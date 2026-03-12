@@ -229,8 +229,9 @@ export default function LandingPage() {
                 )}
               </ul>
               <Link to="/signup" className="mt-8 w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
-                Start 3-Day Trial — $4
+                Get access, no credit card needed
               </Link>
+              <p className="text-xs text-muted-foreground text-center mt-3">Access dashboard without credit card</p>
             </div>
           </div>
         </div>
