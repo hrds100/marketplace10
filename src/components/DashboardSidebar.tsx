@@ -6,7 +6,7 @@ const navItems = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
   { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
-  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
+  { to: '/dashboard/university', icon: GraduationCap, label: 'University ✨' },
   { to: '/dashboard/affiliates', icon: Users, label: 'Affiliates' },
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
   { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
@@ -38,7 +38,14 @@ export default function DashboardSidebar() {
                 title={collapsed ? item.label : undefined}
               >
                 <item.icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.75} />
-                {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
+                {!collapsed && (
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium leading-tight">{item.label}</span>
+                    {item.to === '/dashboard/university' && (
+                      <span className="text-[9px] font-medium leading-tight" style={{ color: '#1DB954' }}>AI Powered</span>
+                    )}
+                  </div>
+                )}
               </NavLink>
             );
           })}
