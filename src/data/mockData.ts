@@ -25,8 +25,7 @@ export interface CRMDeal {
   lastContact: string;
   ownerInitials: string;
   notes: string;
-  phone?: string;
-  email?: string;
+  whatsapp?: string;
 }
 
 export interface UniversityModule {
@@ -90,16 +89,16 @@ export const listings: Listing[] = Array.from({ length: 90 }, (_, i) => {
 export const CRM_STAGES = ['New Lead', 'Under Negotiation', 'Contract Sent', 'Follow Up', 'Closed', 'Portfolio'];
 
 export const crmDeals: CRMDeal[] = [
-  { id: 'crm-1', name: 'Maple House', city: 'Manchester', postcode: 'M14', rent: 1200, profit: 680, type: '3-bed flat', stage: 'New Lead', lastContact: '2 days ago', ownerInitials: 'JW', notes: 'Landlord keen, needs follow-up call', phone: '07911123456', email: 'landlord@example.com' },
+  { id: 'crm-1', name: 'Maple House', city: 'Manchester', postcode: 'M14', rent: 1200, profit: 680, type: '3-bed flat', stage: 'New Lead', lastContact: '2 days ago', ownerInitials: 'JW', notes: 'Landlord keen, needs follow-up call', whatsapp: '+447911123456' },
   { id: 'crm-2', name: 'Victoria Court', city: 'London', postcode: 'SW9', rent: 2100, profit: 820, type: '2-bed flat', stage: 'New Lead', lastContact: '5 days ago', ownerInitials: 'JW', notes: 'High demand area' },
-  { id: 'crm-3', name: 'Oak Lodge', city: 'Birmingham', postcode: 'B15', rent: 950, profit: 420, type: '2-bed house', stage: 'Under Negotiation', lastContact: '1 day ago', ownerInitials: 'JW', notes: 'Negotiating rent reduction', phone: '07922234567' },
+  { id: 'crm-3', name: 'Oak Lodge', city: 'Birmingham', postcode: 'B15', rent: 950, profit: 420, type: '2-bed house', stage: 'Under Negotiation', lastContact: '1 day ago', ownerInitials: 'JW', notes: 'Negotiating rent reduction', whatsapp: '+447922234567' },
   { id: 'crm-4', name: 'Regent Place', city: 'Leeds', postcode: 'LS1', rent: 1100, profit: 550, type: '3-bed house', stage: 'Under Negotiation', lastContact: '3 days ago', ownerInitials: 'JW', notes: 'Awaiting landlord response' },
-  { id: 'crm-5', name: 'Elm Terrace', city: 'Bristol', postcode: 'BS1', rent: 1400, profit: 620, type: '2-bed flat', stage: 'Contract Sent', lastContact: 'Today', ownerInitials: 'JW', notes: 'Contract sent yesterday', email: 'owner@example.com' },
+  { id: 'crm-5', name: 'Elm Terrace', city: 'Bristol', postcode: 'BS1', rent: 1400, profit: 620, type: '2-bed flat', stage: 'Contract Sent', lastContact: 'Today', ownerInitials: 'JW', notes: 'Contract sent yesterday', whatsapp: '+447933345678' },
   { id: 'crm-6', name: 'Birch Manor', city: 'Liverpool', postcode: 'L1', rent: 900, profit: 380, type: '1-bed flat', stage: 'Contract Sent', lastContact: '4 days ago', ownerInitials: 'JW', notes: 'Awaiting signed contract' },
   { id: 'crm-7', name: 'Cedar View', city: 'Glasgow', postcode: 'G1', rent: 850, profit: 350, type: '2-bed flat', stage: 'Follow Up', lastContact: '1 week ago', ownerInitials: 'JW', notes: 'Need to chase landlord' },
   { id: 'crm-8', name: 'Willow Gate', city: 'Sheffield', postcode: 'S1', rent: 800, profit: 300, type: '1-bed flat', stage: 'Follow Up', lastContact: '6 days ago', ownerInitials: 'JW', notes: 'Scheduled viewing' },
   { id: 'crm-9', name: 'Pine Apartments', city: 'Manchester', postcode: 'M20', rent: 1500, profit: 700, type: '3-bed flat', stage: 'Follow Up', lastContact: '2 days ago', ownerInitials: 'JW', notes: 'Strong deal, push to close' },
-  { id: 'crm-10', name: 'Ash Grove', city: 'Edinburgh', postcode: 'EH1', rent: 1300, profit: 580, type: '2-bed house', stage: 'Closed', lastContact: '1 day ago', ownerInitials: 'JW', notes: 'Deal closed! Move-in next month', phone: '07933345678', email: 'ash@example.com' },
+  { id: 'crm-10', name: 'Ash Grove', city: 'Edinburgh', postcode: 'EH1', rent: 1300, profit: 580, type: '2-bed house', stage: 'Closed', lastContact: '1 day ago', ownerInitials: 'JW', notes: 'Deal closed! Move-in next month', whatsapp: '+447944456789' },
   { id: 'crm-11', name: 'Ivy House', city: 'Nottingham', postcode: 'NG1', rent: 950, profit: 440, type: '2-bed flat', stage: 'Closed', lastContact: '3 days ago', ownerInitials: 'JW', notes: 'Keys collected' },
   { id: 'crm-12', name: 'Holly Court', city: 'London', postcode: 'E1', rent: 2400, profit: 900, type: '3-bed flat', stage: 'Portfolio', lastContact: 'Active', ownerInitials: 'JW', notes: 'Running well, 92% occupancy' },
   { id: 'crm-13', name: 'Hazel Lodge', city: 'Manchester', postcode: 'M4', rent: 1100, profit: 520, type: '2-bed flat', stage: 'Portfolio', lastContact: 'Active', ownerInitials: 'JW', notes: '100% booked this month' },

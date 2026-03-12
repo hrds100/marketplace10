@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, CheckCircle, BookOpen, Target, TrendingUp, BarChart3, Shield, ChevronDown } from 'lucide-react';
 import LandingNav from '@/components/LandingNav';
@@ -34,7 +34,10 @@ function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
 export default function LandingPage() {
   const { toggle, isFav } = useFavourites();
   const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const navigate = useNavigate();
   const stripListings = listings.slice(0, 4);
+
+  const goSignUp = () => navigate('/signup');
 
   return (
     <div className="min-h-screen bg-card">
@@ -68,7 +71,7 @@ export default function LandingPage() {
               </p>
 
               <div className="mt-9 flex flex-wrap gap-3">
-                <Link to="/dashboard/deals" className="h-[52px] px-7 rounded-lg bg-primary text-primary-foreground font-semibold text-[15px] inline-flex items-center hover:opacity-90 transition-opacity">
+                <Link to="/signup" className="h-[52px] px-7 rounded-lg bg-primary text-primary-foreground font-semibold text-[15px] inline-flex items-center hover:opacity-90 transition-opacity">
                   Browse Live Deals <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
                 <a href="#how-it-works" className="h-[52px] px-7 rounded-lg font-medium text-[15px] inline-flex items-center transition-colors" style={{ border: '1.5px solid hsl(215 22% 28%)', color: 'white' }}>
@@ -106,13 +109,7 @@ export default function LandingPage() {
 
             {/* Right - Floating cards */}
             <div className="hidden lg:block relative h-[480px]">
-              {/* Notification card */}
-              <motion.div
-                initial={{ opacity: 0, x: -40 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-                className="absolute top-10 left-5 z-20 float-fast"
-              >
+              <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4, duration: 0.6 }} className="absolute top-10 left-5 z-20 float-fast">
                 <div className="flex items-center gap-3 px-5 py-3.5 rounded-2xl min-w-[280px]" style={{ background: 'hsl(215 35% 18%)', boxShadow: '0 20px 60px rgba(0,0,0,0.30)' }}>
                   <img src="https://picsum.photos/seed/hero-notif/40/40" className="w-10 h-10 rounded-lg object-cover" alt="" />
                   <div>
@@ -123,13 +120,7 @@ export default function LandingPage() {
                 </div>
               </motion.div>
 
-              {/* Main property card */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.6 }}
-                className="absolute right-0 top-20 z-10 float-slow"
-              >
+              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="absolute right-0 top-20 z-10 float-slow">
                 <div className="w-[320px] rounded-[20px] overflow-hidden bg-card" style={{ boxShadow: '0 32px 80px rgba(0,0,0,0.35)' }}>
                   <img src="https://picsum.photos/seed/hero-prop1/640/400" className="w-full h-[200px] object-cover" alt="" />
                   <div className="p-[18px_20px_20px]">
@@ -146,13 +137,7 @@ export default function LandingPage() {
                 </div>
               </motion.div>
 
-              {/* Stacked card */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.9 }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-                className="absolute right-5 top-[200px] z-0 rotate-[2deg]"
-              >
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.9 }} transition={{ delay: 0.5, duration: 0.6 }} className="absolute right-5 top-[200px] z-0 rotate-[2deg]">
                 <div className="w-[300px] rounded-2xl bg-card p-4" style={{ boxShadow: '0 16px 40px rgba(0,0,0,0.20)' }}>
                   <div className="flex items-center gap-3">
                     <img src="https://picsum.photos/seed/hero-prop2/80/80" className="w-12 h-12 rounded-lg object-cover" alt="" />
@@ -167,7 +152,6 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-[120px] z-10" style={{ background: 'linear-gradient(transparent, hsl(0 0% 100%))' }} />
       </section>
 
@@ -179,22 +163,22 @@ export default function LandingPage() {
               <button className="text-[15px] font-semibold text-foreground pb-3.5 border-b-2 border-foreground -mb-[15px]">Live Deals</button>
               <button className="text-[15px] font-medium text-muted-foreground pb-3.5 -mb-[15px]">Featured Deals</button>
             </div>
-            <Link to="/dashboard/deals" className="text-sm font-semibold text-primary hover:opacity-75 transition-opacity">View all deals →</Link>
+            <button onClick={goSignUp} className="text-sm font-semibold text-primary hover:opacity-75 transition-opacity">View all deals →</button>
           </div>
           <p className="text-[15px] text-muted-foreground mt-5 mb-8">Updated daily — 1,800+ landlord-approved rent-to-rent listings across the UK</p>
 
           <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
             {stripListings.map(l => (
               <div key={l.id} className="min-w-[280px] snap-start">
-                <PropertyCard listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} />
+                <PropertyCard listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} forceSignUp />
               </div>
             ))}
           </div>
 
           <div className="mt-9 text-center">
-            <Link to="/dashboard/deals" className="bg-nfstay-black text-nfstay-black-foreground h-[52px] px-8 rounded-lg font-semibold text-[15px] inline-flex items-center hover:opacity-90 transition-opacity">
+            <button onClick={goSignUp} className="bg-nfstay-black text-nfstay-black-foreground h-[52px] px-8 rounded-lg font-semibold text-[15px] inline-flex items-center hover:opacity-90 transition-opacity">
               Browse All 1,800+ Deals <ArrowRight className="ml-2 w-4 h-4" />
-            </Link>
+            </button>
           </div>
         </div>
       </section>
@@ -227,43 +211,25 @@ export default function LandingPage() {
       {/* PRICING */}
       <section id="pricing" className="py-20 bg-card">
         <div className="max-w-[1280px] mx-auto px-6 md:px-10 text-center">
-          <h2 className="text-[36px] md:text-[42px] font-bold tracking-[-0.025em] text-foreground">Simple, transparent pricing</h2>
-          <p className="text-lg text-muted-foreground mt-4 max-w-[480px] mx-auto">Start with a 30-day trial. Cancel any time.</p>
+          <h2 className="text-[36px] md:text-[42px] font-bold tracking-[-0.025em] text-foreground">Simple pricing</h2>
+          <p className="text-lg text-muted-foreground mt-4 max-w-[480px] mx-auto">Try everything for $4. Cancel any time.</p>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-[800px] mx-auto mt-14">
-            {/* Trial */}
-            <div className="bg-card rounded-2xl p-8 border border-border text-left">
-              <span className="badge-green">Trial</span>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-foreground">£9</span>
-                <span className="text-muted-foreground text-sm">/ 30 days</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-3">Full access to everything. No restrictions.</p>
-              <ul className="mt-6 space-y-3">
-                {['1,800+ verified deals', 'CRM pipeline tools', 'Airbnb University', 'Earnings estimator', 'Deal alerts'].map(v => (
-                  <li key={v} className="flex items-center gap-2.5 text-sm text-foreground"><CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />{v}</li>
-                ))}
-              </ul>
-              <Link to="/signup" className="mt-8 w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
-                Start trial — £9
-              </Link>
-            </div>
-
-            {/* Monthly */}
+          <div className="max-w-[480px] mx-auto mt-14">
             <div className="bg-card rounded-2xl p-8 border-2 border-primary text-left relative">
-              <span className="badge-green-fill">Most popular</span>
+              <span className="badge-green-fill">Full Access</span>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-foreground">£97</span>
-                <span className="text-muted-foreground text-sm">/ month</span>
+                <span className="text-4xl font-extrabold text-foreground">$4</span>
+                <span className="text-muted-foreground text-sm">/ 3-day trial</span>
               </div>
-              <p className="text-sm text-muted-foreground mt-3">Everything in trial, plus priority features.</p>
+              <p className="text-sm text-muted-foreground mt-2">Then $997/month after trial. Cancel any time.</p>
+              <p className="text-sm text-muted-foreground mt-1">Full access to everything. No restrictions.</p>
               <ul className="mt-6 space-y-3">
-                {['Everything in trial', 'Priority deal alerts', 'Affiliate programme', 'Direct landlord contact', 'Full CRM access', 'Cancel any time'].map(v => (
+                {['1,800+ verified deals', 'Priority deal alerts', 'Affiliate programme', 'Direct landlord contact', 'Full CRM access', 'Airbnb University', 'Earnings estimator', 'Cancel any time'].map(v => (
                   <li key={v} className="flex items-center gap-2.5 text-sm text-foreground"><CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />{v}</li>
                 ))}
               </ul>
               <Link to="/signup" className="mt-8 w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
-                Get started — £97/mo
+                Start 3-Day Trial — $4
               </Link>
             </div>
           </div>
@@ -282,7 +248,7 @@ export default function LandingPage() {
               { emoji: '🏠', title: 'Property Hunting', desc: 'Find the best opportunities', lessons: 8 },
               { emoji: '💬', title: 'Landlord Pitching', desc: 'Win landlords with proven scripts', lessons: 5 },
             ].map(m => (
-              <div key={m.title} className="bg-card rounded-2xl p-6 border border-border card-hover text-left">
+              <div key={m.title} className="bg-card rounded-2xl p-6 border border-border card-hover text-left cursor-pointer" onClick={goSignUp}>
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-2xl">{m.emoji}</span>
                   <h3 className="text-base font-bold text-foreground">{m.title}</h3>
@@ -293,9 +259,9 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <Link to="/dashboard/university" className="mt-10 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:opacity-75 transition-opacity">
+          <button onClick={goSignUp} className="mt-10 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:opacity-75 transition-opacity">
             <BookOpen className="w-4 h-4" /> View all 9 modules →
-          </Link>
+          </button>
         </div>
       </section>
 
@@ -354,7 +320,7 @@ export default function LandingPage() {
           <p className="text-lg mt-4" style={{ color: 'hsl(215 20% 65%)' }}>Join 4,200+ operators already using NFsTay to build their rent-to-rent portfolio.</p>
           <div className="mt-8 flex flex-wrap gap-3 justify-center">
             <Link to="/signup" className="h-[52px] px-8 rounded-lg bg-primary text-primary-foreground font-semibold text-[15px] inline-flex items-center hover:opacity-90 transition-opacity">
-              Get Started — £9 Trial <ArrowRight className="ml-2 w-4 h-4" />
+              Get Started — $4 Trial <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
             <Link to="/signin" className="h-[52px] px-8 rounded-lg font-medium text-[15px] inline-flex items-center" style={{ border: '1.5px solid hsl(215 22% 28%)', color: 'white' }}>
               Sign In
@@ -375,9 +341,9 @@ export default function LandingPage() {
               <div>
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Platform</h4>
                 <div className="space-y-2">
-                  <Link to="/dashboard/deals" className="block text-sm text-foreground hover:text-primary transition-colors">Deals</Link>
-                  <Link to="/dashboard/university" className="block text-sm text-foreground hover:text-primary transition-colors">University</Link>
-                  <Link to="/dashboard/crm" className="block text-sm text-foreground hover:text-primary transition-colors">CRM</Link>
+                  <Link to="/signup" className="block text-sm text-foreground hover:text-primary transition-colors">Deals</Link>
+                  <Link to="/signup" className="block text-sm text-foreground hover:text-primary transition-colors">University</Link>
+                  <Link to="/signup" className="block text-sm text-foreground hover:text-primary transition-colors">CRM</Link>
                 </div>
               </div>
               <div>

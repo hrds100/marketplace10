@@ -1,13 +1,16 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, X } from 'lucide-react';
 import PropertyCard from '@/components/PropertyCard';
 import { listings } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
+import { toast } from 'sonner';
 
 const tabs = ['All', 'Live', 'On Offer', 'Inactive'] as const;
 
 export default function DealsPage() {
   const { toggle, isFav } = useFavourites();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('All');
   const [city, setCity] = useState('');
   const [type, setType] = useState('');
@@ -36,6 +39,11 @@ export default function DealsPage() {
   const cities = [...new Set(listings.map(l => l.city))].sort();
   const types = [...new Set(listings.map(l => l.type))].sort();
 
+  const handleAddToCRM = (listing: typeof listings[0]) => {
+    toast.success(`${listing.name} added to CRM`);
+    navigate('/dashboard/crm');
+  };
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
@@ -60,7 +68,7 @@ export default function DealsPage() {
         <span className="text-[13px] font-semibold text-foreground mb-3 block">⭐ Featured</span>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {featured.map(l => (
-            <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => {}} />
+            <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => handleAddToCRM(l)} />
           ))}
         </div>
       </div>
@@ -101,7 +109,7 @@ export default function DealsPage() {
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         {pageListings.map(l => (
-          <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => {}} />
+          <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => handleAddToCRM(l)} />
         ))}
       </div>
 
