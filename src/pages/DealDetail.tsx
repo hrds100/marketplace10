@@ -4,6 +4,7 @@ import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle } from
 import { listings, faqItems } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 import PropertyCard from '@/components/PropertyCard';
+import InquiryPopup from '@/components/InquiryPopup';
 
 export default function DealDetail() {
   const { id } = useParams();
