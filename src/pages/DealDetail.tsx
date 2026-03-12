@@ -10,6 +10,8 @@ export default function DealDetail() {
   const listing = listings.find(l => l.id === id) || listings[0];
   const { toggle, isFav } = useFavourites();
   const [nights, setNights] = useState(20);
+  const defaultNightlyRate = Math.round(listing.rent / 20 * 1.8);
+  const [nightlyRate, setNightlyRate] = useState(defaultNightlyRate);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIdx, setGalleryIdx] = useState(0);
@@ -22,7 +24,6 @@ export default function DealDetail() {
     `https://picsum.photos/seed/detail-g5/1200/900`,
   ];
 
-  const nightlyRate = Math.round(listing.rent / 20 * 1.8);
   const estRevenue = nightlyRate * nights;
   const estProfit = estRevenue - listing.rent;
   const nearbyDeals = listings.filter(l => l.city === listing.city && l.id !== listing.id).slice(0, 3);
@@ -135,7 +136,7 @@ export default function DealDetail() {
                 <span className="text-sm text-muted-foreground">{listing.type}</span>
               </div>
 
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="text-xs font-semibold text-foreground block mb-2">Nights booked per month</label>
                 <input
                   type="range"
@@ -150,6 +151,18 @@ export default function DealDetail() {
                   <span className="font-semibold text-foreground">{nights} nights</span>
                   <span>30</span>
                 </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="text-xs font-semibold text-foreground block mb-2">Nightly average rate (£)</label>
+                <input
+                  type="number"
+                  min={20}
+                  max={500}
+                  value={nightlyRate}
+                  onChange={e => setNightlyRate(Number(e.target.value) || 0)}
+                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
               </div>
 
               <div className="space-y-3 border-t border-border pt-4">

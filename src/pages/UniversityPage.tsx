@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { universityModules } from '@/data/mockData';
-import { X, ChevronRight } from 'lucide-react';
+import { universityModules as initialModules, type UniversityModule } from '@/data/mockData';
+import { X, ChevronRight, BookOpen, CheckCircle } from 'lucide-react';
 
 const moduleContent: Record<string, string[]> = {
   'mod-1': [
@@ -86,10 +86,21 @@ const moduleContent: Record<string, string[]> = {
 };
 
 export default function UniversityPage() {
-  const completed = universityModules.filter(m => m.status === 'completed').length;
+  const [modules, setModules] = useState<UniversityModule[]>(initialModules);
   const [openModule, setOpenModule] = useState<string | null>(null);
 
-  const activeModule = universityModules.find(m => m.id === openModule);
+  const completed = modules.filter(m => m.status === 'completed').length;
+  const activeModule = modules.find(m => m.id === openModule);
+
+  const handleOpenModule = (id: string) => {
+    setOpenModule(id);
+    // Auto set to in-progress if not started
+    setModules(prev => prev.map(m => m.id === id && m.status === 'not-started' ? { ...m, status: 'in-progress' as const } : m));
+  };
+
+  const handleSetStatus = (id: string, status: UniversityModule['status']) => {
+    setModules(prev => prev.map(m => m.id === id ? { ...m, status } : m));
+  };
 
   return (
     <div>
@@ -97,14 +108,14 @@ export default function UniversityPage() {
       <p className="text-sm text-muted-foreground mt-1">Master rent-to-rent operations from zero to operator.</p>
 
       <div className="mt-4 flex items-center gap-3">
-        <span className="text-sm text-foreground">{completed} of {universityModules.length} modules completed</span>
+        <span className="text-sm text-foreground">{completed} of {modules.length} modules completed</span>
       </div>
       <div className="w-full max-w-[360px] h-1.5 bg-border rounded-full mt-2 overflow-hidden">
-        <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(completed / universityModules.length) * 100}%` }} />
+        <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(completed / modules.length) * 100}%` }} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mt-8">
-        {universityModules.map(mod => (
+        {modules.map(mod => (
           <div key={mod.id} className="bg-card border border-border rounded-2xl p-5 card-hover">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -114,14 +125,13 @@ export default function UniversityPage() {
               <img src={mod.image} className="w-[72px] h-12 rounded-lg object-cover" alt="" loading="lazy" />
             </div>
             <p className="text-sm text-muted-foreground">{mod.description}</p>
-            <p className="text-xs text-muted-foreground mt-2">{mod.lessons} lessons · ~{mod.minutes} mins</p>
             <div className="mt-3">
               {mod.status === 'completed' && <span className="badge-green">Completed ✓</span>}
               {mod.status === 'in-progress' && <span className="badge-amber">In progress</span>}
               {mod.status === 'not-started' && <span className="badge-gray">Not started</span>}
             </div>
             <button
-              onClick={() => setOpenModule(mod.id)}
+              onClick={() => handleOpenModule(mod.id)}
               className="w-full h-10 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm mt-4 hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2"
             >
               Open Module <ChevronRight className="w-4 h-4" />
@@ -140,11 +150,32 @@ export default function UniversityPage() {
                 <span className="text-2xl">{activeModule.emoji}</span>
                 <div>
                   <h2 className="text-lg font-bold text-foreground">{activeModule.title}</h2>
-                  <p className="text-xs text-muted-foreground">{activeModule.lessons} lessons · ~{activeModule.minutes} mins</p>
+                  <p className="text-xs text-muted-foreground">{activeModule.description}</p>
                 </div>
               </div>
               <button onClick={() => setOpenModule(null)} className="p-1.5 rounded-lg hover:bg-secondary"><X className="w-5 h-5 text-muted-foreground" /></button>
             </div>
+
+            {/* Status buttons */}
+            <div className="flex gap-2 px-6 pt-4">
+              {([
+                { status: 'in-progress' as const, label: 'Still Studying', icon: BookOpen },
+                { status: 'completed' as const, label: 'Completed', icon: CheckCircle },
+              ]).map(s => (
+                <button
+                  key={s.status}
+                  onClick={() => handleSetStatus(openModule, s.status)}
+                  className={`h-9 px-4 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
+                    activeModule.status === s.status
+                      ? s.status === 'completed' ? 'bg-primary text-primary-foreground' : 'bg-amber-100 text-amber-800'
+                      : 'border border-border text-muted-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <s.icon className="w-3.5 h-3.5" /> {s.label}
+                </button>
+              ))}
+            </div>
+
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {(moduleContent[openModule] || ['Content coming soon...']).map((text, i) => (
