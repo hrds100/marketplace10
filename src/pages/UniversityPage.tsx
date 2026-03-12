@@ -41,6 +41,9 @@ export default function UniversityPage() {
         <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
           Build a compliant UK rent-to-rent business from the ground up.
         </p>
+        <p className="text-xs mt-2 px-3 py-1.5 rounded-lg inline-block font-medium" style={{ background: '#ECFDF5', color: '#065F46' }}>
+          ✨ We've dumped everything we know into these lessons — enjoy.
+        </p>
       </div>
 
       {/* Gamification bar */}
