@@ -31,7 +31,7 @@ export default function LandingNav() {
 
           <div className="hidden md:flex items-center gap-3">
             <Link to="/signin" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2">Sign In</Link>
-            <Link to="/signup" className="bg-nfstay-black text-nfstay-black-foreground text-sm font-semibold h-10 px-5 rounded-lg inline-flex items-center hover:opacity-90 transition-opacity">
+            <Link to="/signup" className="bg-primary text-primary-foreground text-sm font-semibold h-10 px-5 rounded-lg inline-flex items-center hover:opacity-90 transition-opacity">
               Get Started →
             </Link>
           </div>
@@ -57,7 +57,7 @@ export default function LandingNav() {
             {['Deals', 'How it Works', 'Pricing', 'University'].map(t => (
               <a key={t} href={`#${t.toLowerCase().replace(/ /g, '-')}`} onClick={() => setMobileOpen(false)} className="text-[22px] font-medium text-foreground">{t}</a>
             ))}
-            <Link to="/signup" className="bg-nfstay-black text-nfstay-black-foreground text-base font-semibold h-12 px-8 rounded-lg inline-flex items-center" onClick={() => setMobileOpen(false)}>
+            <Link to="/signup" className="bg-primary text-primary-foreground text-base font-semibold h-12 px-8 rounded-lg inline-flex items-center" onClick={() => setMobileOpen(false)}>
               Get Started →
             </Link>
           </motion.div>

@@ -1,5 +1,5 @@
 import { Heart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { Listing } from '@/data/mockData';
 
 interface Props {
@@ -8,9 +8,12 @@ interface Props {
   onToggleFav: () => void;
   onAddToCRM?: () => void;
   showSavedBadge?: boolean;
+  forceSignUp?: boolean;
 }
 
-export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, showSavedBadge }: Props) {
+export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, showSavedBadge, forceSignUp }: Props) {
+  const navigate = useNavigate();
+
   const statusBadge = () => {
     if (listing.featured) return <span className="badge-green-fill text-[11px]">Featured</span>;
     switch (listing.status) {
@@ -25,6 +28,14 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       case 'live': return 'bg-emerald-500';
       case 'on-offer': return 'bg-amber-500';
       case 'inactive': return 'bg-gray-400';
+    }
+  };
+
+  const handleAction = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (forceSignUp) {
+      navigate('/signup');
     }
   };
 
@@ -44,7 +55,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           {statusBadge()}
         </div>
         <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFav(); }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (forceSignUp) { navigate('/signup'); return; } onToggleFav(); }}
           className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isFav ? 'bg-accent-light' : 'bg-black/30'}`}
         >
           <Heart className={`w-4 h-4 ${isFav ? 'fill-primary text-primary' : 'text-white'}`} />
@@ -92,15 +103,34 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         </div>
 
         <div className="flex gap-2 mt-3">
-          <Link
-            to={`/deals/${listing.id}`}
-            className="flex-1 bg-nfstay-black text-nfstay-black-foreground h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity"
-          >
-            Visit Listing
-          </Link>
-          <button className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
-            Inquire Now
-          </button>
+          {forceSignUp ? (
+            <>
+              <button
+                onClick={handleAction}
+                className="flex-1 bg-nfstay-black text-nfstay-black-foreground h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity"
+              >
+                Visit Listing
+              </button>
+              <button
+                onClick={handleAction}
+                className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors"
+              >
+                Inquire Now
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to={`/deals/${listing.id}`}
+                className="flex-1 bg-nfstay-black text-nfstay-black-foreground h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity"
+              >
+                Visit Listing
+              </Link>
+              <button className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
+                Inquire Now
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

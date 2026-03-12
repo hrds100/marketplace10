@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, Link } from 'react-router-dom';
 import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
@@ -21,7 +21,7 @@ export default function DashboardSidebar() {
       {/* Desktop sidebar */}
       <aside className={`hidden md:flex fixed left-0 top-0 h-screen bg-card border-r border-border z-[100] flex-col transition-all duration-200 ${collapsed ? 'w-16' : 'w-56'}`}>
         <div className={`h-[68px] flex items-center border-b border-border ${collapsed ? 'justify-center px-2' : 'px-5'}`}>
-          {!collapsed && <span className="text-lg font-extrabold text-foreground tracking-tight">NFsTay</span>}
+          {!collapsed && <Link to="/" className="text-lg font-extrabold text-foreground tracking-tight hover:opacity-75 transition-opacity">NFsTay</Link>}
           <button onClick={() => setCollapsed(!collapsed)} className={`p-1.5 rounded-md hover:bg-secondary transition-colors ${collapsed ? '' : 'ml-auto'}`}>
             {collapsed ? <ChevronRight className="w-4 h-4 text-muted-foreground" /> : <ChevronLeft className="w-4 h-4 text-muted-foreground" />}
           </button>

@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { GripVertical, Plus, Phone, Mail } from 'lucide-react';
-import { crmDeals, CRM_STAGES, type CRMDeal } from '@/data/mockData';
+import { GripVertical, Plus, MessageCircle, X } from 'lucide-react';
+import { crmDeals, CRM_STAGES, type CRMDeal, listings } from '@/data/mockData';
 import { toast } from 'sonner';
 
 export default function CRMPage() {
   const [deals, setDeals] = useState<CRMDeal[]>(crmDeals);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newDeal, setNewDeal] = useState({ name: '', city: '', postcode: '', rent: '', profit: '', type: '2-bed flat', stage: 'New Lead', notes: '', whatsapp: '' });
 
   const stageDeals = (stage: string) => deals.filter(d => d.stage === stage);
   const stagePotProfit = (stage: string) => stageDeals(stage).reduce((s, d) => s + d.profit, 0);
@@ -18,6 +20,38 @@ export default function CRMPage() {
     toast.success('Deal moved');
   };
 
+  // Find matching listing image for CRM deal
+  const getDealImage = (deal: CRMDeal) => {
+    const match = listings.find(l => l.name === deal.name && l.city === deal.city);
+    if (match) return match.image;
+    return `https://picsum.photos/seed/${deal.id}/400/300`;
+  };
+
+  const handleAddDeal = () => {
+    if (!newDeal.name || !newDeal.city) {
+      toast.error('Please fill in at least name and city');
+      return;
+    }
+    const deal: CRMDeal = {
+      id: `crm-${Date.now()}`,
+      name: newDeal.name,
+      city: newDeal.city,
+      postcode: newDeal.postcode,
+      rent: Number(newDeal.rent) || 0,
+      profit: Number(newDeal.profit) || 0,
+      type: newDeal.type,
+      stage: newDeal.stage,
+      lastContact: 'Today',
+      ownerInitials: 'ME',
+      notes: newDeal.notes,
+      whatsapp: newDeal.whatsapp || undefined,
+    };
+    setDeals(prev => [...prev, deal]);
+    setShowAddForm(false);
+    setNewDeal({ name: '', city: '', postcode: '', rent: '', profit: '', type: '2-bed flat', stage: 'New Lead', notes: '', whatsapp: '' });
+    toast.success('Deal added to ' + deal.stage);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -25,7 +59,7 @@ export default function CRMPage() {
           <h1 className="text-[28px] font-bold text-foreground">CRM Pipeline</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage your rent-to-rent acquisition pipeline.</p>
         </div>
-        <button className="h-11 px-5 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
+        <button onClick={() => setShowAddForm(true)} className="h-11 px-5 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
           <Plus className="w-4 h-4" /> Add Deal
         </button>
       </div>
@@ -35,6 +69,69 @@ export default function CRMPage() {
         <span className="badge-gray">£{deals.reduce((s, d) => s + d.profit, 0).toLocaleString()} potential monthly profit</span>
         <span className="badge-gray">{stageDeals('Closed').length} deals closing this month</span>
       </div>
+
+      {/* Add Deal Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => setShowAddForm(false)}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[480px] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-foreground">Add Deal to Pipeline</h2>
+              <button onClick={() => setShowAddForm(false)} className="p-1.5 rounded-lg hover:bg-secondary"><X className="w-5 h-5 text-muted-foreground" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Property Name *</label>
+                <input value={newDeal.name} onChange={e => setNewDeal(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Maple House" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">City *</label>
+                  <input value={newDeal.city} onChange={e => setNewDeal(p => ({ ...p, city: e.target.value }))} placeholder="Manchester" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Postcode</label>
+                  <input value={newDeal.postcode} onChange={e => setNewDeal(p => ({ ...p, postcode: e.target.value }))} placeholder="M14" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Monthly Rent (£)</label>
+                  <input type="number" value={newDeal.rent} onChange={e => setNewDeal(p => ({ ...p, rent: e.target.value }))} placeholder="1200" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Est. Profit (£)</label>
+                  <input type="number" value={newDeal.profit} onChange={e => setNewDeal(p => ({ ...p, profit: e.target.value }))} placeholder="680" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Property Type</label>
+                  <select value={newDeal.type} onChange={e => setNewDeal(p => ({ ...p, type: e.target.value }))} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                    {['1-bed flat', '2-bed flat', '3-bed flat', '2-bed house', '3-bed house', '4-bed house'].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Pipeline Stage</label>
+                  <select value={newDeal.stage} onChange={e => setNewDeal(p => ({ ...p, stage: e.target.value }))} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                    {CRM_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">WhatsApp Number</label>
+                <input value={newDeal.whatsapp} onChange={e => setNewDeal(p => ({ ...p, whatsapp: e.target.value }))} placeholder="+447911123456" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Notes</label>
+                <textarea value={newDeal.notes} onChange={e => setNewDeal(p => ({ ...p, notes: e.target.value }))} placeholder="Any notes about this deal..." rows={2} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+              </div>
+              <button onClick={handleAddDeal} className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">
+                Add to Pipeline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-4 overflow-x-auto pb-4" style={{ scrollbarWidth: 'none' }}>
         {CRM_STAGES.map(stage => (
@@ -60,25 +157,30 @@ export default function CRMPage() {
                   key={deal.id}
                   draggable
                   onDragStart={() => onDragStart(deal.id)}
-                  className={`bg-card border border-border rounded-lg p-3.5 cursor-grab active:cursor-grabbing transition-shadow ${dragId === deal.id ? 'shadow-lg opacity-75' : 'shadow-sm'}`}
+                  className={`bg-card border border-border rounded-lg overflow-hidden cursor-grab active:cursor-grabbing transition-shadow ${dragId === deal.id ? 'shadow-lg opacity-75' : 'shadow-sm'}`}
                 >
-                  <div className="flex items-start gap-2">
-                    <GripVertical className="w-3.5 h-3.5 text-border mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-foreground">{deal.name}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{deal.city} · {deal.postcode}</div>
-                      <div className="flex gap-3 mt-2 text-xs">
-                        <span className="text-muted-foreground">Rent: £{deal.rent.toLocaleString()}</span>
-                        <span className="text-accent-foreground font-medium">Profit: £{deal.profit}</span>
-                      </div>
-                      {(deal.phone || deal.email) && (
-                        <div className="flex gap-3 mt-2 pt-2 border-t border-border">
-                          {deal.phone && <a href={`tel:${deal.phone}`} className="text-xs text-primary flex items-center gap-1"><Phone className="w-3 h-3" />{deal.phone}</a>}
-                          {deal.email && <a href={`mailto:${deal.email}`} className="text-xs text-primary flex items-center gap-1"><Mail className="w-3 h-3" />Email</a>}
+                  {/* Property image */}
+                  <img src={getDealImage(deal)} alt="" className="w-full h-[100px] object-cover" loading="lazy" />
+                  <div className="p-3.5">
+                    <div className="flex items-start gap-2">
+                      <GripVertical className="w-3.5 h-3.5 text-border mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-foreground">{deal.name}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{deal.city} · {deal.postcode}</div>
+                        <div className="flex gap-3 mt-2 text-xs">
+                          <span className="text-muted-foreground">Rent: £{deal.rent.toLocaleString()}</span>
+                          <span className="text-accent-foreground font-medium">Profit: £{deal.profit}</span>
                         </div>
-                      )}
-                      <div className="text-[11px] text-muted-foreground mt-2 italic truncate">{deal.notes}</div>
-                      <div className="text-[11px] text-muted-foreground mt-1">{deal.lastContact}</div>
+                        {deal.whatsapp && (
+                          <div className="mt-2 pt-2 border-t border-border">
+                            <a href={`https://wa.me/${deal.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary flex items-center gap-1 hover:opacity-75 transition-opacity">
+                              <MessageCircle className="w-3 h-3" /> Contact via WhatsApp
+                            </a>
+                          </div>
+                        )}
+                        <div className="text-[11px] text-muted-foreground mt-2 italic truncate">{deal.notes}</div>
+                        <div className="text-[11px] text-muted-foreground mt-1">{deal.lastContact}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
