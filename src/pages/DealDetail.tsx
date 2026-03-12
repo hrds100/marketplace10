@@ -16,6 +16,7 @@ export default function DealDetail() {
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIdx, setGalleryIdx] = useState(0);
+  const [showInquiry, setShowInquiry] = useState(false);
 
   const images = [
     `https://picsum.photos/seed/detail-main/1200/900`,
