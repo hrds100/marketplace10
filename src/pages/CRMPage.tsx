@@ -64,6 +64,8 @@ export default function CRMPage() {
         </button>
       </div>
       <p className="text-sm text-muted-foreground mb-2">Add your own deal to the CRM and keep track of all your prospects.</p>
+
+      <div className="flex gap-3 mb-6 flex-wrap">
         <span className="badge-gray">{deals.length} deals tracked</span>
         <span className="badge-gray">£{deals.reduce((s, d) => s + d.profit, 0).toLocaleString()} potential monthly profit</span>
         <span className="badge-gray">{stageDeals('Closed').length} deals closing this month</span>
