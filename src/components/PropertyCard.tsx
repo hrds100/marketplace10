@@ -16,6 +16,7 @@ interface Props {
 export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, showSavedBadge, forceSignUp }: Props) {
   const navigate = useNavigate();
   const [addedToCRM, setAddedToCRM] = useState(false);
+  const [showInquiry, setShowInquiry] = useState(false);
 
   const statusBadge = () => {
     if (listing.featured) return <span className="badge-green-fill text-[11px]">Featured</span>;
