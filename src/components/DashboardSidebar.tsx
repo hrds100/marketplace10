@@ -6,7 +6,7 @@ const navItems = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
   { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
-  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
+  { to: '/dashboard/university', icon: GraduationCap, label: 'University ✨' },
   { to: '/dashboard/affiliates', icon: Users, label: 'Affiliates' },
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
   { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
