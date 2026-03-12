@@ -1,6 +1,7 @@
 import { Heart, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import InquiryPopup from '@/components/InquiryPopup';
 import type { Listing } from '@/data/mockData';
 
 interface Props {
