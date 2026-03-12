@@ -11,6 +11,8 @@ import FavouritesPage from "./pages/FavouritesPage";
 import DealDetail from "./pages/DealDetail";
 import CRMPage from "./pages/CRMPage";
 import UniversityPage from "./pages/UniversityPage";
+import ModuleOverviewPage from "./pages/ModuleOverviewPage";
+import LessonPage from "./pages/LessonPage";
 import AffiliatesPage from "./pages/AffiliatesPage";
 import ListADealPage from "./pages/ListADealPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -42,6 +44,10 @@ const App = () => (
             <Route path="affiliates" element={<AffiliatesPage />} />
             <Route path="list-a-deal" element={<ListADealPage />} />
             <Route path="settings" element={<SettingsPage />} />
+          </Route>
+          <Route path="/university/:moduleId" element={<DashboardLayout />}>
+            <Route index element={<ModuleOverviewPage />} />
+            <Route path=":lessonId" element={<LessonPage />} />
           </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
