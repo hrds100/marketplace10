@@ -143,7 +143,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               >
                 Visit Listing
               </Link>
-              <button className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
+              <button onClick={() => setShowInquiry(true)} className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
                 Inquire Now
               </button>
             </>
