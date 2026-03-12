@@ -177,10 +177,10 @@ export default function DealDetail() {
                 </div>
               </div>
 
-              <button className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold mt-6 hover:opacity-90 transition-opacity">
+              <button onClick={() => setShowInquiry(true)} className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold mt-6 hover:opacity-90 transition-opacity">
                 Inquire Now
               </button>
-              <p className="text-xs text-muted-foreground text-center mt-2">Contact the landlord directly</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Contact via WhatsApp</p>
             </div>
           </div>
         </div>
