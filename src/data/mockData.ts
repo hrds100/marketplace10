@@ -81,7 +81,7 @@ export const listings: Listing[] = Array.from({ length: 90 }, (_, i) => {
     status: i < 3 ? 'live' : statuses[i % statuses.length],
     featured: i < 3,
     daysAgo: 1 + (i % 30),
-    image: `https://picsum.photos/seed/${citySeeds[city]}${idx}/800/520`,
+    image: `https://picsum.photos/seed/prop-${city.toLowerCase()}-${i}-${idx}/800/520`,
     landlordApproved: true,
   };
 });
