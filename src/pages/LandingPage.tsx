@@ -7,7 +7,7 @@ import { listings, faqItems } from '@/data/mockData';
 import PropertyCard from '@/components/PropertyCard';
 import { useFavourites } from '@/hooks/useFavourites';
 
-function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
+function Counter({ target, suffix = '' }: {target: number;suffix?: string;}) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -66,8 +66,8 @@ export default function LandingPage() {
                 </span>
               </h1>
 
-              <p className="mt-6 text-lg leading-relaxed max-w-[480px]" style={{ color: 'hsl(215 20% 65%)' }}>
-                NFsTay connects short-term rental operators with verified, landlord-approved rent-to-rent opportunities. Browse, analyse, and close deals — all in one place.
+              <p className="mt-6 text-lg leading-relaxed max-w-[480px]" style={{ color: 'hsl(215 20% 65%)' }}>NFsTay connects short-term rental operators with verified, landlord-approved rent-to-rent opportunities. Browse, analyse, and close deals, all in one place.
+
               </p>
 
               <div className="mt-9 flex flex-wrap gap-3">
@@ -81,27 +81,27 @@ export default function LandingPage() {
 
               {/* Stats */}
               <div className="mt-12 flex items-center gap-8 flex-wrap">
-                {[{ n: 4200, s: '+', l: 'UK operators' }, { n: 1800, s: '+', l: 'verified deals' }, { n: 10, s: '', l: 'cities covered' }].map((s, i) => (
-                  <div key={i} className="flex items-center gap-8">
+                {[{ n: 4200, s: '+', l: 'UK operators' }, { n: 1800, s: '+', l: 'verified deals' }, { n: 10, s: '', l: 'cities covered' }].map((s, i) =>
+                <div key={i} className="flex items-center gap-8">
                     {i > 0 && <div className="w-px h-9 hidden sm:block" style={{ background: 'hsl(215 22% 28%)' }} />}
                     <div>
                       <div className="text-xl font-bold" style={{ color: 'white' }}><Counter target={s.n} suffix={s.s} /></div>
                       <div className="text-[13px]" style={{ color: 'hsl(215 20% 65%)' }}>{s.l}</div>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
 
               {/* Avatars */}
               <div className="mt-5 flex items-center gap-3">
                 <div className="flex -space-x-2">
-                  {[1,2,3,4,5].map(i => (
-                    <img key={i} src={`https://picsum.photos/seed/auth-av${i}/40/40`} className="w-8 h-8 rounded-full border-2" style={{ borderColor: 'hsl(215 50% 11%)' }} alt="" />
-                  ))}
+                  {[1, 2, 3, 4, 5].map((i) =>
+                  <img key={i} src={`https://picsum.photos/seed/auth-av${i}/40/40`} className="w-8 h-8 rounded-full border-2" style={{ borderColor: 'hsl(215 50% 11%)' }} alt="" />
+                  )}
                 </div>
                 <span className="text-[13px]" style={{ color: 'hsl(215 20% 65%)' }}>Joined by 47 operators this month</span>
                 <div className="flex items-center gap-1 ml-4">
-                  {[1,2,3,4,5].map(i => <Star key={i} className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />)}
+                  {[1, 2, 3, 4, 5].map((i) => <Star key={i} className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />)}
                   <span className="text-[13px] ml-1" style={{ color: 'hsl(215 16% 47%)' }}>4.8 · Excellent</span>
                 </div>
               </div>
@@ -168,11 +168,11 @@ export default function LandingPage() {
           <p className="text-[15px] text-muted-foreground mt-5 mb-8">Updated daily — 1,800+ landlord-approved rent-to-rent listings across the UK</p>
 
           <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
-            {stripListings.map(l => (
-              <div key={l.id} className="min-w-[280px] snap-start">
+            {stripListings.map((l) =>
+            <div key={l.id} className="min-w-[280px] snap-start">
                 <PropertyCard listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} forceSignUp />
               </div>
-            ))}
+            )}
           </div>
 
           <div className="mt-9 text-center">
@@ -191,11 +191,11 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8 mt-14">
             {[
-              { icon: Target, step: '01', title: 'Browse deals', desc: 'Search 1,800+ landlord-approved properties across 10 UK cities. Filter by rent, profit, and type.' },
-              { icon: BarChart3, step: '02', title: 'Analyse & compare', desc: 'Use the earnings estimator, track deals in your CRM pipeline, and compare profit margins side by side.' },
-              { icon: TrendingUp, step: '03', title: 'Close & earn', desc: 'Contact landlords directly, sign your rent-to-rent agreement, and start earning from day one.' },
-            ].map(s => (
-              <div key={s.step} className="bg-card rounded-2xl p-8 border border-border card-hover text-left">
+            { icon: Target, step: '01', title: 'Browse deals', desc: 'Search 1,800+ landlord-approved properties across 10 UK cities. Filter by rent, profit, and type.' },
+            { icon: BarChart3, step: '02', title: 'Analyse & compare', desc: 'Use the earnings estimator, track deals in your CRM pipeline, and compare profit margins side by side.' },
+            { icon: TrendingUp, step: '03', title: 'Close & earn', desc: 'Contact landlords directly, sign your rent-to-rent agreement, and start earning from day one.' }].
+            map((s) =>
+            <div key={s.step} className="bg-card rounded-2xl p-8 border border-border card-hover text-left">
                 <div className="w-12 h-12 rounded-xl bg-accent-light flex items-center justify-center mb-5">
                   <s.icon className="w-6 h-6 text-primary" />
                 </div>
@@ -203,7 +203,7 @@ export default function LandingPage() {
                 <h3 className="text-xl font-bold text-foreground mt-2">{s.title}</h3>
                 <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{s.desc}</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -224,9 +224,9 @@ export default function LandingPage() {
               <p className="text-sm text-muted-foreground mt-2">Then $997/month after trial. Cancel any time.</p>
               <p className="text-sm text-muted-foreground mt-1">Full access to everything. No restrictions.</p>
               <ul className="mt-6 space-y-3">
-                {['1,800+ verified deals', 'Priority deal alerts', 'Affiliate programme', 'Direct landlord contact', 'Full CRM access', 'Airbnb University', 'Earnings estimator', 'Cancel any time'].map(v => (
-                  <li key={v} className="flex items-center gap-2.5 text-sm text-foreground"><CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />{v}</li>
-                ))}
+                {['1,800+ verified deals', 'Priority deal alerts', 'Affiliate programme', 'Direct landlord contact', 'Full CRM access', 'Airbnb University', 'Earnings estimator', 'Cancel any time'].map((v) =>
+                <li key={v} className="flex items-center gap-2.5 text-sm text-foreground"><CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />{v}</li>
+                )}
               </ul>
               <Link to="/signup" className="mt-8 w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
                 Start 3-Day Trial — $4
@@ -244,11 +244,11 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-6 mt-14">
             {[
-              { emoji: '🚀', title: 'Getting Started', desc: 'Set up your R2R business from scratch', lessons: 6 },
-              { emoji: '🏠', title: 'Property Hunting', desc: 'Find the best opportunities', lessons: 8 },
-              { emoji: '💬', title: 'Landlord Pitching', desc: 'Win landlords with proven scripts', lessons: 5 },
-            ].map(m => (
-              <div key={m.title} className="bg-card rounded-2xl p-6 border border-border card-hover text-left cursor-pointer" onClick={goSignUp}>
+            { emoji: '🚀', title: 'Getting Started', desc: 'Set up your R2R business from scratch', lessons: 6 },
+            { emoji: '🏠', title: 'Property Hunting', desc: 'Find the best opportunities', lessons: 8 },
+            { emoji: '💬', title: 'Landlord Pitching', desc: 'Win landlords with proven scripts', lessons: 5 }].
+            map((m) =>
+            <div key={m.title} className="bg-card rounded-2xl p-6 border border-border card-hover text-left cursor-pointer" onClick={goSignUp}>
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-2xl">{m.emoji}</span>
                   <h3 className="text-base font-bold text-foreground">{m.title}</h3>
@@ -256,7 +256,7 @@ export default function LandingPage() {
                 <p className="text-sm text-muted-foreground">{m.desc}</p>
                 <p className="text-xs text-muted-foreground mt-3">{m.lessons} lessons</p>
               </div>
-            ))}
+            )}
           </div>
 
           <button onClick={goSignUp} className="mt-10 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:opacity-75 transition-opacity">
@@ -271,19 +271,19 @@ export default function LandingPage() {
           <h2 className="text-[36px] md:text-[42px] font-bold tracking-[-0.025em] text-foreground">Trusted by operators</h2>
           <div className="grid md:grid-cols-3 gap-6 mt-14">
             {[
-              { name: 'Sarah K.', role: 'Manchester', quote: 'NFsTay helped me find my first three deals in under a month. The CRM is a game-changer for staying organised.' },
-              { name: 'Tom P.', role: 'London', quote: 'The university modules alone are worth the subscription. I went from zero knowledge to closing my first property in 6 weeks.' },
-              { name: 'Priya S.', role: 'Birmingham', quote: 'Finally a platform that takes rent-to-rent seriously. Every deal is verified and the earnings estimator is spot-on.' },
-            ].map((t, i) => (
-              <div key={t.name} className="bg-card rounded-2xl p-6 border border-border text-left">
-                <div className="flex gap-1 mb-4">{[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 fill-yellow-500 text-yellow-500" />)}</div>
+            { name: 'Sarah K.', role: 'Manchester', quote: 'NFsTay helped me find my first three deals in under a month. The CRM is a game-changer for staying organised.' },
+            { name: 'Tom P.', role: 'London', quote: 'The university modules alone are worth the subscription. I went from zero knowledge to closing my first property in 6 weeks.' },
+            { name: 'Priya S.', role: 'Birmingham', quote: 'Finally a platform that takes rent-to-rent seriously. Every deal is verified and the earnings estimator is spot-on.' }].
+            map((t, i) =>
+            <div key={t.name} className="bg-card rounded-2xl p-6 border border-border text-left">
+                <div className="flex gap-1 mb-4">{[1, 2, 3, 4, 5].map((s) => <Star key={s} className="w-4 h-4 fill-yellow-500 text-yellow-500" />)}</div>
                 <p className="text-sm text-foreground leading-relaxed">"{t.quote}"</p>
                 <div className="flex items-center gap-3 mt-5">
-                  <img src={`https://picsum.photos/seed/testi${i+1}/80/80`} className="w-10 h-10 rounded-full object-cover" alt="" />
+                  <img src={`https://picsum.photos/seed/testi${i + 1}/80/80`} className="w-10 h-10 rounded-full object-cover" alt="" />
                   <div><div className="text-sm font-semibold text-foreground">{t.name}</div><div className="text-xs text-muted-foreground">{t.role}</div></div>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -293,22 +293,22 @@ export default function LandingPage() {
         <div className="max-w-[720px] mx-auto px-6 md:px-10">
           <h2 className="text-[36px] md:text-[42px] font-bold tracking-[-0.025em] text-foreground text-center">Frequently asked questions</h2>
           <div className="mt-12 space-y-3">
-            {faqItems.slice(0, 6).map(faq => (
-              <div key={faq.id} className="bg-card rounded-2xl border border-border overflow-hidden">
+            {faqItems.slice(0, 6).map((faq) =>
+            <div key={faq.id} className="bg-card rounded-2xl border border-border overflow-hidden">
                 <button onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)} className="w-full flex items-center justify-between p-5 text-left">
                   <span className="text-[15px] font-medium text-foreground">{faq.question}</span>
                   <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${openFaq === faq.id ? 'rotate-180' : ''}`} />
                 </button>
                 <motion.div
-                  initial={false}
-                  animate={{ height: openFaq === faq.id ? 'auto' : 0, opacity: openFaq === faq.id ? 1 : 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
+                initial={false}
+                animate={{ height: openFaq === faq.id ? 'auto' : 0, opacity: openFaq === faq.id ? 1 : 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden">
+                
                   <p className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">{faq.answer}</p>
                 </motion.div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -365,6 +365,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>);
+
 }
