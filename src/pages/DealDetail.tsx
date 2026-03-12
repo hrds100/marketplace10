@@ -208,6 +208,8 @@ export default function DealDetail() {
           <div className="absolute bottom-6 text-white text-sm">{galleryIdx + 1} / {images.length}</div>
         </div>
       )}
+
+      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} />
     </div>
   );
 }
