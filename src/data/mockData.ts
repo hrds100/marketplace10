@@ -25,8 +25,7 @@ export interface CRMDeal {
   lastContact: string;
   ownerInitials: string;
   notes: string;
-  phone?: string;
-  email?: string;
+  whatsapp?: string;
 }
 
 export interface UniversityModule {
