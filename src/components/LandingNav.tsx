@@ -20,24 +20,24 @@ export default function LandingNav() {
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 h-[68px] flex items-center transition-all duration-200 ${scrolled ? 'bg-card/95 backdrop-blur-md border-b border-border shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-[1280px] w-full mx-auto px-6 md:px-10 flex items-center justify-between">
-          <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">NFsTay</Link>
+          <Link to="/" className={`text-xl font-extrabold tracking-tight ${scrolled ? 'text-foreground' : 'text-white'}`}>NFsTay</Link>
           
           <div className="hidden md:flex items-center gap-8">
-            <a href="#deals-strip" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Deals</a>
-            <a href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-            <a href="#pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
-            <a href="#university" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">University</a>
+            <a href="#deals-strip" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Deals</a>
+            <a href="#how-it-works" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>How it Works</a>
+            <a href="#pricing" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Pricing</a>
+            <a href="#university" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>University</a>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/signin" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2">Sign In</Link>
+            <Link to="/signin" className={`text-sm font-medium transition-colors px-3 py-2 ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Sign In</Link>
             <Link to="/signup" className="bg-primary text-primary-foreground text-sm font-semibold h-10 px-5 rounded-lg inline-flex items-center hover:opacity-90 transition-opacity">
               Get Started →
             </Link>
           </div>
 
           <button className="md:hidden p-2" onClick={() => setMobileOpen(true)}>
-            <Menu className="w-6 h-6 text-foreground" />
+            <Menu className={`w-6 h-6 ${scrolled ? 'text-foreground' : 'text-white'}`} />
           </button>
         </div>
       </nav>

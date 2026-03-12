@@ -1,5 +1,6 @@
-import { Heart } from 'lucide-react';
+import { Heart, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import type { Listing } from '@/data/mockData';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 
 export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, showSavedBadge, forceSignUp }: Props) {
   const navigate = useNavigate();
+  const [addedToCRM, setAddedToCRM] = useState(false);
 
   const statusBadge = () => {
     if (listing.featured) return <span className="badge-green-fill text-[11px]">Featured</span>;
@@ -37,6 +39,12 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     if (forceSignUp) {
       navigate('/signup');
     }
+  };
+
+  const handleAddToCRM = () => {
+    if (addedToCRM) return;
+    setAddedToCRM(true);
+    onAddToCRM?.();
   };
 
   return (
@@ -70,8 +78,15 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <p className="text-[13px] text-muted-foreground mt-0.5">{listing.city} · {listing.postcode}</p>
           </div>
           {onAddToCRM && (
-            <button onClick={onAddToCRM} className="text-[11px] font-semibold text-primary hover:opacity-75 transition-opacity whitespace-nowrap">
-              + Add to CRM
+            <button
+              onClick={handleAddToCRM}
+              className={`text-[11px] font-semibold transition-opacity whitespace-nowrap flex items-center gap-1 ${addedToCRM ? 'text-primary cursor-default' : 'text-primary hover:opacity-75'}`}
+            >
+              {addedToCRM ? (
+                <><CheckCircle className="w-3.5 h-3.5" /> Added to CRM</>
+              ) : (
+                '+ Add to CRM'
+              )}
             </button>
           )}
         </div>
