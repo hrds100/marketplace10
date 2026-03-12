@@ -30,8 +30,8 @@ export default function SignUp() {
                 </button>
               </div>
             </div>
-            <button type="submit" className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity">
-              Start trial — £9
+            <button type="submit" className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
+              Get access, no credit card needed
             </button>
             <p className="text-xs text-muted-foreground text-center">Cancel any time. No commitment.</p>
           </form>
