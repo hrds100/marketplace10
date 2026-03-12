@@ -229,8 +229,9 @@ export default function LandingPage() {
                 )}
               </ul>
               <Link to="/signup" className="mt-8 w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
-                Start 3-Day Trial — $4
+                Get access, no credit card needed
               </Link>
+              <p className="text-xs text-muted-foreground text-center mt-3">Access dashboard without credit card</p>
             </div>
           </div>
         </div>
@@ -320,7 +321,7 @@ export default function LandingPage() {
           <p className="text-lg mt-4" style={{ color: 'hsl(215 20% 65%)' }}>Join 4,200+ operators already using NFsTay to build their rent-to-rent portfolio.</p>
           <div className="mt-8 flex flex-wrap gap-3 justify-center">
             <Link to="/signup" className="h-[52px] px-8 rounded-lg bg-primary text-primary-foreground font-semibold text-[15px] inline-flex items-center hover:opacity-90 transition-opacity">
-              Get Started — $4 Trial <ArrowRight className="ml-2 w-4 h-4" />
+              Get Started — No Credit Card Needed <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
             <Link to="/signin" className="h-[52px] px-8 rounded-lg font-medium text-[15px] inline-flex items-center" style={{ border: '1.5px solid hsl(215 22% 28%)', color: 'white' }}>
               Sign In

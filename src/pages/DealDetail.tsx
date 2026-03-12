@@ -4,6 +4,7 @@ import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle } from
 import { listings, faqItems } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 import PropertyCard from '@/components/PropertyCard';
+import InquiryPopup from '@/components/InquiryPopup';
 
 export default function DealDetail() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function DealDetail() {
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIdx, setGalleryIdx] = useState(0);
+  const [showInquiry, setShowInquiry] = useState(false);
 
   const images = [
     `https://picsum.photos/seed/detail-main/1200/900`,
@@ -175,10 +177,10 @@ export default function DealDetail() {
                 </div>
               </div>
 
-              <button className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold mt-6 hover:opacity-90 transition-opacity">
+              <button onClick={() => setShowInquiry(true)} className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold mt-6 hover:opacity-90 transition-opacity">
                 Inquire Now
               </button>
-              <p className="text-xs text-muted-foreground text-center mt-2">Contact the landlord directly</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Contact via WhatsApp</p>
             </div>
           </div>
         </div>
@@ -206,6 +208,8 @@ export default function DealDetail() {
           <div className="absolute bottom-6 text-white text-sm">{galleryIdx + 1} / {images.length}</div>
         </div>
       )}
+
+      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} />
     </div>
   );
 }

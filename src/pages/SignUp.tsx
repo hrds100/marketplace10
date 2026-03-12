@@ -10,7 +10,7 @@ export default function SignUp() {
         <div className="w-full max-w-[400px]">
           <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">NFsTay</Link>
           <h1 className="text-[28px] font-bold text-foreground mt-8">Create your account</h1>
-          <p className="text-sm text-muted-foreground mt-1">Start your 30-day trial for just £9.</p>
+          <p className="text-sm text-muted-foreground mt-1">Get full access. No credit card needed.</p>
 
           <form className="mt-8 space-y-4" onSubmit={e => { e.preventDefault(); window.location.href = '/dashboard/deals'; }}>
             <div>
@@ -30,8 +30,8 @@ export default function SignUp() {
                 </button>
               </div>
             </div>
-            <button type="submit" className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity">
-              Start trial — £9
+            <button type="submit" className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
+              Get access, no credit card needed
             </button>
             <p className="text-xs text-muted-foreground text-center">Cancel any time. No commitment.</p>
           </form>

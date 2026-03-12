@@ -1,6 +1,7 @@
 import { Heart, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import InquiryPopup from '@/components/InquiryPopup';
 import type { Listing } from '@/data/mockData';
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, showSavedBadge, forceSignUp }: Props) {
   const navigate = useNavigate();
   const [addedToCRM, setAddedToCRM] = useState(false);
+  const [showInquiry, setShowInquiry] = useState(false);
 
   const statusBadge = () => {
     if (listing.featured) return <span className="badge-green-fill text-[11px]">Featured</span>;
@@ -141,13 +143,14 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               >
                 Visit Listing
               </Link>
-              <button className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
+              <button onClick={() => setShowInquiry(true)} className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
                 Inquire Now
               </button>
             </>
           )}
         </div>
       </div>
+      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} />
     </div>
   );
 }
