@@ -57,11 +57,11 @@ export default function LandingPage() {
               </div>
 
               <h1 className="text-[34px] md:text-[46px] lg:text-[60px] font-extrabold leading-[1.08] tracking-[-0.035em]" style={{ color: 'white' }}>
-                Find your next rent-to-rent deal{' '}
+                Airbnb-ready properties with{' '}
                 <span className="relative inline-block">
-                  across the UK.
-                  <svg className="absolute -bottom-1 left-0 w-full" viewBox="0 0 200 8" fill="none" style={{ opacity: 0.6 }}>
-                    <path d="M0 6C40 2 60 2 100 4C140 6 160 2 200 4" stroke="hsl(145 63% 42%)" strokeWidth="2.5" strokeLinecap="round" />
+                  permission to operate and profit
+                  <svg className="absolute -bottom-1 left-0 w-full" viewBox="0 0 320 8" fill="none" style={{ opacity: 0.6 }}>
+                    <path d="M0 6C60 2 100 2 160 4C220 6 260 2 320 4" stroke="hsl(145 63% 42%)" strokeWidth="2.5" strokeLinecap="round" />
                   </svg>
                 </span>
               </h1>
