@@ -1,16 +1,24 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
-import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle } from 'lucide-react';
-import { listings, faqItems } from '@/data/mockData';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus } from 'lucide-react';
+import { listings, faqItems, crmDeals } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
+import { toast } from 'sonner';
 import PropertyCard from '@/components/PropertyCard';
 import InquiryPopup from '@/components/InquiryPopup';
+
+declare global {
+  interface Window {
+    crmDeals?: Array<{ id: string; name: string; city: string; postcode: string; rent: number; profit: number; type: string; stage: string; lastContact: string; ownerInitials: string; notes: string }>;
+  }
+}
 
 export default function DealDetail() {
   const { id } = useParams();
   const listing = listings.find(l => l.id === id) || listings[0];
   const { toggle, isFav } = useFavourites();
   const [nights, setNights] = useState(20);
+  const [addedToCrm, setAddedToCrm] = useState(false);
   const defaultNightlyRate = Math.round(listing.rent / 20 * 1.8);
   const [nightlyRate, setNightlyRate] = useState(defaultNightlyRate);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
@@ -29,6 +37,34 @@ export default function DealDetail() {
   const estRevenue = nightlyRate * nights;
   const estProfit = estRevenue - listing.rent;
   const nearbyDeals = listings.filter(l => l.city === listing.city && l.id !== listing.id).slice(0, 3);
+
+  useEffect(() => {
+    const source = window.crmDeals && window.crmDeals.length ? window.crmDeals : crmDeals;
+    const isInCrm = source.some(d => d.name === listing.name && d.city === listing.city);
+    setAddedToCrm(isInCrm);
+  }, [listing.name, listing.city]);
+
+  const handleAddToCrm = () => {
+    const newCrmDeal = {
+      id: `deal-${listing.id}-crm`,
+      name: listing.name,
+      city: listing.city,
+      postcode: listing.postcode,
+      rent: listing.rent,
+      profit: listing.profit,
+      type: listing.type,
+      stage: 'New Lead',
+      lastContact: 'Today',
+      ownerInitials: 'ME',
+      notes: 'Added from deal page',
+    };
+    window.crmDeals = window.crmDeals ?? [...crmDeals];
+    if (!window.crmDeals.some(d => d.name === listing.name && d.city === listing.city)) {
+      window.crmDeals.push(newCrmDeal);
+      setAddedToCrm(true);
+      toast.success('Added to CRM!');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-card">
@@ -51,12 +87,24 @@ export default function DealDetail() {
             <h1 className="text-[28px] font-bold text-foreground">{listing.name}</h1>
             <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><MapPin className="w-3.5 h-3.5" /> {listing.city} · {listing.postcode}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button onClick={() => toggle(listing.id)} className={`h-10 px-4 rounded-lg border border-border flex items-center gap-2 text-sm font-medium transition-colors ${isFav(listing.id) ? 'text-primary bg-accent-light' : 'text-foreground hover:bg-secondary'}`}>
               <Heart className={`w-4 h-4 ${isFav(listing.id) ? 'fill-primary' : ''}`} /> {isFav(listing.id) ? 'Saved' : 'Save'}
             </button>
             <button className="h-10 px-4 rounded-lg border border-border flex items-center gap-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors">
               <Share2 className="w-4 h-4" /> Share
+            </button>
+            <button
+              onClick={handleAddToCrm}
+              disabled={addedToCrm}
+              className={`h-10 px-4 rounded-lg border flex items-center gap-2 text-sm font-medium transition-all ${
+                addedToCrm
+                  ? 'bg-accent text-accent-foreground border-accent cursor-not-allowed'
+                  : 'border-border text-foreground hover:bg-secondary hover:border-border-foreground'
+              }`}
+            >
+              {addedToCrm ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {addedToCrm ? 'Added' : 'Add to CRM'}
             </button>
           </div>
         </div>
