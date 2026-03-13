@@ -16,10 +16,12 @@ function cleanPhone(phone: string): string {
 
 /** POST /webhook/send-otp → { phone } → { success, message_id } */
 export async function sendOtp(phone: string): Promise<{ success: boolean; message_id?: string }> {
+  const clean = cleanPhone(phone);
+  console.log('sendOtp PHONE:', phone, 'CLEAN:', clean);
   const res = await fetch(webhook('webhook/send-otp'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: cleanPhone(phone) }),
+    body: JSON.stringify({ phone: clean }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -64,10 +66,12 @@ export async function verifyOtp(params: {
   name: string;
   email?: string;
 }): Promise<{ success: boolean; error?: string }> {
+  const clean = cleanPhone(params.phone);
+  console.log('verifyOtp PHONE:', params.phone, 'CLEAN:', clean);
   const res = await fetch(webhook('webhook/verify-otp'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...params, phone: cleanPhone(params.phone) }),
+    body: JSON.stringify({ ...params, phone: clean }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
