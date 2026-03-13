@@ -99,12 +99,12 @@ export default function DealDetail() {
               disabled={addedToCrm}
               className={`h-10 px-4 rounded-lg border flex items-center gap-2 text-sm font-medium transition-all ${
                 addedToCrm
-                  ? 'bg-accent text-accent-foreground border-accent cursor-not-allowed'
+                  ? 'bg-muted text-muted-foreground border-border cursor-not-allowed'
                   : 'border-border text-foreground hover:bg-secondary hover:border-border-foreground'
               }`}
             >
               {addedToCrm ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              {addedToCrm ? 'Added' : 'Add to CRM'}
+              {addedToCrm ? 'Added to CRM' : 'Add to CRM'}
             </button>
           </div>
         </div>
