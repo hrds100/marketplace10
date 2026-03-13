@@ -2,11 +2,34 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X } from 'lucide-react';
 import PropertyCard from '@/components/PropertyCard';
-import { listings } from '@/data/mockData';
+import { listings as mockListings } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 
 const tabs = ['All', 'Live', 'On Offer', 'Inactive'] as const;
+
+// Convert DB property to Listing shape for PropertyCard
+function toListingShape(p: Tables<'properties'>) {
+  const daysAgo = Math.max(0, Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000));
+  return {
+    id: p.id,
+    name: p.name,
+    city: p.city,
+    postcode: p.postcode,
+    rent: p.rent_monthly,
+    profit: p.profit_est,
+    type: p.type,
+    status: p.status as 'live' | 'on-offer' | 'inactive',
+    featured: p.featured,
+    daysAgo,
+    image: p.image_url || `https://picsum.photos/seed/prop-${p.city.toLowerCase()}-${p.id.slice(0, 6)}/800/520`,
+    landlordApproved: p.landlord_approved,
+    landlordWhatsapp: p.landlord_whatsapp,
+  };
+}
 
 export default function DealsPage() {
   const { toggle, isFav } = useFavourites();
@@ -18,6 +41,25 @@ export default function DealsPage() {
   const [showAlert, setShowAlert] = useState(true);
   const [page, setPage] = useState(1);
   const perPage = 12;
+
+  // Fetch properties from Supabase, fallback to mock
+  const { data: dbProperties } = useQuery({
+    queryKey: ['properties'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('properties').select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const listings = useMemo(() => {
+    if (dbProperties && dbProperties.length > 0) {
+      return dbProperties.map(toListingShape);
+    }
+    return mockListings;
+  }, [dbProperties]);
+
+  const liveCount = listings.filter(l => l.status === 'live').length;
 
   const filtered = useMemo(() => {
     let result = [...listings];
@@ -31,7 +73,7 @@ export default function DealsPage() {
     else if (sort === 'rent') result.sort((a, b) => a.rent - b.rent);
     else result.sort((a, b) => a.daysAgo - b.daysAgo);
     return result;
-  }, [activeTab, city, type, sort]);
+  }, [activeTab, city, type, sort, listings]);
 
   const featured = listings.filter(l => l.featured);
   const totalPages = Math.ceil(filtered.length / perPage);
@@ -43,6 +85,13 @@ export default function DealsPage() {
     toast.success(`${listing.name} added to CRM`);
   };
 
+  const handleAlertClick = () => {
+    setCity('Manchester');
+    setActiveTab('All');
+    setPage(1);
+    setShowAlert(false);
+  };
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
@@ -50,27 +99,29 @@ export default function DealsPage() {
           <h1 className="text-[28px] font-bold text-foreground">Deals</h1>
           <p className="text-sm text-muted-foreground mt-1">Landlord-approved rent-to-rent opportunities across the UK</p>
         </div>
-        <span className="badge-gray text-xs">📍 UK-wide · 1,800+ live listings</span>
+        <span className="badge-gray text-xs">📍 UK-wide · {liveCount} properties live</span>
       </div>
 
       {showAlert && (
         <div className="bg-accent-light border rounded-xl p-3 px-4 mb-6 flex items-center gap-2.5" style={{ borderColor: 'hsla(145,63%,42%,0.18)' }}>
           <Bell className="w-4 h-4 text-primary flex-shrink-0" />
           <span className="text-[13px] font-medium text-accent-foreground">3 new deals added in Manchester today</span>
-          <button className="text-[13px] text-primary font-semibold ml-1 hover:underline">View</button>
+          <button className="text-[13px] text-primary font-semibold ml-1 hover:underline" onClick={handleAlertClick}>View</button>
           <button onClick={() => setShowAlert(false)} className="ml-auto text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
         </div>
       )}
 
       {/* Featured */}
-      <div className="mb-8">
-        <span className="text-[13px] font-semibold text-foreground mb-3 block">⭐ Featured</span>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {featured.map(l => (
-            <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => handleAddToCRM(l)} />
-          ))}
+      {featured.length > 0 && (
+        <div className="mb-8">
+          <span className="text-[13px] font-semibold text-foreground mb-3 block">⭐ Featured</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {featured.map(l => (
+              <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => handleAddToCRM(l)} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Tabs */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">

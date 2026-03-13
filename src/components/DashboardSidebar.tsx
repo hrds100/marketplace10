@@ -1,6 +1,7 @@
-import { NavLink, useLocation, Link } from 'react-router-dom';
+import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
@@ -15,6 +16,13 @@ const navItems = [
 export default function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, isAdmin } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/signin');
+  };
 
   return (
     <>
@@ -51,11 +59,17 @@ export default function DashboardSidebar() {
           })}
         </nav>
 
-        <div className="p-2 border-t border-border">
-          <NavLink to="/admin" className={`flex items-center gap-2.5 h-10 rounded-lg transition-colors ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground hover:bg-secondary`} title={collapsed ? 'Admin' : undefined}>
+        <div className="p-2 border-t border-border space-y-0.5">
+          {isAdmin && (
+            <NavLink to="/admin" className={`flex items-center gap-2.5 h-10 rounded-lg transition-colors ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground hover:bg-secondary`} title={collapsed ? 'Admin' : undefined}>
+              <Settings className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              {!collapsed && <span className="text-sm font-medium">Admin View</span>}
+            </NavLink>
+          )}
+          <button onClick={handleLogout} className={`flex items-center gap-2.5 h-10 rounded-lg transition-colors w-full ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground hover:bg-secondary`} title={collapsed ? 'Sign out' : undefined}>
             <LogOut className="w-[18px] h-[18px]" strokeWidth={1.75} />
-            {!collapsed && <span className="text-sm font-medium">Admin View</span>}
-          </NavLink>
+            {!collapsed && <span className="text-sm font-medium">Sign Out</span>}
+          </button>
         </div>
       </aside>
 

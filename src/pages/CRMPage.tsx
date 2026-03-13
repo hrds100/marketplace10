@@ -1,53 +1,80 @@
-import { useState } from 'react';
-import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore } from 'lucide-react';
-import { crmDeals, CRM_STAGES, type CRMDeal, listings } from '@/data/mockData';
+import { useState, useEffect } from 'react';
+import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore, Tag, ImagePlus } from 'lucide-react';
+import { crmDeals as mockDeals, CRM_STAGES, type CRMDeal, listings } from '@/data/mockData';
 import { toast } from 'sonner';
-
-function getInitialDeals(): CRMDeal[] {
-  if (typeof window !== 'undefined' && window.crmDeals && Array.isArray(window.crmDeals) && window.crmDeals.length > 0) {
-    return [...window.crmDeals];
-  }
-  return crmDeals;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function CRMPage() {
-  const [deals, setDeals] = useState<CRMDeal[]>(getInitialDeals);
+  const { user } = useAuth();
+  const [deals, setDeals] = useState<CRMDeal[]>(mockDeals);
   const [archivedIds, setArchivedIds] = useState<string[]>([]);
-  const [showArchived, setShowArchived] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newDeal, setNewDeal] = useState({ name: '', city: '', postcode: '', rent: '', profit: '', type: '2-bed flat', stage: 'New Lead', notes: '', whatsapp: '' });
+  const [isOutsiderLead, setIsOutsiderLead] = useState(false);
+  const [newDeal, setNewDeal] = useState({ name: '', city: '', postcode: '', rent: '', profit: '', type: '2-bed flat', stage: 'New Lead', notes: '', whatsapp: '', email: '', photoUrl: '' });
+
+  // Load CRM deals from Supabase if user is logged in
+  useEffect(() => {
+    if (!user) return;
+    const loadDeals = async () => {
+      const { data } = await supabase.from('crm_deals').select('*').eq('user_id', user.id);
+      if (data && data.length > 0) {
+        const mapped: CRMDeal[] = data.map(d => ({
+          id: d.id,
+          name: d.name,
+          city: d.city,
+          postcode: d.postcode,
+          rent: d.rent,
+          profit: d.profit,
+          type: d.type,
+          stage: d.stage,
+          lastContact: d.last_contact || 'Today',
+          ownerInitials: 'ME',
+          notes: d.notes || '',
+          whatsapp: d.whatsapp || undefined,
+        }));
+        setDeals(mapped);
+        setArchivedIds(data.filter(d => d.archived).map(d => d.id));
+      }
+    };
+    loadDeals();
+  }, [user]);
 
   const stageDeals = (stage: string) => deals.filter(d => d.stage === stage && !archivedIds.includes(d.id));
   const archivedDeals = deals.filter(d => archivedIds.includes(d.id));
 
-  const handleArchive = (dealId: string) => {
+  const handleArchive = async (dealId: string) => {
     setArchivedIds(prev => [...prev, dealId]);
+    if (user) await supabase.from('crm_deals').update({ archived: true }).eq('id', dealId);
     toast.success('Deal archived');
   };
-  const handleUnarchive = (dealId: string) => {
+
+  const handleUnarchive = async (dealId: string) => {
     setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: 'New Lead' } : d));
     setArchivedIds(prev => prev.filter(id => id !== dealId));
+    if (user) await supabase.from('crm_deals').update({ archived: false, stage: 'New Lead' as any }).eq('id', dealId);
     toast.success('Deal restored to pipeline');
   };
+
   const stagePotProfit = (stage: string) => stageDeals(stage).reduce((s, d) => s + d.profit, 0);
 
   const onDragStart = (id: string) => setDragId(id);
-  const onDrop = (stage: string) => {
+  const onDrop = async (stage: string) => {
     if (!dragId) return;
     setDeals(prev => prev.map(d => d.id === dragId ? { ...d, stage } : d));
+    if (user) await supabase.from('crm_deals').update({ stage: stage as any }).eq('id', dragId);
     setDragId(null);
     toast.success('Deal moved');
   };
 
-  // Find matching listing image for CRM deal
   const getDealImage = (deal: CRMDeal) => {
     const match = listings.find(l => l.name === deal.name && l.city === deal.city);
     if (match) return match.image;
     return `https://picsum.photos/seed/${deal.id}/400/300`;
   };
 
-  const handleAddDeal = () => {
+  const handleAddDeal = async () => {
     if (!newDeal.name || !newDeal.city) {
       toast.error('Please fill in at least name and city');
       return;
@@ -66,9 +93,32 @@ export default function CRMPage() {
       notes: newDeal.notes,
       whatsapp: newDeal.whatsapp || undefined,
     };
+
+    // Save to Supabase if logged in
+    if (user) {
+      const { data, error } = await supabase.from('crm_deals').insert({
+        user_id: user.id,
+        name: newDeal.name,
+        city: newDeal.city,
+        postcode: newDeal.postcode,
+        rent: Number(newDeal.rent) || 0,
+        profit: Number(newDeal.profit) || 0,
+        type: newDeal.type,
+        stage: newDeal.stage as any,
+        outsider_lead: isOutsiderLead,
+        whatsapp: newDeal.whatsapp || null,
+        email: newDeal.email || null,
+        notes: newDeal.notes || null,
+        photo_url: newDeal.photoUrl || null,
+      }).select().single();
+      if (data) deal.id = data.id;
+      if (error) toast.error(error.message);
+    }
+
     setDeals(prev => [...prev, deal]);
     setShowAddForm(false);
-    setNewDeal({ name: '', city: '', postcode: '', rent: '', profit: '', type: '2-bed flat', stage: 'New Lead', notes: '', whatsapp: '' });
+    setIsOutsiderLead(false);
+    setNewDeal({ name: '', city: '', postcode: '', rent: '', profit: '', type: '2-bed flat', stage: 'New Lead', notes: '', whatsapp: '', email: '', photoUrl: '' });
     toast.success('Deal added to ' + deal.stage);
   };
 
@@ -110,6 +160,17 @@ export default function CRMPage() {
               <h2 className="text-lg font-bold text-foreground">Add Deal to Pipeline</h2>
               <button onClick={() => setShowAddForm(false)} className="p-1.5 rounded-lg hover:bg-secondary"><X className="w-5 h-5 text-muted-foreground" /></button>
             </div>
+
+            {/* Outsider Lead Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsOutsiderLead(!isOutsiderLead)}
+              className={`mb-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${isOutsiderLead ? 'bg-amber-100 text-amber-800' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
+            >
+              <Tag className="w-3 h-3" />
+              🔖 Outsider Lead
+            </button>
+
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-foreground block mb-1.5">Property Name *</label>
@@ -154,6 +215,19 @@ export default function CRMPage() {
                 <input value={newDeal.whatsapp} onChange={e => setNewDeal(p => ({ ...p, whatsapp: e.target.value }))} placeholder="+447911123456" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
               </div>
               <div>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Email</label>
+                <input type="email" value={newDeal.email} onChange={e => setNewDeal(p => ({ ...p, email: e.target.value }))} placeholder="landlord@example.com" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              {isOutsiderLead && (
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Photo URL</label>
+                  <div className="flex items-center gap-2">
+                    <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                    <input value={newDeal.photoUrl} onChange={e => setNewDeal(p => ({ ...p, photoUrl: e.target.value }))} placeholder="https://..." className="flex-1 h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+                  </div>
+                </div>
+              )}
+              <div>
                 <label className="text-xs font-semibold text-foreground block mb-1.5">Notes</label>
                 <textarea value={newDeal.notes} onChange={e => setNewDeal(p => ({ ...p, notes: e.target.value }))} placeholder="Any notes about this deal..." rows={2} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
               </div>
@@ -191,7 +265,6 @@ export default function CRMPage() {
                   onDragStart={() => onDragStart(deal.id)}
                   className={`bg-card border border-border rounded-lg overflow-hidden cursor-grab active:cursor-grabbing transition-shadow ${dragId === deal.id ? 'shadow-lg opacity-75' : 'shadow-sm'}`}
                 >
-                  {/* Property image */}
                   <img src={getDealImage(deal)} alt="" className="w-full h-[100px] object-cover" loading="lazy" />
                   <div className="p-3.5">
                     <div className="flex items-start gap-2">
@@ -236,34 +309,30 @@ export default function CRMPage() {
             <Archive className="w-5 h-5 text-muted-foreground" />
             Archived Deals ({archivedDeals.length})
           </h3>
-          {archivedDeals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No archived deals.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {archivedDeals.map(deal => (
-                <div key={deal.id} className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-                  <img src={getDealImage(deal)} alt="" className="w-full h-[80px] object-cover" loading="lazy" />
-                  <div className="p-4">
-                    <div className="text-sm font-bold text-foreground">{deal.name}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{deal.city} · {deal.postcode}</div>
-                    <div className="flex gap-3 mt-2 text-xs">
-                      <span className="text-muted-foreground">Rent: £{deal.rent.toLocaleString()}</span>
-                      <span className="text-accent-foreground font-medium">Profit: £{deal.profit}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">{deal.type}</div>
-                    {deal.notes && <div className="text-[11px] text-muted-foreground mt-1 italic truncate">{deal.notes}</div>}
-                    <button
-                      type="button"
-                      onClick={() => handleUnarchive(deal.id)}
-                      className="mt-3 w-full h-9 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <ArchiveRestore className="w-3.5 h-3.5" /> Unarchive
-                    </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {archivedDeals.map(deal => (
+              <div key={deal.id} className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                <img src={getDealImage(deal)} alt="" className="w-full h-[80px] object-cover" loading="lazy" />
+                <div className="p-4">
+                  <div className="text-sm font-bold text-foreground">{deal.name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{deal.city} · {deal.postcode}</div>
+                  <div className="flex gap-3 mt-2 text-xs">
+                    <span className="text-muted-foreground">Rent: £{deal.rent.toLocaleString()}</span>
+                    <span className="text-accent-foreground font-medium">Profit: £{deal.profit}</span>
                   </div>
+                  <div className="text-xs text-muted-foreground mt-1">{deal.type}</div>
+                  {deal.notes && <div className="text-[11px] text-muted-foreground mt-1 italic truncate">{deal.notes}</div>}
+                  <button
+                    type="button"
+                    onClick={() => handleUnarchive(deal.id)}
+                    className="mt-3 w-full h-9 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <ArchiveRestore className="w-3.5 h-3.5" /> Unarchive
+                  </button>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
