@@ -42,7 +42,7 @@ export default function UniversityPage() {
           Build a compliant UK rent-to-rent business from the ground up.
         </p>
         <p className="text-xs mt-2 px-3 py-1.5 rounded-lg inline-block font-medium" style={{ background: '#ECFDF5', color: '#065F46' }}>
-          ✨ We've dumped everything we know into these lessons — enjoy.
+          ✨ We've dumped everything we know into these lessons — from agents with 15+ years of experience. Knowledge you won't find anywhere else. Enjoy.
         </p>
       </div>
 
