@@ -362,10 +362,12 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-border flex flex-col md:flex-row justify-between gap-4">
-            <p className="text-xs text-muted-foreground">© 2026 NFsTay. All rights reserved.</p>
-            <div className="flex gap-4">
-              <a href="#" className="text-xs text-muted-foreground hover:text-foreground">Privacy</a>
-              <a href="#" className="text-xs text-muted-foreground hover:text-foreground">Terms</a>
+            <p className="text-xs text-muted-foreground">© 2026 NFsTay Ltd. All rights reserved. Registered in England & Wales.</p>
+            <div className="flex gap-6">
+              <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">About</a>
+              <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
+              <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms of Service</a>
+              <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Contact</a>
             </div>
           </div>
         </div>
