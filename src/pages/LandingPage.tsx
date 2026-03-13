@@ -240,8 +240,12 @@ export default function LandingPage() {
       {/* UNIVERSITY PREVIEW */}
       <section id="university" className="py-20 bg-secondary">
         <div className="max-w-[1280px] mx-auto px-6 md:px-10 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4" style={{ background: 'hsla(145,63%,42%,0.12)' }}>
+            <span className="text-sm">🎓</span>
+            <span className="text-xs font-semibold text-primary">Powered by GPT-4.1 AI</span>
+          </div>
           <h2 className="text-[36px] md:text-[42px] font-bold tracking-[-0.025em] text-foreground">Airbnb University</h2>
-          <p className="text-lg text-muted-foreground mt-4 max-w-[520px] mx-auto">Learn everything about rent-to-rent with step-by-step modules. From zero to operator.</p>
+          <p className="text-lg text-muted-foreground mt-4 max-w-[520px] mx-auto">15yr operator knowledge, 100+ properties trained in AI. Learn everything about rent-to-rent with step-by-step modules.</p>
 
           <div className="grid md:grid-cols-3 gap-6 mt-14">
             {[
@@ -358,10 +362,12 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-border flex flex-col md:flex-row justify-between gap-4">
-            <p className="text-xs text-muted-foreground">© 2026 NFsTay. All rights reserved.</p>
-            <div className="flex gap-4">
-              <a href="#" className="text-xs text-muted-foreground hover:text-foreground">Privacy</a>
-              <a href="#" className="text-xs text-muted-foreground hover:text-foreground">Terms</a>
+            <p className="text-xs text-muted-foreground">© 2026 NFsTay Ltd. All rights reserved. Registered in England & Wales.</p>
+            <div className="flex gap-6">
+              <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">About</a>
+              <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
+              <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms of Service</a>
+              <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Contact</a>
             </div>
           </div>
         </div>

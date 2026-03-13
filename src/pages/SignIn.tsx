@@ -1,9 +1,29 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export default function SignIn() {
   const [showPw, setShowPw] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await signIn(email, password);
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      navigate('/dashboard/deals');
+    }
+  };
+
   return (
     <div className="min-h-screen flex">
       <div className="flex-1 flex items-center justify-center p-8">
@@ -12,22 +32,22 @@ export default function SignIn() {
           <h1 className="text-[28px] font-bold text-foreground mt-8">Welcome back</h1>
           <p className="text-sm text-muted-foreground mt-1">Sign in to access your deals and pipeline.</p>
 
-          <form className="mt-8 space-y-4" onSubmit={e => { e.preventDefault(); window.location.href = '/dashboard/deals'; }}>
+          <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
             <div>
               <label className="text-xs font-semibold text-foreground block mb-1.5">Email</label>
-              <input type="email" placeholder="you@example.com" className="input-nfstay w-full" defaultValue="james@nfstay.com" />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="input-nfstay w-full" required />
             </div>
             <div>
               <label className="text-xs font-semibold text-foreground block mb-1.5">Password</label>
               <div className="relative">
-                <input type={showPw ? 'text' : 'password'} placeholder="••••••••" className="input-nfstay w-full pr-10" defaultValue="password123" />
+                <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="input-nfstay w-full pr-10" required />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
-            <button type="submit" className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity">
-              Sign in
+            <button type="submit" disabled={loading} className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+              {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 

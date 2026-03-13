@@ -2,10 +2,25 @@ import { Heart, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import InquiryPopup from '@/components/InquiryPopup';
-import type { Listing } from '@/data/mockData';
+
+export interface ListingShape {
+  id: string;
+  name: string;
+  city: string;
+  postcode: string;
+  rent: number;
+  profit: number;
+  type: string;
+  status: 'live' | 'on-offer' | 'inactive';
+  featured: boolean;
+  daysAgo: number;
+  image: string;
+  landlordApproved: boolean;
+  landlordWhatsapp?: string | null;
+}
 
 interface Props {
-  listing: Listing;
+  listing: ListingShape;
   isFav: boolean;
   onToggleFav: () => void;
   onAddToCRM?: () => void;
@@ -18,21 +33,16 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const [addedToCRM, setAddedToCRM] = useState(false);
   const [showInquiry, setShowInquiry] = useState(false);
 
-  const statusBadge = () => {
-    if (listing.featured) return <span className="badge-green-fill text-[11px]">Featured</span>;
-    switch (listing.status) {
-      case 'live': return <span className="badge-green-fill text-[11px]">LIVE</span>;
-      case 'on-offer': return <span className="badge-amber text-[11px]">On offer</span>;
-      case 'inactive': return <span className="badge-gray text-[11px]">Inactive</span>;
-    }
+  const ageBadge = () => {
+    if (listing.daysAgo <= 7) return <span className="badge-green-fill text-[11px]">LIVE</span>;
+    if (listing.daysAgo <= 14) return <span className="badge-amber text-[11px]">Under Offer</span>;
+    return <span className="badge-gray text-[11px]">Expired</span>;
   };
 
   const statusDot = () => {
-    switch (listing.status) {
-      case 'live': return 'bg-emerald-500';
-      case 'on-offer': return 'bg-amber-500';
-      case 'inactive': return 'bg-gray-400';
-    }
+    if (listing.daysAgo <= 7) return 'bg-emerald-500';
+    if (listing.daysAgo <= 14) return 'bg-amber-500';
+    return 'bg-gray-400';
   };
 
   const handleAction = (e: React.MouseEvent) => {
@@ -52,6 +62,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     setTimeout(() => setCelebrating(false), 1500);
   };
 
+  const airbnbSearchUrl = `https://www.airbnb.co.uk/s/${encodeURIComponent(listing.city)}/homes`;
+
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover">
       {/* Photo */}
@@ -65,7 +77,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         />
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
-          {statusBadge()}
+          {listing.featured && <span className="badge-green-fill text-[11px]">Featured</span>}
+          {ageBadge()}
         </div>
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (forceSignUp) { navigate('/signup'); return; } onToggleFav(); }}
@@ -106,7 +119,9 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <span className="text-xs text-muted-foreground">Est. monthly profit</span>
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-bold text-accent-foreground">£{listing.profit}</span>
-              {listing.profit >= 500 && <span className="badge-green text-[10px]">Healthy margin</span>}
+              <a href={airbnbSearchUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary font-medium hover:underline" onClick={e => e.stopPropagation()}>
+                Airbnb verified ✓
+              </a>
             </div>
           </div>
           <div className="flex justify-between items-center py-[7px]">
@@ -119,7 +134,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           <span className="text-[11px] text-muted-foreground">Added {listing.daysAgo} days ago</span>
           <div className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${statusDot()}`} />
-            <span className="text-[11px] text-muted-foreground capitalize">{listing.status.replace('-', ' ')}</span>
+            <span className="text-[11px] text-muted-foreground capitalize">{listing.daysAgo <= 7 ? 'Live' : listing.daysAgo <= 14 ? 'Under offer' : 'Expired'}</span>
           </div>
         </div>
 
