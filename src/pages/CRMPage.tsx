@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GripVertical, Plus, MessageCircle, X, Archive } from 'lucide-react';
+import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore } from 'lucide-react';
 import { crmDeals, CRM_STAGES, type CRMDeal, listings } from '@/data/mockData';
 import { toast } from 'sonner';
 
@@ -24,6 +24,11 @@ export default function CRMPage() {
   const handleArchive = (dealId: string) => {
     setArchivedIds(prev => [...prev, dealId]);
     toast.success('Deal archived');
+  };
+  const handleUnarchive = (dealId: string) => {
+    setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: 'New Lead' } : d));
+    setArchivedIds(prev => prev.filter(id => id !== dealId));
+    toast.success('Deal restored to pipeline');
   };
   const stagePotProfit = (stage: string) => stageDeals(stage).reduce((s, d) => s + d.profit, 0);
 
@@ -222,21 +227,40 @@ export default function CRMPage() {
         ))}
       </div>
 
-      {showArchived && archivedDeals.length > 0 && (
+      {showArchived && (
         <div className="mt-8 p-6 bg-secondary/50 rounded-2xl">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Archive className="w-5 h-5 text-muted-foreground" />
             Archived Deals ({archivedDeals.length})
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {archivedDeals.map(deal => (
-              <div key={deal.id} className="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div className="text-sm font-bold">{deal.name}</div>
-                <div className="text-xs text-muted-foreground">{deal.city}</div>
-                <div className="text-xs mt-1">£{deal.profit} profit</div>
-              </div>
-            ))}
-          </div>
+          {archivedDeals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No archived deals.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {archivedDeals.map(deal => (
+                <div key={deal.id} className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                  <img src={getDealImage(deal)} alt="" className="w-full h-[80px] object-cover" loading="lazy" />
+                  <div className="p-4">
+                    <div className="text-sm font-bold text-foreground">{deal.name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{deal.city} · {deal.postcode}</div>
+                    <div className="flex gap-3 mt-2 text-xs">
+                      <span className="text-muted-foreground">Rent: £{deal.rent.toLocaleString()}</span>
+                      <span className="text-accent-foreground font-medium">Profit: £{deal.profit}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">{deal.type}</div>
+                    {deal.notes && <div className="text-[11px] text-muted-foreground mt-1 italic truncate">{deal.notes}</div>}
+                    <button
+                      type="button"
+                      onClick={() => handleUnarchive(deal.id)}
+                      className="mt-3 w-full h-9 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <ArchiveRestore className="w-3.5 h-3.5" /> Unarchive
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
