@@ -4,6 +4,11 @@
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
+**Canonical deploy (only project we work on):**
+- **Vercel:** [hugos-projects-f8cc36a8/marketplace10](https://vercel.com/hugos-projects-f8cc36a8/marketplace10)
+- **GitHub:** [hrds100/marketplace10](https://github.com/hrds100/marketplace10)
+- **Live:** https://marketplace10.vercel.app
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
