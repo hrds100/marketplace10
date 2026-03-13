@@ -1,13 +1,4 @@
-/**
- * n8n webhook base URL (set in .env as VITE_N8N_WEBHOOK_URL).
- * Production: https://n8n.srv886554.hstgr.cloud
- */
-const base = import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud';
-
-function webhook(path: string) {
-  const url = path.startsWith('http') ? path : `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
-  return url;
-}
+const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
 
 /** Strip spaces, dashes, parens from phone numbers: "+44 7863 992555" → "+447863992555" */
 function cleanPhone(phone: string): string {
@@ -18,13 +9,19 @@ function cleanPhone(phone: string): string {
 export async function sendOtp(phone: string): Promise<{ success: boolean; message_id?: string }> {
   const clean = cleanPhone(phone);
   console.log('sendOtp PHONE:', phone, 'CLEAN:', clean);
-  const res = await fetch(webhook('webhook/send-otp'), {
+  const res = await fetch(`${N8N_BASE}/webhook/send-otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone: clean }),
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('n8n sendOtp ERROR:', res.status, errText);
+    throw new Error(errText);
+  }
+  const data = await res.json();
+  console.log('n8n sendOtp RESP:', data);
+  return data;
 }
 
 /** POST /webhook/estimate-profit → { city, postcode, beds } → { profit_est, airbnb_url, ... } */
@@ -33,7 +30,7 @@ export async function estimateProfit(params: {
   postcode?: string;
   beds?: number;
 }): Promise<{ profit_est: number; airbnb_url?: string }> {
-  const res = await fetch(webhook('webhook/estimate-profit'), {
+  const res = await fetch(`${N8N_BASE}/webhook/estimate-profit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
@@ -50,7 +47,7 @@ export async function submitInquiry(params: {
   phone?: string;
   message?: string;
 }): Promise<{ success: boolean; id?: string }> {
-  const res = await fetch(webhook('webhook/new-inquiry'), {
+  const res = await fetch(`${N8N_BASE}/webhook/new-inquiry`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
@@ -68,18 +65,24 @@ export async function verifyOtp(params: {
 }): Promise<{ success: boolean; error?: string }> {
   const clean = cleanPhone(params.phone);
   console.log('verifyOtp PHONE:', params.phone, 'CLEAN:', clean);
-  const res = await fetch(webhook('webhook/verify-otp'), {
+  const res = await fetch(`${N8N_BASE}/webhook/verify-otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...params, phone: clean }),
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('n8n verifyOtp ERROR:', res.status, errText);
+    throw new Error(errText);
+  }
+  const data = await res.json();
+  console.log('n8n verifyOtp RESP:', data);
+  return data;
 }
 
 /** POST /webhook/signup-welcome (call after Supabase signup if you use Auth) */
 export async function sendSignupWelcome(params: { email: string; name?: string }): Promise<{ success: boolean }> {
-  const res = await fetch(webhook('webhook/signup-welcome'), {
+  const res = await fetch(`${N8N_BASE}/webhook/signup-welcome`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
