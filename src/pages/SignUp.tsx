@@ -10,6 +10,7 @@ type Step = 'phone' | 'otp';
 export default function SignUp() {
   const [step, setStep] = useState<Step>('phone');
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,9 +39,9 @@ export default function SignUp() {
     setLoading(true);
     setError('');
     try {
-      const result = await verifyOtp(phone, otp);
+      const result = await verifyOtp({ phone, code: otp, name, email: email || undefined });
       if (result.success) {
-        localStorage.setItem('auth', JSON.stringify({ phone, name, ts: Date.now() }));
+        localStorage.setItem('auth', JSON.stringify({ phone, name, email, ts: Date.now() }));
         toast.success('Welcome to NFsTay!');
         window.location.href = '/dashboard/deals';
       } else {
@@ -89,6 +90,16 @@ export default function SignUp() {
                     onChange={e => setName(e.target.value)}
                     className="input-nfstay w-full"
                     required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Email <span className="font-normal text-muted-foreground">(optional)</span></label>
+                  <input
+                    type="email"
+                    placeholder="james@example.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="input-nfstay w-full"
                   />
                 </div>
                 <div>

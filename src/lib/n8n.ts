@@ -52,12 +52,17 @@ export async function submitInquiry(params: {
   return res.json();
 }
 
-/** POST /webhook/verify-otp → { phone, code } → { success, error? } */
-export async function verifyOtp(phone: string, code: string): Promise<{ success: boolean; error?: string }> {
+/** POST /webhook/verify-otp → { phone, code, name, email? } → { success, error? } */
+export async function verifyOtp(params: {
+  phone: string;
+  code: string;
+  name: string;
+  email?: string;
+}): Promise<{ success: boolean; error?: string }> {
   const res = await fetch(webhook('webhook/verify-otp'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, code }),
+    body: JSON.stringify(params),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
