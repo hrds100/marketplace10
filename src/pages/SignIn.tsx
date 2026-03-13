@@ -24,7 +24,7 @@ export default function SignIn() {
       await sendOtp(formatted);
       setPhone(formatted);
       setStep('otp');
-      toast.success('OTP sent via SMS');
+      toast.success('OTP sent via WhatsApp');
     } catch {
       setError('Failed to send OTP. Check your phone number.');
     } finally {
@@ -78,11 +78,11 @@ export default function SignIn() {
           {step === 'phone' && (
             <>
               <h1 className="text-[28px] font-bold text-foreground mt-8">Welcome back</h1>
-              <p className="text-sm text-muted-foreground mt-1">We'll send a verification code via SMS.</p>
+              <p className="text-sm text-muted-foreground mt-1">We'll send a verification code via WhatsApp.</p>
 
               <form className="mt-8 space-y-4" onSubmit={handleSendOtp}>
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">Phone number</label>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">WhatsApp number</label>
                   <input
                     type="tel"
                     placeholder="+44 7863 992555"
@@ -116,7 +116,7 @@ export default function SignIn() {
               </button>
               <h1 className="text-[28px] font-bold text-foreground">Enter verification code</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                We sent a 6-digit code to <span className="font-medium text-foreground">{phone}</span> via SMS.
+                We sent a 6-digit code to <span className="font-medium text-foreground">{phone}</span> via WhatsApp.
               </p>
 
               <div className="mt-8 flex justify-center">
