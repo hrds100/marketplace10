@@ -9,12 +9,17 @@ function webhook(path: string) {
   return url;
 }
 
+/** Strip spaces, dashes, parens from phone numbers: "+44 7863 992555" → "+447863992555" */
+function cleanPhone(phone: string): string {
+  return phone.replace(/[^0-9+]/g, '');
+}
+
 /** POST /webhook/send-otp → { phone } → { success, message_id } */
 export async function sendOtp(phone: string): Promise<{ success: boolean; message_id?: string }> {
   const res = await fetch(webhook('webhook/send-otp'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone }),
+    body: JSON.stringify({ phone: cleanPhone(phone) }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -62,7 +67,7 @@ export async function verifyOtp(params: {
   const res = await fetch(webhook('webhook/verify-otp'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
+    body: JSON.stringify({ ...params, phone: cleanPhone(params.phone) }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
