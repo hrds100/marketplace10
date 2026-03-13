@@ -317,7 +317,7 @@ export default function DealDetail() {
         </div>
       )}
 
-      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} />
+      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} propertyId={listing.id} />
     </div>
   );
 }
