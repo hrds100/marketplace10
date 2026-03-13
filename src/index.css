@@ -99,6 +99,18 @@
   }
 }
 
+/* Add to CRM celebration - global so it works in production build */
+@keyframes crm-glow {
+  0% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.5); opacity: 1; }
+  70% { box-shadow: 0 0 0 14px rgba(56, 161, 105, 0); opacity: 0.8; }
+  100% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0); opacity: 0; }
+}
+.crm-celebration-ring {
+  animation: crm-glow 1s ease-out forwards;
+  pointer-events: none;
+  z-index: 1;
+}
+
 @layer components {
   /* Badge variants */
   .badge-green {

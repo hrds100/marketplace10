@@ -102,32 +102,22 @@ export default function DealDetail() {
             <button className="h-10 px-4 rounded-lg border border-border flex items-center gap-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors">
               <Share2 className="w-4 h-4" /> Share
             </button>
-            <div className="relative inline-block">
-              <style>{`
-                @keyframes crm-glow {
-                  0% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.5); opacity: 1; }
-                  70% { box-shadow: 0 0 0 14px rgba(56, 161, 105, 0); opacity: 0.8; }
-                  100% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0); opacity: 0; }
-                }
-                .crm-celebration-ring {
-                  animation: crm-glow 1s ease-out forwards;
-                  pointer-events: none;
-                }
-              `}</style>
+            <div className="relative inline-block min-w-[140px]">
               {justAddedToCrm && (
                 <div className="crm-celebration-ring absolute inset-0 rounded-lg border-2 border-primary" aria-hidden />
               )}
               <button
+                type="button"
                 onClick={handleAddToCrm}
                 disabled={addedToCrm}
-                className={`h-10 px-4 rounded-lg border flex items-center gap-2 text-sm font-medium transition-all ${
+                className={`relative z-0 h-10 px-4 rounded-lg border flex items-center gap-2 text-sm font-medium transition-all shrink-0 ${
                   addedToCrm
                     ? 'bg-muted text-muted-foreground border-border cursor-not-allowed'
                     : 'bg-primary text-primary-foreground border-primary hover:opacity-90'
                 }`}
               >
-                {addedToCrm ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                {addedToCrm ? 'Added to CRM' : 'Add to CRM'}
+                {addedToCrm ? <CheckCircle className="w-4 h-4 shrink-0" /> : <Plus className="w-4 h-4 shrink-0" />}
+                <span>{addedToCrm ? 'Added to CRM' : 'Add to CRM'}</span>
               </button>
             </div>
           </div>
