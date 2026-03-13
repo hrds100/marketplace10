@@ -26,6 +26,13 @@ export default function DealDetail() {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [showInquiry, setShowInquiry] = useState(false);
   const [justAddedToCrm, setJustAddedToCrm] = useState(false);
+  const [showExtraCosts, setShowExtraCosts] = useState(false);
+  const [extraCosts, setExtraCosts] = useState([
+    { label: 'Cleaning', amount: 80 },
+    { label: 'Utilities', amount: 120 },
+    { label: 'Insurance', amount: 50 },
+    { label: 'Platform fees', amount: 60 },
+  ]);
 
   const images = [
     `https://picsum.photos/seed/detail-main/1200/900`,
