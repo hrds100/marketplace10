@@ -22,6 +22,11 @@ import AdminListings from "./pages/admin/AdminListings";
 import AdminSubmissions from "./pages/admin/AdminSubmissions";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminLessons from "./pages/admin/AdminLessons";
+import AdminPricing from "./pages/admin/AdminPricing";
+import AdminFAQ from "./pages/admin/AdminFAQ";
+import AdminAffiliates from "./pages/admin/AdminAffiliates";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,12 +55,18 @@ const App = () => (
             <Route index element={<ModuleOverviewPage />} />
             <Route path=":lessonId" element={<LessonPage />} />
           </Route>
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
             <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="listings" element={<AdminListings />} />
+            <Route path="properties" element={<AdminListings />} />
             <Route path="submissions" element={<AdminSubmissions />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="university" element={<AdminLessons />} />
+            <Route path="pricing" element={<AdminPricing />} />
+            <Route path="faq" element={<AdminFAQ />} />
+            <Route path="affiliates" element={<AdminAffiliates />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
