@@ -74,6 +74,9 @@ export default function CRMPage() {
 
   return (
     <div>
+      <p style={{ background: 'yellow', color: 'black', padding: 8 }}>
+        DEPLOY MARKER FB7354D
+      </p>
       <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-[28px] font-bold text-foreground">CRM Pipeline</h1>
