@@ -41,7 +41,6 @@ export default function DealsPage() {
 
   const handleAddToCRM = (listing: typeof listings[0]) => {
     toast.success(`${listing.name} added to CRM`);
-    navigate('/dashboard/crm');
   };
 
   return (

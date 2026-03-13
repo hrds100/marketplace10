@@ -43,10 +43,13 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     }
   };
 
+  const [celebrating, setCelebrating] = useState(false);
   const handleAddToCRM = () => {
     if (addedToCRM) return;
     setAddedToCRM(true);
+    setCelebrating(true);
     onAddToCRM?.();
+    setTimeout(() => setCelebrating(false), 1500);
   };
 
   return (
@@ -82,8 +85,9 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           {onAddToCRM && (
             <button
               onClick={handleAddToCRM}
-              className={`text-[11px] font-semibold transition-opacity whitespace-nowrap flex items-center gap-1 ${addedToCRM ? 'text-primary cursor-default' : 'text-primary hover:opacity-75'}`}
+              className={`relative text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground cursor-default' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
             >
+              {celebrating && <span className="absolute inset-0 rounded-full animate-ping bg-primary/30" />}
               {addedToCRM ? (
                 <><CheckCircle className="w-3.5 h-3.5" /> Added to CRM</>
               ) : (

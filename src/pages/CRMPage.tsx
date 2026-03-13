@@ -91,7 +91,10 @@ export default function CRMPage() {
         <span className="badge-gray">{stageDeals('Closed').length} deals closing this month</span>
         <button
           type="button"
-          onClick={() => setShowArchived(!showArchived)}
+          onClick={() => {
+            const el = document.getElementById('archived-section');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
           className="badge-gray flex items-center gap-1 hover:bg-secondary px-2 py-1 text-xs cursor-pointer transition-colors"
         >
           <Archive className="w-3 h-3" />
@@ -228,7 +231,7 @@ export default function CRMPage() {
       </div>
 
       {archivedDeals.length > 0 && (
-        <div className="mt-8 p-6 bg-secondary/50 rounded-2xl">
+        <div id="archived-section" className="mt-8 p-6 bg-secondary/50 rounded-2xl">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Archive className="w-5 h-5 text-muted-foreground" />
             Archived Deals ({archivedDeals.length})
