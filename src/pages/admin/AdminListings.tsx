@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { listings as mockListings, type Listing } from '@/data/mockData';
 import { toast } from 'sonner';
-import { Upload, X, MessageCircle, Edit2, Trash2 } from 'lucide-react';
+import { Upload, X, MessageCircle, Edit2, Trash2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
