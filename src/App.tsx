@@ -7,7 +7,6 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
-import SignUp from "./pages/SignUp";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DealsPage from "./pages/DealsPage";
 import FavouritesPage from "./pages/FavouritesPage";
