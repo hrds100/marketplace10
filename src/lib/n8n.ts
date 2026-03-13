@@ -2,7 +2,7 @@
  * n8n webhook base URL (set in .env as VITE_N8N_WEBHOOK_URL).
  * Production: https://n8n.srv886554.hstgr.cloud
  */
-const base = import.meta.env.VITE_N8N_WEBHOOK_URL || '';
+const base = import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud';
 
 function webhook(path: string) {
   const url = path.startsWith('http') ? path : `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
