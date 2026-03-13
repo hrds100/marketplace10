@@ -25,6 +25,7 @@ export default function DealDetail() {
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [showInquiry, setShowInquiry] = useState(false);
+  const [justAddedToCrm, setJustAddedToCrm] = useState(false);
 
   const images = [
     `https://picsum.photos/seed/detail-main/1200/900`,
@@ -44,6 +45,12 @@ export default function DealDetail() {
     setAddedToCrm(isInCrm);
   }, [listing.name, listing.city]);
 
+  useEffect(() => {
+    if (!justAddedToCrm) return;
+    const t = setTimeout(() => setJustAddedToCrm(false), 1500);
+    return () => clearTimeout(t);
+  }, [justAddedToCrm]);
+
   const handleAddToCrm = () => {
     const newCrmDeal = {
       id: `deal-${listing.id}-crm`,
@@ -62,6 +69,7 @@ export default function DealDetail() {
     if (!window.crmDeals.some(d => d.name === listing.name && d.city === listing.city)) {
       window.crmDeals.push(newCrmDeal);
       setAddedToCrm(true);
+      setJustAddedToCrm(true);
       toast.success('Added to CRM!');
     }
   };
@@ -94,18 +102,34 @@ export default function DealDetail() {
             <button className="h-10 px-4 rounded-lg border border-border flex items-center gap-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors">
               <Share2 className="w-4 h-4" /> Share
             </button>
-            <button
-              onClick={handleAddToCrm}
-              disabled={addedToCrm}
-              className={`h-10 px-4 rounded-lg border flex items-center gap-2 text-sm font-medium transition-all ${
-                addedToCrm
-                  ? 'bg-muted text-muted-foreground border-border cursor-not-allowed'
-                  : 'border-border text-foreground hover:bg-secondary hover:border-border-foreground'
-              }`}
-            >
-              {addedToCrm ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              {addedToCrm ? 'Added to CRM' : 'Add to CRM'}
-            </button>
+            <div className="relative inline-block">
+              <style>{`
+                @keyframes crm-glow {
+                  0% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.5); opacity: 1; }
+                  70% { box-shadow: 0 0 0 14px rgba(56, 161, 105, 0); opacity: 0.8; }
+                  100% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0); opacity: 0; }
+                }
+                .crm-celebration-ring {
+                  animation: crm-glow 1s ease-out forwards;
+                  pointer-events: none;
+                }
+              `}</style>
+              {justAddedToCrm && (
+                <div className="crm-celebration-ring absolute inset-0 rounded-lg border-2 border-primary" aria-hidden />
+              )}
+              <button
+                onClick={handleAddToCrm}
+                disabled={addedToCrm}
+                className={`h-10 px-4 rounded-lg border flex items-center gap-2 text-sm font-medium transition-all ${
+                  addedToCrm
+                    ? 'bg-muted text-muted-foreground border-border cursor-not-allowed'
+                    : 'bg-primary text-primary-foreground border-primary hover:opacity-90'
+                }`}
+              >
+                {addedToCrm ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                {addedToCrm ? 'Added to CRM' : 'Add to CRM'}
+              </button>
+            </div>
           </div>
         </div>
 
