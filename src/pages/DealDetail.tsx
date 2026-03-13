@@ -44,6 +44,8 @@ export default function DealDetail() {
 
   const estRevenue = nightlyRate * nights;
   const estProfit = estRevenue - listing.rent;
+  const totalExtraCosts = extraCosts.reduce((sum, c) => sum + c.amount, 0);
+  const finalProfit = estProfit - (showExtraCosts ? totalExtraCosts : 0);
   const nearbyDeals = listings.filter(l => l.city === listing.city && l.id !== listing.id).slice(0, 3);
 
   useEffect(() => {
