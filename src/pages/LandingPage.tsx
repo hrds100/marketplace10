@@ -240,8 +240,12 @@ export default function LandingPage() {
       {/* UNIVERSITY PREVIEW */}
       <section id="university" className="py-20 bg-secondary">
         <div className="max-w-[1280px] mx-auto px-6 md:px-10 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4" style={{ background: 'hsla(145,63%,42%,0.12)' }}>
+            <span className="text-sm">🎓</span>
+            <span className="text-xs font-semibold text-primary">Powered by GPT-4.1 AI</span>
+          </div>
           <h2 className="text-[36px] md:text-[42px] font-bold tracking-[-0.025em] text-foreground">Airbnb University</h2>
-          <p className="text-lg text-muted-foreground mt-4 max-w-[520px] mx-auto">Learn everything about rent-to-rent with step-by-step modules. From zero to operator.</p>
+          <p className="text-lg text-muted-foreground mt-4 max-w-[520px] mx-auto">15yr operator knowledge, 100+ properties trained in AI. Learn everything about rent-to-rent with step-by-step modules.</p>
 
           <div className="grid md:grid-cols-3 gap-6 mt-14">
             {[
