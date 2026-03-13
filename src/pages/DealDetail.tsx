@@ -26,6 +26,13 @@ export default function DealDetail() {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [showInquiry, setShowInquiry] = useState(false);
   const [justAddedToCrm, setJustAddedToCrm] = useState(false);
+  const [showExtraCosts, setShowExtraCosts] = useState(false);
+  const [extraCosts, setExtraCosts] = useState([
+    { label: 'Cleaning', amount: 80 },
+    { label: 'Utilities', amount: 120 },
+    { label: 'Insurance', amount: 50 },
+    { label: 'Platform fees', amount: 60 },
+  ]);
 
   const images = [
     `https://picsum.photos/seed/detail-main/1200/900`,
@@ -37,6 +44,8 @@ export default function DealDetail() {
 
   const estRevenue = nightlyRate * nights;
   const estProfit = estRevenue - listing.rent;
+  const totalExtraCosts = extraCosts.reduce((sum, c) => sum + c.amount, 0);
+  const finalProfit = estProfit - (showExtraCosts ? totalExtraCosts : 0);
   const nearbyDeals = listings.filter(l => l.city === listing.city && l.id !== listing.id).slice(0, 3);
 
   useEffect(() => {
@@ -217,7 +226,7 @@ export default function DealDetail() {
                 </div>
               </div>
 
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="text-xs font-semibold text-foreground block mb-2">Nightly average rate (£)</label>
                 <input
                   type="number"
@@ -229,13 +238,50 @@ export default function DealDetail() {
                 />
               </div>
 
+              {/* Extra costs toggle */}
+              <div className="mb-4">
+                <button
+                  onClick={() => setShowExtraCosts(!showExtraCosts)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <span className="text-xs font-semibold text-foreground">Extra costs</span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showExtraCosts ? 'rotate-180' : ''}`} />
+                </button>
+                {showExtraCosts && (
+                  <div className="mt-3 space-y-2">
+                    {extraCosts.map((cost, i) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">{cost.label}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">£</span>
+                          <input
+                            type="number"
+                            value={cost.amount}
+                            onChange={e => {
+                              const updated = [...extraCosts];
+                              updated[i].amount = Number(e.target.value) || 0;
+                              setExtraCosts(updated);
+                            }}
+                            className="w-16 h-7 rounded border border-border bg-background px-2 text-xs text-foreground"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    <p className="text-[11px] text-muted-foreground italic mt-1">💡 AI suggestion: typical costs for a {listing.type} in {listing.city}</p>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-3 border-t border-border pt-4">
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Nightly rate</span><span className="font-medium text-foreground">£{nightlyRate}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Est. revenue</span><span className="font-medium text-foreground">£{estRevenue.toLocaleString()}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Monthly rent</span><span className="font-medium text-foreground">-£{listing.rent.toLocaleString()}</span></div>
+                {showExtraCosts && totalExtraCosts > 0 && (
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Extra costs</span><span className="font-medium text-foreground">-£{totalExtraCosts}</span></div>
+                )}
                 <div className="flex justify-between text-base border-t border-border pt-3">
                   <span className="font-semibold text-foreground">Est. monthly profit</span>
-                  <span className={`font-bold text-lg ${estProfit > 0 ? 'text-accent-foreground' : 'text-destructive'}`}>£{estProfit.toLocaleString()}</span>
+                  <span className={`font-bold text-lg ${finalProfit > 0 ? 'text-accent-foreground' : 'text-destructive'}`}>£{finalProfit.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -271,7 +317,7 @@ export default function DealDetail() {
         </div>
       )}
 
-      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} />
+      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} propertyId={listing.id} />
     </div>
   );
 }

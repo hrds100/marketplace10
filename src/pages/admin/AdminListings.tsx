@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { listings as mockListings, type Listing } from '@/data/mockData';
 import { toast } from 'sonner';
-import { Upload, X, MessageCircle, Edit2, Trash2 } from 'lucide-react';
+import { Upload, X, MessageCircle, Edit2, Trash2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -109,12 +109,29 @@ export default function AdminListings() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const downloadCSVTemplate = () => {
+    const headers = 'name,city,postcode,rent_monthly,profit_est,beds,type,status,landlord_whatsapp,description,featured,image_url';
+    const example = 'Maple House,Manchester,M14,1200,680,3,3-bed flat,live,447911123456,Great property near transport,false,';
+    const csv = headers + '\n' + example;
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'nfstay-properties-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Template downloaded');
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[28px] font-bold text-foreground">Listings ({listings.length})</h1>
         <div className="flex gap-2">
           <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleCSVImport} />
+          <button onClick={downloadCSVTemplate} className="h-11 px-5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-2">
+            <Download className="w-4 h-4" /> CSV Template
+          </button>
           <button onClick={() => fileInputRef.current?.click()} className="h-11 px-5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-2">
             <Upload className="w-4 h-4" /> Import CSV
           </button>
