@@ -98,7 +98,7 @@
 
 ### n8n Workflows (Backend)
 - [x] Send OTP (#kRuEBEDHEHokExtp) — WhatsApp via Twilio (+15559459048 NFsTay Properties)
-- [x] Verify OTP (#Coowne7rD2uOij8w) — checks Supabase otps table, deletes used OTP, saves to signups table
+- [x] Verify OTP (#Coowne7rD2uOij8w) — checks otps table, deletes used OTP, saves signup to inquiries table, triggers welcome email
 - [x] Estimate Profit (#3EDIQKRea9nGzxve)
 - [x] New Inquiry Notifications (#dC24ZjEE7F3OhxLg)
 - [x] AI Generate Listing (#VfJ1uwFTH1UkZHVg)
@@ -108,6 +108,7 @@
 ### Supabase
 - [x] properties table (CRUD via REST)
 - [x] otps table (phone, code, expires_at)
+- [x] inquiries table (also stores signups with property_name='SIGNUP')
 - [x] Supabase client integration (@supabase/supabase-js)
 - [x] TypeScript types generated (Tables<'properties'>)
 
@@ -124,13 +125,14 @@
 ## 🔄 PENDING (Phase 2)
 
 ### n8n Workflows
-- [ ] Resend welcome emails (workflow #bI0vzTqncMjCs5jO — structure ready, needs Resend API key)
-- [ ] Production Twilio WhatsApp (sandbox → business approval)
+- [ ] Resend welcome emails (workflow #bI0vzTqncMjCs5jO — structure ready, needs Resend API key in Code node)
+- [x] Production Twilio WhatsApp (+15559459048 NFsTay Properties — LIVE)
 - [ ] Daily deals WhatsApp summary
 - [ ] Deal expiry cron job
 
 ### Supabase
-- [ ] signups table (SQL ready — needs creation in dashboard)
+- [x] Signup data stored in inquiries table (property_name='SIGNUP') — works now
+- [ ] Dedicated signups table (needs Supabase DB password for DDL)
 - [ ] Row-Level Security (RLS) policies
 - [ ] profiles table migration (FK to auth.users — future Supabase Auth integration)
 
