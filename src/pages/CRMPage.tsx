@@ -227,7 +227,7 @@ export default function CRMPage() {
         ))}
       </div>
 
-      {showArchived && (
+      {archivedDeals.length > 0 && (
         <div className="mt-8 p-6 bg-secondary/50 rounded-2xl">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Archive className="w-5 h-5 text-muted-foreground" />
