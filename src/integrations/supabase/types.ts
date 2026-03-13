@@ -14,16 +14,279 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      crm_deals: {
+        Row: {
+          archived: boolean
+          city: string
+          created_at: string
+          email: string | null
+          id: string
+          last_contact: string | null
+          name: string
+          notes: string | null
+          outsider_lead: boolean
+          photo_url: string | null
+          postcode: string
+          profit: number
+          property_id: string | null
+          rent: number
+          stage: Database["public"]["Enums"]["crm_stage"]
+          type: string
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          archived?: boolean
+          city?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contact?: string | null
+          name?: string
+          notes?: string | null
+          outsider_lead?: boolean
+          photo_url?: string | null
+          postcode?: string
+          profit?: number
+          property_id?: string | null
+          rent?: number
+          stage?: Database["public"]["Enums"]["crm_stage"]
+          type?: string
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          archived?: boolean
+          city?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contact?: string | null
+          name?: string
+          notes?: string | null
+          outsider_lead?: boolean
+          photo_url?: string | null
+          postcode?: string
+          profit?: number
+          property_id?: string | null
+          rent?: number
+          stage?: Database["public"]["Enums"]["crm_stage"]
+          type?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          module_id: string | null
+          order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          module_id?: string | null
+          order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          module_id?: string | null
+          order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          photo_url: string | null
+          samcart_customer_id: string | null
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          photo_url?: string | null
+          samcart_customer_id?: string | null
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          photo_url?: string | null
+          samcart_customer_id?: string | null
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          beds: number
+          city: string
+          created_at: string
+          description: string | null
+          featured: boolean
+          id: string
+          image_url: string | null
+          landlord_approved: boolean
+          landlord_whatsapp: string | null
+          name: string
+          photos: string[] | null
+          postcode: string
+          profit_est: number
+          rent_monthly: number
+          status: Database["public"]["Enums"]["property_status"]
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          beds?: number
+          city: string
+          created_at?: string
+          description?: string | null
+          featured?: boolean
+          id?: string
+          image_url?: string | null
+          landlord_approved?: boolean
+          landlord_whatsapp?: string | null
+          name: string
+          photos?: string[] | null
+          postcode?: string
+          profit_est?: number
+          rent_monthly?: number
+          status?: Database["public"]["Enums"]["property_status"]
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          beds?: number
+          city?: string
+          created_at?: string
+          description?: string | null
+          featured?: boolean
+          id?: string
+          image_url?: string | null
+          landlord_approved?: boolean
+          landlord_whatsapp?: string | null
+          name?: string
+          photos?: string[] | null
+          postcode?: string
+          profit_est?: number
+          rent_monthly?: number
+          status?: Database["public"]["Enums"]["property_status"]
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          samcart_id: string | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          samcart_id?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          samcart_id?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      crm_stage:
+        | "New Lead"
+        | "Under Negotiation"
+        | "Contract Sent"
+        | "Follow Up"
+        | "Closed"
+        | "Portfolio"
+      property_status: "live" | "on-offer" | "inactive"
+      subscription_status: "active" | "cancelled" | "paused" | "trial"
+      subscription_tier: "monthly" | "yearly" | "lifetime"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +413,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      crm_stage: [
+        "New Lead",
+        "Under Negotiation",
+        "Contract Sent",
+        "Follow Up",
+        "Closed",
+        "Portfolio",
+      ],
+      property_status: ["live", "on-offer", "inactive"],
+      subscription_status: ["active", "cancelled", "paused", "trial"],
+      subscription_tier: ["monthly", "yearly", "lifetime"],
+    },
   },
 } as const
