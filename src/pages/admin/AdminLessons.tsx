@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, Edit2, Trash2 } from 'lucide-react';
+import { Plus, X, Edit2, Trash2, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,7 @@ export default function AdminLessons() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', content: '', module_id: '', order: 0 });
+  const [generating, setGenerating] = useState(false);
 
   const { data: lessons = [] } = useQuery({
     queryKey: ['admin-lessons'],
@@ -18,6 +19,25 @@ export default function AdminLessons() {
       return data;
     },
   });
+
+  const handleGenerateContent = async () => {
+    if (!form.title) { toast.error('Enter a title first'); return; }
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-description', {
+        body: { type: 'lesson', context: { title: form.title, module_id: form.module_id } },
+      });
+      if (error) throw error;
+      if (data?.text) {
+        setForm(p => ({ ...p, content: data.text }));
+        toast.success('Content generated with AI');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to generate content');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!form.title) { toast.error('Title required'); return; }
@@ -66,7 +86,21 @@ export default function AdminLessons() {
               <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="Lesson title" />
               <input value={form.module_id} onChange={e => setForm(p => ({ ...p, module_id: e.target.value }))} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="Module ID (e.g. mod-1)" />
               <input type="number" value={form.order} onChange={e => setForm(p => ({ ...p, order: Number(e.target.value) }))} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="Order" />
-              <textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none" rows={6} placeholder="Lesson content..." />
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-foreground">Content</label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateContent}
+                    disabled={generating}
+                    className="text-xs font-semibold text-primary hover:opacity-75 transition-opacity inline-flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {generating ? 'Generating...' : 'Generate with AI'}
+                  </button>
+                </div>
+                <textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none" rows={8} placeholder="Lesson content..." />
+              </div>
               <button onClick={handleSave} className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm">{editingId ? 'Save Changes' : 'Create Lesson'}</button>
             </div>
           </div>
@@ -77,7 +111,7 @@ export default function AdminLessons() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
-              {['Order', 'Title', 'Module', 'Actions'].map(h => (
+              {['Order', 'Title', 'Module', 'Content', 'Actions'].map(h => (
                 <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
               ))}
             </tr>
@@ -88,6 +122,7 @@ export default function AdminLessons() {
                 <td className="p-3.5 text-foreground">{l.order}</td>
                 <td className="p-3.5 font-medium text-foreground">{l.title}</td>
                 <td className="p-3.5 text-muted-foreground">{l.module_id || '—'}</td>
+                <td className="p-3.5 text-muted-foreground max-w-[200px] truncate">{l.content ? l.content.slice(0, 60) + '…' : '—'}</td>
                 <td className="p-3.5">
                   <div className="flex gap-2">
                     <button onClick={() => startEdit(l)} className="text-xs text-primary font-medium inline-flex items-center gap-1"><Edit2 className="w-3 h-3" /> Edit</button>
@@ -97,7 +132,7 @@ export default function AdminLessons() {
               </tr>
             ))}
             {lessons.length === 0 && (
-              <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No lessons yet. Click "Add Lesson" to create one.</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No lessons yet. Click "Add Lesson" to create one.</td></tr>
             )}
           </tbody>
         </table>

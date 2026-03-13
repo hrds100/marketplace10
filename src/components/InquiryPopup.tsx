@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, MessageCircle, CreditCard } from 'lucide-react';
+import { X, MessageCircle, CreditCard, Crown, Zap } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -7,6 +7,12 @@ interface Props {
   propertyName: string;
   city: string;
 }
+
+const SAMCART_URLS = {
+  monthly: 'https://checkout.nfstay.com/monthly', // £47/mo
+  lifetime: 'https://checkout.nfstay.com/lifetime', // £997 OTO
+  yearly: 'https://checkout.nfstay.com/yearly', // £597/yr downsell
+};
 
 export default function InquiryPopup({ open, onClose, propertyName, city }: Props) {
   const [step, setStep] = useState<'whatsapp' | 'payment'>('whatsapp');
@@ -25,9 +31,14 @@ export default function InquiryPopup({ open, onClose, propertyName, city }: Prop
     onClose();
   };
 
+  const handleCheckout = (tier: keyof typeof SAMCART_URLS) => {
+    window.open(SAMCART_URLS[tier], '_blank');
+    handleClose();
+  };
+
   return (
     <div className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4" onClick={handleClose}>
-      <div className="bg-card rounded-2xl border border-border w-full max-w-[440px] overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-card rounded-2xl border border-border w-full max-w-[480px] overflow-hidden" onClick={e => e.stopPropagation()}>
         {step === 'whatsapp' ? (
           <>
             <div className="flex items-center justify-between p-5 border-b border-border">
@@ -62,24 +73,58 @@ export default function InquiryPopup({ open, onClose, propertyName, city }: Prop
               </div>
               <button onClick={handleClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
             </div>
-            <div className="p-5 text-center">
-              <div className="w-16 h-16 rounded-full bg-accent-light flex items-center justify-center mx-auto mb-4">
-                <MessageCircle className="w-8 h-8 text-primary" />
+            <div className="p-5 space-y-4">
+              {/* Monthly — primary */}
+              <div className="rounded-xl border-2 border-primary p-5 relative">
+                <span className="absolute -top-3 left-4 bg-primary text-primary-foreground text-[11px] font-bold px-2.5 py-0.5 rounded-full">MOST POPULAR</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-extrabold text-foreground">£47</span>
+                  <span className="text-sm text-muted-foreground">/ month</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Full access to all deals, CRM, University & more</p>
+                <button
+                  onClick={() => handleCheckout('monthly')}
+                  className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm mt-4 hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4" /> Start Monthly — £47/mo
+                </button>
               </div>
-              <h4 className="text-xl font-bold text-foreground">Start your 3-day trial</h4>
-              <p className="text-sm text-muted-foreground mt-2">Contact landlords directly, access all deals, CRM, University and more.</p>
-              <div className="flex items-baseline justify-center gap-1 mt-4">
-                <span className="text-3xl font-extrabold text-foreground">£4</span>
-                <span className="text-sm text-muted-foreground">/ 3 days</span>
+
+              {/* Lifetime — OTO */}
+              <div className="rounded-xl border border-border p-5 bg-secondary/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Crown className="w-4 h-4 text-yellow-500" />
+                  <span className="text-xs font-bold text-foreground">ONE-TIME OFFER</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-extrabold text-foreground">£997</span>
+                  <span className="text-sm text-muted-foreground">lifetime access</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Pay once, access forever. Best value.</p>
+                <button
+                  onClick={() => handleCheckout('lifetime')}
+                  className="w-full h-10 rounded-lg border border-border font-semibold text-sm mt-3 hover:bg-secondary transition-colors text-foreground"
+                >
+                  Get Lifetime Access — £997
+                </button>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Then £97/month. Cancel any time.</p>
-              <button
-                onClick={() => { handleClose(); window.location.href = '/signup'; }}
-                className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold mt-6 hover:opacity-90 transition-opacity"
-              >
-                Start 3-Day Trial — £4
-              </button>
-              <p className="text-xs text-muted-foreground mt-3">Secure payment · Cancel any time</p>
+
+              {/* Yearly — downsell */}
+              <div className="rounded-xl border border-border p-4">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold text-foreground">£597</span>
+                  <span className="text-sm text-muted-foreground">/ year</span>
+                  <span className="ml-2 text-[11px] font-semibold text-primary bg-accent-light px-2 py-0.5 rounded-full">Save 5 months</span>
+                </div>
+                <button
+                  onClick={() => handleCheckout('yearly')}
+                  className="w-full h-10 rounded-lg border border-border font-medium text-sm mt-3 hover:bg-secondary transition-colors text-foreground"
+                >
+                  Go Yearly — £597/yr
+                </button>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">Secure payment via SamCart · Cancel any time</p>
             </div>
           </>
         )}
