@@ -50,9 +50,9 @@ export default function VerifyOtp() {
         // Update whatsapp_verified in profiles — update first, upsert as fallback
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { error: updateErr } = await supabase
-            .from('profiles')
-            .update({ whatsapp_verified: true } as any)
+          const { error: updateErr } = await (supabase
+            .from('profiles') as any)
+            .update({ whatsapp_verified: true })
             .eq('id', user.id);
           if (updateErr) {
             // Profile doesn't exist — create it with all fields
