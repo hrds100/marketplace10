@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const { signUp, signIn } = useAuth();
+  const { signUp } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -55,22 +55,24 @@ export default function SignUp() {
         return;
       }
 
-      // 1b. Sign in immediately — signUp may not return a session
-      if (!authData?.session) {
-        const { error: signInErr } = await signIn(cleanEmail, data.password);
+      // 1b. Ensure we have a session — signUp may or may not return one
+      let userId = authData?.user?.id;
+      if (!authData?.session?.access_token) {
+        // No session from signUp — sign in to get one
+        await new Promise(r => setTimeout(r, 500)); // Brief delay for user to propagate
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: data.password,
+        });
         if (signInErr) {
-          toast.error('Account created but sign-in failed. Please sign in manually.');
-          setLoading(false);
-          navigate('/signin');
-          return;
+          console.error('Post-signup signIn error:', signInErr.message);
+          // Don't block — proceed without session, OTP page will still work
+        } else {
+          userId = signInData?.user?.id || userId;
         }
       }
 
-      // 1c. Now we have a session — get the authenticated user
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      const userId = currentUser?.id || authData?.user?.id;
-
-      // 1d. Ensure profile has name + whatsapp (trigger creates it, this is backup)
+      // 1c. Ensure profile has name + whatsapp (trigger creates it, this is backup)
       if (userId) {
         await (supabase
           .from('profiles') as any)
