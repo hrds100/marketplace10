@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import LandingPage from "./pages/LandingPage";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import VerifyOtp from "./pages/VerifyOtp";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/deals/:id" element={<DealDetail />} />

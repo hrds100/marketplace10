@@ -1,268 +1,303 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
-import { sendOtp, verifyOtp } from '@/lib/n8n';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { sendOtp } from '@/lib/n8n';
+import { signupSchema, type SignupFormData, passwordStrength, strengthLabels, strengthColors } from '@/lib/validation';
+import CountryCodeSelect from '@/components/CountryCodeSelect';
 import { toast } from 'sonner';
-
-type Step = 'details' | 'whatsapp' | 'otp';
 
 export default function SignUp() {
   const navigate = useNavigate();
   const { signUp } = useAuth();
-  const [step, setStep] = useState<Step>('details');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !email.trim() || !password.trim()) return;
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
-    setLoading(true);
-    setError('');
-    try {
-      const { error: authError } = await signUp(email, password, name, phone);
-      if (authError) { setError(authError.message); return; }
-      toast.success('Account created!');
-      setStep('whatsapp');
-    } catch {
-      setError('Failed to create account. Try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: { countryCode: '+44', terms: false as unknown as true },
+  });
 
-  const handleSendCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phone.trim()) return;
-    setLoading(true);
-    setError('');
-    try {
-      const formatted = phone.startsWith('+') ? phone : `+${phone}`;
-      await sendOtp(formatted);
-      setPhone(formatted);
-      setStep('otp');
-      toast.success('Code sent via WhatsApp');
-    } catch {
-      setError('Failed to send code. Check your phone number.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const pw = watch('password') || '';
+  const strength = passwordStrength(pw);
+  const countryCode = watch('countryCode');
 
-  const handleVerifyCode = async () => {
-    if (otp.length !== 4) return;
+  const onSubmit = async (data: SignupFormData) => {
     setLoading(true);
-    setError('');
     try {
-      const result = await verifyOtp({ phone, code: otp, name, email });
-      if (result.success) {
-        toast.success('WhatsApp verified! Welcome to NFsTay!');
-        navigate('/dashboard/deals');
-      } else {
-        setError(result.error || 'Invalid or expired code');
-        setOtp('');
+      const fullPhone = data.countryCode + data.phone.replace(/[^0-9]/g, '');
+
+      // 1. Create Supabase account
+      const { error: authError } = await signUp(data.email, data.password, data.name, fullPhone);
+      if (authError) {
+        toast.error(authError.message);
+        setLoading(false);
+        return;
       }
+
+      // 2. Send WhatsApp OTP via GHL
+      try {
+        await sendOtp(fullPhone);
+        toast.success('Account created! Check WhatsApp for your code.');
+      } catch {
+        toast.success('Account created! Sending verification code...');
+      }
+
+      // 3. Redirect to OTP page
+      navigate(`/verify-otp?phone=${encodeURIComponent(fullPhone)}&name=${encodeURIComponent(data.name)}&email=${encodeURIComponent(data.email)}`);
     } catch {
-      setError('Verification failed. Try again.');
-      setOtp('');
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleResend = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await sendOtp(phone);
-      toast.success('New code sent');
-    } catch {
-      setError('Failed to resend code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSkip = () => {
-    toast.info('You can verify WhatsApp later in Settings');
-    navigate('/dashboard/deals');
   };
 
   return (
     <div className="min-h-screen flex">
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-[400px]">
-          <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">NFsTay</Link>
+      {/* Form side */}
+      <div className="flex-1 flex items-center justify-center p-6 md:p-8">
+        <div className="w-full max-w-[440px]">
+          <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">
+            NFsTay
+          </Link>
 
-          {step === 'details' && (
-            <>
-              <h1 className="text-[28px] font-bold text-foreground mt-8">Create your account</h1>
-              <p className="text-sm text-muted-foreground mt-1">Start finding rent-to-rent deals today.</p>
+          <h1 className="text-[28px] font-bold text-foreground mt-8">Create your account</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Start finding rent-to-rent deals today.
+          </p>
 
-              <form className="mt-8 space-y-4" onSubmit={handleSignUp}>
-                <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">Full name</label>
-                  <input
-                    type="text"
-                    placeholder="James Walker"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    className="input-nfstay w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">Email</label>
-                  <input
-                    type="email"
-                    placeholder="james@example.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="input-nfstay w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">Password</label>
-                  <input
-                    type="password"
-                    placeholder="Min 6 characters"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="input-nfstay w-full"
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">WhatsApp number <span className="font-normal text-muted-foreground">(optional)</span></label>
-                  <input
-                    type="tel"
-                    placeholder="+44 7863 992555"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    className="input-nfstay w-full"
-                  />
-                  <p className="text-[11px] text-muted-foreground mt-1">Include country code (e.g. +44)</p>
-                </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <button
-                  type="submit"
-                  disabled={loading || !name.trim() || !email.trim() || !password.trim()}
-                  className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Create account
-                </button>
-                <p className="text-xs text-muted-foreground text-center">Cancel any time. No commitment.</p>
-              </form>
-            </>
-          )}
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
+            {/* Full name */}
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1.5">
+                Full name <span className="text-red-500">*</span>
+              </label>
+              <input
+                {...register('name')}
+                type="text"
+                placeholder="James Walker"
+                className="input-nfstay w-full"
+              />
+              {errors.name && (
+                <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>
+              )}
+            </div>
 
-          {step === 'whatsapp' && (
-            <>
-              <h1 className="text-[28px] font-bold text-foreground mt-8">Verify your WhatsApp</h1>
-              <p className="text-sm text-muted-foreground mt-1">Get deal alerts and agent support on WhatsApp.</p>
+            {/* Email */}
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1.5">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                {...register('email')}
+                type="email"
+                placeholder="james@example.com"
+                className="input-nfstay w-full"
+              />
+              {errors.email && (
+                <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
+              )}
+            </div>
 
-              <form className="mt-8 space-y-4" onSubmit={handleSendCode}>
-                <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">WhatsApp number</label>
-                  <input
-                    type="tel"
-                    placeholder="+44 7863 992555"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    className="input-nfstay w-full"
-                    required
-                  />
-                  <p className="text-[11px] text-muted-foreground mt-1">Include country code (e.g. +44)</p>
-                </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <button
-                  type="submit"
-                  disabled={loading || !phone.trim()}
-                  className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Send WhatsApp code
-                </button>
+            {/* Password */}
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1.5">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  {...register('password')}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Min 8 characters"
+                  className="input-nfstay w-full pr-10"
+                />
                 <button
                   type="button"
-                  onClick={handleSkip}
-                  className="w-full text-sm text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
                 >
-                  Skip for now
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              </form>
-            </>
-          )}
-
-          {step === 'otp' && (
-            <>
-              <button
-                onClick={() => { setStep('whatsapp'); setOtp(''); setError(''); }}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-8 mb-4"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" /> Back
-              </button>
-              <h1 className="text-[28px] font-bold text-foreground">Enter your code</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                We sent a 4-digit code to <span className="font-medium text-foreground">{phone}</span> via WhatsApp.
-              </p>
-
-              <div className="mt-8 flex justify-center">
-                <InputOTP maxLength={4} value={otp} onChange={val => { setOtp(val); setError(''); }}>
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                  </InputOTPGroup>
-                </InputOTP>
               </div>
+              {pw.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex gap-1">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="h-1 flex-1 rounded-full transition-all duration-300"
+                        style={{
+                          backgroundColor: i <= strength ? strengthColors[strength] : '#E5E7EB',
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <p
+                    className="text-[11px] font-medium mt-1 transition-colors"
+                    style={{ color: strengthColors[strength] }}
+                  >
+                    {strengthLabels[strength]}
+                  </p>
+                </div>
+              )}
+              {errors.password && (
+                <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
+              )}
+            </div>
 
-              {error && <p className="text-sm text-red-500 text-center mt-3">{error}</p>}
+            {/* Confirm password */}
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1.5">
+                Confirm password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  {...register('confirmPassword')}
+                  type={showConfirm ? 'text' : 'password'}
+                  placeholder="Re-enter password"
+                  className="input-nfstay w-full pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-xs text-red-500 mt-1">{errors.confirmPassword.message}</p>
+              )}
+            </div>
 
-              <button
-                onClick={handleVerifyCode}
-                disabled={loading || otp.length !== 4}
-                className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 mt-6"
-              >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Verify WhatsApp
-              </button>
+            {/* WhatsApp number */}
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1.5">
+                WhatsApp number <span className="text-red-500">*</span>
+              </label>
+              <div className="flex">
+                <CountryCodeSelect
+                  value={countryCode}
+                  onChange={(val) => setValue('countryCode', val)}
+                />
+                <input
+                  {...register('phone')}
+                  type="tel"
+                  placeholder="7863 992 555"
+                  className="input-nfstay flex-1 rounded-l-none"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                We'll send a verification code via WhatsApp
+              </p>
+              {errors.phone && (
+                <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>
+              )}
+            </div>
 
-              <button
-                onClick={handleResend}
-                disabled={loading}
-                className="w-full text-sm text-muted-foreground hover:text-foreground mt-3 disabled:opacity-50"
-              >
-                Didn't receive it? Resend code
-              </button>
-            </>
-          )}
+            {/* Terms */}
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                {...register('terms')}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#00D084]"
+              />
+              <span className="text-xs text-muted-foreground leading-relaxed">
+                I agree to the{' '}
+                <Link to="/terms" className="text-primary font-semibold underline" target="_blank">
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link to="/privacy" className="text-primary font-semibold underline" target="_blank">
+                  Privacy Policy
+                </Link>{' '}
+                <span className="text-red-500">*</span>
+              </span>
+            </label>
+            {errors.terms && (
+              <p className="text-xs text-red-500 -mt-2">{errors.terms.message}</p>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{ background: '#00D084' }}
+            >
+              <AnimatePresence mode="wait">
+                {loading ? (
+                  <motion.span
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2"
+                  >
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Creating account...
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="idle"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Create account
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
+          </form>
 
           <p className="text-sm text-muted-foreground mt-6 text-center">
-            Already have an account? <Link to="/signin" className="text-primary font-semibold">Sign in</Link>
+            Already have an account?{' '}
+            <Link to="/signin" className="text-primary font-semibold">
+              Sign in
+            </Link>
           </p>
         </div>
       </div>
 
-      <div className="hidden lg:flex flex-1 items-center justify-center p-12" style={{ background: 'hsl(215 50% 11%)' }}>
-        <div className="max-w-[400px]">
-          <h2 className="text-[28px] font-bold" style={{ color: 'white' }}>Your rent-to-rent portfolio starts here</h2>
-          <p className="text-base mt-4" style={{ color: 'hsl(215 20% 65%)' }}>Join thousands of operators using NFsTay to find and close deals faster.</p>
+      {/* Right panel */}
+      <div
+        className="hidden lg:flex flex-1 items-center justify-center p-12 relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
+      >
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+        <div className="relative max-w-[400px]">
+          <h2 className="text-[28px] font-bold text-white">
+            Your rent-to-rent portfolio starts here
+          </h2>
+          <p className="text-base mt-4 text-white/70">
+            Join thousands of operators using NFsTay to find and close deals faster. WhatsApp-verified community.
+          </p>
           <div className="flex -space-x-2 mt-8">
-            {[1,2,3,4,5].map(i => <img key={i} src={`https://picsum.photos/seed/auth-av${i}/48/48`} className="w-10 h-10 rounded-full border-2" style={{ borderColor: 'hsl(215 50% 11%)' }} alt="" />)}
+            {[1, 2, 3, 4, 5].map((i) => (
+              <img
+                key={i}
+                src={`https://picsum.photos/seed/auth-av${i}/48/48`}
+                className="w-10 h-10 rounded-full border-2 border-white/20"
+                alt=""
+              />
+            ))}
           </div>
-          <p className="text-sm mt-3" style={{ color: 'hsl(215 20% 65%)' }}>4,200+ UK operators trust NFsTay</p>
+          <p className="text-sm mt-3 text-white/60">4,200+ UK operators trust NFsTay</p>
         </div>
       </div>
     </div>
