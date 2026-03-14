@@ -143,14 +143,16 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
               )}
             </div>
           ) : (
-            /* ── FREE USER → GHL funnel iframe ── */
+            /* ── FREE USER → GHL funnel iframe (scaled 80% to fit panel) ── */
             funnelUrl ? (
-              <iframe
-                src={funnelUrl}
-                className="w-full h-full border-0"
-                title="Checkout"
-                allow="payment"
-              />
+              <div className="flex-1 overflow-hidden" style={{ transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' }}>
+                <iframe
+                  src={funnelUrl}
+                  className="w-full h-full border-0"
+                  title="Checkout"
+                  allow="payment"
+                />
+              </div>
             ) : (
               <div className="flex-1 flex items-center justify-center p-8">
                 <p className="text-sm text-muted-foreground text-center">
