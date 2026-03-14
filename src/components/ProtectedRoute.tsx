@@ -15,11 +15,16 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     }
     supabase
       .from('profiles')
-      .select('whatsapp_verified')
+      .select('*')
       .eq('user_id', user.id)
       .single()
-      .then(({ data }) => {
-        setWhatsappVerified(!!(data as Record<string, unknown>)?.whatsapp_verified);
+      .then(({ data, error }) => {
+        if (error || !data) {
+          // No profile yet or column doesn't exist — redirect to verify
+          setWhatsappVerified(false);
+        } else {
+          setWhatsappVerified(!!(data as Record<string, unknown>).whatsapp_verified);
+        }
         setChecking(false);
       });
   }, [user]);

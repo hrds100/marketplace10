@@ -1,10 +1,4 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useState } from 'react';
 
 export interface Country {
   code: string;
@@ -72,22 +66,73 @@ interface CountryCodeSelectProps {
 }
 
 export default function CountryCodeSelect({ value, onChange }: CountryCodeSelectProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const selected = countries.find((c) => c.dial === value) || countries[0];
+  const filtered = search
+    ? countries.filter(
+        (c) =>
+          c.name.toLowerCase().includes(search.toLowerCase()) ||
+          c.dial.includes(search) ||
+          c.code.toLowerCase().includes(search.toLowerCase()),
+      )
+    : countries;
+
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[110px] shrink-0 rounded-r-none border-r-0 bg-white/5 backdrop-blur-sm">
-        <SelectValue placeholder="Code" />
-      </SelectTrigger>
-      <SelectContent className="max-h-[280px]">
-        {countries.map((c) => (
-          <SelectItem key={c.code} value={c.dial}>
-            <span className="flex items-center gap-2">
-              <span>{c.flag}</span>
-              <span className="font-medium">{c.dial}</span>
-              <span className="text-muted-foreground text-xs">{c.name}</span>
-            </span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 h-10 px-3 rounded-l-md border border-r-0 border-input bg-background text-sm hover:bg-accent transition-colors shrink-0"
+      >
+        <span className="text-base leading-none">{selected.flag}</span>
+        <span className="font-medium text-foreground">{selected.dial}</span>
+        <svg className="w-3 h-3 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute top-full left-0 mt-1 w-[260px] bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+            <div className="p-2 border-b border-border">
+              <input
+                type="text"
+                placeholder="Search country..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full text-sm px-2 py-1.5 rounded bg-background border border-input outline-none focus:ring-1 focus:ring-ring"
+                autoFocus
+              />
+            </div>
+            <div className="max-h-[240px] overflow-y-auto">
+              {filtered.map((c) => (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => {
+                    onChange(c.dial);
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                    c.dial === value ? 'bg-accent' : ''
+                  }`}
+                >
+                  <span className="text-base leading-none">{c.flag}</span>
+                  <span className="font-medium">{c.dial}</span>
+                  <span className="text-muted-foreground text-xs ml-auto">{c.name}</span>
+                </button>
+              ))}
+              {filtered.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No results</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
