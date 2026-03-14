@@ -47,12 +47,22 @@ export default function VerifyOtp() {
     try {
       const result = await verifyOtp({ phone, code: otp, name, email });
       if (result.success) {
-        // Update whatsapp_verified in profiles (upsert to handle missing profile)
+        // Update whatsapp_verified in profiles — update first, upsert as fallback
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await supabase
+          const { error: updateErr } = await supabase
             .from('profiles')
-            .upsert({ id: user.id, whatsapp_verified: true } as Record<string, unknown>);
+            .update({ whatsapp_verified: true } as Record<string, unknown>)
+            .eq('id', user.id);
+          if (updateErr) {
+            // Profile doesn't exist — create it with all fields
+            await supabase.from('profiles').upsert({
+              id: user.id,
+              name: name || user.user_metadata?.name || user.email,
+              whatsapp: phone,
+              whatsapp_verified: true,
+            } as Record<string, unknown>);
+          }
         }
         setVerified(true);
         if (!toastFiredRef.current) {

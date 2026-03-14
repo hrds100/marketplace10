@@ -36,7 +36,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           await supabase.from('profiles').upsert({
             id: user.id,
             name: meta.name || user.email,
-            whatsapp: meta.whatsapp || '',
+            whatsapp: meta.whatsapp || null,
+            whatsapp_verified: false,
           } as Record<string, unknown>);
           // Profile created but not verified
           queryInFlight.current = false;

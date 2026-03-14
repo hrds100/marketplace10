@@ -50,7 +50,12 @@ export default function SignUp() {
       if (authData?.user) {
         await supabase
           .from('profiles')
-          .upsert({ id: authData.user.id, name: data.name, whatsapp: fullPhone } as Record<string, unknown>);
+          .upsert({
+            id: authData.user.id,
+            name: data.name,
+            whatsapp: fullPhone,
+            whatsapp_verified: false,
+          } as Record<string, unknown>);
       }
 
       // 2. Send WhatsApp OTP via GHL

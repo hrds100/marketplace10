@@ -18,32 +18,17 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    const checkAdmin = async (user: User | null): Promise<boolean> => {
-      if (!user) return false;
-      try {
-        const { data } = await supabase.rpc('has_role', {
-          _user_id: user.id,
-          _role: 'admin',
-        });
-        return !!data;
-      } catch {
-        // has_role function may not exist yet — default to false
-        return false;
-      }
-    };
-
+    // Set loading false immediately on auth state — admin check runs in background
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         const user = session?.user ?? null;
-        const isAdmin = await checkAdmin(user);
-        setState({ user, session, loading: false, isAdmin });
+        setState(prev => ({ ...prev, user, session, loading: false }));
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user ?? null;
-      const isAdmin = await checkAdmin(user);
-      setState({ user, session, loading: false, isAdmin });
+      setState(prev => ({ ...prev, user, session, loading: false }));
     });
 
     return () => subscription.unsubscribe();

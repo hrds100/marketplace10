@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
 
 export default function SignIn() {
-  const navigate = useNavigate();
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,8 +22,8 @@ export default function SignIn() {
         setError(authError.message);
         return;
       }
-      toast.success('Welcome back!');
-      navigate('/dashboard/deals');
+      // Full page load ensures ProtectedRoute gets fresh auth state
+      window.location.href = '/dashboard/deals';
     } catch {
       setError('Sign in failed. Try again.');
     } finally {
