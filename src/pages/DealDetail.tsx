@@ -1,11 +1,12 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus } from 'lucide-react';
 import { listings, faqItems, crmDeals } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
 import PropertyCard from '@/components/PropertyCard';
-import InquiryPopup from '@/components/InquiryPopup';
+import InquiryPanel from '@/components/InquiryPanel';
+import type { ListingShape } from '@/components/InquiryPanel';
 
 declare global {
   interface Window {
@@ -24,7 +25,6 @@ export default function DealDetail() {
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIdx, setGalleryIdx] = useState(0);
-  const [showInquiry, setShowInquiry] = useState(false);
   const [justAddedToCrm, setJustAddedToCrm] = useState(false);
   const [showExtraCosts, setShowExtraCosts] = useState(false);
   const [extraCosts, setExtraCosts] = useState([
@@ -33,6 +33,19 @@ export default function DealDetail() {
     { label: 'Insurance', amount: 50 },
     { label: 'Platform fees', amount: 60 },
   ]);
+
+  // ── Page-level inquiry panel state ──
+  const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+
+  const handleInquire = useCallback((l: ListingShape) => {
+    setInquiryListing(l);
+    setInquiryOpen(true);
+  }, []);
+
+  const handleCloseInquiry = useCallback(() => {
+    setInquiryOpen(false);
+  }, []);
 
   const images = [
     `https://picsum.photos/seed/detail-main/1200/900`,
@@ -182,7 +195,7 @@ export default function DealDetail() {
             <div className="mt-10">
               <h2 className="text-xl font-bold text-foreground mb-4">About this deal</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                {listing.name} is a {listing.type} in {listing.city} ({listing.postcode}), fully approved by the landlord for short-term rental use. 
+                {listing.name} is a {listing.type} in {listing.city} ({listing.postcode}), fully approved by the landlord for short-term rental use.
                 With a monthly rent of £{listing.rent.toLocaleString()} and estimated profit of £{listing.profit}, this property offers strong returns in a high-demand area.
               </p>
 
@@ -285,7 +298,7 @@ export default function DealDetail() {
                 </div>
               </div>
 
-              <button onClick={() => setShowInquiry(true)} className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold mt-6 hover:opacity-90 transition-opacity">
+              <button onClick={() => handleInquire(listing as unknown as ListingShape)} className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold mt-6 hover:opacity-90 transition-opacity">
                 Inquire Now
               </button>
               <p className="text-xs text-muted-foreground text-center mt-2">Contact via WhatsApp</p>
@@ -299,7 +312,7 @@ export default function DealDetail() {
             <h2 className="text-xl font-bold text-foreground mb-6">More deals near {listing.city}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {nearbyDeals.map(l => (
-                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} />
+                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} />
               ))}
             </div>
           </div>
@@ -317,7 +330,8 @@ export default function DealDetail() {
         </div>
       )}
 
-      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} propertyId={listing.id} />
+      {/* Single page-level inquiry panel */}
+      <InquiryPanel open={inquiryOpen} listing={inquiryListing} onClose={handleCloseInquiry} />
     </div>
   );
 }

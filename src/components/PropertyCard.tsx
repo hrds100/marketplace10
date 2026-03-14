@@ -1,43 +1,23 @@
 import { Heart, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import InquiryPopup from '@/components/InquiryPopup';
+import type { ListingShape } from '@/components/InquiryPanel';
 
-export interface ListingShape {
-  id: string;
-  name: string;
-  city: string;
-  postcode: string;
-  rent: number;
-  profit: number;
-  type: string;
-  status: 'live' | 'on-offer' | 'inactive';
-  featured: boolean;
-  daysAgo: number;
-  image: string;
-  landlordApproved: boolean;
-  landlordWhatsapp?: string | null;
-}
+export type { ListingShape };
 
 interface Props {
   listing: ListingShape;
   isFav: boolean;
   onToggleFav: () => void;
   onAddToCRM?: () => void;
+  onInquire?: (listing: ListingShape) => void;
   showSavedBadge?: boolean;
   forceSignUp?: boolean;
 }
 
-export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, showSavedBadge, forceSignUp }: Props) {
+export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, showSavedBadge, forceSignUp }: Props) {
   const navigate = useNavigate();
   const [addedToCRM, setAddedToCRM] = useState(false);
-  const [showInquiry, setShowInquiry] = useState(false);
-
-  const ageBadge = () => {
-    if (listing.daysAgo <= 7) return <span className="badge-green-fill text-[11px]">LIVE</span>;
-    if (listing.daysAgo <= 14) return <span className="badge-amber text-[11px]">Under Offer</span>;
-    return <span className="badge-gray text-[11px]">Expired</span>;
-  };
 
   const statusDot = () => {
     if (listing.daysAgo <= 7) return 'bg-emerald-500';
@@ -60,6 +40,16 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     setCelebrating(true);
     onAddToCRM?.();
     setTimeout(() => setCelebrating(false), 1500);
+  };
+
+  const handleInquire = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (forceSignUp) {
+      navigate('/signup');
+      return;
+    }
+    onInquire?.(listing);
   };
 
   const pricelabsUrl = `https://www.pricelabs.co`;
@@ -161,14 +151,14 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               >
                 Visit Listing
               </Link>
-              <button onClick={() => setShowInquiry(true)} className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
+              <button onClick={handleInquire} className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
                 Inquire Now
               </button>
             </>
           )}
         </div>
       </div>
-      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} propertyId={listing.id} landlordWhatsapp={listing.landlordWhatsapp ?? undefined} />
+      {/* NO modal rendered here — modal lives at page level */}
     </div>
   );
 }

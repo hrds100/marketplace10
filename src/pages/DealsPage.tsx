@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useCallback } from 'react';
 import { Bell, X } from 'lucide-react';
 import PropertyCard from '@/components/PropertyCard';
+import InquiryPanel from '@/components/InquiryPanel';
+import type { ListingShape } from '@/components/InquiryPanel';
 import { listings as mockListings } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
@@ -12,7 +13,7 @@ import type { Tables } from '@/integrations/supabase/types';
 const tabs = ['All', 'Live', 'On Offer', 'Inactive'] as const;
 
 // Convert DB property to Listing shape for PropertyCard
-function toListingShape(p: Tables<'properties'>) {
+function toListingShape(p: Tables<'properties'>): ListingShape {
   const daysAgo = Math.max(0, Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000));
   return {
     id: p.id,
@@ -33,7 +34,6 @@ function toListingShape(p: Tables<'properties'>) {
 
 export default function DealsPage() {
   const { toggle, isFav } = useFavourites();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('All');
   const [city, setCity] = useState('');
   const [type, setType] = useState('');
@@ -41,6 +41,19 @@ export default function DealsPage() {
   const [showAlert, setShowAlert] = useState(true);
   const [page, setPage] = useState(1);
   const perPage = 12;
+
+  // ── Page-level inquiry panel state ──
+  const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+
+  const handleInquire = useCallback((listing: ListingShape) => {
+    setInquiryListing(listing);
+    setInquiryOpen(true);
+  }, []);
+
+  const handleCloseInquiry = useCallback(() => {
+    setInquiryOpen(false);
+  }, []);
 
   // Fetch properties from Supabase, fallback to mock
   const { data: dbProperties } = useQuery({
@@ -81,7 +94,7 @@ export default function DealsPage() {
   const cities = [...new Set(listings.map(l => l.city))].sort();
   const types = [...new Set(listings.map(l => l.type))].sort();
 
-  const handleAddToCRM = (listing: typeof listings[0]) => {
+  const handleAddToCRM = (listing: ListingShape) => {
     toast.success(`${listing.name} added to CRM`);
   };
 
@@ -117,7 +130,7 @@ export default function DealsPage() {
           <span className="text-[13px] font-semibold text-foreground mb-3 block">⭐ Featured</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {featured.map(l => (
-              <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => handleAddToCRM(l)} />
+              <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => handleAddToCRM(l)} onInquire={handleInquire} />
             ))}
           </div>
         </div>
@@ -159,7 +172,7 @@ export default function DealsPage() {
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         {pageListings.map(l => (
-          <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => handleAddToCRM(l)} />
+          <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => handleAddToCRM(l)} onInquire={handleInquire} />
         ))}
       </div>
 
@@ -175,6 +188,9 @@ export default function DealsPage() {
           <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="text-sm text-muted-foreground hover:text-foreground disabled:opacity-40">Next</button>
         </div>
       )}
+
+      {/* Single page-level inquiry panel */}
+      <InquiryPanel open={inquiryOpen} listing={inquiryListing} onClose={handleCloseInquiry} />
     </div>
   );
 }

@@ -1,12 +1,27 @@
+import { useState, useCallback } from 'react';
 import { Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PropertyCard from '@/components/PropertyCard';
+import InquiryPanel from '@/components/InquiryPanel';
+import type { ListingShape } from '@/components/InquiryPanel';
 import { listings } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 
 export default function FavouritesPage() {
   const { toggle, isFav, favourites } = useFavourites();
   const favListings = listings.filter(l => favourites.has(l.id));
+
+  const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+
+  const handleInquire = useCallback((listing: ListingShape) => {
+    setInquiryListing(listing);
+    setInquiryOpen(true);
+  }, []);
+
+  const handleCloseInquiry = useCallback(() => {
+    setInquiryOpen(false);
+  }, []);
 
   if (favListings.length === 0) {
     return (
@@ -27,9 +42,10 @@ export default function FavouritesPage() {
       <p className="text-sm text-muted-foreground mt-1 mb-6">Your saved rent-to-rent deals</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         {favListings.map(l => (
-          <PropertyCard key={l.id} listing={l} isFav={true} onToggleFav={() => toggle(l.id)} showSavedBadge />
+          <PropertyCard key={l.id} listing={l} isFav={true} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} showSavedBadge />
         ))}
       </div>
+      <InquiryPanel open={inquiryOpen} listing={inquiryListing} onClose={handleCloseInquiry} />
     </div>
   );
 }
