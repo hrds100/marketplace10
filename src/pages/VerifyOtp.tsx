@@ -121,17 +121,17 @@ export default function VerifyOtp() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Form side */}
-      <div className="flex-1 flex items-center justify-center p-6 md:p-8">
-        <div className="w-full max-w-[400px]">
+      <div className="w-full lg:w-[42%] flex items-center justify-center p-6 md:p-8 lg:p-12">
+        <div className="w-full max-w-md mx-auto">
           <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">
             NFsTay
           </Link>
 
           <button
             onClick={() => navigate('/signup')}
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-8 mb-4"
+            className="flex items-center gap-1 text-sm opacity-60 hover:opacity-100 transition-opacity text-foreground mt-8 mb-4"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to signup
           </button>
@@ -238,26 +238,24 @@ export default function VerifyOtp() {
         </div>
       </div>
 
-      {/* Right panel */}
-      <div
-        className="hidden lg:flex flex-1 items-center justify-center p-12 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
-      >
-        <div className="absolute inset-0 backdrop-blur-3xl" />
-        <div className="relative max-w-[400px]">
-          <h2 className="text-[28px] font-bold text-white">Almost there!</h2>
-          <p className="text-base mt-4 text-white/70">
+      {/* Right hero — matches signup */}
+      <div className="hidden lg:flex lg:w-[58%] bg-[#FAFBFC] border-l border-gray-100">
+        <div className="flex-1 flex flex-col justify-center px-12 xl:px-20 py-16 space-y-6">
+          <h2 className="text-3xl xl:text-4xl font-bold text-gray-900 leading-tight">
+            Almost there!
+          </h2>
+          <p className="text-lg text-gray-500 max-w-lg leading-relaxed">
             Verify your WhatsApp to unlock deal alerts, agent support, and your full NFsTay dashboard.
           </p>
-          <div className="mt-8 space-y-3">
+          <div className="space-y-4 mt-4">
             {[
               'Instant deal alerts via WhatsApp',
               'Direct agent messaging',
               'Priority support channel',
             ].map((item) => (
               <div key={item} className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-white/80 shrink-0" />
-                <span className="text-sm text-white/80">{item}</span>
+                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                <span className="text-base text-gray-700">{item}</span>
               </div>
             ))}
           </div>
