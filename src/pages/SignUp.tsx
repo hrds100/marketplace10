@@ -45,6 +45,12 @@ export default function SignUp() {
         setLoading(false);
         return;
       }
+      // Supabase returns a fake user with no identities if email already exists
+      if (authData?.user && (!authData.user.identities || authData.user.identities.length === 0)) {
+        toast.error('An account with this email already exists. Please sign in.');
+        setLoading(false);
+        return;
+      }
 
       // 1b. Ensure profile exists with name + whatsapp (trigger may be broken)
       if (authData?.user) {
