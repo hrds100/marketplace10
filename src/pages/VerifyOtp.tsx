@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,6 +20,8 @@ export default function VerifyOtp() {
   const [error, setError] = useState('');
   const [timer, setTimer] = useState(300); // 5 min
   const [canResend, setCanResend] = useState(false);
+  const verifyingRef = useRef(false);
+  const toastFiredRef = useRef(false);
 
   // Countdown timer
   useEffect(() => {
@@ -37,8 +39,9 @@ export default function VerifyOtp() {
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const handleVerify = useCallback(async () => {
-    if (otp.length !== 4 || loading) return;
+  const handleVerify = async () => {
+    if (otp.length !== 4 || verifyingRef.current || verified) return;
+    verifyingRef.current = true;
     setLoading(true);
     setError('');
     try {
@@ -53,34 +56,37 @@ export default function VerifyOtp() {
             .eq('id', user.id);
           if (updateErr) {
             console.error('Profile update error:', updateErr);
-            // Retry with service-level fallback — use upsert
             await supabase
               .from('profiles')
               .upsert({ id: user.id, whatsapp_verified: true } as Record<string, unknown>);
           }
         }
         setVerified(true);
-        toast.success('WhatsApp verified! Welcome to NFsTay!');
-        // Navigate after animation — use window.location for clean state
+        if (!toastFiredRef.current) {
+          toastFiredRef.current = true;
+          toast.success('WhatsApp verified! Welcome to NFsTay!');
+        }
         setTimeout(() => {
           window.location.href = '/dashboard/deals';
         }, 1500);
       } else {
+        verifyingRef.current = false;
         setError(result.error || 'Invalid or expired code');
         setOtp('');
       }
     } catch {
+      verifyingRef.current = false;
       setError('Verification failed. Try again.');
       setOtp('');
     } finally {
       setLoading(false);
     }
-  }, [otp, phone, name, email, loading, navigate]);
+  };
 
   // Auto-verify when 4 digits entered
   useEffect(() => {
-    if (otp.length === 4) handleVerify();
-  }, [otp, handleVerify]);
+    if (otp.length === 4 && !verifyingRef.current && !verified) handleVerify();
+  }, [otp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleResend = async () => {
     if (!canResend && timer > 0) return;

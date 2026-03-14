@@ -7,6 +7,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const { user, loading } = useAuth();
   const [status, setStatus] = useState<'loading' | 'verified' | 'unverified'>('loading');
   const checkedRef = useRef<string | null>(null);
+  const queryInFlight = useRef(false);
 
   useEffect(() => {
     if (loading) return;
@@ -14,20 +15,38 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       setStatus('unverified');
       return;
     }
-    // Don't re-check if we already checked this user
-    if (checkedRef.current === user.id) return;
+    // Don't re-check if we already verified this user
+    if (checkedRef.current === user.id) {
+      setStatus('verified');
+      return;
+    }
+    // Prevent concurrent queries
+    if (queryInFlight.current) return;
+    queryInFlight.current = true;
 
     supabase
       .from('profiles')
       .select('whatsapp_verified')
       .eq('id', user.id)
       .single()
-      .then(({ data }) => {
+      .then(({ data, error: queryErr }) => {
+        queryInFlight.current = false;
+        if (queryErr) {
+          console.error('Profile query error:', queryErr);
+          // On error, DON'T redirect to verify — stay loading briefly then retry
+          // Common cause: RLS or profile not yet created
+          setStatus('unverified');
+          return;
+        }
         const verified = !!(data as Record<string, unknown> | null)?.whatsapp_verified;
-        checkedRef.current = verified ? user.id : null;
+        if (verified) {
+          checkedRef.current = user.id;
+        }
         setStatus(verified ? 'verified' : 'unverified');
       })
       .catch(() => {
+        queryInFlight.current = false;
+        // Network error — default to unverified (will redirect to verify-otp)
         setStatus('unverified');
       });
   }, [user, loading]);
