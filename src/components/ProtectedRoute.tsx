@@ -24,8 +24,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
     const checkProfile = async () => {
       try {
-        const { data, error: queryErr } = await supabase
-          .from('profiles')
+        const { data, error: queryErr } = await (supabase
+          .from('profiles') as any)
           .select('whatsapp_verified')
           .eq('id', user.id)
           .single();
