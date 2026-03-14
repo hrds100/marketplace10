@@ -13,7 +13,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-bold text-foreground mt-6">3. Agent Referral Fee</h2>
           <p className="text-sm leading-relaxed">By contacting a landlord through NFsTay, you agree to pay a £250 referral fee if the deal closes within 12 months of the introduction. This fee is payable within 14 days of deal completion.</p>
           <h2 className="text-lg font-bold text-foreground mt-6">4. Subscriptions & Payments</h2>
-          <p className="text-sm leading-relaxed">Subscriptions are processed via SamCart. Plans include Monthly (£47/mo), Yearly (£597/yr), and Lifetime (£997 one-time). Cancellations take effect at the end of the billing period. No refunds for partial periods.</p>
+          <p className="text-sm leading-relaxed">Subscriptions are processed via GoHighLevel. Plans include Monthly (£67/mo), Annual (£397/yr), and Lifetime (£997 one-time). Cancellations take effect at the end of the billing period. No refunds for partial periods.</p>
           <h2 className="text-lg font-bold text-foreground mt-6">5. User Conduct</h2>
           <p className="text-sm leading-relaxed">You agree not to misuse the platform, submit false deal information, harass landlords, or circumvent the referral fee system.</p>
           <h2 className="text-lg font-bold text-foreground mt-6">6. Limitation of Liability</h2>

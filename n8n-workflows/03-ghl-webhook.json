@@ -1,0 +1,83 @@
+{
+  "name": "03 – GHL Payment Webhook → Profile Tier Update",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ghl-payment",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ghl-webhook-trigger",
+      "name": "GHL Payment Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract payment info from GHL webhook payload\nconst body = $input.first().json.body || $input.first().json;\n\n// GHL sends different event types:\n// - order.completed\n// - subscription.created  \n// - invoice.paid\n\nconst contactEmail = body.contact?.email || body.email || '';\nconst contactPhone = body.contact?.phone || body.phone || '';\nconst contactId = body.contact?.id || body.contactId || body.contact_id || '';\n\n// Determine tier from product/price ID\nconst PRODUCT_TO_TIER = {\n  '69b5b769081db66d1afbf145': 'monthly',\n  '69b5b777711f98f382f110ff': 'lifetime',\n  '69b5b7791fe1a8f21eb651b5': 'yearly'\n};\n\nconst PRICE_TO_TIER = {\n  '69b5b794c6731008d7ae723c': 'monthly',\n  '69b5b7a8081db612f9fbfe60': 'lifetime',\n  '69b5b7ab247cf6a48020f434': 'yearly'\n};\n\n// Try to find product/price ID in various payload locations\nconst productId = body.product?.id || body.productId || \n  (body.items && body.items[0]?.product?.id) || \n  (body.lineItems && body.lineItems[0]?.productId) || '';\n\nconst priceId = body.price?.id || body.priceId ||\n  (body.items && body.items[0]?.price?.id) ||\n  (body.lineItems && body.lineItems[0]?.priceId) || '';\n\nlet tier = PRODUCT_TO_TIER[productId] || PRICE_TO_TIER[priceId] || null;\n\n// Fallback: check amount\nif (!tier) {\n  const amount = body.amount || body.totalAmount || \n    (body.items && body.items[0]?.amount) || 0;\n  if (amount === 99700 || amount === 997) tier = 'lifetime';\n  else if (amount === 39700 || amount === 397) tier = 'yearly';\n  else if (amount === 6700 || amount === 67) tier = 'monthly';\n}\n\nreturn [{\n  json: {\n    contactEmail,\n    contactPhone,\n    contactId,\n    productId,\n    priceId,\n    tier: tier || 'monthly',\n    rawEvent: body.type || body.event || 'unknown'\n  }\n}];"
+      },
+      "id": "parse-ghl-payload",
+      "name": "Parse GHL Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.profiles SET tier = '{{ $json.tier }}', samcart_cust_id = '{{ $json.contactId }}', updated_at = NOW() WHERE id = (SELECT id FROM auth.users WHERE email = '{{ $json.contactEmail }}' LIMIT 1) RETURNING id, tier;",
+        "options": {}
+      },
+      "id": "update-profile-tier",
+      "name": "Update Profile Tier",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [690, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ { \"success\": true, \"tier\": $json.tier } }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-200",
+      "name": "Respond 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [910, 300]
+    }
+  ],
+  "connections": {
+    "GHL Payment Webhook": {
+      "main": [
+        [{ "node": "Parse GHL Payload", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse GHL Payload": {
+      "main": [
+        [{ "node": "Update Profile Tier", "type": "main", "index": 0 }]
+      ]
+    },
+    "Update Profile Tier": {
+      "main": [
+        [{ "node": "Respond 200 OK", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-03-14T19:30:00.000Z",
+  "versionId": "1"
+}

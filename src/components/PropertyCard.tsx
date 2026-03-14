@@ -169,7 +169,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           )}
         </div>
       </div>
-      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} />
+      <InquiryPopup open={showInquiry} onClose={() => setShowInquiry(false)} propertyName={listing.name} city={listing.city} propertyId={listing.id} landlordWhatsapp={listing.landlordWhatsapp ?? undefined} />
     </div>
   );
 }

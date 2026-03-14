@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { User, Shield, CreditCard, Bell, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserTier } from '@/hooks/useUserTier';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { isPaidTier, tierDisplayName, getFunnelUrl } from '@/lib/ghl';
 
 const settingsTabs = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -15,6 +17,7 @@ const settingsTabs = [
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
+  const { tier } = useUserTier();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [profile, setProfile] = useState({ name: '', email: '', whatsapp: '' });
@@ -141,36 +144,36 @@ export default function SettingsPage() {
               <div className="bg-card border border-border rounded-xl p-5 max-w-[400px]">
                 <div className="text-xs text-muted-foreground mb-1">Current plan</div>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-foreground">Monthly · £47/month</span>
-                  <span className="badge-green">Active</span>
+                  <span className="text-lg font-bold text-foreground">{tierDisplayName(tier)}</span>
+                  {isPaidTier(tier) ? (
+                    <span className="badge-green">Active</span>
+                  ) : (
+                    <span className="badge-gray">Free</span>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Manage your subscription via SamCart.</p>
-                <div className="flex gap-2 mt-4">
-                  <a href="https://checkout.nfstay.com/manage" target="_blank" rel="noopener noreferrer" className="h-10 px-4 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center">Manage billing</a>
-                </div>
-                <p className="text-xs text-muted-foreground mt-3">Cancelling takes effect at the end of your billing period.</p>
+                {isPaidTier(tier) && (
+                  <>
+                    <p className="text-xs text-muted-foreground mt-2">Your subscription is managed via GoHighLevel.</p>
+                    <p className="text-xs text-muted-foreground mt-1">To cancel or update billing, contact support or manage from your payment confirmation email.</p>
+                  </>
+                )}
+                {!isPaidTier(tier) && (
+                  <p className="text-xs text-muted-foreground mt-2">Upgrade to access all deals and features.</p>
+                )}
               </div>
 
-              <div className="mt-6 max-w-[400px]">
-                <h3 className="text-sm font-bold text-foreground mb-3">Upgrade your plan</h3>
-                <div className="space-y-3">
-                  <a href="https://checkout.nfstay.com/lifetime" target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-border p-4 hover:border-primary transition-colors">
+              {!isPaidTier(tier) && (
+                <div className="mt-6 max-w-[400px]">
+                  <h3 className="text-sm font-bold text-foreground mb-3">Get started</h3>
+                  <button onClick={() => { const url = getFunnelUrl({ email: user?.email }); if (url) window.open(url, '_blank'); }} className="block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-foreground">£997</span>
-                      <span className="text-sm text-muted-foreground">lifetime access</span>
+                      <span className="text-lg font-bold text-foreground">£67</span>
+                      <span className="text-sm text-muted-foreground">/ month</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Pay once, access forever</p>
-                  </a>
-                  <a href="https://checkout.nfstay.com/yearly" target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-border p-4 hover:border-primary transition-colors">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-foreground">£597</span>
-                      <span className="text-sm text-muted-foreground">/ year</span>
-                      <span className="ml-2 text-[11px] font-semibold text-primary bg-accent-light px-2 py-0.5 rounded-full">Save 5 months</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Annual billing, cancel any time</p>
-                  </a>
+                    <p className="text-xs text-muted-foreground mt-1">Full access to all deals · Cancel any time</p>
+                  </button>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
