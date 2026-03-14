@@ -12,15 +12,15 @@ export const GHL_LOCATION_ID = 'eFBsWXY3BmWDGIRez13x';
 export const GHL_PRODUCTS = {
   monthly: {
     productId: '69b5b769081db66d1afbf145',
-    priceId: '69b5b794c6731008d7ae723c',
+    priceId: '69b5d533d314dc23b8a6f918',
   },
   lifetime: {
     productId: '69b5b777711f98f382f110ff',
-    priceId: '69b5b7a8081db612f9fbfe60',
+    priceId: '69b5d535a0334430aa1f2eac',
   },
   annual: {
     productId: '69b5b7791fe1a8f21eb651b5',
-    priceId: '69b5b7ab247cf6a48020f434',
+    priceId: '69b5d5371fe1a88dbdba1590',
   },
 } as const;
 
@@ -35,6 +35,10 @@ export const PRICE_ID_TO_TIER: Record<string, string> = {
   [GHL_PRODUCTS.monthly.priceId]: 'monthly',
   [GHL_PRODUCTS.lifetime.priceId]: 'lifetime',
   [GHL_PRODUCTS.annual.priceId]: 'yearly',
+  // Legacy wrong prices (6700/99700/39700 instead of 67/997/397) — keep for safety
+  '69b5b794c6731008d7ae723c': 'monthly',
+  '69b5b7a8081db612f9fbfe60': 'lifetime',
+  '69b5b7ab247cf6a48020f434': 'yearly',
 };
 
 /**

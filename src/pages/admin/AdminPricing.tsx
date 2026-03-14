@@ -2,9 +2,9 @@ import { CreditCard } from 'lucide-react';
 
 export default function AdminPricing() {
   const tiers = [
-    { name: 'Monthly', price: '£67/mo', productId: '69b5b769081db66d1afbf145', priceId: '69b5b794c6731008d7ae723c' },
-    { name: 'Annual', price: '£397/yr', productId: '69b5b7791fe1a8f21eb651b5', priceId: '69b5b7ab247cf6a48020f434' },
-    { name: 'Lifetime', price: '£997 one-time', productId: '69b5b777711f98f382f110ff', priceId: '69b5b7a8081db612f9fbfe60' },
+    { name: 'Monthly', price: '£67/mo', productId: '69b5b769081db66d1afbf145', priceId: '69b5d533d314dc23b8a6f918' },
+    { name: 'Annual', price: '£397/yr', productId: '69b5b7791fe1a8f21eb651b5', priceId: '69b5d5371fe1a88dbdba1590' },
+    { name: 'Lifetime', price: '£997 one-time', productId: '69b5b777711f98f382f110ff', priceId: '69b5d535a0334430aa1f2eac' },
   ];
 
   return (
