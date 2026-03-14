@@ -18,34 +18,31 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // Set up listener BEFORE checking session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const user = session?.user ?? null;
-        let isAdmin = false;
-        if (user) {
-          // Check admin role using security definer function
-          const { data } = await supabase.rpc('has_role', {
-            _user_id: user.id,
-            _role: 'admin',
-          });
-          isAdmin = !!data;
-        }
-        setState({ user, session, loading: false, isAdmin });
-      }
-    );
-
-    // Then get current session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const user = session?.user ?? null;
-      let isAdmin = false;
-      if (user) {
+    const checkAdmin = async (user: User | null): Promise<boolean> => {
+      if (!user) return false;
+      try {
         const { data } = await supabase.rpc('has_role', {
           _user_id: user.id,
           _role: 'admin',
         });
-        isAdmin = !!data;
+        return !!data;
+      } catch {
+        // has_role function may not exist yet — default to false
+        return false;
       }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        const user = session?.user ?? null;
+        const isAdmin = await checkAdmin(user);
+        setState({ user, session, loading: false, isAdmin });
+      }
+    );
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const user = session?.user ?? null;
+      const isAdmin = await checkAdmin(user);
       setState({ user, session, loading: false, isAdmin });
     });
 

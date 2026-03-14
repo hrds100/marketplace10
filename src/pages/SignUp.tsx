@@ -6,6 +6,7 @@ import { Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { sendOtp } from '@/lib/n8n';
+import { supabase } from '@/integrations/supabase/client';
 import { signupSchema, type SignupFormData, passwordStrength, strengthLabels, strengthColors } from '@/lib/validation';
 import CountryCodeSelect from '@/components/CountryCodeSelect';
 import { toast } from 'sonner';
@@ -38,11 +39,19 @@ export default function SignUp() {
       const fullPhone = data.countryCode + data.phone.replace(/[^0-9]/g, '');
 
       // 1. Create Supabase account
-      const { error: authError } = await signUp(data.email, data.password, data.name, fullPhone);
+      const { data: authData, error: authError } = await signUp(data.email, data.password, data.name, fullPhone);
       if (authError) {
         toast.error(authError.message);
         setLoading(false);
         return;
+      }
+
+      // 1b. Update profile with name + whatsapp (trigger may not save metadata)
+      if (authData?.user) {
+        await supabase
+          .from('profiles')
+          .update({ name: data.name, whatsapp: fullPhone } as Record<string, unknown>)
+          .eq('id', authData.user.id);
       }
 
       // 2. Send WhatsApp OTP via GHL
