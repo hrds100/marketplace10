@@ -35,10 +35,12 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           const meta = (user.user_metadata || {}) as Record<string, string>;
           await supabase.from('profiles').upsert({
             id: user.id,
-            name: meta.name || user.email,
+            user_id: user.id,
+            name: meta.name || user.email || 'User',
             whatsapp: meta.whatsapp || null,
             whatsapp_verified: false,
-          } as Record<string, unknown>);
+            email: user.email || '',
+          } as any);
           // Profile created but not verified
           queryInFlight.current = false;
           setStatus('unverified');
@@ -52,7 +54,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           return;
         }
 
-        const verified = !!(data as Record<string, unknown> | null)?.whatsapp_verified;
+        const verified = !!(data as any)?.whatsapp_verified;
         if (verified) {
           checkedRef.current = user.id;
         }

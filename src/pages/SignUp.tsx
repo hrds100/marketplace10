@@ -52,10 +52,12 @@ export default function SignUp() {
           .from('profiles')
           .upsert({
             id: authData.user.id,
+            user_id: authData.user.id,
             name: data.name,
             whatsapp: fullPhone,
             whatsapp_verified: false,
-          } as Record<string, unknown>);
+            email: data.email,
+          } as any);
       }
 
       // 2. Send WhatsApp OTP via GHL
@@ -293,47 +295,47 @@ export default function SignUp() {
         style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
       >
         <div className="absolute inset-0 backdrop-blur-3xl" />
-        <div className="relative w-full h-full flex flex-col py-12">
+        <div className="relative w-full h-full flex flex-col py-8 lg:py-12">
           {/* Top spacer */}
-          <div className="flex-1" />
+          <div className="flex-1 min-h-[40px]" />
 
           {/* Center content block */}
-          <div className="text-center px-10 xl:px-16 max-w-[500px] mx-auto space-y-7">
-            {/* Avatars */}
-            <div className="flex justify-center -space-x-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <img
-                  key={i}
-                  src={`https://picsum.photos/seed/auth-av${i}/48/48`}
-                  className="w-10 h-10 rounded-full border-2 border-white/20"
-                  alt=""
-                />
-              ))}
+          <div className="text-center px-8 lg:px-12 xl:px-16 max-w-[520px] mx-auto">
+            {/* Avatars + trust group */}
+            <div className="flex flex-col items-center mb-6 lg:mb-8">
+              <div className="flex -space-x-3 mb-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <img
+                    key={i}
+                    src={`https://picsum.photos/seed/auth-av${i}/48/48`}
+                    className="w-12 h-12 lg:w-14 lg:h-14 rounded-full border-2 border-white/20"
+                    alt=""
+                  />
+                ))}
+              </div>
+              <p className="text-sm lg:text-base font-medium text-white/80">
+                4,200+ UK operators trust NFsTay
+              </p>
             </div>
 
-            {/* Trust line — tight to avatars */}
-            <p className="text-sm font-medium text-white/70 -mt-3">
-              4,200+ UK operators trust NFsTay
-            </p>
-
-            {/* Headline */}
-            <h2 className="text-[40px] xl:text-5xl font-bold text-white leading-[1.1] pt-2">
+            {/* Headline — larger and prominent */}
+            <h2 className="text-[44px] sm:text-[52px] lg:text-[56px] xl:text-6xl font-bold text-white leading-[1.05] mb-6">
               Your Airbnb portfolio<br />starts here
             </h2>
 
             {/* Subheadline */}
-            <p className="text-[17px] text-white/60 leading-relaxed max-w-[440px] mx-auto">
+            <p className="text-base lg:text-lg text-white/70 leading-relaxed max-w-[420px] mx-auto">
               Join thousands of operators using NFsTay to find and close deals faster, with a verified community behind them.
             </p>
           </div>
 
           {/* Bottom spacer */}
-          <div className="flex-1" />
+          <div className="flex-1 min-h-[40px]" />
 
-          {/* Bottom trust — pinned */}
-          <div className="flex items-center justify-center gap-2 pb-2">
-            <CheckCircle2 className="w-4 h-4 text-white/60 shrink-0" />
-            <p className="text-xs font-medium text-white/50">
+          {/* Bottom trust badge */}
+          <div className="flex items-center justify-center gap-2 pb-4 lg:pb-6">
+            <CheckCircle2 className="w-5 h-5 text-white/70 shrink-0" />
+            <p className="text-sm font-medium text-white/60">
               Fully authorised properties, ready for Airbnb income
             </p>
           </div>
