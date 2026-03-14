@@ -289,12 +289,12 @@ export default function SignUp() {
 
       {/* Right panel */}
       <div
-        className="hidden lg:flex items-center justify-center relative overflow-hidden"
+        className="hidden lg:flex relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
       >
         <div className="absolute inset-0 backdrop-blur-3xl" />
-        <div className="relative max-w-[420px] text-center space-y-8">
-          {/* Avatars top */}
+        <div className="relative max-w-[560px] mx-auto px-8 lg:px-12 h-full flex flex-col items-center justify-center text-center">
+          {/* Avatars + trust group */}
           <div className="flex justify-center -space-x-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <img
@@ -305,24 +305,22 @@ export default function SignUp() {
               />
             ))}
           </div>
-
-          {/* Trust line */}
-          <p className="text-base font-medium text-white/80 tracking-wide">
+          <p className="text-base font-medium text-white/80 tracking-wide mt-4">
             4,200+ UK operators trust NFsTay
           </p>
 
           {/* Main headline */}
-          <h2 className="text-4xl xl:text-[44px] font-extrabold text-white leading-[1.15]">
+          <h2 className="text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] text-white mt-12">
             Your Airbnb portfolio starts here
           </h2>
 
           {/* Subheadline */}
-          <p className="text-lg text-white/60 leading-relaxed">
+          <p className="text-lg text-white/60 leading-relaxed max-w-[520px] mt-6">
             Join thousands of operators using NFsTay to find and close deals faster, with a verified community behind them.
           </p>
 
-          {/* Bottom trust */}
-          <div className="flex items-center justify-center gap-2 pt-4">
+          {/* Bottom trust — anchored near bottom */}
+          <div className="flex items-center justify-center gap-2 mt-auto pb-8 lg:pb-10">
             <CheckCircle2 className="w-5 h-5 text-white/80 shrink-0" />
             <p className="text-sm font-medium text-white/70">
               Fully authorised properties, ready for Airbnb income
