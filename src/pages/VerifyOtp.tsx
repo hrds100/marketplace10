@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { sendOtp, verifyOtp } from '@/lib/n8n';
+import { sendOtp } from '@/lib/n8n';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -44,46 +44,46 @@ export default function VerifyOtp() {
     verifyingRef.current = true;
     setLoading(true);
     setError('');
-    try {
-      const result = await verifyOtp({ phone, code: otp, name, email });
-      if (result.success) {
-        // Update whatsapp_verified in profiles — update first, upsert as fallback
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { error: updateErr } = await (supabase
-            .from('profiles') as any)
-            .update({ whatsapp_verified: true })
-            .eq('id', user.id);
-          if (updateErr) {
-            // Profile doesn't exist — create it with all fields
-            await (supabase.from('profiles') as any).upsert({
-              id: user.id,
-              name: name || user.user_metadata?.name || user.email || 'User',
-              whatsapp: phone,
-              whatsapp_verified: true,
-            } as any);
-          }
-        }
-        setVerified(true);
-        if (!toastFiredRef.current) {
-          toastFiredRef.current = true;
-          toast.success('WhatsApp verified! Welcome to NFsTay!');
-        }
-        setTimeout(() => {
-          window.location.href = '/dashboard/deals';
-        }, 1500);
-      } else {
-        verifyingRef.current = false;
-        setError(result.error || 'Invalid or expired code');
-        setOtp('');
-      }
-    } catch {
+    // MVP: fixed code 3467 — verified on frontend
+    if (otp !== '3467') {
       verifyingRef.current = false;
-      setError('Verification failed. Try again.');
+      setError('Invalid code. Please check your WhatsApp and try again.');
       setOtp('');
-    } finally {
       setLoading(false);
+      return;
     }
+
+    // Update whatsapp_verified in profiles (best-effort, don't block on failure)
+    try {
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+      if (user) {
+        const { error: updateErr } = await (supabase
+          .from('profiles') as any)
+          .update({ whatsapp_verified: true })
+          .eq('id', user.id);
+        if (updateErr) {
+          await (supabase.from('profiles') as any).upsert({
+            id: user.id,
+            name: name || user.user_metadata?.name || user.email || 'User',
+            whatsapp: phone,
+            whatsapp_verified: true,
+          } as any);
+        }
+      }
+    } catch (err) {
+      console.error('Profile update failed (non-blocking):', err);
+    }
+
+    setVerified(true);
+    if (!toastFiredRef.current) {
+      toastFiredRef.current = true;
+      toast.success('WhatsApp verified! Welcome to NFsTay!');
+    }
+    setTimeout(() => {
+      window.location.href = '/dashboard/deals';
+    }, 1500);
+    setLoading(false);
   };
 
   // Auto-verify when 4 digits entered
