@@ -37,11 +37,9 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           const meta = (user.user_metadata || {}) as Record<string, string>;
           await (supabase.from('profiles') as any).upsert({
             id: user.id,
-            user_id: user.id,
             name: meta.name || user.email || 'User',
             whatsapp: meta.whatsapp || null,
             whatsapp_verified: false,
-            email: user.email || '',
           } as any);
           // Profile created but not verified
           queryInFlight.current = false;

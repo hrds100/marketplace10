@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, signIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -38,8 +38,11 @@ export default function SignUp() {
     try {
       const fullPhone = data.countryCode + data.phone.replace(/[^0-9]/g, '');
 
+      const cleanEmail = data.email.trim().toLowerCase();
+      const cleanName = data.name.trim();
+
       // 1. Create Supabase account
-      const { data: authData, error: authError } = await signUp(data.email.trim().toLowerCase(), data.password, data.name.trim(), fullPhone);
+      const { data: authData, error: authError } = await signUp(cleanEmail, data.password, cleanName, fullPhone);
       if (authError) {
         toast.error(authError.message);
         setLoading(false);
@@ -52,18 +55,31 @@ export default function SignUp() {
         return;
       }
 
-      // 1b. Ensure profile exists with name + whatsapp (trigger may be broken)
-      if (authData?.user) {
+      // 1b. Sign in immediately — signUp may not return a session
+      if (!authData?.session) {
+        const { error: signInErr } = await signIn(cleanEmail, data.password);
+        if (signInErr) {
+          toast.error('Account created but sign-in failed. Please sign in manually.');
+          setLoading(false);
+          navigate('/signin');
+          return;
+        }
+      }
+
+      // 1c. Now we have a session — get the authenticated user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const userId = currentUser?.id || authData?.user?.id;
+
+      // 1d. Ensure profile has name + whatsapp (trigger creates it, this is backup)
+      if (userId) {
         await (supabase
           .from('profiles') as any)
-          .upsert({
-            id: authData.user.id,
-            user_id: authData.user.id,
-            name: data.name,
+          .update({
+            name: cleanName,
             whatsapp: fullPhone,
             whatsapp_verified: false,
-            email: data.email,
-          } as any);
+          } as any)
+          .eq('id', userId);
       }
 
       // 2. Send WhatsApp OTP via GHL
