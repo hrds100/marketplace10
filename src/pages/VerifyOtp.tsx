@@ -50,7 +50,7 @@ export default function VerifyOtp() {
           await supabase
             .from('profiles')
             .update({ whatsapp_verified: true } as Record<string, unknown>)
-            .eq('user_id', user.id);
+            .eq('id', user.id);
         }
         setVerified(true);
         toast.success('WhatsApp verified! Welcome to NFsTay!');
