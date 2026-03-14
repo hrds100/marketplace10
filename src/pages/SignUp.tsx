@@ -76,10 +76,10 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex">
       {/* Form side */}
-      <div className="w-full lg:w-[42%] flex items-center justify-center p-6 md:p-8 lg:p-12">
-        <div className="w-full max-w-md mx-auto">
+      <div className="flex-1 flex items-center justify-center p-6 md:p-8">
+        <div className="w-full max-w-[440px]">
           <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">
             NFsTay
           </Link>
@@ -287,56 +287,30 @@ export default function SignUp() {
         </div>
       </div>
 
-      {/* Right hero — Stake 2026 layout */}
-      <div className="hidden lg:flex lg:w-[58%] bg-[#FAFBFC] border-l border-gray-100">
-        <div className="flex-1 flex flex-col justify-center px-12 xl:px-20 py-16 space-y-8">
-          {/* Operator count */}
-          <h1 className="text-5xl xl:text-7xl font-black tracking-tight bg-gradient-to-r from-emerald-500 to-green-600 bg-clip-text text-transparent leading-none">
-            4,200+
-            <span className="block text-3xl xl:text-4xl font-bold text-gray-900 mt-2 bg-none" style={{ WebkitTextFillColor: 'initial' }}>
-              UK Operators
-            </span>
-          </h1>
-
-          {/* Headline */}
-          <h2 className="text-2xl xl:text-4xl font-bold text-gray-900 leading-tight">
-            Your Airbnb portfolio starts here
+      {/* Right panel */}
+      <div
+        className="hidden lg:flex flex-1 items-center justify-center p-12 relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
+      >
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+        <div className="relative max-w-[400px]">
+          <h2 className="text-[28px] font-bold text-white">
+            Your rent-to-rent portfolio starts here
           </h2>
-
-          {/* Social proof */}
-          <p className="text-lg xl:text-xl text-gray-500 max-w-lg leading-relaxed">
-            Join thousands using NFsTay to find deals faster.{' '}
-            <span className="font-semibold text-emerald-600">Community verified.</span>
+          <p className="text-base mt-4 text-white/70">
+            Join thousands of operators using NFsTay to find and close deals faster. WhatsApp-verified community.
           </p>
-
-          {/* Hub + Logos */}
-          <div className="mt-8 pt-8 border-t border-gray-200 space-y-5">
-            <p className="text-base font-semibold text-gray-800">
-              Hub of agents &amp; landlords for Airbnb operators
-            </p>
-            <div className="flex items-center gap-8 flex-wrap">
+          <div className="flex -space-x-2 mt-8">
+            {[1, 2, 3, 4, 5].map((i) => (
               <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Rightmove_Logo.svg/118px-Rightmove_Logo.svg.png"
-                alt="Rightmove"
-                className="h-8 opacity-60 hover:opacity-100 transition-opacity"
+                key={i}
+                src={`https://picsum.photos/seed/auth-av${i}/48/48`}
+                className="w-10 h-10 rounded-full border-2 border-white/20"
+                alt=""
               />
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Zoopla_logo.svg/200px-Zoopla_logo.svg.png"
-                alt="Zoopla"
-                className="h-7 opacity-60 hover:opacity-100 transition-opacity"
-              />
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Booking.com_logo.svg/200px-Booking.com_logo.svg.png"
-                alt="Booking.com"
-                className="h-7 opacity-60 hover:opacity-100 transition-opacity"
-              />
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Airbnb_Logo_B%C3%A9lo.svg/200px-Airbnb_Logo_B%C3%A9lo.svg.png"
-                alt="Airbnb"
-                className="h-7 opacity-60 hover:opacity-100 transition-opacity"
-              />
-            </div>
+            ))}
           </div>
+          <p className="text-sm mt-3 text-white/60">4,200+ UK operators trust NFsTay</p>
         </div>
       </div>
     </div>
