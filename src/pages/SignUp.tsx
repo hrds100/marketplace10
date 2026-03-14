@@ -76,10 +76,10 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
       {/* Form side */}
-      <div className="flex-1 flex items-center justify-center p-6 md:p-8">
-        <div className="w-full max-w-[440px]">
+      <div className="flex items-center justify-center px-6 md:px-8 lg:px-12 py-10">
+        <div className="w-full max-w-[440px] mx-auto">
           <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">
             NFsTay
           </Link>
@@ -289,29 +289,44 @@ export default function SignUp() {
 
       {/* Right panel */}
       <div
-        className="hidden lg:flex flex-1 items-center justify-center px-16 xl:px-24 relative overflow-hidden"
+        className="hidden lg:flex items-center justify-center relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
       >
         <div className="absolute inset-0 backdrop-blur-3xl" />
-        <div className="relative max-w-[520px] space-y-10">
-          <h2 className="text-4xl xl:text-5xl font-extrabold text-white leading-tight">
+        <div className="relative max-w-[420px] text-center space-y-8">
+          {/* Avatars top */}
+          <div className="flex justify-center -space-x-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <img
+                key={i}
+                src={`https://picsum.photos/seed/auth-av${i}/48/48`}
+                className="w-11 h-11 rounded-full border-2 border-white/20"
+                alt=""
+              />
+            ))}
+          </div>
+
+          {/* Trust line */}
+          <p className="text-base font-medium text-white/80 tracking-wide">
+            4,200+ UK operators trust NFsTay
+          </p>
+
+          {/* Main headline */}
+          <h2 className="text-4xl xl:text-[44px] font-extrabold text-white leading-[1.15]">
             Your Airbnb portfolio starts here
           </h2>
-          <p className="text-lg xl:text-xl text-white/70 leading-relaxed">
-            Join thousands of operators using NFsTay to find and close deals faster. Community verified.
+
+          {/* Subheadline */}
+          <p className="text-lg text-white/60 leading-relaxed">
+            Join thousands of operators using NFsTay to find and close deals faster, with a verified community behind them.
           </p>
-          <div className="flex items-center gap-4 pt-2">
-            <div className="flex -space-x-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <img
-                  key={i}
-                  src={`https://picsum.photos/seed/auth-av${i}/48/48`}
-                  className="w-11 h-11 rounded-full border-2 border-white/20"
-                  alt=""
-                />
-              ))}
-            </div>
-            <p className="text-base font-medium text-white/80">4,200+ UK operators trust NFsTay</p>
+
+          {/* Bottom trust */}
+          <div className="flex items-center justify-center gap-2 pt-4">
+            <CheckCircle2 className="w-5 h-5 text-white/80 shrink-0" />
+            <p className="text-sm font-medium text-white/70">
+              Fully authorised properties, ready for Airbnb income
+            </p>
           </div>
         </div>
       </div>
