@@ -5,7 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const [status, setStatus] = useState<'loading' | 'verified' | 'unverified'>('loading');
+  const [status, setStatus] = useState<'loading' | 'verified' | 'unverified'>(
+    'loading'
+  );
   const checkedRef = useRef<string | null>(null);
   const queryInFlight = useRef(false);
 
@@ -33,7 +35,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         // Profile doesn't exist — create it (trigger may be broken)
         if (queryErr && queryErr.code === 'PGRST116') {
           const meta = (user.user_metadata || {}) as Record<string, string>;
-          await supabase.from('profiles').upsert({
+          await (supabase.from('profiles') as any).upsert({
             id: user.id,
             user_id: user.id,
             name: meta.name || user.email || 'User',

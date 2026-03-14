@@ -48,8 +48,8 @@ export default function SignUp() {
 
       // 1b. Ensure profile exists with name + whatsapp (trigger may be broken)
       if (authData?.user) {
-        await supabase
-          .from('profiles')
+        await (supabase
+          .from('profiles') as any)
           .upsert({
             id: authData.user.id,
             user_id: authData.user.id,
