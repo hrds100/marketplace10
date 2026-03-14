@@ -1,67 +1,165 @@
 import { useState } from 'react';
-import { submissions } from '@/data/mockData';
+import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function AdminSubmissions() {
-  const [data, setData] = useState(submissions);
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filtered = filter === 'all' ? data : data.filter(s => s.status === filter);
+  const { data: submissions = [] } = useQuery({
+    queryKey: ['admin-submissions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const approve = (id: string) => {
-    setData(prev => prev.map(s => s.id === id ? { ...s, status: 'approved' } : s));
-    toast.success('Published ✓');
+  const filtered = filter === 'all'
+    ? submissions
+    : filter === 'pending'
+      ? submissions.filter(s => s.status === 'inactive')
+      : submissions.filter(s => s.status === filter);
+
+  const approve = async (id: string) => {
+    const { error } = await supabase.from('properties').update({ status: 'live' as const }).eq('id', id);
+    if (error) { toast.error('Failed'); return; }
+    toast.success('Published');
+    queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
   };
-  const reject = (id: string) => {
-    setData(prev => prev.map(s => s.id === id ? { ...s, status: 'rejected' } : s));
+
+  const reject = async (id: string) => {
+    const { error } = await supabase.from('properties').update({ status: 'inactive' as const }).eq('id', id);
+    if (error) { toast.error('Failed'); return; }
     toast.error('Rejected');
+    queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === 'live') return <span className="badge-green">live</span>;
+    if (status === 'inactive') return <span className="badge-amber">pending</span>;
+    return <span className="badge-gray">{status}</span>;
+  };
+
+  const saLabel = (sa: string | null) => {
+    if (sa === 'yes') return <span className="text-emerald-600 font-medium">Yes</span>;
+    if (sa === 'no') return <span className="text-red-500 font-medium">No</span>;
+    return <span className="text-amber-500 font-medium">Awaiting</span>;
   };
 
   return (
     <div>
-      <h1 className="text-[28px] font-bold text-foreground mb-6">Deal submissions</h1>
+      <h1 className="text-[28px] font-bold text-foreground mb-6">Deal Submissions</h1>
 
       <div className="flex gap-2 mb-6">
-        {['all', 'pending', 'approved', 'rejected'].map(f => (
+        {['all', 'pending', 'live'].map(f => (
           <button key={f} onClick={() => setFilter(f)} className={`px-4 py-1.5 rounded-full text-[13px] font-semibold capitalize transition-colors ${filter === f ? 'bg-nfstay-black text-nfstay-black-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
             {f}
           </button>
         ))}
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto">
-        <table className="w-full text-sm min-w-[700px]">
-          <thead>
-            <tr className="border-b border-border">
-              {['Name', 'Submitted by', 'City', 'Rent', 'Date', 'Status', 'Actions'].map(h => (
-                <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((s, i) => (
-              <tr key={s.id} className={i % 2 === 1 ? 'bg-secondary' : ''}>
-                <td className="p-3.5 font-medium text-foreground">{s.name}</td>
-                <td className="p-3.5 text-muted-foreground">{s.submittedBy}</td>
-                <td className="p-3.5 text-muted-foreground">{s.city}</td>
-                <td className="p-3.5 text-foreground">£{s.rent.toLocaleString()}</td>
-                <td className="p-3.5 text-muted-foreground">{s.date}</td>
-                <td className="p-3.5">
-                  <span className={s.status === 'approved' ? 'badge-green' : s.status === 'rejected' ? 'badge-red' : 'badge-amber'}>{s.status}</span>
-                </td>
-                <td className="p-3.5">
-                  {s.status === 'pending' && (
-                    <div className="flex gap-2">
-                      <button onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1 rounded-md font-medium">Approve</button>
-                      <button onClick={() => reject(s.id)} className="text-xs text-destructive font-medium">Reject</button>
+      <div className="space-y-3">
+        {filtered.map(s => (
+          <div key={s.id} className="bg-card border border-border rounded-2xl overflow-hidden">
+            {/* Row header */}
+            <div className="flex items-center gap-4 p-4 cursor-pointer" onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-foreground truncate">{s.name}</span>
+                  {statusLabel(s.status)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{s.city} · {s.postcode} · £{s.rent_monthly?.toLocaleString()}/mo</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {s.status === 'inactive' && (
+                  <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Approve</button>
+                    <button onClick={() => reject(s.id)} className="text-xs text-destructive font-medium px-2">Reject</button>
+                  </div>
+                )}
+                {expandedId === s.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+              </div>
+            </div>
+
+            {/* Expanded detail */}
+            {expandedId === s.id && (
+              <div className="border-t border-border p-4 space-y-4">
+                {/* Property details */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <Detail label="Type" value={s.type} />
+                  <Detail label="Category" value={s.property_category || '—'} />
+                  <Detail label="Bedrooms" value={s.bedrooms?.toString() || '—'} />
+                  <Detail label="Bathrooms" value={s.bathrooms?.toString() || '—'} />
+                  <Detail label="Garage" value={s.garage ? 'Yes' : 'No'} />
+                  <Detail label="SA Approved" value={saLabel(s.sa_approved)} />
+                  <Detail label="Rent" value={`£${s.rent_monthly?.toLocaleString()}`} />
+                  <Detail label="Est. Profit" value={`£${s.profit_est?.toLocaleString()}`} />
+                  <Detail label="Deposit" value={s.deposit ? `£${s.deposit.toLocaleString()}` : '—'} />
+                  <Detail label="Agent Fee" value={s.agent_fee ? `£${s.agent_fee.toLocaleString()}` : '—'} />
+                  <Detail label="Featured" value={s.featured ? 'Yes' : 'No'} />
+                  <Detail label="Created" value={new Date(s.created_at).toLocaleDateString()} />
+                </div>
+
+                {/* Contact */}
+                <div>
+                  <h4 className="text-xs font-semibold text-foreground mb-2">Contact</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <Detail label="Name" value={s.contact_name || '—'} />
+                    <Detail label="Phone" value={s.contact_phone || '—'} />
+                    <Detail label="WhatsApp" value={s.contact_whatsapp || s.landlord_whatsapp || '—'} />
+                    <Detail label="Email" value={s.contact_email || '—'} />
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {(s.notes || s.description) && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-foreground mb-1">Notes</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{s.notes || s.description}</p>
+                  </div>
+                )}
+
+                {/* Photos */}
+                {s.photos && s.photos.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-foreground mb-2">Photos ({s.photos.length})</h4>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                      {s.photos.map((url, i) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="relative rounded-lg overflow-hidden aspect-square group">
+                          <img src={url} className="w-full h-full object-cover" alt={`Photo ${i + 1}`} />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <ExternalLink className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </a>
+                      ))}
                     </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {filtered.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-12">No submissions found.</p>
+        )}
       </div>
+    </div>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <span className="text-[11px] text-muted-foreground block">{label}</span>
+      <span className="text-sm text-foreground">{value}</span>
     </div>
   );
 }

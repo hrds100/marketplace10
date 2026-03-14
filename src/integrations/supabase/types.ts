@@ -176,6 +176,19 @@ export type Database = {
           status: Database["public"]["Enums"]["property_status"]
           type: string
           updated_at: string
+          submitted_by: string | null
+          property_category: string | null
+          bedrooms: number | null
+          bathrooms: number | null
+          garage: boolean
+          deposit: number | null
+          agent_fee: number | null
+          sa_approved: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          contact_whatsapp: string | null
+          contact_email: string | null
+          notes: string | null
         }
         Insert: {
           beds?: number
@@ -195,6 +208,19 @@ export type Database = {
           status?: Database["public"]["Enums"]["property_status"]
           type?: string
           updated_at?: string
+          submitted_by?: string | null
+          property_category?: string | null
+          bedrooms?: number | null
+          bathrooms?: number | null
+          garage?: boolean
+          deposit?: number | null
+          agent_fee?: number | null
+          sa_approved?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          contact_email?: string | null
+          notes?: string | null
         }
         Update: {
           beds?: number
@@ -214,6 +240,19 @@ export type Database = {
           status?: Database["public"]["Enums"]["property_status"]
           type?: string
           updated_at?: string
+          submitted_by?: string | null
+          property_category?: string | null
+          bedrooms?: number | null
+          bathrooms?: number | null
+          garage?: boolean
+          deposit?: number | null
+          agent_fee?: number | null
+          sa_approved?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          contact_email?: string | null
+          notes?: string | null
         }
         Relationships: []
       }
