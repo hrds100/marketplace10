@@ -133,7 +133,6 @@ export default function ListADealPage() {
         deposit: parseInt(form.deposit) || null,
         agent_fee: parseInt(form.agentFee) || null,
         sa_approved: form.saApproved.toLowerCase(),
-        landlord_approved: form.saApproved === 'Yes',
         contact_name: form.contactName,
         contact_phone: form.contactPhone,
         contact_whatsapp: form.contactWhatsapp,
