@@ -293,42 +293,49 @@ export default function SignUp() {
         style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
       >
         <div className="absolute inset-0 backdrop-blur-3xl" />
-        <div className="relative max-w-[560px] mx-auto px-8 lg:px-12 h-full flex flex-col justify-center text-center">
-          {/* Avatars + trust group */}
-          <div className="flex flex-col items-center mt-6 lg:mt-8 mb-10">
-            <div className="flex -space-x-3 mb-2">
+        <div className="relative w-full h-full flex flex-col py-12">
+          {/* Top spacer */}
+          <div className="flex-1" />
+
+          {/* Center content block */}
+          <div className="text-center px-10 xl:px-16 max-w-[500px] mx-auto space-y-7">
+            {/* Avatars */}
+            <div className="flex justify-center -space-x-3">
               {[1, 2, 3, 4, 5].map((i) => (
                 <img
                   key={i}
                   src={`https://picsum.photos/seed/auth-av${i}/48/48`}
-                  className="w-11 h-11 rounded-full border-2 border-white/20"
+                  className="w-10 h-10 rounded-full border-2 border-white/20"
                   alt=""
                 />
               ))}
             </div>
-            <p className="text-sm text-white/80 mt-1">
+
+            {/* Trust line — tight to avatars */}
+            <p className="text-sm font-medium text-white/70 -mt-3">
               4,200+ UK operators trust NFsTay
+            </p>
+
+            {/* Headline */}
+            <h2 className="text-[40px] xl:text-5xl font-bold text-white leading-[1.1] pt-2">
+              Your Airbnb portfolio<br />starts here
+            </h2>
+
+            {/* Subheadline */}
+            <p className="text-[17px] text-white/60 leading-relaxed max-w-[440px] mx-auto">
+              Join thousands of operators using NFsTay to find and close deals faster, with a verified community behind them.
             </p>
           </div>
 
-          {/* Main headline */}
-          <h2 className="text-5xl lg:text-6xl font-bold text-center text-white leading-[1.05] mb-8">
-            Your Airbnb portfolio starts here
-          </h2>
+          {/* Bottom spacer */}
+          <div className="flex-1" />
 
-          {/* Subheadline */}
-          <p className="text-lg text-white/80 text-center max-w-[520px] mx-auto">
-            Join thousands of operators using NFsTay to find and close deals faster, with a verified community behind them.
-          </p>
-
-          {/* Bottom trust — anchored near bottom */}
-          <div className="mt-auto flex justify-center pb-10">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-white/80 shrink-0" />
-              <p className="text-sm font-medium text-white/70">
-                Fully authorised properties, ready for Airbnb income
-              </p>
-            </div>
+          {/* Bottom trust — pinned */}
+          <div className="flex items-center justify-center gap-2 pb-2">
+            <CheckCircle2 className="w-4 h-4 text-white/60 shrink-0" />
+            <p className="text-xs font-medium text-white/50">
+              Fully authorised properties, ready for Airbnb income
+            </p>
           </div>
         </div>
       </div>
