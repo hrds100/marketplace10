@@ -293,38 +293,42 @@ export default function SignUp() {
         style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
       >
         <div className="absolute inset-0 backdrop-blur-3xl" />
-        <div className="relative max-w-[560px] mx-auto px-8 lg:px-12 h-full flex flex-col items-center justify-center text-center">
+        <div className="relative max-w-[560px] mx-auto px-8 lg:px-12 h-full flex flex-col justify-center text-center">
           {/* Avatars + trust group */}
-          <div className="flex justify-center -space-x-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <img
-                key={i}
-                src={`https://picsum.photos/seed/auth-av${i}/48/48`}
-                className="w-11 h-11 rounded-full border-2 border-white/20"
-                alt=""
-              />
-            ))}
+          <div className="flex flex-col items-center mt-6 lg:mt-8 mb-10">
+            <div className="flex -space-x-3 mb-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <img
+                  key={i}
+                  src={`https://picsum.photos/seed/auth-av${i}/48/48`}
+                  className="w-11 h-11 rounded-full border-2 border-white/20"
+                  alt=""
+                />
+              ))}
+            </div>
+            <p className="text-sm text-white/80 mt-1">
+              4,200+ UK operators trust NFsTay
+            </p>
           </div>
-          <p className="text-base font-medium text-white/80 tracking-wide mt-4">
-            4,200+ UK operators trust NFsTay
-          </p>
 
           {/* Main headline */}
-          <h2 className="text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] text-white mt-12">
+          <h2 className="text-5xl lg:text-6xl font-bold text-center text-white leading-[1.05] mb-8">
             Your Airbnb portfolio starts here
           </h2>
 
           {/* Subheadline */}
-          <p className="text-lg text-white/60 leading-relaxed max-w-[520px] mt-6">
+          <p className="text-lg text-white/80 text-center max-w-[520px] mx-auto">
             Join thousands of operators using NFsTay to find and close deals faster, with a verified community behind them.
           </p>
 
           {/* Bottom trust — anchored near bottom */}
-          <div className="flex items-center justify-center gap-2 mt-auto pb-8 lg:pb-10">
-            <CheckCircle2 className="w-5 h-5 text-white/80 shrink-0" />
-            <p className="text-sm font-medium text-white/70">
-              Fully authorised properties, ready for Airbnb income
-            </p>
+          <div className="mt-auto flex justify-center pb-10">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-white/80 shrink-0" />
+              <p className="text-sm font-medium text-white/70">
+                Fully authorised properties, ready for Airbnb income
+              </p>
+            </div>
           </div>
         </div>
       </div>
