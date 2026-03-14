@@ -47,14 +47,24 @@ export default function VerifyOtp() {
         // Update whatsapp_verified in profiles
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await supabase
+          const { error: updateErr } = await supabase
             .from('profiles')
             .update({ whatsapp_verified: true } as Record<string, unknown>)
             .eq('id', user.id);
+          if (updateErr) {
+            console.error('Profile update error:', updateErr);
+            // Retry with service-level fallback — use upsert
+            await supabase
+              .from('profiles')
+              .upsert({ id: user.id, whatsapp_verified: true } as Record<string, unknown>);
+          }
         }
         setVerified(true);
         toast.success('WhatsApp verified! Welcome to NFsTay!');
-        setTimeout(() => navigate('/dashboard/deals'), 1500);
+        // Navigate after animation — use window.location for clean state
+        setTimeout(() => {
+          window.location.href = '/dashboard/deals';
+        }, 1500);
       } else {
         setError(result.error || 'Invalid or expired code');
         setOtp('');

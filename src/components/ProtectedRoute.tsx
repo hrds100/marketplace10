@@ -1,35 +1,38 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const [checking, setChecking] = useState(true);
-  const [whatsappVerified, setWhatsappVerified] = useState(false);
+  const [status, setStatus] = useState<'loading' | 'verified' | 'unverified'>('loading');
+  const checkedRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) {
-      setChecking(false);
+      setStatus('unverified');
       return;
     }
+    // Don't re-check if we already checked this user
+    if (checkedRef.current === user.id) return;
+
     supabase
       .from('profiles')
-      .select('*')
+      .select('whatsapp_verified')
       .eq('id', user.id)
       .single()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          // No profile yet or column doesn't exist — redirect to verify
-          setWhatsappVerified(false);
-        } else {
-          setWhatsappVerified(!!(data as Record<string, unknown>).whatsapp_verified);
-        }
-        setChecking(false);
+      .then(({ data }) => {
+        const verified = !!(data as Record<string, unknown> | null)?.whatsapp_verified;
+        checkedRef.current = verified ? user.id : null;
+        setStatus(verified ? 'verified' : 'unverified');
+      })
+      .catch(() => {
+        setStatus('unverified');
       });
-  }, [user]);
+  }, [user, loading]);
 
-  if (loading || checking) {
+  if (loading || status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -41,7 +44,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     return <Navigate to="/signin" replace />;
   }
 
-  if (!whatsappVerified) {
+  if (status === 'unverified') {
     const phone = (user.user_metadata as Record<string, string>)?.whatsapp || '';
     const name = (user.user_metadata as Record<string, string>)?.name || '';
     return (
