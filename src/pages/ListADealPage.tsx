@@ -12,6 +12,8 @@ const HOUSE_BEDS = ['2-bed', '3-bed', '4-bed', '5-bed', '6-bed', '7-bed', '8-bed
 
 interface DealForm {
   name: string;
+  streetName: string;
+  houseNumber: string;
   city: string;
   postcode: string;
   propertyCategory: 'flat' | 'house' | 'hmo' | '';
@@ -31,7 +33,7 @@ interface DealForm {
 }
 
 const INITIAL_FORM: DealForm = {
-  name: '', city: '', postcode: '',
+  name: '', streetName: '', houseNumber: '', city: '', postcode: '',
   propertyCategory: '', type: '', bedrooms: '', bathrooms: '', garage: '',
   rent: '', profit: '', deposit: '', agentFee: '',
   saApproved: '',
@@ -42,8 +44,10 @@ export default function ListADealPage() {
   const { user } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [nextId] = useState(() => `Property #${1000 + Math.floor(Math.random() * 9000)}`);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<DealForm>(INITIAL_FORM);
 
@@ -89,7 +93,7 @@ export default function ListADealPage() {
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       if (data?.description || data?.text) {
-        setNotes(data.description || data.text);
+        setDescription(data.description || data.text);
         toast.success('Description generated with AI');
       }
     } catch {
@@ -102,15 +106,19 @@ export default function ListADealPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.name || !form.city || !form.rent || !form.type || !form.contactName || !form.contactPhone || !form.contactWhatsapp || !form.contactEmail || !form.saApproved) {
+    if (!form.city || !form.rent || !form.type || !form.contactName || !form.contactEmail || !form.saApproved) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+    if (!form.contactPhone && !form.contactWhatsapp) {
+      toast.error('Please provide at least a phone number or WhatsApp');
       return;
     }
 
     setLoading(true);
     try {
       const { error } = await supabase.from('properties').insert({
-        name: form.name,
+        name: nextId,
         city: form.city,
         postcode: form.postcode,
         rent_monthly: parseInt(form.rent) || 0,
@@ -131,7 +139,7 @@ export default function ListADealPage() {
         contact_whatsapp: form.contactWhatsapp,
         contact_email: form.contactEmail,
         landlord_whatsapp: form.contactWhatsapp || null,
-        description: notes || null,
+        description: description || null,
         photos: photos.length > 0 ? photos : [],
         notes: notes || null,
       });
@@ -153,7 +161,7 @@ export default function ListADealPage() {
         </div>
         <h2 className="text-[22px] font-bold text-foreground mt-4">Deal submitted</h2>
         <p className="text-sm text-muted-foreground mt-1.5">We'll review and publish it within 24–48 hours.</p>
-        <button onClick={() => { setSubmitted(false); setPhotos([]); setNotes(''); setForm(INITIAL_FORM); }} className="mt-5 h-11 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">
+        <button onClick={() => { setSubmitted(false); setPhotos([]); setDescription(''); setNotes(''); setForm(INITIAL_FORM); }} className="mt-5 h-11 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">
           Submit another deal
         </button>
       </div>
@@ -168,8 +176,18 @@ export default function ListADealPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* ── PROPERTY INFO ── */}
         <div>
-          <label className="text-xs font-semibold text-foreground block mb-1.5">Property name *</label>
-          <input type="text" placeholder="e.g. Maple House" value={form.name} onChange={e => set('name', e.target.value)} className="input-nfstay w-full" required />
+          <label className="text-xs font-semibold text-foreground block mb-1.5">Property ID</label>
+          <input type="text" value={nextId} disabled className="input-nfstay w-full opacity-60" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-semibold text-foreground block mb-1.5">Street name</label>
+            <input type="text" placeholder="e.g. Oxford Road" value={form.streetName} onChange={e => set('streetName', e.target.value)} className="input-nfstay w-full" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-foreground block mb-1.5">House number</label>
+            <input type="text" placeholder="e.g. 42" value={form.houseNumber} onChange={e => set('houseNumber', e.target.value)} className="input-nfstay w-full" />
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -258,7 +276,7 @@ export default function ListADealPage() {
             <input type="number" placeholder="2400" value={form.deposit} onChange={e => set('deposit', e.target.value)} className="input-nfstay w-full" required />
           </div>
           <div>
-            <label className="text-xs font-semibold text-foreground block mb-1.5">Agent/Platform fee (£)</label>
+            <label className="text-xs font-semibold text-foreground block mb-1.5">Fee (£)</label>
             <input type="number" placeholder="0" value={form.agentFee} onChange={e => set('agentFee', e.target.value)} className="input-nfstay w-full" />
           </div>
         </div>
@@ -279,16 +297,17 @@ export default function ListADealPage() {
         <div className="space-y-4">
           <div>
             <label className="text-xs font-semibold text-foreground block mb-1.5">Contact name *</label>
-            <input type="text" placeholder="Landlord name" value={form.contactName} onChange={e => set('contactName', e.target.value)} className="input-nfstay w-full" required />
+            <input type="text" placeholder="Landlord/Agent" value={form.contactName} onChange={e => set('contactName', e.target.value)} className="input-nfstay w-full" required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">Contact phone *</label>
-              <input type="tel" placeholder="07911 123 456" value={form.contactPhone} onChange={e => set('contactPhone', e.target.value)} className="input-nfstay w-full" required />
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Contact phone</label>
+              <input type="tel" placeholder="07911 123 456" value={form.contactPhone} onChange={e => set('contactPhone', e.target.value)} className="input-nfstay w-full" />
+              <p className="text-[10px] text-muted-foreground mt-0.5">At least one of phone or WhatsApp required</p>
             </div>
             <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">Contact WhatsApp *</label>
-              <input type="tel" placeholder="+44 7911 123 456" value={form.contactWhatsapp} onChange={e => set('contactWhatsapp', e.target.value)} className="input-nfstay w-full" required />
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Contact WhatsApp</label>
+              <input type="tel" placeholder="+44 7911 123 456" value={form.contactWhatsapp} onChange={e => set('contactWhatsapp', e.target.value)} className="input-nfstay w-full" />
             </div>
           </div>
           <div>
@@ -300,10 +319,11 @@ export default function ListADealPage() {
         {/* ── PHOTOS ── */}
         <PhotoUpload photos={photos} onChange={setPhotos} />
 
-        {/* ── NOTES ── */}
+        {/* ── DESCRIPTION (public listing) ── */}
         <div>
-          <label className="text-xs font-semibold text-foreground block mb-1.5">Notes / Description</label>
-          <textarea rows={4} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any additional details about the property..." className="input-nfstay w-full h-auto py-3 resize-none" />
+          <label className="text-xs font-semibold text-foreground block mb-1.5">Description</label>
+          <p className="text-[10px] text-muted-foreground mb-1.5">Public listing description visible to members.</p>
+          <textarea rows={4} value={description} onChange={e => setDescription(e.target.value)} placeholder="Property description for the listing..." className="input-nfstay w-full h-auto py-3 resize-none" />
           <button
             type="button"
             onClick={generateDesc}
@@ -313,6 +333,13 @@ export default function ListADealPage() {
             {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
             {generating ? 'Generating...' : 'Generate description with AI'}
           </button>
+        </div>
+
+        {/* ── NOTES (admin-only) ── */}
+        <div>
+          <label className="text-xs font-semibold text-foreground block mb-1.5">Notes</label>
+          <p className="text-[10px] text-muted-foreground mb-1.5">Internal notes — only visible to admin, not on the listing.</p>
+          <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any internal notes for the admin team..." className="input-nfstay w-full h-auto py-3 resize-none" />
         </div>
 
         <button type="submit" disabled={loading} className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity mt-2 disabled:opacity-50">
