@@ -46,12 +46,11 @@ export default function SignUp() {
         return;
       }
 
-      // 1b. Update profile with name + whatsapp (trigger may not save metadata)
+      // 1b. Ensure profile exists with name + whatsapp (trigger may be broken)
       if (authData?.user) {
         await supabase
           .from('profiles')
-          .update({ name: data.name, whatsapp: fullPhone } as Record<string, unknown>)
-          .eq('id', authData.user.id);
+          .upsert({ id: authData.user.id, name: data.name, whatsapp: fullPhone } as Record<string, unknown>);
       }
 
       // 2. Send WhatsApp OTP via GHL
