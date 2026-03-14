@@ -54,7 +54,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           return;
         }
 
-        const verified = !!(data as Record<string, unknown> | null)?.whatsapp_verified;
+        const verified = !!(data as any)?.whatsapp_verified;
         if (verified) {
           checkedRef.current = user.id;
         }

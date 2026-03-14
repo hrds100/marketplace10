@@ -52,10 +52,12 @@ export default function SignUp() {
           .from('profiles')
           .upsert({
             id: authData.user.id,
+            user_id: authData.user.id,
             name: data.name,
             whatsapp: fullPhone,
             whatsapp_verified: false,
-          } as Record<string, unknown>);
+            email: data.email,
+          } as any);
       }
 
       // 2. Send WhatsApp OTP via GHL
