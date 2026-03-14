@@ -1,24 +1,46 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { sendOtp, verifyOtp } from '@/lib/n8n';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from 'sonner';
 
-type Step = 'phone' | 'otp';
+type Step = 'details' | 'whatsapp' | 'otp';
 
 export default function SignUp() {
-  const [step, setStep] = useState<Step>('phone');
+  const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const [step, setStep] = useState<Step>('details');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !phone.trim()) return;
+    if (!name.trim() || !email.trim() || !password.trim()) return;
+    if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      const { error: authError } = await signUp(email, password, name, phone);
+      if (authError) { setError(authError.message); return; }
+      toast.success('Account created!');
+      setStep('whatsapp');
+    } catch {
+      setError('Failed to create account. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phone.trim()) return;
     setLoading(true);
     setError('');
     try {
@@ -26,26 +48,25 @@ export default function SignUp() {
       await sendOtp(formatted);
       setPhone(formatted);
       setStep('otp');
-      toast.success('OTP sent via SMS');
+      toast.success('Code sent via WhatsApp');
     } catch {
-      setError('Failed to send OTP. Check your phone number.');
+      setError('Failed to send code. Check your phone number.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) return;
+  const handleVerifyCode = async () => {
+    if (otp.length !== 4) return;
     setLoading(true);
     setError('');
     try {
-      const result = await verifyOtp({ phone, code: otp, name, email: email || undefined });
+      const result = await verifyOtp({ phone, code: otp, name, email });
       if (result.success) {
-        localStorage.setItem('auth', JSON.stringify({ phone, name, email, ts: Date.now() }));
-        toast.success('Welcome to NFsTay!');
-        window.location.href = '/dashboard/deals';
+        toast.success('WhatsApp verified! Welcome to NFsTay!');
+        navigate('/dashboard/deals');
       } else {
-        setError(result.error || 'Invalid or expired OTP');
+        setError(result.error || 'Invalid or expired code');
         setOtp('');
       }
     } catch {
@@ -61,12 +82,17 @@ export default function SignUp() {
     setError('');
     try {
       await sendOtp(phone);
-      toast.success('New OTP sent');
+      toast.success('New code sent');
     } catch {
-      setError('Failed to resend OTP');
+      setError('Failed to resend code');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSkip = () => {
+    toast.info('You can verify WhatsApp later in Settings');
+    navigate('/dashboard/deals');
   };
 
   return (
@@ -75,12 +101,12 @@ export default function SignUp() {
         <div className="w-full max-w-[400px]">
           <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">NFsTay</Link>
 
-          {step === 'phone' && (
+          {step === 'details' && (
             <>
               <h1 className="text-[28px] font-bold text-foreground mt-8">Create your account</h1>
-              <p className="text-sm text-muted-foreground mt-1">We'll send a verification code via SMS.</p>
+              <p className="text-sm text-muted-foreground mt-1">Start finding rent-to-rent deals today.</p>
 
-              <form className="mt-8 space-y-4" onSubmit={handleSendOtp}>
+              <form className="mt-8 space-y-4" onSubmit={handleSignUp}>
                 <div>
                   <label className="text-xs font-semibold text-foreground block mb-1.5">Full name</label>
                   <input
@@ -93,17 +119,61 @@ export default function SignUp() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">Email <span className="font-normal text-muted-foreground">(optional)</span></label>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Email</label>
                   <input
                     type="email"
                     placeholder="james@example.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     className="input-nfstay w-full"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">Phone number</label>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Password</label>
+                  <input
+                    type="password"
+                    placeholder="Min 6 characters"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="input-nfstay w-full"
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">WhatsApp number <span className="font-normal text-muted-foreground">(optional)</span></label>
+                  <input
+                    type="tel"
+                    placeholder="+44 7863 992555"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    className="input-nfstay w-full"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">Include country code (e.g. +44)</p>
+                </div>
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                <button
+                  type="submit"
+                  disabled={loading || !name.trim() || !email.trim() || !password.trim()}
+                  className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Create account
+                </button>
+                <p className="text-xs text-muted-foreground text-center">Cancel any time. No commitment.</p>
+              </form>
+            </>
+          )}
+
+          {step === 'whatsapp' && (
+            <>
+              <h1 className="text-[28px] font-bold text-foreground mt-8">Verify your WhatsApp</h1>
+              <p className="text-sm text-muted-foreground mt-1">Get deal alerts and agent support on WhatsApp.</p>
+
+              <form className="mt-8 space-y-4" onSubmit={handleSendCode}>
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">WhatsApp number</label>
                   <input
                     type="tel"
                     placeholder="+44 7863 992555"
@@ -117,13 +187,19 @@ export default function SignUp() {
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <button
                   type="submit"
-                  disabled={loading || !name.trim() || !phone.trim()}
+                  disabled={loading || !phone.trim()}
                   className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Send verification code
+                  Send WhatsApp code
                 </button>
-                <p className="text-xs text-muted-foreground text-center">Cancel any time. No commitment.</p>
+                <button
+                  type="button"
+                  onClick={handleSkip}
+                  className="w-full text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Skip for now
+                </button>
               </form>
             </>
           )}
@@ -131,25 +207,23 @@ export default function SignUp() {
           {step === 'otp' && (
             <>
               <button
-                onClick={() => { setStep('phone'); setOtp(''); setError(''); }}
+                onClick={() => { setStep('whatsapp'); setOtp(''); setError(''); }}
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-8 mb-4"
               >
                 <ArrowLeft className="w-3.5 h-3.5" /> Back
               </button>
-              <h1 className="text-[28px] font-bold text-foreground">Enter verification code</h1>
+              <h1 className="text-[28px] font-bold text-foreground">Enter your code</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                We sent a 6-digit code to <span className="font-medium text-foreground">{phone}</span> via SMS.
+                We sent a 4-digit code to <span className="font-medium text-foreground">{phone}</span> via WhatsApp.
               </p>
 
               <div className="mt-8 flex justify-center">
-                <InputOTP maxLength={6} value={otp} onChange={val => { setOtp(val); setError(''); }}>
+                <InputOTP maxLength={4} value={otp} onChange={val => { setOtp(val); setError(''); }}>
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
                     <InputOTPSlot index={1} />
                     <InputOTPSlot index={2} />
                     <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
                   </InputOTPGroup>
                 </InputOTP>
               </div>
@@ -157,12 +231,12 @@ export default function SignUp() {
               {error && <p className="text-sm text-red-500 text-center mt-3">{error}</p>}
 
               <button
-                onClick={handleVerifyOtp}
-                disabled={loading || otp.length !== 6}
+                onClick={handleVerifyCode}
+                disabled={loading || otp.length !== 4}
                 className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 mt-6"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Verify & create account
+                Verify WhatsApp
               </button>
 
               <button
