@@ -39,7 +39,7 @@ export default function SignUp() {
       const fullPhone = data.countryCode + data.phone.replace(/[^0-9]/g, '');
 
       // 1. Create Supabase account
-      const { data: authData, error: authError } = await signUp(data.email, data.password, data.name, fullPhone);
+      const { data: authData, error: authError } = await signUp(data.email.trim().toLowerCase(), data.password, data.name.trim(), fullPhone);
       if (authError) {
         toast.error(authError.message);
         setLoading(false);

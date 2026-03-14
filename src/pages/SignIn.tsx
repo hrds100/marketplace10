@@ -17,7 +17,7 @@ export default function SignIn() {
     setLoading(true);
     setError('');
     try {
-      const { error: authError } = await signIn(email, password);
+      const { error: authError } = await signIn(email.trim().toLowerCase(), password);
       if (authError) {
         setError(authError.message);
         return;
