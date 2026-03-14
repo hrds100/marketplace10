@@ -86,8 +86,8 @@ export default function InquiryPopup({ open, onClose, propertyName, city, proper
       {/* Backdrop */}
       <div className="fixed inset-0 z-[200] bg-black/60 transition-opacity" onClick={handleClose} />
 
-      {/* Slide-in drawer from right */}
-      <div className="fixed inset-y-0 right-0 z-[201] w-full max-w-[520px] bg-card border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+      {/* Modal covering right half of page */}
+      <div className="fixed inset-y-0 right-0 z-[201] w-full md:w-1/2 bg-card border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
           <h3 className="text-lg font-bold text-foreground">Get Deal Access</h3>
