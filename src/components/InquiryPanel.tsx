@@ -102,9 +102,11 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border flex-shrink-0">
           <div>
             <h3 className="text-lg font-bold text-foreground">
-              {paid ? 'Contact Landlord' : 'Get Deal Access'}
+              {paid ? 'Contact Landlord' : 'Get Unlimited Access to All Deals'}
             </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">{listing.name} · {listing.city}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {paid ? `${listing.name} · ${listing.city}` : "Building your Airbnb portfolio couldn't be easier"}
+            </p>
           </div>
           <button
             onClick={handleClose}
