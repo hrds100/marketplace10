@@ -289,28 +289,30 @@ export default function SignUp() {
 
       {/* Right panel */}
       <div
-        className="hidden lg:flex flex-1 items-center justify-center p-12 relative overflow-hidden"
+        className="hidden lg:flex flex-1 items-center justify-center px-16 xl:px-24 relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
       >
         <div className="absolute inset-0 backdrop-blur-3xl" />
-        <div className="relative max-w-[400px]">
-          <h2 className="text-[28px] font-bold text-white">
-            Your rent-to-rent portfolio starts here
+        <div className="relative max-w-[520px] space-y-10">
+          <h2 className="text-4xl xl:text-5xl font-extrabold text-white leading-tight">
+            Your Airbnb portfolio starts here
           </h2>
-          <p className="text-base mt-4 text-white/70">
-            Join thousands of operators using NFsTay to find and close deals faster. WhatsApp-verified community.
+          <p className="text-lg xl:text-xl text-white/70 leading-relaxed">
+            Join thousands of operators using NFsTay to find and close deals faster. Community verified.
           </p>
-          <div className="flex -space-x-2 mt-8">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <img
-                key={i}
-                src={`https://picsum.photos/seed/auth-av${i}/48/48`}
-                className="w-10 h-10 rounded-full border-2 border-white/20"
-                alt=""
-              />
-            ))}
+          <div className="flex items-center gap-4 pt-2">
+            <div className="flex -space-x-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <img
+                  key={i}
+                  src={`https://picsum.photos/seed/auth-av${i}/48/48`}
+                  className="w-11 h-11 rounded-full border-2 border-white/20"
+                  alt=""
+                />
+              ))}
+            </div>
+            <p className="text-base font-medium text-white/80">4,200+ UK operators trust NFsTay</p>
           </div>
-          <p className="text-sm mt-3 text-white/60">4,200+ UK operators trust NFsTay</p>
         </div>
       </div>
     </div>
