@@ -5,7 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const [status, setStatus] = useState<'loading' | 'verified' | 'unverified'>('loading');
+  const [status, setStatus] = useState<'loading' | 'verified' | 'unverified'>(
+    'loading'
+  );
   const checkedRef = useRef<string | null>(null);
   const queryInFlight = useRef(false);
 
