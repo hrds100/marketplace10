@@ -145,7 +145,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
           ) : (
             /* ── FREE USER → GHL funnel iframe (scaled 80% to fit panel) ── */
             funnelUrl ? (
-              <div className="flex-1 overflow-hidden" style={{ transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' }}>
+              <div className="flex-1 overflow-hidden" style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%', height: '125%' }}>
                 <iframe
                   src={funnelUrl}
                   className="w-full h-full border-0"
