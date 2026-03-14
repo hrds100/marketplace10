@@ -62,7 +62,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     setTimeout(() => setCelebrating(false), 1500);
   };
 
-  const airbnbSearchUrl = `https://www.airbnb.co.uk/s/${encodeURIComponent(listing.city)}/homes`;
+  const pricelabsUrl = `https://www.pricelabs.co`;
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover">
@@ -78,7 +78,6 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
           {listing.featured && <span className="badge-green-fill text-[11px]">Featured</span>}
-          {ageBadge()}
         </div>
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (forceSignUp) { navigate('/signup'); return; } onToggleFav(); }}
@@ -119,8 +118,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <span className="text-xs text-muted-foreground">Est. monthly profit</span>
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-bold text-accent-foreground">£{listing.profit}</span>
-              <a href={airbnbSearchUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary font-medium hover:underline" onClick={e => e.stopPropagation()}>
-                Airbnb verified ✓
+              <a href={pricelabsUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary font-medium hover:underline" onClick={e => e.stopPropagation()}>
+                Pricelabs verified ✓
               </a>
             </div>
           </div>
