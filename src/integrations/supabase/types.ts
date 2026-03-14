@@ -166,7 +166,7 @@ export type Database = {
           featured: boolean
           id: string
           image_url: string | null
-          landlord_approved: boolean
+          landlord_approved: boolean | null
           landlord_whatsapp: string | null
           name: string
           photos: string[] | null

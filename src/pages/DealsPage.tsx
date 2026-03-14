@@ -27,7 +27,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     featured: p.featured,
     daysAgo,
     image: p.image_url || `https://picsum.photos/seed/prop-${p.city.toLowerCase()}-${p.id.slice(0, 6)}/800/520`,
-    landlordApproved: p.landlord_approved,
+    landlordApproved: p.sa_approved === 'yes',
     landlordWhatsapp: p.landlord_whatsapp,
   };
 }
