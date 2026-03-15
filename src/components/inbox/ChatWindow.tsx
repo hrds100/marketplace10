@@ -24,14 +24,7 @@ export default function ChatWindow({ thread, messages, onBack, onToggleDetails, 
 
   const handleSend = () => {
     if (!input.trim()) return;
-    const newMsg: Message = {
-      id: `local-${Date.now()}`,
-      threadId: thread.id,
-      senderId: 'me',
-      body: input.trim(),
-      messageType: 'text',
-      createdAt: new Date().toISOString(),
-    };
+    const newMsg: Message = { id: `local-${Date.now()}`, threadId: thread.id, senderId: 'me', body: input.trim(), messageType: 'text', createdAt: new Date().toISOString() };
     setLocalMessages(prev => [...prev, newMsg]);
     setInput('');
   };
@@ -40,17 +33,12 @@ export default function ChatWindow({ thread, messages, onBack, onToggleDetails, 
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  // Group messages by date
   const grouped: { date: string; msgs: Message[] }[] = [];
   let lastDate = '';
   for (const msg of localMessages) {
     const date = new Date(msg.createdAt).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
-    if (date !== lastDate) {
-      grouped.push({ date, msgs: [msg] });
-      lastDate = date;
-    } else {
-      grouped[grouped.length - 1].msgs.push(msg);
-    }
+    if (date !== lastDate) { grouped.push({ date, msgs: [msg] }); lastDate = date; }
+    else { grouped[grouped.length - 1].msgs.push(msg); }
   }
 
   return (
@@ -58,13 +46,17 @@ export default function ChatWindow({ thread, messages, onBack, onToggleDetails, 
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
         {isMobile && (
-          <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-secondary mr-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
+          <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-secondary mr-1"><ArrowLeft className="w-5 h-5 text-foreground" /></button>
         )}
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold text-foreground truncate">
-            {thread.isSupport ? 'NFsTay Support' : thread.contactName}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-foreground truncate">{thread.isSupport ? 'NFsTay Support' : thread.contactName}</span>
+            {!thread.isSupport && (
+              <span className={`flex items-center gap-1 text-[10px] ${thread.isOnline ? 'text-emerald-600' : 'text-gray-400'}`}>
+                <span className={`w-2 h-2 rounded-full ${thread.isOnline ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                {thread.isOnline ? 'Online' : 'Offline'}
+              </span>
+            )}
           </div>
           {!thread.isSupport && (
             <div className="text-[11px] text-muted-foreground">{thread.propertyTitle} · {thread.propertyCity}</div>
@@ -77,45 +69,33 @@ export default function ChatWindow({ thread, messages, onBack, onToggleDetails, 
         )}
       </div>
 
-      {/* Messages — fills remaining space */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
         {grouped.map(group => (
           <div key={group.date}>
-            <div className="text-center py-3">
-              <span className="text-[11px] text-gray-400 bg-gray-50 px-3 py-1 rounded-full">{group.date}</span>
-            </div>
+            <div className="text-center py-3"><span className="text-[11px] text-gray-400 bg-gray-50 px-3 py-1 rounded-full">{group.date}</span></div>
             {group.msgs.map(msg => <MessageBubble key={msg.id} message={msg} />)}
           </div>
         ))}
         <div ref={endRef} />
       </div>
 
-      {/* Input bar — pinned to bottom, zero gap */}
+      {/* NDA warning banner — shown when NDA not signed */}
+      {!thread.isSupport && !thread.termsAccepted && (
+        <div className="bg-amber-50 border-t border-amber-200 text-amber-800 text-xs px-4 py-2 shrink-0">
+          🔒 Share contact details only after NDA is signed. Phone numbers in messages will be masked until the NDA is complete.
+        </div>
+      )}
+
+      {/* Input bar */}
       <div className="relative border-t border-gray-200 bg-white px-4 py-3 flex items-end gap-2 shrink-0">
         <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
-
-        <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0">
-          <Plus className="w-5 h-5 text-muted-foreground" />
-        </button>
-        <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}>
-          <LayoutGrid className="w-5 h-5 text-muted-foreground" />
-        </button>
-
-        <textarea
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Write a message..."
-          rows={1}
-          className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px]"
-          style={{ minHeight: 36 }}
-        />
-
-        <button
-          onClick={handleSend}
-          disabled={!input.trim()}
-          className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}
-        >
+        <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
+        <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
+        <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
+          className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px]" style={{ minHeight: 36 }} />
+        <button onClick={handleSend} disabled={!input.trim()}
+          className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
           <Send className="w-5 h-5" />
         </button>
       </div>

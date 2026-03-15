@@ -93,13 +93,13 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
               <>
                 <div className="text-xs text-gray-400 uppercase tracking-wide px-4 py-1">Pinned</div>
                 {supportThreads.map(thread => (
-                  <ThreadItem key={thread.id} thread={thread} isSelected={selectedId === thread.id} onSelect={() => onSelect(thread.id)} />
+                  <ThreadItem key={thread.id} thread={thread} isSelected={selectedId === thread.id} onSelect={() => onSelect(thread.id)} searchQuery={search} />
                 ))}
                 <div className="border-b border-gray-100" />
               </>
             )}
             {regularThreads.map(thread => (
-              <ThreadItem key={thread.id} thread={thread} isSelected={selectedId === thread.id} onSelect={() => onSelect(thread.id)} />
+              <ThreadItem key={thread.id} thread={thread} isSelected={selectedId === thread.id} onSelect={() => onSelect(thread.id)} searchQuery={search} />
             ))}
           </>
         )}

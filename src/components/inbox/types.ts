@@ -12,8 +12,10 @@ export interface Thread {
   contactEmail: string;
   lastMessage: string;
   lastMessageAt: string;
+  lastMessageSenderIsOperator: boolean;
   unread: boolean;
   isSupport: boolean;
+  isOnline: boolean;
   termsAccepted: boolean;
 }
 
@@ -30,4 +32,5 @@ export interface QuickReply {
   id: string;
   title: string;
   body: string;
+  category: string;
 }

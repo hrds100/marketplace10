@@ -15,8 +15,10 @@ export const DUMMY_THREADS: Thread[] = [
     contactEmail: 'support@nfstay.com',
     lastMessage: 'Welcome to NFsTay! How can we help you today?',
     lastMessageAt: 'Ongoing',
+    lastMessageSenderIsOperator: false,
     unread: false,
     isSupport: true,
+    isOnline: true,
     termsAccepted: true,
   },
   {
@@ -33,8 +35,10 @@ export const DUMMY_THREADS: Thread[] = [
     contactEmail: 'james.walker@landlords.co.uk',
     lastMessage: 'Hi, I saw your listing and I am very interested in the property. Could we arrange a viewing?',
     lastMessageAt: 'Yesterday',
+    lastMessageSenderIsOperator: false,
     unread: true,
     isSupport: false,
+    isOnline: true,
     termsAccepted: false,
   },
   {
@@ -51,8 +55,10 @@ export const DUMMY_THREADS: Thread[] = [
     contactEmail: 'sarah.khan@property.co.uk',
     lastMessage: 'The landlord has confirmed SA approval. Ready to proceed whenever you are.',
     lastMessageAt: 'Friday',
+    lastMessageSenderIsOperator: false,
     unread: false,
     isSupport: false,
+    isOnline: false,
     termsAccepted: true,
   },
   {
@@ -69,8 +75,10 @@ export const DUMMY_THREADS: Thread[] = [
     contactEmail: 'tom.peters@bham-lets.co.uk',
     lastMessage: 'Can you send over the projected occupancy rates for this area?',
     lastMessageAt: 'Thursday',
+    lastMessageSenderIsOperator: true,
     unread: true,
     isSupport: false,
+    isOnline: true,
     termsAccepted: false,
   },
 ];
@@ -87,20 +95,20 @@ export const DUMMY_MESSAGES: Record<string, Message[]> = {
   'thread-2': [
     { id: 'm2-1', threadId: 'thread-2', senderId: 'system', body: 'Hugo sent an inquiry · 8 Mar', messageType: 'system', createdAt: '2026-03-08T09:00:00Z' },
     { id: 'm2-2', threadId: 'thread-2', senderId: 'me', body: 'Hi Sarah, really interested in Victoria Court. Is the landlord open to a rent-to-rent arrangement with SA approval?', messageType: 'text', createdAt: '2026-03-08T09:10:00Z' },
-    { id: 'm2-3', threadId: 'thread-2', senderId: 'other', body: 'Yes, absolutely. The landlord is fully on board with serviced accommodation. Happy to share the compliance documents.', messageType: 'text', createdAt: '2026-03-09T11:00:00Z' },
+    { id: 'm2-3', threadId: 'thread-2', senderId: 'other', body: 'Yes, absolutely. The landlord is fully on board with serviced accommodation.', messageType: 'text', createdAt: '2026-03-09T11:00:00Z' },
     { id: 'm2-4', threadId: 'thread-2', senderId: 'me', body: 'Brilliant. Can you confirm the monthly rent and any break clauses?', messageType: 'text', createdAt: '2026-03-10T08:30:00Z' },
     { id: 'm2-5', threadId: 'thread-2', senderId: 'other', body: 'The landlord has confirmed SA approval. Ready to proceed whenever you are.', messageType: 'text', createdAt: '2026-03-14T16:00:00Z' },
   ],
   'thread-3': [
     { id: 'm3-1', threadId: 'thread-3', senderId: 'system', body: 'Hugo sent an inquiry · 10 Mar', messageType: 'system', createdAt: '2026-03-10T14:00:00Z' },
     { id: 'm3-2', threadId: 'thread-3', senderId: 'me', body: 'Hi Tom, Oak Lodge looks like a solid opportunity. What is the current occupancy like in B15?', messageType: 'text', createdAt: '2026-03-10T14:05:00Z' },
-    { id: 'm3-3', threadId: 'thread-3', senderId: 'other', body: 'Can you send over the projected occupancy rates for this area?', messageType: 'text', createdAt: '2026-03-13T09:15:00Z' },
+    { id: 'm3-3', threadId: 'thread-3', senderId: 'me', body: 'Can you send over the projected occupancy rates for this area?', messageType: 'text', createdAt: '2026-03-13T09:15:00Z' },
   ],
 };
 
 export const DUMMY_QUICK_REPLIES: QuickReply[] = [
-  { id: 'qr-1', title: 'Arrange viewing', body: 'Thanks for your inquiry! I\'d love to arrange a viewing. What day works best for you?' },
-  { id: 'qr-2', title: 'Ask about property', body: 'Could you tell me more about the property? I\'m particularly interested in the SA approval status and any existing tenancy.' },
-  { id: 'qr-3', title: 'Express interest', body: 'I\'m very interested in this opportunity. What\'s the best time to speak and discuss terms?' },
-  { id: 'qr-4', title: 'Request documents', body: 'Could you share the compliance documents and any existing EPC/gas safety certificates?' },
+  { id: 'qr-1', title: 'Arrange viewing', body: 'Thanks for your inquiry! I\'d love to arrange a viewing. What day works best for you?', category: 'Viewing' },
+  { id: 'qr-2', title: 'Ask about property', body: 'Could you tell me more about the property? I\'m particularly interested in the SA approval status and any existing tenancy.', category: 'Property Info' },
+  { id: 'qr-3', title: 'Express interest', body: 'I\'m very interested in this opportunity. What\'s the best time to speak and discuss terms?', category: 'Interest' },
+  { id: 'qr-4', title: 'Request documents', body: 'Could you share the compliance documents and any existing EPC/gas safety certificates?', category: 'Documents' },
 ];
