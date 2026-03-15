@@ -1,4 +1,3 @@
-Initialising login role...
 export type Json =
   | string
   | number
@@ -158,9 +157,11 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_read: boolean
           landlord_id: string | null
           operator_id: string | null
           property_id: string | null
+          starred: boolean
           status: string
           terms_accepted: boolean
           terms_accepted_at: string | null
@@ -168,9 +169,11 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_read?: boolean
           landlord_id?: string | null
           operator_id?: string | null
           property_id?: string | null
+          starred?: boolean
           status?: string
           terms_accepted?: boolean
           terms_accepted_at?: string | null
@@ -178,9 +181,11 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_read?: boolean
           landlord_id?: string | null
           operator_id?: string | null
           property_id?: string | null
+          starred?: boolean
           status?: string
           terms_accepted?: boolean
           terms_accepted_at?: string | null
@@ -411,6 +416,7 @@ export type Database = {
           notif_whatsapp_new_deals: boolean | null
           notif_whatsapp_status: boolean | null
           photo_url: string | null
+          role: string | null
           samcart_cust_id: string | null
           suspended: boolean | null
           tier: string | null
@@ -425,6 +431,7 @@ export type Database = {
           notif_whatsapp_new_deals?: boolean | null
           notif_whatsapp_status?: boolean | null
           photo_url?: string | null
+          role?: string | null
           samcart_cust_id?: string | null
           suspended?: boolean | null
           tier?: string | null
@@ -439,6 +446,7 @@ export type Database = {
           notif_whatsapp_new_deals?: boolean | null
           notif_whatsapp_status?: boolean | null
           photo_url?: string | null
+          role?: string | null
           samcart_cust_id?: string | null
           suspended?: boolean | null
           tier?: string | null

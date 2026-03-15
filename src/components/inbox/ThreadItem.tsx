@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MoreHorizontal, Sparkles, BookmarkCheck, Star, Archive } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import type { Thread } from './types';
 
 interface Props {
@@ -7,13 +9,8 @@ interface Props {
   isSelected: boolean;
   onSelect: () => void;
   searchQuery?: string;
+  onArchive?: (id: string) => void;
 }
-
-const MENU_ITEMS = [
-  { label: 'Mark as unread', icon: BookmarkCheck },
-  { label: 'Star', icon: Star },
-  { label: 'Archive', icon: Archive },
-];
 
 function highlightMatch(text: string, query: string): React.ReactNode {
   if (!query || query.length < 2) return text;
@@ -24,7 +21,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
   );
 }
 
-export default function ThreadItem({ thread, isSelected, onSelect, searchQuery = '' }: Props) {
+export default function ThreadItem({ thread, isSelected, onSelect, searchQuery = '', onArchive }: Props) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -87,13 +84,36 @@ export default function ThreadItem({ thread, isSelected, onSelect, searchQuery =
       )}
       {showMenu && (
         <div ref={menuRef} className="absolute top-10 right-3 z-20 bg-white border border-gray-100 rounded-xl shadow-lg py-1 min-w-[180px]">
-          {MENU_ITEMS.map(item => (
-            <button key={item.label} className="w-full text-left px-4 py-2.5 flex items-center gap-2.5 hover:bg-gray-50 transition-colors"
-              onClick={e => { e.stopPropagation(); console.log(item.label, thread.id); setShowMenu(false); }}>
-              <item.icon className="w-[18px] h-[18px] text-gray-700" />
-              <span className="text-sm text-gray-800">{item.label}</span>
-            </button>
-          ))}
+          <button className="w-full text-left px-4 py-2.5 flex items-center gap-2.5 hover:bg-gray-50 transition-colors"
+            onClick={async e => {
+              e.stopPropagation(); setShowMenu(false);
+              if (thread.isSupport) return;
+              const { error } = await supabase.from('chat_threads').update({ is_read: false }).eq('id', thread.id);
+              if (error) toast.error('Failed to mark as unread');
+              else toast.success('Marked as unread');
+            }}>
+            <BookmarkCheck className="w-[18px] h-[18px] text-gray-700" />
+            <span className="text-sm text-gray-800">Mark as unread</span>
+          </button>
+          <button className="w-full text-left px-4 py-2.5 flex items-center gap-2.5 hover:bg-gray-50 transition-colors"
+            onClick={async e => {
+              e.stopPropagation(); setShowMenu(false);
+              if (thread.isSupport) return;
+              const { error } = await supabase.from('chat_threads').update({ starred: true }).eq('id', thread.id);
+              if (error) toast.error('Failed to star');
+              else toast.success('Starred');
+            }}>
+            <Star className="w-[18px] h-[18px] text-gray-700" />
+            <span className="text-sm text-gray-800">Star</span>
+          </button>
+          <button className="w-full text-left px-4 py-2.5 flex items-center gap-2.5 hover:bg-gray-50 transition-colors"
+            onClick={e => {
+              e.stopPropagation(); setShowMenu(false);
+              onArchive?.(thread.id);
+            }}>
+            <Archive className="w-[18px] h-[18px] text-gray-700" />
+            <span className="text-sm text-gray-800">Archive</span>
+          </button>
         </div>
       )}
     </div>

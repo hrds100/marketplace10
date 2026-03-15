@@ -7,12 +7,11 @@ interface Props {
   thread: Thread;
   onClose: () => void;
   onSignNDA: () => void;
+  isOperator?: boolean;
 }
 
-export default function InboxInquiryPanel({ thread, onClose, onSignNDA }: Props) {
+export default function InboxInquiryPanel({ thread, onClose, onSignNDA, isOperator = true }: Props) {
   const [showAgreement, setShowAgreement] = useState(false);
-  // TODO: replace with auth role check
-  const isOperator = true;
 
   return (
     <>

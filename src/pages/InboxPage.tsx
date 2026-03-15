@@ -36,6 +36,14 @@ export default function InboxPage() {
   const [dbThreads, setDbThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string>('operator');
+
+  // Fetch user role from profiles
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from('profiles').select('role').eq('id', user.id).single()
+      .then(({ data }) => { if (data?.role) setUserRole(data.role); });
+  }, [user?.id]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
@@ -218,7 +226,7 @@ export default function InboxPage() {
       </div>
       {showRightPanel && (
         <div className="w-[320px] shrink-0">
-          <InboxInquiryPanel thread={selectedThread} onClose={() => setShowDetails(false)} onSignNDA={handleSignNDA} />
+          <InboxInquiryPanel thread={selectedThread} onClose={() => setShowDetails(false)} onSignNDA={handleSignNDA} isOperator={userRole === 'operator' || userRole === 'admin'} />
         </div>
       )}
       <MessagingSettingsModal open={showSettings} onClose={() => setShowSettings(false)} />
