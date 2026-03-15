@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import PhotoUpload from '@/components/PhotoUpload';
+import MyListingsPanel from '@/components/MyListingsPanel';
 
 const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
 
@@ -405,10 +406,12 @@ export default function ListADealPage() {
 
   // ── Phase: Idle (form) ──
   return (
-    <div className="max-w-[640px]">
+    <div>
       <h1 className="text-[28px] font-bold text-foreground">Submit a Deal</h1>
       <p className="text-sm text-muted-foreground mt-1 mb-8">List a landlord-approved rent-to-rent opportunity.</p>
 
+      <div className="grid lg:grid-cols-[1fr_400px] gap-8 items-start">
+      <div>
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* ── PROPERTY INFO ── */}
         <div>
@@ -584,6 +587,18 @@ export default function ListADealPage() {
         </button>
         <p className="text-xs text-muted-foreground text-center mt-2">Our team reviews all submissions within 24–48 hours.</p>
       </form>
+      </div>
+
+      {/* Right column — My Listings */}
+      <div className="hidden lg:block">
+        <MyListingsPanel userId={user?.id} />
+      </div>
+      </div>
+
+      {/* Mobile: My Listings below form */}
+      <div className="lg:hidden mt-8">
+        <MyListingsPanel userId={user?.id} />
+      </div>
     </div>
   );
 }
