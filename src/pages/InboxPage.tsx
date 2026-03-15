@@ -51,14 +51,13 @@ export default function InboxPage() {
     );
   }
 
-  // Show right panel only for non-support threads
   const showRightPanel = showDetails && selectedThread && !selectedThread.isSupport;
 
-  // Desktop: 3-panel layout — fills full width (responds to sidebar collapse)
+  // Desktop: 3-panel layout — fills all available space from DashboardLayout
   return (
-    <div className="h-[calc(100vh-68px)] w-full flex overflow-hidden -m-6 md:-m-8">
+    <div className="h-full w-full flex overflow-hidden flex-1">
       {/* Left panel — thread list */}
-      <div className="w-[320px] flex-shrink-0">
+      <div className="w-[320px] shrink-0">
         <ThreadList threads={DUMMY_THREADS} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} />
       </div>
 
@@ -84,7 +83,7 @@ export default function InboxPage() {
 
       {/* Right panel — inquiry details */}
       {showRightPanel && (
-        <div className="w-[320px] flex-shrink-0">
+        <div className="w-[320px] shrink-0">
           <InboxInquiryPanel thread={selectedThread} onClose={() => setShowDetails(false)} />
         </div>
       )}

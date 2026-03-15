@@ -14,8 +14,15 @@ const navItems = [
   { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
-export default function DashboardSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+interface SidebarProps {
+  collapsed?: boolean;
+  onCollapse?: (collapsed: boolean) => void;
+}
+
+export default function DashboardSidebar({ collapsed: controlledCollapsed, onCollapse }: SidebarProps = {}) {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const collapsed = controlledCollapsed ?? internalCollapsed;
+  const setCollapsed = (v: boolean) => { setInternalCollapsed(v); onCollapse?.(v); };
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, isAdmin } = useAuth();
