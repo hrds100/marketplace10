@@ -124,7 +124,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
             >
               {addedToCRM ? (
-                <><X className="w-3.5 h-3.5" /> Remove</>
+                <><X className="w-3.5 h-3.5" /> Remove from CRM</>
               ) : (
                 '+ Add to CRM'
               )}
