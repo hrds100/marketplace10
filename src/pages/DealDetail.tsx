@@ -335,7 +335,9 @@ export default function DealDetail() {
               </div>
               <div className="mb-4">
                 <label className="text-xs font-semibold text-foreground block mb-2">Nights booked per month</label>
-                <input type="range" min={5} max={30} value={nights} onChange={e => setNights(Number(e.target.value))} className="w-full accent-primary" />
+                <input type="range" min={5} max={30} value={nights} onChange={e => setNights(Number(e.target.value))}
+                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer outline-none"
+                  style={{ background: `linear-gradient(to right, #10b981 0%, #10b981 ${((nights - 5) / 25) * 100}%, #e5e7eb ${((nights - 5) / 25) * 100}%, #e5e7eb 100%)` }} />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>5</span><span className="font-semibold text-foreground">{nights} nights</span><span>30</span>
                 </div>
