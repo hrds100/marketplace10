@@ -95,8 +95,8 @@ export default function ListADealPage() {
   };
 
   const generateDesc = async () => {
-    if (!form.name && !form.city && !form.type) {
-      toast.error('Fill in property name, city, or type first');
+    if (!form.city && !form.type && !form.bedrooms) {
+      toast.error('Please fill in at least city, property type, or bedrooms first.');
       return;
     }
     setGenerating(true);
@@ -105,16 +105,19 @@ export default function ListADealPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          city: form.city,
-          postcode: form.postcode,
+          city: form.city || '',
+          postcode: form.postcode || '',
           bedrooms: parseInt(form.bedrooms) || 0,
           bathrooms: parseInt(form.bathrooms) || 0,
-          type: form.type || form.propertyCategory,
+          type: form.type || form.propertyCategory || '',
           rent: parseInt(form.rent) || 0,
           profit: parseInt(form.profit) || 0,
           deposit: parseInt(form.deposit) || 0,
           garage: form.garage === 'yes',
-          sa_approved: form.saApproved.toLowerCase(),
+          sa_approved: form.saApproved || '',
+          notes: notes || '',
+          existing_description: description || '',
+          street_name: form.streetName || '',
         }),
       });
       if (!res.ok) throw new Error('Failed');
@@ -500,6 +503,7 @@ export default function ListADealPage() {
           </div>
           <div>
             <label className="text-xs font-semibold text-foreground block mb-1.5">Est. monthly profit (£) *</label>
+            <p className="text-[10px] text-muted-foreground mb-1">We will cross-check with Airbnb similar listings for accuracy.</p>
             <input type="number" placeholder="600" value={form.profit} onChange={e => set('profit', e.target.value)} className="input-nfstay w-full" required />
           </div>
         </div>

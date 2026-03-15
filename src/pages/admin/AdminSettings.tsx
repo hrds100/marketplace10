@@ -13,15 +13,19 @@ const MODEL_OPTIONS = [
 interface AIForm {
   model_pricing: string;
   model_university: string;
+  model_description: string;
   system_prompt_pricing: string;
   system_prompt_university: string;
+  system_prompt_description: string;
 }
 
 const DEFAULT_AI: AIForm = {
   model_pricing: 'gpt-4o-mini',
   model_university: 'gpt-4o-mini',
+  model_description: 'gpt-4o-mini',
   system_prompt_pricing: '',
   system_prompt_university: '',
+  system_prompt_description: '',
 };
 
 export default function AdminSettings() {
@@ -45,8 +49,10 @@ export default function AdminSettings() {
         setAiForm({
           model_pricing: data.model_pricing || 'gpt-4o-mini',
           model_university: data.model_university || 'gpt-4o-mini',
+          model_description: data.model_description || 'gpt-4o-mini',
           system_prompt_pricing: data.system_prompt_pricing || '',
           system_prompt_university: data.system_prompt_university || '',
+          system_prompt_description: data.system_prompt_description || '',
         });
       }
       setAiLoading(false);
@@ -193,6 +199,33 @@ export default function AdminSettings() {
                   className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">This is the instruction set for the lesson chat assistant. Keep it focused on UK rent-to-rent.</p>
+              </div>
+
+              {/* Description model */}
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Description Generator Model</label>
+                <select
+                  value={aiForm.model_description}
+                  onChange={e => setAiForm(p => ({ ...p, model_description: e.target.value }))}
+                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {MODEL_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Description system prompt */}
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Description AI System Prompt</label>
+                <textarea
+                  rows={10}
+                  value={aiForm.system_prompt_description}
+                  onChange={e => setAiForm(p => ({ ...p, system_prompt_description: e.target.value }))}
+                  placeholder="You are NFsTay's property listing writer..."
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">This prompt generates listing descriptions when users click "Generate description with AI". Keep it UK-focused and investor-oriented.</p>
               </div>
 
               <button
