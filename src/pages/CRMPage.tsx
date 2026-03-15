@@ -4,6 +4,7 @@ import { crmDeals as mockDeals, CRM_STAGES, type CRMDeal, listings } from '@/dat
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { notifyCrmStageMove } from '@/lib/n8n';
 
 export default function CRMPage() {
   const { user } = useAuth();
@@ -60,10 +61,15 @@ export default function CRMPage() {
   const stagePotProfit = (stage: string) => stageDeals(stage).reduce((s, d) => s + d.profit, 0);
 
   const onDragStart = (id: string) => setDragId(id);
-  const onDrop = async (stage: string) => {
+  const onDrop = async (toStage: string) => {
     if (!dragId) return;
-    setDeals(prev => prev.map(d => d.id === dragId ? { ...d, stage } : d));
-    if (user) await supabase.from('crm_deals').update({ stage: stage as any }).eq('id', dragId);
+    const deal = deals.find(d => d.id === dragId);
+    const fromStage = deal?.stage || '';
+    setDeals(prev => prev.map(d => d.id === dragId ? { ...d, stage: toStage } : d));
+    if (user) {
+      await supabase.from('crm_deals').update({ stage: toStage as any }).eq('id', dragId);
+      notifyCrmStageMove({ dealId: dragId, fromStage, toStage, userId: user.id });
+    }
     setDragId(null);
     toast.success('Deal moved');
   };

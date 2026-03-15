@@ -80,6 +80,22 @@ export async function verifyOtp(params: {
   return data;
 }
 
+/** POST /webhook/move-crm-stage — fire-and-forget notification, never blocks UI */
+export function notifyCrmStageMove(params: {
+  dealId: string;
+  fromStage: string;
+  toStage: string;
+  userId: string;
+}): void {
+  fetch(`${N8N_BASE}/webhook/move-crm-stage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  }).catch(() => {
+    // Silent fail — Supabase is source of truth, n8n is just a notification
+  });
+}
+
 /** POST /webhook/signup-welcome (call after Supabase signup if you use Auth) */
 export async function sendSignupWelcome(params: { email: string; name?: string }): Promise<{ success: boolean }> {
   const res = await fetch(`${N8N_BASE}/webhook/signup-welcome`, {
