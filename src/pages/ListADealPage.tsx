@@ -111,12 +111,12 @@ function AccordionSection({ id, title, description, isOpen, isComplete, onToggle
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {isOpen && (
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="px-6 pb-6 pt-1 border-t border-border">
           <p className="text-xs text-muted-foreground mb-5">{description}</p>
           {children}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -135,7 +135,15 @@ export default function ListADealPage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<DealForm>(INITIAL_FORM);
   const [profileWhatsapp, setProfileWhatsapp] = useState('');
-  const [openSection, setOpenSection] = useState<string>('property-details');
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['property-details', 'media']));
+
+  const toggleSection = (id: string) => {
+    setOpenSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const set = (key: keyof DealForm, value: string) => setForm(p => ({ ...p, [key]: value }));
 
@@ -175,7 +183,7 @@ export default function ListADealPage() {
     setDescription('');
     setNotes('');
     setForm(INITIAL_FORM);
-    setOpenSection('property-details');
+    setOpenSections(new Set(['property-details', 'media']));
   };
 
   // Section completion checks
@@ -199,18 +207,7 @@ export default function ListADealPage() {
     'media': () => `${photos.length} photo${photos.length !== 1 ? 's' : ''}${description ? ' · description added' : ''}`,
   };
 
-  // Auto-advance to next incomplete section
-  useEffect(() => {
-    const currentIndex = SECTION_ORDER.indexOf(openSection as typeof SECTION_ORDER[number]);
-    if (currentIndex === -1) return;
-    if (sectionComplete[openSection]?.()) {
-      const next = SECTION_ORDER.slice(currentIndex + 1).find(s => !sectionComplete[s]?.());
-      if (next) {
-        const timer = setTimeout(() => setOpenSection(next), 400);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [form, openSection, photos, description]);
+  // No auto-advance — sections only open/close on manual click
 
   const generateDesc = async () => {
     if (!form.city && !form.type && !form.bedrooms) {
@@ -376,7 +373,6 @@ export default function ListADealPage() {
   }
 
   const bedOptions = form.propertyCategory === 'flat' ? FLAT_BEDS : form.propertyCategory === 'house' ? HOUSE_BEDS : [];
-  const toggle = (id: string) => setOpenSection(prev => prev === id ? '' : id);
 
   // ── Phase: Idle (form) ──
   return (
@@ -390,7 +386,7 @@ export default function ListADealPage() {
 
             {/* ── Property Details ── */}
             <AccordionSection id="property-details" title="Property Details" description="Basic information about the property location."
-              isOpen={openSection === 'property-details'} isComplete={sectionComplete['property-details']()} onToggle={() => toggle('property-details')}
+              isOpen={openSections.has('property-details')} isComplete={sectionComplete['property-details']()} onToggle={() => toggleSection('property-details')}
               summary={summaries['property-details']()}>
               <div className="space-y-4">
                 <div>
@@ -410,7 +406,7 @@ export default function ListADealPage() {
 
             {/* ── Property Type ── */}
             <AccordionSection id="property-type" title="Property Type" description="Select the type that best describes this property."
-              isOpen={openSection === 'property-type'} isComplete={sectionComplete['property-type']()} onToggle={() => toggle('property-type')}
+              isOpen={openSections.has('property-type')} isComplete={sectionComplete['property-type']()} onToggle={() => toggleSection('property-type')}
               summary={summaries['property-type']()}>
               <div className="grid grid-cols-3 gap-3">
                 {CATEGORIES.map(cat => (
@@ -436,7 +432,7 @@ export default function ListADealPage() {
 
             {/* ── Property Features ── */}
             <AccordionSection id="property-features" title="Property Features" description="Room counts and amenities."
-              isOpen={openSection === 'property-features'} isComplete={sectionComplete['property-features']()} onToggle={() => toggle('property-features')}
+              isOpen={openSections.has('property-features')} isComplete={sectionComplete['property-features']()} onToggle={() => toggleSection('property-features')}
               summary={summaries['property-features']()}>
               <div className="flex flex-wrap gap-8">
                 <Counter label="Bedrooms *" value={form.bedrooms} onChange={v => set('bedrooms', v)} />
@@ -468,7 +464,7 @@ export default function ListADealPage() {
 
             {/* ── Financials ── */}
             <AccordionSection id="financials" title="Financials" description="Rental costs and expected returns."
-              isOpen={openSection === 'financials'} isComplete={sectionComplete['financials']()} onToggle={() => toggle('financials')}
+              isOpen={openSections.has('financials')} isComplete={sectionComplete['financials']()} onToggle={() => toggleSection('financials')}
               summary={summaries['financials']()}>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -484,7 +480,7 @@ export default function ListADealPage() {
 
             {/* ── SA Approval ── */}
             <AccordionSection id="sa-approval" title="SA Approval" description="Is the agent or landlord approved for Serviced Accommodation?"
-              isOpen={openSection === 'sa-approval'} isComplete={sectionComplete['sa-approval']()} onToggle={() => toggle('sa-approval')}
+              isOpen={openSections.has('sa-approval')} isComplete={sectionComplete['sa-approval']()} onToggle={() => toggleSection('sa-approval')}
               summary={summaries['sa-approval']()}>
               <div className="flex gap-4">
                 {['Yes', 'No', 'Awaiting'].map(o => (
@@ -497,7 +493,7 @@ export default function ListADealPage() {
 
             {/* ── Contact ── */}
             <AccordionSection id="contact" title="Contact Details" description="Landlord or agent contact information."
-              isOpen={openSection === 'contact'} isComplete={sectionComplete['contact']()} onToggle={() => toggle('contact')}
+              isOpen={openSections.has('contact')} isComplete={sectionComplete['contact']()} onToggle={() => toggleSection('contact')}
               summary={summaries['contact']()}>
               <div className="space-y-4">
                 <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact name *</label><input type="text" placeholder="Landlord/Agent" value={form.contactName} onChange={e => set('contactName', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
@@ -528,7 +524,7 @@ export default function ListADealPage() {
 
             {/* ── Media ── */}
             <AccordionSection id="media" title="Media & Description" description="Photos and listing text to attract investors."
-              isOpen={openSection === 'media'} isComplete={sectionComplete['media']()} onToggle={() => toggle('media')}
+              isOpen={openSections.has('media')} isComplete={sectionComplete['media']()} onToggle={() => toggleSection('media')}
               summary={summaries['media']()}>
               <div className="space-y-5">
                 <PhotoUpload photos={photos} onChange={setPhotos} />
