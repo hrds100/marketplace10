@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -12,75 +13,193 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      ai_settings: {
+        Row: {
+          id: string
+          model_description: string | null
+          model_pricing: string | null
+          model_university: string | null
+          system_prompt_description: string | null
+          system_prompt_pricing: string | null
+          system_prompt_university: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          model_description?: string | null
+          model_pricing?: string | null
+          model_university?: string | null
+          system_prompt_description?: string | null
+          system_prompt_pricing?: string | null
+          system_prompt_university?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          model_description?: string | null
+          model_pricing?: string | null
+          model_university?: string | null
+          system_prompt_description?: string | null
+          system_prompt_pricing?: string | null
+          system_prompt_university?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       crm_deals: {
         Row: {
-          archived: boolean
+          archived: boolean | null
           city: string
-          created_at: string
+          created_at: string | null
           email: string | null
           id: string
           last_contact: string | null
           name: string
           notes: string | null
-          outsider_lead: boolean
+          outsider_lead: boolean | null
           photo_url: string | null
-          postcode: string
-          profit: number
-          property_id: string | null
-          rent: number
-          stage: Database["public"]["Enums"]["crm_stage"]
-          type: string
-          updated_at: string
+          postcode: string | null
+          profit: number | null
+          rent: number | null
+          stage: string | null
+          type: string | null
           user_id: string
           whatsapp: string | null
         }
         Insert: {
-          archived?: boolean
-          city?: string
-          created_at?: string
+          archived?: boolean | null
+          city: string
+          created_at?: string | null
           email?: string | null
           id?: string
           last_contact?: string | null
-          name?: string
+          name: string
           notes?: string | null
-          outsider_lead?: boolean
+          outsider_lead?: boolean | null
           photo_url?: string | null
-          postcode?: string
-          profit?: number
-          property_id?: string | null
-          rent?: number
-          stage?: Database["public"]["Enums"]["crm_stage"]
-          type?: string
-          updated_at?: string
+          postcode?: string | null
+          profit?: number | null
+          rent?: number | null
+          stage?: string | null
+          type?: string | null
           user_id: string
           whatsapp?: string | null
         }
         Update: {
-          archived?: boolean
+          archived?: boolean | null
           city?: string
-          created_at?: string
+          created_at?: string | null
           email?: string | null
           id?: string
           last_contact?: string | null
           name?: string
           notes?: string | null
-          outsider_lead?: boolean
+          outsider_lead?: boolean | null
           photo_url?: string | null
-          postcode?: string
-          profit?: number
-          property_id?: string | null
-          rent?: number
-          stage?: Database["public"]["Enums"]["crm_stage"]
-          type?: string
-          updated_at?: string
+          postcode?: string | null
+          profit?: number | null
+          rent?: number | null
+          stage?: string | null
+          type?: string | null
           user_id?: string
           whatsapp?: string | null
         }
+        Relationships: []
+      }
+      inquiries: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          message: string | null
+          phone: string | null
+          property_name: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          message?: string | null
+          phone?: string | null
+          property_name?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          message?: string | null
+          phone?: string | null
+          property_name?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          id: string
+          property_id: string | null
+          read: boolean | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          property_id?: string | null
+          read?: boolean | null
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          property_id?: string | null
+          read?: boolean | null
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "crm_deals_property_id_fkey"
+            foreignKeyName: "notifications_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
@@ -88,70 +207,70 @@ export type Database = {
           },
         ]
       }
-      lessons: {
+      otps: {
         Row: {
-          content: string | null
-          created_at: string
+          code: string
+          created_at: string | null
+          expires_at: string
           id: string
-          module_id: string | null
-          order: number
-          title: string
-          updated_at: string
+          phone: string
         }
         Insert: {
-          content?: string | null
-          created_at?: string
+          code: string
+          created_at?: string | null
+          expires_at: string
           id?: string
-          module_id?: string | null
-          order?: number
-          title: string
-          updated_at?: string
+          phone: string
         }
         Update: {
-          content?: string | null
-          created_at?: string
+          code?: string
+          created_at?: string | null
+          expires_at?: string
           id?: string
-          module_id?: string | null
-          order?: number
-          title?: string
-          updated_at?: string
+          phone?: string
         }
         Relationships: []
       }
       profiles: {
         Row: {
-          created_at: string
-          email: string
           id: string
-          name: string
+          name: string | null
+          notif_email_daily: boolean | null
+          notif_whatsapp_daily: boolean | null
+          notif_whatsapp_new_deals: boolean | null
+          notif_whatsapp_status: boolean | null
           photo_url: string | null
-          samcart_customer_id: string | null
-          updated_at: string
-          user_id: string
+          samcart_cust_id: string | null
+          suspended: boolean | null
+          tier: string | null
           whatsapp: string | null
           whatsapp_verified: boolean | null
         }
         Insert: {
-          created_at?: string
-          email?: string
-          id?: string
-          name?: string
+          id: string
+          name?: string | null
+          notif_email_daily?: boolean | null
+          notif_whatsapp_daily?: boolean | null
+          notif_whatsapp_new_deals?: boolean | null
+          notif_whatsapp_status?: boolean | null
           photo_url?: string | null
-          samcart_customer_id?: string | null
-          updated_at?: string
-          user_id: string
+          samcart_cust_id?: string | null
+          suspended?: boolean | null
+          tier?: string | null
           whatsapp?: string | null
           whatsapp_verified?: boolean | null
         }
         Update: {
-          created_at?: string
-          email?: string
           id?: string
-          name?: string
+          name?: string | null
+          notif_email_daily?: boolean | null
+          notif_whatsapp_daily?: boolean | null
+          notif_whatsapp_new_deals?: boolean | null
+          notif_whatsapp_status?: boolean | null
           photo_url?: string | null
-          samcart_customer_id?: string | null
-          updated_at?: string
-          user_id?: string
+          samcart_cust_id?: string | null
+          suspended?: boolean | null
+          tier?: string | null
           whatsapp?: string | null
           whatsapp_verified?: boolean | null
         }
@@ -159,147 +278,180 @@ export type Database = {
       }
       properties: {
         Row: {
-          beds: number
-          city: string
-          created_at: string
-          description: string | null
-          featured: boolean
-          id: string
-          image_url: string | null
-          landlord_approved: boolean | null
-          landlord_whatsapp: string | null
-          name: string
-          photos: string[] | null
-          postcode: string
-          profit_est: number
-          rent_monthly: number
-          status: Database["public"]["Enums"]["property_status"]
-          type: string
-          updated_at: string
-          submitted_by: string | null
-          property_category: string | null
-          bedrooms: number | null
-          bathrooms: number | null
-          garage: boolean
-          deposit: number | null
           agent_fee: number | null
-          sa_approved: string | null
+          ai_model_used: string | null
+          airbnb_search_url_30d: string | null
+          airbnb_search_url_7d: string | null
+          airbnb_search_url_90d: string | null
+          bathrooms: number | null
+          bedrooms: number | null
+          beds: number | null
+          city: string | null
+          contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
           contact_whatsapp: string | null
-          contact_email: string | null
+          created_at: string | null
+          days_since_added: number | null
+          deposit: number | null
+          description: string | null
+          edit_requested_at: string | null
+          estimated_monthly_revenue: number | null
+          estimated_nightly_rate: number | null
+          estimated_profit: number | null
+          estimation_confidence: string | null
+          estimation_notes: string | null
+          featured: boolean | null
+          garage: boolean | null
+          id: string
+          in_crm: boolean | null
+          landlord_whatsapp: string | null
+          name: string | null
           notes: string | null
+          pending_reason: string | null
+          photos: string[] | null
+          postcode: string | null
+          profit_est: number | null
+          property_category: string | null
+          rent_monthly: number | null
+          sa_approved: string | null
+          status: string | null
+          submitted_by: string | null
+          type: string | null
         }
         Insert: {
-          beds?: number
-          city: string
-          created_at?: string
-          description?: string | null
-          featured?: boolean
-          id?: string
-          image_url?: string | null
-          landlord_approved?: boolean
-          landlord_whatsapp?: string | null
-          name: string
-          photos?: string[] | null
-          postcode?: string
-          profit_est?: number
-          rent_monthly?: number
-          status?: Database["public"]["Enums"]["property_status"]
-          type?: string
-          updated_at?: string
-          submitted_by?: string | null
-          property_category?: string | null
-          bedrooms?: number | null
-          bathrooms?: number | null
-          garage?: boolean
-          deposit?: number | null
           agent_fee?: number | null
-          sa_approved?: string | null
+          ai_model_used?: string | null
+          airbnb_search_url_30d?: string | null
+          airbnb_search_url_7d?: string | null
+          airbnb_search_url_90d?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          beds?: number | null
+          city?: string | null
+          contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           contact_whatsapp?: string | null
-          contact_email?: string | null
+          created_at?: string | null
+          days_since_added?: number | null
+          deposit?: number | null
+          description?: string | null
+          edit_requested_at?: string | null
+          estimated_monthly_revenue?: number | null
+          estimated_nightly_rate?: number | null
+          estimated_profit?: number | null
+          estimation_confidence?: string | null
+          estimation_notes?: string | null
+          featured?: boolean | null
+          garage?: boolean | null
+          id?: string
+          in_crm?: boolean | null
+          landlord_whatsapp?: string | null
+          name?: string | null
           notes?: string | null
+          pending_reason?: string | null
+          photos?: string[] | null
+          postcode?: string | null
+          profit_est?: number | null
+          property_category?: string | null
+          rent_monthly?: number | null
+          sa_approved?: string | null
+          status?: string | null
+          submitted_by?: string | null
+          type?: string | null
         }
         Update: {
-          beds?: number
-          city?: string
-          created_at?: string
-          description?: string | null
-          featured?: boolean
-          id?: string
-          image_url?: string | null
-          landlord_approved?: boolean
-          landlord_whatsapp?: string | null
-          name?: string
-          photos?: string[] | null
-          postcode?: string
-          profit_est?: number
-          rent_monthly?: number
-          status?: Database["public"]["Enums"]["property_status"]
-          type?: string
-          updated_at?: string
-          submitted_by?: string | null
-          property_category?: string | null
-          bedrooms?: number | null
-          bathrooms?: number | null
-          garage?: boolean
-          deposit?: number | null
           agent_fee?: number | null
-          sa_approved?: string | null
+          ai_model_used?: string | null
+          airbnb_search_url_30d?: string | null
+          airbnb_search_url_7d?: string | null
+          airbnb_search_url_90d?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          beds?: number | null
+          city?: string | null
+          contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           contact_whatsapp?: string | null
-          contact_email?: string | null
+          created_at?: string | null
+          days_since_added?: number | null
+          deposit?: number | null
+          description?: string | null
+          edit_requested_at?: string | null
+          estimated_monthly_revenue?: number | null
+          estimated_nightly_rate?: number | null
+          estimated_profit?: number | null
+          estimation_confidence?: string | null
+          estimation_notes?: string | null
+          featured?: boolean | null
+          garage?: boolean | null
+          id?: string
+          in_crm?: boolean | null
+          landlord_whatsapp?: string | null
+          name?: string | null
           notes?: string | null
+          pending_reason?: string | null
+          photos?: string[] | null
+          postcode?: string | null
+          profit_est?: number | null
+          property_category?: string | null
+          rent_monthly?: number | null
+          sa_approved?: string | null
+          status?: string | null
+          submitted_by?: string | null
+          type?: string | null
         }
         Relationships: []
       }
-      subscriptions: {
+      user_favourites: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
-          samcart_id: string | null
-          status: Database["public"]["Enums"]["subscription_status"]
-          tier: Database["public"]["Enums"]["subscription_tier"]
-          updated_at: string
+          property_id: string
           user_id: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          samcart_id?: string | null
-          status?: Database["public"]["Enums"]["subscription_status"]
-          tier?: Database["public"]["Enums"]["subscription_tier"]
-          updated_at?: string
+          property_id: string
           user_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          samcart_id?: string | null
-          status?: Database["public"]["Enums"]["subscription_status"]
-          tier?: Database["public"]["Enums"]["subscription_tier"]
-          updated_at?: string
+          property_id?: string
           user_id?: string
         }
         Relationships: []
       }
-      user_roles: {
+      user_progress: {
         Row: {
+          completed: boolean | null
+          completed_at: string | null
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          lesson_id: string
+          module_id: string
+          step_index: number | null
           user_id: string
         }
         Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          lesson_id: string
+          module_id: string
+          step_index?: number | null
           user_id: string
         }
         Update: {
+          completed?: boolean | null
+          completed_at?: string | null
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          lesson_id?: string
+          module_id?: string
+          step_index?: number | null
           user_id?: string
         }
         Relationships: []
@@ -309,26 +461,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
+      update_profile_tier_by_email: {
+        Args: { customer_email: string; new_tier: string }
+        Returns: undefined
       }
     }
     Enums: {
-      app_role: "admin" | "user"
-      crm_stage:
-        | "New Lead"
-        | "Under Negotiation"
-        | "Contract Sent"
-        | "Follow Up"
-        | "Closed"
-        | "Portfolio"
-      property_status: "live" | "on-offer" | "inactive"
-      subscription_status: "active" | "cancelled" | "paused" | "trial"
-      subscription_tier: "monthly" | "yearly" | "lifetime"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -454,20 +593,10 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
-    Enums: {
-      app_role: ["admin", "user"],
-      crm_stage: [
-        "New Lead",
-        "Under Negotiation",
-        "Contract Sent",
-        "Follow Up",
-        "Closed",
-        "Portfolio",
-      ],
-      property_status: ["live", "on-offer", "inactive"],
-      subscription_status: ["active", "cancelled", "paused", "trial"],
-      subscription_tier: ["monthly", "yearly", "lifetime"],
-    },
+    Enums: {},
   },
 } as const
