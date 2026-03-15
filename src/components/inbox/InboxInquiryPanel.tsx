@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, MapPin, Home, Phone, Mail, User, FileText, CheckCircle, Clock, Circle, Lock, ExternalLink } from 'lucide-react';
+import { ChevronLeft, MapPin, Home, Phone, Mail, User, FileText, CheckCircle, Clock, Circle, Lock, ExternalLink, TrendingUp } from 'lucide-react';
 import type { Thread } from './types';
 import AgreementModal from './AgreementModal';
 import EarningsEstimator from './EarningsEstimator';
@@ -16,12 +16,12 @@ function PropertyInfo({ thread }: { thread: Thread }) {
   const fallbackImage = `https://picsum.photos/seed/${thread.id.slice(0, 8)}/400/240`;
   return (
     <>
-      <div className="w-full h-40 rounded-xl bg-gray-100 overflow-hidden">
+      <div className="w-full h-36 rounded-xl bg-gray-100 overflow-hidden">
         <img src={thread.propertyImage || fallbackImage} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).src = fallbackImage; }} />
       </div>
       <div>
-        <h4 className="text-base font-semibold text-gray-900">{thread.propertyTitle}</h4>
-        <div className="flex items-center gap-1.5 mt-1.5">
+        <h4 className="text-base font-semibold text-gray-900 leading-snug">{thread.propertyTitle}</h4>
+        <div className="flex items-center gap-1.5 mt-1">
           <MapPin className="w-3.5 h-3.5 text-gray-400" />
           <span className="text-sm text-gray-500">{thread.propertyCity}{thread.propertyPostcode ? ` · ${thread.propertyPostcode}` : ''}</span>
         </div>
@@ -30,15 +30,20 @@ function PropertyInfo({ thread }: { thread: Thread }) {
           <span className="text-sm text-gray-500">{thread.dealType || 'Serviced Accommodation'}</span>
         </div>
         {thread.propertyProfit > 0 && (
-          <div className="mt-2 text-sm font-medium text-emerald-600">£{thread.propertyProfit.toLocaleString()}/mo estimated profit</div>
+          <div className="mt-2">
+            <span className="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+              <TrendingUp className="w-3 h-3" />
+              £{thread.propertyProfit.toLocaleString()}/mo
+            </span>
+          </div>
         )}
       </div>
       {thread.propertyId ? (
-        <a href={`/deals/${thread.propertyId}`} className="w-full h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+        <a href={`/deals/${thread.propertyId}`} className="w-full h-10 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
           <ExternalLink className="w-4 h-4" /> View Listing
         </a>
       ) : (
-        <div className="w-full h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-400 flex items-center justify-center gap-2 opacity-50 cursor-not-allowed" title="Property not available">
+        <div className="w-full h-10 rounded-xl bg-gray-200 text-gray-400 text-sm font-medium flex items-center justify-center gap-2 opacity-50 cursor-not-allowed" title="Property not available">
           <ExternalLink className="w-4 h-4" /> View Listing
         </div>
       )}
@@ -52,31 +57,28 @@ function OperatorView({ thread }: { thread: Thread }) {
     <>
       <PropertyInfo thread={thread} />
 
-      {/* Earnings Estimator — operator only */}
       <EarningsEstimator
         monthlyRent={thread.propertyRent ?? 0}
         bedrooms={thread.propertyBedrooms ?? 0}
         propertyType={thread.dealType ?? 'Property'}
       />
 
-      <div className="border-t border-gray-100" />
-
       {/* Landlord Details — locked */}
       <div>
-        <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Landlord Details</h5>
-        <div className="flex items-center gap-2.5">
-          <Lock className="w-4 h-4 text-gray-300 shrink-0" />
-          <span className="text-sm text-gray-400 italic">Waiting to unlock landlord details</span>
+        <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wide border-t border-gray-50 pt-4 mb-3">Landlord Details</h5>
+        <div className="rounded-xl bg-gray-50 px-3 py-3 flex flex-col gap-1.5">
+          <div className="flex items-center gap-2.5">
+            <Lock className="w-4 h-4 text-gray-300 shrink-0" />
+            <span className="text-sm text-gray-400 italic">Waiting to unlock landlord details</span>
+          </div>
+          <p className="text-xs text-gray-400">Waiting for landlord to release details.</p>
         </div>
-        <p className="text-xs text-gray-400 mt-2">Waiting for landlord to release details.</p>
       </div>
-
-      <div className="border-t border-gray-100" />
 
       {/* Next Steps */}
       <div>
-        <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Next Steps</h5>
-        <div className="space-y-2.5">
+        <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wide border-t border-gray-50 pt-4 mb-3">Next Steps</h5>
+        <div className="rounded-xl bg-gray-50 px-3 py-3 space-y-2.5">
           <div className="flex items-center gap-2.5">
             <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
             <span className="text-sm text-gray-600">Initial inquiry sent</span>
@@ -96,8 +98,6 @@ function LandlordView({ thread, onOpenAgreement }: { thread: Thread; onOpenAgree
   return (
     <>
       <PropertyInfo thread={thread} />
-
-      <div className="border-t border-gray-100" />
 
       {/* NDA Status */}
       <div>
@@ -124,11 +124,9 @@ function LandlordView({ thread, onOpenAgreement }: { thread: Thread; onOpenAgree
         {thread.termsAccepted ? 'NDA Signed ✓' : 'View NDA Agreement'}
       </button>
 
-      <div className="border-t border-gray-100" />
-
       {/* Operator Details — gated by NDA */}
       <div>
-        <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Operator Details</h5>
+        <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wide border-t border-gray-50 pt-4 mb-3">Operator Details</h5>
         {thread.termsAccepted ? (
           <div className="space-y-2.5">
             <div className="flex items-center gap-2 text-sm text-gray-700">
@@ -145,22 +143,20 @@ function LandlordView({ thread, onOpenAgreement }: { thread: Thread; onOpenAgree
             </div>
           </div>
         ) : (
-          <>
+          <div className="rounded-xl bg-gray-50 px-3 py-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-2.5">
               <Lock className="w-4 h-4 text-gray-300 shrink-0" />
               <span className="text-sm text-gray-400 italic">Hidden until NDA is signed</span>
             </div>
-            <p className="text-xs text-gray-400 mt-2">Will be released after you sign the above agreement.</p>
-          </>
+            <p className="text-xs text-gray-400">Will be released after you sign the above agreement.</p>
+          </div>
         )}
       </div>
 
-      <div className="border-t border-gray-100" />
-
       {/* Next Steps */}
       <div>
-        <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Next Steps</h5>
-        <div className="space-y-2.5">
+        <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wide border-t border-gray-50 pt-4 mb-3">Next Steps</h5>
+        <div className="rounded-xl bg-gray-50 px-3 py-3 space-y-2.5">
           <div className="flex items-center gap-2.5">
             <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
             <span className="text-sm text-gray-600">Initial inquiry sent</span>

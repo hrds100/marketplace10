@@ -16,6 +16,7 @@ export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType 
   const estimatedRevenue = nightsBooked * nightlyRate;
   const estimatedProfit = estimatedRevenue - monthlyRent - extraCosts;
   const isProfitable = estimatedProfit >= 0;
+  const sliderPercent = ((nightsBooked - 5) / 25) * 100;
 
   const summary = [bedrooms > 0 ? `${bedrooms}-bed` : null, propertyType].filter(Boolean).join(' ') || 'Property';
 
@@ -31,7 +32,7 @@ export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType 
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs text-gray-500">Nights booked / month</span>
-          <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{nightsBooked} nights</span>
+          <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{nightsBooked} nights</span>
         </div>
         <input
           type="range"
@@ -40,7 +41,10 @@ export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType 
           step={1}
           value={nightsBooked}
           onChange={e => setNightsBooked(parseInt(e.target.value))}
-          className="w-full accent-indigo-600"
+          className="w-full h-1.5 rounded-full appearance-none cursor-pointer outline-none"
+          style={{
+            background: `linear-gradient(to right, #10b981 0%, #10b981 ${sliderPercent}%, #e5e7eb ${sliderPercent}%, #e5e7eb 100%)`,
+          }}
         />
         <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
           <span>5 nights</span>
@@ -51,7 +55,7 @@ export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType 
       {/* Nightly rate input */}
       <div>
         <label className="text-xs text-gray-500 block mb-1.5">Nightly average rate</label>
-        <div className="flex items-center border border-gray-200 rounded-xl px-3 h-10 focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-100 transition">
+        <div className="flex items-center border border-gray-200 rounded-xl px-3 h-10 focus-within:border-emerald-400 focus-within:ring-1 focus-within:ring-emerald-100 transition">
           <span className="text-sm text-gray-400 mr-1">£</span>
           <input
             type="number"
@@ -78,7 +82,7 @@ export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType 
         {showExtraCosts && (
           <div className="mt-2">
             <label className="text-xs text-gray-500 block mb-1.5">Monthly extras (cleaning, bills...)</label>
-            <div className="flex items-center border border-gray-200 rounded-xl px-3 h-10 focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-100 transition">
+            <div className="flex items-center border border-gray-200 rounded-xl px-3 h-10 focus-within:border-emerald-400 focus-within:ring-1 focus-within:ring-emerald-100 transition">
               <span className="text-sm text-gray-400 mr-1">£</span>
               <input
                 type="number"

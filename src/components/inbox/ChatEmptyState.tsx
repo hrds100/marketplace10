@@ -17,8 +17,8 @@ interface Props {
 export default function ChatEmptyState({ propertyTitle, onSelectStarter }: Props) {
   return (
     <div className="h-full flex flex-col items-center justify-center px-6 py-10 gap-6">
-      <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
-        <MessageSquare className="w-6 h-6 text-indigo-400" />
+      <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center">
+        <MessageSquare className="w-6 h-6 text-emerald-500" />
       </div>
 
       <div className="text-center">
@@ -41,7 +41,7 @@ export default function ChatEmptyState({ propertyTitle, onSelectStarter }: Props
             <button
               key={text}
               onClick={() => onSelectStarter(text)}
-              className="w-full text-left px-4 py-2.5 rounded-xl border border-gray-100 bg-white text-sm text-gray-600 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-all duration-150 shadow-sm"
+              className="w-full text-left px-4 py-2.5 rounded-xl border border-gray-100 bg-white text-sm text-gray-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all duration-150 shadow-sm"
             >
               {text}
             </button>
