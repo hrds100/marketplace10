@@ -13,7 +13,7 @@ export default function ThreadItem({ thread, isSelected, onSelect }: Props) {
 
   return (
     <div
-      className={`relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors group ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50/60'}`}
+      className={`relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors group ${isSelected ? 'bg-gray-100' : 'bg-white hover:bg-gray-50'}`}
       onClick={onSelect}
       onMouseLeave={() => setShowMenu(false)}
     >

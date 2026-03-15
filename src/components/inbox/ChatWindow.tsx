@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, ChevronRight, Plus, LayoutGrid, Send } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronLeft, Plus, LayoutGrid, Send } from 'lucide-react';
 import type { Thread, Message } from './types';
 import MessageBubble from './MessageBubble';
 import QuickRepliesModal from './QuickRepliesModal';
@@ -9,10 +9,11 @@ interface Props {
   messages: Message[];
   onBack: () => void;
   onToggleDetails: () => void;
+  showDetailsOpen: boolean;
   isMobile: boolean;
 }
 
-export default function ChatWindow({ thread, messages, onBack, onToggleDetails, isMobile }: Props) {
+export default function ChatWindow({ thread, messages, onBack, onToggleDetails, showDetailsOpen, isMobile }: Props) {
   const [input, setInput] = useState('');
   const [localMessages, setLocalMessages] = useState(messages);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
@@ -55,7 +56,7 @@ export default function ChatWindow({ thread, messages, onBack, onToggleDetails, 
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
         {isMobile && (
           <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-secondary mr-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -69,15 +70,15 @@ export default function ChatWindow({ thread, messages, onBack, onToggleDetails, 
             <div className="text-[11px] text-muted-foreground">{thread.propertyTitle} · {thread.propertyCity}</div>
           )}
         </div>
-        {!thread.isSupport && (
-          <button onClick={onToggleDetails} className="p-1.5 rounded-lg hover:bg-secondary">
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        {!thread.isSupport && !isMobile && (
+          <button onClick={onToggleDetails} className="p-1.5 rounded-lg hover:bg-secondary" title={showDetailsOpen ? 'Hide details' : 'Show details'}>
+            {showDetailsOpen ? <ChevronRight className="w-5 h-5 text-muted-foreground" /> : <ChevronLeft className="w-5 h-5 text-muted-foreground" />}
           </button>
         )}
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      {/* Messages — fills remaining space */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
         {grouped.map(group => (
           <div key={group.date}>
             <div className="text-center py-3">
@@ -89,14 +90,14 @@ export default function ChatWindow({ thread, messages, onBack, onToggleDetails, 
         <div ref={endRef} />
       </div>
 
-      {/* Input bar */}
-      <div className="relative border-t border-gray-200 bg-white px-4 py-3 flex items-end gap-2 flex-shrink-0">
+      {/* Input bar — pinned to bottom, zero gap */}
+      <div className="relative border-t border-gray-200 bg-white px-4 py-3 flex items-end gap-2 shrink-0">
         <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
 
-        <button className="p-2 rounded-lg hover:bg-secondary transition-colors flex-shrink-0">
+        <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0">
           <Plus className="w-5 h-5 text-muted-foreground" />
         </button>
-        <button className="p-2 rounded-lg hover:bg-secondary transition-colors flex-shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}>
+        <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}>
           <LayoutGrid className="w-5 h-5 text-muted-foreground" />
         </button>
 
@@ -113,7 +114,7 @@ export default function ChatWindow({ thread, messages, onBack, onToggleDetails, 
         <button
           onClick={handleSend}
           disabled={!input.trim()}
-          className={`p-2 rounded-lg transition-colors flex-shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'text-muted-foreground'}`}
+          className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}
         >
           <Send className="w-5 h-5" />
         </button>

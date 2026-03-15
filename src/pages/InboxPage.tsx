@@ -8,7 +8,7 @@ import { DUMMY_THREADS, DUMMY_MESSAGES } from '@/components/inbox/dummyData';
 
 export default function InboxPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -24,10 +24,10 @@ export default function InboxPage() {
 
   const handleSelectThread = (id: string) => {
     setSelectedId(id);
-    setShowDetails(false);
+    setShowDetails(true);
   };
 
-  // Mobile: show chat fullscreen when thread selected
+  // Mobile: full-screen chat when thread selected
   if (isMobile) {
     if (selectedId && selectedThread) {
       return (
@@ -37,39 +37,32 @@ export default function InboxPage() {
             messages={messages}
             onBack={() => setSelectedId(null)}
             onToggleDetails={() => setShowDetails(!showDetails)}
+            showDetailsOpen={showDetails}
             isMobile
           />
         </div>
       );
     }
-
     return (
       <div className="h-[calc(100vh-60px)]">
-        <ThreadList
-          threads={DUMMY_THREADS}
-          selectedId={selectedId}
-          onSelect={handleSelectThread}
-          onOpenSettings={() => setShowSettings(true)}
-        />
+        <ThreadList threads={DUMMY_THREADS} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} />
         <MessagingSettingsModal open={showSettings} onClose={() => setShowSettings(false)} />
       </div>
     );
   }
 
-  // Desktop: 3-panel layout
+  // Show right panel only for non-support threads
+  const showRightPanel = showDetails && selectedThread && !selectedThread.isSupport;
+
+  // Desktop: 3-panel layout — fills full width (responds to sidebar collapse)
   return (
-    <div className="h-[calc(100vh-68px)] flex overflow-hidden -m-6 md:-m-8">
+    <div className="h-[calc(100vh-68px)] w-full flex overflow-hidden -m-6 md:-m-8">
       {/* Left panel — thread list */}
       <div className="w-[320px] flex-shrink-0">
-        <ThreadList
-          threads={DUMMY_THREADS}
-          selectedId={selectedId}
-          onSelect={handleSelectThread}
-          onOpenSettings={() => setShowSettings(true)}
-        />
+        <ThreadList threads={DUMMY_THREADS} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} />
       </div>
 
-      {/* Centre panel — chat */}
+      {/* Centre panel — chat or empty state */}
       <div className="flex-1 min-w-0">
         {selectedThread ? (
           <ChatWindow
@@ -77,21 +70,20 @@ export default function InboxPage() {
             messages={messages}
             onBack={() => setSelectedId(null)}
             onToggleDetails={() => setShowDetails(!showDetails)}
+            showDetailsOpen={!!showRightPanel}
             isMobile={false}
           />
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center bg-gray-50/50">
-            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-              <MessageSquare className="w-7 h-7 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">Your messages</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-[280px]">Select a conversation from the left to start messaging landlords and agents.</p>
+          <div className="h-full flex flex-col items-center justify-center text-center bg-white">
+            <MessageSquare className="w-12 h-12 text-gray-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900">Your messages</h3>
+            <p className="text-sm text-gray-400 mt-1">Select a conversation to get started</p>
           </div>
         )}
       </div>
 
       {/* Right panel — inquiry details */}
-      {showDetails && selectedThread && !selectedThread.isSupport && (
+      {showRightPanel && (
         <div className="w-[320px] flex-shrink-0">
           <InboxInquiryPanel thread={selectedThread} onClose={() => setShowDetails(false)} />
         </div>

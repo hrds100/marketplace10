@@ -23,12 +23,8 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
     return true;
   });
 
-  // Support thread always first
-  const sorted = [...filtered].sort((a, b) => {
-    if (a.isSupport) return -1;
-    if (b.isSupport) return 1;
-    return 0;
-  });
+  const supportThreads = filtered.filter(t => t.isSupport);
+  const regularThreads = filtered.filter(t => !t.isSupport);
 
   return (
     <div className="h-full flex flex-col bg-white border-r border-border">
@@ -70,12 +66,26 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
 
       {/* Thread list */}
       <div className="flex-1 overflow-y-auto">
-        {sorted.length === 0 ? (
+        {supportThreads.length === 0 && regularThreads.length === 0 ? (
           <div className="text-center py-12 text-sm text-muted-foreground">No messages yet</div>
         ) : (
-          sorted.map(thread => (
-            <ThreadItem key={thread.id} thread={thread} isSelected={selectedId === thread.id} onSelect={() => onSelect(thread.id)} />
-          ))
+          <>
+            {/* Pinned support thread */}
+            {supportThreads.length > 0 && (
+              <>
+                <div className="text-xs text-gray-400 uppercase tracking-wide px-4 py-1">Pinned</div>
+                {supportThreads.map(thread => (
+                  <ThreadItem key={thread.id} thread={thread} isSelected={selectedId === thread.id} onSelect={() => onSelect(thread.id)} />
+                ))}
+                <div className="border-b border-gray-100" />
+              </>
+            )}
+
+            {/* Regular threads */}
+            {regularThreads.map(thread => (
+              <ThreadItem key={thread.id} thread={thread} isSelected={selectedId === thread.id} onSelect={() => onSelect(thread.id)} />
+            ))}
+          </>
         )}
       </div>
     </div>
