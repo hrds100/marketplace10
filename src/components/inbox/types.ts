@@ -24,6 +24,9 @@ export interface Message {
   threadId: string;
   senderId: string;
   body: string;
+  bodyReceiver: string | null;
+  isMasked: boolean;
+  maskType: string | null;
   messageType: 'text' | 'system';
   createdAt: string;
 }

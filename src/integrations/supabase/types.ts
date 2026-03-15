@@ -109,9 +109,11 @@ export type Database = {
         Row: {
           body: string
           body_original: string | null
+          body_receiver: string | null
           created_at: string
           id: string
           is_masked: boolean
+          mask_type: string | null
           message_type: string
           sender_id: string
           thread_id: string
@@ -119,9 +121,11 @@ export type Database = {
         Insert: {
           body: string
           body_original?: string | null
+          body_receiver?: string | null
           created_at?: string
           id?: string
           is_masked?: boolean
+          mask_type?: string | null
           message_type?: string
           sender_id: string
           thread_id: string
@@ -129,9 +133,11 @@ export type Database = {
         Update: {
           body?: string
           body_original?: string | null
+          body_receiver?: string | null
           created_at?: string
           id?: string
           is_masked?: boolean
+          mask_type?: string | null
           message_type?: string
           sender_id?: string
           thread_id?: string
