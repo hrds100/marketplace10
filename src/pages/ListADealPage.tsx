@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, Sparkles, Loader2, ArrowRight, Minus, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -124,6 +124,7 @@ function AccordionSection({ id, title, description, isOpen, isComplete, onToggle
 export default function ListADealPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [submitPhase, setSubmitPhase] = useState<SubmitPhase>('idle');
   const [pricingResult, setPricingResult] = useState<AIPricingResult | null>(null);
   const [submittedPropertyId, setSubmittedPropertyId] = useState<string | null>(null);
@@ -137,10 +138,25 @@ export default function ListADealPage() {
   const [profileWhatsapp, setProfileWhatsapp] = useState('');
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['property-details', 'media']));
 
+  // Reset form when user navigates to this page fresh (e.g. sidebar click after submit)
+  useEffect(() => {
+    if (submitPhase !== 'idle') resetAll();
+  }, [location.key]);
+
   const toggleSection = (id: string) => {
     setOpenSections(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) {
+        // Clicking open section → close it
+        next.delete(id);
+      } else {
+        // Clicking closed section → close all others, open this one
+        // Keep media open if it was open — it's always optional
+        const keepMedia = id !== 'media' && prev.has('media');
+        next.clear();
+        next.add(id);
+        if (keepMedia) next.add('media');
+      }
       return next;
     });
   };
@@ -235,16 +251,24 @@ export default function ListADealPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // FIX A: Accept form.type OR propertyCategory='hmo' as valid type
     const resolvedType = form.type || (form.propertyCategory === 'hmo' ? 'HMO' : '');
 
-    if (!form.city || !form.rent || !resolvedType || !form.contactName || !form.contactEmail || !form.saApproved) {
-      toast.error('Please fill in all required fields');
-      if (!resolvedType) toast.error('Please select a property type and number of bedrooms');
-      return;
-    }
-    if (!form.contactPhone && !form.contactWhatsapp) {
-      toast.error('Please provide at least a phone number or WhatsApp');
+    const missing: string[] = [];
+    if (!form.city) missing.push('City');
+    if (!form.postcode) missing.push('Postcode');
+    if (!resolvedType) missing.push('Property type');
+    if (!form.bedrooms) missing.push('Bedrooms');
+    if (!form.bathrooms) missing.push('Bathrooms');
+    if (!form.rent) missing.push('Monthly rent');
+    if (!form.profit) missing.push('Est. monthly profit');
+    if (!form.deposit) missing.push('Deposit');
+    if (!form.saApproved) missing.push('SA Approval');
+    if (!form.contactName) missing.push('Contact name');
+    if (!form.contactEmail) missing.push('Contact email');
+    if (!form.contactPhone && !form.contactWhatsapp) missing.push('Phone or WhatsApp');
+
+    if (missing.length > 0) {
+      toast.error(`Please fill in: ${missing.join(', ')}`);
       return;
     }
 
@@ -347,9 +371,8 @@ export default function ListADealPage() {
           <p className="text-[11px] text-muted-foreground mt-3 italic">Estimation based on live Airbnb comparable listings. Actual results may vary.</p>
           <div className="border-t border-border mt-6 pt-5">
             <p className="text-sm text-muted-foreground mb-5">Your listing is now under review by our DME (Deal Management Engine).</p>
-            <div className="flex gap-3 justify-center">
-              <button onClick={() => navigate('/dashboard/deals')} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">View my deals <ArrowRight className="w-4 h-4" /></button>
-              <button onClick={resetAll} className="h-11 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">Submit another deal</button>
+            <div className="flex justify-center">
+              <button onClick={resetAll} className="h-11 px-8 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">Submit another deal <ArrowRight className="w-4 h-4" /></button>
             </div>
           </div>
         </div>
@@ -364,9 +387,8 @@ export default function ListADealPage() {
         <div className="w-12 h-12 rounded-full bg-accent-light flex items-center justify-center"><CheckCircle className="w-6 h-6 text-primary" /></div>
         <h2 className="text-[22px] font-bold text-foreground mt-4">Deal submitted successfully!</h2>
         <p className="text-sm text-muted-foreground mt-1.5 max-w-[400px]">Your listing has been submitted. Our AI is still analysing market data — estimated profitability will appear on your deal shortly.</p>
-        <div className="flex gap-3 mt-6">
-          <button onClick={() => navigate('/dashboard/deals')} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">View my deals <ArrowRight className="w-4 h-4" /></button>
-          <button onClick={resetAll} className="h-11 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">Submit another deal</button>
+        <div className="flex justify-center mt-6">
+          <button onClick={resetAll} className="h-11 px-8 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">Submit another deal <ArrowRight className="w-4 h-4" /></button>
         </div>
       </div>
     );
