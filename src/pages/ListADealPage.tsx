@@ -165,7 +165,7 @@ export default function ListADealPage() {
         rent_monthly: parseInt(form.rent) || 0,
         profit_est: parseInt(form.profit) || 0,
         type: form.type,
-        status: 'inactive',
+        status: 'pending',
         submitted_by: user?.id || null,
         property_category: form.propertyCategory || null,
         bedrooms: parseInt(form.bedrooms) || null,
@@ -427,7 +427,7 @@ export default function ListADealPage() {
       <h1 className="text-[28px] font-bold text-foreground">Submit a Deal</h1>
       <p className="text-sm text-muted-foreground mt-1 mb-8">List a landlord-approved rent-to-rent opportunity.</p>
 
-      <div className="grid lg:grid-cols-[1fr_400px] gap-8 items-start">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_440px] gap-6 items-start max-w-6xl">
       <div>
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* ── PROPERTY INFO ── */}

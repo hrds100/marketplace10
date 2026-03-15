@@ -67,7 +67,11 @@ export default function DealsPage() {
 
   const listings = useMemo(() => {
     if (dbProperties && dbProperties.length > 0) {
-      return dbProperties.map(toListingShape);
+      // Only show live/on-offer deals on public Deals page — pending/approved await admin action
+      const publicDeals = dbProperties
+        .filter(p => p.status === 'live' || p.status === 'on-offer')
+        .map(toListingShape);
+      return publicDeals.length > 0 ? publicDeals : mockListings;
     }
     return mockListings;
   }, [dbProperties]);
