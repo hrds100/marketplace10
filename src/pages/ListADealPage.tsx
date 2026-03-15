@@ -191,6 +191,23 @@ export default function ListADealPage() {
       setSubmitPhase('analysing');
       setLoading(false);
 
+      // Notify admin of new deal (non-blocking, 10s timeout)
+      const notifController = new AbortController();
+      const notifTimeout = setTimeout(() => notifController.abort(), 10_000);
+      fetch(`${N8N_BASE}/webhook/notify-admin-new-deal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId,
+          city: form.city,
+          postcode: form.postcode,
+          type: form.type,
+          submittedBy: user?.id,
+          rent: parseInt(form.rent) || 0,
+        }),
+        signal: notifController.signal,
+      }).catch(() => {}).finally(() => clearTimeout(notifTimeout));
+
       // Fire AI pricing in background with minimum delay
       const minDelay = new Promise(r => setTimeout(r, 2500));
 
