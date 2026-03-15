@@ -1,5 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { modules as allModules } from '@/data/universityData';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const STORAGE_KEY = 'nfstay-university-progress';
 
@@ -38,11 +40,100 @@ function saveProgress(p: UniversityProgress) {
 }
 
 export function useUniversityProgress() {
+  const { user } = useAuth();
   const [progress, setProgress] = useState<UniversityProgress>(loadProgress);
+  const loadedFromDb = useRef(false);
 
+  // Save to localStorage on every change
   useEffect(() => {
     saveProgress(progress);
   }, [progress]);
+
+  // Load from Supabase on login — DB is source of truth
+  useEffect(() => {
+    if (!user || loadedFromDb.current) return;
+
+    const load = async () => {
+      const { data } = await supabase
+        .from('user_progress')
+        .select('module_id, lesson_id, step_index')
+        .eq('user_id', user.id);
+
+      if (!data || data.length === 0) {
+        // First login: migrate localStorage progress to Supabase
+        const local = loadProgress();
+        const rows: { user_id: string; module_id: string; lesson_id: string; step_index: number }[] = [];
+
+        // Migrate completed steps
+        for (const key of Object.keys(local.completedSteps)) {
+          if (!local.completedSteps[key]) continue;
+          const [moduleId, lessonId, stepIdx] = key.split(':');
+          if (moduleId && lessonId && stepIdx !== undefined) {
+            rows.push({ user_id: user.id, module_id: moduleId, lesson_id: lessonId, step_index: parseInt(stepIdx, 10) });
+          }
+        }
+        // Migrate completed lessons (step_index = -1)
+        for (const key of Object.keys(local.completedLessons)) {
+          if (!local.completedLessons[key]) continue;
+          const [moduleId, lessonId] = key.split(':');
+          if (moduleId && lessonId) {
+            rows.push({ user_id: user.id, module_id: moduleId, lesson_id: lessonId, step_index: -1 });
+          }
+        }
+
+        if (rows.length > 0) {
+          await supabase.from('user_progress').upsert(rows, { onConflict: 'user_id,module_id,lesson_id,step_index' });
+        }
+        loadedFromDb.current = true;
+        return;
+      }
+
+      // Build progress from DB rows
+      const completedSteps: Record<string, boolean> = {};
+      const completedLessons: Record<string, boolean> = {};
+      const completedModules: Record<string, boolean> = {};
+
+      for (const row of data) {
+        if (row.step_index === -1) {
+          completedLessons[`${row.module_id}:${row.lesson_id}`] = true;
+        } else {
+          completedSteps[`${row.module_id}:${row.lesson_id}:${row.step_index}`] = true;
+        }
+      }
+
+      // Derive completed modules
+      for (const mod of allModules) {
+        const allDone = mod.lessons.every(l => completedLessons[`${mod.id}:${l.id}`]);
+        if (allDone) completedModules[mod.id] = true;
+      }
+
+      // Calculate XP: 5 per step + 80 per lesson + 320 per module
+      const stepCount = Object.keys(completedSteps).length;
+      const lessonCount = Object.keys(completedLessons).length;
+      const moduleCount = Object.keys(completedModules).length;
+      const totalXP = 1240 + (stepCount * 5) + (lessonCount * 80) + (moduleCount * 320);
+
+      // Derive achievements
+      const achievementsUnlocked = ['first-steps', 'deal-hunter'];
+      if (completedModules['getting-started']) achievementsUnlocked.push('first-steps');
+      if (completedModules['landlord-pitching']) achievementsUnlocked.push('negotiator');
+      if (completedModules['outreach-scripts']) achievementsUnlocked.push('script-master');
+      if (allModules.every(m => completedModules[m.id])) achievementsUnlocked.push('full-operator');
+
+      setProgress(prev => ({
+        ...prev,
+        completedSteps,
+        completedLessons,
+        completedModules,
+        totalXP,
+        achievementsUnlocked: [...new Set(achievementsUnlocked)],
+      }));
+
+      loadedFromDb.current = true;
+    };
+
+    load();
+  }, [user?.id]);
 
   // Update streak
   useEffect(() => {
@@ -59,18 +150,44 @@ export function useUniversityProgress() {
     }
   }, []);
 
+  // Helper: upsert a progress row to Supabase (fire-and-forget)
+  const syncToDb = useCallback((moduleId: string, lessonId: string, stepIndex: number) => {
+    if (!user) return;
+    supabase.from('user_progress').upsert(
+      { user_id: user.id, module_id: moduleId, lesson_id: lessonId, step_index: stepIndex },
+      { onConflict: 'user_id,module_id,lesson_id,step_index' }
+    ).then(() => {});
+  }, [user]);
+
+  // Helper: delete a progress row from Supabase (fire-and-forget)
+  const deleteFromDb = useCallback((moduleId: string, lessonId: string, stepIndex: number) => {
+    if (!user) return;
+    supabase.from('user_progress')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('module_id', moduleId)
+      .eq('lesson_id', lessonId)
+      .eq('step_index', stepIndex)
+      .then(() => {});
+  }, [user]);
+
   const toggleStep = useCallback((moduleId: string, lessonId: string, stepIndex: number) => {
     const key = `${moduleId}:${lessonId}:${stepIndex}`;
     setProgress(p => {
       const wasCompleted = p.completedSteps[key];
       const newSteps = { ...p.completedSteps, [key]: !wasCompleted };
+      if (wasCompleted) {
+        deleteFromDb(moduleId, lessonId, stepIndex);
+      } else {
+        syncToDb(moduleId, lessonId, stepIndex);
+      }
       return {
         ...p,
         completedSteps: newSteps,
         totalXP: wasCompleted ? p.totalXP - 5 : p.totalXP + 5,
       };
     });
-  }, []);
+  }, [syncToDb, deleteFromDb]);
 
   const toggleQuickWinTask = useCallback((moduleId: string, lessonId: string, taskIndex: number) => {
     const key = `${moduleId}:${lessonId}`;
@@ -116,6 +233,9 @@ export function useUniversityProgress() {
 
   const completeLesson = useCallback((moduleId: string, lessonId: string) => {
     const key = `${moduleId}:${lessonId}`;
+    // Sync lesson completion to DB (step_index = -1 means lesson-level)
+    syncToDb(moduleId, lessonId, -1);
+
     setProgress(p => {
       if (p.completedLessons[key]) return p;
       const newLessons = { ...p.completedLessons, [key]: true };
@@ -131,7 +251,6 @@ export function useUniversityProgress() {
         if (allLessonsDone && !p.completedModules[moduleId]) {
           newModules[moduleId] = true;
           bonusXP += 320;
-          // Check achievements
           if (moduleId === 'getting-started' && !newAchievements.includes('first-steps')) {
             newAchievements.push('first-steps');
           }
@@ -141,7 +260,6 @@ export function useUniversityProgress() {
           if (moduleId === 'outreach-scripts' && !newAchievements.includes('script-master')) {
             newAchievements.push('script-master');
           }
-          // Check full operator
           const allComplete = allModules.every(m => newModules[m.id]);
           if (allComplete && !newAchievements.includes('full-operator')) {
             newAchievements.push('full-operator');
@@ -157,7 +275,7 @@ export function useUniversityProgress() {
         achievementsUnlocked: newAchievements,
       };
     });
-  }, []);
+  }, [syncToDb]);
 
   const isModuleComplete = useCallback((moduleId: string) => {
     return !!progress.completedModules[moduleId];
@@ -169,13 +287,10 @@ export function useUniversityProgress() {
 
   const getLessonStatus = useCallback((moduleId: string, lessonId: string, lessonIndex: number, lessons: { id: string }[]) => {
     if (progress.completedLessons[`${moduleId}:${lessonId}`]) return 'completed';
-    // Check if prior lesson is done or it's the first
     if (lessonIndex === 0) return 'available';
     const priorLesson = lessons[lessonIndex - 1];
     if (progress.completedLessons[`${moduleId}:${priorLesson.id}`]) return 'available';
-    // For completed modules or the first incomplete module, unlock first available
     if (progress.completedModules[moduleId]) return 'available';
-    // Check if any step has been done in this lesson
     const hasActivity = Object.keys(progress.completedSteps).some(k => k.startsWith(`${moduleId}:${lessonId}:`));
     if (hasActivity) return 'available';
     return 'locked';
