@@ -1,11 +1,13 @@
 export interface Thread {
   id: string;
+  propertyId: string | null;
   propertyTitle: string;
   propertyCity: string;
   propertyPostcode: string;
   propertyImage: string | null;
   propertyProfit: number;
   propertyRent: number;
+  propertyBedrooms: number | null;
   dealType: string;
   contactName: string;
   contactPhone: string;

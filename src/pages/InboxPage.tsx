@@ -12,12 +12,14 @@ import type { Thread } from '@/components/inbox/types';
 // Support thread is always pinned, never from DB
 const SUPPORT_THREAD: Thread = {
   id: 'support',
+  propertyId: null,
   propertyTitle: 'NFsTay Support',
   propertyCity: '',
   propertyPostcode: '',
   propertyImage: null,
   propertyProfit: 0,
   propertyRent: 0,
+  propertyBedrooms: null,
   dealType: '',
   contactName: 'NFsTay Team',
   contactPhone: '',
@@ -81,12 +83,14 @@ export default function InboxPage() {
         const displayTitle = city && type ? `${city} · ${type}` : city || contactName || 'Untitled Thread';
         return {
           id: row.id,
+          propertyId: (prop?.id as string) || null,
           propertyTitle: displayTitle,
           propertyCity: (prop?.city as string) || '',
           propertyPostcode: (prop?.postcode as string) || '',
           propertyImage: ((prop?.photos as string[]) || [])[0] || null,
           propertyProfit: (prop?.profit_est as number) || 0,
           propertyRent: (prop?.rent_monthly as number) || 0,
+          propertyBedrooms: (prop?.bedrooms as number) || null,
           dealType: 'Serviced Accommodation',
           contactName: (prop?.contact_name as string) || 'Unknown',
           contactPhone: (prop?.contact_phone as string) || '',

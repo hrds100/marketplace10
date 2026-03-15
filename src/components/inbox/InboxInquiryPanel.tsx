@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronLeft, MapPin, Home, Phone, Mail, User, FileText, CheckCircle, Clock, Circle, Lock, ExternalLink } from 'lucide-react';
 import type { Thread } from './types';
 import AgreementModal from './AgreementModal';
+import EarningsEstimator from './EarningsEstimator';
 
 interface Props {
   thread: Thread;
@@ -32,18 +33,31 @@ function PropertyInfo({ thread }: { thread: Thread }) {
           <div className="mt-2 text-sm font-medium text-emerald-600">£{thread.propertyProfit.toLocaleString()}/mo estimated profit</div>
         )}
       </div>
-      <a href={`/dashboard/deals/${thread.id}`} className="w-full h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-        <ExternalLink className="w-4 h-4" /> View Listing
-      </a>
+      {thread.propertyId ? (
+        <a href={`/deals/${thread.propertyId}`} className="w-full h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+          <ExternalLink className="w-4 h-4" /> View Listing
+        </a>
+      ) : (
+        <div className="w-full h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-400 flex items-center justify-center gap-2 opacity-50 cursor-not-allowed" title="Property not available">
+          <ExternalLink className="w-4 h-4" /> View Listing
+        </div>
+      )}
     </>
   );
 }
 
-// OPERATOR VIEW — sees waiting state, no NDA controls
+// OPERATOR VIEW — sees waiting state, no NDA controls, has earnings estimator
 function OperatorView({ thread }: { thread: Thread }) {
   return (
     <>
       <PropertyInfo thread={thread} />
+
+      {/* Earnings Estimator — operator only */}
+      <EarningsEstimator
+        monthlyRent={thread.propertyRent ?? 0}
+        bedrooms={thread.propertyBedrooms ?? 0}
+        propertyType={thread.dealType ?? 'Property'}
+      />
 
       <div className="border-t border-gray-100" />
 
