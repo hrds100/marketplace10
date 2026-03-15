@@ -79,6 +79,7 @@ Supabase Edge Function secrets (via `npx supabase secrets set`):
 14. **Null safety.** Never assume data exists. Guard against null/undefined on every DB response before accessing properties.
 15. **Feature completeness.** No half-built UI. Empty states, loading states, and error states must all exist before a feature ships.
 16. **Admin auditability.** Any admin action that modifies, creates, or deletes data must write a row to an `admin_audit_log` table (`user_id`, `action`, `target_table`, `target_id`, `timestamp`). A toast is also shown. Console.log alone is NOT sufficient — audit logs must be persistent and queryable.
+17. **Hugo never does terminal work.** Claude handles ALL terminal commands, migrations, and CLI operations directly. Never ask Hugo to run a terminal command unless there is absolutely no other way. Prefer MCP tools (Supabase MCP, GitHub MCP) to execute operations programmatically. If a terminal command is unavoidable, Claude runs it — not Hugo. This is mandatory.
 
 ## 7. UI DESIGN STANDARDS
 
