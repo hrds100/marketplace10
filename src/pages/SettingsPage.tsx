@@ -15,6 +15,20 @@ const settingsTabs = [
   { id: 'signout', label: 'Sign out', icon: LogOut },
 ];
 
+interface NotifPrefs {
+  notif_whatsapp_new_deals: boolean;
+  notif_whatsapp_daily: boolean;
+  notif_email_daily: boolean;
+  notif_whatsapp_status: boolean;
+}
+
+const defaultNotifs: NotifPrefs = {
+  notif_whatsapp_new_deals: true,
+  notif_whatsapp_daily: true,
+  notif_email_daily: true,
+  notif_whatsapp_status: true,
+};
+
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const { tier } = useUserTier();
@@ -23,15 +37,30 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState({ name: '', email: '', whatsapp: '' });
   const [saving, setSaving] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', new_pw: '', confirm: '' });
-  const [notifications, setNotifications] = useState({
-    deals: true, status: true, affiliates: false, whatsapp: true,
-  });
+  const [notifs, setNotifs] = useState<NotifPrefs>(defaultNotifs);
 
+  // Load profile + notification prefs
   useEffect(() => {
     if (!user) return;
-    supabase.from('profiles').select('name, email, whatsapp').eq('user_id', user.id).single().then(({ data }) => {
-      if (data) setProfile({ name: data.name || '', email: data.email || '', whatsapp: data.whatsapp || '' });
-    });
+    supabase
+      .from('profiles')
+      .select('name, whatsapp, notif_whatsapp_new_deals, notif_whatsapp_daily, notif_email_daily, notif_whatsapp_status')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setProfile({ name: data.name || '', email: user.email || '', whatsapp: data.whatsapp || '' });
+          setNotifs({
+            notif_whatsapp_new_deals: data.notif_whatsapp_new_deals ?? true,
+            notif_whatsapp_daily: data.notif_whatsapp_daily ?? true,
+            notif_email_daily: data.notif_email_daily ?? true,
+            notif_whatsapp_status: data.notif_whatsapp_status ?? true,
+          });
+        } else {
+          // Fallback: read email from auth
+          setProfile(p => ({ ...p, email: user.email || '' }));
+        }
+      });
   }, [user]);
 
   const handleSaveProfile = async () => {
@@ -40,7 +69,7 @@ export default function SettingsPage() {
     const { error } = await supabase.from('profiles').update({
       name: profile.name,
       whatsapp: profile.whatsapp,
-    }).eq('user_id', user.id);
+    }).eq('id', user.id);
     setSaving(false);
     if (error) toast.error('Failed to save');
     else toast.success('Profile updated');
@@ -63,12 +92,37 @@ export default function SettingsPage() {
     }
   };
 
+  const handleToggleNotif = async (key: keyof NotifPrefs) => {
+    if (!user) return;
+    const newVal = !notifs[key];
+    setNotifs(prev => ({ ...prev, [key]: newVal }));
+    const { error } = await supabase
+      .from('profiles')
+      .update({ [key]: newVal } as any)
+      .eq('id', user.id);
+    if (error) {
+      // Revert on failure
+      setNotifs(prev => ({ ...prev, [key]: !newVal }));
+      toast.error('Failed to save preference');
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
   const initials = profile.name ? profile.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : 'U';
+
+  const Toggle = ({ on, onToggle, disabled }: { on: boolean; onToggle?: () => void; disabled?: boolean }) => (
+    <button
+      onClick={onToggle}
+      disabled={disabled}
+      className={`w-11 h-6 rounded-full relative transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${on ? 'bg-primary' : 'bg-border'}`}
+    >
+      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${on ? 'left-[22px]' : 'left-0.5'}`} />
+    </button>
+  );
 
   return (
     <div>
@@ -179,27 +233,72 @@ export default function SettingsPage() {
 
           {activeTab === 'notifications' && (
             <div>
-              <h2 className="text-[22px] font-bold text-foreground mb-6">Notifications</h2>
-              <div className="space-y-4 max-w-[500px]">
-                {[
-                  { key: 'deals' as const, label: 'New deal alerts', desc: 'Get notified when new deals match your criteria' },
-                  { key: 'status' as const, label: 'Deal status changes', desc: 'Updates when deals you follow change status' },
-                  { key: 'affiliates' as const, label: 'Affiliate conversions', desc: 'Know when your referrals convert' },
-                  { key: 'whatsapp' as const, label: 'WhatsApp inquiry notifications', desc: 'Receive inquiry updates via WhatsApp' },
-                ].map(n => (
-                  <div key={n.key} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                    <div>
-                      <div className="text-sm font-medium text-foreground">{n.label}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{n.desc}</div>
-                    </div>
-                    <button
-                      onClick={() => setNotifications(prev => ({ ...prev, [n.key]: !prev[n.key] }))}
-                      className={`w-11 h-6 rounded-full relative transition-colors ${notifications[n.key] ? 'bg-primary' : 'bg-border'}`}
-                    >
-                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${notifications[n.key] ? 'left-[22px]' : 'left-0.5'}`} />
-                    </button>
+              <h2 className="text-[22px] font-bold text-foreground mb-2">Notifications</h2>
+              <p className="text-sm text-muted-foreground mb-6">Choose how you want to be notified about activity on your account.</p>
+
+              <div className="max-w-[600px]">
+                {/* Header row */}
+                <div className="flex items-center gap-4 pb-3 border-b border-border mb-1">
+                  <div className="flex-1" />
+                  <div className="w-20 text-center text-xs font-semibold text-muted-foreground">Email</div>
+                  <div className="w-20 text-center text-xs font-semibold text-muted-foreground">WhatsApp</div>
+                </div>
+
+                {/* New deal alerts: Email always ON, WhatsApp toggleable */}
+                <div className="flex items-center gap-4 py-4 border-b border-border">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-foreground">New deal alerts</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Get notified when new deals match your criteria</div>
                   </div>
-                ))}
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={true} disabled />
+                  </div>
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={notifs.notif_whatsapp_new_deals} onToggle={() => handleToggleNotif('notif_whatsapp_new_deals')} />
+                  </div>
+                </div>
+
+                {/* Daily digest: both toggleable */}
+                <div className="flex items-center gap-4 py-4 border-b border-border">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-foreground">Daily digest</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Summary of new deals and activity each day</div>
+                  </div>
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={notifs.notif_email_daily} onToggle={() => handleToggleNotif('notif_email_daily')} />
+                  </div>
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={notifs.notif_whatsapp_daily} onToggle={() => handleToggleNotif('notif_whatsapp_daily')} />
+                  </div>
+                </div>
+
+                {/* Status changes: Email always ON, WhatsApp toggleable */}
+                <div className="flex items-center gap-4 py-4 border-b border-border">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-foreground">Status changes</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Updates when deals you follow change status</div>
+                  </div>
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={true} disabled />
+                  </div>
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={notifs.notif_whatsapp_status} onToggle={() => handleToggleNotif('notif_whatsapp_status')} />
+                  </div>
+                </div>
+
+                {/* Affiliate conversions: both always ON */}
+                <div className="flex items-center gap-4 py-4">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-foreground">Affiliate conversions</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Know when your referrals convert</div>
+                  </div>
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={true} disabled />
+                  </div>
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={true} disabled />
+                  </div>
+                </div>
               </div>
             </div>
           )}
