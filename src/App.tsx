@@ -30,6 +30,7 @@ import AdminPricing from "./pages/admin/AdminPricing";
 import AdminFAQ from "./pages/admin/AdminFAQ";
 import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="faq" element={<AdminFAQ />} />
             <Route path="affiliates" element={<AdminAffiliates />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="notifications" element={<AdminNotifications />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
