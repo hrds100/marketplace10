@@ -15,11 +15,12 @@ export default function CRMPage() {
   const [isOutsiderLead, setIsOutsiderLead] = useState(false);
   const [newDeal, setNewDeal] = useState({ name: '', city: '', postcode: '', rent: '', profit: '', type: '2-bed flat', stage: 'New Lead', notes: '', whatsapp: '', email: '', photoUrl: '' });
 
-  // Load CRM deals from Supabase if user is logged in
+  // Load CRM deals from Supabase; seed with mock deals if empty
   useEffect(() => {
     if (!user) return;
     const loadDeals = async () => {
       const { data } = await supabase.from('crm_deals').select('*').eq('user_id', user.id);
+
       if (data && data.length > 0) {
         const mapped: CRMDeal[] = data.map(d => ({
           id: d.id,
@@ -37,6 +38,38 @@ export default function CRMPage() {
         }));
         setDeals(mapped);
         setArchivedIds(data.filter(d => d.archived).map(d => d.id));
+      } else {
+        // Seed with mock deals on first load so user doesn't see blank board
+        const rows = mockDeals.map(d => ({
+          user_id: user.id,
+          name: d.name,
+          city: d.city,
+          postcode: d.postcode,
+          rent: d.rent,
+          profit: d.profit,
+          type: d.type,
+          stage: d.stage,
+          notes: d.notes || null,
+          whatsapp: d.whatsapp || null,
+        }));
+        const { data: inserted } = await supabase.from('crm_deals').insert(rows).select();
+        if (inserted && inserted.length > 0) {
+          const mapped: CRMDeal[] = inserted.map(d => ({
+            id: d.id,
+            name: d.name,
+            city: d.city,
+            postcode: d.postcode,
+            rent: d.rent,
+            profit: d.profit,
+            type: d.type,
+            stage: d.stage,
+            lastContact: 'Today',
+            ownerInitials: 'ME',
+            notes: d.notes || '',
+            whatsapp: d.whatsapp || undefined,
+          }));
+          setDeals(mapped);
+        }
       }
     };
     loadDeals();

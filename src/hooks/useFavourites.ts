@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -56,7 +56,14 @@ export function useFavourites() {
     load();
   }, [user?.id]);
 
+  // Ref tracks latest favourites so async DB calls never read stale state
+  const favsRef = useRef(favourites);
+  useEffect(() => { favsRef.current = favourites; }, [favourites]);
+
   const toggle = useCallback(async (id: string) => {
+    // Read current state from ref BEFORE updating
+    const wasFav = favsRef.current.has(id);
+
     setFavourites(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
@@ -65,8 +72,7 @@ export function useFavourites() {
     });
 
     if (user) {
-      const isCurrent = favourites.has(id);
-      if (isCurrent) {
+      if (wasFav) {
         await supabase
           .from('user_favourites')
           .delete()
@@ -78,7 +84,7 @@ export function useFavourites() {
           .upsert({ user_id: user.id, property_id: id }, { onConflict: 'user_id,property_id' });
       }
     }
-  }, [user, favourites]);
+  }, [user]);
 
   const isFav = useCallback((id: string) => favourites.has(id), [favourites]);
 
