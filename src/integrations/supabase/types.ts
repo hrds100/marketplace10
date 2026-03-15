@@ -40,6 +40,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          target_id: string
+          target_table: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          target_id: string
+          target_table: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          target_id?: string
+          target_table?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_settings: {
         Row: {
           id: string
@@ -76,6 +106,109 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          body: string
+          body_original: string | null
+          created_at: string
+          id: string
+          is_masked: boolean
+          message_type: string
+          sender_id: string
+          thread_id: string
+        }
+        Insert: {
+          body: string
+          body_original?: string | null
+          created_at?: string
+          id?: string
+          is_masked?: boolean
+          message_type?: string
+          sender_id: string
+          thread_id: string
+        }
+        Update: {
+          body?: string
+          body_original?: string | null
+          created_at?: string
+          id?: string
+          is_masked?: boolean
+          message_type?: string
+          sender_id?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_threads: {
+        Row: {
+          created_at: string
+          id: string
+          landlord_id: string | null
+          operator_id: string | null
+          property_id: string | null
+          status: string
+          terms_accepted: boolean
+          terms_accepted_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          landlord_id?: string | null
+          operator_id?: string | null
+          property_id?: string | null
+          status?: string
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          landlord_id?: string | null
+          operator_id?: string | null
+          property_id?: string | null
+          status?: string
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_threads_landlord_id_fkey"
+            columns: ["landlord_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_threads_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_threads_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_deals: {
         Row: {
           archived: boolean | null
@@ -90,6 +223,7 @@ export type Database = {
           photo_url: string | null
           postcode: string | null
           profit: number | null
+          property_id: string | null
           rent: number | null
           stage: string | null
           type: string | null
@@ -109,6 +243,7 @@ export type Database = {
           photo_url?: string | null
           postcode?: string | null
           profit?: number | null
+          property_id?: string | null
           rent?: number | null
           stage?: string | null
           type?: string | null
@@ -128,6 +263,7 @@ export type Database = {
           photo_url?: string | null
           postcode?: string | null
           profit?: number | null
+          property_id?: string | null
           rent?: number | null
           stage?: string | null
           type?: string | null
@@ -165,6 +301,41 @@ export type Database = {
           property_name?: string | null
         }
         Relationships: []
+      }
+      message_templates: {
+        Row: {
+          body: string
+          category: string | null
+          created_at: string
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          category?: string | null
+          created_at?: string
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          category?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {

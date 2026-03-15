@@ -1,41 +1,145 @@
-import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, ChevronRight, ChevronLeft, Plus, LayoutGrid, Send } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { ArrowLeft, ChevronRight, ChevronLeft, Plus, LayoutGrid, Send, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import type { Thread, Message } from './types';
 import MessageBubble from './MessageBubble';
 import QuickRepliesModal from './QuickRepliesModal';
 
+// Mask phone numbers when NDA not signed
+const PHONE_REGEX = /(\+44|0)[0-9\s]{9,}/g;
+const maskPhones = (text: string, termsAccepted: boolean): string => {
+  if (termsAccepted) return text;
+  return text.replace(PHONE_REGEX, '[number hidden — sign NDA to reveal]');
+};
+
 interface Props {
   thread: Thread;
-  messages: Message[];
   onBack: () => void;
   onToggleDetails: () => void;
   showDetailsOpen: boolean;
   isMobile: boolean;
 }
 
-export default function ChatWindow({ thread, messages, onBack, onToggleDetails, showDetailsOpen, isMobile }: Props) {
+export default function ChatWindow({ thread, onBack, onToggleDetails, showDetailsOpen, isMobile }: Props) {
+  const { user } = useAuth();
   const [input, setInput] = useState('');
-  const [localMessages, setLocalMessages] = useState(messages);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setLocalMessages(messages); }, [messages]);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [localMessages]);
+  // Load messages from Supabase (or show dummy for support)
+  const loadMessages = useCallback(async () => {
+    if (thread.isSupport) {
+      setMessages([{ id: 'support-welcome', threadId: 'support', senderId: 'system', body: 'Welcome to NFsTay! How can we help you today?', messageType: 'system', createdAt: new Date().toISOString() }]);
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('thread_id', thread.id)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      const mapped: Message[] = (data || []).map(row => ({
+        id: row.id,
+        threadId: row.thread_id,
+        senderId: row.sender_id === user?.id ? 'me' : 'other',
+        body: maskPhones(row.body, thread.termsAccepted),
+        messageType: row.message_type as Message['messageType'],
+        createdAt: row.created_at,
+      }));
+      setMessages(mapped);
+    } catch (err) {
+      console.error('Failed to load messages:', err);
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [thread.id, thread.isSupport, thread.termsAccepted, user?.id]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const newMsg: Message = { id: `local-${Date.now()}`, threadId: thread.id, senderId: 'me', body: input.trim(), messageType: 'text', createdAt: new Date().toISOString() };
-    setLocalMessages(prev => [...prev, newMsg]);
+  useEffect(() => { loadMessages(); }, [loadMessages]);
+
+  // Realtime subscription for new messages
+  useEffect(() => {
+    if (thread.isSupport) return;
+    const channel = supabase
+      .channel(`messages-${thread.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `thread_id=eq.${thread.id}`,
+      }, (payload) => {
+        const row = payload.new as Record<string, unknown>;
+        const newMsg: Message = {
+          id: row.id as string,
+          threadId: row.thread_id as string,
+          senderId: (row.sender_id as string) === user?.id ? 'me' : 'other',
+          body: maskPhones(row.body as string, thread.termsAccepted),
+          messageType: (row.message_type as string) as Message['messageType'],
+          createdAt: row.created_at as string,
+        };
+        setMessages(prev => {
+          // Deduplicate (optimistic messages may already be there)
+          if (prev.some(m => m.id === newMsg.id)) return prev;
+          // Replace optimistic message if body matches
+          const optimisticIdx = prev.findIndex(m => m.id.startsWith('optimistic-') && m.body === newMsg.body);
+          if (optimisticIdx >= 0) {
+            const next = [...prev];
+            next[optimisticIdx] = newMsg;
+            return next;
+          }
+          return [...prev, newMsg];
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [thread.id, thread.isSupport, thread.termsAccepted, user?.id]);
+
+  // Scroll to bottom on new messages
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !user?.id) return;
+    const body = input.trim();
     setInput('');
+
+    // Optimistic add
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticMsg: Message = { id: optimisticId, threadId: thread.id, senderId: 'me', body, messageType: 'text', createdAt: new Date().toISOString() };
+    setMessages(prev => [...prev, optimisticMsg]);
+
+    if (thread.isSupport) return; // Support thread is local-only for now
+
+    try {
+      const { error } = await supabase.from('chat_messages').insert({
+        thread_id: thread.id,
+        sender_id: user.id,
+        body,
+        message_type: 'text',
+      });
+      if (error) throw error;
+    } catch (err) {
+      // Remove optimistic message on failure
+      setMessages(prev => prev.filter(m => m.id !== optimisticId));
+      toast.error('Message failed to send');
+      setInput(body); // Restore input
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  // Group messages by date
   const grouped: { date: string; msgs: Message[] }[] = [];
   let lastDate = '';
-  for (const msg of localMessages) {
+  for (const msg of messages) {
     const date = new Date(msg.createdAt).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
     if (date !== lastDate) { grouped.push({ date, msgs: [msg] }); lastDate = date; }
     else { grouped[grouped.length - 1].msgs.push(msg); }
@@ -71,16 +175,26 @@ export default function ChatWindow({ thread, messages, onBack, onToggleDetails, 
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
-        {grouped.map(group => (
-          <div key={group.date}>
-            <div className="text-center py-3"><span className="text-[11px] text-gray-400 bg-gray-50 px-3 py-1 rounded-full">{group.date}</span></div>
-            {group.msgs.map(msg => <MessageBubble key={msg.id} message={msg} />)}
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className={`animate-pulse flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                <div className={`h-10 rounded-2xl bg-gray-100 ${i % 2 === 0 ? 'w-2/3' : 'w-1/2'}`} />
+              </div>
+            ))}
           </div>
-        ))}
+        ) : (
+          grouped.map(group => (
+            <div key={group.date}>
+              <div className="text-center py-3"><span className="text-[11px] text-gray-400 bg-gray-50 px-3 py-1 rounded-full">{group.date}</span></div>
+              {group.msgs.map(msg => <MessageBubble key={msg.id} message={msg} />)}
+            </div>
+          ))
+        )}
         <div ref={endRef} />
       </div>
 
-      {/* NDA warning banner — shown when NDA not signed */}
+      {/* NDA warning banner */}
       {!thread.isSupport && !thread.termsAccepted && (
         <div className="bg-amber-50 border-t border-amber-200 text-amber-800 text-xs px-4 py-2 shrink-0">
           🔒 Share contact details only after NDA is signed. Phone numbers in messages will be masked until the NDA is complete.

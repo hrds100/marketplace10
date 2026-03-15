@@ -8,9 +8,10 @@ interface Props {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onOpenSettings: () => void;
+  onArchive?: (id: string) => void;
 }
 
-export default function ThreadList({ threads, selectedId, onSelect, onOpenSettings }: Props) {
+export default function ThreadList({ threads, selectedId, onSelect, onOpenSettings, onArchive }: Props) {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
