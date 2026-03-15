@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus, Sparkles } from 'lucide-react';
+import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus, Sparkles, X } from 'lucide-react';
 import { faqItems } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 import { useAuth } from '@/hooks/useAuth';
@@ -140,19 +140,30 @@ export default function DealDetail() {
   const finalProfit = estProfit - (showExtraCosts ? totalExtraCosts : 0);
 
   const handleAddToCrm = async () => {
-    if (addedToCrm) return;
     if (!user) { toast.error('Sign in to add deals to your CRM'); return; }
     if (!id) return;
-    // Insert into crm_deals table
+
+    // TOGGLE OFF — remove from CRM
+    if (addedToCrm) {
+      const { error } = await supabase.from('crm_deals').delete()
+        .eq('user_id', user.id).eq('property_id', id);
+      if (error) { toast.error('Failed to remove — ' + error.message); return; }
+      localStorage.removeItem(`crm_${id}`);
+      setAddedToCrm(false);
+      toast.success('Removed from CRM');
+      return;
+    }
+
+    // TOGGLE ON — add to CRM
     const { error } = await supabase.from('crm_deals').insert({
       user_id: user.id,
       name, city, postcode, rent, profit, type,
       stage: 'New Lead',
       notes: 'Added from deal page',
+      photo_url: images[0] || null,
+      property_id: id || null,
     });
-    if (error) { toast.error('Failed to add to CRM'); return; }
-    // Also flag property as in CRM
-    (supabase.from('properties') as any).update({ in_crm: true }).eq('id', id).then(() => {});
+    if (error) { toast.error('Failed to add to CRM — ' + error.message); return; }
     localStorage.setItem(`crm_${id}`, 'true');
     setAddedToCrm(true);
     setJustAddedToCrm(true);
@@ -224,10 +235,10 @@ export default function DealDetail() {
             </button>
             <div className="relative inline-block min-w-[140px]">
               {justAddedToCrm && <div className="crm-celebration-ring absolute inset-0 rounded-lg border-2 border-primary" aria-hidden />}
-              <button type="button" onClick={handleAddToCrm} disabled={addedToCrm}
-                className={`relative z-0 h-10 px-4 rounded-lg border flex items-center gap-2 text-sm font-medium transition-all shrink-0 ${addedToCrm ? 'bg-muted text-muted-foreground border-border cursor-not-allowed' : 'bg-primary text-primary-foreground border-primary hover:opacity-90'}`}>
-                {addedToCrm ? <CheckCircle className="w-4 h-4 shrink-0" /> : <Plus className="w-4 h-4 shrink-0" />}
-                <span>{addedToCrm ? 'Added to CRM' : 'Add to CRM'}</span>
+              <button type="button" onClick={handleAddToCrm}
+                className={`relative z-0 h-10 px-4 rounded-lg border flex items-center gap-2 text-sm font-medium transition-all shrink-0 ${addedToCrm ? 'bg-muted text-muted-foreground border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive' : 'bg-primary text-primary-foreground border-primary hover:opacity-90'}`}>
+                {addedToCrm ? <X className="w-4 h-4 shrink-0" /> : <Plus className="w-4 h-4 shrink-0" />}
+                <span>{addedToCrm ? 'Remove from CRM' : 'Add to CRM'}</span>
               </button>
             </div>
           </div>

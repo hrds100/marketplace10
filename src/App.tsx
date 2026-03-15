@@ -34,6 +34,14 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 
+// One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
+if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('crm_'))
+    .forEach(k => localStorage.removeItem(k));
+  localStorage.setItem('crm_localStorage_v2_cleared', 'true');
+}
+
 const queryClient = new QueryClient();
 
 const App = () => (

@@ -1,4 +1,4 @@
-import { Heart, CheckCircle } from 'lucide-react';
+import { Heart, CheckCircle, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { ListingShape } from '@/components/InquiryPanel';
@@ -37,13 +37,21 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     }
   };
 
-  const [celebrating, setCelebrating] = useState(false);
   const handleAddToCRM = async () => {
-    if (addedToCRM) return;
-    if (!user) {
-      toast.error('Sign in to add deals to your CRM');
+    if (!user) { toast.error('Sign in to add deals to your CRM'); return; }
+
+    // TOGGLE OFF — remove from CRM
+    if (addedToCRM) {
+      const { error } = await supabase.from('crm_deals').delete()
+        .eq('user_id', user.id).eq('property_id', listing.id);
+      if (error) { toast.error('Failed to remove — ' + error.message); return; }
+      localStorage.removeItem(`crm_${listing.id}`);
+      setAddedToCRM(false);
+      toast.success('Removed from CRM');
       return;
     }
+
+    // TOGGLE ON — add to CRM
     const { error } = await supabase.from('crm_deals').insert({
       user_id: user.id,
       name: listing.name,
@@ -54,20 +62,14 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       type: listing.type,
       stage: 'New Lead',
       notes: 'Added from deals page',
+      photo_url: listing.image || null,
+      property_id: listing.id || null,
     });
-    if (error) {
-      console.error('CRM insert error:', error.message);
-      toast.error('Failed to add to CRM — ' + error.message);
-      return;
-    }
-    // Flag property as in CRM (non-blocking)
-    (supabase.from('properties') as any).update({ in_crm: true }).eq('id', listing.id).then(() => {});
+    if (error) { toast.error('Failed to add — ' + error.message); return; }
     localStorage.setItem(`crm_${listing.id}`, 'true');
     setAddedToCRM(true);
-    setCelebrating(true);
     onAddToCRM?.();
     toast.success(`${listing.name} added to CRM!`);
-    setTimeout(() => setCelebrating(false), 1500);
   };
 
   const handleInquire = (e: React.MouseEvent) => {
@@ -119,11 +121,10 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           {onAddToCRM && (
             <button
               onClick={handleAddToCRM}
-              className={`relative text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground cursor-default' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
+              className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
             >
-              {celebrating && <span className="absolute inset-0 rounded-full animate-ping bg-primary/30" />}
               {addedToCRM ? (
-                <><CheckCircle className="w-3.5 h-3.5" /> Added to CRM</>
+                <><X className="w-3.5 h-3.5" /> Remove</>
               ) : (
                 '+ Add to CRM'
               )}

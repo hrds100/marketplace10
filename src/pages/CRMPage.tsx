@@ -21,7 +21,7 @@ export default function CRMPage() {
     const loadDeals = async () => {
       const { data } = await supabase.from('crm_deals').select('*').eq('user_id', user.id);
       if (data && data.length > 0) {
-        const mapped: CRMDeal[] = data.map(d => ({
+        const mapped = data.map(d => ({
           id: d.id,
           name: d.name,
           city: d.city,
@@ -34,7 +34,8 @@ export default function CRMPage() {
           ownerInitials: 'ME',
           notes: d.notes || '',
           whatsapp: d.whatsapp || undefined,
-        }));
+          photo_url: d.photo_url || null,
+        })) as (CRMDeal & { photo_url?: string | null })[];
         setDeals(mapped);
         setArchivedIds(data.filter(d => d.archived).map(d => d.id));
       }
@@ -74,7 +75,8 @@ export default function CRMPage() {
     toast.success('Deal moved');
   };
 
-  const getDealImage = (deal: CRMDeal) => {
+  const getDealImage = (deal: CRMDeal & { photo_url?: string | null }) => {
+    if (deal.photo_url) return deal.photo_url;
     const citySlug = encodeURIComponent((deal.city || 'london').toLowerCase());
     return `https://source.unsplash.com/featured/400x300/?${citySlug},property&sig=${deal.id.slice(0, 6)}`;
   };
