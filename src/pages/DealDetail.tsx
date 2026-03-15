@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchPexelsPhotos } from '@/lib/pexels';
 import PropertyCard from '@/components/PropertyCard';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
@@ -97,13 +98,27 @@ export default function DealDetail() {
     setInquiryOpen(false);
   }, []);
 
-  // Build images: user photos first, city stock fallbacks to fill 5
-  const citySlug = encodeURIComponent((city || 'london').toLowerCase());
-  const stockImages = Array.from({ length: 5 }, (_, i) =>
-    `https://source.unsplash.com/featured/1200x900/?${citySlug},property,interior&sig=${citySlug}-${i}`
-  );
+  // Build images: user photos first, Pexels fills remaining slots
   const userPhotos: string[] = Array.isArray(listing?.photos) ? (listing.photos as string[]) : [];
-  const images = [...userPhotos, ...stockImages.slice(userPhotos.length)].slice(0, 5);
+  const [pexelsImages, setPexelsImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!listing) return;
+    if (userPhotos.length >= 5) return;
+    const needed = 5 - userPhotos.length;
+    fetchPexelsPhotos(city, type, needed + 2).then(results => {
+      setPexelsImages(results.slice(0, needed));
+      // Cache to DB if property has no photos at all
+      if (userPhotos.length === 0 && results.length > 0 && id) {
+        (supabase.from('properties') as any).update({ photos: results.slice(0, 5) }).eq('id', id).then(() => {});
+      }
+    });
+  }, [listing?.id]);
+
+  const stockImages = pexelsImages.length > 0
+    ? pexelsImages
+    : Array.from({ length: 5 }, (_, i) => `https://placehold.co/1200x900/1a1a2e/ffffff?text=${encodeURIComponent(city || 'Property')}-${i + 1}`);
+  const images = [...userPhotos, ...stockImages.slice(0, 5 - userPhotos.length)].slice(0, 5);
 
   // Nearby deals from Supabase (same city, live only)
   const { data: nearbyDeals = [] } = useQuery({
@@ -126,7 +141,7 @@ export default function DealDetail() {
         status: (p.status as 'live' | 'on-offer' | 'inactive') || 'inactive',
         featured: !!p.featured,
         daysAgo: Math.max(0, Math.floor((Date.now() - new Date(p.created_at as string).getTime()) / 86400000)),
-        image: (p.image_url as string) || `https://source.unsplash.com/featured/800x520/?${encodeURIComponent((p.city as string || 'london').toLowerCase())},apartment&sig=${(p.id as string).slice(0, 4)}`,
+        image: ((p.photos as string[] | null)?.[0]) || `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent((p.city as string) || 'Property')}`,
         landlordApproved: p.sa_approved === 'yes',
         landlordWhatsapp: (p.landlord_whatsapp as string) || null,
       })) as ListingShape[];

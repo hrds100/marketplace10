@@ -5,6 +5,8 @@ import type { ListingShape } from '@/components/InquiryPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { usePropertyImage } from '@/hooks/usePropertyImage';
+import { fetchPexelsPhotos } from '@/lib/pexels';
 
 export type { ListingShape };
 
@@ -51,7 +53,12 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       return;
     }
 
-    // TOGGLE ON — add to CRM
+    // TOGGLE ON — add to CRM (resolve photo if placeholder)
+    let photoUrl = resolvedImage;
+    if (!photoUrl || photoUrl.includes('placehold.co')) {
+      const pexels = await fetchPexelsPhotos(listing.city, listing.type, 1);
+      if (pexels[0]) photoUrl = pexels[0];
+    }
     const { error } = await supabase.from('crm_deals').insert({
       user_id: user.id,
       name: listing.name,
@@ -62,7 +69,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       type: listing.type,
       stage: 'New Lead',
       notes: 'Added from deals page',
-      photo_url: listing.image || null,
+      photo_url: photoUrl || null,
       property_id: listing.id || null,
     });
     if (error) { toast.error('Failed to add — ' + error.message); return; }
@@ -83,21 +90,18 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   };
 
   const airdnaUrl = `https://www.airdna.co`;
-
-  // Use listing.image (set by toListingShape from photos[0] or Unsplash fallback)
-  const citySlug = encodeURIComponent((listing.city || 'london').toLowerCase());
-  const cardImage = listing.image || `https://source.unsplash.com/featured/800x520/?${citySlug},property,interior&sig=${listing.id}`;
+  const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type);
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover">
       {/* Photo */}
       <div className="relative h-[200px] overflow-hidden">
         <img
-          src={cardImage}
+          src={resolvedImage}
           alt={`Property in ${listing.city}`}
           loading="lazy"
           className="w-full h-full object-cover"
-          onError={(e) => { (e.target as HTMLImageElement).src = `https://source.unsplash.com/featured/800x520/?${citySlug},apartment&sig=fallback`; }}
+          onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }}
         />
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}

@@ -19,7 +19,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
   const citySlug = encodeURIComponent((p.city || 'london').toLowerCase());
   const image = (photos && photos.length > 0)
     ? photos[0]
-    : `https://source.unsplash.com/featured/800x520/?${citySlug},property,interior&sig=${p.id.slice(0, 6)}`;
+    : `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(p.city || 'Property')}`;
 
   return {
     id: p.id,

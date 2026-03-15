@@ -86,8 +86,7 @@ export default function CRMPage() {
 
   const getDealImage = (deal: ExtendedDeal) => {
     if (deal.photo_url) return deal.photo_url;
-    const citySlug = encodeURIComponent((deal.city || 'london').toLowerCase());
-    return `https://source.unsplash.com/featured/400x300/?${citySlug},property&sig=${deal.id.slice(0, 6)}`;
+    return `https://placehold.co/400x300/1a1a2e/ffffff?text=${encodeURIComponent(deal.city || 'Property')}`;
   };
 
   const dealToListingShape = (deal: ExtendedDeal): ListingShape => ({
