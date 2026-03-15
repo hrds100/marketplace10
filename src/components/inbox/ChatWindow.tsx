@@ -171,19 +171,28 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       if (n8nBase) {
         const ac = new AbortController();
         const timeout = setTimeout(() => ac.abort(), 5000);
-        const endpoint = isFirstMessage ? '/webhook/inbox-new-inquiry' : '/webhook/inbox-new-message';
+        const isLandlord = user.id === thread.landlordId;
+        const payload = JSON.stringify({
+          thread_id: thread.id,
+          property_title: thread.propertyTitle,
+          property_city: thread.propertyCity,
+          sender_name: user.user_metadata?.name || 'NFsTay User',
+          sender_role: isLandlord ? 'landlord' : 'operator',
+          is_masked: isMasked,
+          mask_type: maskType,
+          landlord_id: thread.landlordId ?? null,
+        });
+        // Determine which webhook to fire based on sender role + message count
+        let endpoint: string;
+        if (isLandlord) {
+          endpoint = '/webhook/inbox-landlord-replied';
+        } else {
+          endpoint = isFirstMessage ? '/webhook/inbox-new-inquiry' : '/webhook/inbox-new-message';
+        }
         fetch(`${n8nBase}${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            thread_id: thread.id,
-            property_title: thread.propertyTitle,
-            property_city: thread.propertyCity,
-            sender_name: user.user_metadata?.name || 'NFsTay User',
-            is_masked: isMasked,
-            mask_type: maskType,
-            landlord_id: thread.landlordId ?? null,
-          }),
+          body: payload,
           signal: ac.signal,
         }).catch(() => {}).finally(() => clearTimeout(timeout));
       }
