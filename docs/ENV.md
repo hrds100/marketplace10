@@ -12,6 +12,7 @@ Local development: copy `.env.example` to `.env` and fill in values.
 | VITE_GHL_FUNNEL_URL | Yes | src/lib/ghl.ts | GHL cart funnel page URL for checkout iframe |
 | VITE_GHL_LOCATION_ID | No | Reference only | GHL location ID |
 | VITE_PEXELS_API_KEY | Yes | src/lib/pexels.ts | Pexels API key for property stock photos |
+| VITE_SENTRY_DSN | No | src/main.tsx | Sentry error monitoring DSN (silently no-ops if absent) |
 
 ## Supabase Edge Function Secrets
 Set via `npx supabase secrets set` or Supabase Dashboard → Edge Functions → Secrets:

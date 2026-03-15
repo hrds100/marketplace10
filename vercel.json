@@ -4,6 +4,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/api/health",
+      "destination": "https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/health"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
