@@ -1,6 +1,8 @@
 # NFsTay — Full Stack Reference
 _Last updated: 2026-03-15_
 
+> **Rule:** Any time a new service, tool, or integration is added to the project, this file MUST be updated in the same commit. No exceptions.
+
 ## Quick Links
 - **Production**: https://hub.nfstay.com
 - **GitHub**: https://github.com/hrds100/marketplace10
@@ -8,6 +10,8 @@ _Last updated: 2026-03-15_
 - **Supabase**: https://supabase.com/dashboard/project/asazddtvjvmckouxcmmo
 - **n8n**: https://n8n.srv886554.hstgr.cloud
 - **GHL**: https://app.gohighlevel.com (Location ID: `eFBsWXY3BmWDGIRez13x`)
+- **Sentry**: https://nfstay.sentry.io
+- **UptimeRobot**: https://uptimerobot.com (monitor: hub.nfstay.com/api/health)
 
 ## Services
 
@@ -19,6 +23,10 @@ _Last updated: 2026-03-15_
 | Hosting | Vercel | hub.nfstay.com | prj_knviieakfA3YpyLA6CW1ADTulRL3 | — | vercel.json |
 | Stock Photos | Pexels | api.pexels.com | — | VITE_PEXELS_API_KEY | src/lib/pexels.ts |
 | Email | Resend | api.resend.com | — | RESEND_API_KEY (Supabase secret) | supabase/functions/send-email/ |
+| Error Monitoring | Sentry | nfstay.sentry.io | — | VITE_SENTRY_DSN | src/main.tsx |
+| Uptime Monitoring | UptimeRobot | uptimerobot.com | — | — | hub.nfstay.com/api/health |
+| CI Pipeline | GitHub Actions | github.com/hrds100/marketplace10/actions | — | — | .github/workflows/ci.yml |
+| Health Check | Supabase Edge Fn | hub.nfstay.com/api/health | — | — | supabase/functions/health/index.ts |
 
 ## Supabase Tables
 
@@ -31,6 +39,7 @@ _Last updated: 2026-03-15_
 | user_progress | University lesson progress | user_id, module_id, lesson_id, step_index |
 | notifications | Admin notifications | user_id, type, title, body, property_id, read |
 | ai_settings | AI model + prompt config | model_pricing, model_university, model_description, system_prompt_* |
+| admin_audit_log | Persistent admin action log | user_id, action, target_table, target_id, metadata, created_at |
 
 ## n8n Webhooks
 
@@ -62,6 +71,8 @@ _Last updated: 2026-03-15_
 | VITE_N8N_WEBHOOK_URL | n8n.ts | Yes (fallback to hardcoded) |
 | VITE_GHL_FUNNEL_URL | ghl.ts | Yes (InquiryPanel needs it) |
 | VITE_PEXELS_API_KEY | pexels.ts | Yes (photo fallbacks) |
+| VITE_SENTRY_DSN | main.tsx | Optional — Sentry silently disabled if absent |
+| VITE_SUPABASE_PROJECT_ID | supabase CLI | Optional — used for local dev |
 
 ## Known Issues / Tech Debt
 1. `ai_settings` and `notifications` tables not in generated Supabase types — using `as any` casts
