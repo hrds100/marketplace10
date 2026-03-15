@@ -6,45 +6,31 @@ import { useAuth } from '@/hooks/useAuth';
 import type { Thread, Message } from './types';
 import MessageBubble from './MessageBubble';
 import QuickRepliesModal from './QuickRepliesModal';
+import ChatEmptyState from './ChatEmptyState';
 
 // ── Masking utility ──────────────────────────────────────────────
 interface MaskResult { maskedBody: string; isMasked: boolean; maskType: string }
 
 function maskMessage(body: string): MaskResult {
   let result = body;
-  let detected = false;
-  let type = 'none';
+  let isMasked = false;
+  let maskType = 'none';
 
-  // WhatsApp links — replace entire message
-  if (/(whatsapp|wa\.me|chat\.whatsapp)/gi.test(result)) {
+  // WhatsApp bypass attempt — replace entire message (intentional)
+  if (/(whatsapp|wa\.me|chat\.whatsapp)/gi.test(body)) {
     return { maskedBody: 'Contact details hidden. Sign the NDA to unlock.', isMasked: true, maskType: 'contact' };
   }
 
-  // Phone numbers
-  const phoneRegex = /(\+44\s?|0)(\d\s?){9,10}/g;
-  if (phoneRegex.test(result)) {
-    result = result.replace(phoneRegex, '[Hidden number]');
-    detected = true;
-    type = 'phone';
-  }
+  // Phone — inline replace match only, preserve surrounding text
+  result = result.replace(/(\+44\s?|0)(\d[\s\d]{8,10})/g, () => { isMasked = true; maskType = 'phone'; return '[Hidden number]'; });
 
-  // Email addresses
-  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-  if (emailRegex.test(result)) {
-    result = result.replace(emailRegex, '[Hidden email]');
-    detected = true;
-    type = detected && type !== 'none' ? 'contact' : 'email';
-  }
+  // Email — inline replace match only
+  result = result.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, () => { isMasked = true; maskType = maskType === 'phone' ? 'contact' : 'email'; return '[Hidden email]'; });
 
-  // Physical addresses
-  const addressRegex = /\d+\s+[A-Za-z]+\s+(Road|Street|Avenue|Lane|Drive|Close|Way|Place|Rd|St|Ave)\b/gi;
-  if (addressRegex.test(result)) {
-    result = result.replace(addressRegex, '[Hidden address]');
-    detected = true;
-    type = detected && type !== 'none' ? 'contact' : 'address';
-  }
+  // Address — inline replace match only
+  result = result.replace(/\d+\s+[A-Za-z]+\s+(Road|Street|Avenue|Lane|Drive|Close|Way|Place|Rd|St|Ave)\b/gi, () => { isMasked = true; maskType = maskType !== 'none' ? 'contact' : 'address'; return '[Hidden address]'; });
 
-  return { maskedBody: result, isMasked: detected, maskType: type };
+  return { maskedBody: result, isMasked, maskType };
 }
 
 // ── Phone masking for display (legacy — used when NDA not signed) ──
@@ -70,6 +56,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const [loading, setLoading] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Map DB row to Message
   const mapRow = useCallback((row: Record<string, unknown>, userId?: string): Message => {
@@ -208,6 +195,13 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  const handleSelectStarter = (text: string) => {
+    setInput(text);
+    inputRef.current?.focus();
+  };
+
+  const isEmpty = !loading && messages.length === 0;
+
   // Group by date
   const grouped: { date: string; msgs: Message[] }[] = [];
   let lastDate = '';
@@ -246,31 +240,35 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
-          <div className="space-y-4">
+          <div className="px-4 py-4 space-y-4">
             {[1, 2, 3].map(i => (
               <div key={i} className={`animate-pulse flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
                 <div className={`h-10 rounded-2xl bg-gray-100 ${i % 2 === 0 ? 'w-2/3' : 'w-1/2'}`} />
               </div>
             ))}
           </div>
+        ) : isEmpty ? (
+          <ChatEmptyState propertyTitle={thread.propertyTitle} onSelectStarter={handleSelectStarter} />
         ) : (
-          grouped.map(group => (
-            <div key={group.date}>
-              <div className="text-center py-3"><span className="text-[11px] text-gray-400 bg-gray-50 px-3 py-1 rounded-full">{group.date}</span></div>
-              {group.msgs.map(msg => (
-                <MessageBubble
-                  key={msg.id}
-                  message={msg}
-                  isSender={msg.senderId === 'me'}
-                  termsAccepted={thread.termsAccepted}
-                />
-              ))}
-            </div>
-          ))
+          <div className="px-4 py-4">
+            {grouped.map(group => (
+              <div key={group.date}>
+                <div className="text-center py-3"><span className="text-[11px] text-gray-400 bg-gray-50 px-3 py-1 rounded-full">{group.date}</span></div>
+                {group.msgs.map(msg => (
+                  <MessageBubble
+                    key={msg.id}
+                    message={msg}
+                    isSender={msg.senderId === 'me'}
+                    termsAccepted={thread.termsAccepted}
+                  />
+                ))}
+              </div>
+            ))}
+            <div ref={endRef} />
+          </div>
         )}
-        <div ref={endRef} />
       </div>
 
       {/* NDA warning banner */}
@@ -285,7 +283,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
         <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
         <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
-        <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
+        <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
           className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px]" style={{ minHeight: 36 }} />
         <button onClick={handleSend} disabled={!input.trim()}
           className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
