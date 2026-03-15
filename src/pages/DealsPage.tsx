@@ -3,7 +3,6 @@ import { Bell, X } from 'lucide-react';
 import PropertyCard from '@/components/PropertyCard';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
-import { listings as mockListings } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -62,8 +61,7 @@ export default function DealsPage() {
     setInquiryOpen(false);
   }, []);
 
-  // Fetch properties from Supabase, fallback to mock
-  const { data: dbProperties } = useQuery({
+  const { data: dbProperties, isLoading } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
       const { data, error } = await supabase.from('properties').select('*');
@@ -73,20 +71,22 @@ export default function DealsPage() {
   });
 
   const listings = useMemo(() => {
-    if (dbProperties && dbProperties.length > 0) {
-      // Only show live/on-offer deals on public Deals page — pending/approved await admin action
-      const publicDeals = dbProperties
-        .filter(p => p.status === 'live' || p.status === 'on-offer')
-        .map(toListingShape);
-      return publicDeals.length > 0 ? publicDeals : mockListings;
-    }
-    return mockListings;
+    if (!dbProperties) return [];
+    return dbProperties
+      .filter(p => p.status === 'live' || p.status === 'on-offer')
+      .map(toListingShape);
   }, [dbProperties]);
 
   const liveCount = listings.filter(l => l.status === 'live').length;
 
+  const featured = listings.filter(l => l.featured);
+  const featuredIds = new Set(featured.map(l => l.id));
+
   const filtered = useMemo(() => {
-    let result = [...listings];
+    // Exclude featured from main grid when featured strip is visible
+    let result = featured.length > 0
+      ? listings.filter(l => !featuredIds.has(l.id))
+      : [...listings];
     if (activeTab !== 'All') {
       const statusMap: Record<string, string> = { 'Live': 'live', 'On Offer': 'on-offer', 'Inactive': 'inactive' };
       result = result.filter(l => l.status === statusMap[activeTab]);
@@ -97,9 +97,7 @@ export default function DealsPage() {
     else if (sort === 'rent') result.sort((a, b) => a.rent - b.rent);
     else result.sort((a, b) => a.daysAgo - b.daysAgo);
     return result;
-  }, [activeTab, city, type, sort, listings]);
-
-  const featured = listings.filter(l => l.featured);
+  }, [activeTab, city, type, sort, listings, featured.length]);
   const totalPages = Math.ceil(filtered.length / perPage);
   const pageListings = filtered.slice((page - 1) * perPage, page * perPage);
   const cities = [...new Set(listings.map(l => l.city))].sort();
@@ -160,7 +158,7 @@ export default function DealsPage() {
             </button>
           ))}
         </div>
-        <span className="text-[13px] text-muted-foreground">Showing {filtered.length} deals</span>
+        <span className="text-[13px] text-muted-foreground">Showing {filtered.length + featured.length} deals</span>
       </div>
 
       {/* Filters */}
@@ -186,6 +184,17 @@ export default function DealsPage() {
           <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onAddToCRM={() => handleAddToCRM(l)} onInquire={handleInquire} />
         ))}
       </div>
+
+      {isLoading && (
+        <div className="text-center py-16 text-muted-foreground text-sm">Loading deals...</div>
+      )}
+
+      {!isLoading && pageListings.length === 0 && featured.length === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="text-lg font-semibold mb-1">No deals found</p>
+          <p className="text-sm">Check back soon — new deals are added daily.</p>
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

@@ -98,7 +98,7 @@ export default function DealDetail() {
   // Build images: user photos first, city stock fallbacks to fill 5
   const citySlug = encodeURIComponent((city || 'london').toLowerCase());
   const stockImages = Array.from({ length: 5 }, (_, i) =>
-    `https://source.unsplash.com/featured/1200x900/?${citySlug},property,interior&sig=${i}`
+    `https://source.unsplash.com/featured/1200x900/?${citySlug},property,interior&sig=${citySlug}-${i}`
   );
   const userPhotos: string[] = Array.isArray(listing?.photos) ? (listing.photos as string[]) : [];
   const images = [...userPhotos, ...stockImages.slice(userPhotos.length)].slice(0, 5);
