@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus } from 'lucide-react';
+import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus, Sparkles } from 'lucide-react';
 import { listings, faqItems, crmDeals } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
@@ -21,7 +21,10 @@ export default function DealDetail() {
   const [nights, setNights] = useState(20);
   const [addedToCrm, setAddedToCrm] = useState(false);
   const defaultNightlyRate = Math.round(listing.rent / 20 * 1.8);
-  const [nightlyRate, setNightlyRate] = useState(defaultNightlyRate);
+  // Use AI-estimated rate if available (only present on Supabase-loaded properties)
+  const aiNightlyRate = (listing as Record<string, unknown>).estimated_nightly_rate as number | undefined;
+  const aiSearchUrl = (listing as Record<string, unknown>).airbnb_search_url_30d as string | undefined;
+  const [nightlyRate, setNightlyRate] = useState(aiNightlyRate && aiNightlyRate > 0 ? aiNightlyRate : defaultNightlyRate);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIdx, setGalleryIdx] = useState(0);
@@ -240,7 +243,20 @@ export default function DealDetail() {
               </div>
 
               <div className="mb-4">
-                <label className="text-xs font-semibold text-foreground block mb-2">Nightly average rate (£)</label>
+                <label className="text-xs font-semibold text-foreground block mb-2">
+                  Nightly average rate (£)
+                  {aiNightlyRate && aiNightlyRate > 0 && (
+                    aiSearchUrl ? (
+                      <a href={aiSearchUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-light text-accent-foreground inline-flex items-center gap-1 hover:opacity-75 transition-opacity">
+                        <Sparkles className="w-3 h-3" /> AI estimated
+                      </a>
+                    ) : (
+                      <span className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-light text-accent-foreground inline-flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> AI estimated
+                      </span>
+                    )
+                  )}
+                </label>
                 <input
                   type="number"
                   min={20}
