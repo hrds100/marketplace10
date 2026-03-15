@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MoreHorizontal, Sparkles, BookmarkCheck, Star, Archive } from 'lucide-react';
+import { MoreHorizontal, Sparkles, BookmarkCheck, Star, Archive, Home } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Thread } from './types';
@@ -50,7 +50,7 @@ export default function ThreadItem({ thread, isSelected, onSelect, searchQuery =
           ) : thread.propertyImage ? (
             <img src={thread.propertyImage} alt="" className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-muted-foreground">{thread.contactName.charAt(0)}</div>
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center"><Home className="w-5 h-5 text-gray-400" /></div>
           )}
         </div>
         {!thread.isSupport && (

@@ -72,10 +72,16 @@ export default function InboxPage() {
 
       const mapped: Thread[] = (data || []).map((row) => {
         const prop = row.properties as Record<string, unknown> | null;
-        // Get last message for preview (we'll fetch separately if needed)
+        // Display name: use city + type if available, fallback to contact name, never show raw IDs
+        const propName = (prop?.name as string) || '';
+        const city = (prop?.city as string) || '';
+        const type = (prop?.type as string) || '';
+        const contactName = (prop?.contact_name as string) || '';
+        // Build a human-friendly title: "Manchester · 2-bed flat" or contact name or "Untitled Thread"
+        const displayTitle = city && type ? `${city} · ${type}` : city || contactName || 'Untitled Thread';
         return {
           id: row.id,
-          propertyTitle: (prop?.name as string) || 'Untitled Property',
+          propertyTitle: displayTitle,
           propertyCity: (prop?.city as string) || '',
           propertyPostcode: (prop?.postcode as string) || '',
           propertyImage: ((prop?.photos as string[]) || [])[0] || null,
