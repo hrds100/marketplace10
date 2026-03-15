@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export type { ListingShape };
 
@@ -38,9 +39,12 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
 
   const [celebrating, setCelebrating] = useState(false);
   const handleAddToCRM = async () => {
-    if (addedToCRM || !user) return;
-    // Insert into crm_deals table
-    await supabase.from('crm_deals').insert({
+    if (addedToCRM) return;
+    if (!user) {
+      toast.error('Sign in to add deals to your CRM');
+      return;
+    }
+    const { error } = await supabase.from('crm_deals').insert({
       user_id: user.id,
       name: listing.name,
       city: listing.city,
@@ -51,12 +55,18 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       stage: 'New Lead',
       notes: 'Added from deals page',
     });
-    // Flag property as in CRM
+    if (error) {
+      console.error('CRM insert error:', error.message);
+      toast.error('Failed to add to CRM — ' + error.message);
+      return;
+    }
+    // Flag property as in CRM (non-blocking)
     (supabase.from('properties') as any).update({ in_crm: true }).eq('id', listing.id).then(() => {});
     localStorage.setItem(`crm_${listing.id}`, 'true');
     setAddedToCRM(true);
     setCelebrating(true);
     onAddToCRM?.();
+    toast.success(`${listing.name} added to CRM!`);
     setTimeout(() => setCelebrating(false), 1500);
   };
 

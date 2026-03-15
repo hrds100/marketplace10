@@ -140,7 +140,9 @@ export default function DealDetail() {
   const finalProfit = estProfit - (showExtraCosts ? totalExtraCosts : 0);
 
   const handleAddToCrm = async () => {
-    if (!id || !user || addedToCrm) return;
+    if (addedToCrm) return;
+    if (!user) { toast.error('Sign in to add deals to your CRM'); return; }
+    if (!id) return;
     // Insert into crm_deals table
     const { error } = await supabase.from('crm_deals').insert({
       user_id: user.id,
