@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, Settings } from 'lucide-react';
 import type { Thread } from './types';
 import ThreadItem from './ThreadItem';
@@ -13,12 +13,23 @@ interface Props {
 export default function ThreadList({ threads, selectedId, onSelect, onOpenSettings }: Props) {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus();
+  }, [searchOpen]);
+
+  const handleCloseSearch = () => {
+    setSearchOpen(false);
+    setSearch('');
+  };
 
   const filtered = threads.filter(t => {
     if (filter === 'unread' && !t.unread && !t.isSupport) return false;
     if (search) {
       const q = search.toLowerCase();
-      return t.propertyTitle.toLowerCase().includes(q) || t.contactName.toLowerCase().includes(q);
+      return t.propertyTitle.toLowerCase().includes(q) || t.contactName.toLowerCase().includes(q) || t.lastMessage.toLowerCase().includes(q);
     }
     return true;
   });
@@ -29,30 +40,36 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
   return (
     <div className="h-full flex flex-col bg-white border-r border-border">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h2 className="text-lg font-bold text-foreground">Messages</h2>
-        <div className="flex items-center gap-1">
-          <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-            <Search className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <button className="p-2 rounded-lg hover:bg-secondary transition-colors" onClick={onOpenSettings}>
-            <Settings className="w-4 h-4 text-muted-foreground" />
-          </button>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="px-4 py-2">
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search messages..."
-          className="w-full h-9 rounded-lg bg-secondary px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        />
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+        {searchOpen ? (
+          <div className="flex items-center gap-2 w-full">
+            <Search className="w-4 h-4 text-gray-400 shrink-0" />
+            <input
+              ref={searchRef}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search messages..."
+              className="flex-1 text-sm text-foreground placeholder:text-gray-400 bg-transparent focus:outline-none"
+            />
+            <button onClick={handleCloseSearch} className="text-sm text-gray-600 hover:text-gray-900 shrink-0">Cancel</button>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-lg font-bold text-foreground">Messages</h2>
+            <div className="flex items-center gap-1">
+              <button className="p-2 rounded-lg hover:bg-secondary transition-colors" onClick={() => setSearchOpen(true)}>
+                <Search className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <button className="p-2 rounded-lg hover:bg-secondary transition-colors" onClick={onOpenSettings}>
+                <Settings className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Filter pills */}
-      <div className="flex gap-2 px-4 pb-2">
+      <div className="flex gap-2 px-4 py-2">
         {(['all', 'unread'] as const).map(f => (
           <button
             key={f}
@@ -67,10 +84,11 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
       {/* Thread list */}
       <div className="flex-1 overflow-y-auto">
         {supportThreads.length === 0 && regularThreads.length === 0 ? (
-          <div className="text-center py-12 text-sm text-muted-foreground">No messages yet</div>
+          <div className="text-center py-12 text-sm text-muted-foreground">
+            {search ? `No results for "${search}"` : 'No messages yet'}
+          </div>
         ) : (
           <>
-            {/* Pinned support thread */}
             {supportThreads.length > 0 && (
               <>
                 <div className="text-xs text-gray-400 uppercase tracking-wide px-4 py-1">Pinned</div>
@@ -80,8 +98,6 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
                 <div className="border-b border-gray-100" />
               </>
             )}
-
-            {/* Regular threads */}
             {regularThreads.map(thread => (
               <ThreadItem key={thread.id} thread={thread} isSelected={selectedId === thread.id} onSelect={() => onSelect(thread.id)} />
             ))}

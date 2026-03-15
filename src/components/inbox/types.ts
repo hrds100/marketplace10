@@ -5,7 +5,11 @@ export interface Thread {
   propertyPostcode: string;
   propertyImage: string | null;
   propertyProfit: number;
+  propertyRent: number;
+  dealType: string;
   contactName: string;
+  contactPhone: string;
+  contactEmail: string;
   lastMessage: string;
   lastMessageAt: string;
   unread: boolean;

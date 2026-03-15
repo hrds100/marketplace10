@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { MoreHorizontal, Sparkles } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { MoreHorizontal, Sparkles, BookmarkCheck, Star, Archive } from 'lucide-react';
 import type { Thread } from './types';
 
 interface Props {
@@ -8,14 +8,30 @@ interface Props {
   onSelect: () => void;
 }
 
+const MENU_ITEMS = [
+  { label: 'Mark as unread', icon: BookmarkCheck },
+  { label: 'Star', icon: Star },
+  { label: 'Archive', icon: Archive },
+];
+
 export default function ThreadItem({ thread, isSelected, onSelect }: Props) {
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMenu]);
 
   return (
     <div
       className={`relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors group ${isSelected ? 'bg-gray-100' : 'bg-white hover:bg-gray-50'}`}
       onClick={onSelect}
-      onMouseLeave={() => setShowMenu(false)}
     >
       {/* Avatar */}
       <div className="w-10 h-10 rounded-lg bg-secondary flex-shrink-0 overflow-hidden">
@@ -49,26 +65,27 @@ export default function ThreadItem({ thread, isSelected, onSelect }: Props) {
         </div>
       </div>
 
-      {/* Context menu trigger */}
+      {/* Context menu trigger — hover only, not on support */}
       {!thread.isSupport && (
         <button
-          className="absolute top-3 right-3 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-secondary transition-all"
+          className="absolute top-3 right-3 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
           onClick={e => { e.stopPropagation(); setShowMenu(!showMenu); }}
         >
-          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+          <MoreHorizontal className="w-4 h-4 text-gray-500" />
         </button>
       )}
 
       {/* Context menu dropdown */}
       {showMenu && (
-        <div className="absolute top-10 right-3 z-20 bg-card border border-border rounded-xl shadow-lg py-1 min-w-[160px]">
-          {['Mark as unread', 'Star', 'Archive'].map(action => (
+        <div ref={menuRef} className="absolute top-10 right-3 z-20 bg-white border border-gray-100 rounded-xl shadow-lg py-1 min-w-[180px]">
+          {MENU_ITEMS.map(item => (
             <button
-              key={action}
-              className="w-full text-left px-3 py-2 text-xs text-foreground hover:bg-secondary transition-colors"
-              onClick={e => { e.stopPropagation(); setShowMenu(false); }}
+              key={item.label}
+              className="w-full text-left px-4 py-2.5 flex items-center gap-2.5 hover:bg-gray-50 transition-colors"
+              onClick={e => { e.stopPropagation(); console.log(item.label, thread.id); setShowMenu(false); }}
             >
-              {action}
+              <item.icon className="w-[18px] h-[18px] text-gray-700" />
+              <span className="text-sm text-gray-800">{item.label}</span>
             </button>
           ))}
         </div>
