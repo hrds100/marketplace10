@@ -12,6 +12,11 @@ import type { Tables } from '@/integrations/supabase/types';
 
 function toListingShape(p: Tables<'properties'>): ListingShape {
   const daysAgo = Math.max(0, Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000));
+  const photos = (p as Record<string, unknown>).photos as string[] | null;
+  const citySlug = encodeURIComponent((p.city || 'london').toLowerCase());
+  const image = (photos && photos.length > 0)
+    ? photos[0]
+    : `https://source.unsplash.com/featured/800x520/?${citySlug},property,interior&sig=${p.id.slice(0, 6)}`;
   return {
     id: p.id,
     name: p.name,
@@ -23,8 +28,8 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     status: p.status as 'live' | 'on-offer' | 'inactive',
     featured: p.featured,
     daysAgo,
-    image: p.image_url || `https://picsum.photos/seed/prop-${p.city.toLowerCase()}-${p.id.slice(0, 6)}/800/520`,
-    landlordApproved: p.sa_approved === 'yes',
+    image,
+    landlordApproved: (p as Record<string, unknown>).sa_approved === 'yes',
     landlordWhatsapp: p.landlord_whatsapp,
   };
 }

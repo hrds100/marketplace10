@@ -17,7 +17,7 @@ interface Props {
 
 export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, showSavedBadge, forceSignUp }: Props) {
   const navigate = useNavigate();
-  const [addedToCRM, setAddedToCRM] = useState(false);
+  const [addedToCRM, setAddedToCRM] = useState(() => localStorage.getItem(`crm_${listing.id}`) === 'true');
 
   const statusDot = () => {
     if (listing.daysAgo <= 7) return 'bg-emerald-500';
@@ -36,6 +36,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const [celebrating, setCelebrating] = useState(false);
   const handleAddToCRM = () => {
     if (addedToCRM) return;
+    localStorage.setItem(`crm_${listing.id}`, 'true');
     setAddedToCRM(true);
     setCelebrating(true);
     onAddToCRM?.();
@@ -54,16 +55,20 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
 
   const airdnaUrl = `https://www.airdna.co`;
 
+  // Use listing.image (set by toListingShape from photos[0] or Unsplash fallback)
+  const citySlug = encodeURIComponent((listing.city || 'london').toLowerCase());
+  const cardImage = listing.image || `https://source.unsplash.com/featured/800x520/?${citySlug},property,interior&sig=${listing.id}`;
+
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover">
       {/* Photo */}
       <div className="relative h-[200px] overflow-hidden">
         <img
-          src={listing.image}
+          src={cardImage}
           alt={`Property in ${listing.city}`}
           loading="lazy"
           className="w-full h-full object-cover"
-          onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/fallback/800/520'; }}
+          onError={(e) => { (e.target as HTMLImageElement).src = `https://source.unsplash.com/featured/800x520/?${citySlug},apartment&sig=fallback`; }}
         />
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
