@@ -9,6 +9,8 @@ interface AuthState {
   isAdmin: boolean;
 }
 
+const ADMIN_EMAILS = ['admin@hub.nfstay.com'];
+
 export function useAuth() {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -18,17 +20,18 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // Set loading false immediately on auth state — admin check runs in background
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         const user = session?.user ?? null;
-        setState(prev => ({ ...prev, user, session, loading: false }));
+        const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
+        setState(prev => ({ ...prev, user, session, loading: false, isAdmin }));
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user ?? null;
-      setState(prev => ({ ...prev, user, session, loading: false }));
+      const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
+      setState(prev => ({ ...prev, user, session, loading: false, isAdmin }));
     });
 
     return () => subscription.unsubscribe();
