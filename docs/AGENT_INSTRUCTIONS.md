@@ -31,7 +31,11 @@ You report to Hugo. You execute what is asked, cleanly and completely. You do no
 ## 3. BEFORE EVERY TASK
 
 1. Run `git log -1 --format="%ci"` to get current date. Never assume.
-2. Read relevant docs: `docs/STACK.md`, `docs/ARCHITECTURE.md`, `docs/DATABASE.md`, `docs/INTEGRATIONS.md`, `docs/CHANGELOG.md`
+2. Read relevant docs:
+   - `docs/STACK.md` — always
+   - `docs/AGENT_INSTRUCTIONS.md` — always (this file)
+   - `docs/MESSAGING.md` — **required if task touches inbox, chat, messages, chat_threads, chat_messages, or InboxPage**
+   - `docs/ARCHITECTURE.md`, `docs/DATABASE.md`, `docs/INTEGRATIONS.md`, `docs/CHANGELOG.md` — as relevant
 3. Read the actual source files you will modify. Never edit code you haven't opened.
 
 ## 4. ENV VARS
@@ -77,6 +81,8 @@ Use them instead of terminal commands wherever possible (Rule 17).
 5. **STEP 4** — Write minimum code to pass.
 6. **STEP 5** — Run: `npx tsc --noEmit && npm run test` (both must pass).
 7. **STEP 6** — Output the Section 9 report.
+
+> **Exception for large features (e.g. Messaging):** Hugo may say "go end-to-end" — in that case, Claude works through the entire feature autonomously, completing all steps without stopping for confirmation. Flag any blockers at the END in the output report, not mid-build.
 </workflow>
 
 <rules>
