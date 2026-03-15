@@ -124,6 +124,18 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         message_type: 'text',
       });
       if (error) throw error;
+      // n8n notifies landlord via WhatsApp on new operator message
+      const n8nBase = (import.meta.env.VITE_N8N_WEBHOOK_URL || '').replace(/\/$/, '');
+      if (n8nBase) {
+        const ac = new AbortController();
+        const timeout = setTimeout(() => ac.abort(), 5000);
+        fetch(`${n8nBase}/webhook/inbox-operator-message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ thread_id: thread.id, sender_id: user.id, body, property_title: thread.propertyTitle, timestamp: new Date().toISOString() }),
+          signal: ac.signal,
+        }).catch(() => {}).finally(() => clearTimeout(timeout));
+      }
     } catch (err) {
       // Remove optimistic message on failure
       setMessages(prev => prev.filter(m => m.id !== optimisticId));

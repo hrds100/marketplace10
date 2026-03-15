@@ -57,6 +57,18 @@ export default function AgreementModal({ thread, isOperator, onClose, onSign }: 
     onSign();
     toast.success('NDA signed — contact details are now unlocked');
     onClose();
+    // n8n notifies both parties that NDA was signed
+    const n8nBase = (import.meta.env.VITE_N8N_WEBHOOK_URL || '').replace(/\/$/, '');
+    if (n8nBase) {
+      const ac = new AbortController();
+      const timeout = setTimeout(() => ac.abort(), 5000);
+      fetch(`${n8nBase}/webhook/inbox-nda-signed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ thread_id: thread.id, property_title: thread.propertyTitle, signed_at: new Date().toISOString() }),
+        signal: ac.signal,
+      }).catch(() => {}).finally(() => clearTimeout(timeout));
+    }
   };
 
   return (

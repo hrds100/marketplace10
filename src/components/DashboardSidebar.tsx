@@ -1,7 +1,8 @@
 import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const navItems = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
@@ -25,7 +26,27 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
   const setCollapsed = (v: boolean) => { setInternalCollapsed(v); onCollapse?.(v); };
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isAdmin } = useAuth();
+  const { signOut, isAdmin, user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread thread count + subscribe to realtime updates
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('chat_threads')
+        .select('id', { count: 'exact', head: true })
+        .eq('operator_id', user.id)
+        .eq('is_read', false);
+      setUnreadCount(count ?? 0);
+    };
+    fetchUnread();
+    const channel = supabase
+      .channel('sidebar-unread')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads', filter: `operator_id=eq.${user.id}` }, () => fetchUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
 
   const handleLogout = async () => {
     await signOut();
@@ -50,10 +71,17 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={`flex items-center gap-2.5 h-10 rounded-lg transition-all duration-150 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary shadow-[inset_3px_0_0] shadow-primary font-semibold' : 'text-sidebar-foreground hover:bg-secondary'}`}
+                className={`relative flex items-center gap-2.5 h-10 rounded-lg transition-all duration-150 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary shadow-[inset_3px_0_0] shadow-primary font-semibold' : 'text-sidebar-foreground hover:bg-secondary'}`}
                 title={collapsed ? item.label : undefined}
               >
-                <item.icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.75} />
+                <div className="relative flex-shrink-0">
+                  <item.icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                  {item.to === '/dashboard/inbox' && unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
                 {!collapsed && (
                   <div className="flex flex-col">
                     <span className="text-sm font-medium leading-tight">{item.label}</span>
@@ -86,8 +114,15 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
         {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[6]].map(item => {
           const isActive = location.pathname === item.to;
           return (
-            <NavLink key={item.to} to={item.to} className="flex flex-col items-center gap-0.5">
-              <item.icon className={`w-[22px] h-[22px] ${isActive ? 'text-primary' : 'text-muted-foreground'}`} strokeWidth={1.75} />
+            <NavLink key={item.to} to={item.to} className="relative flex flex-col items-center gap-0.5">
+              <div className="relative">
+                <item.icon className={`w-[22px] h-[22px] ${isActive ? 'text-primary' : 'text-muted-foreground'}`} strokeWidth={1.75} />
+                {item.to === '/dashboard/inbox' && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
               <span className={`text-[10px] font-medium ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>{item.label}</span>
             </NavLink>
           );
