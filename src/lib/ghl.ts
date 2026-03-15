@@ -35,7 +35,8 @@ export const PRICE_ID_TO_TIER: Record<string, string> = {
   [GHL_PRODUCTS.monthly.priceId]: 'monthly',
   [GHL_PRODUCTS.lifetime.priceId]: 'lifetime',
   [GHL_PRODUCTS.annual.priceId]: 'yearly',
-  // Legacy wrong prices (6700/99700/39700 instead of 67/997/397) — keep for safety
+  // Legacy price IDs — wrong amounts (6700/99700/39700 pennies) from initial GHL setup.
+  // Keep mapped for backward compatibility with any existing webhook calls.
   '69b5b794c6731008d7ae723c': 'monthly',
   '69b5b7a8081db612f9fbfe60': 'lifetime',
   '69b5b7ab247cf6a48020f434': 'yearly',

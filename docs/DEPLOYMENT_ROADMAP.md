@@ -113,9 +113,10 @@
 - [x] TypeScript types generated (Tables<'properties'>)
 
 ### Infrastructure
-- [x] Vercel deployment (marketplace10.vercel.app) via GitHub integration
+- [x] Vercel deployment [hugos-projects-f8cc36a8/marketplace10](https://vercel.com/hugos-projects-f8cc36a8/marketplace10) — hub.nfstay.com + marketplace10.vercel.app
+- [x] GitHub [hrds100/marketplace10](https://github.com/hrds100/marketplace10), main
+- [x] Supabase [project asazddtvjvmckouxcmmo](https://supabase.com/dashboard/project/asazddtvjvmckouxcmmo/)
 - [x] VITE_N8N_WEBHOOK_URL env var on Vercel
-- [x] GitHub repo (hrds100/marketplace10)
 - [x] React + Vite + TypeScript + Tailwind
 - [x] React Query for data fetching
 - [x] React Router DOM for routing

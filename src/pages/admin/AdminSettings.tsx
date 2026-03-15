@@ -239,7 +239,6 @@ export default function AdminSettings() {
           )}
         </div>
 
-        <button className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Save settings</button>
       </div>
     </div>
   );

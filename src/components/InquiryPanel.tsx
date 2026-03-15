@@ -144,12 +144,20 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
                 </div>
               )}
             </div>
+          ) : !funnelUrl ? (
+            /* ── FREE USER, NO FUNNEL URL → fallback ── */
+            <div className="flex flex-col items-center justify-center flex-1 p-8 text-center">
+              <p className="text-sm text-muted-foreground">Upgrade to access all deals and contact landlords directly.</p>
+              <a href="/dashboard/settings" className="mt-4 h-10 px-6 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center hover:opacity-90 transition-opacity">
+                View Plans
+              </a>
+            </div>
           ) : (
             /* ── FREE USER → GHL funnel iframe ── */
             <div className="flex flex-col flex-1 overflow-hidden">
               <div className="flex-1 min-h-0 overflow-hidden">
                 <iframe
-                  src={funnelUrl || ''}
+                  src={funnelUrl}
                   className="w-full h-full border-0"
                   style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%', height: '125%' }}
                   allow="payment; camera; microphone; geolocation; clipboard-write"
