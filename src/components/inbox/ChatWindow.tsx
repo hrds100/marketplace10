@@ -178,8 +178,11 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           body: JSON.stringify({
             thread_id: thread.id,
             property_title: thread.propertyTitle,
+            property_city: thread.propertyCity,
             sender_name: user.user_metadata?.name || 'NFsTay User',
             is_masked: isMasked,
+            mask_type: maskType,
+            landlord_id: thread.landlordId ?? null,
           }),
           signal: ac.signal,
         }).catch(() => {}).finally(() => clearTimeout(timeout));

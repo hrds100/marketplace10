@@ -19,6 +19,7 @@ export interface Thread {
   isSupport: boolean;
   isOnline: boolean;
   termsAccepted: boolean;
+  landlordId: string | null;
 }
 
 export interface Message {

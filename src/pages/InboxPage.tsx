@@ -31,6 +31,7 @@ const SUPPORT_THREAD: Thread = {
   isSupport: true,
   isOnline: true,
   termsAccepted: true,
+  landlordId: null,
 };
 
 export default function InboxPage() {
@@ -102,6 +103,7 @@ export default function InboxPage() {
           isSupport: false,
           isOnline: false, // TODO: wire to presence when available
           termsAccepted: row.terms_accepted,
+          landlordId: (row.landlord_id as string) || null,
         };
       });
 
