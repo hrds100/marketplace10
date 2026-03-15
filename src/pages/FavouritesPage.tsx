@@ -5,6 +5,7 @@ import PropertyCard from '@/components/PropertyCard';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { useFavourites } from '@/hooks/useFavourites';
+import { listings as mockListings } from '@/data/mockData';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
@@ -31,22 +32,29 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
 export default function FavouritesPage() {
   const { toggle, isFav, favourites } = useFavourites();
 
-  // Fetch properties matching favourite IDs from Supabase
   const favIds = [...favourites];
-  const { data: properties } = useQuery({
+
+  // Try Supabase first, fallback to mock data for matching IDs
+  const { data: favListings = [] } = useQuery({
     queryKey: ['favourite-properties', favIds.sort().join(',')],
     queryFn: async () => {
       if (favIds.length === 0) return [];
+
+      // Try DB first
       const { data } = await supabase
         .from('properties')
         .select('*')
         .in('id', favIds);
-      return (data || []).map(toListingShape);
+
+      if (data && data.length > 0) {
+        return data.map(toListingShape);
+      }
+
+      // Fallback: match against mock listings (properties table may be empty)
+      return mockListings.filter(l => favIds.includes(l.id));
     },
     enabled: favIds.length > 0,
   });
-
-  const favListings = properties || [];
 
   const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
   const [inquiryOpen, setInquiryOpen] = useState(false);
