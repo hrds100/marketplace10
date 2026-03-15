@@ -24,14 +24,31 @@ export default function AdminSubmissions() {
   const filtered = filter === 'all'
     ? submissions
     : filter === 'pending'
-      ? submissions.filter(s => s.status === 'inactive')
+      ? submissions.filter(s => s.status === 'pending')
       : submissions.filter(s => s.status === filter);
 
+  const pendingCount = submissions.filter(s => s.status === 'pending').length;
+
   const approve = async (id: string) => {
+    const submission = submissions.find(s => s.id === id);
     const { error } = await supabase.from('properties').update({ status: 'live' as const }).eq('id', id);
     if (error) { toast.error('Failed'); return; }
-    toast.success('Published');
+    toast.success('Published ✓');
     queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
+
+    // Email member on approval (non-blocking)
+    if (submission?.contact_email) {
+      supabase.functions.invoke('send-email', {
+        body: {
+          type: 'deal-approved-member',
+          data: {
+            memberEmail: submission.contact_email,
+            name: submission.name,
+            city: submission.city,
+          },
+        },
+      }).catch(() => {});
+    }
   };
 
   const reject = async (id: string) => {
@@ -42,8 +59,10 @@ export default function AdminSubmissions() {
   };
 
   const statusLabel = (status: string) => {
-    if (status === 'live') return <span className="badge-green">live</span>;
-    if (status === 'inactive') return <span className="badge-amber">pending</span>;
+    if (status === 'live') return <span className="badge-green">Live</span>;
+    if (status === 'pending') return <span className="badge-amber">Pending</span>;
+    if (status === 'inactive') return <span className="badge-gray">Inactive</span>;
+    if (status === 'on-offer') return <span className="badge-blue">On offer</span>;
     return <span className="badge-gray">{status}</span>;
   };
 
@@ -58,11 +77,18 @@ export default function AdminSubmissions() {
       <h1 className="text-[28px] font-bold text-foreground mb-6">Deal Submissions</h1>
 
       <div className="flex gap-2 mb-6">
-        {['all', 'pending', 'live'].map(f => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-4 py-1.5 rounded-full text-[13px] font-semibold capitalize transition-colors ${filter === f ? 'bg-nfstay-black text-nfstay-black-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-            {f}
-          </button>
-        ))}
+        {(['all', 'pending', 'live'] as const).map(f => {
+          const count = f === 'pending' ? pendingCount : null;
+          return (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`px-4 py-1.5 rounded-full text-[13px] font-semibold capitalize transition-colors inline-flex items-center gap-1.5 ${filter === f ? 'bg-nfstay-black text-nfstay-black-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+              {f}
+              {count !== null && count > 0 && (
+                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${filter === f ? 'bg-white/20 text-white' : 'bg-destructive text-white'}`}>{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div className="space-y-3">
@@ -78,7 +104,7 @@ export default function AdminSubmissions() {
                 <p className="text-xs text-muted-foreground mt-0.5">{s.city} · {s.postcode} · £{s.rent_monthly?.toLocaleString()}/mo</p>
               </div>
               <div className="flex items-center gap-2">
-                {s.status === 'inactive' && (
+                {(s.status === 'pending' || s.status === 'inactive') && (
                   <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
                     <button onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Approve</button>
                     <button onClick={() => reject(s.id)} className="text-xs text-destructive font-medium px-2">Reject</button>

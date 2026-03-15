@@ -299,6 +299,14 @@ export default function ListADealPage() {
         body: JSON.stringify({ propertyId, city: form.city, postcode: form.postcode, type: resolvedType, submittedBy: user?.id, rent: parseInt(form.rent) || 0 }),
         signal: nc.signal }).catch(() => {}).finally(() => clearTimeout(nt));
 
+      // Email admin via Resend (non-blocking)
+      supabase.functions.invoke('send-email', {
+        body: {
+          type: 'new-deal-admin',
+          data: { name: nextId, city: form.city, postcode: form.postcode, type: resolvedType, rent: parseInt(form.rent) || 0, contactName: form.contactName, contactEmail: form.contactEmail },
+        },
+      }).catch(() => {});
+
       // AI pricing
       const minDelay = new Promise(r => setTimeout(r, 2500));
       const pricingFetch = (async (): Promise<AIPricingResult | null> => {
