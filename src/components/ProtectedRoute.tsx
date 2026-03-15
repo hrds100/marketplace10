@@ -17,6 +17,13 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       setStatus('unverified');
       return;
     }
+    // Admin emails bypass OTP verification
+    const adminEmails = ['admin@hub.nfstay.com'];
+    if (user.email && adminEmails.includes(user.email)) {
+      checkedRef.current = user.id;
+      setStatus('verified');
+      return;
+    }
     if (checkedRef.current === user.id) {
       setStatus('verified');
       return;
