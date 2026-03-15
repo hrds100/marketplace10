@@ -54,7 +54,7 @@ export default function CRMPage() {
   const handleUnarchive = async (dealId: string) => {
     setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: 'New Lead' } : d));
     setArchivedIds(prev => prev.filter(id => id !== dealId));
-    if (user) await supabase.from('crm_deals').update({ archived: false, stage: 'New Lead' as any }).eq('id', dealId);
+    if (user) await supabase.from('crm_deals').update({ archived: false, stage: 'New Lead' }).eq('id', dealId);
     toast.success('Deal restored to pipeline');
   };
 
@@ -67,7 +67,7 @@ export default function CRMPage() {
     const fromStage = deal?.stage || '';
     setDeals(prev => prev.map(d => d.id === dragId ? { ...d, stage: toStage } : d));
     if (user) {
-      await supabase.from('crm_deals').update({ stage: toStage as any }).eq('id', dragId);
+      await supabase.from('crm_deals').update({ stage: toStage }).eq('id', dragId);
       notifyCrmStageMove({ dealId: dragId, fromStage, toStage, userId: user.id });
     }
     setDragId(null);
@@ -109,7 +109,7 @@ export default function CRMPage() {
         rent: Number(newDeal.rent) || 0,
         profit: Number(newDeal.profit) || 0,
         type: newDeal.type,
-        stage: newDeal.stage as any,
+        stage: newDeal.stage,
         outsider_lead: isOutsiderLead,
         whatsapp: newDeal.whatsapp || null,
         email: newDeal.email || null,

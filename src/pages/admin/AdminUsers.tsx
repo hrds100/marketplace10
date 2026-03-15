@@ -48,7 +48,7 @@ export default function AdminUsers() {
   // Suspend/unsuspend mutation
   const suspendMutation = useMutation({
     mutationFn: async ({ id, suspended }: { id: string; suspended: boolean }) => {
-      const { error } = await supabase.from('profiles').update({ suspended } as any).eq('id', id);
+      const { error } = await supabase.from('profiles').update({ suspended }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -62,7 +62,7 @@ export default function AdminUsers() {
   const hardDeleteMutation = useMutation({
     mutationFn: async (id: string) => {
       // Soft delete: mark as suspended since we can't call auth.admin.deleteUser from client-side
-      const { error } = await supabase.from('profiles').update({ suspended: true } as any).eq('id', id);
+      const { error } = await supabase.from('profiles').update({ suspended: true }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {

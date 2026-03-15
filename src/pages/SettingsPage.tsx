@@ -98,7 +98,7 @@ export default function SettingsPage() {
     setNotifs(prev => ({ ...prev, [key]: newVal }));
     const { error } = await supabase
       .from('profiles')
-      .update({ [key]: newVal } as any)
+      .update({ [key]: newVal })
       .eq('id', user.id);
     if (error) {
       // Revert on failure

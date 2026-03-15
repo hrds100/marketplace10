@@ -37,7 +37,7 @@ export default function AdminListings() {
   };
 
   const changeStatus = async (id: string, status: string) => {
-    await supabase.from('properties').update({ status: status as any }).eq('id', id);
+    await supabase.from('properties').update({ status }).eq('id', id);
     queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
   };
 
@@ -53,7 +53,7 @@ export default function AdminListings() {
       city: editForm.city,
       rent_monthly: editForm.rent,
       profit_est: editForm.profit,
-      status: editForm.status as any,
+      status: editForm.status,
     }).eq('id', editingId);
     queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
     setEditingId(null);
@@ -92,7 +92,7 @@ export default function AdminListings() {
       profit_est: parseInt(r.profit || r.profit_est || '0'),
       beds: parseInt(r.beds || '2'),
       type: r.type || '2-bed flat',
-      status: (r.status || 'live') as any,
+      status: r.status || 'live',
       landlord_whatsapp: r.whatsapp || r.landlord_whatsapp || null,
       description: r.description || null,
       featured: r.featured === 'true',

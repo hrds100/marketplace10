@@ -31,7 +31,7 @@ export default function AdminSubmissions() {
 
   const approve = async (id: string) => {
     const submission = submissions.find(s => s.id === id);
-    const { error } = await supabase.from('properties').update({ status: 'live' as any }).eq('id', id);
+    const { error } = await supabase.from('properties').update({ status: 'live' }).eq('id', id);
     if (error) { toast.error(`Approve failed: ${error.message}`); console.error('Approve error:', error); return; }
     toast.success('Published ✓');
     queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
@@ -52,7 +52,7 @@ export default function AdminSubmissions() {
   };
 
   const reject = async (id: string) => {
-    const { error } = await supabase.from('properties').update({ status: 'inactive' as any }).eq('id', id);
+    const { error } = await supabase.from('properties').update({ status: 'inactive' }).eq('id', id);
     if (error) { toast.error(`Reject failed: ${error.message}`); console.error('Reject error:', error); return; }
     toast.error('Rejected');
     queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
