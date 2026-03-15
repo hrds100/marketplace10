@@ -131,6 +131,8 @@ Supabase Edge Function secrets (set via `npx supabase secrets set`):
 
 ## 10. PERPLEXITY AUDIT PROTOCOL
 
+- Hugo has **one Raycast hotkey**. He sends tasks to **Perplexity only**. Perplexity writes all Claude prompts.
+- Every prompt Perplexity writes to Claude will begin with: **"Read docs/AGENT_INSTRUCTIONS.md first. Then:"**
 - Perplexity audits GitHub + Vercel before writing every task.
 - Perplexity verifies Claude's output before the next task.
 - All tasks received are pre-checked and safe to execute.
