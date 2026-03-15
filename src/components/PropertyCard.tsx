@@ -52,7 +52,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     onInquire?.(listing);
   };
 
-  const pricelabsUrl = `https://www.pricelabs.co`;
+  const airdnaUrl = `https://www.airdna.co`;
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover">
@@ -108,8 +108,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <span className="text-xs text-muted-foreground">Est. monthly profit</span>
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-bold text-accent-foreground">£{listing.profit}</span>
-              <a href={pricelabsUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary font-medium hover:underline" onClick={e => e.stopPropagation()}>
-                Pricelabs verified ✓
+              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary font-medium hover:underline" onClick={e => e.stopPropagation()}>
+                Airdna verified ✓
               </a>
             </div>
           </div>
