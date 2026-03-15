@@ -117,7 +117,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {paid ? (
             /* ── PAID USER → WhatsApp ── */
             <div className="p-6">
@@ -145,23 +145,18 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
               )}
             </div>
           ) : (
-            /* ── FREE USER → GHL funnel opens in new tab ── */
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
-                <svg className="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            /* ── FREE USER → GHL funnel iframe ── */
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <iframe
+                  src={funnelUrl || ''}
+                  className="w-full h-full border-0"
+                  style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%', height: '125%' }}
+                  allow="payment; camera; microphone; geolocation; clipboard-write"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
+                  title="Checkout"
+                />
               </div>
-              <h4 className="text-xl font-bold text-foreground mb-2">Unlock All Deals — £67/mo</h4>
-              <p className="text-sm text-muted-foreground max-w-[320px] mb-6">
-                Get instant access to every deal, contact landlords directly via WhatsApp, and use the full CRM & University.
-              </p>
-              <button
-                onClick={() => { if (funnelUrl) window.open(funnelUrl, '_blank'); }}
-                className="h-12 px-8 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
-              >
-                Continue to Checkout
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-              </button>
-              <p className="text-xs text-muted-foreground mt-4">Secure payment · Cancel any time</p>
             </div>
           )}
         </div>
