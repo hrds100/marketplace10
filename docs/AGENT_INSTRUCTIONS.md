@@ -43,6 +43,7 @@ All set in **Vercel → hugos-projects-f8cc36a8 → marketplace10 → Settings �
 | `VITE_N8N_WEBHOOK_URL` | n8n webhook base URL |
 | `VITE_GHL_FUNNEL_URL` | GHL checkout funnel page URL |
 | `VITE_PEXELS_API_KEY` | Pexels API key for property photos |
+| `VITE_SENTRY_DSN` | Sentry DSN for error monitoring (optional) |
 
 Supabase Edge Function secrets (via `npx supabase secrets set`):
 `RESEND_API_KEY`, `ADMIN_EMAIL`
@@ -98,6 +99,9 @@ Supabase Edge Function secrets (via `npx supabase secrets set`):
 <output_format>
 ## 8. OUTPUT FORMAT (every task, no exceptions)
 
+The ENTIRE report must be wrapped in a single fenced code block so Hugo can copy it in one click and paste it directly into Perplexity. No exceptions.
+
+````
 ```
 ✅ DONE: [one sentence]
 📁 FILES CHANGED: [list]
@@ -106,6 +110,9 @@ Supabase Edge Function secrets (via `npx supabase secrets set`):
 🔑 ENV VARS NEEDED: [new Vercel vars, or "None"]
 📋 NEXT STEP: [one sentence]
 ```
+````
+
+Do not put the report outside the code block. Do not split it across multiple blocks. One block, copy-paste ready.
 </output_format>
 
 <safety>
