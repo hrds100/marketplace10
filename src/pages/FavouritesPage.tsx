@@ -4,12 +4,49 @@ import { Link } from 'react-router-dom';
 import PropertyCard from '@/components/PropertyCard';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
-import { listings } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
+
+function toListingShape(p: Tables<'properties'>): ListingShape {
+  const daysAgo = Math.max(0, Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000));
+  return {
+    id: p.id,
+    name: p.name,
+    city: p.city,
+    postcode: p.postcode,
+    rent: p.rent_monthly,
+    profit: p.profit_est,
+    type: p.type,
+    status: p.status as 'live' | 'on-offer' | 'inactive',
+    featured: p.featured,
+    daysAgo,
+    image: p.image_url || `https://picsum.photos/seed/prop-${p.city.toLowerCase()}-${p.id.slice(0, 6)}/800/520`,
+    landlordApproved: p.sa_approved === 'yes',
+    landlordWhatsapp: p.landlord_whatsapp,
+  };
+}
 
 export default function FavouritesPage() {
   const { toggle, isFav, favourites } = useFavourites();
-  const favListings = listings.filter(l => favourites.has(l.id));
+
+  // Fetch properties matching favourite IDs from Supabase
+  const favIds = [...favourites];
+  const { data: properties } = useQuery({
+    queryKey: ['favourite-properties', favIds.sort().join(',')],
+    queryFn: async () => {
+      if (favIds.length === 0) return [];
+      const { data } = await supabase
+        .from('properties')
+        .select('*')
+        .in('id', favIds);
+      return (data || []).map(toListingShape);
+    },
+    enabled: favIds.length > 0,
+  });
+
+  const favListings = properties || [];
 
   const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
   const [inquiryOpen, setInquiryOpen] = useState(false);
@@ -23,7 +60,7 @@ export default function FavouritesPage() {
     setInquiryOpen(false);
   }, []);
 
-  if (favListings.length === 0) {
+  if (favIds.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <Heart className="w-12 h-12 text-border mb-4" strokeWidth={1.5} />
