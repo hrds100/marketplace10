@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { CheckCircle, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle, Sparkles, Loader2, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,6 +33,19 @@ interface DealForm {
   contactEmail: string;
 }
 
+interface AIPricingResult {
+  estimated_nightly_rate: number;
+  estimated_monthly_revenue: number;
+  estimated_profit: number;
+  confidence: string;
+  notes: string;
+  airbnb_url_7d?: string;
+  airbnb_url_30d?: string;
+  airbnb_url_90d?: string;
+}
+
+type SubmitPhase = 'idle' | 'analysing' | 'reveal' | 'fallback';
+
 const INITIAL_FORM: DealForm = {
   name: '', streetName: '', houseNumber: '', city: '', postcode: '',
   propertyCategory: '', type: '', bedrooms: '', bathrooms: '', garage: '',
@@ -42,7 +56,10 @@ const INITIAL_FORM: DealForm = {
 
 export default function ListADealPage() {
   const { user } = useAuth();
-  const [submitted, setSubmitted] = useState(false);
+  const navigate = useNavigate();
+  const [submitPhase, setSubmitPhase] = useState<SubmitPhase>('idle');
+  const [pricingResult, setPricingResult] = useState<AIPricingResult | null>(null);
+  const [submittedPropertyId, setSubmittedPropertyId] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
@@ -65,6 +82,16 @@ export default function ListADealPage() {
         bedrooms: bedNum,
       }));
     }
+  };
+
+  const resetAll = () => {
+    setSubmitPhase('idle');
+    setPricingResult(null);
+    setSubmittedPropertyId(null);
+    setPhotos([]);
+    setDescription('');
+    setNotes('');
+    setForm(INITIAL_FORM);
   };
 
   const generateDesc = async () => {
@@ -103,6 +130,15 @@ export default function ListADealPage() {
     }
   };
 
+  /**
+   * handleSubmit flow:
+   * 1. Insert property to Supabase, capture returned ID
+   * 2. Set phase to 'analysing' immediately
+   * 3. Fire AI pricing webhook in background (15s timeout)
+   * 4. Wait minimum 2.5s AND pricing result
+   * 5. On success: save AI data to Supabase, set phase to 'reveal'
+   * 6. On failure/timeout: set phase to 'fallback'
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -117,14 +153,15 @@ export default function ListADealPage() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('properties').insert({
+      // Insert and capture the new property ID
+      const { data: insertedRow, error } = await (supabase.from('properties') as any).insert({
         name: nextId,
         city: form.city,
         postcode: form.postcode,
         rent_monthly: parseInt(form.rent) || 0,
         profit_est: parseInt(form.profit) || 0,
         type: form.type,
-        status: 'inactive' as const,
+        status: 'inactive',
         submitted_by: user?.id || null,
         property_category: form.propertyCategory || null,
         bedrooms: parseInt(form.bedrooms) || null,
@@ -141,32 +178,226 @@ export default function ListADealPage() {
         description: description || null,
         photos: photos.length > 0 ? photos : [],
         notes: notes || null,
-      });
+      }).select('id').single();
+
       if (error) throw error;
-      setSubmitted(true);
-      toast.success('Deal submitted successfully!');
-    } catch (e: any) {
-      toast.error(e.message || 'Submission failed');
-    } finally {
+
+      const propertyId = insertedRow?.id || null;
+      setSubmittedPropertyId(propertyId);
+      setSubmitPhase('analysing');
+      setLoading(false);
+
+      // Fire AI pricing in background with minimum delay
+      const minDelay = new Promise(r => setTimeout(r, 2500));
+
+      const pricingFetch = (async (): Promise<AIPricingResult | null> => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15_000);
+        try {
+          const res = await fetch(`${N8N_BASE}/webhook/airbnb-pricing`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              city: form.city,
+              postcode: form.postcode,
+              bedrooms: parseInt(form.bedrooms) || 0,
+              bathrooms: parseInt(form.bathrooms) || 0,
+              type: form.type || form.propertyCategory,
+              rent: parseInt(form.rent) || 0,
+              propertyId,
+            }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (!data?.estimated_nightly_rate) return null;
+          return data as AIPricingResult;
+        } catch {
+          clearTimeout(timeout);
+          return null;
+        }
+      })();
+
+      const [, result] = await Promise.all([minDelay, pricingFetch]);
+
+      if (result) {
+        setPricingResult(result);
+        setSubmitPhase('reveal');
+
+        // Save AI data back to Supabase (fire-and-forget)
+        if (propertyId) {
+          // AI estimation columns not in generated Supabase types — cast needed
+          (supabase.from('properties') as any).update({
+            estimated_nightly_rate: result.estimated_nightly_rate,
+            estimated_monthly_revenue: result.estimated_monthly_revenue,
+            estimated_profit: result.estimated_profit,
+            estimation_confidence: result.confidence,
+            estimation_notes: result.notes,
+            airbnb_search_url_7d: result.airbnb_url_7d || null,
+            airbnb_search_url_30d: result.airbnb_url_30d || null,
+            airbnb_search_url_90d: result.airbnb_url_90d || null,
+            ai_model_used: 'gpt-4o-mini',
+          }).eq('id', propertyId).then(() => {});
+        }
+      } else {
+        setSubmitPhase('fallback');
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Submission failed';
+      toast.error(msg);
       setLoading(false);
     }
   };
 
-  if (submitted) {
+  // ── Phase: Analysing ──
+  if (submitPhase === 'analysing') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="w-full max-w-lg border border-border rounded-2xl p-8 bg-card text-center">
+          <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto" />
+          <h2 className="text-[22px] font-bold text-foreground mt-5">We are preparing your listing</h2>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            Our AI is analysing Airbnb data and comparable listings in {form.city || 'your area'}.
+          </p>
+
+          {/* Property preview */}
+          <div className="mt-6 rounded-xl bg-secondary p-4 text-left">
+            {photos[0] && <img src={photos[0]} alt="" className="w-full h-32 object-cover rounded-lg mb-3" />}
+            <div className="text-sm font-bold text-foreground">{nextId}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{form.city} · {form.postcode}</div>
+            <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+              <span>{form.type}</span>
+              {form.bedrooms && <span>{form.bedrooms} bed</span>}
+            </div>
+            <div className="text-sm font-semibold text-foreground mt-2">£{parseInt(form.rent || '0').toLocaleString()} / month</div>
+          </div>
+
+          {/* Animated progress bar */}
+          <div className="mt-6 w-full h-1.5 rounded-full overflow-hidden bg-border">
+            <div
+              className="h-full rounded-full bg-primary"
+              style={{
+                animation: 'analysingProgress 2.5s ease-out forwards',
+              }}
+            />
+          </div>
+          <style>{`@keyframes analysingProgress { from { width: 0% } to { width: 92% } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Phase: Reveal ──
+  if (submitPhase === 'reveal' && pricingResult) {
+    const rent = parseInt(form.rent || '0');
+    const confidenceColor = pricingResult.confidence === 'High'
+      ? 'bg-emerald-100 text-emerald-800'
+      : pricingResult.confidence === 'Medium'
+        ? 'bg-amber-100 text-amber-800'
+        : 'bg-gray-100 text-gray-600';
+
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="w-full max-w-lg border border-border rounded-2xl p-8 bg-card text-center">
+          <div className="w-12 h-12 rounded-full bg-accent-light flex items-center justify-center mx-auto">
+            <CheckCircle className="w-6 h-6 text-primary" />
+          </div>
+          <h2 className="text-[22px] font-bold text-foreground mt-4">Congratulations! Your deal is under review.</h2>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            Based on Airbnb comparable listings, we estimate this property could generate approximately:
+          </p>
+
+          {/* Profit reveal card */}
+          <div className="mt-5 rounded-xl bg-accent-light p-6 text-left">
+            <div className="flex justify-between items-center py-2 border-b border-border/30">
+              <span className="text-sm text-muted-foreground">Estimated nightly rate</span>
+              <span className="text-sm font-semibold text-foreground">£{pricingResult.estimated_nightly_rate}/night</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border/30">
+              <span className="text-sm text-muted-foreground">Est. monthly revenue</span>
+              <span className="text-sm font-semibold text-foreground">£{pricingResult.estimated_monthly_revenue.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border/30">
+              <span className="text-sm text-muted-foreground">Monthly rent</span>
+              <span className="text-sm font-semibold text-foreground">-£{rent.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center pt-3 mt-1">
+              <span className="text-base font-bold text-foreground">Est. monthly profit</span>
+              <span className="text-2xl font-bold text-primary">£{pricingResult.estimated_profit.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {/* Confidence badge */}
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <span className={`text-xs font-semibold px-3 py-1 rounded-full ${confidenceColor}`}>
+              Confidence: {pricingResult.confidence}
+            </span>
+          </div>
+
+          {/* Notes */}
+          {pricingResult.notes && (
+            <p className="text-xs text-muted-foreground mt-3 max-w-[400px] mx-auto">{pricingResult.notes}</p>
+          )}
+
+          <p className="text-[11px] text-muted-foreground mt-3 italic">
+            Estimation based on live Airbnb comparable listings. Actual results may vary depending on pricing strategy and occupancy.
+          </p>
+
+          <div className="border-t border-border mt-6 pt-5">
+            <p className="text-sm text-muted-foreground mb-5">
+              Your listing is now under review by our DME (Deal Management Engine).
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => navigate('/dashboard/deals')}
+                className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity"
+              >
+                View my deals <ArrowRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={resetAll}
+                className="h-11 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+              >
+                Submit another deal
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Phase: Fallback ──
+  if (submitPhase === 'fallback') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <div className="w-12 h-12 rounded-full bg-accent-light flex items-center justify-center">
           <CheckCircle className="w-6 h-6 text-primary" />
         </div>
-        <h2 className="text-[22px] font-bold text-foreground mt-4">Deal submitted</h2>
-        <p className="text-sm text-muted-foreground mt-1.5">We'll review and publish it within 24–48 hours.</p>
-        <button onClick={() => { setSubmitted(false); setPhotos([]); setDescription(''); setNotes(''); setForm(INITIAL_FORM); }} className="mt-5 h-11 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">
-          Submit another deal
-        </button>
+        <h2 className="text-[22px] font-bold text-foreground mt-4">Deal submitted successfully!</h2>
+        <p className="text-sm text-muted-foreground mt-1.5 max-w-[400px]">
+          Your listing has been submitted. Our AI is still analysing market data — estimated profitability will appear on your deal shortly.
+        </p>
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={() => navigate('/dashboard/deals')}
+            className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity"
+          >
+            View my deals <ArrowRight className="w-4 h-4" />
+          </button>
+          <button
+            onClick={resetAll}
+            className="h-11 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+          >
+            Submit another deal
+          </button>
+        </div>
       </div>
     );
   }
 
+  // ── Phase: Idle (form) ──
   return (
     <div className="max-w-[640px]">
       <h1 className="text-[28px] font-bold text-foreground">Submit a Deal</h1>
