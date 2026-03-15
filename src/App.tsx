@@ -11,6 +11,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DealsPage from "./pages/DealsPage";
+import InboxPage from "./pages/InboxPage";
 import FavouritesPage from "./pages/FavouritesPage";
 import DealDetail from "./pages/DealDetail";
 import CRMPage from "./pages/CRMPage";
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="deals" replace />} />
             <Route path="deals" element={<DealsPage />} />
+            <Route path="inbox" element={<InboxPage />} />
             <Route path="favourites" element={<FavouritesPage />} />
             <Route path="crm" element={<CRMPage />} />
             <Route path="university" element={<UniversityPage />} />

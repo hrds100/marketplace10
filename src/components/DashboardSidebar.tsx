@@ -1,10 +1,11 @@
 import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
+  { to: '/dashboard/inbox', icon: MessageSquare, label: 'Inbox' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
   { to: '/dashboard/university', icon: GraduationCap, label: 'University ✨' },
   { to: '/dashboard/affiliates', icon: Users, label: 'Affiliates' },
