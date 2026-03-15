@@ -2,6 +2,36 @@
 
 ## [Unreleased]
 
+## [2026-03-15] — Inbox UI + Production Safety
+
+### Added
+- **Inbox UI**: Airbnb-style 3-panel messaging layout (dummy data)
+  - ThreadList with expandable search, filter pills, pinned support thread
+  - ChatWindow with date-grouped bubbles, input bar, quick replies
+  - InboxInquiryPanel with property details, profit, agreement CTA, next steps checklist
+  - ThreadItem with hover context menu (Mark unread / Star / Archive)
+  - QuickRepliesModal with full CRUD (add, edit, delete inline)
+  - MessagingSettingsModal (UI stub)
+  - Mobile: full-screen chat with back button
+  - Nav: Inbox between Deals and CRM (MessageSquare icon)
+- **GitHub Actions CI**: tsc + tests on every push/PR to main
+- **Sentry ErrorBoundary**: wraps App, shows fallback UI instead of blank screen
+- **Health check**: Supabase edge function + Vercel rewrite at /api/health
+- **Admin audit log**: persistent admin_audit_log table, wired into approve/reject/suspend
+
+### Fixed
+- OTP page: backdrop-blur overlay blocking input interaction (z-index fix)
+- Inbox layout: sidebar-responsive margins, full-bleed mode, no bottom gap
+- Vercel env vars: all 7 VITE_* vars added after .env removed from git
+- DashboardLayout: dynamic ml-16/ml-56 margin responds to sidebar collapse
+
+### Docs
+- docs/runbooks/DEPLOY_SAFETY.md — env checklist, rollback, smoke test
+- docs/runbooks/UPTIME_MONITORING.md — UptimeRobot/BetterStack setup
+- CLAUDE.md (root) — auto-loaded by Claude Code
+- docs/AGENT_INSTRUCTIONS.md — XML structure, 17 hard rules, personalities
+- src/pages/admin/CLAUDE.md + src/integrations/supabase/CLAUDE.md — local guardrails
+
 ## [2026-03-15] — Full Platform Build Session
 
 ### Added

@@ -281,26 +281,53 @@ Every outbound message goes through an AI filter **before** being saved to DB.
 Claude should implement ALL of the following in one complete pass:
 
 ### UI (dummy data first, then wire up)
-- [ ] `/inbox` route + `InboxPage.tsx`
-- [ ] Left panel: thread list, search, filter pills, support thread pinned
-- [ ] Centre panel: chat bubbles, timestamps, system notices, input bar
-- [ ] Right panel: property details, agreement CTA
-- [ ] Quick replies modal
-- [ ] Messaging settings modal (gear)
-- [ ] Thread context menu (hover •••)
-- [ ] Empty state (no threads yet)
-- [ ] Mobile: full-screen chat (left panel hides, back button shown)
-- [ ] Nav: add Inbox between Deals and CRM with `MessageSquare` icon
+- [x] `/inbox` route + `InboxPage.tsx`
+- [x] Left panel: thread list, expandable search, filter pills, support thread pinned
+- [x] Centre panel: chat bubbles, date grouping, system notices, input bar with send
+- [x] Right panel: property details, profit, agreement CTA, landlord details, next steps
+- [x] Quick replies modal (full CRUD: add, edit, delete with inline confirmation)
+- [x] Messaging settings modal (gear) — UI stub
+- [x] Thread context menu (hover ••• → Mark unread / Star / Archive with icons)
+- [x] Empty state (MessageSquare icon + "Select a conversation")
+- [x] Mobile: full-screen chat (left panel hides, back button shown)
+- [x] Nav: Inbox between Deals and CRM with `MessageSquare` icon
+- [x] Sidebar-responsive layout (full-bleed, no gap on collapse)
 
-### Backend
+### Backend (not started — all UI uses dummy data)
 - [ ] All 6 DB tables created with RLS
 - [ ] Supabase Realtime wired on `chat_messages`
 - [ ] `filter-message` Edge Function (AI contact filter)
-- [ ] Agreement acceptance flow
+- [ ] Agreement acceptance flow + AgreementModal.tsx
 - [ ] Magic link handler on `/inbox?token=`
 - [ ] n8n webhooks: `inbox-operator-message` + `inbox-landlord-message`
-- [ ] Quick replies CRUD (templates)
+- [ ] Quick replies CRUD persisted to `message_templates` table
 - [ ] Support thread auto-created on first inbox load
+
+### Current component tree
+```
+src/pages/InboxPage.tsx                    ← main page (3-panel layout)
+src/components/inbox/
+  types.ts                                 ← Thread, Message, QuickReply interfaces
+  dummyData.ts                             ← 4 threads, messages, 4 quick replies
+  ThreadList.tsx                           ← left panel: search, filters, pinned support
+  ThreadItem.tsx                           ← thread row: avatar, preview, context menu
+  ChatWindow.tsx                           ← centre: bubbles, date groups, input bar
+  MessageBubble.tsx                        ← dark/white/system bubble rendering
+  InboxInquiryPanel.tsx                    ← right: property, profit, agreement, checklist
+  QuickRepliesModal.tsx                    ← CRUD quick reply templates
+  MessagingSettingsModal.tsx               ← settings dropdown (UI stub)
+```
+
+### Dummy data → Supabase mapping
+| Dummy field | Supabase table.column |
+|-------------|----------------------|
+| Thread.id | chat_threads.id |
+| Thread.propertyTitle | properties.name (via chat_threads.property_id) |
+| Thread.contactName | profiles.name (via chat_threads.landlord_id) |
+| Thread.termsAccepted | chat_threads.terms_accepted |
+| Message.body | chat_messages.body |
+| Message.senderId | chat_messages.sender_id |
+| QuickReply.title/body | message_templates.title/body |
 
 ### If Claude gets stuck on anything:
 - List it at the end of the output report under `⚠️ ISSUES`
