@@ -24,6 +24,8 @@ const FURNISHED_OPTIONS = [
   { key: 'unfurnished' as const, label: 'Unfurnished', icon: '📦' },
 ];
 
+const SECTION_ORDER = ['property-details', 'property-type', 'property-features', 'financials', 'sa-approval', 'contact', 'media'] as const;
+
 interface DealForm {
   name: string;
   streetName: string;
@@ -68,31 +70,53 @@ const INITIAL_FORM: DealForm = {
   contactName: '', contactPhone: '', contactWhatsapp: '', contactEmail: '',
 };
 
-// Reusable counter component for bedrooms/bathrooms
 function Counter({ value, onChange, min = 1, max = 10, label }: { value: string; onChange: (v: string) => void; min?: number; max?: number; label: string }) {
   const num = parseInt(value) || 0;
   return (
     <div>
       <label className="text-xs font-semibold text-foreground block mb-2">{label}</label>
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => onChange(String(Math.max(min, num - 1)))}
-          disabled={num <= min}
-          className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-30"
-        >
+        <button type="button" onClick={() => onChange(String(Math.max(min, num - 1)))} disabled={num <= min} className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-30">
           <Minus className="w-4 h-4 text-foreground" />
         </button>
         <span className="w-10 text-center text-base font-semibold text-foreground">{num || '—'}</span>
-        <button
-          type="button"
-          onClick={() => onChange(String(Math.min(max, num + 1)))}
-          disabled={num >= max}
-          className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-30"
-        >
+        <button type="button" onClick={() => onChange(String(Math.min(max, num + 1)))} disabled={num >= max} className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-30">
           <Plus className="w-4 h-4 text-foreground" />
         </button>
       </div>
+    </div>
+  );
+}
+
+function AccordionSection({ id, title, description, isOpen, isComplete, onToggle, summary, children }: {
+  id: string; title: string; description: string; isOpen: boolean; isComplete: boolean; onToggle: () => void; summary: string; children: React.ReactNode;
+}) {
+  return (
+    <div className={`bg-card border rounded-2xl overflow-hidden transition-all ${isComplete && !isOpen ? 'border-emerald-200' : 'border-border'}`}>
+      <button type="button" onClick={onToggle} className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-secondary/40 transition-colors">
+        <div className="flex items-center gap-3">
+          {isComplete ? (
+            <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+          ) : (
+            <div className="w-5 h-5 rounded-full border-2 border-border flex-shrink-0" />
+          )}
+          <div>
+            <div className="text-sm font-bold text-foreground">{title}</div>
+            {!isOpen && <div className="text-xs text-muted-foreground mt-0.5">{isComplete ? summary : description}</div>}
+          </div>
+        </div>
+        <svg className={`w-4 h-4 text-muted-foreground transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="px-6 pb-6 pt-1 border-t border-border">
+          <p className="text-xs text-muted-foreground mb-5">{description}</p>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -111,10 +135,10 @@ export default function ListADealPage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<DealForm>(INITIAL_FORM);
   const [profileWhatsapp, setProfileWhatsapp] = useState('');
+  const [openSection, setOpenSection] = useState<string>('property-details');
 
   const set = (key: keyof DealForm, value: string) => setForm(p => ({ ...p, [key]: value }));
 
-  // Pre-fill WhatsApp from profile
   useEffect(() => {
     if (!user?.id) return;
     (supabase.from('profiles') as any)
@@ -134,22 +158,13 @@ export default function ListADealPage() {
       setForm(p => ({ ...p, propertyCategory: 'hmo', type: 'HMO', bedrooms: '' }));
     } else {
       const bedNum = bed.replace('-bed', '');
-      setForm(p => ({
-        ...p,
-        propertyCategory: category,
-        type: `${bed} ${category}`,
-        bedrooms: bedNum,
-      }));
+      setForm(p => ({ ...p, propertyCategory: category, type: `${bed} ${category}`, bedrooms: bedNum }));
     }
   };
 
   const selectCategory = (cat: 'flat' | 'house' | 'hmo') => {
-    if (cat === 'hmo') {
-      selectPropertyType('hmo', '');
-    } else {
-      // Select category but clear bed selection — user picks from dropdown
-      setForm(p => ({ ...p, propertyCategory: cat, type: '', bedrooms: '' }));
-    }
+    if (cat === 'hmo') { selectPropertyType('hmo', ''); }
+    else { setForm(p => ({ ...p, propertyCategory: cat, type: '', bedrooms: '' })); }
   };
 
   const resetAll = () => {
@@ -160,7 +175,42 @@ export default function ListADealPage() {
     setDescription('');
     setNotes('');
     setForm(INITIAL_FORM);
+    setOpenSection('property-details');
   };
+
+  // Section completion checks
+  const sectionComplete: Record<string, () => boolean> = {
+    'property-details': () => !!form.city && !!form.postcode,
+    'property-type': () => !!form.type || form.propertyCategory === 'hmo',
+    'property-features': () => !!form.bedrooms && !!form.bathrooms,
+    'financials': () => !!form.rent && !!form.profit && !!form.deposit,
+    'sa-approval': () => !!form.saApproved,
+    'contact': () => !!form.contactName && !!form.contactEmail && (!!form.contactPhone || !!form.contactWhatsapp),
+    'media': () => true,
+  };
+
+  const summaries: Record<string, () => string> = {
+    'property-details': () => [form.streetName, form.city, form.postcode].filter(Boolean).join(' · '),
+    'property-type': () => form.type || 'HMO',
+    'property-features': () => `${form.bedrooms} bed · ${form.bathrooms} bath${form.furnished ? ` · ${form.furnished}` : ''}`,
+    'financials': () => `£${form.rent}/mo · £${form.profit} profit · £${form.deposit} deposit`,
+    'sa-approval': () => `SA Approved: ${form.saApproved}`,
+    'contact': () => form.contactName,
+    'media': () => `${photos.length} photo${photos.length !== 1 ? 's' : ''}${description ? ' · description added' : ''}`,
+  };
+
+  // Auto-advance to next incomplete section
+  useEffect(() => {
+    const currentIndex = SECTION_ORDER.indexOf(openSection as typeof SECTION_ORDER[number]);
+    if (currentIndex === -1) return;
+    if (sectionComplete[openSection]?.()) {
+      const next = SECTION_ORDER.slice(currentIndex + 1).find(s => !sectionComplete[s]?.());
+      if (next) {
+        const timer = setTimeout(() => setOpenSection(next), 400);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [form, openSection, photos, description]);
 
   const generateDesc = async () => {
     if (!form.city && !form.type && !form.bedrooms) {
@@ -173,39 +223,27 @@ export default function ListADealPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          city: form.city || '',
-          postcode: form.postcode || '',
-          bedrooms: parseInt(form.bedrooms) || 0,
-          bathrooms: parseInt(form.bathrooms) || 0,
-          type: form.type || form.propertyCategory || '',
-          rent: parseInt(form.rent) || 0,
-          profit: parseInt(form.profit) || 0,
-          deposit: parseInt(form.deposit) || 0,
-          garage: form.garage === 'yes',
-          sa_approved: form.saApproved || '',
-          notes: notes || '',
-          existing_description: description || '',
-          street_name: form.streetName || '',
+          city: form.city || '', postcode: form.postcode || '', bedrooms: parseInt(form.bedrooms) || 0, bathrooms: parseInt(form.bathrooms) || 0,
+          type: form.type || form.propertyCategory || '', rent: parseInt(form.rent) || 0, profit: parseInt(form.profit) || 0, deposit: parseInt(form.deposit) || 0,
+          garage: form.garage === 'yes', sa_approved: form.saApproved || '', notes: notes || '', existing_description: description || '', street_name: form.streetName || '',
         }),
       });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
-      if (data?.description || data?.text) {
-        setDescription(data.description || data.text);
-        toast.success('Description generated with AI');
-      }
-    } catch {
-      toast.error('Failed to generate description');
-    } finally {
-      setGenerating(false);
-    }
+      if (data?.description || data?.text) { setDescription(data.description || data.text); toast.success('Description generated with AI'); }
+    } catch { toast.error('Failed to generate description'); }
+    finally { setGenerating(false); }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.city || !form.rent || !form.type || !form.contactName || !form.contactEmail || !form.saApproved) {
+    // FIX A: Accept form.type OR propertyCategory='hmo' as valid type
+    const resolvedType = form.type || (form.propertyCategory === 'hmo' ? 'HMO' : '');
+
+    if (!form.city || !form.rent || !resolvedType || !form.contactName || !form.contactEmail || !form.saApproved) {
       toast.error('Please fill in all required fields');
+      if (!resolvedType) toast.error('Please select a property type and number of bedrooms');
       return;
     }
     if (!form.contactPhone && !form.contactWhatsapp) {
@@ -216,92 +254,54 @@ export default function ListADealPage() {
     setLoading(true);
     try {
       const { data: insertedRow, error } = await (supabase.from('properties') as any).insert({
-        name: nextId,
-        city: form.city,
-        postcode: form.postcode,
-        rent_monthly: parseInt(form.rent) || 0,
-        profit_est: parseInt(form.profit) || 0,
-        type: form.type,
-        status: 'pending',
-        submitted_by: user?.id || null,
-        property_category: form.propertyCategory || null,
-        bedrooms: parseInt(form.bedrooms) || null,
-        bathrooms: parseInt(form.bathrooms) || null,
-        garage: form.garage === 'yes',
-        deposit: parseInt(form.deposit) || null,
-        agent_fee: parseInt(form.agentFee) || null,
-        sa_approved: form.saApproved.toLowerCase(),
-        contact_name: form.contactName,
-        contact_phone: form.contactPhone,
-        contact_whatsapp: form.contactWhatsapp,
-        contact_email: form.contactEmail,
-        landlord_whatsapp: form.contactWhatsapp || null,
-        description: description || null,
-        photos: photos.length > 0 ? photos : [],
+        name: nextId, city: form.city, postcode: form.postcode,
+        rent_monthly: parseInt(form.rent) || 0, profit_est: parseInt(form.profit) || 0,
+        type: resolvedType, status: 'pending', submitted_by: user?.id || null,
+        property_category: form.propertyCategory || null, bedrooms: parseInt(form.bedrooms) || null, bathrooms: parseInt(form.bathrooms) || null,
+        garage: form.garage === 'yes', deposit: parseInt(form.deposit) || null, agent_fee: parseInt(form.agentFee) || null,
+        sa_approved: form.saApproved.toLowerCase(), contact_name: form.contactName, contact_phone: form.contactPhone,
+        contact_whatsapp: form.contactWhatsapp, contact_email: form.contactEmail, landlord_whatsapp: form.contactWhatsapp || null,
+        description: description || null, photos: photos.length > 0 ? photos : [],
         notes: [notes, form.furnished ? `Furnishing: ${form.furnished}` : ''].filter(Boolean).join(' | ') || null,
       }).select('id').single();
 
       if (error) throw error;
-
       const propertyId = insertedRow?.id || null;
       setSubmittedPropertyId(propertyId);
       setSubmitPhase('analysing');
       setLoading(false);
 
       // Notify admin (non-blocking)
-      const notifController = new AbortController();
-      const notifTimeout = setTimeout(() => notifController.abort(), 10_000);
-      fetch(`${N8N_BASE}/webhook/notify-admin-new-deal`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propertyId, city: form.city, postcode: form.postcode, type: form.type, submittedBy: user?.id, rent: parseInt(form.rent) || 0 }),
-        signal: notifController.signal,
-      }).catch(() => {}).finally(() => clearTimeout(notifTimeout));
+      const nc = new AbortController();
+      const nt = setTimeout(() => nc.abort(), 10_000);
+      fetch(`${N8N_BASE}/webhook/notify-admin-new-deal`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId, city: form.city, postcode: form.postcode, type: resolvedType, submittedBy: user?.id, rent: parseInt(form.rent) || 0 }),
+        signal: nc.signal }).catch(() => {}).finally(() => clearTimeout(nt));
 
       // AI pricing
       const minDelay = new Promise(r => setTimeout(r, 2500));
       const pricingFetch = (async (): Promise<AIPricingResult | null> => {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15_000);
+        const c = new AbortController(); const t = setTimeout(() => c.abort(), 15_000);
         try {
-          const res = await fetch(`${N8N_BASE}/webhook/airbnb-pricing`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city: form.city, postcode: form.postcode, bedrooms: parseInt(form.bedrooms) || 0, bathrooms: parseInt(form.bathrooms) || 0, type: form.type || form.propertyCategory, rent: parseInt(form.rent) || 0, propertyId }),
-            signal: controller.signal,
-          });
-          clearTimeout(timeout);
-          if (!res.ok) return null;
-          const data = await res.json();
-          if (!data?.estimated_nightly_rate) return null;
-          return data as AIPricingResult;
-        } catch { clearTimeout(timeout); return null; }
+          const res = await fetch(`${N8N_BASE}/webhook/airbnb-pricing`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city: form.city, postcode: form.postcode, bedrooms: parseInt(form.bedrooms) || 0, bathrooms: parseInt(form.bathrooms) || 0, type: resolvedType, rent: parseInt(form.rent) || 0, propertyId }),
+            signal: c.signal });
+          clearTimeout(t); if (!res.ok) return null; const data = await res.json(); if (!data?.estimated_nightly_rate) return null; return data as AIPricingResult;
+        } catch { clearTimeout(t); return null; }
       })();
 
       const [, result] = await Promise.all([minDelay, pricingFetch]);
       if (result) {
-        setPricingResult(result);
-        setSubmitPhase('reveal');
+        setPricingResult(result); setSubmitPhase('reveal');
         if (propertyId) {
           (supabase.from('properties') as any).update({
-            estimated_nightly_rate: result.estimated_nightly_rate,
-            estimated_monthly_revenue: result.estimated_monthly_revenue,
-            estimated_profit: result.estimated_profit,
-            estimation_confidence: result.confidence,
-            estimation_notes: result.notes,
-            airbnb_search_url_7d: result.airbnb_url_7d || null,
-            airbnb_search_url_30d: result.airbnb_url_30d || null,
-            airbnb_search_url_90d: result.airbnb_url_90d || null,
-            ai_model_used: 'gpt-4o-mini',
+            estimated_nightly_rate: result.estimated_nightly_rate, estimated_monthly_revenue: result.estimated_monthly_revenue, estimated_profit: result.estimated_profit,
+            estimation_confidence: result.confidence, estimation_notes: result.notes,
+            airbnb_search_url_7d: result.airbnb_url_7d || null, airbnb_search_url_30d: result.airbnb_url_30d || null, airbnb_search_url_90d: result.airbnb_url_90d || null, ai_model_used: 'gpt-4o-mini',
           }).eq('id', propertyId).then(() => {});
         }
-      } else {
-        setSubmitPhase('fallback');
-      }
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Submission failed');
-      setLoading(false);
-    }
+      } else { setSubmitPhase('fallback'); }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Submission failed'); setLoading(false); }
   };
 
   // ── Phase: Analysing ──
@@ -331,7 +331,7 @@ export default function ListADealPage() {
   // ── Phase: Reveal ──
   if (submitPhase === 'reveal' && pricingResult) {
     const rent = parseInt(form.rent || '0');
-    const confidenceColor = pricingResult.confidence === 'High' ? 'bg-emerald-100 text-emerald-800' : pricingResult.confidence === 'Medium' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600';
+    const cc = pricingResult.confidence === 'High' ? 'bg-emerald-100 text-emerald-800' : pricingResult.confidence === 'Medium' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600';
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="w-full max-w-lg border border-border rounded-2xl p-8 bg-card text-center">
@@ -345,7 +345,7 @@ export default function ListADealPage() {
             <div className="flex justify-between items-center pt-3 mt-1"><span className="text-base font-bold text-foreground">Est. monthly profit</span><span className="text-2xl font-bold text-primary">£{pricingResult.estimated_profit.toLocaleString()}</span></div>
             <p className="text-[11px] text-muted-foreground mt-1 italic">Please consider costs such as utilities, cleaning, and platform fees.</p>
           </div>
-          <div className="mt-4 flex items-center justify-center gap-2"><span className={`text-xs font-semibold px-3 py-1 rounded-full ${confidenceColor}`}>Confidence: {pricingResult.confidence}</span></div>
+          <div className="mt-4 flex items-center justify-center"><span className={`text-xs font-semibold px-3 py-1 rounded-full ${cc}`}>Confidence: {pricingResult.confidence}</span></div>
           {pricingResult.notes && <p className="text-xs text-muted-foreground mt-3 max-w-[400px] mx-auto">{pricingResult.notes}</p>}
           <p className="text-[11px] text-muted-foreground mt-3 italic">Estimation based on live Airbnb comparable listings. Actual results may vary.</p>
           <div className="border-t border-border mt-6 pt-5">
@@ -375,8 +375,8 @@ export default function ListADealPage() {
     );
   }
 
-  // Bedroom dropdown options based on category
   const bedOptions = form.propertyCategory === 'flat' ? FLAT_BEDS : form.propertyCategory === 'house' ? HOUSE_BEDS : [];
+  const toggle = (id: string) => setOpenSection(prev => prev === id ? '' : id);
 
   // ── Phase: Idle (form) ──
   return (
@@ -385,241 +385,181 @@ export default function ListADealPage() {
       <p className="text-sm text-muted-foreground mt-1 mb-8">List a landlord-approved rent-to-rent opportunity.</p>
 
       <div className="grid lg:grid-cols-[minmax(0,1fr)_440px] gap-6 items-start max-w-6xl">
-      <div>
-      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <form onSubmit={handleSubmit} className="space-y-4">
 
-        {/* ── SECTION: Property Details ── */}
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="text-base font-bold text-foreground mb-0.5">Property Details</h2>
-          <p className="text-xs text-muted-foreground mb-5">Basic information about the property location.</p>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">Property ID</label>
-              <input type="text" value={nextId} disabled className="input-nfstay w-full opacity-60 rounded-xl" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Street name</label>
-                <input type="text" placeholder="e.g. Oxford Road" value={form.streetName} onChange={e => set('streetName', e.target.value)} className="input-nfstay w-full rounded-xl" />
+            {/* ── Property Details ── */}
+            <AccordionSection id="property-details" title="Property Details" description="Basic information about the property location."
+              isOpen={openSection === 'property-details'} isComplete={sectionComplete['property-details']()} onToggle={() => toggle('property-details')}
+              summary={summaries['property-details']()}>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Property ID</label>
+                  <input type="text" value={nextId} disabled className="input-nfstay w-full opacity-60 rounded-xl" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Street name</label><input type="text" placeholder="e.g. Oxford Road" value={form.streetName} onChange={e => set('streetName', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">House number</label><input type="text" placeholder="e.g. 42" value={form.houseNumber} onChange={e => set('houseNumber', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">City *</label><input type="text" placeholder="e.g. Manchester" value={form.city} onChange={e => set('city', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Postcode area *</label><input type="text" placeholder="e.g. M14" value={form.postcode} onChange={e => set('postcode', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                </div>
               </div>
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">House number</label>
-                <input type="text" placeholder="e.g. 42" value={form.houseNumber} onChange={e => set('houseNumber', e.target.value)} className="input-nfstay w-full rounded-xl" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">City *</label>
-                <input type="text" placeholder="e.g. Manchester" value={form.city} onChange={e => set('city', e.target.value)} className="input-nfstay w-full rounded-xl" required />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Postcode area *</label>
-                <input type="text" placeholder="e.g. M14" value={form.postcode} onChange={e => set('postcode', e.target.value)} className="input-nfstay w-full rounded-xl" required />
-              </div>
-            </div>
-          </div>
-        </div>
+            </AccordionSection>
 
-        {/* ── SECTION: Property Type ── */}
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="text-base font-bold text-foreground mb-0.5">Property Type *</h2>
-          <p className="text-xs text-muted-foreground mb-5">Select the type that best describes this property.</p>
-          <div className="grid grid-cols-3 gap-3">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.key}
-                type="button"
-                onClick={() => selectCategory(cat.key)}
-                className={`rounded-2xl border-2 p-5 cursor-pointer text-center transition-all ${
-                  form.propertyCategory === cat.key
-                    ? 'border-primary bg-accent-light'
-                    : 'border-border hover:border-muted-foreground'
-                }`}
-              >
-                <div className="text-2xl mb-2">{cat.icon}</div>
-                <div className="text-sm font-bold text-foreground">{cat.label}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">{cat.desc}</div>
-              </button>
-            ))}
-          </div>
-
-          {/* Bedroom dropdown for flat/house */}
-          {(form.propertyCategory === 'flat' || form.propertyCategory === 'house') && (
-            <div className="mt-5">
-              <label className="text-xs font-semibold text-foreground block mb-1.5">How many bedrooms?</label>
-              <select
-                value={form.bedrooms ? `${form.bedrooms}-bed` : ''}
-                onChange={e => {
-                  if (e.target.value) selectPropertyType(form.propertyCategory as 'flat' | 'house', e.target.value);
-                }}
-                className="w-full h-12 rounded-xl border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                required
-              >
-                <option value="">Select bedrooms</option>
-                {bedOptions.map(bed => (
-                  <option key={bed} value={bed}>{bed}</option>
+            {/* ── Property Type ── */}
+            <AccordionSection id="property-type" title="Property Type" description="Select the type that best describes this property."
+              isOpen={openSection === 'property-type'} isComplete={sectionComplete['property-type']()} onToggle={() => toggle('property-type')}
+              summary={summaries['property-type']()}>
+              <div className="grid grid-cols-3 gap-3">
+                {CATEGORIES.map(cat => (
+                  <button key={cat.key} type="button" onClick={() => selectCategory(cat.key)}
+                    className={`rounded-2xl border-2 p-5 cursor-pointer text-center transition-all ${form.propertyCategory === cat.key ? 'border-primary bg-accent-light' : 'border-border hover:border-muted-foreground'}`}>
+                    <div className="text-2xl mb-2">{cat.icon}</div>
+                    <div className="text-sm font-bold text-foreground">{cat.label}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">{cat.desc}</div>
+                  </button>
                 ))}
-              </select>
-            </div>
-          )}
-        </div>
+              </div>
+              {(form.propertyCategory === 'flat' || form.propertyCategory === 'house') && (
+                <div className="mt-5">
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">How many bedrooms?</label>
+                  <select value={form.bedrooms ? `${form.bedrooms}-bed` : ''} onChange={e => { if (e.target.value) selectPropertyType(form.propertyCategory as 'flat' | 'house', e.target.value); }}
+                    className="w-full h-12 rounded-xl border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" required>
+                    <option value="">Select bedrooms</option>
+                    {bedOptions.map(bed => <option key={bed} value={bed}>{bed}</option>)}
+                  </select>
+                </div>
+              )}
+            </AccordionSection>
 
-        {/* ── SECTION: Property Features ── */}
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="text-base font-bold text-foreground mb-0.5">Property Features</h2>
-          <p className="text-xs text-muted-foreground mb-5">Room counts and amenities.</p>
+            {/* ── Property Features ── */}
+            <AccordionSection id="property-features" title="Property Features" description="Room counts and amenities."
+              isOpen={openSection === 'property-features'} isComplete={sectionComplete['property-features']()} onToggle={() => toggle('property-features')}
+              summary={summaries['property-features']()}>
+              <div className="flex flex-wrap gap-8">
+                <Counter label="Bedrooms *" value={form.bedrooms} onChange={v => set('bedrooms', v)} />
+                <Counter label="Bathrooms *" value={form.bathrooms} onChange={v => set('bathrooms', v)} />
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-2">Garage?</label>
+                  <div className="flex gap-3 mt-1">
+                    {['yes', 'no'].map(o => (
+                      <label key={o} className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer capitalize">
+                        <input type="radio" name="garage" value={o} checked={form.garage === o} onChange={e => set('garage', e.target.value)} className="accent-primary" /> {o}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6">
+                <label className="text-xs font-semibold text-foreground block mb-3">Furnishing</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {FURNISHED_OPTIONS.map(opt => (
+                    <button key={opt.key} type="button" onClick={() => set('furnished', opt.key)}
+                      className={`rounded-2xl border-2 p-4 cursor-pointer text-center transition-all ${form.furnished === opt.key ? 'border-primary bg-accent-light' : 'border-border hover:border-muted-foreground'}`}>
+                      <div className="text-xl mb-1">{opt.icon}</div>
+                      <div className="text-xs font-semibold text-foreground">{opt.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </AccordionSection>
 
-          <div className="flex flex-wrap gap-8">
-            <Counter label="Bedrooms *" value={form.bedrooms} onChange={v => set('bedrooms', v)} />
-            <Counter label="Bathrooms *" value={form.bathrooms} onChange={v => set('bathrooms', v)} />
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-2">Garage?</label>
-              <div className="flex gap-3 mt-1">
-                {['yes', 'no'].map(o => (
-                  <label key={o} className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer capitalize">
-                    <input type="radio" name="garage" value={o} checked={form.garage === o} onChange={e => set('garage', e.target.value)} className="accent-primary" /> {o}
+            {/* ── Financials ── */}
+            <AccordionSection id="financials" title="Financials" description="Rental costs and expected returns."
+              isOpen={openSection === 'financials'} isComplete={sectionComplete['financials']()} onToggle={() => toggle('financials')}
+              summary={summaries['financials']()}>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Monthly rent (£) *</label><input type="number" placeholder="1200" value={form.rent} onChange={e => set('rent', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Est. monthly profit (£) *</label><p className="text-[10px] text-muted-foreground mb-1">We will cross-check with Airbnb similar listings for accuracy.</p><input type="number" placeholder="600" value={form.profit} onChange={e => set('profit', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Deposit (£) *</label><input type="number" placeholder="2400" value={form.deposit} onChange={e => set('deposit', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Fee (£)</label><input type="number" placeholder="0" value={form.agentFee} onChange={e => set('agentFee', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                </div>
+              </div>
+            </AccordionSection>
+
+            {/* ── SA Approval ── */}
+            <AccordionSection id="sa-approval" title="SA Approval" description="Is the agent or landlord approved for Serviced Accommodation?"
+              isOpen={openSection === 'sa-approval'} isComplete={sectionComplete['sa-approval']()} onToggle={() => toggle('sa-approval')}
+              summary={summaries['sa-approval']()}>
+              <div className="flex gap-4">
+                {['Yes', 'No', 'Awaiting'].map(o => (
+                  <label key={o} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                    <input type="radio" name="saApproved" value={o} checked={form.saApproved === o} onChange={e => set('saApproved', e.target.value)} className="accent-primary" required /> {o}
                   </label>
                 ))}
               </div>
-            </div>
-          </div>
+            </AccordionSection>
 
-          {/* Furnishing */}
-          <div className="mt-6">
-            <label className="text-xs font-semibold text-foreground block mb-3">Furnishing</label>
-            <div className="grid grid-cols-3 gap-3">
-              {FURNISHED_OPTIONS.map(opt => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => set('furnished', opt.key)}
-                  className={`rounded-2xl border-2 p-4 cursor-pointer text-center transition-all ${
-                    form.furnished === opt.key
-                      ? 'border-primary bg-accent-light'
-                      : 'border-border hover:border-muted-foreground'
-                  }`}
-                >
-                  <div className="text-xl mb-1">{opt.icon}</div>
-                  <div className="text-xs font-semibold text-foreground">{opt.label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ── SECTION: Financials ── */}
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="text-base font-bold text-foreground mb-0.5">Financials</h2>
-          <p className="text-xs text-muted-foreground mb-5">Rental costs and expected returns.</p>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Monthly rent (£) *</label>
-                <input type="number" placeholder="1200" value={form.rent} onChange={e => set('rent', e.target.value)} className="input-nfstay w-full rounded-xl" required />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Est. monthly profit (£) *</label>
-                <p className="text-[10px] text-muted-foreground mb-1">We will cross-check with Airbnb similar listings for accuracy.</p>
-                <input type="number" placeholder="600" value={form.profit} onChange={e => set('profit', e.target.value)} className="input-nfstay w-full rounded-xl" required />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Deposit (£) *</label>
-                <input type="number" placeholder="2400" value={form.deposit} onChange={e => set('deposit', e.target.value)} className="input-nfstay w-full rounded-xl" required />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Fee (£)</label>
-                <input type="number" placeholder="0" value={form.agentFee} onChange={e => set('agentFee', e.target.value)} className="input-nfstay w-full rounded-xl" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── SECTION: SA Approval ── */}
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="text-base font-bold text-foreground mb-0.5">SA Approval</h2>
-          <p className="text-xs text-muted-foreground mb-5">Is the agent or landlord approved for Serviced Accommodation?</p>
-          <div className="flex gap-4">
-            {['Yes', 'No', 'Awaiting'].map(o => (
-              <label key={o} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                <input type="radio" name="saApproved" value={o} checked={form.saApproved === o} onChange={e => set('saApproved', e.target.value)} className="accent-primary" required /> {o}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* ── SECTION: Contact Details ── */}
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="text-base font-bold text-foreground mb-0.5">Contact Details</h2>
-          <p className="text-xs text-muted-foreground mb-5">Landlord or agent contact information.</p>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">Contact name *</label>
-              <input type="text" placeholder="Landlord/Agent" value={form.contactName} onChange={e => set('contactName', e.target.value)} className="input-nfstay w-full rounded-xl" required />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Contact phone</label>
-                <input type="tel" placeholder="07911 123 456" value={form.contactPhone} onChange={e => set('contactPhone', e.target.value)} className="input-nfstay w-full rounded-xl" />
-                <p className="text-[10px] text-muted-foreground mt-0.5">At least one of phone or WhatsApp required</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Contact WhatsApp</label>
-                {profileWhatsapp ? (
-                  <div className="h-10 rounded-xl border border-border bg-secondary px-3 flex items-center gap-2 cursor-not-allowed">
-                    <span className="text-sm text-foreground">{profileWhatsapp}</span>
-                    <span className="ml-auto text-[10px] text-muted-foreground">From your profile</span>
+            {/* ── Contact ── */}
+            <AccordionSection id="contact" title="Contact Details" description="Landlord or agent contact information."
+              isOpen={openSection === 'contact'} isComplete={sectionComplete['contact']()} onToggle={() => toggle('contact')}
+              summary={summaries['contact']()}>
+              <div className="space-y-4">
+                <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact name *</label><input type="text" placeholder="Landlord/Agent" value={form.contactName} onChange={e => set('contactName', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">Contact phone</label>
+                    <input type="tel" placeholder="07911 123 456" value={form.contactPhone} onChange={e => set('contactPhone', e.target.value)} className="input-nfstay w-full rounded-xl" />
+                    <p className="text-[10px] text-muted-foreground mt-0.5">At least one of phone or WhatsApp required</p>
                   </div>
-                ) : (
-                  <>
-                    <input type="tel" placeholder="+44 7911 123 456" value={form.contactWhatsapp} onChange={e => set('contactWhatsapp', e.target.value)} className="input-nfstay w-full rounded-xl" />
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Add WhatsApp to your profile to auto-fill this field.</p>
-                  </>
-                )}
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">Contact WhatsApp</label>
+                    {profileWhatsapp ? (
+                      <div className="h-10 rounded-xl border border-border bg-secondary px-3 flex items-center gap-2 cursor-not-allowed">
+                        <span className="text-sm text-foreground">{profileWhatsapp}</span>
+                        <span className="ml-auto text-[10px] text-muted-foreground">From your profile</span>
+                      </div>
+                    ) : (
+                      <>
+                        <input type="tel" placeholder="+44 7911 123 456" value={form.contactWhatsapp} onChange={e => set('contactWhatsapp', e.target.value)} className="input-nfstay w-full rounded-xl" />
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Add WhatsApp to your profile to auto-fill this field.</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact email *</label><input type="email" placeholder="landlord@example.com" value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
               </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">Contact email *</label>
-              <input type="email" placeholder="landlord@example.com" value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} className="input-nfstay w-full rounded-xl" required />
-            </div>
-          </div>
+            </AccordionSection>
+
+            {/* ── Media ── */}
+            <AccordionSection id="media" title="Media & Description" description="Photos and listing text to attract investors."
+              isOpen={openSection === 'media'} isComplete={sectionComplete['media']()} onToggle={() => toggle('media')}
+              summary={summaries['media']()}>
+              <div className="space-y-5">
+                <PhotoUpload photos={photos} onChange={setPhotos} />
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Description</label>
+                  <p className="text-[10px] text-muted-foreground mb-1.5">Public listing description visible to members.</p>
+                  <textarea rows={4} value={description} onChange={e => setDescription(e.target.value)} placeholder="Property description for the listing..." className="input-nfstay w-full h-auto py-3 resize-none rounded-xl" />
+                  <button type="button" onClick={generateDesc} disabled={generating} className="text-[13px] font-semibold text-primary mt-1 hover:opacity-75 transition-opacity inline-flex items-center gap-1 disabled:opacity-50">
+                    {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {generating ? 'Generating...' : 'Generate description with AI'}
+                  </button>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Notes</label>
+                  <p className="text-[10px] text-muted-foreground mb-1.5">Internal notes — only visible to admin, not on the listing.</p>
+                  <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any internal notes for the admin team..." className="input-nfstay w-full h-auto py-3 resize-none rounded-xl" />
+                </div>
+              </div>
+            </AccordionSection>
+
+            <button type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+              {loading ? 'Submitting...' : 'Submit Deal'}
+            </button>
+            <p className="text-xs text-muted-foreground text-center mt-2">Our team reviews all submissions within 24–48 hours.</p>
+          </form>
         </div>
 
-        {/* ── SECTION: Media & Description ── */}
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="text-base font-bold text-foreground mb-0.5">Media & Description</h2>
-          <p className="text-xs text-muted-foreground mb-5">Photos and listing text to attract investors.</p>
-          <div className="space-y-5">
-            <PhotoUpload photos={photos} onChange={setPhotos} />
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">Description</label>
-              <p className="text-[10px] text-muted-foreground mb-1.5">Public listing description visible to members.</p>
-              <textarea rows={4} value={description} onChange={e => setDescription(e.target.value)} placeholder="Property description for the listing..." className="input-nfstay w-full h-auto py-3 resize-none rounded-xl" />
-              <button type="button" onClick={generateDesc} disabled={generating} className="text-[13px] font-semibold text-primary mt-1 hover:opacity-75 transition-opacity inline-flex items-center gap-1 disabled:opacity-50">
-                {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                {generating ? 'Generating...' : 'Generate description with AI'}
-              </button>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">Notes</label>
-              <p className="text-[10px] text-muted-foreground mb-1.5">Internal notes — only visible to admin, not on the listing.</p>
-              <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any internal notes for the admin team..." className="input-nfstay w-full h-auto py-3 resize-none rounded-xl" />
-            </div>
-          </div>
+        {/* Right column — My Listings (desktop) */}
+        <div className="hidden lg:block">
+          <MyListingsPanel userId={user?.id} />
         </div>
-
-        <button type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-          {loading ? 'Submitting...' : 'Submit Deal'}
-        </button>
-        <p className="text-xs text-muted-foreground text-center mt-2">Our team reviews all submissions within 24–48 hours.</p>
-      </form>
-      </div>
-
-      {/* Right column — My Listings */}
-      <div className="hidden lg:block">
-        <MyListingsPanel userId={user?.id} />
-      </div>
       </div>
 
       {/* Mobile: My Listings below form */}
