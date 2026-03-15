@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore, Tag, ImagePlus } from 'lucide-react';
-import { crmDeals as mockDeals, CRM_STAGES, type CRMDeal, listings } from '@/data/mockData';
+import { CRM_STAGES, type CRMDeal } from '@/data/mockData';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,19 +8,18 @@ import { notifyCrmStageMove } from '@/lib/n8n';
 
 export default function CRMPage() {
   const { user } = useAuth();
-  const [deals, setDeals] = useState<CRMDeal[]>(mockDeals);
+  const [deals, setDeals] = useState<CRMDeal[]>([]);
   const [archivedIds, setArchivedIds] = useState<string[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isOutsiderLead, setIsOutsiderLead] = useState(false);
   const [newDeal, setNewDeal] = useState({ name: '', city: '', postcode: '', rent: '', profit: '', type: '2-bed flat', stage: 'New Lead', notes: '', whatsapp: '', email: '', photoUrl: '' });
 
-  // Load CRM deals from Supabase; seed with mock deals if empty
+  // Load CRM deals from Supabase
   useEffect(() => {
     if (!user) return;
     const loadDeals = async () => {
       const { data } = await supabase.from('crm_deals').select('*').eq('user_id', user.id);
-
       if (data && data.length > 0) {
         const mapped: CRMDeal[] = data.map(d => ({
           id: d.id,
@@ -38,38 +37,6 @@ export default function CRMPage() {
         }));
         setDeals(mapped);
         setArchivedIds(data.filter(d => d.archived).map(d => d.id));
-      } else {
-        // Seed with mock deals on first load so user doesn't see blank board
-        const rows = mockDeals.map(d => ({
-          user_id: user.id,
-          name: d.name,
-          city: d.city,
-          postcode: d.postcode,
-          rent: d.rent,
-          profit: d.profit,
-          type: d.type,
-          stage: d.stage,
-          notes: d.notes || null,
-          whatsapp: d.whatsapp || null,
-        }));
-        const { data: inserted } = await supabase.from('crm_deals').insert(rows).select();
-        if (inserted && inserted.length > 0) {
-          const mapped: CRMDeal[] = inserted.map(d => ({
-            id: d.id,
-            name: d.name,
-            city: d.city,
-            postcode: d.postcode,
-            rent: d.rent,
-            profit: d.profit,
-            type: d.type,
-            stage: d.stage,
-            lastContact: 'Today',
-            ownerInitials: 'ME',
-            notes: d.notes || '',
-            whatsapp: d.whatsapp || undefined,
-          }));
-          setDeals(mapped);
-        }
       }
     };
     loadDeals();
@@ -108,9 +75,8 @@ export default function CRMPage() {
   };
 
   const getDealImage = (deal: CRMDeal) => {
-    const match = listings.find(l => l.name === deal.name && l.city === deal.city);
-    if (match) return match.image;
-    return `https://picsum.photos/seed/${deal.id}/400/300`;
+    const citySlug = encodeURIComponent((deal.city || 'london').toLowerCase());
+    return `https://source.unsplash.com/featured/400x300/?${citySlug},property&sig=${deal.id.slice(0, 6)}`;
   };
 
   const handleAddDeal = async () => {

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus, Sparkles } from 'lucide-react';
 import { faqItems } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +13,7 @@ import type { ListingShape } from '@/components/InquiryPanel';
 
 export default function DealDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
   const { toggle, isFav } = useFavourites();
 
   // Fetch real property from Supabase
@@ -137,8 +139,18 @@ export default function DealDetail() {
   const totalExtraCosts = extraCosts.reduce((sum, c) => sum + c.amount, 0);
   const finalProfit = estProfit - (showExtraCosts ? totalExtraCosts : 0);
 
-  const handleAddToCrm = () => {
-    if (!id) return;
+  const handleAddToCrm = async () => {
+    if (!id || !user || addedToCrm) return;
+    // Insert into crm_deals table
+    const { error } = await supabase.from('crm_deals').insert({
+      user_id: user.id,
+      name, city, postcode, rent, profit, type,
+      stage: 'New Lead',
+      notes: 'Added from deal page',
+    });
+    if (error) { toast.error('Failed to add to CRM'); return; }
+    // Also flag property as in CRM
+    (supabase.from('properties') as any).update({ in_crm: true }).eq('id', id).then(() => {});
     localStorage.setItem(`crm_${id}`, 'true');
     setAddedToCrm(true);
     setJustAddedToCrm(true);

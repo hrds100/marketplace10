@@ -2,6 +2,8 @@ import { Heart, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { ListingShape } from '@/components/InquiryPanel';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export type { ListingShape };
 
@@ -17,6 +19,7 @@ interface Props {
 
 export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, showSavedBadge, forceSignUp }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [addedToCRM, setAddedToCRM] = useState(() => localStorage.getItem(`crm_${listing.id}`) === 'true');
 
   const statusDot = () => {
@@ -34,8 +37,22 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   };
 
   const [celebrating, setCelebrating] = useState(false);
-  const handleAddToCRM = () => {
-    if (addedToCRM) return;
+  const handleAddToCRM = async () => {
+    if (addedToCRM || !user) return;
+    // Insert into crm_deals table
+    await supabase.from('crm_deals').insert({
+      user_id: user.id,
+      name: listing.name,
+      city: listing.city,
+      postcode: listing.postcode,
+      rent: listing.rent,
+      profit: listing.profit,
+      type: listing.type,
+      stage: 'New Lead',
+      notes: 'Added from deals page',
+    });
+    // Flag property as in CRM
+    (supabase.from('properties') as any).update({ in_crm: true }).eq('id', listing.id).then(() => {});
     localStorage.setItem(`crm_${listing.id}`, 'true');
     setAddedToCRM(true);
     setCelebrating(true);
