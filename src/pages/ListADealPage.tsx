@@ -326,6 +326,9 @@ export default function ListADealPage() {
               <span className="text-base font-bold text-foreground">Est. monthly profit</span>
               <span className="text-2xl font-bold text-primary">£{pricingResult.estimated_profit.toLocaleString()}</span>
             </div>
+            <p className="text-[11px] text-muted-foreground mt-1 italic">
+              Please consider costs such as utilities, cleaning, and platform fees.
+            </p>
           </div>
 
           {/* Confidence badge */}
