@@ -123,7 +123,7 @@ export default function VerifyOtp() {
   return (
     <div className="min-h-screen flex">
       {/* Form side */}
-      <div className="flex-1 flex items-center justify-center p-6 md:p-8">
+      <div className="flex-1 flex items-center justify-center p-6 md:p-8 relative z-10">
         <div className="w-full max-w-[400px]">
           <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">
             NFsTay
@@ -243,8 +243,8 @@ export default function VerifyOtp() {
         className="hidden lg:flex flex-1 items-center justify-center p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
       >
-        <div className="absolute inset-0 backdrop-blur-3xl" />
-        <div className="relative max-w-[400px]">
+        <div className="absolute inset-0 backdrop-blur-3xl pointer-events-none z-0" />
+        <div className="relative z-10 max-w-[400px]">
           <h2 className="text-[28px] font-bold text-white">Almost there!</h2>
           <p className="text-base mt-4 text-white/70">
             Verify your WhatsApp to unlock deal alerts, agent support, and your full NFsTay dashboard.
