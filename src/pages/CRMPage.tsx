@@ -159,8 +159,8 @@ export default function CRMPage() {
         <button onClick={() => setShowAddForm(true)} className="h-11 px-5 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
           <Plus className="w-4 h-4" /> Add Your Own Deal
         </button>
+        <p className="text-sm text-muted-foreground mt-1">Add your own deal to the CRM and keep track of all your prospects & portfolio.</p>
       </div>
-      <p className="text-sm text-muted-foreground mb-2">Add your own deal to the CRM and keep track of all your prospects.</p>
 
       <div className="flex gap-3 mb-6 flex-wrap items-center">
         <span className="badge-gray">{deals.length - archivedDeals.length} deals tracked</span>
