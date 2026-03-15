@@ -154,3 +154,19 @@ Admin-configurable AI model and prompt settings. Single row.
 
 **RLS**: Open (single row, admin-managed via AdminSettings page).
 **Note**: Not in generated TypeScript types — accessed via `as any` casts.
+
+## admin_audit_log
+Append-only log of all admin actions. Immutable — no UPDATE or DELETE policies.
+
+| Column | Type | Default | Notes |
+|--------|------|---------|-------|
+| id | uuid | gen_random_uuid() | PK |
+| user_id | uuid | | Admin who performed the action |
+| action | text | | e.g. approve_deal, reject_deal, suspend_user, delete_user |
+| target_table | text | | Table affected (properties, profiles) |
+| target_id | text | | Row ID affected |
+| metadata | jsonb | {} | Additional context (city, name, etc.) |
+| created_at | timestamptz | now() | |
+
+**RLS**: Admin emails can INSERT and SELECT only. No UPDATE or DELETE.
+**Note**: Not in generated TypeScript types — accessed via `as any` casts in `src/lib/auditLog.ts`.

@@ -3,8 +3,11 @@ import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { logAdminAction } from '@/lib/auditLog';
 
 export default function AdminSubmissions() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -36,26 +39,29 @@ export default function AdminSubmissions() {
     toast.success('Published ✓');
     queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
 
+    // Audit log (fire-and-forget)
+    if (user) logAdminAction(user.id, { action: 'approve_deal', target_table: 'properties', target_id: id, metadata: { city: submission?.city, name: submission?.name } });
+
     // Email member on approval (non-blocking)
     if (submission?.contact_email) {
       supabase.functions.invoke('send-email', {
         body: {
           type: 'deal-approved-member',
-          data: {
-            memberEmail: submission.contact_email,
-            name: submission.name,
-            city: submission.city,
-          },
+          data: { memberEmail: submission.contact_email, name: submission.name, city: submission.city },
         },
       }).catch(() => {});
     }
   };
 
   const reject = async (id: string) => {
+    const submission = submissions.find(s => s.id === id);
     const { error } = await supabase.from('properties').update({ status: 'inactive' }).eq('id', id);
     if (error) { toast.error(`Reject failed: ${error.message}`); console.error('Reject error:', error); return; }
     toast.error('Rejected');
     queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
+
+    // Audit log (fire-and-forget)
+    if (user) logAdminAction(user.id, { action: 'reject_deal', target_table: 'properties', target_id: id, metadata: { city: submission?.city, name: submission?.name } });
   };
 
   const statusLabel = (status: string) => {

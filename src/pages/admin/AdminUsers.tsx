@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { tierDisplayName } from '@/lib/ghl';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { logAdminAction } from '@/lib/auditLog';
 
 const PAGE_SIZE = 20;
 const TIER_FILTERS = ['all', 'free', 'monthly', 'yearly', 'lifetime'] as const;
@@ -18,6 +20,7 @@ interface Profile {
 }
 
 export default function AdminUsers() {
+  const { user: adminUser } = useAuth();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [tierFilter, setTierFilter] = useState<string>('all');
@@ -50,12 +53,14 @@ export default function AdminUsers() {
     mutationFn: async ({ id, suspended }: { id: string; suspended: boolean }) => {
       const { error } = await supabase.from('profiles').update({ suspended }).eq('id', id);
       if (error) throw error;
+      // Audit log (fire-and-forget)
+      if (adminUser) logAdminAction(adminUser.id, { action: suspended ? 'suspend_user' : 'unsuspend_user', target_table: 'profiles', target_id: id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
       toast.success('User updated');
     },
-    onError: (err: any) => toast.error(err.message || 'Failed to update'),
+    onError: (err: unknown) => toast.error((err as Error).message || 'Failed to update'),
   });
 
   // Hard delete mutation (soft: just suspend)
@@ -64,6 +69,8 @@ export default function AdminUsers() {
       // Soft delete: mark as suspended since we can't call auth.admin.deleteUser from client-side
       const { error } = await supabase.from('profiles').update({ suspended: true }).eq('id', id);
       if (error) throw error;
+      // Audit log (fire-and-forget)
+      if (adminUser) logAdminAction(adminUser.id, { action: 'delete_user', target_table: 'profiles', target_id: id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
