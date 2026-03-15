@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { getLessonById, modules } from '@/data/universityData';
 import { useUniversityProgress } from '@/hooks/useUniversityProgress';
+import { useAuth } from '@/hooks/useAuth';
+import { callAIChat } from '@/hooks/useAIChat';
 import { useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft, ArrowRight, Zap, CheckSquare, AlertTriangle, MapPin, Copy, Code,
@@ -33,6 +35,7 @@ function Confetti({ show }: { show: boolean }) {
 export default function LessonPage() {
   const { moduleId, lessonId } = useParams<{ moduleId: string; lessonId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const result = getLessonById(moduleId || '', lessonId || '');
   const {
     toggleStep, isStepDone, countCompletedSteps, completeLesson, isLessonComplete,
@@ -72,19 +75,24 @@ export default function LessonPage() {
     }
   };
 
-  const handleSendChat = (text?: string) => {
+  const handleSendChat = async (text?: string) => {
     const msg = text || chatInput.trim();
-    if (!msg) return;
+    if (!msg || typing) return;
     setChatMessages(prev => [...prev, { role: 'user', text: msg }]);
     setChatInput('');
     setTyping(true);
-    setTimeout(() => {
-      setTyping(false);
-      setChatMessages(prev => [...prev, {
-        role: 'ai',
-        text: "Good question. Our AI consultant is being loaded with everything we know — every deal lesson, objection answer, and UK-specific framework from years of real operations. It launches very soon.\n\nFor now, the lesson above and the action steps have everything you need to move forward. Come back shortly and you'll be able to ask this anything.",
-      }]);
-    }, 1200);
+
+    const lessonContext = lesson.content.slice(0, 3).join(' ').substring(0, 400);
+    const reply = await callAIChat({
+      message: msg,
+      lessonTitle: lesson.title,
+      moduleTitle: mod.title,
+      lessonContext,
+      userId: user?.id,
+    });
+
+    setTyping(false);
+    setChatMessages(prev => [...prev, { role: 'ai', text: reply }]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
