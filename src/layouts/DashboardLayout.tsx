@@ -4,7 +4,7 @@ import DashboardSidebar from '@/components/DashboardSidebar';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PaymentSuccessRefresher from '@/components/PaymentSuccessRefresher';
 
-const FULL_BLEED_ROUTES = ['/dashboard/inbox'];
+const FULL_BLEED_ROUTES = ['/dashboard/inbox', '/dashboard/deals-v2'];
 
 export interface DashboardContext {
   sidebarCollapsed: boolean;
