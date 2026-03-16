@@ -1,0 +1,117 @@
+{
+  "name": "NFsTay – University AI Chat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-university-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "university-chat-webhook",
+      "name": "University Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $input.first().json?.body || $input.first().json || {};\n\nconst message = b.message || '';\nconst lessonTitle = b.lessonTitle || '';\nconst moduleTitle = b.moduleTitle || '';\nconst lessonContext = b.lessonContext || '';\nconst userId = b.userId || 'anonymous';\n\nif (!message) {\n  throw new Error('message field is required');\n}\n\nreturn [{ json: { message, lessonTitle, moduleTitle, lessonContext, userId } }];"
+      },
+      "id": "university-chat-extract",
+      "name": "Extract Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a UK property investment coach specialising in rent-to-rent. The student is currently on lesson: {{ $json.lessonTitle }} in module: {{ $json.moduleTitle }}. Context: {{ $json.lessonContext }}. Answer concisely and practically.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.message }}\"\n    }\n  ],\n  \"max_tokens\": 600,\n  \"temperature\": 0.7\n}",
+        "options": {}
+      },
+      "id": "university-chat-openai",
+      "name": "OpenAI Chat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "OpenAI API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"response\": $node[\"OpenAI Chat\"].json[\"choices\"][0][\"message\"][\"content\"] } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "university-chat-respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [660, 0]
+    }
+  ],
+  "connections": {
+    "University Chat Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Fields": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "university-ai-chat-v1",
+  "id": "university-ai-chat"
+}

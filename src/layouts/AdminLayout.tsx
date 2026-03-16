@@ -10,7 +10,9 @@ const adminLinks = [
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/submissions', label: 'Submissions', icon: FileText },
   { to: '/admin/notifications', label: 'Notifications', icon: Bell },
-  { to: '/admin/university', label: 'University', icon: GraduationCap },
+  { to: '/admin/university', label: 'Uni: Lessons', icon: GraduationCap, exact: true },
+  { to: '/admin/university/modules', label: 'Uni: Modules', icon: GraduationCap },
+  { to: '/admin/university/analytics', label: 'Uni: Analytics', icon: GraduationCap },
   { to: '/admin/pricing', label: 'Pricing', icon: CreditCard },
   { to: '/admin/faq', label: 'FAQ', icon: HelpCircle },
   { to: '/admin/affiliates', label: 'Affiliates', icon: UserCheck },
@@ -45,7 +47,9 @@ export default function AdminLayout() {
         <span className="text-lg font-extrabold text-foreground tracking-tight">NFsTay</span>
         <div className="flex gap-1 overflow-x-auto flex-1" style={{ scrollbarWidth: 'none' }}>
           {adminLinks.map(l => {
-            const isActive = l.exact ? location.pathname === l.to : location.pathname.startsWith(l.to) && l.to !== '/admin';
+            const isActive = l.exact
+              ? location.pathname === l.to
+              : location.pathname === l.to || (location.pathname.startsWith(l.to + '/') && l.to !== '/admin');
             return (
               <Link key={l.to} to={l.to} className={`px-3 py-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap transition-colors inline-flex items-center gap-1.5 ${isActive ? 'bg-accent-light text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                 {l.label}

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { getLessonById, modules } from '@/data/universityData';
+import { getLessonById, modules as staticModules } from '@/data/universityData';
 import { useUniversityProgress } from '@/hooks/useUniversityProgress';
 import { useAuth } from '@/hooks/useAuth';
 import { callAIChat } from '@/hooks/useAIChat';
@@ -32,15 +32,35 @@ function Confetti({ show }: { show: boolean }) {
   );
 }
 
+function tierSatisfied(required: string, userTier: string): boolean {
+  const tiers = ['free', 'monthly', 'yearly', 'lifetime', 'pro', 'premium'];
+  const reqIdx = tiers.indexOf(required);
+  const userIdx = tiers.indexOf(userTier);
+  if (reqIdx <= 0) return true;
+  return userIdx >= reqIdx;
+}
+
 export default function LessonPage() {
   const { moduleId, lessonId } = useParams<{ moduleId: string; lessonId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const result = getLessonById(moduleId || '', lessonId || '');
   const {
     toggleStep, isStepDone, countCompletedSteps, completeLesson, isLessonComplete,
     progress, toggleQuickWinTask, isQuickWinTaskDone, allQuickWinTasksDone,
+    curriculumModules, userTier,
   } = useUniversityProgress();
+
+  // Try DB-driven curriculum first, then static fallback
+  const dbResult = (() => {
+    const dbMod = curriculumModules.find(m => m.id === (moduleId || ''));
+    if (dbMod) {
+      const lesson = dbMod.lessons.find(l => l.id === (lessonId || ''));
+      if (lesson) return { module: dbMod, lesson };
+    }
+    return null;
+  })();
+  const staticResult = getLessonById(moduleId || '', lessonId || '');
+  const result = dbResult ?? staticResult;
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([]);
@@ -55,6 +75,11 @@ export default function LessonPage() {
   if (!result) return <div className="p-8 text-center" style={{ color: '#6B7280' }}>Lesson not found</div>;
 
   const { module: mod, lesson } = result;
+
+  // Tier gating
+  const dbMod = curriculumModules.find(m => m.id === (moduleId || ''));
+  const moduleTierRequired = (dbMod as unknown as { tier_required?: string } | undefined)?.tier_required ?? 'free';
+  const isGated = !tierSatisfied(moduleTierRequired, userTier);
   const lessonIndex = mod.lessons.findIndex(l => l.id === lesson.id);
   const prevLesson = lessonIndex > 0 ? mod.lessons[lessonIndex - 1] : null;
   const nextLesson = lessonIndex < mod.lessons.length - 1 ? mod.lessons[lessonIndex + 1] : null;
@@ -103,6 +128,29 @@ export default function LessonPage() {
   };
 
   const progressPct = (lessonIndex / mod.lessons.length) * 100 + (lessonDone ? (1 / mod.lessons.length) * 100 : 0);
+
+  // Show gated overlay instead of lesson content
+  if (isGated) {
+    return (
+      <div className="max-w-[860px] mx-auto pb-20">
+        <button onClick={() => navigate(`/university/${mod.id}`)} className="flex items-center gap-1 text-sm hover:opacity-70 mb-6" style={{ color: '#6B7280' }}>
+          <ArrowLeft className="w-4 h-4" />{mod.title}
+        </button>
+        <div className="rounded-2xl border-2 p-12 flex flex-col items-center justify-center text-center" style={{ borderColor: '#E5E7EB' }}>
+          <LockIcon className="w-10 h-10 mb-4" style={{ color: '#9CA3AF' }} />
+          <h2 className="text-xl font-bold mb-2" style={{ color: '#111827' }}>Upgrade to {moduleTierRequired} to access this lesson</h2>
+          <p className="text-sm mb-6" style={{ color: '#6B7280' }}>This lesson is part of the {moduleTierRequired} tier.</p>
+          <button
+            onClick={() => { toast.info(`Upgrade to ${moduleTierRequired} to access this lesson`); navigate('/dashboard/settings'); }}
+            className="h-11 px-6 rounded-[10px] text-sm font-semibold inline-flex items-center gap-2"
+            style={{ background: '#111827', color: '#FFFFFF' }}
+          >
+            Upgrade Plan <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[860px] mx-auto pb-20">

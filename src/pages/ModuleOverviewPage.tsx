@@ -3,18 +3,32 @@ import { getModuleById } from '@/data/universityData';
 import { useUniversityProgress } from '@/hooks/useUniversityProgress';
 import { ArrowLeft, Zap, CheckCircle, Circle, Lock, ChevronRight } from 'lucide-react';
 
+function tierSatisfied(required: string, userTier: string): boolean {
+  const tiers = ['free', 'monthly', 'yearly', 'lifetime', 'pro', 'premium'];
+  const reqIdx = tiers.indexOf(required);
+  const userIdx = tiers.indexOf(userTier);
+  if (reqIdx <= 0) return true; // free is open to all
+  return userIdx >= reqIdx;
+}
+
 export default function ModuleOverviewPage() {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
   const {
-    isLessonComplete, getModuleCompletedLessons, getLessonStatus,
+    isLessonComplete, getModuleCompletedLessons, getLessonStatus, curriculumModules, userTier,
   } = useUniversityProgress();
 
-  const mod = getModuleById(moduleId || '');
+  // Try DB-driven modules first, fallback to static
+  const dbMod = curriculumModules.find(m => m.id === (moduleId || ''));
+  const mod = dbMod ?? getModuleById(moduleId || '');
   if (!mod) return <div className="p-8 text-center" style={{ color: '#6B7280' }}>Module not found</div>;
 
   const completedCount = getModuleCompletedLessons(mod.id, mod.lessons);
   const pct = (completedCount / mod.lessons.length) * 100;
+
+  // Tier gating - get tier_required from DB module if available
+  const dbModuleTierRequired = (dbMod as unknown as { tier_required?: string } | undefined)?.tier_required ?? 'free';
+  const isGated = !tierSatisfied(dbModuleTierRequired, userTier);
 
   return (
     <div className="max-w-[860px] mx-auto">
@@ -59,8 +73,30 @@ export default function ModuleOverviewPage() {
       </div>
 
       {/* Lesson list */}
-      <div className="mt-8 space-y-3">
+      <div className="mt-8 space-y-3 relative">
         <h3 className="text-sm font-bold mb-3" style={{ color: '#111827' }}>Lessons</h3>
+
+        {/* Tier gate overlay */}
+        {isGated && (
+          <div
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl"
+            style={{ background: 'rgba(249,250,251,0.95)', border: '2px solid #E5E7EB' }}
+          >
+            <Lock className="w-8 h-8 mb-3" style={{ color: '#9CA3AF' }} />
+            <p className="text-base font-bold mb-1" style={{ color: '#111827' }}>
+              This module requires {dbModuleTierRequired} access
+            </p>
+            <p className="text-sm mb-4" style={{ color: '#6B7280' }}>Upgrade your plan to unlock all lessons.</p>
+            <button
+              onClick={() => navigate('/dashboard/settings')}
+              className="h-11 px-6 rounded-[10px] text-sm font-semibold inline-flex items-center gap-2 hover:opacity-90"
+              style={{ background: '#111827', color: '#FFFFFF' }}
+            >
+              Upgrade Plan <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {mod.lessons.map((lesson, i) => {
           const status = getLessonStatus(mod.id, lesson.id, i, mod.lessons);
           const done = status === 'completed' || isLessonComplete(mod.id, lesson.id);
