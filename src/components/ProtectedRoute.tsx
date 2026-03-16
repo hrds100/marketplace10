@@ -1,10 +1,11 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const [status, setStatus] = useState<'loading' | 'verified' | 'unverified'>(
     'loading'
   );
@@ -85,7 +86,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   if (!user) {
-    return <Navigate to="/signin" replace />;
+    const redirect = location.pathname + location.search;
+    return <Navigate to={`/signin?redirect=${encodeURIComponent(redirect)}`} replace />;
   }
 
   if (status === 'unverified') {

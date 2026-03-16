@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -7,6 +7,8 @@ const REMEMBER_KEY = 'nfstay_remember_email';
 
 export default function SignIn() {
   const { signIn } = useAuth();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +39,7 @@ export default function SignIn() {
       } else {
         localStorage.removeItem(REMEMBER_KEY);
       }
-      window.location.href = '/dashboard/deals';
+      window.location.href = redirectTo ? decodeURIComponent(redirectTo) : '/dashboard/deals';
     } catch {
       setError('Sign in failed. Try again.');
     } finally {
