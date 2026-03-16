@@ -41,7 +41,7 @@ export default function AdminModules() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string; lessonCount: number } | null>(null);
 
   // Guard — only admins can access this
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['admin-profile', user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -73,7 +73,7 @@ export default function AdminModules() {
     },
   });
 
-  if (profile?.role !== 'admin') {
+  if (!profileLoading && profile?.role !== 'admin') {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
         Admin access required.
