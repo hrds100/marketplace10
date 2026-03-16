@@ -74,6 +74,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const [hasAttemptedSend, setHasAttemptedSend] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const initialMsgLoadDone = useRef(false);
 
   // placeholderIdx no longer used in ChatWindow — animated placeholder moved to ChatEmptyState
@@ -358,6 +359,11 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         )}
       </div>
 
+      {/* QuickRepliesModal — always mounted so it works in both empty and conversation states */}
+      <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
+      {/* Hidden file input for Plus/attach button */}
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) toast.info(`Selected: ${f.name} — image upload coming soon`); e.target.value = ''; }} />
+
       {/* Bottom controls — hidden when empty state shows its own composer */}
       {!isEmpty && <>
       {/* LANDLORD NDA GATE — landlord must sign NDA before replying */}
@@ -382,7 +388,6 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
 
       {/* Input bar — role-aware */}
       <div className="relative border-t border-gray-200 bg-white px-4 py-3 flex items-end gap-2 shrink-0">
-        <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
         {/* While tier is loading, show neutral placeholder so we don't flash wrong UI */}
         {tierLoading && isCurrentUserOperator ? (
           <div className="flex-1 text-sm text-muted-foreground py-2 px-3">Checking access…</div>
@@ -398,7 +403,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         ) : /* OPERATOR: free tier, no messages → real input but send opens payment sheet */
         isCurrentUserOperator && !paid && !hasExistingMessages ? (
           <>
-            <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
+            <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => fileInputRef.current?.click()} title="Attach files"><Plus className="w-5 h-5 text-muted-foreground" /></button>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
             <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
               className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] transition-all" style={{ minHeight: 36 }} />
@@ -410,7 +415,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         ) : (
           /* NORMAL: paid operator, landlord with NDA signed, or support → full input */
           <>
-            <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
+            <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => fileInputRef.current?.click()} title="Attach files"><Plus className="w-5 h-5 text-muted-foreground" /></button>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
             <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
               className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] transition-all" style={{ minHeight: 36 }} />
