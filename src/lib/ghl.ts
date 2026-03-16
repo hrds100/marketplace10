@@ -44,9 +44,17 @@ export const PRICE_ID_TO_TIER: Record<string, string> = {
 
 /**
  * GHL Funnel entry URL.
- * This is the URL of the first funnel step (cart page) built in GHL dashboard.
- * Set via VITE_GHL_FUNNEL_URL env var once the funnel is created in GHL.
- * The full flow (cart → upsell → downsell → thank you) is handled by GHL.
+ * Custom domain: pay.nfstay.com
+ *
+ * Funnel flow (all hosted on GHL):
+ *   1. Cart:      https://pay.nfstay.com/order        (£67/mo)
+ *   2. Upsell:    https://pay.nfstay.com/upsell       (£997 lifetime)
+ *   3. Downsell:  https://pay.nfstay.com/Down          (£397/yr)
+ *   4. Thank You: https://pay.nfstay.com/thank-You
+ *
+ * Set VITE_GHL_FUNNEL_URL to the cart page URL.
+ * IMPORTANT: Do NOT use preview URLs (app.leadconnectorhq.com/v2/preview/...) —
+ * they cause fingerprint errors. Always use the published pay.nfstay.com domain.
  */
 export function getFunnelUrl(contactInfo?: { email?: string; name?: string; phone?: string }): string {
   const base = import.meta.env.VITE_GHL_FUNNEL_URL || '';

@@ -154,14 +154,16 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
             </div>
           ) : (
             /* ── FREE USER → GHL funnel iframe ── */
+            /* GHL payment forms require full DOM access for Stripe fingerprinting.
+               Do NOT add sandbox attribute — it breaks GHL's payment JS.
+               Domain: pay.nfstay.com (GHL custom domain, whitelisted for payments) */
             <div className="flex flex-col flex-1 overflow-hidden">
               <div className="flex-1 min-h-0 overflow-hidden">
                 <iframe
                   src={funnelUrl}
                   className="w-full h-full border-0"
                   style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%', height: '125%' }}
-                  allow="payment; camera; microphone; geolocation; clipboard-write"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
+                  allow="payment *; camera; microphone; geolocation; clipboard-write"
                   title="Checkout"
                 />
               </div>
