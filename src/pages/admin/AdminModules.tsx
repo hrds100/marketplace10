@@ -3,7 +3,6 @@ import { Plus, X, Edit2, Trash2, ArrowUp, ArrowDown, AlertCircle } from 'lucide-
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import type { Tables } from '@/integrations/supabase/types';
 
 type ModuleRow = Tables<'modules'>;
@@ -33,23 +32,11 @@ const emptyForm: ModuleForm = {
 };
 
 export default function AdminModules() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ModuleForm>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string; lessonCount: number } | null>(null);
-
-  // Guard — only admins can access this
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ['admin-profile', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-      return data;
-    },
-    enabled: !!user,
-  });
 
   const { data: modules = [] } = useQuery({
     queryKey: ['admin-modules'],
@@ -72,14 +59,6 @@ export default function AdminModules() {
       return counts;
     },
   });
-
-  if (!profileLoading && profile?.role !== 'admin') {
-    return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground">
-        Admin access required.
-      </div>
-    );
-  }
 
   const openCreate = () => {
     setEditingId(null);
