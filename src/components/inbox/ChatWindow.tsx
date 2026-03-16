@@ -60,9 +60,11 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const { tier, loading: tierLoading, refreshTier } = useUserTier();
   const paid = isPaidTier(tier);
 
-  // Derive role from thread membership (not from profiles.role)
-  const isCurrentUserOperator = !thread.isSupport && user?.id === thread.operatorId;
-  const isCurrentUserLandlord = !thread.isSupport && user?.id === thread.landlordId;
+  // Derive role from thread membership (not from profiles.role).
+  // Landlord takes priority: if the same account appears in both fields (e.g. test env),
+  // treat the user as the landlord so they never see the operator promo shell.
+  const isCurrentUserLandlord = !thread.isSupport && !!user?.id && user.id === thread.landlordId;
+  const isCurrentUserOperator = !thread.isSupport && !!user?.id && user.id === thread.operatorId && !isCurrentUserLandlord;
 
   // Always refetch tier when operator opens/switches thread — prevents stale paid=true
   useEffect(() => { if (isCurrentUserOperator) refreshTier(); }, [thread.id, isCurrentUserOperator]);
@@ -77,6 +79,12 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const initialMsgLoadDone = useRef(false);
+  // Keep a stable ref to onOpenDetails so effects can call the latest version
+  // without adding the inline function to their dependency arrays.
+  const onOpenDetailsRef = useRef(onOpenDetails);
+  useEffect(() => { onOpenDetailsRef.current = onOpenDetails; });
+  // Track previous message count to detect the first message arriving
+  const prevMsgCountRef = useRef(0);
 
   // placeholderIdx no longer used in ChatWindow — animated placeholder moved to ChatEmptyState
 
@@ -168,6 +176,17 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   }, [thread.id, thread.isSupport, loadMessages]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  // Auto-expand right details panel the moment the first message appears in the thread.
+  // Fires regardless of how the message arrived (optimistic, Realtime, poll, DB insert).
+  // Uses ref so the inline onOpenDetails prop never causes a stale closure or loop.
+  useEffect(() => {
+    const hadMessages = prevMsgCountRef.current > 0;
+    prevMsgCountRef.current = messages.length;
+    if (!hadMessages && messages.length > 0 && !thread.isSupport) {
+      onOpenDetailsRef.current?.();
+    }
+  }, [messages.length, thread.isSupport]);
 
   const handleSend = async () => {
     if (!input.trim() || !user?.id) return;
@@ -331,7 +350,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         ) : showOperatorPreChat ? (
           <ChatEmptyState
             thread={thread}
-            onOpenDetails={() => onOpenDetails?.()}
+            onOpenDetails={() => onOpenDetailsRef.current?.()}
             inputValue={input}
             onInputChange={setInput}
             onSend={() => {
@@ -347,6 +366,19 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
             inputRef={inputRef as React.RefObject<HTMLTextAreaElement>}
             displayProfit={displayProfit}
           />
+        ) : !loading && messages.length === 0 && !thread.isSupport ? (
+          // Landlord (or unresolved role) with no messages yet
+          <div className="h-full flex flex-col items-center justify-center text-center px-8 gap-3">
+            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
+              <Send className="w-6 h-6 text-gray-300" />
+            </div>
+            <p className="text-sm font-medium text-gray-500">No messages yet</p>
+            <p className="text-xs text-gray-400 max-w-xs">
+              {isCurrentUserLandlord
+                ? 'The operator will send you their first message soon.'
+                : 'Start the conversation below.'}
+            </p>
+          </div>
         ) : (
           <div className="px-4 py-4">
             {grouped.map(group => (
