@@ -249,7 +249,15 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      // Free operator on new thread → open payment instead of sending
+      if (isCurrentUserOperator && !paid && !hasExistingMessages) {
+        setPaymentSheetOpen(true);
+        return;
+      }
+      handleSend();
+    }
   };
 
   const handleSelectStarter = (text: string) => {
@@ -363,15 +371,15 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           >
             <FileText className="w-4 h-4" /> Sign NDA to reply
           </button>
-        ) : /* OPERATOR: free tier, no messages → locked input */
+        ) : /* OPERATOR: free tier, no messages → real input but send opens payment sheet */
         isCurrentUserOperator && !paid && !hasExistingMessages ? (
           <>
-            <div className="flex-1 relative cursor-pointer" onClick={() => setPaymentSheetOpen(true)} title="Upgrade to send messages">
-              <div className="w-full bg-gray-50 text-gray-400 text-sm opacity-60 border border-dashed border-gray-300 rounded-lg px-3 py-2 select-none" style={{ minHeight: 36 }}>
-                Unlock to send messages
-              </div>
-            </div>
-            <button onClick={() => setPaymentSheetOpen(true)} className="p-2 rounded-lg bg-gray-300 text-gray-500 transition-colors shrink-0" title="Upgrade to send messages">
+            <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
+            <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
+            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
+              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px]" style={{ minHeight: 36 }} />
+            <button onClick={() => setPaymentSheetOpen(true)}
+              className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
               <Send className="w-5 h-5" />
             </button>
           </>
