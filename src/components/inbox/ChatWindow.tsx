@@ -72,6 +72,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const [hasExistingMessages, setHasExistingMessages] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const initialMsgLoadDone = useRef(false);
 
   // Map DB row to Message
   const mapRow = useCallback((row: Record<string, unknown>, userId?: string): Message => {
@@ -104,7 +105,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       return;
     }
     try {
-      setLoading(true);
+      if (!initialMsgLoadDone.current) setLoading(true);
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -116,14 +117,14 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       setHasExistingMessages(mapped.length > 0);
     } catch (err) {
       console.error('Failed to load messages:', err);
-      setMessages([]);
-      setHasExistingMessages(false);
+      if (!initialMsgLoadDone.current) { setMessages([]); setHasExistingMessages(false); }
     } finally {
       setLoading(false);
+      initialMsgLoadDone.current = true;
     }
   }, [thread.id, thread.isSupport, thread.termsAccepted, user?.id, mapRow]);
 
-  useEffect(() => { loadMessages(); }, [loadMessages]);
+  useEffect(() => { initialMsgLoadDone.current = false; loadMessages(); }, [loadMessages]);
 
   // Realtime subscription — both operator and landlord receive the same INSERT
   // event for the thread, so no polling is needed. mapRow determines me/other.
@@ -389,16 +390,18 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         )}
       </div>
 
-      {/* Payment sheet — opens when free user tries to unlock */}
-      <PaymentSheet
-        open={paymentSheetOpen}
-        onOpenChange={setPaymentSheetOpen}
-        onUnlocked={() => {
-          setPaymentSheetOpen(false);
-          refreshTier();
-          setTimeout(() => inputRef.current?.focus(), 300);
-        }}
-      />
+      {/* Payment sheet — ONLY for operators, never rendered for landlords */}
+      {isCurrentUserOperator && (
+        <PaymentSheet
+          open={paymentSheetOpen}
+          onOpenChange={setPaymentSheetOpen}
+          onUnlocked={() => {
+            setPaymentSheetOpen(false);
+            refreshTier();
+            setTimeout(() => inputRef.current?.focus(), 300);
+          }}
+        />
+      )}
     </div>
   );
 }

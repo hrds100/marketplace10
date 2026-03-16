@@ -107,10 +107,13 @@ export default function InboxPage() {
   }, []);
 
   // Load threads for BOTH operator and landlord roles
+  // initialLoad tracks whether this is the first fetch (show skeleton) or a background refresh (no flash)
+  const initialLoadDone = useRef(false);
+
   const loadThreads = useCallback(async () => {
     if (!user?.id) return;
     try {
-      setLoading(true);
+      if (!initialLoadDone.current) setLoading(true);
       setError(null);
       const { data, error: queryError } = await supabase
         .from('chat_threads')
@@ -170,9 +173,10 @@ export default function InboxPage() {
       setDbThreads(mapped);
     } catch (err) {
       console.error('Failed to load threads:', err);
-      setError('Could not load messages. Try refreshing.');
+      if (!initialLoadDone.current) setError('Could not load messages. Try refreshing.');
     } finally {
       setLoading(false);
+      initialLoadDone.current = true;
     }
   }, [user?.id]);
 
