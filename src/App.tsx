@@ -45,6 +45,18 @@ if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
 
 const queryClient = new QueryClient();
 
+// Detect GHL payment redirect: ?payment=success
+// GHL thank-you page redirects to hub.nfstay.com/dashboard/inbox?payment=success
+if (typeof window !== 'undefined') {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') === 'success') {
+    window.history.replaceState({}, '', window.location.pathname);
+    if (!window.location.pathname.includes('inbox')) {
+      window.location.href = '/dashboard/inbox';
+    }
+  }
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>

@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MessageCircle } from 'lucide-react';
+import { X, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { useUserTier } from '@/hooks/useUserTier';
 import { getFunnelUrl, isPaidTier } from '@/lib/ghl';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,22 +27,19 @@ interface Props {
   onClose: () => void;
 }
 
-/**
- * Page-level inquiry panel. Renders via portal to document.body.
- * Slides in from right, covers 50vw on desktop, 100vw on mobile.
- * Only ONE instance should exist per page.
- */
 export default function InquiryPanel({ open, listing, onClose }: Props) {
   const { user } = useAuth();
-  const { tier } = useUserTier();
+  const { tier, refetch: refreshTier } = useUserTier();
   const paid = isPaidTier(tier);
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState('');
+  const [paymentComplete, setPaymentComplete] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sync open state with visibility (allows close animation)
   useEffect(() => {
     if (open && listing) {
       setVisible(true);
+      setPaymentComplete(false);
       setMessage(
         `Hi, interested in ${listing.name} ref #${listing.id}. Could you share more details about availability and terms? Thanks!`
       );
@@ -50,22 +47,68 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   }, [open, listing?.id]);
 
   const handleClose = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
     setVisible(false);
-    // Wait for slide-out animation before clearing
     setTimeout(() => onClose(), 300);
   }, [onClose]);
+
+  // Post-payment success handler
+  const handlePaymentSuccess = useCallback(() => {
+    if (paymentComplete) return; // prevent double-fire
+    setPaymentComplete(true);
+
+    // Poll for tier update (GHL webhook → n8n → Supabase may take a few seconds)
+    let attempts = 0;
+    pollRef.current = setInterval(async () => {
+      attempts++;
+      await refreshTier();
+      if (attempts >= 10) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        handleClose();
+        window.location.href = '/dashboard/inbox';
+      }
+    }, 1000);
+
+    // Hard redirect after 10s regardless
+    setTimeout(() => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      handleClose();
+      window.location.href = '/dashboard/inbox';
+    }, 10000);
+  }, [handleClose, refreshTier, paymentComplete]);
+
+  // Listen for postMessage from GHL iframe (payment success signal)
+  useEffect(() => {
+    if (!open || paid) return;
+    const handleMessage = (e: MessageEvent) => {
+      // Allow messages from pay.nfstay.com and GHL domains
+      if (!e.origin.includes('pay.nfstay.com') && !e.origin.includes('leadconnectorhq.com')) return;
+      const data = e.data;
+      const isSuccess =
+        data?.event === 'order_success' ||
+        data?.type === 'order_success' ||
+        data?.event === 'purchase' ||
+        data?.page === 'thank-you' ||
+        (typeof data === 'string' && data.includes('thank'));
+      if (isSuccess) handlePaymentSuccess();
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [open, paid, handlePaymentSuccess]);
 
   // Close on Escape key
   useEffect(() => {
     if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose();
-    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [open, handleClose]);
 
-  // Don't render anything if not open and not animating out
+  // Cleanup poll on unmount
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
+
   if (!open && !visible) return null;
   if (!listing) return null;
 
@@ -75,6 +118,18 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
       const encodedMsg = encodeURIComponent(message);
       window.open(`https://wa.me/${cleanNumber}?text=${encodedMsg}`, '_blank');
       handleClose();
+    }
+  };
+
+  // Iframe onLoad fallback — detect thank-you page URL
+  const handleIframeLoad = (e: React.SyntheticEvent<HTMLIFrameElement>) => {
+    try {
+      const iframeUrl = (e.target as HTMLIFrameElement).contentWindow?.location?.href || '';
+      if (iframeUrl.includes('thank') || iframeUrl.includes('Thank')) {
+        handlePaymentSuccess();
+      }
+    } catch {
+      // Cross-origin — can't read URL, postMessage will handle it
     }
   };
 
@@ -102,23 +157,35 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border flex-shrink-0">
           <div>
             <h3 className="text-lg font-bold text-foreground">
-              {paid ? 'Contact Landlord' : 'Get Unlimited Access to All Deals'}
+              {paymentComplete ? 'Payment Confirmed' : paid ? 'Contact Landlord' : 'Get Unlimited Access to All Deals'}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {paid ? `${listing.name} · ${listing.city}` : "Building your Airbnb portfolio couldn't be easier"}
+              {paymentComplete ? 'Redirecting to your inbox...' : paid ? `${listing.name} · ${listing.city}` : "Building your Airbnb portfolio couldn't be easier"}
             </p>
           </div>
-          <button
-            onClick={handleClose}
-            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {!paymentComplete && (
+            <button
+              onClick={handleClose}
+              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {paid ? (
+          {paymentComplete ? (
+            /* ── SUCCESS SCREEN ── */
+            <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-green-500" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground">Welcome to NFsTay!</h3>
+              <p className="text-sm text-muted-foreground">Payment confirmed. Taking you to your inbox...</p>
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mt-2" />
+            </div>
+          ) : paid ? (
             /* ── PAID USER → WhatsApp ── */
             <div className="p-6">
               <label className="text-xs font-semibold text-foreground block mb-2">Your message</label>
@@ -128,7 +195,6 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
                 rows={5}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               />
-
               {listing.landlordWhatsapp ? (
                 <button
                   onClick={handleSendWhatsApp}
@@ -165,6 +231,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
                   style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%', height: '125%' }}
                   allow="payment *; camera; microphone; geolocation; clipboard-write"
                   title="Checkout"
+                  onLoad={handleIframeLoad}
                 />
               </div>
             </div>
