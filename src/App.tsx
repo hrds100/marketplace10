@@ -71,6 +71,8 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          {/* Magic link short URL — GHL template approved with hub.nfstay.com/inbox */}
+          <Route path="/inbox" element={<Navigate to={`/dashboard/inbox${window.location.search}`} replace />} />
           <Route path="/deals/:id" element={<DealDetail />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="deals" replace />} />
