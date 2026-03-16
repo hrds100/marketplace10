@@ -79,54 +79,79 @@ export default function PropertyCardV2({
     onInquire?.(listing);
   };
 
-  const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type);
+  const resolvedImage = usePropertyImage(
+    listing.id,
+    listing.image ? [listing.image] : null,
+    listing.city,
+    listing.type,
+  );
 
-  const listedLabel = listing.daysAgo === 0 ? 'Today'
-    : listing.daysAgo === 1 ? 'Yesterday'
-    : `${listing.daysAgo}d ago`;
+  const listedLabel =
+    listing.daysAgo === 0 ? 'Today' :
+    listing.daysAgo === 1 ? 'Yesterday' :
+    `${listing.daysAgo}d ago`;
 
   return (
     <div
-      className="bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
+      className="bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 group"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* Hero image */}
-      <div className="relative h-44 overflow-hidden">
+      {/* Image — aspect-[4/3] keeps height consistent at any card width */}
+      <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted">
         <img
           src={resolvedImage}
           alt={`Property in ${listing.city}`}
           loading="lazy"
-          className="w-full h-full object-cover"
-          onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }}
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src =
+              `https://placehold.co/800x600/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`;
+          }}
         />
+
+        {/* Top-left badges */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
           {showSavedBadge && (
-            <span className="bg-white/90 text-[10px] font-semibold px-2 py-0.5 rounded-full text-foreground">Saved</span>
+            <span className="bg-white/92 backdrop-blur-sm text-[10px] font-semibold px-2 py-0.5 rounded-full text-foreground shadow-sm">
+              Saved
+            </span>
           )}
           {listing.featured && (
-            <span className="bg-white/90 text-[10px] font-semibold px-2 py-0.5 rounded-full text-foreground">⭐ Featured</span>
+            <span className="bg-white/92 backdrop-blur-sm text-[10px] font-semibold px-2 py-0.5 rounded-full text-amber-700 shadow-sm">
+              ⭐ Featured
+            </span>
           )}
           {listing.landlordApproved && (
-            <span className="bg-white/90 text-[10px] font-semibold px-2 py-0.5 rounded-full text-emerald-700 flex items-center gap-1">
+            <span className="bg-white/92 backdrop-blur-sm text-[10px] font-semibold px-2 py-0.5 rounded-full text-emerald-700 flex items-center gap-1 shadow-sm">
               <CheckCircle className="w-2.5 h-2.5" /> SA Approved
             </span>
           )}
         </div>
+
+        {/* Heart — top right */}
         <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (forceSignUp) { navigate('/signup'); return; } onToggleFav(); }}
-          className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (forceSignUp) { navigate('/signup'); return; }
+            onToggleFav();
+          }}
+          className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/92 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-sm"
         >
-          <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-primary text-primary' : 'text-foreground/60'}`} />
+          <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-primary text-primary' : 'text-foreground/50'}`} />
         </button>
       </div>
 
-      {/* Compact body */}
-      <div className="p-3">
-        <div className="flex items-start justify-between gap-1">
-          <div className="min-w-0">
-            <h3 className="text-[13px] font-semibold text-foreground leading-tight truncate">{listing.name}</h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-0.5">
+      {/* Card body — uniform padding, no variable-height elements */}
+      <div className="p-4">
+        {/* Title row */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-[13px] font-semibold text-foreground leading-snug truncate">
+              {listing.name}
+            </h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-0.5 truncate">
               <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
               {listing.city} · {listing.postcode}
             </p>
@@ -134,8 +159,10 @@ export default function PropertyCardV2({
           {onAddToCRM && (
             <button
               onClick={handleAddToCRM}
-              className={`text-[10px] font-medium flex items-center gap-0.5 flex-shrink-0 transition-colors ${
-                addedToCRM ? 'text-destructive hover:text-destructive/80' : 'text-muted-foreground hover:text-foreground'
+              className={`text-[10px] font-medium flex items-center gap-0.5 flex-shrink-0 mt-0.5 transition-colors ${
+                addedToCRM
+                  ? 'text-destructive hover:text-destructive/70'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {addedToCRM ? <><X className="w-2.5 h-2.5" />Remove</> : '+ CRM'}
@@ -143,45 +170,70 @@ export default function PropertyCardV2({
           )}
         </div>
 
-        {/* Stats — 2 col compact */}
-        <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
+        {/* Stats — 2×2 grid, fixed label + value sizes */}
+        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
           <div>
-            <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide">Rent / mo</p>
-            <p className="text-[12px] font-bold text-foreground">£{listing.rent.toLocaleString()}</p>
+            <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide leading-none">
+              Rent / mo
+            </p>
+            <p className="text-[13px] font-bold text-foreground mt-1 leading-none">
+              £{listing.rent.toLocaleString()}
+            </p>
           </div>
           <div>
-            <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide">Est. profit</p>
-            <p className="text-[12px] font-bold text-emerald-600">£{listing.profit.toLocaleString()}</p>
+            <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide leading-none">
+              Est. profit
+            </p>
+            <p className="text-[13px] font-bold text-emerald-600 mt-1 leading-none">
+              £{listing.profit.toLocaleString()}
+            </p>
           </div>
           <div>
-            <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide">Type</p>
-            <p className="text-[11px] font-medium text-foreground">{listing.type}</p>
+            <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide leading-none">
+              Type
+            </p>
+            <p className="text-[11px] font-medium text-foreground mt-1 leading-none truncate">
+              {listing.type}
+            </p>
           </div>
           <div>
-            <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide">Listed</p>
-            <p className="text-[11px] font-medium text-foreground">{listedLabel}</p>
+            <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide leading-none">
+              Listed
+            </p>
+            <p className="text-[11px] font-medium text-foreground mt-1 leading-none">
+              {listedLabel}
+            </p>
           </div>
         </div>
 
         {/* CTAs */}
-        <div className="flex gap-1.5 mt-2.5">
+        <div className="flex gap-1.5 mt-4">
           {forceSignUp ? (
             <>
-              <button onClick={handleAction} className="flex-1 bg-foreground text-background h-8 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity">
+              <button
+                onClick={handleAction}
+                className="flex-1 bg-foreground text-background h-8 rounded-lg text-[11px] font-semibold hover:opacity-90 transition-opacity"
+              >
                 Inquire
               </button>
-              <button onClick={handleAction} className="flex-1 border border-border h-8 rounded-lg text-xs font-medium text-foreground hover:bg-muted transition-colors">
+              <button
+                onClick={handleAction}
+                className="flex-1 border border-border h-8 rounded-lg text-[11px] font-medium text-foreground hover:bg-muted transition-colors"
+              >
                 View
               </button>
             </>
           ) : (
             <>
-              <button onClick={handleInquire} className="flex-1 bg-foreground text-background h-8 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity">
+              <button
+                onClick={handleInquire}
+                className="flex-1 bg-foreground text-background h-8 rounded-lg text-[11px] font-semibold hover:opacity-90 transition-opacity"
+              >
                 Inquire
               </button>
               <Link
                 to={`/deals/${listing.id}`}
-                className="flex-1 border border-border h-8 rounded-lg text-xs font-medium text-foreground hover:bg-muted transition-colors inline-flex items-center justify-center"
+                className="flex-1 border border-border h-8 rounded-lg text-[11px] font-medium text-foreground hover:bg-muted transition-colors inline-flex items-center justify-center"
               >
                 View
               </Link>
