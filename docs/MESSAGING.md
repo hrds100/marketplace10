@@ -401,6 +401,27 @@ src/components/Layout.tsx          ← add Inbox to nav
 
 ---
 
+## 16. CLAUDE PROMPT REFINEMENT PROTOCOL
+
+Any task touching the inbox, chat, messaging, threads, or any `chat_*` table must include **MESSAGING.md** and **INTEGRATIONS.md** in the Phase 1 refined prompt's required doc list.
+
+When Claude refines a messaging prompt:
+1. **Audit last 3 commits** — check if recent changes to `ChatWindow.tsx`, `InboxPage.tsx`, or `PaymentSheet.tsx` affect the task
+2. **Identify the flow** — is this operator-side (payment gate), landlord-side (NDA gate), or cross-cutting?
+3. **List all files** — at minimum: `InboxPage.tsx`, `ChatWindow.tsx`, the relevant modal/panel, `useUserTier.ts`
+4. **Include acceptance scenarios** from `docs/ACCEPTANCE.md` (Inbox & messaging section)
+5. **For cross-cutting tasks** (touches UI + DB + n8n/GHL): require one-pass implementation and list every system in scope
+
+Phase 1 output for a messaging task should explicitly state:
+- Which role is affected (Tenant / Landlord / both)
+- Which DB tables are touched
+- Whether n8n webhooks need updating
+- Whether RLS policies need checking
+
+See `docs/AGENT_INSTRUCTIONS.md` Section 0 and Section 12 for the full two-phase protocol.
+
+---
+
 ## 15. DESIGN TOKENS (from Airbnb screenshots)
 
 - Background: white `#FFFFFF`

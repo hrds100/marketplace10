@@ -130,6 +130,21 @@ Then polls Supabase every 1s for tier update (up to 10s) → shows success scree
 - `new-deal-admin`: Sent to admin when a deal is submitted
 - `deal-approved-member`: Sent to member when admin approves their deal
 
+## Claude Prompt Refinement Protocol
+
+Any task touching payments (GHL funnel, tier updates), n8n webhooks, Pexels, Resend, or Supabase Auth must include **INTEGRATIONS.md** in the Phase 1 refined prompt's required doc list.
+
+When Claude refines a prompt involving integrations:
+1. **Identify which integration is in scope** — GHL (payments/tier), n8n (webhooks/automation), Pexels (photos), Resend (email), Supabase Auth
+2. **For payment tasks:** Include the full GHL funnel flow (cart → upsell → downsell → thank-you → n8n tier webhook → Supabase `profiles.tier`). Flag if any step in this chain is being bypassed.
+3. **For n8n tasks:** List the specific webhook endpoint(s) affected and their expected payload shape. Note whether the n8n workflow needs updating (Claude does this via n8n MCP — Hugo never touches n8n manually).
+4. **For cross-cutting payment + inbox tasks:** Also include MESSAGING.md and DOMAIN.md.
+5. **Locked integrations:** n8n and GoHighLevel are locked — never suggest replacing them. The refined prompt must not propose Stripe or any alternative payment provider.
+
+See `docs/AGENT_INSTRUCTIONS.md` Section 0 and Section 12 for the full two-phase protocol.
+
+---
+
 ## Supabase Auth
 - Email/password signup via `supabase.auth.signUp()`
 - Phone OTP via n8n (Twilio) — not Supabase native OTP
