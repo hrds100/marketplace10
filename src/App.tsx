@@ -27,14 +27,12 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminListings from "./pages/admin/AdminListings";
 import AdminSubmissions from "./pages/admin/AdminSubmissions";
 import AdminUsers from "./pages/admin/AdminUsers";
-import AdminLessons from "./pages/admin/AdminLessons";
 import AdminPricing from "./pages/admin/AdminPricing";
 import AdminFAQ from "./pages/admin/AdminFAQ";
 import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNotifications from "./pages/admin/AdminNotifications";
-import AdminModules from "./pages/admin/AdminModules";
-import AdminUniversityAnalytics from "./pages/admin/AdminUniversityAnalytics";
+import AdminUniversity from "./pages/admin/AdminUniversity";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 
@@ -99,9 +97,7 @@ const App = () => (
             <Route path="properties" element={<AdminListings />} />
             <Route path="submissions" element={<AdminSubmissions />} />
             <Route path="users" element={<AdminUsers />} />
-            <Route path="university" element={<AdminLessons />} />
-            <Route path="university/modules" element={<AdminModules />} />
-            <Route path="university/analytics" element={<AdminUniversityAnalytics />} />
+            <Route path="university" element={<AdminUniversity />} />
             <Route path="pricing" element={<AdminPricing />} />
             <Route path="faq" element={<AdminFAQ />} />
             <Route path="affiliates" element={<AdminAffiliates />} />

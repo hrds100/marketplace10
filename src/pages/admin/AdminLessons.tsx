@@ -12,7 +12,7 @@ interface LessonForm {
   title: string;
   content: string;
   module_id: string;
-  order: number;
+  order_index: number;
   emoji: string;
   estimated_minutes: number;
   is_published: boolean;
@@ -22,7 +22,7 @@ const emptyForm: LessonForm = {
   title: '',
   content: '',
   module_id: '',
-  order: 0,
+  order_index: 0,
   emoji: '',
   estimated_minutes: 15,
   is_published: false,
@@ -39,7 +39,7 @@ export default function AdminLessons() {
   const { data: lessons = [] } = useQuery({
     queryKey: ['admin-lessons'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('lessons').select('*').order('order');
+      const { data, error } = await supabase.from('lessons').select('*').order('order_index');
       if (error) throw error;
       return data as LessonRow[];
     },
@@ -79,7 +79,7 @@ export default function AdminLessons() {
       title: form.title,
       content: form.content,
       module_id: form.module_id || null,
-      order: form.order,
+      order_index: form.order_index,
       emoji: form.emoji || null,
       estimated_minutes: form.estimated_minutes,
       is_published: form.is_published,
@@ -106,7 +106,7 @@ export default function AdminLessons() {
       title: l.title,
       content: l.content ?? '',
       module_id: l.module_id ?? '',
-      order: l.order,
+      order_index: l.order_index,
       emoji: l.emoji ?? '',
       estimated_minutes: l.estimated_minutes ?? 15,
       is_published: l.is_published,
@@ -184,8 +184,8 @@ export default function AdminLessons() {
                 />
                 <input
                   type="number"
-                  value={form.order}
-                  onChange={e => setForm(p => ({ ...p, order: Number(e.target.value) }))}
+                  value={form.order_index}
+                  onChange={e => setForm(p => ({ ...p, order_index: Number(e.target.value) }))}
                   className="flex-1 h-10 rounded-lg border border-border bg-background px-3 text-sm"
                   placeholder="Order"
                 />
@@ -275,7 +275,7 @@ export default function AdminLessons() {
           <tbody>
             {lessons.map((l, i) => (
               <tr key={l.id} className={i % 2 === 1 ? 'bg-secondary' : ''}>
-                <td className="p-3.5 text-foreground">{l.order}</td>
+                <td className="p-3.5 text-foreground">{l.order_index}</td>
                 <td className="p-3.5 font-medium text-foreground">
                   {l.emoji ? `${l.emoji} ` : ''}{l.title}
                 </td>

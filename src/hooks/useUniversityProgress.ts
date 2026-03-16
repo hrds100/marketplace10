@@ -97,7 +97,7 @@ export function useUniversityProgress() {
         const [{ data: dbModules, error: modErr }, { data: dbLessons, error: lesErr }] =
           await Promise.all([
             supabase.from('modules').select('*').order('order_index'),
-            supabase.from('lessons').select('*').eq('is_published', true).order('order'),
+            supabase.from('lessons').select('*').eq('is_published', true).order('order_index'),
           ]);
 
         if (cancelled) return;

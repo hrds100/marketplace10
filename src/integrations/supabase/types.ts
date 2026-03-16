@@ -694,7 +694,7 @@ export type Database = {
           title: string
           content: string | null
           module_id: string | null
-          order: number
+          order_index: number
           created_at: string | null
           updated_at: string | null
           emoji: string | null
@@ -707,7 +707,7 @@ export type Database = {
           title: string
           content?: string | null
           module_id?: string | null
-          order?: number
+          order_index?: number
           created_at?: string | null
           updated_at?: string | null
           emoji?: string | null
@@ -720,7 +720,7 @@ export type Database = {
           title?: string
           content?: string | null
           module_id?: string | null
-          order?: number
+          order_index?: number
           created_at?: string | null
           updated_at?: string | null
           emoji?: string | null
