@@ -155,6 +155,22 @@ export default function LandingPage() {
         <div className="absolute bottom-0 left-0 right-0 h-[120px] z-10" style={{ background: 'linear-gradient(transparent, hsl(0 0% 100%))' }} />
       </section>
 
+      {/* LANDLORD CTA */}
+      <section className="py-16 bg-gradient-to-r from-emerald-50 to-teal-50 border-y border-emerald-100">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Landlords: List Your Property</h2>
+            <p className="text-sm md:text-base text-gray-600 mt-2 max-w-md">Get qualified operators who guarantee rent. No management hassle.</p>
+          </div>
+          <Link
+            to="/dashboard/list-a-deal"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-700 shadow-xl transition-all inline-flex items-center gap-2 shrink-0"
+          >
+            Submit a Deal <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section>
+
       {/* DEALS STRIP */}
       <section id="deals-strip" className="py-20 bg-card">
         <div className="max-w-[1280px] mx-auto px-6 md:px-10">

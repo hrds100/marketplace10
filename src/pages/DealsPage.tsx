@@ -114,7 +114,15 @@ export default function DealsPage() {
           <h1 className="text-[28px] font-bold text-foreground">Deals</h1>
           <p className="text-sm text-muted-foreground mt-1">Landlord-approved rent-to-rent opportunities across the UK</p>
         </div>
-        <span className="badge-gray text-xs">📍 UK-wide · {liveCount} properties live</span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="badge-gray text-xs">📍 UK-wide · {liveCount} properties live</span>
+          <button
+            onClick={() => navigate('/dashboard/list-a-deal')}
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:from-emerald-600 hover:to-teal-700 shadow-md transition-all inline-flex items-center gap-1.5"
+          >
+            Submit a Deal
+          </button>
+        </div>
       </div>
 
       {showAlert && (
