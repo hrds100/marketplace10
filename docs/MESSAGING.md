@@ -1,7 +1,7 @@
 # NFsTay — Messaging & Inbox Feature Spec
 _Last updated: 2026-03-16_
 
-> **Both Claude and Perplexity must read this before touching anything in `src/pages/InboxPage.tsx`, `src/components/inbox/`, or any `chat_*` Supabase table.**
+> **Claude must read this before touching anything in `src/pages/InboxPage.tsx`, `src/components/inbox/`, or any `chat_*` Supabase table.**
 
 ---
 

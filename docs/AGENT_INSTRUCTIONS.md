@@ -10,7 +10,7 @@
 Claude acts as **AI Architect and Orchestrator** for the NFsTay codebase (hub.nfstay.com).
 
 - Claude does **not** write code directly.
-- Claude generates **execution prompts** for coding agents (Claude Code, Cursor, or itself in Phase 2).
+- Claude generates **execution prompts** for coding agents (Claude Code, Cursor, or other coding agents).
 - Claude makes architectural decisions. Coding agents implement.
 - Claude reports to Hugo. Claude does not make product decisions or add unrequested features.
 
@@ -64,7 +64,7 @@ N. Run npx tsc --noEmit. Fix all errors before committing.
 ACCEPTANCE SCENARIOS
 [copy relevant Given/When/Then blocks from docs/ACCEPTANCE.md]
 
-Success = [TypeScript zero errors; Section 6 report with VERIFICATION; acceptance scenarios hold]
+Success = [TypeScript zero errors; Section 9 report with VERIFICATION; acceptance scenarios hold]
 
 💡 What to expect: [result description + how Hugo verifies in under 2 minutes]
 ```
@@ -86,8 +86,8 @@ Then follow with 2–3 plain-English sentences: what the prompt will do, what wi
 Claude then:
 1. Reads all docs listed in the refined prompt.
 2. Runs the Section 3 execution protocol.
-3. Follows all hard rules in Section 12.
-4. Outputs the Section 6 report.
+3. Follows all hard rules in Section 15.
+4. Outputs the Section 9 report.
 
 ---
 
@@ -132,7 +132,7 @@ For every bug report or "X not working" task:
 4. **Fix** — implement only what addresses that root cause.
 5. **Verify** — confirm the fix works before marking DONE.
 
-The Section 6 report **must** include `ROOT CAUSE:` for every bug task. No guess-and-fix.
+The Section 9 report **must** include `ROOT CAUSE:` for every bug task. No guess-and-fix.
 
 Read `docs/runbooks/DIAGNOSE_BEFORE_FIX.md` for the full checklist.
 
@@ -170,7 +170,90 @@ Every execution prompt **must**:
 
 ---
 
-## 6. RESPONSE FORMAT
+## 6. DETERMINISTIC SAFETY GATES
+
+**Prompts alone are not sufficient.**
+
+Claude orchestrates work. CI and tests enforce correctness. These are separate concerns.
+
+The repository must enforce reliability through automated mechanisms — not through prompt discipline alone. This means:
+
+- Every merged change has passed automated checks before it reaches production.
+- Critical flows are verified by tests — not by Claude's memory or Hugo's manual checks.
+- Branch protection prevents accidental direct pushes to main.
+
+### Repository enforcement requirements
+
+| Gate | Mechanism | Where defined |
+|------|-----------|--------------|
+| TypeScript zero errors | `npx tsc --noEmit` in CI | `.github/workflows/ci.yml` |
+| Unit tests pass | `npm test` (Vitest) in CI | `.github/workflows/ci.yml` |
+| Lint clean | `npm run lint` in CI | `.github/workflows/ci.yml` |
+| No direct push to main | Branch protection rule | GitHub → Settings → Branches |
+| PR required to merge | Branch protection rule | GitHub → Settings → Branches |
+| Preview deploy before production | Vercel PR preview | Automatic on Vercel |
+| Health check after deploy | UptimeRobot / Sentry | hub.nfstay.com/api/health |
+
+### Claude's responsibility under this model
+
+Claude generates correct execution prompts. CI confirms they are correct. If CI fails after Phase 2 execution, Claude diagnoses the failure and fixes it — not the reverse.
+
+---
+
+## 7. REQUIRED CI CHECKS
+
+All pull requests must pass before merging:
+
+```yaml
+# .github/workflows/ci.yml — see file for full definition
+jobs:
+  typecheck:   npx tsc --noEmit
+  test:        npm test
+  lint:        npm run lint
+```
+
+**No PR may merge if any check fails.** This is enforced by GitHub branch protection — not by asking nicely.
+
+When a CI check fails after Phase 2 execution:
+1. Claude reads the failure log.
+2. Claude identifies the root cause.
+3. Claude fixes the root cause in the same branch.
+4. Claude does not skip or suppress failing checks.
+
+---
+
+## 8. DEPLOY SAFETY
+
+Every production change follows this path:
+
+```
+IDEA / TASK
+→ Phase 1 Prompt Refinement
+→ Phase 2 Execution Prompt
+→ Feature Branch Implementation
+→ CI Verification (TypeScript + tests + lint)
+→ PR Review
+→ Preview Deploy (Vercel auto-preview on PR)
+→ Production Promotion (merge to main → auto-deploy)
+→ Health Monitoring (UptimeRobot + Sentry)
+```
+
+### Critical flows — must be verified after any deploy
+
+| Flow | What to check |
+|------|--------------|
+| Login | Sign in with test account → dashboard loads |
+| Browse deals | /dashboard/deals → properties render |
+| Inbox messaging | Operator sends message → appears in thread; landlord sees it |
+| Payment gate | Free-tier operator → PaymentSheet opens on send attempt |
+| NDA signing | Landlord → Sign NDA modal → terms_accepted flips to true |
+| Admin audit log | Any admin action → row written to admin_audit_log |
+
+**Automated smoke tests** run after every preview deploy (Playwright / Vitest when configured). Until automated, Hugo's manual checklist above is the minimum.
+
+---
+
+## 9. RESPONSE FORMAT
 
 ### Phase 1 output (prompt refinement)
 
@@ -206,7 +289,7 @@ No content outside the code block. One block. Copy-paste ready.
 
 ---
 
-## 7. STYLE
+## 10. STYLE
 
 ### Phase 1 — Orchestrator voice
 
@@ -227,18 +310,27 @@ No content outside the code block. One block. Copy-paste ready.
 
 ---
 
-## 8. HOTKEY HEADER COMPATIBILITY
+## 11. HOTKEY HEADER
 
 > The hotkey header Hugo uses is intentionally minimal.
 > All operational rules live in this document.
+> Operational guarantees live in CI and tests — not in the header.
 
-The hotkey sends prompts directly to Claude. Claude runs Phase 1 first regardless of how the prompt arrives. The two-phase protocol is enforced by Claude's behavior — not by the header format.
+The hotkey header must only define:
+
+1. Claude's role (AI Architect / Orchestrator)
+2. That the two-phase protocol is required
+3. That `docs/AGENT_INSTRUCTIONS.md` contains all system rules
+
+Nothing else belongs in the hotkey header. It is a pointer, not a rulebook.
+
+The hotkey sends prompts directly to Claude. Claude runs Phase 1 first regardless of how the prompt arrives. The two-phase protocol is enforced by Claude's behavior **and** by CI — not by the header format.
 
 If a prompt arrives that looks like a direct execution request (no prior Phase 1), Claude treats it as a Phase 1 trigger and refines it before doing anything else.
 
 ---
 
-## 9. PROJECT REFERENCE
+## 12. PROJECT REFERENCE
 
 | Item | Value |
 |------|-------|
@@ -258,7 +350,7 @@ If a prompt arrives that looks like a direct execution request (no prior Phase 1
 
 ---
 
-## 10. ENV VARS
+## 13. ENV VARS
 
 All set in **Vercel → hugos-projects-f8cc36a8 → marketplace10 → Settings → Environment Variables**.
 
@@ -275,7 +367,7 @@ Supabase Edge Function secrets (via `npx supabase secrets set`): `RESEND_API_KEY
 
 ---
 
-## 11. MCP TOOLS
+## 14. MCP TOOLS
 
 Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
@@ -290,10 +382,10 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
 ---
 
-## 12. HARD RULES
+## 15. HARD RULES
 
 1. **Zero TypeScript errors always.** Run `tsc --noEmit` before AND after every change.
-2. **Never hardcode API keys or secrets.** Env vars only. See Section 10.
+2. **Never hardcode API keys or secrets.** Env vars only. See Section 13.
 3. **Never use `as any`** unless table is missing from generated types — comment why.
 4. **Never delete or modify existing tests** unless explicitly told.
 5. **Never add unrequested features.** Do only what is asked.
@@ -316,7 +408,7 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
 ---
 
-## 13. UI DESIGN STANDARDS
+## 16. UI DESIGN STANDARDS
 
 - **Reference:** Airbnb, Uber, Linear, Vercel dashboard — clean, minimal, confident
 - **Spacing:** consistent 4px/8px grid, never arbitrary margins
@@ -331,7 +423,7 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
 ---
 
-## 14. SAFETY CHECKS
+## 17. SAFETY CHECKS
 
 | Action | Rule |
 |--------|------|
@@ -345,7 +437,7 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
 ---
 
-## 15. THIRD-PARTY PLATFORM REFERENCE
+## 18. THIRD-PARTY PLATFORM REFERENCE
 
 When any task involves a third-party platform, Claude MUST attempt API/MCP execution first (Hard Rule 19). If a manual UI step is truly unavoidable, use the exact paths below.
 

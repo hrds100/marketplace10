@@ -25,7 +25,7 @@ _Last updated: 2026-03-15_
 | Email | Resend | api.resend.com | — | RESEND_API_KEY (Supabase secret) | supabase/functions/send-email/ |
 | Error Monitoring | Sentry | nfstay.sentry.io | — | VITE_SENTRY_DSN | src/main.tsx |
 | Uptime Monitoring | UptimeRobot | uptimerobot.com | — | — | hub.nfstay.com/api/health |
-| CI Pipeline | GitHub Actions | github.com/hrds100/marketplace10/actions | — | — | .github/workflows/ci.yml |
+| CI Pipeline | GitHub Actions | github.com/hrds100/marketplace10/actions | — | — | `.github/workflows/ci.yml` (typecheck + test + lint) |
 | Health Check | Supabase Edge Fn | hub.nfstay.com/api/health | — | — | supabase/functions/health/index.ts |
 
 ## Supabase Tables
@@ -53,6 +53,8 @@ _Last updated: 2026-03-15_
 | POST /webhook/send-otp | Phone verification | SignUp.tsx |
 | POST /webhook/verify-otp | OTP code check | VerifyOtp.tsx |
 | POST /webhook/move-crm-stage | CRM drag-drop | CRMPage.tsx onDrop |
+| POST /webhook/inbox-new-message | Operator sends message → WhatsApp to landlord | ChatWindow.tsx handleSend |
+| POST /webhook/inbox-landlord-replied | Landlord sends message → WhatsApp to operator | ChatWindow.tsx handleSend |
 
 ## GHL Products
 
@@ -73,6 +75,10 @@ _Last updated: 2026-03-15_
 | VITE_PEXELS_API_KEY | pexels.ts | Yes (photo fallbacks) |
 | VITE_SENTRY_DSN | main.tsx | Optional — Sentry silently disabled if absent |
 | VITE_SUPABASE_PROJECT_ID | supabase CLI | Optional — used for local dev |
+
+## Where behavior and domain live
+- **Domain & terms (DDD):** `docs/DOMAIN.md` — actors and concepts used project-wide.
+- **Acceptance scenarios (BDD):** `docs/ACCEPTANCE.md` — Given/When/Then for major flows.
 
 ## Known Issues / Tech Debt
 1. `ai_settings` and `notifications` tables not in generated Supabase types — using `as any` casts
