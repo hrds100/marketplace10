@@ -181,6 +181,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           is_masked: isMasked,
           mask_type: maskType,
           landlord_id: thread.landlordId ?? null,
+          operator_id: thread.operatorId ?? null,
         });
         // Determine which webhook to fire based on sender role + message count
         let endpoint: string;

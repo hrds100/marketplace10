@@ -1,0 +1,80 @@
+{
+  "name": "NFsTay — New Inquiry",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inbox-new-inquiry",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "name": "Receive Inquiry",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "inbox-new-inquiry"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $json.body.landlord_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer pit-ad222803-150e-48db-b907-4508ac46f2e5" },
+            { "name": "Version", "value": "2021-07-28" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "customFields",
+              "value": "=[{\"id\":\"Z0thvOTyoO2KxTMt5sP8\",\"value\":\"{{ $json.body.property_title }}\"}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Update Property Reference",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/conversations/messages/outbound",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer pit-ad222803-150e-48db-b907-4508ac46f2e5" },
+            { "name": "Version", "value": "2021-07-28" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"WhatsApp\",\n  \"contactId\": \"{{ $('Receive Inquiry').item.json.body.landlord_id }}\",\n  \"templateId\": \"nfstay_new_inquiry\",\n  \"templateParams\": [\"{{ $('Receive Inquiry').item.json.body.property_title }}\"]\n}",
+        "options": {}
+      },
+      "name": "Send WhatsApp — New Inquiry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [710, 300]
+    },
+    {
+      "parameters": {},
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [940, 300]
+    }
+  ],
+  "connections": {
+    "Receive Inquiry": { "main": [[{ "node": "Update Property Reference", "type": "main", "index": 0 }]] },
+    "Update Property Reference": { "main": [[{ "node": "Send WhatsApp — New Inquiry", "type": "main", "index": 0 }]] },
+    "Send WhatsApp — New Inquiry": { "main": [[{ "node": "Done", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
