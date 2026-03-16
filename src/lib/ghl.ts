@@ -67,6 +67,18 @@ export function getFunnelUrl(contactInfo?: { email?: string; name?: string; phon
   return qs ? `${base}?${qs}` : base;
 }
 
+/**
+ * Returns a GHL funnel URL with tier pre-selected for analytics.
+ */
+export function getUpgradeUrl(targetTier: string, contactInfo?: { email?: string }): string {
+  const base = import.meta.env.VITE_GHL_FUNNEL_URL || '';
+  if (!base) return '';
+  const params = new URLSearchParams();
+  params.set('tier', targetTier);
+  if (contactInfo?.email) params.set('email', contactInfo.email);
+  return `${base}?${params.toString()}`;
+}
+
 // ── Tier helpers ──
 
 export type TierName = 'free' | 'monthly' | 'yearly' | 'lifetime';

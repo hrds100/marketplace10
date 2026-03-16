@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserTier } from '@/hooks/useUserTier';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { isPaidTier, tierDisplayName, getFunnelUrl } from '@/lib/ghl';
+import { isPaidTier, tierDisplayName, getFunnelUrl, getUpgradeUrl } from '@/lib/ghl';
 
 const settingsTabs = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -194,37 +194,100 @@ export default function SettingsPage() {
 
           {activeTab === 'membership' && (
             <div>
-              <h2 className="text-[22px] font-bold text-foreground mb-6">Membership</h2>
-              <div className="bg-card border border-border rounded-xl p-5 max-w-[400px]">
-                <div className="text-xs text-muted-foreground mb-1">Current plan</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-foreground">{tierDisplayName(tier)}</span>
-                  {isPaidTier(tier) ? (
-                    <span className="badge-green">Active</span>
-                  ) : (
-                    <span className="badge-gray">Free</span>
+              <h2 className="text-[22px] font-bold text-foreground mb-6">Subscription</h2>
+
+              {/* Current tier card */}
+              <div className="bg-card border border-border rounded-xl p-5 max-w-[480px]">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Current plan</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-foreground">{tierDisplayName(tier)}</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isPaidTier(tier) ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
+                        {isPaidTier(tier) ? 'Active' : 'Free'}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const url = isPaidTier(tier)
+                        ? getUpgradeUrl(tier, { email: user?.email })
+                        : getFunnelUrl({ email: user?.email });
+                      if (url) window.open(url, '_blank');
+                    }}
+                    className="px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
+                  >
+                    {isPaidTier(tier) ? 'Manage Plan' : 'Upgrade Now'}
+                  </button>
+                </div>
+
+                {/* Tier benefits */}
+                <div className="border-t border-border pt-4">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">What's included</div>
+                  {tier === 'free' && (
+                    <ul className="text-sm text-muted-foreground space-y-1.5">
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Browse deals</li>
+                    </ul>
+                  )}
+                  {tier === 'monthly' && (
+                    <ul className="text-sm text-foreground space-y-1.5">
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Unlimited inquiries, full chat access</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> CRM pipeline</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> University access</li>
+                    </ul>
+                  )}
+                  {tier === 'yearly' && (
+                    <ul className="text-sm text-foreground space-y-1.5">
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Everything in Monthly</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> 2 months free (save £134/yr)</li>
+                    </ul>
+                  )}
+                  {tier === 'lifetime' && (
+                    <ul className="text-sm text-foreground space-y-1.5">
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Everything forever</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Priority support</li>
+                    </ul>
                   )}
                 </div>
+
                 {isPaidTier(tier) && (
-                  <>
-                    <p className="text-xs text-muted-foreground mt-2">Your subscription is managed via GoHighLevel.</p>
-                    <p className="text-xs text-muted-foreground mt-1">To cancel or update billing, contact support or manage from your payment confirmation email.</p>
-                  </>
-                )}
-                {!isPaidTier(tier) && (
-                  <p className="text-xs text-muted-foreground mt-2">Upgrade to access all deals and features.</p>
+                  <p className="text-[11px] text-muted-foreground mt-4">To cancel or update billing, contact support@nfstay.com or manage from your payment confirmation email.</p>
                 )}
               </div>
 
-              {!isPaidTier(tier) && (
-                <div className="mt-6 max-w-[400px]">
-                  <h3 className="text-sm font-bold text-foreground mb-3">Get started</h3>
-                  <button onClick={() => { const url = getFunnelUrl({ email: user?.email }); if (url) window.open(url, '_blank'); }} className="block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors">
+              {/* Upgrade options for free/monthly users */}
+              {(!isPaidTier(tier) || tier === 'monthly') && (
+                <div className="mt-6 max-w-[480px] space-y-3">
+                  <h3 className="text-sm font-bold text-foreground">
+                    {isPaidTier(tier) ? 'Upgrade your plan' : 'Get started'}
+                  </h3>
+                  {!isPaidTier(tier) && (
+                    <button onClick={() => { const url = getFunnelUrl({ email: user?.email }); if (url) window.open(url, '_blank'); }}
+                      className="block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-lg font-bold text-foreground">£67</span>
+                        <span className="text-sm text-muted-foreground">/ month</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Unlimited inquiries, full chat access · Cancel any time</p>
+                    </button>
+                  )}
+                  <button onClick={() => { const url = getUpgradeUrl('yearly', { email: user?.email }); if (url) window.open(url, '_blank'); }}
+                    className="block w-full text-left rounded-xl border border-border p-4 hover:bg-secondary/50 transition-colors">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-foreground">£67</span>
-                      <span className="text-sm text-muted-foreground">/ month</span>
+                      <span className="text-lg font-bold text-foreground">£397</span>
+                      <span className="text-sm text-muted-foreground">/ year</span>
+                      <span className="ml-2 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Save £407</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Full access to all deals · Cancel any time</p>
+                    <p className="text-xs text-muted-foreground mt-1">Everything + 2 months free</p>
+                  </button>
+                  <button onClick={() => { const url = getUpgradeUrl('lifetime', { email: user?.email }); if (url) window.open(url, '_blank'); }}
+                    className="block w-full text-left rounded-xl border border-border p-4 hover:bg-secondary/50 transition-colors">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-lg font-bold text-foreground">£997</span>
+                      <span className="text-sm text-muted-foreground">one-time</span>
+                      <span className="ml-2 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Best value</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Everything forever + priority support</p>
                   </button>
                 </div>
               )}
