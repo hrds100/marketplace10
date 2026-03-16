@@ -250,13 +250,19 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           mask_type: maskType,
           landlord_id: thread.landlordId ?? null,
           operator_id: thread.operatorId ?? null,
+          // WhatsApp notification fields — other party's contact + property label for templates
+          recipient_phone: thread.contactPhone,
+          recipient_name: thread.contactName,
+          property_label: thread.propertyCity || thread.propertyTitle,
         });
-        // Determine which webhook to fire based on sender role + message count
+        // Determine which webhook to fire based on sender role.
+        // nfstay_new_inquiry template is Pending (Meta-blocked) — use inbox-new-message
+        // for ALL operator→landlord flows (first message and subsequent messages).
         let endpoint: string;
         if (isLandlord) {
           endpoint = '/webhook/inbox-landlord-replied';
         } else {
-          endpoint = isFirstMessage ? '/webhook/inbox-new-inquiry' : '/webhook/inbox-new-message';
+          endpoint = '/webhook/inbox-new-message';
         }
         fetch(`${n8nBase}${endpoint}`, {
           method: 'POST',
