@@ -78,6 +78,26 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     }, 1000);
   }, [handleClose, user, paymentComplete, onUnlocked]);
 
+  // Fallback poll: every 3 s while the sheet is open, check if tier changed in DB.
+  // Handles the case where GHL's iframe never fires a postMessage and cross-origin
+  // blocks reading the thank-you URL — but n8n already wrote the paid tier.
+  useEffect(() => {
+    if (!open || !user?.id || paymentComplete) return;
+    const id = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('tier')
+          .eq('id', user.id)
+          .single();
+        if (data?.tier && data.tier !== 'free') {
+          handlePaymentSuccess();
+        }
+      } catch { /* ignore */ }
+    }, 3000);
+    return () => clearInterval(id);
+  }, [open, user?.id, paymentComplete, handlePaymentSuccess]);
+
   // postMessage listener
   useEffect(() => {
     if (!open) return;

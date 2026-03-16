@@ -435,7 +435,12 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       {isCurrentUserOperator && (
         <PaymentSheet
           open={paymentSheetOpen}
-          onOpenChange={setPaymentSheetOpen}
+          onOpenChange={(v) => {
+            setPaymentSheetOpen(v);
+            // Refresh tier on every close (manual X or success) so stale paid=false
+            // never blocks Send after a completed payment.
+            if (!v) refreshTier();
+          }}
           onUnlocked={() => {
             setPaymentSheetOpen(false);
             refreshTier();
