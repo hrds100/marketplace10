@@ -28,6 +28,7 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
   const [editCategory, setEditCategory] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   const loadReplies = useCallback(async () => {
     if (!user?.id) { setLoading(false); return; }
@@ -103,8 +104,6 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
     setReplies(prev => prev.filter(r => !(r.id === editingId && r.id.startsWith('local-'))));
     setEditingId(null);
   };
-
-  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   const addNew = () => {
     const newId = `local-${Date.now()}`;
