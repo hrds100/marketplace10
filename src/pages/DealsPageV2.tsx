@@ -206,7 +206,7 @@ export default function DealsPageV2() {
 
         {/* Skeleton loading */}
         {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-card rounded-2xl overflow-hidden animate-pulse">
                 <div className="h-44 bg-muted" />
@@ -233,7 +233,7 @@ export default function DealsPageV2() {
 
         {/* Main grid — 2 col (map takes right space) */}
         {!isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {pageListings.map(l => (
               <PropertyCardV2
                 key={l.id}
@@ -275,7 +275,7 @@ export default function DealsPageV2() {
       </div>
 
       {/* Right: sticky map panel — xl screens only */}
-      <div className="hidden xl:block w-[400px] flex-shrink-0 sticky top-8 h-[calc(100vh-8rem)] rounded-2xl overflow-hidden shadow-sm border border-border">
+      <div className="hidden lg:block w-80 xl:w-[400px] flex-shrink-0 sticky top-8 h-[calc(100vh-8rem)] rounded-2xl overflow-hidden shadow-sm border border-border">
         <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse rounded-2xl" />}>
           <DealsMap listings={mapListings} hoveredId={hoveredId} />
         </Suspense>
