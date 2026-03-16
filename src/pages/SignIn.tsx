@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const REMEMBER_KEY = 'nfstay_remember_email';
 
@@ -15,6 +16,17 @@ export default function SignIn() {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Redirect already-authenticated users away from the sign-in page
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        window.location.href = redirectTo
+          ? decodeURIComponent(redirectTo)
+          : '/dashboard/deals';
+      }
+    });
+  }, [redirectTo]);
 
   // Pre-fill email from localStorage
   useEffect(() => {
