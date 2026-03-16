@@ -234,10 +234,10 @@ export default function LandingPage() {
             <div className="bg-card rounded-2xl p-8 border-2 border-primary text-left relative">
               <span className="badge-green-fill">Full Access</span>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-foreground"> £4</span>
+                <span className="text-4xl font-extrabold text-foreground">£4</span>
                 <span className="text-muted-foreground text-sm">/ 3-day trial</span>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">Then  £97/Month after trial. Cancel any time.</p>
+              <p className="text-sm text-muted-foreground mt-2">Then £97/Month after trial. Cancel any time.</p>
               <p className="text-sm text-muted-foreground mt-1">Full access to everything. No restrictions.</p>
               <ul className="mt-6 space-y-3">
                 {['1,800+ verified deals', 'Priority deal alerts', 'Affiliate programme', 'Direct landlord contact', 'Full CRM access', 'Airbnb University', 'Earnings estimator', 'Cancel any time'].map((v) =>

@@ -64,7 +64,7 @@ N. Run npx tsc --noEmit. Fix all errors before committing.
 ACCEPTANCE SCENARIOS
 [copy relevant Given/When/Then blocks from docs/ACCEPTANCE.md]
 
-Success = [TypeScript zero errors; Section 9 report with VERIFICATION; acceptance scenarios hold]
+Success = [TypeScript zero errors; Section 11 report with VERIFICATION; acceptance scenarios hold]
 
 💡 What to expect: [result description + how Hugo verifies in under 2 minutes]
 ```
@@ -86,8 +86,8 @@ Then follow with 2–3 plain-English sentences: what the prompt will do, what wi
 Claude then:
 1. Reads all docs listed in the refined prompt.
 2. Runs the Section 3 execution protocol.
-3. Follows all hard rules in Section 15.
-4. Outputs the Section 9 report.
+3. Follows all hard rules in Section 17.
+4. Outputs the Section 11 report.
 
 ---
 
@@ -132,7 +132,7 @@ For every bug report or "X not working" task:
 4. **Fix** — implement only what addresses that root cause.
 5. **Verify** — confirm the fix works before marking DONE.
 
-The Section 9 report **must** include `ROOT CAUSE:` for every bug task. No guess-and-fix.
+The Section 11 report **must** include `ROOT CAUSE:` for every bug task. No guess-and-fix.
 
 Read `docs/runbooks/DIAGNOSE_BEFORE_FIX.md` for the full checklist.
 
@@ -170,7 +170,103 @@ Every execution prompt **must**:
 
 ---
 
-## 6. DETERMINISTIC SAFETY GATES
+## 6. HUGO INTERACTION PROTOCOL
+
+**Claude must assume Hugo is not a developer.**
+
+Hugo runs a business. Claude runs the technical work. Every interaction must reflect this.
+
+### Communication rules
+
+- Explain things as if talking to a smart 15-year-old — no jargon, no acronyms without explanation.
+- Never dump walls of code or config at Hugo without a plain-English summary first.
+- When something goes wrong, say what broke, why, and what Claude is doing to fix it — in one sentence each.
+- When Hugo must do something manually, make it impossible to get wrong (see format below).
+
+### Task execution priority
+
+Claude must always attempt tasks in this order:
+
+1. **Do it automatically** — terminal commands, GitHub API, Vercel API, Supabase API, n8n API, GHL API, CLI tools.
+2. **Ask for credentials** — if an API key or token is needed that Claude doesn't have, ask Hugo for it with a single clear sentence explaining what it's for. Save it to memory immediately.
+3. **Give manual instructions** — only if the task is 100% impossible to automate (e.g. a UI-only operation with no API). Use the format below.
+
+### When Hugo must do something manually
+
+Use this exact format — no exceptions:
+
+```
+📋 I need you to do one thing:
+
+Step 1 — Go to [exact URL or app name]
+Step 2 — Click [exact button/menu name]
+Step 3 — Paste this exactly: [value]
+Step 4 — Click [confirm button]
+
+That's it. Come back and tell me when done.
+```
+
+Never assume Hugo knows what a terminal is, what an API is, or how any dashboard works.
+
+### Response length
+
+- Task done with no Hugo action needed → 3–5 lines max. Short. Done.
+- Hugo must do something → explain what Claude did, then the numbered steps, nothing else.
+- Never pad responses with "Great news!", "As you can see", or similar filler.
+
+---
+
+## 7. FEATURE BRANCH + PREVIEW WORKFLOW
+
+**Claude never works directly on main. No exceptions.**
+
+### Branch rules
+
+1. Every task gets a feature branch. Claude creates it if it doesn't exist.
+2. Branch naming: `feat/[short-description]`, `fix/[short-description]`, `docs/[short-description]`
+3. All commits go to the feature branch — never to main.
+4. The same branch is used for all iterations of a task until Hugo says **"merge to main"** or **"ship to production"**.
+5. Claude merges to main only on explicit instruction from Hugo.
+
+### After every push — mandatory preview status report
+
+After every `git push`, Claude must output this block before anything else:
+
+```
+🌿 BRANCH:   feat/[branch-name]
+📦 COMMIT:   [short hash] — [commit message]
+🔁 CI:       running → github.com/hrds100/marketplace10/actions
+🔗 PREVIEW:  https://marketplace10-git-[branch-name]-hugos-projects-f8cc36a8.vercel.app
+```
+
+Hugo uses the preview URL to test. Claude does not merge until Hugo confirms the preview looks correct.
+
+### Preview URL format
+
+Vercel generates preview URLs automatically for every branch push:
+
+```
+https://marketplace10-git-[branch-name]-hugos-projects-f8cc36a8.vercel.app
+```
+
+Dashes replace slashes in branch names (e.g. `feat/inbox-fix` → `feat-inbox-fix`).
+
+The exact URL is also posted by the Vercel bot as a comment on the GitHub PR within ~60 seconds of pushing.
+
+### Merge to main
+
+Hugo says **"merge to main"** or **"ship to production"** →
+Claude:
+1. Confirms CI is green on the branch.
+2. Creates a PR via GitHub API.
+3. Merges the PR via GitHub API.
+4. Reports the production URL: `hub.nfstay.com`
+
+Hugo never touches git or GitHub directly.
+
+---
+
+## 8. DETERMINISTIC SAFETY GATES
 
 **Prompts alone are not sufficient.**
 
@@ -200,7 +296,7 @@ Claude generates correct execution prompts. CI confirms they are correct. If CI 
 
 ---
 
-## 7. REQUIRED CI CHECKS
+## 9. REQUIRED CI CHECKS
 
 All pull requests must pass before merging:
 
@@ -222,7 +318,7 @@ When a CI check fails after Phase 2 execution:
 
 ---
 
-## 8. DEPLOY SAFETY
+## 10. DEPLOY SAFETY
 
 Every production change follows this path:
 
@@ -232,9 +328,9 @@ IDEA / TASK
 → Phase 2 Execution Prompt
 → Feature Branch Implementation
 → CI Verification (TypeScript + tests + lint)
-→ PR Review
-→ Preview Deploy (Vercel auto-preview on PR)
-→ Production Promotion (merge to main → auto-deploy)
+→ Preview Deploy (Vercel auto-preview — Hugo tests here)
+→ Hugo approves preview
+→ Production Promotion (Claude merges PR → hub.nfstay.com updates)
 → Health Monitoring (UptimeRobot + Sentry)
 ```
 
@@ -249,11 +345,9 @@ IDEA / TASK
 | NDA signing | Landlord → Sign NDA modal → terms_accepted flips to true |
 | Admin audit log | Any admin action → row written to admin_audit_log |
 
-**Automated smoke tests** run after every preview deploy (Playwright / Vitest when configured). Until automated, Hugo's manual checklist above is the minimum.
-
 ---
 
-## 9. RESPONSE FORMAT
+## 11. RESPONSE FORMAT
 
 ### Phase 1 output (prompt refinement)
 
@@ -268,28 +362,36 @@ IDEA / TASK
 
 ### Phase 2 output (execution report)
 
-Every completed task must output this report, wrapped in a single fenced code block (copy-paste ready):
+Every completed task must output this report:
 
-````
 ```
-✅ DONE: [one sentence]
-🔍 ROOT CAUSE: [bug tasks only — one sentence. Omit for feature work.]
-📁 FILES CHANGED: [list]
-🧪 TESTS: [pass/fail + names]
-✅ VERIFICATION: [Either "I ran [steps] and confirmed [result]." OR "Hugo should verify: 1. … 2. … 3. …"]
+✅ WHAT WAS DONE
+[one plain-English sentence — no jargon]
+
+🌿 BRANCH:   [branch name]
+📦 COMMIT:   [short hash] — [message]
+🔁 CI:       running → github.com/hrds100/marketplace10/actions
+🔗 PREVIEW:  https://marketplace10-git-[branch]-hugos-projects-f8cc36a8.vercel.app
+
+👀 WHAT TO CHECK ON THE PREVIEW
+[1–3 bullet points — what Hugo should click/test in plain English]
+
+📋 IF HUGO MUST DO SOMETHING
+[numbered steps in simple language, OR "Nothing — Claude handled everything."]
+
 ⚠️ ISSUES: [anything for Hugo, or "None"]
 🔑 ENV VARS NEEDED: [new Vercel vars, or "None"]
-📋 NEXT STEP: [one sentence]
 ```
-````
 
-No content outside the code block. One block. Copy-paste ready.
-
-**When handing back to Hugo:** Short, simple English. Use emojis. If Hugo must do something, give a copy-paste block and name the doc to read. Numbered steps. No jargon.
+**Rules:**
+- Preview URL is mandatory on every response that includes a push. No exceptions.
+- "What to check" must be written as if explaining to someone who has never used the app before.
+- "If Hugo must do something" uses the Section 6 manual step format.
+- ROOT CAUSE line added for bug tasks only, immediately after WHAT WAS DONE.
 
 ---
 
-## 10. STYLE
+## 12. STYLE
 
 ### Phase 1 — Orchestrator voice
 
@@ -310,7 +412,7 @@ No content outside the code block. One block. Copy-paste ready.
 
 ---
 
-## 11. HOTKEY HEADER
+## 13. HOTKEY HEADER
 
 > The hotkey header Hugo uses is intentionally minimal.
 > All operational rules live in this document.
@@ -330,7 +432,7 @@ If a prompt arrives that looks like a direct execution request (no prior Phase 1
 
 ---
 
-## 12. PROJECT REFERENCE
+## 14. PROJECT REFERENCE
 
 | Item | Value |
 |------|-------|
@@ -350,7 +452,7 @@ If a prompt arrives that looks like a direct execution request (no prior Phase 1
 
 ---
 
-## 13. ENV VARS
+## 15. ENV VARS
 
 All set in **Vercel → hugos-projects-f8cc36a8 → marketplace10 → Settings → Environment Variables**.
 
@@ -367,7 +469,7 @@ Supabase Edge Function secrets (via `npx supabase secrets set`): `RESEND_API_KEY
 
 ---
 
-## 14. MCP TOOLS
+## 16. MCP TOOLS
 
 Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
@@ -382,33 +484,35 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
 ---
 
-## 15. HARD RULES
+## 17. HARD RULES
 
 1. **Zero TypeScript errors always.** Run `tsc --noEmit` before AND after every change.
-2. **Never hardcode API keys or secrets.** Env vars only. See Section 13.
+2. **Never hardcode API keys or secrets.** Env vars only. See Section 15.
 3. **Never use `as any`** unless table is missing from generated types — comment why.
 4. **Never delete or modify existing tests** unless explicitly told.
 5. **Never add unrequested features.** Do only what is asked.
-6. **Never push to main** without TypeScript + tests passing.
-7. **Destructive actions** (delete, drop, force push, rm -rf): **STOP and ask Hugo.**
-8. **Keep code minimal.** No extra abstractions, no over-engineering.
-9. **Never speculate about unread code.** Open the file first.
-10. **If unclear: ask ONE specific question.** Never guess.
-11. **API-first.** Check if an existing utility or external API handles the need before writing custom code.
-12. **External API discipline.** Every fetch to n8n/Pexels/GHL must use AbortController timeout + try/catch + fallback state. Never block UI on external failure.
-13. **RLS safety.** Never write a Supabase mutation without confirming an RLS policy covers the operation. If unsure, check with Hugo.
-14. **Null safety.** Never assume data exists. Guard every DB response before accessing properties.
-15. **Feature completeness.** No half-built UI. Empty states, loading states, and error states must all exist before a feature ships.
-16. **Admin auditability.** Any admin action that modifies, creates, or deletes data must write a row to `admin_audit_log`. Console.log alone is not sufficient.
-17. **Hugo never does terminal work.** Claude handles ALL terminal commands, migrations, and CLI operations. Prefer MCP tools. If a terminal command is unavoidable, Claude runs it.
-18. **Always update `docs/STACK.md`** when adding any new service, tool, library, or integration. Same commit. No exceptions.
-19. **Hugo never navigates third-party dashboards manually.** Claude must attempt API/MCP execution first. Only ask Hugo to click if 100% impossible via API. If unavoidable, give exact click-by-click instructions.
-20. **Verification required before DONE.** Either Claude ran the flow and reported what they saw, or Claude provided Hugo a short verification checklist. Report must include VERIFICATION. Do not mark DONE without it.
-21. **Bugs: diagnose before fix.** Identify root cause before writing a fix. Report must include ROOT CAUSE. No guess-and-fix. See Section 3e.
+6. **Never push to main directly.** All work goes on a feature branch. See Section 7.
+7. **Always return the preview URL after every push.** No exceptions. See Section 7.
+8. **Destructive actions** (delete, drop, force push, rm -rf): **STOP and ask Hugo.**
+9. **Keep code minimal.** No extra abstractions, no over-engineering.
+10. **Never speculate about unread code.** Open the file first.
+11. **If unclear: ask ONE specific question.** Never guess.
+12. **API-first.** Check if an existing utility or external API handles the need before writing custom code.
+13. **External API discipline.** Every fetch to n8n/Pexels/GHL must use AbortController timeout + try/catch + fallback state. Never block UI on external failure.
+14. **RLS safety.** Never write a Supabase mutation without confirming an RLS policy covers the operation. If unsure, check with Hugo.
+15. **Null safety.** Never assume data exists. Guard every DB response before accessing properties.
+16. **Feature completeness.** No half-built UI. Empty states, loading states, and error states must all exist before a feature ships.
+17. **Admin auditability.** Any admin action that modifies, creates, or deletes data must write a row to `admin_audit_log`. Console.log alone is not sufficient.
+18. **Hugo never does terminal work.** Claude handles ALL terminal commands, migrations, and CLI operations. Prefer MCP tools. If a terminal command is unavoidable, Claude runs it.
+19. **Always update `docs/STACK.md`** when adding any new service, tool, library, or integration. Same commit. No exceptions.
+20. **Hugo never navigates third-party dashboards manually.** Claude must attempt API/MCP execution first. If unavoidable, give exact step-by-step instructions using the Section 6 format.
+21. **Verification required before DONE.** Report must include VERIFICATION. Do not mark DONE without it.
+22. **Bugs: diagnose before fix.** Report must include ROOT CAUSE. No guess-and-fix. See Section 3e.
+23. **Always try to access tools before asking Hugo.** GitHub API, Vercel API, Supabase API, n8n API, GHL API — attempt access first. If credentials are missing, ask Hugo for them with a single clear sentence, then save them to memory.
 
 ---
 
-## 16. UI DESIGN STANDARDS
+## 18. UI DESIGN STANDARDS
 
 - **Reference:** Airbnb, Uber, Linear, Vercel dashboard — clean, minimal, confident
 - **Spacing:** consistent 4px/8px grid, never arbitrary margins
@@ -423,13 +527,14 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
 ---
 
-## 17. SAFETY CHECKS
+## 19. SAFETY CHECKS
 
 | Action | Rule |
 |--------|------|
 | Local file edits | Safe — proceed |
-| Git commit | Safe — proceed |
-| Git push to main | TypeScript + tests must pass first |
+| Git commit to feature branch | Safe — proceed |
+| Git push to feature branch | Safe — proceed (always include preview URL after) |
+| Git push to main | Never directly — use PR via GitHub API |
 | DB schema changes | Show Hugo the SQL before running |
 | DB data deletion | Ask Hugo first |
 | Force push / reset --hard | Ask Hugo first |
@@ -437,9 +542,9 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
 ---
 
-## 18. THIRD-PARTY PLATFORM REFERENCE
+## 20. THIRD-PARTY PLATFORM REFERENCE
 
-When any task involves a third-party platform, Claude MUST attempt API/MCP execution first (Hard Rule 19). If a manual UI step is truly unavoidable, use the exact paths below.
+When any task involves a third-party platform, Claude MUST attempt API/MCP execution first (Hard Rule 20). If a manual UI step is truly unavoidable, use the Section 6 manual step format and the exact paths below.
 
 ### GoHighLevel (GHL)
 - **Add automation webhook:** GHL → Automations → Workflows → + New Workflow → Start from Scratch → Add Trigger → "Order Submitted" → Add Action → "Custom Webhook" → paste URL → Publish

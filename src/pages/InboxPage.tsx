@@ -215,7 +215,7 @@ export default function InboxPage() {
     let intervalId: ReturnType<typeof setInterval> | null = null;
     const start = () => { if (!intervalId) intervalId = setInterval(loadThreads, 6000); };
     const stop = () => { if (intervalId) { clearInterval(intervalId); intervalId = null; } };
-    const onVis = () => { document.visibilityState === 'visible' ? start() : stop(); };
+    const onVis = () => { if (document.visibilityState === 'visible') start(); else stop(); };
     if (document.visibilityState === 'visible') start();
     document.addEventListener('visibilitychange', onVis);
     return () => { stop(); document.removeEventListener('visibilitychange', onVis); };

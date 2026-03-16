@@ -31,7 +31,7 @@ function loadProgress(): UniversityProgress {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch { /* ignore localStorage parse errors */ }
   return { ...defaultProgress };
 }
 
@@ -242,9 +242,9 @@ export function useUniversityProgress() {
 
       // Check if module is complete
       const mod = allModules.find(m => m.id === moduleId);
-      let newModules = { ...p.completedModules };
+      const newModules = { ...p.completedModules };
       let bonusXP = 80;
-      let newAchievements = [...p.achievementsUnlocked];
+      const newAchievements = [...p.achievementsUnlocked];
 
       if (mod) {
         const allLessonsDone = mod.lessons.every(l => newLessons[`${moduleId}:${l.id}`]);
