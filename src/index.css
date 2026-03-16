@@ -223,6 +223,12 @@
   }
 }
 
+/* Quick Replies modal open animation */
+@keyframes fadeScaleIn {
+  from { opacity: 0; transform: translateX(-50%) scale(0.97); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
 /* Custom range slider — premium green thumb */
 input[type='range'] {
   -webkit-appearance: none;

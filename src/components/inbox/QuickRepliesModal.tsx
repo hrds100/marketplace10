@@ -123,7 +123,7 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
   };
 
   return (
-    <div className="absolute bottom-16 left-4 right-4 z-30 bg-white border border-gray-200 rounded-2xl shadow-xl max-h-[400px] overflow-y-auto">
+    <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-full max-w-sm z-30 bg-white border border-gray-200 rounded-2xl shadow-xl max-h-[400px] overflow-y-auto transition-all duration-200" style={{ animation: 'fadeScaleIn 200ms ease-out' }}>
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 sticky top-0 bg-white z-10">
         <h3 className="text-sm font-bold text-gray-900">Quick Replies</h3>
         <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-50"><X className="w-4 h-4 text-gray-400" /></button>
