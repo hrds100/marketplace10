@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, Settings, PanelLeftOpen } from 'lucide-react';
+import { Search, Settings, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import type { Thread } from './types';
 import ThreadItem from './ThreadItem';
 
@@ -11,9 +11,10 @@ interface Props {
   onArchive?: (id: string) => void;
   isCollapsed?: boolean;
   onExpand?: () => void;
+  onCollapse?: () => void;
 }
 
-export default function ThreadList({ threads, selectedId, onSelect, onOpenSettings, onArchive, isCollapsed, onExpand }: Props) {
+export default function ThreadList({ threads, selectedId, onSelect, onOpenSettings, onArchive, isCollapsed, onExpand, onCollapse }: Props) {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -69,7 +70,14 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
           </div>
         ) : (
           <>
-            <h2 className="text-lg font-bold text-foreground">Messages</h2>
+            <div className="flex items-center gap-1">
+              {onCollapse && (
+                <button className="p-1.5 rounded-lg hover:bg-secondary transition-colors" onClick={onCollapse} title="Collapse">
+                  <PanelLeftClose className="w-4 h-4 text-muted-foreground" />
+                </button>
+              )}
+              <h2 className="text-lg font-bold text-foreground">Messages</h2>
+            </div>
             <div className="flex items-center gap-1">
               <button className="p-2 rounded-lg hover:bg-secondary transition-colors" onClick={() => setSearchOpen(true)}>
                 <Search className="w-4 h-4 text-muted-foreground" />

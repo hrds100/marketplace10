@@ -10,6 +10,7 @@ import AgreementModal from '@/components/inbox/AgreementModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useInquiry } from '@/hooks/useInquiry';
+import { useDashboardContext } from '@/layouts/DashboardLayout';
 import type { Thread } from '@/components/inbox/types';
 
 const SUPPORT_THREAD: Thread = {
@@ -39,6 +40,7 @@ const SUPPORT_THREAD: Thread = {
 
 export default function InboxPage() {
   const { user } = useAuth();
+  const dashCtx = useDashboardContext();
   const [dbThreads, setDbThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,12 +64,13 @@ export default function InboxPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
 
-  // Auto-select thread from Inquire Now — collapse panels for focused inquiry entry
+  // Auto-select thread from Inquire Now — collapse ALL panels for focused inquiry entry
   useEffect(() => {
     if (inquiryThreadId) {
       setSelectedId(inquiryThreadId);
-      setShowDetails(false); // Right panel collapsed on inquiry entry
-      setLeftPanelCollapsed(true); // Left panel collapsed on inquiry entry
+      setShowDetails(false);
+      setLeftPanelCollapsed(true);
+      dashCtx?.setSidebarCollapsed(true); // Collapse NFsTay sidebar rail
       loadThreads();
     }
   }, [inquiryThreadId]);
@@ -316,7 +319,7 @@ export default function InboxPage() {
   return (
     <div className="h-full w-full flex overflow-hidden flex-1">
       <div className={`shrink-0 ${leftPanelCollapsed ? 'w-14' : 'w-[320px]'} transition-all duration-200`}>
-        <ThreadList threads={allThreads} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} onArchive={handleArchiveThread} isCollapsed={leftPanelCollapsed} onExpand={() => setLeftPanelCollapsed(false)} />
+        <ThreadList threads={allThreads} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} onArchive={handleArchiveThread} isCollapsed={leftPanelCollapsed} onExpand={() => setLeftPanelCollapsed(false)} onCollapse={() => setLeftPanelCollapsed(true)} />
       </div>
       <div className="flex-1 min-w-0">
         {selectedThread ? (
