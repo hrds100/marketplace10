@@ -62,6 +62,17 @@ After deploy, the admin button works immediately. No extra DB wiring needed — 
 
 ---
 
+### Troubleshooting
+
+If the button still fails:
+- **Supabase Dashboard** → Edge Functions → confirm `reset-for-testing` exists and shows a recent deployment timestamp
+- **Vercel env** → confirm `VITE_SUPABASE_URL` points to the same Supabase project (`asazddtvjvmckouxcmmo`)
+- **Browser DevTools** → Network tab → click "Yes, reset everything" → find the request to `.../functions/v1/reset-for-testing` → note the status code and response body
+- **403 Forbidden** = your logged-in email is not in the admin list (`admin@hub.nfstay.com` or `hugo@nfstay.com`)
+- **CORS error** = function needs redeploying (run `npx supabase functions deploy reset-for-testing`)
+
+---
+
 ## After running
 
 - Every user's inbox is empty (only NFsTay Support thread remains — hardcoded)

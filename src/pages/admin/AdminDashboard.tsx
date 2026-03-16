@@ -36,19 +36,24 @@ export default function AdminDashboard() {
     setResetting(true);
     try {
       const { data, error } = await supabase.functions.invoke('reset-for-testing', { method: 'POST' });
-      if (error) throw new Error(error.message || 'Edge function error');
-      if (data?.error) throw new Error(data.error);
+      if (error) {
+        console.error('[Reset] Invoke error:', error);
+        throw new Error(error.message || JSON.stringify(error));
+      }
+      if (data?.error) {
+        console.error('[Reset] Function returned error:', data.error);
+        throw new Error(data.error);
+      }
       if (user?.id) {
         logAdminAction(user.id, { action: 'reset_all_for_testing', target_table: 'multiple', target_id: 'n/a', metadata: {} });
       }
       toast.success('Reset complete. All inbox and tier data cleared.');
       setShowResetDialog(false);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error';
-      const isNotDeployed = msg.includes('Failed to send') || msg.includes('Failed to fetch') || msg.includes('not found');
-      toast.error(isNotDeployed
-        ? 'Reset failed: the Edge Function may not be deployed. See docs/runbooks/RESET_ALL_FOR_TESTING.md to deploy it once.'
-        : `Reset failed: ${msg}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      const truncated = msg.length > 200 ? msg.slice(0, 200) + '…' : msg;
+      console.error('[Reset] Full error:', err);
+      toast.error(`Reset failed: ${truncated}`);
     } finally {
       setResetting(false);
     }
