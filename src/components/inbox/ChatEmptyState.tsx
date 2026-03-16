@@ -1,53 +1,53 @@
-import { MessageSquare } from 'lucide-react';
-
-const STARTERS = [
-  "I'm really interested in this property. Is it still available?",
-  'Can you confirm the monthly rent and move-in date?',
-  'Is this property approved for serviced accommodation?',
-  'Can I arrange a viewing for this property?',
-  "Could you tell me what's included in the rent?",
-  "I'd love to move forward — what are the next steps?",
-];
+import { ChevronRight } from 'lucide-react';
+import type { Thread } from './types';
 
 interface Props {
-  propertyTitle: string;
-  onSelectStarter: (text: string) => void;
+  thread: Thread;
+  onOpenDetails: () => void;
 }
 
-export default function ChatEmptyState({ propertyTitle, onSelectStarter }: Props) {
+export default function ChatEmptyState({ thread, onOpenDetails }: Props) {
+  const fallbackImage = `https://picsum.photos/seed/${thread.id.slice(0, 8)}/120/120`;
+  const propertyLine = [
+    thread.propertyBedrooms ? `${thread.propertyBedrooms}-bedroom` : null,
+    thread.dealType || null,
+    thread.propertyCity,
+    thread.propertyPostcode ? `· ${thread.propertyPostcode}` : null,
+  ].filter(Boolean).join(', ').replace(', ·', ' ·') || thread.propertyTitle;
+
   return (
-    <div className="h-full flex flex-col items-center justify-center px-6 py-10 gap-6">
-      <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center">
-        <MessageSquare className="w-6 h-6 text-emerald-500" />
-      </div>
-
-      <div className="text-center">
-        <h3 className="text-xl font-semibold text-gray-900">Start the conversation</h3>
-        <p className="text-sm text-gray-400 mt-1.5 max-w-xs mx-auto">
-          Send a message and the landlord or agent will be notified instantly.
-        </p>
-      </div>
-
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 shadow-sm">
-        <p className="text-sm text-gray-400 italic text-center">
-          Ask about availability, rent, viewings, or serviced accommodation terms...
-        </p>
-      </div>
-
-      <div className="w-full max-w-md">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center mb-3">Quick starters</p>
-        <div className="space-y-2">
-          {STARTERS.map(text => (
-            <button
-              key={text}
-              onClick={() => onSelectStarter(text)}
-              className="w-full text-left px-4 py-2.5 rounded-xl border border-gray-100 bg-white text-sm text-gray-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all duration-150 shadow-sm"
-            >
-              {text}
-            </button>
-          ))}
+    <div className="h-full flex flex-col items-center justify-center px-6 py-10 gap-5">
+      {/* Property image with live dot */}
+      <div className="relative">
+        <div className="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden shadow-sm">
+          <img
+            src={thread.propertyImage || fallbackImage}
+            alt=""
+            className="w-full h-full object-cover"
+            onError={e => { (e.target as HTMLImageElement).src = fallbackImage; }}
+          />
         </div>
+        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
       </div>
+
+      {/* Property row — clickable, opens right panel */}
+      <button
+        onClick={onOpenDetails}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors max-w-sm"
+      >
+        <span className="truncate">{propertyLine}</span>
+        <ChevronRight className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+      </button>
+
+      {/* Headline */}
+      <h2 className="text-2xl font-semibold text-gray-900 text-center max-w-sm leading-snug">
+        Inquire about this property below
+      </h2>
+
+      {/* Supporting copy */}
+      <p className="text-sm text-muted-foreground text-center max-w-xs">
+        Message the landlord or agent and ask what matters first.
+      </p>
     </div>
   );
 }

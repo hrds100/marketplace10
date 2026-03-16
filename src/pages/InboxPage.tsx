@@ -60,12 +60,14 @@ export default function InboxPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showNDAModal, setShowNDAModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
 
-  // Auto-select thread from Inquire Now
+  // Auto-select thread from Inquire Now — collapse panels for focused inquiry entry
   useEffect(() => {
     if (inquiryThreadId) {
       setSelectedId(inquiryThreadId);
-      setShowDetails(true);
+      setShowDetails(false); // Right panel collapsed on inquiry entry
+      setLeftPanelCollapsed(true); // Left panel collapsed on inquiry entry
       loadThreads();
     }
   }, [inquiryThreadId]);
@@ -297,7 +299,7 @@ export default function InboxPage() {
     if (selectedId && selectedThread) {
       return (
         <div className="h-[calc(100vh-60px)]">
-          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={showDetails} isMobile onOpenNDA={() => setShowNDAModal(true)} />
+          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={showDetails} isMobile onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => setShowDetails(true)} />
         </div>
       );
     }
@@ -313,12 +315,12 @@ export default function InboxPage() {
 
   return (
     <div className="h-full w-full flex overflow-hidden flex-1">
-      <div className="w-[320px] shrink-0">
-        <ThreadList threads={allThreads} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} onArchive={handleArchiveThread} />
+      <div className={`shrink-0 ${leftPanelCollapsed ? 'w-14' : 'w-[320px]'} transition-all duration-200`}>
+        <ThreadList threads={allThreads} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} onArchive={handleArchiveThread} isCollapsed={leftPanelCollapsed} onExpand={() => setLeftPanelCollapsed(false)} />
       </div>
       <div className="flex-1 min-w-0">
         {selectedThread ? (
-          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={!!showRightPanel} isMobile={false} onOpenNDA={() => setShowNDAModal(true)} />
+          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={!!showRightPanel} isMobile={false} onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => setShowDetails(true)} />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center bg-white">
             <MessageSquare className="w-12 h-12 text-gray-300 mb-4" />

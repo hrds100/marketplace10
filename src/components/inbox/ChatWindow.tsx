@@ -51,9 +51,10 @@ interface Props {
   showDetailsOpen: boolean;
   isMobile: boolean;
   onOpenNDA?: () => void;
+  onOpenDetails?: () => void;
 }
 
-export default function ChatWindow({ thread, onBack, onToggleDetails, showDetailsOpen, isMobile, onOpenNDA }: Props) {
+export default function ChatWindow({ thread, onBack, onToggleDetails, showDetailsOpen, isMobile, onOpenNDA, onOpenDetails }: Props) {
   const { user } = useAuth();
   const { tier, loading: tierLoading, refreshTier } = useUserTier();
   const paid = isPaidTier(tier);
@@ -70,9 +71,24 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
   const [hasExistingMessages, setHasExistingMessages] = useState(false);
+  const [hasAttemptedSend, setHasAttemptedSend] = useState(false);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const initialMsgLoadDone = useRef(false);
+
+  // Animated placeholder rotation for empty-state composer
+  const PLACEHOLDERS = [
+    'Ask the landlord about viewings…',
+    'Ask the landlord about monthly rent…',
+    'Ask the landlord about move-in dates…',
+    'Ask the landlord about serviced accommodation terms…',
+  ];
+  useEffect(() => {
+    if (hasExistingMessages || thread.isSupport) return;
+    const id = setInterval(() => setPlaceholderIdx(p => (p + 1) % PLACEHOLDERS.length), 3500);
+    return () => clearInterval(id);
+  }, [hasExistingMessages, thread.isSupport]);
 
   // Map DB row to Message
   const mapRow = useCallback((row: Record<string, unknown>, userId?: string): Message => {
@@ -167,7 +183,8 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
     if (!input.trim() || !user?.id) return;
     // Enforce payment gate: operator cannot send first message without paying
     if (isCurrentUserOperator && !paid && !hasExistingMessages) {
-      // Defensive: refetch tier in case it's stale, then open payment sheet
+      // Defensive: refetch tier, show payment strip, open sheet
+      setHasAttemptedSend(true);
       refreshTier();
       setPaymentSheetOpen(true);
       return;
@@ -256,18 +273,14 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      // Free operator on new thread → open payment instead of sending
+      // Free operator on new thread → show payment strip + open sheet
       if (isCurrentUserOperator && !paid && !hasExistingMessages) {
+        setHasAttemptedSend(true);
         setPaymentSheetOpen(true);
         return;
       }
       handleSend();
     }
-  };
-
-  const handleSelectStarter = (text: string) => {
-    setInput(text);
-    inputRef.current?.focus();
   };
 
   const isEmpty = !loading && messages.length === 0;
@@ -320,7 +333,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
             ))}
           </div>
         ) : isEmpty ? (
-          <ChatEmptyState propertyTitle={thread.propertyTitle} onSelectStarter={handleSelectStarter} />
+          <ChatEmptyState thread={thread} onOpenDetails={() => onOpenDetails?.()} />
         ) : (
           <div className="px-4 py-4">
             {grouped.map(group => (
@@ -348,8 +361,8 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         </div>
       )}
 
-      {/* OPERATOR PAYMENT GATE — visible only when operator + free tier + thread has no messages (hasExistingMessages false) */}
-      {isCurrentUserOperator && !paid && !hasExistingMessages && (
+      {/* OPERATOR PAYMENT GATE — visible only after send attempt (operator + free tier + no messages) */}
+      {isCurrentUserOperator && !paid && !hasExistingMessages && hasAttemptedSend && (
         <div className="flex items-center justify-between bg-amber-50 border-t border-amber-200 px-4 py-3 shrink-0">
           <div className="flex items-center gap-2 text-sm text-amber-800">
             <LockKeyhole className="h-4 w-4 shrink-0" />
@@ -381,9 +394,9 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           <>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
-            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
-              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px]" style={{ minHeight: 36 }} />
-            <button onClick={() => setPaymentSheetOpen(true)}
+            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={isEmpty ? PLACEHOLDERS[placeholderIdx] : 'Write a message...'} rows={1}
+              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] transition-all" style={{ minHeight: 36 }} />
+            <button onClick={() => { setHasAttemptedSend(true); setPaymentSheetOpen(true); }}
               className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
               <Send className="w-5 h-5" />
             </button>
@@ -393,8 +406,8 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           <>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
-            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
-              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px]" style={{ minHeight: 36 }} />
+            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={isEmpty ? PLACEHOLDERS[placeholderIdx] : 'Write a message...'} rows={1}
+              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] transition-all" style={{ minHeight: 36 }} />
             <button onClick={handleSend} disabled={!input.trim()}
               className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
               <Send className="w-5 h-5" />

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, Settings } from 'lucide-react';
+import { Search, Settings, PanelLeftOpen } from 'lucide-react';
 import type { Thread } from './types';
 import ThreadItem from './ThreadItem';
 
@@ -9,9 +9,11 @@ interface Props {
   onSelect: (id: string) => void;
   onOpenSettings: () => void;
   onArchive?: (id: string) => void;
+  isCollapsed?: boolean;
+  onExpand?: () => void;
 }
 
-export default function ThreadList({ threads, selectedId, onSelect, onOpenSettings, onArchive }: Props) {
+export default function ThreadList({ threads, selectedId, onSelect, onOpenSettings, onArchive, isCollapsed, onExpand }: Props) {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -37,6 +39,17 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
 
   const supportThreads = filtered.filter(t => t.isSupport);
   const regularThreads = filtered.filter(t => !t.isSupport);
+
+  // Collapsed rail mode — narrow sidebar with expand button
+  if (isCollapsed) {
+    return (
+      <div className="h-full flex flex-col items-center bg-white border-r border-border py-4 w-14">
+        <button onClick={onExpand} className="p-2 rounded-lg hover:bg-secondary transition-colors" title="Expand messages">
+          <PanelLeftOpen className="w-5 h-5 text-muted-foreground" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-white border-r border-border">
