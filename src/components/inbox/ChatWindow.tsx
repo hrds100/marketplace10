@@ -212,6 +212,9 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       });
       if (error) throw error;
 
+      // Auto-expand right details panel on first message sent
+      if (isFirstMessage) onOpenDetails?.();
+
       // n8n webhooks — fire-and-forget after DB success
       const n8nBase = (import.meta.env.VITE_N8N_WEBHOOK_URL || '').replace(/\/$/, '');
       if (n8nBase) {
@@ -273,7 +276,9 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
     }
   };
 
-  const isEmpty = !loading && messages.length === 0;
+  // Role-aware empty state: the "You could earn £X" promo shell is only for operators.
+  // Landlords/agents with 0 messages still need the NDA gate + composer — not the promo shell.
+  const showOperatorPreChat = !loading && messages.length === 0 && isCurrentUserOperator;
 
   // Group by date
   const grouped: { date: string; msgs: Message[] }[] = [];
@@ -323,7 +328,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
               </div>
             ))}
           </div>
-        ) : isEmpty ? (
+        ) : showOperatorPreChat ? (
           <ChatEmptyState
             thread={thread}
             onOpenDetails={() => onOpenDetails?.()}
@@ -367,8 +372,8 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       {/* Hidden file input for Plus/attach button */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) toast.info(`Selected: ${f.name} — image upload coming soon`); e.target.value = ''; }} />
 
-      {/* Bottom controls — hidden when empty state shows its own composer */}
-      {!isEmpty && <>
+      {/* Bottom controls — hidden when operator pre-chat empty state shows its own composer */}
+      {!showOperatorPreChat && <>
       {/* LANDLORD NDA GATE — landlord must sign NDA before replying */}
       {isCurrentUserLandlord && !thread.termsAccepted && (
         <div className="bg-amber-50 border-t border-amber-200 text-amber-800 text-xs px-4 py-2 shrink-0">
@@ -444,6 +449,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           onUnlocked={() => {
             setPaymentSheetOpen(false);
             refreshTier();
+            onOpenDetails?.(); // Auto-expand right panel after payment
             setTimeout(() => inputRef.current?.focus(), 300);
           }}
         />
