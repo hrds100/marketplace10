@@ -83,11 +83,11 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
       </button>
 
       {/* Headline — earnings copy with real amount */}
-      <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 text-center max-w-2xl leading-[1.05] tracking-tight">
+      <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 text-center max-w-2xl leading-[1.05] tracking-tight">
         You could earn{' '}
         <span className="text-emerald-600">£{(thread.propertyProfit || 0).toLocaleString()}</span>
         <br />
-        hosting this property on RBMB
+        hosting this property on Airbnb
       </h2>
 
       {/* Supporting copy */}
@@ -115,8 +115,9 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
               <button className="p-2 rounded-lg hover:bg-secondary transition-colors" title="Attach files" onClick={() => fileInputRef.current?.click()}>
                 <Plus className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button className="p-2 rounded-lg hover:bg-secondary transition-colors" onClick={onOpenQuickReplies} title="Quick replies & templates">
-                <LayoutGrid className="w-5 h-5 text-muted-foreground" />
+              <button className="relative p-2 rounded-lg hover:bg-secondary transition-colors" onClick={onOpenQuickReplies} title="Quick replies & templates">
+                <span className="absolute inset-0 rounded-lg ring-2 ring-emerald-400/50 animate-pulse" />
+                <LayoutGrid className="w-5 h-5 text-muted-foreground relative" />
               </button>
             </div>
             <button onClick={onSend}

@@ -104,10 +104,14 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
     setEditingId(null);
   };
 
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
+
   const addNew = () => {
     const newId = `local-${Date.now()}`;
     setReplies(prev => [...prev, { id: newId, title: '', body: '', category: '' }]);
     setEditingId(newId); setEditTitle(''); setEditBody(''); setEditCategory(''); setDeletingId(null);
+    setJustAddedId(newId);
+    setTimeout(() => setJustAddedId(null), 400);
   };
 
   const confirmDelete = async (id: string) => {
@@ -123,7 +127,7 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
   };
 
   return (
-    <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-full max-w-sm z-30 bg-white border border-gray-200 rounded-2xl shadow-xl max-h-[400px] overflow-y-auto transition-all duration-200" style={{ animation: 'fadeScaleIn 200ms ease-out' }}>
+    <div className={`absolute bottom-16 left-1/2 -translate-x-1/2 w-full z-30 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-y-auto transition-all duration-200 ${editingId ? 'max-w-md max-h-[520px]' : 'max-w-sm max-h-[400px]'}`} style={{ animation: 'fadeScaleIn 200ms ease-out' }}>
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 sticky top-0 bg-white z-10">
         <h3 className="text-sm font-bold text-gray-900">Quick Replies</h3>
         <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-50"><X className="w-4 h-4 text-gray-400" /></button>
@@ -157,16 +161,16 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
             }
             if (editingId === qr.id) {
               return (
-                <div key={qr.id} className="p-3 rounded-xl bg-gray-50 border border-gray-200 space-y-2">
+                <div key={qr.id} className={`p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3 transition-all ${justAddedId === qr.id ? 'ring-2 ring-emerald-300 bg-emerald-50' : ''}`}>
                   <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Reply title..." autoFocus
-                    className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary" />
-                  <textarea value={editBody} onChange={e => setEditBody(e.target.value)} placeholder="Reply message..." rows={2}
-                    className="w-full text-sm text-gray-500 bg-white border border-gray-200 rounded-lg px-3 py-1.5 resize-none focus:outline-none focus:ring-2 focus:ring-primary" />
+                    className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary" />
+                  <textarea value={editBody} onChange={e => setEditBody(e.target.value)} placeholder="Reply message..." rows={4}
+                    className="w-full text-sm text-gray-500 bg-white border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary" />
                   <input value={editCategory} onChange={e => setEditCategory(e.target.value)} placeholder="Category e.g. Viewing"
-                    className="w-full text-xs text-gray-600 bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary" />
+                    className="w-full text-xs text-gray-600 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary" />
                   <div className="flex gap-2">
-                    <button onClick={saveEdit} className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">Save</button>
-                    <button onClick={cancelEdit} className="px-3 py-1 rounded-lg text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+                    <button onClick={saveEdit} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">Save</button>
+                    <button onClick={cancelEdit} className="px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:text-gray-700">Cancel</button>
                   </div>
                 </div>
               );

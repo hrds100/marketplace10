@@ -60,6 +60,7 @@ function OperatorView({ thread }: { thread: Thread }) {
         monthlyRent={thread.propertyRent ?? 0}
         bedrooms={thread.propertyBedrooms ?? 0}
         propertyType={thread.dealType ?? 'Property'}
+        propertyProfit={thread.propertyProfit ?? 0}
       />
 
       {/* Landlord Details — locked */}

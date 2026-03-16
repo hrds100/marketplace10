@@ -5,11 +5,19 @@ interface Props {
   monthlyRent: number;
   bedrooms: number;
   propertyType: string;
+  propertyProfit?: number;
 }
 
-export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType }: Props) {
+export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType, propertyProfit }: Props) {
   const [nightsBooked, setNightsBooked] = useState(20);
-  const [nightlyRate, setNightlyRate] = useState(85);
+  // Seed nightlyRate so Est. monthly profit matches the property's real profit on first render
+  const [nightlyRate, setNightlyRate] = useState(() => {
+    if (propertyProfit && propertyProfit > 0 && monthlyRent > 0) {
+      const derived = Math.round((monthlyRent + propertyProfit) / 20);
+      return Math.max(20, Math.min(500, derived));
+    }
+    return 85;
+  });
   const [extraCosts, setExtraCosts] = useState(0);
   const [showExtraCosts, setShowExtraCosts] = useState(false);
 
