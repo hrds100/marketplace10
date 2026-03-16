@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, Search } from 'lucide-react';
 import PropertyCardV2 from '@/components/PropertyCardV2';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { useFavourites } from '@/hooks/useFavourites';
@@ -9,7 +9,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 
-// Lazy-load map to avoid blocking initial render
 const DealsMap = lazy(() => import('@/components/DealsMap'));
 
 const tabs = ['All', 'Live', 'On Offer', 'Inactive'] as const;
@@ -23,7 +22,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
   const image =
     photos && photos.length > 0
       ? photos[0]
-      : `https://placehold.co/800x800/1a1a2e/ffffff?text=${encodeURIComponent(p.city || 'Property')}`;
+      : `https://placehold.co/800x600/1a1a2e/ffffff?text=${encodeURIComponent(p.city || 'Property')}`;
   return {
     id: p.id,
     name: p.name,
@@ -41,11 +40,10 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
   };
 }
 
-// Skeleton card — matches aspect-square (1:1) image + body height
 function CardSkeleton() {
   return (
     <div className="bg-card rounded-xl overflow-hidden animate-pulse">
-      <div className="w-full aspect-square bg-muted" />
+      <div className="w-full aspect-[4/3] bg-muted" />
       <div className="p-3.5 space-y-3">
         <div className="h-3 bg-muted rounded w-3/4" />
         <div className="h-2.5 bg-muted rounded w-1/2" />
@@ -142,69 +140,135 @@ export default function DealsPageV2() {
     setShowAlert(false);
   };
 
-  // Map pins — featured + current page
   const mapListings = useMemo(
     () => [...featured, ...pageListings],
     [featured, pageListings],
   );
 
   return (
-    <div className="flex gap-5 items-start">
+    <div className="flex flex-1 overflow-hidden">
 
-      {/* ── LEFT PANEL: ~55% ────────────────────────────────────────── */}
-      <div className="flex-1 min-w-0">
+      {/* ── LEFT: scrollable card list ──────────────────────────────── */}
+      <div className="flex-1 min-w-0 overflow-y-auto">
+        <div className="p-6 md:p-8 max-w-[960px]">
 
-        {/* Page header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-          <div>
-            <h1 className="text-xl font-bold text-foreground tracking-tight">Deals</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Landlord-approved rent-to-rent opportunities across the UK
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1 bg-muted text-muted-foreground text-[11px] font-medium px-2.5 py-1 rounded-full">
-              📍 UK-wide · {liveCount} {liveCount === 1 ? 'property' : 'properties'} live
-            </span>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Deals</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {liveCount} landlord-approved properties across the UK
+              </p>
+            </div>
             <button
               onClick={() => navigate('/dashboard/list-a-deal')}
-              className="bg-foreground text-background px-3.5 py-1.5 rounded-lg text-[11px] font-semibold hover:opacity-90 transition-opacity"
+              className="bg-foreground text-background px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity self-start"
             >
               + Submit a Deal
             </button>
           </div>
-        </div>
 
-        {/* Alert */}
-        {showAlert && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 mb-5 flex items-center gap-2.5">
-            <Bell className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-            <span className="text-[12px] font-medium text-emerald-900">
-              3 new deals added in Manchester today
+          {/* Alert */}
+          {showAlert && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+              <Bell className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span className="text-sm font-medium text-emerald-900 flex-1">
+                3 new deals in Manchester today
+              </span>
+              <button
+                className="text-sm text-emerald-700 font-semibold hover:underline"
+                onClick={handleAlertClick}
+              >
+                View
+              </button>
+              <button
+                onClick={() => setShowAlert(false)}
+                className="text-emerald-600/50 hover:text-emerald-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Filter bar */}
+          <div className="flex items-center gap-2 mb-6 flex-wrap">
+            <div className="flex gap-0.5 bg-muted p-1 rounded-lg">
+              {tabs.map(t => (
+                <button
+                  key={t}
+                  onClick={() => { setActiveTab(t); setPage(1); }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                    activeTab === t
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <select
+              value={city}
+              onChange={e => { setCity(e.target.value); setPage(1); }}
+              className="input-nfstay h-8 text-xs pr-7 bg-card"
+            >
+              <option value="">All cities</option>
+              {cities.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select
+              value={type}
+              onChange={e => { setType(e.target.value); setPage(1); }}
+              className="input-nfstay h-8 text-xs pr-7 bg-card"
+            >
+              <option value="">All types</option>
+              {types.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select
+              value={sort}
+              onChange={e => setSort(e.target.value)}
+              className="input-nfstay h-8 text-xs pr-7 bg-card"
+            >
+              <option value="newest">Newest</option>
+              <option value="profit">Highest profit</option>
+              <option value="rent">Lowest rent</option>
+            </select>
+            <span className="text-xs text-muted-foreground">
+              {filtered.length + featured.length} deals
             </span>
-            <button
-              className="text-[12px] text-emerald-700 font-semibold ml-1 hover:underline"
-              onClick={handleAlertClick}
-            >
-              View
-            </button>
-            <button
-              onClick={() => setShowAlert(false)}
-              className="ml-auto text-emerald-600/50 hover:text-emerald-700"
-            >
-              <X className="w-3 h-3" />
-            </button>
           </div>
-        )}
 
-        {/* ── FEATURED — same grid, same cards, pinned at top ──── */}
-        {featured.length > 0 && (
-          <div className="mb-6">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              ⭐ Featured
-            </p>
-            <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-              {featured.map(l => (
+          {/* Featured */}
+          {featured.length > 0 && (
+            <div className="mb-8">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                Featured
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                {featured.map(l => (
+                  <PropertyCardV2
+                    key={l.id}
+                    listing={l}
+                    isFav={isFav(l.id)}
+                    onToggleFav={() => toggle(l.id)}
+                    onAddToCRM={() => handleAddToCRM(l)}
+                    onInquire={handleInquire}
+                    onMouseEnter={() => setHoveredId(l.id)}
+                    onMouseLeave={() => setHoveredId(null)}
+                  />
+                ))}
+              </div>
+              <div className="mt-8 border-t border-border" />
+            </div>
+          )}
+
+          {/* Card grid */}
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-4">
+              {[0, 1, 2, 3, 4, 5].map(i => <CardSkeleton key={i} />)}
+            </div>
+          ) : pageListings.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4">
+              {pageListings.map(l => (
                 <PropertyCardV2
                   key={l.id}
                   listing={l}
@@ -217,156 +281,77 @@ export default function DealsPageV2() {
                 />
               ))}
             </div>
-            <div className="mt-6 border-t border-border" />
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-20">
+              <p className="text-2xl mb-3">🏠</p>
+              <p className="text-base font-semibold text-foreground mb-1">No deals found</p>
+              <p className="text-sm text-muted-foreground">
+                Check back soon — new deals are added daily.
+              </p>
+            </div>
+          )}
 
-        {/* ── UNIFIED FILTER BAR ───────────────────────────────── */}
-        {/* All controls in one harmonious row — no ml-auto orphaning */}
-        <div className="flex items-center gap-2 mb-5 flex-wrap">
-          {/* Tab pills */}
-          <div className="flex gap-0.5 bg-muted p-1 rounded-lg flex-shrink-0">
-            {tabs.map(t => (
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8 pb-8">
               <button
-                key={t}
-                onClick={() => { setActiveTab(t); setPage(1); }}
-                className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
-                  activeTab === t
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 px-2 py-1"
               >
-                {t}
+                Prev
               </button>
-            ))}
-          </div>
-
-          {/* Selects — inline with tabs, no orphan sort */}
-          <select
-            value={city}
-            onChange={e => { setCity(e.target.value); setPage(1); }}
-            className="input-nfstay h-8 text-[11px] pr-7 bg-card"
-          >
-            <option value="">All cities</option>
-            {cities.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select
-            value={type}
-            onChange={e => { setType(e.target.value); setPage(1); }}
-            className="input-nfstay h-8 text-[11px] pr-7 bg-card"
-          >
-            <option value="">All types</option>
-            {types.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <select
-            value={sort}
-            onChange={e => setSort(e.target.value)}
-            className="input-nfstay h-8 text-[11px] pr-7 bg-card"
-          >
-            <option value="newest">Newest</option>
-            <option value="profit">Highest profit</option>
-            <option value="rent">Lowest rent</option>
-          </select>
-
-          {/* Deal count — trailing, naturally placed */}
-          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-            {filtered.length + featured.length} deals
-          </span>
-        </div>
-
-        {/* ── CARD GRID ────────────────────────────────────────── */}
-        {isLoading ? (
-          <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-            {[0, 1, 2, 3, 4, 5].map(i => <CardSkeleton key={i} />)}
-          </div>
-        ) : pageListings.length > 0 ? (
-          <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-            {pageListings.map(l => (
-              <PropertyCardV2
-                key={l.id}
-                listing={l}
-                isFav={isFav(l.id)}
-                onToggleFav={() => toggle(l.id)}
-                onAddToCRM={() => handleAddToCRM(l)}
-                onInquire={handleInquire}
-                onMouseEnter={() => setHoveredId(l.id)}
-                onMouseLeave={() => setHoveredId(null)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <p className="text-2xl mb-3">🏠</p>
-            <p className="text-[14px] font-semibold text-foreground mb-1">No deals found</p>
-            <p className="text-xs text-muted-foreground">
-              Check back soon — new deals are added daily.
-            </p>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-1.5 mt-6">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40 px-2"
-            >
-              Prev
-            </button>
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-7 h-7 rounded-full text-[11px] font-medium transition-colors ${
-                  page === p
-                    ? 'bg-foreground text-background'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-            {totalPages > 5 && (
-              <>
-                <span className="text-muted-foreground text-[11px]">…</span>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
                 <button
-                  onClick={() => setPage(totalPages)}
-                  className={`w-7 h-7 rounded-full text-[11px] font-medium ${
-                    page === totalPages
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-8 h-8 rounded-full text-xs font-medium transition-colors ${
+                    page === p
                       ? 'bg-foreground text-background'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {totalPages}
+                  {p}
                 </button>
-              </>
-            )}
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40 px-2"
-            >
-              Next
-            </button>
-          </div>
-        )}
+              ))}
+              {totalPages > 5 && (
+                <>
+                  <span className="text-muted-foreground text-xs">…</span>
+                  <button
+                    onClick={() => setPage(totalPages)}
+                    className={`w-8 h-8 rounded-full text-xs font-medium ${
+                      page === totalPages
+                        ? 'bg-foreground text-background'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 px-2 py-1"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* ── RIGHT PANEL: sticky map, 45% ────────────────────────────── */}
-      {/* 55/45 split — Airbnb-confirmed. h-screen sticky top-0 — Airbnb pattern. */}
-      <div className="hidden lg:flex flex-col w-[45%] flex-shrink-0 sticky top-0 h-screen">
-        <div className="flex-1 rounded-xl overflow-hidden border border-border/60 shadow-sm bg-muted">
-          <Suspense
-            fallback={
-              <div className="w-full h-full bg-muted animate-pulse rounded-xl flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">Loading map…</span>
-              </div>
-            }
-          >
-            <DealsMap listings={mapListings} hoveredId={hoveredId} />
-          </Suspense>
-        </div>
+      {/* ── RIGHT: map panel ─────────────────────────────────────────── */}
+      <div className="hidden lg:block w-[45%] max-w-[700px] flex-shrink-0 border-l border-border/40">
+        <Suspense
+          fallback={
+            <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+              <span className="text-sm text-muted-foreground">Loading map…</span>
+            </div>
+          }
+        >
+          <DealsMap listings={mapListings} hoveredId={hoveredId} />
+        </Suspense>
       </div>
 
     </div>
