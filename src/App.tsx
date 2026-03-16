@@ -50,6 +50,7 @@ const queryClient = new QueryClient();
 if (typeof window !== 'undefined') {
   const params = new URLSearchParams(window.location.search);
   if (params.get('payment') === 'success') {
+    sessionStorage.setItem('nfstay_payment_success', '1');
     window.history.replaceState({}, '', window.location.pathname);
     if (!window.location.pathname.includes('inbox')) {
       window.location.href = '/dashboard/inbox';

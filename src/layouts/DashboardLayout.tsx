@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import PaymentSuccessRefresher from '@/components/PaymentSuccessRefresher';
 
-// Routes that need edge-to-edge layout (no padding, no max-width)
 const FULL_BLEED_ROUTES = ['/dashboard/inbox'];
 
 export default function DashboardLayout() {
@@ -15,6 +15,7 @@ export default function DashboardLayout() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen" style={{ background: 'hsl(210 20% 98%)' }}>
+        <PaymentSuccessRefresher />
         <DashboardSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
         {isFullBleed ? (
           <main className={`${marginClass} h-screen flex flex-col transition-all duration-200`}>

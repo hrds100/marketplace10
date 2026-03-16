@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, ChevronRight, ChevronLeft, Plus, LayoutGrid, Send, LockKeyhole } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronLeft, Plus, LayoutGrid, Send, LockKeyhole, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -50,15 +50,20 @@ interface Props {
   onToggleDetails: () => void;
   showDetailsOpen: boolean;
   isMobile: boolean;
+  onOpenNDA?: () => void;
 }
 
-export default function ChatWindow({ thread, onBack, onToggleDetails, showDetailsOpen, isMobile }: Props) {
+export default function ChatWindow({ thread, onBack, onToggleDetails, showDetailsOpen, isMobile, onOpenNDA }: Props) {
   const { user } = useAuth();
   const { tier, refreshTier } = useUserTier();
   const paid = isPaidTier(tier);
 
+  // Derive role from thread membership (not from profiles.role)
+  const isCurrentUserOperator = !thread.isSupport && user?.id === thread.operatorId;
+  const isCurrentUserLandlord = !thread.isSupport && user?.id === thread.landlordId;
+
   // Re-check tier on mount to catch missed webhook updates
-  useEffect(() => { if (!paid) refreshTier(); }, []);
+  useEffect(() => { if (!paid && isCurrentUserOperator) refreshTier(); }, []);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -307,72 +312,68 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         )}
       </div>
 
-      {/* NDA warning banner */}
-      {!thread.isSupport && !thread.termsAccepted && (
+      {/* NDA masking warning — shown to both roles when NDA unsigned */}
+      {!thread.isSupport && !thread.termsAccepted && !isCurrentUserLandlord && (
         <div className="bg-amber-50 border-t border-amber-200 text-amber-800 text-xs px-4 py-2 shrink-0">
-          🔒 Share contact details only after NDA is signed. Phone numbers in messages will be masked until the NDA is complete.
+          🔒 Phone numbers in messages will be masked until the landlord signs the NDA.
         </div>
       )}
 
-      {/* Locked input banner — free tier with no existing messages */}
-      {!paid && !thread.isSupport && !hasExistingMessages && (
+      {/* LANDLORD NDA GATE — landlord must sign NDA before replying */}
+      {isCurrentUserLandlord && !thread.termsAccepted && (
+        <div className="bg-amber-50 border-t border-amber-200 text-amber-800 text-xs px-4 py-2 shrink-0">
+          🔒 Sign the NDA to reply. Contact details will be shared after signing.
+        </div>
+      )}
+
+      {/* OPERATOR PAYMENT GATE — only for operators, only on new threads */}
+      {isCurrentUserOperator && !paid && !hasExistingMessages && (
         <div className="flex items-center justify-between bg-amber-50 border-t border-amber-200 px-4 py-3 shrink-0">
           <div className="flex items-center gap-2 text-sm text-amber-800">
             <LockKeyhole className="h-4 w-4 shrink-0" />
             <span>Send your first message — upgrade to unlock</span>
           </div>
-          <button
-            onClick={() => setPaymentSheetOpen(true)}
-            className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shrink-0 transition-colors animate-pulse"
-          >
+          <button onClick={() => setPaymentSheetOpen(true)} className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shrink-0 transition-colors animate-pulse">
             Unlock Now
           </button>
         </div>
       )}
 
-      {/* Input bar */}
+      {/* Input bar — role-aware */}
       <div className="relative border-t border-gray-200 bg-white px-4 py-3 flex items-end gap-2 shrink-0">
         <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
-        {(paid || hasExistingMessages) ? (
+        {/* LANDLORD: NDA unsigned → "Sign NDA to reply" button instead of input */}
+        {isCurrentUserLandlord && !thread.termsAccepted ? (
+          <button
+            onClick={() => onOpenNDA?.()}
+            className="flex-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm font-semibold py-2 px-4 flex items-center justify-center gap-2 transition-colors"
+          >
+            <FileText className="w-4 h-4" /> Sign NDA to reply
+          </button>
+        ) : /* OPERATOR: free tier, no messages → locked input */
+        isCurrentUserOperator && !paid && !hasExistingMessages ? (
+          <>
+            <div className="flex-1 relative cursor-pointer" onClick={() => setPaymentSheetOpen(true)} title="Upgrade to send messages">
+              <div className="w-full bg-gray-50 text-gray-400 text-sm opacity-60 border border-dashed border-gray-300 rounded-lg px-3 py-2 select-none" style={{ minHeight: 36 }}>
+                Unlock to send messages
+              </div>
+            </div>
+            <button onClick={() => setPaymentSheetOpen(true)} className="p-2 rounded-lg bg-gray-300 text-gray-500 transition-colors shrink-0" title="Upgrade to send messages">
+              <Send className="w-5 h-5" />
+            </button>
+          </>
+        ) : (
+          /* NORMAL: paid operator, landlord with NDA signed, or support → full input */
           <>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Write a message..."
-              rows={1}
-              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px]"
-              style={{ minHeight: 36 }}
-            />
+            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
+              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px]" style={{ minHeight: 36 }} />
             <button onClick={handleSend} disabled={!input.trim()}
               className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
               <Send className="w-5 h-5" />
             </button>
           </>
-        ) : (
-          /* Locked input — clickable overlay triggers PaymentSheet.
-             disabled textarea swallows click events, so we use a div overlay */
-          <div
-            className="flex-1 relative cursor-pointer"
-            onClick={() => setPaymentSheetOpen(true)}
-            title="Upgrade to send messages"
-          >
-            <div className="w-full bg-gray-50 text-gray-400 text-sm opacity-60 border border-dashed border-gray-300 rounded-lg px-3 py-2 select-none" style={{ minHeight: 36 }}>
-              Unlock to send messages
-            </div>
-          </div>
-        )}
-        {!paid && !hasExistingMessages && (
-          <button
-            onClick={() => setPaymentSheetOpen(true)}
-            className="p-2 rounded-lg bg-gray-300 text-gray-500 transition-colors shrink-0"
-            title="Upgrade to send messages"
-          >
-            <Send className="w-5 h-5" />
-          </button>
         )}
       </div>
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, CheckCircle2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { getFunnelUrl } from '@/lib/ghl';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,7 +74,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   useEffect(() => {
     if (!open) return;
     const handleMessage = (e: MessageEvent) => {
-      if (!e.origin.includes('pay.nfstay.com') && !e.origin.includes('leadconnectorhq.com')) return;
+      if (!e.origin.includes('pay.nfstay.com') && !e.origin.includes('leadconnectorhq.com') && !e.origin.includes('gohighlevel.com')) return;
       const data = e.data;
       const isSuccess =
         data?.event === 'order_success' || data?.type === 'order_success' ||
@@ -161,12 +162,12 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
               )}
             </div>
           ) : !funnelUrl ? (
-            <div className="flex flex-col items-center justify-center flex-1 p-8 text-center">
-              <p className="text-sm text-muted-foreground">Payment is being set up. Please try again shortly.</p>
+            <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-3">
+              <p className="text-sm text-muted-foreground">Checkout is not configured.</p>
+              <p className="text-xs text-muted-foreground">Please set VITE_GHL_FUNNEL_URL in Vercel.</p>
             </div>
           ) : (
             <div className="flex flex-col flex-1 overflow-hidden relative">
-              {/* Loading spinner — visible until iframe loads */}
               {!iframeLoaded && (
                 <div className="absolute inset-0 flex items-center justify-center bg-card z-10">
                   <div className="flex flex-col items-center gap-3">
@@ -184,6 +185,25 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
                   title="Payment"
                   onLoad={handleIframeLoad}
                 />
+              </div>
+              {/* Manual check for users who paid but detection missed */}
+              <div className="px-4 py-2 border-t border-border text-center shrink-0">
+                <button
+                  onClick={async () => {
+                    if (!user?.id) return;
+                    const { data } = await supabase.from('profiles').select('tier').eq('id', user.id).single();
+                    if (data?.tier && data.tier !== 'free') {
+                      setPaymentComplete(true);
+                      if (pollRef.current) clearInterval(pollRef.current);
+                      setTimeout(() => { handleClose(); onUnlocked(); }, 500);
+                    } else {
+                      toast.error('Payment not confirmed yet. Please complete checkout or contact support.');
+                    }
+                  }}
+                  className="text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors"
+                >
+                  I've already paid — check status
+                </button>
               </div>
             </div>
           )}

@@ -6,6 +6,7 @@ import ThreadList from '@/components/inbox/ThreadList';
 import ChatWindow from '@/components/inbox/ChatWindow';
 import InboxInquiryPanel from '@/components/inbox/InboxInquiryPanel';
 import MessagingSettingsModal from '@/components/inbox/MessagingSettingsModal';
+import AgreementModal from '@/components/inbox/AgreementModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useInquiry } from '@/hooks/useInquiry';
@@ -57,6 +58,7 @@ export default function InboxPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [showNDAModal, setShowNDAModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   // Auto-select thread from Inquire Now
@@ -279,7 +281,7 @@ export default function InboxPage() {
     if (selectedId && selectedThread) {
       return (
         <div className="h-[calc(100vh-60px)]">
-          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={showDetails} isMobile />
+          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={showDetails} isMobile onOpenNDA={() => setShowNDAModal(true)} />
         </div>
       );
     }
@@ -300,7 +302,7 @@ export default function InboxPage() {
       </div>
       <div className="flex-1 min-w-0">
         {selectedThread ? (
-          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={!!showRightPanel} isMobile={false} />
+          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={!!showRightPanel} isMobile={false} onOpenNDA={() => setShowNDAModal(true)} />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center bg-white">
             <MessageSquare className="w-12 h-12 text-gray-300 mb-4" />
@@ -311,10 +313,18 @@ export default function InboxPage() {
       </div>
       {showRightPanel && (
         <div className="w-[320px] shrink-0">
-          <InboxInquiryPanel thread={selectedThread} onClose={() => setShowDetails(false)} onSignNDA={handleSignNDA} isOperator={isOperator} />
+          <InboxInquiryPanel thread={selectedThread} onClose={() => setShowDetails(false)} onSignNDA={handleSignNDA} isOperator={isOperator} onOpenAgreement={() => setShowNDAModal(true)} />
         </div>
       )}
       <MessagingSettingsModal open={showSettings} onClose={() => setShowSettings(false)} />
+      {showNDAModal && selectedThread && !selectedThread.isSupport && (
+        <AgreementModal
+          thread={selectedThread}
+          isOperator={isOperator}
+          onClose={() => setShowNDAModal(false)}
+          onSign={handleSignNDA}
+        />
+      )}
     </div>
   );
 }

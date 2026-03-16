@@ -1,15 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+
+const REMEMBER_KEY = 'nfstay_remember_email';
 
 export default function SignIn() {
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Pre-fill email from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(REMEMBER_KEY);
+    if (saved) setEmail(saved);
+  }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +31,12 @@ export default function SignIn() {
         setError(authError.message);
         return;
       }
-      // Full page load ensures ProtectedRoute gets fresh auth state
+      // Persist or clear email
+      if (rememberMe) {
+        localStorage.setItem(REMEMBER_KEY, email.trim().toLowerCase());
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
       window.location.href = '/dashboard/deals';
     } catch {
       setError('Sign in failed. Try again.');
@@ -72,11 +86,12 @@ export default function SignIn() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <div className="flex justify-end mt-1.5">
-                <Link
-                  to="/forgot-password"
-                  className="text-xs text-primary font-semibold hover:underline"
-                >
+              <div className="flex items-center justify-between mt-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="accent-primary w-3.5 h-3.5" />
+                  <span className="text-xs text-muted-foreground">Remember me</span>
+                </label>
+                <Link to="/forgot-password" className="text-xs text-primary font-semibold hover:underline">
                   Forgot password?
                 </Link>
               </div>

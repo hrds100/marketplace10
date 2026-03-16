@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import { ChevronLeft, MapPin, Home, Phone, Mail, User, FileText, CheckCircle, Clock, Circle, Lock, ExternalLink, TrendingUp } from 'lucide-react';
 import type { Thread } from './types';
-import AgreementModal from './AgreementModal';
 import EarningsEstimator from './EarningsEstimator';
 
 interface Props {
@@ -9,6 +7,7 @@ interface Props {
   onClose: () => void;
   onSignNDA: () => void;
   isOperator?: boolean;
+  onOpenAgreement?: () => void;
 }
 
 // Shared property info section — identical for both views
@@ -183,31 +182,23 @@ function LandlordView({ thread, onOpenAgreement }: { thread: Thread; onOpenAgree
   );
 }
 
-export default function InboxInquiryPanel({ thread, onClose, onSignNDA, isOperator = true }: Props) {
-  const [showAgreement, setShowAgreement] = useState(false);
-
+export default function InboxInquiryPanel({ thread, onClose, onSignNDA, isOperator = true, onOpenAgreement }: Props) {
   return (
-    <>
-      <div className="h-full flex flex-col bg-white border-l border-gray-100">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
-          <h3 className="text-sm font-bold text-gray-900">Inquiry Details</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-            <ChevronLeft className="w-4 h-4 text-gray-400" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-5">
-          {isOperator ? (
-            <OperatorView thread={thread} />
-          ) : (
-            <LandlordView thread={thread} onOpenAgreement={() => setShowAgreement(true)} />
-          )}
-        </div>
+    <div className="h-full flex flex-col bg-white border-l border-gray-100">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+        <h3 className="text-sm font-bold text-gray-900">Inquiry Details</h3>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+          <ChevronLeft className="w-4 h-4 text-gray-400" />
+        </button>
       </div>
 
-      {showAgreement && (
-        <AgreementModal thread={thread} isOperator={isOperator} onClose={() => setShowAgreement(false)} onSign={onSignNDA} />
-      )}
-    </>
+      <div className="flex-1 overflow-y-auto p-4 space-y-5">
+        {isOperator ? (
+          <OperatorView thread={thread} />
+        ) : (
+          <LandlordView thread={thread} onOpenAgreement={() => onOpenAgreement?.()} />
+        )}
+      </div>
+    </div>
   );
 }
