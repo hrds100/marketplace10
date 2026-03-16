@@ -72,7 +72,7 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
           <img src={thread.propertyImage || fallbackImage} alt="" className="w-full h-full object-cover"
             onError={e => { (e.target as HTMLImageElement).src = fallbackImage; }} />
         </div>
-        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${thread.isOnline ? 'bg-emerald-500' : 'bg-gray-300'}`} />
       </div>
 
       {/* Property row */}
@@ -82,9 +82,12 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
         <ChevronRight className="w-3 h-3 shrink-0 text-gray-400" />
       </button>
 
-      {/* Headline */}
+      {/* Headline — earnings copy with real amount */}
       <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 text-center max-w-2xl leading-[1.05] tracking-tight">
-        Inquire about this property below
+        You could earn{' '}
+        <span className="text-emerald-600">£{(thread.propertyProfit || 0).toLocaleString()}</span>
+        <br />
+        hosting this property on RBMB
       </h2>
 
       {/* Supporting copy */}
