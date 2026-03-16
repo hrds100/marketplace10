@@ -1,5 +1,6 @@
 {
   "name": "NFsTay — New Message",
+  "meta": { "description": "Fires on follow-up tenant messages. Template: nfstay_new_message. Notifies landlord via WhatsApp." },
   "nodes": [
     {
       "parameters": {

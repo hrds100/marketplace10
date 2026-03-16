@@ -7,6 +7,15 @@
 | workflow-2-new-message.json | NFsTay — New Message | /webhook/inbox-new-message | Landlord |
 | workflow-3-landlord-replied.json | NFsTay — Landlord Replied | /webhook/inbox-landlord-replied | Tenant |
 | workflow-4-tenant-message.json | NFsTay — Tenant New Message | /webhook/inbox-tenant-message | Tenant |
+| **workflow-test-echo.json** | **Test Echo (all 4)** | All 4 paths | Logs only |
+
+## Quick Start — Test First
+1. Import `workflow-test-echo.json` into n8n
+2. Activate it
+3. Send a message in the NFsTay inbox
+4. Check n8n execution log — you should see the payload logged with `status: ok`
+5. Check browser console — you should see `[NFsTay webhook] ✅ fired successfully`
+6. Once confirmed working, deactivate test workflow and import the real 4 workflows
 
 ## How to Import
 

@@ -1,5 +1,6 @@
 {
   "name": "NFsTay — Tenant New Message",
+  "meta": { "description": "General tenant notification. Template: nfstay_tenant_new_message. Notifies tenant via WhatsApp." },
   "nodes": [
     {
       "parameters": {

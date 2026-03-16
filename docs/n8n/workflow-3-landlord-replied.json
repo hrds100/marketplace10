@@ -1,5 +1,6 @@
 {
   "name": "NFsTay — Landlord Replied",
+  "meta": { "description": "Fires when landlord replies. Template: nfstay_landlord_replied. Notifies tenant via WhatsApp." },
   "nodes": [
     {
       "parameters": {
