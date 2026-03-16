@@ -51,6 +51,7 @@ These templates must exist in GHL before the workflows will send messages:
 | New Message | `J6hWjodwJlqXHme1` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-new-message | ✅ Active |
 | Landlord Replied | `BrwfLUE2LPj9jovR` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-landlord-replied | ✅ Active |
 | Tenant Message | `UBuNLDn0mO0md39Y` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-tenant-message | ✅ Active |
+| Tier Update | `wsDjAdpWnjqnO7ML` | https://n8n.srv886554.hstgr.cloud/webhook/ghl-payment-success | ✅ Active |
 
 **Note:** Test Echo and New Inquiry share the same webhook path (`inbox-new-inquiry`). When New Inquiry is activated (after Meta approves the template), deactivate the Test Echo workflow to avoid conflicts.
 

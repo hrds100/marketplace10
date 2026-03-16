@@ -1,0 +1,171 @@
+{
+  "name": "NFsTay \u2014 GHL Payment \u2192 Tier Update",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ghl-payment-success",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "GHL Payment Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "ghl-payment-success",
+      "id": "d98ec5ee-b8aa-4ca4-9523-e5f689cdb543"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract payment data from GHL webhook body\nconst body = $input.first().json.body || $input.first().json;\n\nconst contact_id = body.contact_id || body.contactId || body.contact?.id || '';\nconst email = body.email || body.contact?.email || body.customer?.email || '';\nconst product_id = body.product_id || body.productId || body.line_items?.[0]?.product_id || '';\nconst price_id = body.price_id || body.priceId || body.line_items?.[0]?.price_id || '';\nconst amount = body.amount || body.total || 0;\n\n// Map product/price IDs to tier\nconst PRODUCT_MAP = {\n  '69b5b769081db66d1afbf145': 'monthly',\n  '69b5b777711f98f382f110ff': 'lifetime',\n  '69b5b7791fe1a8f21eb651b5': 'yearly',\n};\nconst PRICE_MAP = {\n  '69b5d533d314dc23b8a6f918': 'monthly',\n  '69b5d535a0334430aa1f2eac': 'lifetime',\n  '69b5d5371fe1a88dbdba1590': 'yearly',\n  // Legacy price IDs\n  '69b5b794c6731008d7ae723c': 'monthly',\n  '69b5b7a8081db612f9fbfe60': 'lifetime',\n  '69b5b7ab247cf6a48020f434': 'yearly',\n};\n\nconst tier = PRODUCT_MAP[product_id] || PRICE_MAP[price_id] || 'monthly';\n\nreturn [{ json: { contact_id, email, product_id, price_id, amount, tier } }];"
+      },
+      "name": "Extract & Map Tier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ],
+      "id": "32003862-9225-4cae-bbc4-cd1c00ebceab"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://asazddtvjvmckouxcmmo.supabase.co/rest/v1/profiles?or=(id.eq.{{ $json.contact_id }},whatsapp.ilike.*{{ $json.email }}*)",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzYXpkZHR2anZtY2tvdXhjbW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQxODQ2NCwiZXhwIjoyMDg4OTk0NDY0fQ.B7nmKCji4LEDU5JozanHl9PjNXzYuIpav6B8KR3BNV0"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzYXpkZHR2anZtY2tvdXhjbW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQxODQ2NCwiZXhwIjoyMDg4OTk0NDY0fQ.B7nmKCji4LEDU5JozanHl9PjNXzYuIpav6B8KR3BNV0"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tier\":\"{{ $json.tier }}\"}",
+        "options": {}
+      },
+      "name": "Update Supabase Tier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        300
+      ],
+      "id": "e9044329-929f-4a26-b45e-a942f56930f9"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Extract & Map Tier').item.json.contact_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pit-ad222803-150e-48db-b907-4508ac46f2e5"
+            },
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tags\":[\"paid-member\",\"{{ $('Extract & Map Tier').item.json.tier }}\"]}",
+        "options": {}
+      },
+      "name": "Tag GHL Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        860,
+        300
+      ],
+      "id": "cebc80cb-cece-4845-a598-a4b4ceef582c"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return success response\nconst tier = $('Extract & Map Tier').first().json.tier;\nconst email = $('Extract & Map Tier').first().json.email;\nreturn [{ json: { ok: true, tier, email } }];"
+      },
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        300
+      ],
+      "id": "1aa7e460-97f2-4907-8419-856702f89a02"
+    }
+  ],
+  "connections": {
+    "GHL Payment Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract & Map Tier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Map Tier": {
+      "main": [
+        [
+          {
+            "node": "Update Supabase Tier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Supabase Tier": {
+      "main": [
+        [
+          {
+            "node": "Tag GHL Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag GHL Contact": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
