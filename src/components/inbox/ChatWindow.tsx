@@ -320,7 +320,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           </div>
           <button
             onClick={() => setPaymentSheetOpen(true)}
-            className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shrink-0 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shrink-0 transition-colors animate-pulse"
           >
             Unlock Now
           </button>
@@ -330,39 +330,47 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       {/* Input bar */}
       <div className="relative border-t border-gray-200 bg-white px-4 py-3 flex items-end gap-2 shrink-0">
         <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
-        {paid && (
+        {paid ? (
           <>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Write a message..."
+              rows={1}
+              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px]"
+              style={{ minHeight: 36 }}
+            />
+            <button onClick={handleSend} disabled={!input.trim()}
+              className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
+              <Send className="w-5 h-5" />
+            </button>
           </>
+        ) : (
+          /* Locked input — clickable overlay triggers PaymentSheet.
+             disabled textarea swallows click events, so we use a div overlay */
+          <div
+            className="flex-1 relative cursor-pointer"
+            onClick={() => setPaymentSheetOpen(true)}
+            title="Upgrade to send messages"
+          >
+            <div className="w-full bg-gray-50 text-gray-400 text-sm opacity-60 border border-dashed border-gray-300 rounded-lg px-3 py-2 select-none" style={{ minHeight: 36 }}>
+              Unlock to send messages
+            </div>
+          </div>
         )}
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={e => { if (paid) setInput(e.target.value); }}
-          onKeyDown={paid ? handleKeyDown : undefined}
-          onClick={!paid ? () => setPaymentSheetOpen(true) : undefined}
-          placeholder={paid ? 'Write a message...' : 'Unlock to send messages'}
-          rows={1}
-          disabled={!paid}
-          aria-disabled={!paid}
-          tabIndex={paid ? 0 : -1}
-          className={`flex-1 resize-none text-sm placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] ${
-            paid ? 'bg-transparent text-foreground' : 'bg-gray-50 text-gray-400 opacity-50 cursor-not-allowed border border-dashed border-gray-300 rounded-lg px-3'
-          }`}
-          style={{ minHeight: 36 }}
-        />
-        <button
-          onClick={paid ? handleSend : () => setPaymentSheetOpen(true)}
-          disabled={paid ? !input.trim() : false}
-          className={`p-2 rounded-lg transition-colors shrink-0 ${
-            !paid ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : input.trim() ? 'bg-foreground text-background hover:opacity-90'
-            : 'bg-foreground text-background opacity-40 cursor-not-allowed'
-          }`}
-        >
-          <Send className="w-5 h-5" />
-        </button>
+        {!paid && (
+          <button
+            onClick={() => setPaymentSheetOpen(true)}
+            className="p-2 rounded-lg bg-gray-300 text-gray-500 transition-colors shrink-0"
+            title="Upgrade to send messages"
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Payment sheet — opens when free user tries to unlock */}
