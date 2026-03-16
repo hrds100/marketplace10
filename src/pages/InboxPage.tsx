@@ -330,7 +330,7 @@ export default function InboxPage() {
       </div>
       <div className="flex-1 min-w-0">
         {selectedThread ? (
-          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={!!showRightPanel} isMobile={false} onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => setShowDetails(true)} displayProfit={showRightPanel && liveEstimatedProfit !== null ? liveEstimatedProfit : null} />
+          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={!!showRightPanel} isMobile={false} onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => { setShowDetails(true); setLeftPanelCollapsed(false); dashCtx?.setSidebarCollapsed(false); }} displayProfit={showRightPanel && liveEstimatedProfit !== null ? liveEstimatedProfit : null} />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center bg-white">
             <MessageSquare className="w-12 h-12 text-gray-300 mb-4" />
