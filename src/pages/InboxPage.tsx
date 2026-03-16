@@ -46,22 +46,19 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>('operator');
-  const [landlordProfile, setLandlordProfile] = useState<{ claimed: boolean; whatsapp: string } | null>(null);
+  const [landlordProfile, setLandlordProfile] = useState<{ whatsapp: string } | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
     (supabase.from('profiles') as any)
-      .select('role, claimed, whatsapp')
+      .select('role, whatsapp')
       .eq('id', user.id)
       .single()
       .then(({ data }: { data: Record<string, unknown> | null }) => {
         if (data?.role) setUserRole(data.role as string);
-        // Track claim state for magic-link landlords (email ends with @nfstay.internal)
+        // Magic-link landlords have an @nfstay.internal email — show claim banner
         if (user.email?.endsWith('@nfstay.internal')) {
-          setLandlordProfile({
-            claimed: !!(data as any)?.claimed,
-            whatsapp: (data as any)?.whatsapp || '',
-          });
+          setLandlordProfile({ whatsapp: (data as any)?.whatsapp || '' });
         }
       });
   }, [user?.id]);
@@ -345,14 +342,14 @@ export default function InboxPage() {
   }
 
   const showRightPanel = showDetails && selectedThread && !selectedThread.isSupport;
-  const showClaimBanner = landlordProfile !== null && !landlordProfile.claimed;
+  const showClaimBanner = landlordProfile !== null; // email @nfstay.internal = unclaimed
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden flex-1">
       {showClaimBanner && (
         <ClaimAccountBanner
           phone={landlordProfile!.whatsapp}
-          onClaimed={() => setLandlordProfile(prev => prev ? { ...prev, claimed: true } : null)}
+          onClaimed={() => setLandlordProfile(null)}
         />
       )}
     <div className="flex-1 flex overflow-hidden">

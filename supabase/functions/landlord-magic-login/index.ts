@@ -23,12 +23,13 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // 1. Validate token — must exist and not be expired
+    // 1. Validate token — must exist and not older than 30 days
+    const expiryDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     const { data: invite, error: inviteErr } = await supabaseAdmin
       .from('landlord_invites')
-      .select('thread_id, phone, expires_at, landlord_user_id')
+      .select('id, thread_id, created_at')
       .eq('magic_token', token)
-      .gt('expires_at', new Date().toISOString())
+      .gt('created_at', expiryDate)
       .maybeSingle()
 
     if (inviteErr || !invite) {
@@ -38,14 +39,41 @@ serve(async (req) => {
       )
     }
 
-    let userId: string = invite.landlord_user_id || ''
+    // 2. Get phone from thread → property (no phone column in invite needed)
+    const { data: thread } = await supabaseAdmin
+      .from('chat_threads')
+      .select('property_id')
+      .eq('id', invite.thread_id)
+      .maybeSingle()
+
+    let phone = ''
+    if (thread?.property_id) {
+      const { data: property } = await supabaseAdmin
+        .from('properties')
+        .select('contact_phone, contact_whatsapp, landlord_whatsapp')
+        .eq('id', thread.property_id)
+        .maybeSingle()
+      phone = (property?.contact_phone || property?.contact_whatsapp || property?.landlord_whatsapp || '').trim()
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '')
+    const internalEmail = `landlord_${cleanPhone}@nfstay.internal`
+
+    // 3. Look up existing landlord by phone in profiles (whatsapp field)
+    //    This handles re-taps without needing a landlord_user_id column
+    let userId = ''
+
+    if (cleanPhone) {
+      const { data: existingProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('whatsapp', phone)
+        .maybeSingle()
+      if (existingProfile?.id) userId = existingProfile.id
+    }
 
     if (!userId) {
-      // 2. First tap — create Supabase account for this landlord
-      const phone: string = invite.phone || ''
-      // Internal email — landlord never sees or uses this
-      const internalEmail = `landlord_${phone.replace(/\D/g, '')}@nfstay.internal`
-
+      // First tap — create Supabase account for this landlord
       const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
         email: internalEmail,
         email_confirm: true,
@@ -60,29 +88,22 @@ serve(async (req) => {
 
       userId = created.user.id
 
-      // 3. Create profile — whatsapp_verified:true bypasses OTP gate
+      // Create profile — whatsapp_verified:true bypasses OTP gate
       await supabaseAdmin.from('profiles').upsert({
         id: userId,
         name: phone,
         whatsapp: phone,
         whatsapp_verified: true,
-        claimed: false,
       })
-
-      // 4. Link the thread to this landlord so loadThreads() finds it
-      await supabaseAdmin
-        .from('chat_threads')
-        .update({ landlord_id: userId })
-        .eq('id', invite.thread_id)
-
-      // 5. Store user ID in invite — future taps skip account creation
-      await supabaseAdmin
-        .from('landlord_invites')
-        .update({ landlord_user_id: userId })
-        .eq('magic_token', token)
     }
 
-    // 6. Create a fresh session
+    // 4. Link the thread to this landlord so loadThreads() finds it
+    await supabaseAdmin
+      .from('chat_threads')
+      .update({ landlord_id: userId })
+      .eq('id', invite.thread_id)
+
+    // 5. Create a fresh session
     const { data: sessionData, error: sessionErr } = await supabaseAdmin.auth.admin.createSession({
       user_id: userId,
     })

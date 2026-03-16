@@ -57,6 +57,5 @@ jobs:
       - run: |
           supabase functions deploy landlord-magic-login --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
           supabase functions deploy claim-landlord-account --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
-          supabase functions deploy run-migrations --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

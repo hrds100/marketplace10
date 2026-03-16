@@ -61,7 +61,7 @@ serve(async (req) => {
     // 2. Update profile
     await supabaseAdmin
       .from('profiles')
-      .update({ name, claimed: true })
+      .update({ name })
       .eq('id', user.id)
 
     // 3. Link ALL property threads matching this landlord's phone to their account
