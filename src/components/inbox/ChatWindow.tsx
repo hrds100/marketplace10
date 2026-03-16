@@ -125,7 +125,8 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
 
   useEffect(() => { loadMessages(); }, [loadMessages]);
 
-  // Realtime subscription
+  // Realtime subscription — both operator and landlord receive the same INSERT
+  // event for the thread, so no polling is needed. mapRow determines me/other.
   useEffect(() => {
     if (thread.isSupport) return;
     const channel = supabase
@@ -151,6 +152,8 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
 
   const handleSend = async () => {
     if (!input.trim() || !user?.id) return;
+    // Enforce payment gate: operator cannot send first message without paying
+    if (isCurrentUserOperator && !paid && !hasExistingMessages) return;
     const body = input.trim();
     setInput('');
 
@@ -311,13 +314,6 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           </div>
         )}
       </div>
-
-      {/* NDA masking warning — shown to both roles when NDA unsigned */}
-      {!thread.isSupport && !thread.termsAccepted && !isCurrentUserLandlord && (
-        <div className="bg-amber-50 border-t border-amber-200 text-amber-800 text-xs px-4 py-2 shrink-0">
-          🔒 Phone numbers in messages will be masked until the landlord signs the NDA.
-        </div>
-      )}
 
       {/* LANDLORD NDA GATE — landlord must sign NDA before replying */}
       {isCurrentUserLandlord && !thread.termsAccepted && (

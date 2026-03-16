@@ -1,5 +1,5 @@
 # NFsTay — Messaging & Inbox Feature Spec
-_Last updated: 2026-03-15_
+_Last updated: 2026-03-16_
 
 > **Both Claude and Perplexity must read this before touching anything in `src/pages/InboxPage.tsx`, `src/components/inbox/`, or any `chat_*` Supabase table.**
 
@@ -10,6 +10,18 @@ _Last updated: 2026-03-15_
 A clean, bright, Airbnb-style inbox where operators (rent-to-rent operators / serviced accommodation managers) and landlords/agents communicate inside NFsTay. Every conversation is anchored to a specific property deal. NFsTay is the source of truth — WhatsApp is notifications only.
 
 **UX reference:** Airbnb Messages (airbnb.co.uk/hosting/messages) — clone the layout as closely as possible.
+
+---
+
+## 1b. CANONICAL FLOWS (single source of truth)
+
+Terms and roles are defined in **`docs/DOMAIN.md`**. Inbox behavior:
+
+- **Tenant (operator):** To send the **first message** in a thread, must have a **paid tier**. The payment gate (PaymentSheet / GHL) is shown until paid. The tenant does **not** sign the NDA.
+- **Landlord:** To send their **first reply** in a thread, must **sign the NDA**. The NDA modal or "Sign NDA to reply" is shown until signed. The landlord does **not** see the payment gate for messaging.
+- **Who signs NDA:** Landlord only. Never show the NDA signature form to the tenant.
+
+Acceptance scenarios for inbox are in **`docs/ACCEPTANCE.md`** (Inbox & messaging).
 
 ---
 
@@ -170,7 +182,7 @@ create table message_templates (
 
 ## 5. REALTIME
 
-Use **Supabase Realtime** on `chat_messages` table.
+Use **Supabase Realtime** on `chat_messages` table. Realtime must be enabled for `chat_messages` in Supabase (Dashboard → Database → Replication) so both operator and landlord see new messages without refresh.
 
 ```ts
 supabase
@@ -293,15 +305,18 @@ Claude should implement ALL of the following in one complete pass:
 - [x] Nav: Inbox between Deals and CRM with `MessageSquare` icon
 - [x] Sidebar-responsive layout (full-bleed, no gap on collapse)
 
-### Backend (not started — all UI uses dummy data)
-- [ ] All 6 DB tables created with RLS
-- [ ] Supabase Realtime wired on `chat_messages`
-- [ ] `filter-message` Edge Function (AI contact filter)
-- [ ] Agreement acceptance flow + AgreementModal.tsx
-- [ ] Magic link handler on `/inbox?token=`
-- [ ] n8n webhooks: `inbox-operator-message` + `inbox-landlord-message`
-- [ ] Quick replies CRUD persisted to `message_templates` table
-- [ ] Support thread auto-created on first inbox load
+### Current implementation status (as of 2026-03-16)
+- [x] chat_threads, chat_messages, message_templates, landlord_invites, agreement_acceptances (and RLS) — done
+- [x] Supabase Realtime on `chat_messages`; thread list and unread for both operator and landlord
+- [x] Agreement flow + AgreementModal; landlord signs NDA; NDA modal openable from centre panel
+- [x] Payment gate for tenant (first message); PaymentSheet + GHL; payment-success redirect + tier refresh
+- [x] Quick replies CRUD persisted to `message_templates`; n8n webhooks (inbox-new-inquiry, inbox-new-message, inbox-landlord-replied, inbox-nda-signed)
+- [x] Magic link handler `?token=` on inbox (landlord_invites lookup)
+- [ ] Optional: `filter-message` Edge Function (AI contact filter) — client-side regex masking in place
+- [ ] Optional: Support thread auto-created on first load — currently hardcoded SUPPORT_THREAD
+
+### Prompt scope for messaging changes
+When changing inbox/messaging flow (e.g. who pays, who signs NDA, payment redirect), the prompt must include: **MESSAGING.md**, **INTEGRATIONS.md**, **DOMAIN.md**, and the full list of touched files (InboxPage, ChatWindow, InboxInquiryPanel, AgreementModal, PaymentSheet, useUserTier, ghl.ts). Prefer **one end-to-end** implementation so the full flow works in one round. Include relevant scenarios from **ACCEPTANCE.md**.
 
 ### Current component tree
 ```
