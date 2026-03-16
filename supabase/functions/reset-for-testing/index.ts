@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const ADMIN_EMAILS = ['admin@hub.nfstay.com', 'hugo@nfstay.com'];
+const ADMIN_EMAILS = ['admin@hub.nfstay.com', 'hugo@nfstay.com', 'hello@nfstay.com', 'hugodesouzax@gmail.com'];
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
