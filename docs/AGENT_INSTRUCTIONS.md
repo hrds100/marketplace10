@@ -65,6 +65,8 @@ Use them instead of terminal commands wherever possible (Rule 17).
 | Vercel MCP | Claude + Perplexity | List deployments, check build logs, runtime logs, env vars |
 | Sentry MCP | Claude (new sessions only) | Query issues, events, errors, performance data |
 | Supabase MCP | Claude | DB queries, migrations, edge functions |
+| n8n MCP | Claude | Create, deploy, activate, test workflows directly |
+| GHL MCP | Claude | Read/write GHL contacts, workflows, automations, webhooks via API |
 
 **Sentry note:** Sentry MCP is configured in Claude Code settings but only loads on new sessions. To query Sentry errors: use Sentry MCP in Claude, or paste Sentry output into Perplexity for diagnosis.
 
@@ -106,6 +108,7 @@ Use them instead of terminal commands wherever possible (Rule 17).
 16. **Admin auditability.** Any admin action that modifies, creates, or deletes data must write a row to an `admin_audit_log` table (`user_id`, `action`, `target_table`, `target_id`, `timestamp`). A toast is also shown. Console.log alone is NOT sufficient — audit logs must be persistent and queryable.
 17. **Hugo never does terminal work.** Claude handles ALL terminal commands, migrations, and CLI operations directly. Never ask Hugo to run a terminal command unless there is absolutely no other way. Prefer MCP tools (Supabase MCP, GitHub MCP) to execute operations programmatically. If a terminal command is unavoidable, Claude runs it — not Hugo. This is mandatory.
 18. **Always update docs/STACK.md** when adding any new service, tool, library, or integration. This must happen in the same commit. No exceptions.
+19. **Hugo never navigates third-party dashboards manually.** Before asking Hugo to click anything in GHL, n8n, Vercel, Supabase, or any external platform, Claude MUST first attempt to execute it via MCP tool or API call. Only ask Hugo to do a manual UI action if the operation is 100% impossible via API/MCP and there is no programmatic alternative. If a manual UI step is truly unavoidable, provide exact click-by-click instructions with the precise location (e.g. "GHL → Automations → Workflows → + New Workflow") — never send Hugo to guess.
 
 ## 8. UI DESIGN STANDARDS
 
@@ -180,4 +183,42 @@ Do not put the report outside the code block. Do not split it across multiple bl
 - Perplexity audits GitHub + Vercel before every task.
 - Perplexity verifies Claude's output before the next task.
 - If a task contradicts the code, flag it — don't blindly execute.
+
+## 13. THIRD-PARTY PLATFORM REFERENCE
+
+When any task involves a third-party platform, Claude MUST attempt API/MCP execution first (Rule 19).
+If a manual UI step is truly unavoidable, use the exact paths below.
+
+### GoHighLevel (GHL)
+- **Add automation webhook (e.g. order submitted):**
+  GHL → Automations → Workflows → + New Workflow → Start from Scratch → Add Trigger → "Order Submitted" → Add Action → "Custom Webhook" → paste URL → Publish
+- **GHL webhooks are NOT in Settings → Integrations.** They are workflow actions only.
+- **Funnel page redirect URL:**
+  GHL → Funnels → [your funnel] → click the specific page (e.g. Thank You) → Settings (gear icon top right of page editor) → "Redirect URL"
+- **Funnel-level settings** (domain, payment mode, tracking): GHL → Funnels → [funnel] → Settings tab (funnel level, not page level)
+- **GHL API base URL:** https://services.leadconnectorhq.com
+- **GHL API version header:** `Version: 2021-07-28`
+- **GHL Location ID:** `eFBsWXY3BmWDGIRez13x`
+
+### n8n
+- **Import workflow:** n8n → Workflows → + New → ⋮ menu → Import from JSON
+- **Add credential:** n8n → Settings → Credentials → + New
+- **Activate workflow:** toggle top-right of workflow editor
+- **Test webhook:** n8n workflow editor → Webhook node → "Listen for test event" → send curl
+- **n8n base URL:** https://n8n.srv886554.hstgr.cloud
+- **Prefer n8n MCP over manual UI** — Claude can create/activate/test workflows via API
+
+### Vercel
+- **Add env var:** Vercel MCP → or → Vercel dashboard → Project → Settings → Environment Variables
+- **Redeploy:** Vercel MCP `deploy` → or → Vercel dashboard → Deployments → ⋮ → Redeploy
+- **Check build logs:** Vercel MCP `get_deployment_build_logs`
+
+### Supabase
+- **Run SQL:** Supabase MCP preferred → or → Supabase dashboard → SQL Editor
+- **Edit RLS:** Supabase dashboard → Authentication → Policies
+- **Edge functions:** `npx supabase functions deploy [name]` via Claude terminal
+
+### Stripe (via GHL)
+- **Test card:** 4242 4242 4242 4242 / any future date / any CVC
+- **Enable test mode:** GHL → Funnels → [funnel] → Settings → Payment mode → Test
 </personality>
