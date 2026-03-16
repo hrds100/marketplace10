@@ -1,8 +1,22 @@
-# Clear Inbox Data for Testing
+# 🗑️ Clear ALL Inbox Data for ALL Users
 
-> **Dev/test only.** This removes all threads and messages; run only if you want to start fresh.
+> ⚠️ **Dev/test only.** This deletes every thread, message, NDA acceptance, and invite for EVERY user. All inboxes will be completely empty.
 
-Run in **Supabase SQL Editor** (order matters — foreign keys):
+---
+
+## How to run
+
+1️⃣ Open **Supabase** → your project dashboard (`asazddtvjvmckouxcmmo`)
+
+2️⃣ Click **SQL Editor** → **New query**
+
+3️⃣ Copy-paste the SQL below, then click **Run**
+
+4️⃣ ✅ Done — every user's inbox is now empty
+
+---
+
+## SQL
 
 ```sql
 DELETE FROM agreement_acceptances;
@@ -11,9 +25,16 @@ DELETE FROM chat_messages;
 DELETE FROM chat_threads;
 ```
 
-After running:
-1. Refresh `/dashboard/inbox` — thread list will be empty (only NFsTay Support remains, which is hardcoded)
-2. Click "Inquire Now" on any deal — a new thread is created
-3. If your tier is `free`, the payment gate ("Unlock Now") will appear
-4. To test as free tier: `UPDATE profiles SET tier = 'free' WHERE email = 'hugo@nfstay.com';`
-5. After testing: `UPDATE profiles SET tier = 'monthly' WHERE email = 'hugo@nfstay.com';`
+---
+
+## After running
+
+Every user's inbox is now empty. The only thread visible is **NFsTay Support** (hardcoded in the app, not from the database).
+
+**For you (Hugo):**
+
+1. 🔄 Refresh `/dashboard/inbox` — thread list is empty (only Support thread remains)
+2. 🏠 Click **Inquire Now** on any deal — a brand new thread is created
+3. 🔒 To test the payment gate: `UPDATE profiles SET tier = 'free' WHERE email = 'hugo@nfstay.com';`
+4. 💳 Open the new thread → you'll see the **"Unlock Now"** payment banner
+5. ✅ After testing: `UPDATE profiles SET tier = 'monthly' WHERE email = 'hugo@nfstay.com';`
