@@ -23,7 +23,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
   const image =
     photos && photos.length > 0
       ? photos[0]
-      : `https://placehold.co/800x600/1a1a2e/ffffff?text=${encodeURIComponent(p.city || 'Property')}`;
+      : `https://placehold.co/800x800/1a1a2e/ffffff?text=${encodeURIComponent(p.city || 'Property')}`;
   return {
     id: p.id,
     name: p.name,
@@ -41,15 +41,15 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
   };
 }
 
-// Skeleton card — matches aspect-[4/3] image + body height
+// Skeleton card — matches aspect-square (1:1) image + body height
 function CardSkeleton() {
   return (
     <div className="bg-card rounded-xl overflow-hidden animate-pulse">
-      <div className="w-full aspect-[4/3] bg-muted" />
-      <div className="p-4 space-y-3">
+      <div className="w-full aspect-square bg-muted" />
+      <div className="p-3.5 space-y-3">
         <div className="h-3 bg-muted rounded w-3/4" />
         <div className="h-2.5 bg-muted rounded w-1/2" />
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 mt-2.5">
           {[0, 1, 2, 3].map(i => (
             <div key={i} className="space-y-1.5">
               <div className="h-2 bg-muted rounded w-2/3" />
@@ -57,7 +57,7 @@ function CardSkeleton() {
             </div>
           ))}
         </div>
-        <div className="flex gap-1.5 mt-4">
+        <div className="flex gap-1.5 mt-3">
           <div className="flex-1 h-8 bg-muted rounded-lg" />
           <div className="flex-1 h-8 bg-muted rounded-lg" />
         </div>
@@ -149,14 +149,9 @@ export default function DealsPageV2() {
   );
 
   return (
-    /*
-     * Layout reference: Airbnb 62/38 split (1128px breakpoint)
-     * Left panel scrolls via page body. Map is sticky within viewport.
-     * Source: Airbnb search results CSS vars + Serkanbyx/real-estate-listing
-     */
     <div className="flex gap-5 items-start">
 
-      {/* ── LEFT PANEL: 62% ─────────────────────────────────────────── */}
+      {/* ── LEFT PANEL: ~55% ────────────────────────────────────────── */}
       <div className="flex-1 min-w-0">
 
         {/* Page header */}
@@ -208,7 +203,7 @@ export default function DealsPageV2() {
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               ⭐ Featured
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
               {featured.map(l => (
                 <PropertyCardV2
                   key={l.id}
@@ -226,14 +221,16 @@ export default function DealsPageV2() {
           </div>
         )}
 
-        {/* ── TABS + FILTERS ───────────────────────────────────── */}
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div className="flex gap-1 bg-muted p-1 rounded-lg">
+        {/* ── UNIFIED FILTER BAR ───────────────────────────────── */}
+        {/* All controls in one harmonious row — no ml-auto orphaning */}
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
+          {/* Tab pills */}
+          <div className="flex gap-0.5 bg-muted p-1 rounded-lg flex-shrink-0">
             {tabs.map(t => (
               <button
                 key={t}
                 onClick={() => { setActiveTab(t); setPage(1); }}
-                className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
                   activeTab === t
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -243,12 +240,8 @@ export default function DealsPageV2() {
               </button>
             ))}
           </div>
-          <span className="text-[11px] text-muted-foreground">
-            {filtered.length + featured.length} deals
-          </span>
-        </div>
 
-        <div className="flex flex-wrap gap-2 mb-5">
+          {/* Selects — inline with tabs, no orphan sort */}
           <select
             value={city}
             onChange={e => { setCity(e.target.value); setPage(1); }}
@@ -268,21 +261,26 @@ export default function DealsPageV2() {
           <select
             value={sort}
             onChange={e => setSort(e.target.value)}
-            className="input-nfstay h-8 text-[11px] pr-7 bg-card ml-auto"
+            className="input-nfstay h-8 text-[11px] pr-7 bg-card"
           >
             <option value="newest">Newest</option>
             <option value="profit">Highest profit</option>
             <option value="rent">Lowest rent</option>
           </select>
+
+          {/* Deal count — trailing, naturally placed */}
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+            {filtered.length + featured.length} deals
+          </span>
         </div>
 
         {/* ── CARD GRID ────────────────────────────────────────── */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
             {[0, 1, 2, 3, 4, 5].map(i => <CardSkeleton key={i} />)}
           </div>
         ) : pageListings.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
             {pageListings.map(l => (
               <PropertyCardV2
                 key={l.id}
@@ -355,14 +353,9 @@ export default function DealsPageV2() {
         )}
       </div>
 
-      {/* ── RIGHT PANEL: sticky map, 38% ────────────────────────────── */}
-      {/*
-       * Proportions: Airbnb 38% at 1128px breakpoint.
-       * sticky top-0 + h-[calc(100vh-theme(spacing.20))] mirrors
-       * Airbnb's calc(100vh - header - 48px) pattern.
-       * Shown at lg+ (1024px). Below lg: full-width list only.
-       */}
-      <div className="hidden lg:flex flex-col w-[38%] max-w-[500px] flex-shrink-0 sticky top-0 h-[calc(100vh-5rem)]">
+      {/* ── RIGHT PANEL: sticky map, 45% ────────────────────────────── */}
+      {/* 55/45 split — Airbnb-confirmed. h-screen sticky top-0 — Airbnb pattern. */}
+      <div className="hidden lg:flex flex-col w-[45%] flex-shrink-0 sticky top-0 h-screen">
         <div className="flex-1 rounded-xl overflow-hidden border border-border/60 shadow-sm bg-muted">
           <Suspense
             fallback={
