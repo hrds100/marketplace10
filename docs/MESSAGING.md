@@ -316,7 +316,7 @@ Claude should implement ALL of the following in one complete pass:
 - [ ] Optional: Support thread auto-created on first load — currently hardcoded SUPPORT_THREAD
 
 ### Prompt scope for messaging changes
-When changing inbox/messaging flow (e.g. who pays, who signs NDA, payment redirect), the prompt must include: **MESSAGING.md**, **INTEGRATIONS.md**, **DOMAIN.md**, and the full list of touched files (InboxPage, ChatWindow, InboxInquiryPanel, AgreementModal, PaymentSheet, useUserTier, ghl.ts). Prefer **one end-to-end** implementation so the full flow works in one round. Include relevant scenarios from **ACCEPTANCE.md**.
+When refining a prompt (Phase 1) for inbox/messaging work, include: **MESSAGING.md**, **INTEGRATIONS.md**, **DOMAIN.md**, and the full list of touched files (InboxPage, ChatWindow, InboxInquiryPanel, AgreementModal, PaymentSheet, useUserTier, ghl.ts). One end-to-end prompt — no part-1/part-2. Include relevant scenarios from **ACCEPTANCE.md**. See `docs/AGENT_INSTRUCTIONS.md` Section 4 (Full Flow Audits).
 
 ### Current component tree
 ```
@@ -398,27 +398,6 @@ src/components/Layout.tsx          ← add Inbox to nav
 |-----|---------|
 | `VITE_AI_FILTER_MODEL` | Optional — defaults to fastest available. Set to `gpt-4o-mini` or leave blank |
 | `OPENAI_API_KEY py` | Supabase secret for Edge Function AI filter |
-
----
-
-## 16. CLAUDE PROMPT REFINEMENT PROTOCOL
-
-Any task touching the inbox, chat, messaging, threads, or any `chat_*` table must include **MESSAGING.md** and **INTEGRATIONS.md** in the Phase 1 refined prompt's required doc list.
-
-When Claude refines a messaging prompt:
-1. **Audit last 3 commits** — check if recent changes to `ChatWindow.tsx`, `InboxPage.tsx`, or `PaymentSheet.tsx` affect the task
-2. **Identify the flow** — is this operator-side (payment gate), landlord-side (NDA gate), or cross-cutting?
-3. **List all files** — at minimum: `InboxPage.tsx`, `ChatWindow.tsx`, the relevant modal/panel, `useUserTier.ts`
-4. **Include acceptance scenarios** from `docs/ACCEPTANCE.md` (Inbox & messaging section)
-5. **For cross-cutting tasks** (touches UI + DB + n8n/GHL): require one-pass implementation and list every system in scope
-
-Phase 1 output for a messaging task should explicitly state:
-- Which role is affected (Tenant / Landlord / both)
-- Which DB tables are touched
-- Whether n8n webhooks need updating
-- Whether RLS policies need checking
-
-See `docs/AGENT_INSTRUCTIONS.md` Section 0 and Section 12 for the full two-phase protocol.
 
 ---
 

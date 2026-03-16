@@ -51,13 +51,8 @@ _Last updated: 2026-03-16_
 
 ---
 
-## Claude Prompt Refinement Protocol
+## AI operating protocol
 
-Any task touching roles, actors, or inbox flows (who pays, who signs NDA, who sends first message) must include **DOMAIN.md** in the refined prompt's required doc list (Phase 1).
+The full two-phase execution protocol (Prompt Refinement → Execution) lives in **`docs/AGENT_INSTRUCTIONS.md`**. This file contains domain definitions only — no workflow rules are duplicated here.
 
-When Claude refines a prompt involving role logic:
-- Confirm which actor is performing the action (Tenant/Operator vs Landlord vs Admin) using the definitions above
-- Confirm the canonical flow (tenant pays first, landlord signs NDA — never inverted)
-- Flag any prompt that inverts roles or contradicts the canonical flows before executing
-
-See `docs/AGENT_INSTRUCTIONS.md` Section 0 and Section 12 for the full two-phase protocol.
+When a task touches roles or flows (who pays, who signs NDA, who sends first message), Claude includes **DOMAIN.md** in the Phase 1 refined prompt's doc list, confirms the canonical flow, and flags any inversion before executing.
