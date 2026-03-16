@@ -57,14 +57,14 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const { tier, refreshTier } = useUserTier();
   const paid = isPaidTier(tier);
 
-  // Belt-and-braces: re-check tier on mount in case a payment webhook
-  // updated the DB after last render (e.g. user refreshed quickly)
+  // Re-check tier on mount to catch missed webhook updates
   useEffect(() => { if (!paid) refreshTier(); }, []);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
+  const [hasExistingMessages, setHasExistingMessages] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -106,10 +106,13 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         .eq('thread_id', thread.id)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      setMessages((data || []).map(row => mapRow(row as Record<string, unknown>, user?.id)));
+      const mapped = (data || []).map(row => mapRow(row as Record<string, unknown>, user?.id));
+      setMessages(mapped);
+      setHasExistingMessages(mapped.length > 0);
     } catch (err) {
       console.error('Failed to load messages:', err);
       setMessages([]);
+      setHasExistingMessages(false);
     } finally {
       setLoading(false);
     }
@@ -311,8 +314,8 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         </div>
       )}
 
-      {/* Locked input banner — free tier */}
-      {!paid && !thread.isSupport && (
+      {/* Locked input banner — free tier with no existing messages */}
+      {!paid && !thread.isSupport && !hasExistingMessages && (
         <div className="flex items-center justify-between bg-amber-50 border-t border-amber-200 px-4 py-3 shrink-0">
           <div className="flex items-center gap-2 text-sm text-amber-800">
             <LockKeyhole className="h-4 w-4 shrink-0" />
@@ -330,7 +333,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       {/* Input bar */}
       <div className="relative border-t border-gray-200 bg-white px-4 py-3 flex items-end gap-2 shrink-0">
         <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
-        {paid ? (
+        {(paid || hasExistingMessages) ? (
           <>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
@@ -362,7 +365,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
             </div>
           </div>
         )}
-        {!paid && (
+        {!paid && !hasExistingMessages && (
           <button
             onClick={() => setPaymentSheetOpen(true)}
             className="p-2 rounded-lg bg-gray-300 text-gray-500 transition-colors shrink-0"

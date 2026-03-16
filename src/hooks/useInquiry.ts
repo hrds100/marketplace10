@@ -66,8 +66,8 @@ export function useInquiry(propertyId: string | null) {
           .single();
 
         if (error) {
-          console.error('Failed to create thread:', error.message);
-          // Might have been created concurrently — try fetching again
+          console.warn('useInquiry: thread insert failed (likely duplicate):', error.message);
+          // Race condition — thread was created concurrently, fetch it
           const { data: retry } = await supabase
             .from('chat_threads')
             .select('id')

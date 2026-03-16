@@ -61,13 +61,17 @@ export default function InboxPage() {
 
   // Auto-select thread created from Inquire Now navigation
   useEffect(() => {
-    if (inquiryThreadId && !selectedId) {
+    if (inquiryThreadId) {
       setSelectedId(inquiryThreadId);
       setShowDetails(true);
-      // Refresh thread list to include the new thread
-      loadThreads();
+      loadThreads(); // Refresh thread list to include the new thread
     }
   }, [inquiryThreadId]);
+
+  // Clear stale selection when deal param changes
+  useEffect(() => {
+    if (dealQueryParam) setSelectedId(null); // Reset before useInquiry resolves
+  }, [dealQueryParam]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
