@@ -43,6 +43,17 @@ These templates must exist in GHL before the workflows will send messages:
 | Property Reference | `contact.property_reference` | `Z0thvOTyoO2KxTMt5sP8` |
 | Magic Link URL | `contact.magic_link_url` | `gWb4evAKLWCK0y8RHp32` |
 
+## Deployed Workflow IDs
+| Workflow | n8n ID | Webhook URL | Status |
+|----------|--------|-------------|--------|
+| Test Echo | `KV9cGIEfFd3mtDWr` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-new-inquiry | ✅ Active |
+| New Inquiry | `IvXzbcqzv5bKtu01` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-new-inquiry | ⏳ Inactive (pending Meta) |
+| New Message | `OHE0twdHzWJOii4Q` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-new-message | ✅ Active |
+| Landlord Replied | `Sa3qQgBRabtXHEDT` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-landlord-replied | ✅ Active |
+| Tenant Message | `i59O02eoU8WCvcFM` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-tenant-message | ✅ Active |
+
+**Note:** Test Echo and New Inquiry share the same webhook path (`inbox-new-inquiry`). When New Inquiry is activated (after Meta approves the template), deactivate the Test Echo workflow to avoid conflicts.
+
 ## Troubleshooting
 - **Webhook returns 404**: workflow is not activated — toggle it on
 - **GHL returns 401**: API key expired or invalid
