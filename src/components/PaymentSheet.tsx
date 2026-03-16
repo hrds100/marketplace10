@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, CheckCircle2 } from 'lucide-react';
+import { X, CheckCircle2, Loader2 } from 'lucide-react';
 import { getFunnelUrl } from '@/lib/ghl';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,21 +11,20 @@ interface Props {
   onUnlocked: () => void;
 }
 
-/**
- * Payment-only sheet. GHL iframe + tier polling.
- * Opens as a slide-in panel. On successful payment (tier flips to non-free),
- * calls onUnlocked() and closes itself.
- */
 export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) {
   const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [pollTimedOut, setPollTimedOut] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (open) {
       setVisible(true);
       setPaymentComplete(false);
+      setIframeLoaded(false);
+      setPollTimedOut(false);
     }
   }, [open]);
 
@@ -38,6 +37,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   const handlePaymentSuccess = useCallback(() => {
     if (paymentComplete) return;
     setPaymentComplete(true);
+    setPollTimedOut(false);
 
     let attempts = 0;
     pollRef.current = setInterval(async () => {
@@ -61,25 +61,23 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
         console.error('Tier poll error:', e);
       }
 
+      // After 20 attempts (20s): show error, do NOT auto-unlock
       if (attempts >= 20) {
         if (pollRef.current) clearInterval(pollRef.current);
-        handleClose();
-        onUnlocked(); // Assume success after 20s — tier webhook may be slow
+        setPollTimedOut(true);
       }
     }, 1000);
   }, [handleClose, user, paymentComplete, onUnlocked]);
 
-  // postMessage listener for GHL iframe
+  // postMessage listener
   useEffect(() => {
     if (!open) return;
     const handleMessage = (e: MessageEvent) => {
       if (!e.origin.includes('pay.nfstay.com') && !e.origin.includes('leadconnectorhq.com')) return;
       const data = e.data;
       const isSuccess =
-        data?.event === 'order_success' ||
-        data?.type === 'order_success' ||
-        data?.event === 'purchase' ||
-        data?.page === 'thank-you' ||
+        data?.event === 'order_success' || data?.type === 'order_success' ||
+        data?.event === 'purchase' || data?.page === 'thank-you' ||
         (typeof data === 'string' && data.includes('thank'));
       if (isSuccess) handlePaymentSuccess();
     };
@@ -87,7 +85,6 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     return () => window.removeEventListener('message', handleMessage);
   }, [open, handlePaymentSuccess]);
 
-  // Escape key
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
@@ -95,7 +92,6 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     return () => window.removeEventListener('keydown', handleKey);
   }, [open, handleClose]);
 
-  // Cleanup
   useEffect(() => {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
@@ -103,6 +99,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   if (!open && !visible) return null;
 
   const handleIframeLoad = (e: React.SyntheticEvent<HTMLIFrameElement>) => {
+    setIframeLoaded(true);
     try {
       const url = (e.target as HTMLIFrameElement).contentWindow?.location?.href || '';
       if (url.includes('thank') || url.includes('Thank')) handlePaymentSuccess();
@@ -135,29 +132,49 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
               {paymentComplete ? 'Unlocking your inbox...' : 'Get full access to contact landlords directly'}
             </p>
           </div>
-          {!paymentComplete && (
-            <button onClick={handleClose} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
-              <X className="w-5 h-5" />
-            </button>
-          )}
+          <button onClick={handleClose} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden">
           {paymentComplete ? (
             <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-green-500" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">You're in!</h3>
-              <p className="text-sm text-muted-foreground">Messaging unlocked. You can now contact landlords directly.</p>
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mt-2" />
+              {pollTimedOut ? (
+                <>
+                  <h3 className="text-lg font-bold text-foreground">Almost there</h3>
+                  <p className="text-sm text-muted-foreground">Your payment is being processed.</p>
+                  <p className="mt-4 text-xs text-red-600">We couldn't confirm your payment yet. Please refresh or contact support.</p>
+                  <button onClick={() => window.location.reload()} className="mt-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90">
+                    Refresh Page
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <CheckCircle2 className="w-8 h-8 text-green-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">You're in!</h3>
+                  <p className="text-sm text-muted-foreground">Messaging unlocked. You can now contact landlords directly.</p>
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mt-2" />
+                </>
+              )}
             </div>
           ) : !funnelUrl ? (
             <div className="flex flex-col items-center justify-center flex-1 p-8 text-center">
               <p className="text-sm text-muted-foreground">Payment is being set up. Please try again shortly.</p>
             </div>
           ) : (
-            <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex flex-col flex-1 overflow-hidden relative">
+              {/* Loading spinner — visible until iframe loads */}
+              {!iframeLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+                    <p className="text-sm text-muted-foreground">Preparing secure checkout…</p>
+                  </div>
+                </div>
+              )}
               <div className="flex-1 min-h-0 overflow-hidden">
                 <iframe
                   src={funnelUrl}

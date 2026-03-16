@@ -56,6 +56,10 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const { user } = useAuth();
   const { tier, refreshTier } = useUserTier();
   const paid = isPaidTier(tier);
+
+  // Belt-and-braces: re-check tier on mount in case a payment webhook
+  // updated the DB after last render (e.g. user refreshed quickly)
+  useEffect(() => { if (!paid) refreshTier(); }, []);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -342,8 +346,9 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           rows={1}
           disabled={!paid}
           aria-disabled={!paid}
+          tabIndex={paid ? 0 : -1}
           className={`flex-1 resize-none text-sm placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] ${
-            paid ? 'bg-transparent text-foreground' : 'bg-gray-50 text-gray-400 opacity-50 cursor-not-allowed'
+            paid ? 'bg-transparent text-foreground' : 'bg-gray-50 text-gray-400 opacity-50 cursor-not-allowed border border-dashed border-gray-300 rounded-lg px-3'
           }`}
           style={{ minHeight: 36 }}
         />
