@@ -3,7 +3,6 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import LandingPage from "./pages/LandingPage";
-import MagicLoginPage from "./pages/MagicLoginPage";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import VerifyOtp from "./pages/VerifyOtp";
@@ -12,6 +11,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DealsPage from "./pages/DealsPage";
+import DealsPageV2 from "./pages/DealsPageV2";
 import InboxPage from "./pages/InboxPage";
 import FavouritesPage from "./pages/FavouritesPage";
 import DealDetail from "./pages/DealDetail";
@@ -72,12 +72,13 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
-          {/* Magic link entry point — GHL WhatsApp button uses hub.nfstay.com/inbox?token=... */}
-          <Route path="/inbox" element={<MagicLoginPage />} />
+          {/* Magic link short URL — GHL template approved with hub.nfstay.com/inbox */}
+          <Route path="/inbox" element={<Navigate to={`/dashboard/inbox${window.location.search}`} replace />} />
           <Route path="/deals/:id" element={<DealDetail />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="deals" replace />} />
             <Route path="deals" element={<DealsPage />} />
+            <Route path="deals-v2" element={<DealsPageV2 />} />
             <Route path="inbox" element={<InboxPage />} />
             <Route path="favourites" element={<FavouritesPage />} />
             <Route path="crm" element={<CRMPage />} />
