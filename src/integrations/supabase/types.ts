@@ -415,6 +415,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          email: string | null
           id: string
           name: string | null
           notif_email_daily: boolean | null
@@ -430,6 +431,7 @@ export type Database = {
           whatsapp_verified: boolean | null
         }
         Insert: {
+          email?: string | null
           id: string
           name?: string | null
           notif_email_daily?: boolean | null
@@ -445,6 +447,7 @@ export type Database = {
           whatsapp_verified?: boolean | null
         }
         Update: {
+          email?: string | null
           id?: string
           name?: string | null
           notif_email_daily?: boolean | null
