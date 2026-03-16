@@ -69,6 +69,48 @@ export type Database = {
         }
         Relationships: []
       }
+      agreement_acceptances: {
+        Row: {
+          accepted_at: string
+          id: string
+          ip_address: string | null
+          landlord_id: string
+          metadata: Json | null
+          thread_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          ip_address?: string | null
+          landlord_id: string
+          metadata?: Json | null
+          thread_id: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          ip_address?: string | null
+          landlord_id?: string
+          metadata?: Json | null
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agreement_acceptances_landlord_id_fkey"
+            columns: ["landlord_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agreement_acceptances_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_settings: {
         Row: {
           id: string
@@ -312,6 +354,38 @@ export type Database = {
           property_name?: string | null
         }
         Relationships: []
+      }
+      landlord_invites: {
+        Row: {
+          created_at: string
+          id: string
+          magic_token: string
+          thread_id: string
+          used: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          magic_token?: string
+          thread_id: string
+          used?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          magic_token?: string
+          thread_id?: string
+          used?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landlord_invites_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       message_templates: {
         Row: {

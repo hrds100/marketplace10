@@ -115,8 +115,8 @@ export default function AgreementModal({ thread, isOperator, onClose, onSign }: 
             {NDA_TEXT}
           </div>
 
-          {/* Signature section — only for operators when not yet signed */}
-          {!thread.termsAccepted && isOperator && (
+          {/* Signature section — landlord signs, operator waits */}
+          {!thread.termsAccepted && !isOperator && (
             <div className="border-t border-gray-100 pt-5 space-y-4">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900">Landlord / Agent Signature Required</h3>
@@ -156,8 +156,8 @@ export default function AgreementModal({ thread, isOperator, onClose, onSign }: 
             </div>
           )}
 
-          {/* Operator waiting view */}
-          {!thread.termsAccepted && !isOperator && (
+          {/* Operator waiting view — operator cannot sign, must wait for landlord */}
+          {!thread.termsAccepted && isOperator && (
             <div className="border-t border-gray-100 pt-5 text-center">
               <p className="text-sm text-gray-500">Waiting for landlord to sign this agreement.</p>
             </div>

@@ -11,7 +11,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useInquiry } from '@/hooks/useInquiry';
 import type { Thread } from '@/components/inbox/types';
 
-// Support thread is always pinned, never from DB
 const SUPPORT_THREAD: Thread = {
   id: 'support',
   propertyId: null,
@@ -44,14 +43,15 @@ export default function InboxPage() {
   const [error, setError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>('operator');
 
-  // Fetch user role from profiles
   useEffect(() => {
     if (!user?.id) return;
     supabase.from('profiles').select('role').eq('id', user.id).single()
       .then(({ data }) => { if (data?.role) setUserRole(data.role); });
   }, [user?.id]);
-  const [searchParams] = useSearchParams();
+
+  const [searchParams, setSearchParams] = useSearchParams();
   const dealQueryParam = searchParams.get('deal');
+  const tokenParam = searchParams.get('token');
   const { threadId: inquiryThreadId } = useInquiry(dealQueryParam);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -59,19 +59,43 @@ export default function InboxPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Auto-select thread created from Inquire Now navigation
+  // Auto-select thread from Inquire Now
   useEffect(() => {
     if (inquiryThreadId) {
       setSelectedId(inquiryThreadId);
       setShowDetails(true);
-      loadThreads(); // Refresh thread list to include the new thread
+      loadThreads();
     }
   }, [inquiryThreadId]);
 
   // Clear stale selection when deal param changes
   useEffect(() => {
-    if (dealQueryParam) setSelectedId(null); // Reset before useInquiry resolves
+    if (dealQueryParam) setSelectedId(null);
   }, [dealQueryParam]);
+
+  // Magic link: ?token= → find thread, select it, mark invite used
+  useEffect(() => {
+    if (!tokenParam || !user?.id) return;
+    (async () => {
+      const { data } = await (supabase.from('landlord_invites') as any)
+        .select('thread_id')
+        .eq('magic_token', tokenParam)
+        .eq('used', false)
+        .maybeSingle();
+      if (data?.thread_id) {
+        setSelectedId(data.thread_id);
+        setShowDetails(true);
+        // Mark invite as used — fire-and-forget
+        (supabase.from('landlord_invites') as any)
+          .update({ used: true })
+          .eq('magic_token', tokenParam)
+          .then(() => {});
+        loadThreads();
+      }
+      // Strip token from URL
+      setSearchParams(prev => { prev.delete('token'); return prev; }, { replace: true });
+    })();
+  }, [tokenParam, user?.id]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -80,7 +104,7 @@ export default function InboxPage() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Load threads from Supabase
+  // Load threads for BOTH operator and landlord roles
   const loadThreads = useCallback(async () => {
     if (!user?.id) return;
     try {
@@ -88,42 +112,54 @@ export default function InboxPage() {
       setError(null);
       const { data, error: queryError } = await supabase
         .from('chat_threads')
-        .select('*, properties(*)')
-        .eq('operator_id', user.id)
+        .select('*, properties(*), operator:profiles!chat_threads_operator_id_fkey(name, email, whatsapp), landlord:profiles!chat_threads_landlord_id_fkey(name, email, whatsapp)')
+        .or(`operator_id.eq.${user.id},landlord_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (queryError) throw queryError;
 
-      const mapped: Thread[] = (data || []).map((row) => {
+      const mapped: Thread[] = (data || []).map((row: Record<string, unknown>) => {
         const prop = row.properties as Record<string, unknown> | null;
-        // Display name: use city + type if available, fallback to contact name, never show raw IDs
-        const propName = (prop?.name as string) || '';
+        const operatorProfile = row.operator as Record<string, unknown> | null;
+        const landlordProfile = row.landlord as Record<string, unknown> | null;
+        const isOperatorView = (row.operator_id as string) === user.id;
+
         const city = (prop?.city as string) || '';
         const type = (prop?.type as string) || '';
-        const contactName = (prop?.contact_name as string) || '';
-        // Build a human-friendly title: "Manchester · 2-bed flat" or contact name or "Untitled Thread"
-        const displayTitle = city && type ? `${city} · ${type}` : city || contactName || 'Untitled Thread';
+        const displayTitle = city && type ? `${city} · ${type}` : city || 'Untitled Thread';
+
+        // Contact info depends on which role the current user has
+        const contactName = isOperatorView
+          ? (prop?.contact_name as string) || (landlordProfile?.name as string) || 'Unknown'
+          : (operatorProfile?.name as string) || 'Operator';
+        const contactPhone = isOperatorView
+          ? (prop?.contact_phone as string) || ''
+          : (operatorProfile?.whatsapp as string) || '';
+        const contactEmail = isOperatorView
+          ? (prop?.contact_email as string) || ''
+          : (operatorProfile?.email as string) || '';
+
         return {
-          id: row.id,
+          id: row.id as string,
           propertyId: (prop?.id as string) || null,
           propertyTitle: displayTitle,
-          propertyCity: (prop?.city as string) || '',
+          propertyCity: city,
           propertyPostcode: (prop?.postcode as string) || '',
           propertyImage: ((prop?.photos as string[]) || [])[0] || null,
           propertyProfit: (prop?.profit_est as number) || 0,
           propertyRent: (prop?.rent_monthly as number) || 0,
           propertyBedrooms: (prop?.bedrooms as number) || null,
           dealType: 'Serviced Accommodation',
-          contactName: (prop?.contact_name as string) || 'Unknown',
-          contactPhone: (prop?.contact_phone as string) || '',
-          contactEmail: (prop?.contact_email as string) || '',
+          contactName,
+          contactPhone,
+          contactEmail,
           lastMessage: '',
-          lastMessageAt: new Date(row.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+          lastMessageAt: new Date(row.created_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
           lastMessageSenderIsOperator: false,
-          unread: false,
+          unread: !(row.is_read as boolean),
           isSupport: false,
-          isOnline: false, // TODO: wire to presence when available
-          termsAccepted: row.terms_accepted,
+          isOnline: false,
+          termsAccepted: row.terms_accepted as boolean,
           landlordId: (row.landlord_id as string) || null,
           operatorId: (row.operator_id as string) || null,
         };
@@ -140,24 +176,38 @@ export default function InboxPage() {
 
   useEffect(() => { loadThreads(); }, [loadThreads]);
 
-  // Realtime: listen for thread changes (new threads, NDA updates)
+  // Realtime for operator threads
   useEffect(() => {
     if (!user?.id) return;
-    const channel = supabase
-      .channel('inbox-threads')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads', filter: `operator_id=eq.${user.id}` }, () => {
-        loadThreads(); // Refresh on any change
-      })
+    const ch1 = supabase
+      .channel('inbox-threads-operator')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads', filter: `operator_id=eq.${user.id}` }, () => loadThreads())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    // Realtime for landlord threads
+    const ch2 = supabase
+      .channel('inbox-threads-landlord')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads', filter: `landlord_id=eq.${user.id}` }, () => loadThreads())
+      .subscribe();
+    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
   }, [user?.id, loadThreads]);
 
   const allThreads = [SUPPORT_THREAD, ...dbThreads];
   const selectedThread = allThreads.find(t => t.id === selectedId) || null;
+  const isOperator = !selectedThread?.isSupport && selectedThread?.operatorId === user?.id;
 
+  // Mark thread as read on open
   const handleSelectThread = (id: string) => {
     setSelectedId(id);
     setShowDetails(true);
+    if (id !== 'support' && user?.id) {
+      supabase.from('chat_threads')
+        .update({ is_read: true })
+        .eq('id', id)
+        .or(`operator_id.eq.${user.id},landlord_id.eq.${user.id}`)
+        .then(() => {});
+      // Optimistic local update
+      setDbThreads(prev => prev.map(t => t.id === id ? { ...t, unread: false } : t));
+    }
   };
 
   const handleSignNDA = async () => {
@@ -170,6 +220,15 @@ export default function InboxPage() {
       toast.error('Failed to save signature. Try again.');
       return;
     }
+    // Insert agreement acceptance audit trail
+    const thread = allThreads.find(t => t.id === selectedId);
+    (supabase.from('agreement_acceptances') as any).insert({
+      thread_id: selectedId,
+      landlord_id: thread?.landlordId ?? user?.id,
+      accepted_at: new Date().toISOString(),
+    }).then(({ error: insertErr }: { error: unknown }) => {
+      if (insertErr) console.error('Failed to log agreement acceptance:', insertErr);
+    });
     // Optimistic local update
     setDbThreads(prev => prev.map(t => t.id === selectedId ? { ...t, termsAccepted: true } : t));
   };
@@ -188,7 +247,6 @@ export default function InboxPage() {
     toast.success('Thread archived');
   };
 
-  // Loading state
   if (loading && dbThreads.length === 0) {
     return (
       <div className="h-full w-full flex overflow-hidden flex-1">
@@ -196,21 +254,15 @@ export default function InboxPage() {
           {[1, 2, 3].map(i => (
             <div key={i} className="animate-pulse flex items-start gap-3">
               <div className="w-10 h-10 bg-gray-200 rounded-lg" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3 bg-gray-200 rounded w-3/4" />
-                <div className="h-2 bg-gray-100 rounded w-1/2" />
-              </div>
+              <div className="flex-1 space-y-2"><div className="h-3 bg-gray-200 rounded w-3/4" /><div className="h-2 bg-gray-100 rounded w-1/2" /></div>
             </div>
           ))}
         </div>
-        <div className="flex-1 flex items-center justify-center bg-white">
-          <Loader2 className="w-6 h-6 text-gray-300 animate-spin" />
-        </div>
+        <div className="flex-1 flex items-center justify-center bg-white"><Loader2 className="w-6 h-6 text-gray-300 animate-spin" /></div>
       </div>
     );
   }
 
-  // Error state
   if (error && dbThreads.length === 0) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-white">
@@ -223,7 +275,6 @@ export default function InboxPage() {
     );
   }
 
-  // Mobile
   if (isMobile) {
     if (selectedId && selectedThread) {
       return (
@@ -260,7 +311,7 @@ export default function InboxPage() {
       </div>
       {showRightPanel && (
         <div className="w-[320px] shrink-0">
-          <InboxInquiryPanel thread={selectedThread} onClose={() => setShowDetails(false)} onSignNDA={handleSignNDA} isOperator={userRole === 'operator' || userRole === 'admin'} />
+          <InboxInquiryPanel thread={selectedThread} onClose={() => setShowDetails(false)} onSignNDA={handleSignNDA} isOperator={isOperator} />
         </div>
       )}
       <MessagingSettingsModal open={showSettings} onClose={() => setShowSettings(false)} />

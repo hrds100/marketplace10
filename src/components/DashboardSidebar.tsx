@@ -29,23 +29,27 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
   const { signOut, isAdmin, user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch unread thread count + subscribe to realtime updates
+  // Fetch unread thread count for both operator and landlord roles
   useEffect(() => {
     if (!user?.id) return;
     const fetchUnread = async () => {
       const { count } = await supabase
         .from('chat_threads')
         .select('id', { count: 'exact', head: true })
-        .eq('operator_id', user.id)
+        .or(`operator_id.eq.${user.id},landlord_id.eq.${user.id}`)
         .eq('is_read', false);
       setUnreadCount(count ?? 0);
     };
     fetchUnread();
-    const channel = supabase
-      .channel('sidebar-unread')
+    const ch1 = supabase
+      .channel('sidebar-unread-operator')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads', filter: `operator_id=eq.${user.id}` }, () => fetchUnread())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const ch2 = supabase
+      .channel('sidebar-unread-landlord')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads', filter: `landlord_id=eq.${user.id}` }, () => fetchUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
   }, [user?.id]);
 
   const handleLogout = async () => {
