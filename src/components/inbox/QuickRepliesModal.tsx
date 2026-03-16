@@ -30,7 +30,7 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
   const [activeCategory, setActiveCategory] = useState('All');
 
   const loadReplies = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) { setLoading(false); return; }
     try {
       setLoading(true);
       const { data, error, count } = await supabase
@@ -177,7 +177,7 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
             }
             return (
               <div key={qr.id} className="group relative">
-                <button onClick={() => { onSelect(qr.body); onClose(); }} className="w-full text-left p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                <button onClick={() => { if (typeof qr.body === 'string') { onSelect(qr.body); onClose(); } }} className="w-full text-left p-3 rounded-xl hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-gray-900">{qr.title}</span>
                     {qr.category && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{qr.category}</span>}

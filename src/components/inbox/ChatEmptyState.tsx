@@ -19,9 +19,10 @@ interface Props {
   onKeyDown: (e: React.KeyboardEvent) => void;
   onOpenQuickReplies: () => void;
   inputRef: React.RefObject<HTMLTextAreaElement>;
+  displayProfit?: number | null;
 }
 
-export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onInputChange, onSend, onKeyDown, onOpenQuickReplies, inputRef }: Props) {
+export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onInputChange, onSend, onKeyDown, onOpenQuickReplies, inputRef, displayProfit }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fallbackImage = `https://picsum.photos/seed/${thread.id.slice(0, 8)}/160/160`;
 
@@ -82,10 +83,10 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
         <ChevronRight className="w-3 h-3 shrink-0 text-gray-400" />
       </button>
 
-      {/* Headline — earnings copy with real amount */}
-      <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 text-center max-w-2xl leading-[1.05] tracking-tight">
+      {/* Headline — earnings copy with real amount (live from estimator when right panel is open) */}
+      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 text-center max-w-2xl leading-[1.05] tracking-tight">
         You could earn{' '}
-        <span className="text-emerald-600">£{(thread.propertyProfit || 0).toLocaleString()}</span>
+        <span className="text-emerald-600">£{(displayProfit != null ? displayProfit : thread.propertyProfit || 0).toLocaleString()}</span>
         <br />
         hosting this property on Airbnb
       </h2>
@@ -116,8 +117,8 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
                 <Plus className="w-5 h-5 text-muted-foreground" />
               </button>
               <button className="relative p-2 rounded-lg hover:bg-secondary transition-colors" onClick={onOpenQuickReplies} title="Quick replies & templates">
-                <span className="absolute inset-0 rounded-lg ring-2 ring-emerald-400/50 animate-pulse" />
-                <LayoutGrid className="w-5 h-5 text-muted-foreground relative" />
+                <span className={`absolute inset-0 rounded-lg ring-2 ring-emerald-300 ${!inputValue ? 'animate-pulse' : ''}`} />
+                <LayoutGrid className={`w-5 h-5 relative ${!inputValue ? 'text-emerald-500' : 'text-muted-foreground'}`} />
               </button>
             </div>
             <button onClick={onSend}

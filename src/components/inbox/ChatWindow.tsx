@@ -52,9 +52,10 @@ interface Props {
   isMobile: boolean;
   onOpenNDA?: () => void;
   onOpenDetails?: () => void;
+  displayProfit?: number | null;
 }
 
-export default function ChatWindow({ thread, onBack, onToggleDetails, showDetailsOpen, isMobile, onOpenNDA, onOpenDetails }: Props) {
+export default function ChatWindow({ thread, onBack, onToggleDetails, showDetailsOpen, isMobile, onOpenNDA, onOpenDetails, displayProfit }: Props) {
   const { user } = useAuth();
   const { tier, loading: tierLoading, refreshTier } = useUserTier();
   const paid = isPaidTier(tier);
@@ -284,7 +285,8 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    // relative — gives QuickRepliesModal (absolute bottom-16) a position context anchored to the chat panel
+    <div className="relative h-full flex flex-col bg-white">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
         {isMobile && (
@@ -338,6 +340,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
             onKeyDown={handleKeyDown}
             onOpenQuickReplies={() => setShowQuickReplies(!showQuickReplies)}
             inputRef={inputRef as React.RefObject<HTMLTextAreaElement>}
+            displayProfit={displayProfit}
           />
         ) : (
           <div className="px-4 py-4">
@@ -360,7 +363,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       </div>
 
       {/* QuickRepliesModal — always mounted so it works in both empty and conversation states */}
-      <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
+      <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => { if (typeof text === 'string') setInput(text); }} />
       {/* Hidden file input for Plus/attach button */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) toast.info(`Selected: ${f.name} — image upload coming soon`); e.target.value = ''; }} />
 

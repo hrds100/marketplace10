@@ -8,6 +8,7 @@ interface Props {
   onSignNDA: () => void;
   isOperator?: boolean;
   onOpenAgreement?: () => void;
+  onEstimatedProfitChange?: (profit: number) => void;
 }
 
 // Shared property info section — identical for both views
@@ -51,7 +52,7 @@ function PropertyInfo({ thread }: { thread: Thread }) {
 }
 
 // OPERATOR VIEW — sees waiting state, no NDA controls, has earnings estimator
-function OperatorView({ thread }: { thread: Thread }) {
+function OperatorView({ thread, onEstimatedProfitChange }: { thread: Thread; onEstimatedProfitChange?: (profit: number) => void }) {
   return (
     <>
       <PropertyInfo thread={thread} />
@@ -61,6 +62,7 @@ function OperatorView({ thread }: { thread: Thread }) {
         bedrooms={thread.propertyBedrooms ?? 0}
         propertyType={thread.dealType ?? 'Property'}
         propertyProfit={thread.propertyProfit ?? 0}
+        onEstimatedProfitChange={onEstimatedProfitChange}
       />
 
       {/* Landlord Details — locked */}
@@ -183,7 +185,7 @@ function LandlordView({ thread, onOpenAgreement }: { thread: Thread; onOpenAgree
   );
 }
 
-export default function InboxInquiryPanel({ thread, onClose, onSignNDA, isOperator = true, onOpenAgreement }: Props) {
+export default function InboxInquiryPanel({ thread, onClose, onSignNDA, isOperator = true, onOpenAgreement, onEstimatedProfitChange }: Props) {
   return (
     <div className="h-full flex flex-col bg-white border-l border-gray-100">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
@@ -195,7 +197,7 @@ export default function InboxInquiryPanel({ thread, onClose, onSignNDA, isOperat
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
         {isOperator ? (
-          <OperatorView thread={thread} />
+          <OperatorView thread={thread} onEstimatedProfitChange={onEstimatedProfitChange} />
         ) : (
           <LandlordView thread={thread} onOpenAgreement={() => onOpenAgreement?.()} />
         )}

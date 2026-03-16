@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Props {
@@ -6,9 +6,10 @@ interface Props {
   bedrooms: number;
   propertyType: string;
   propertyProfit?: number;
+  onEstimatedProfitChange?: (profit: number) => void;
 }
 
-export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType, propertyProfit }: Props) {
+export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType, propertyProfit, onEstimatedProfitChange }: Props) {
   const [nightsBooked, setNightsBooked] = useState(20);
   // Seed nightlyRate so Est. monthly profit matches the property's real profit on first render
   const [nightlyRate, setNightlyRate] = useState(() => {
@@ -25,6 +26,10 @@ export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType,
   const estimatedProfit = estimatedRevenue - monthlyRent - extraCosts;
   const isProfitable = estimatedProfit >= 0;
   const sliderPercent = ((nightsBooked - 5) / 25) * 100;
+
+  useEffect(() => {
+    onEstimatedProfitChange?.(estimatedProfit);
+  }, [estimatedProfit, onEstimatedProfitChange]);
 
   const summary = [bedrooms > 0 ? `${bedrooms}-bed` : null, propertyType].filter(Boolean).join(' ') || 'Property';
 

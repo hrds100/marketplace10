@@ -59,6 +59,7 @@ export default function InboxPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(true);
+  const [liveEstimatedProfit, setLiveEstimatedProfit] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showNDAModal, setShowNDAModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -103,6 +104,12 @@ export default function InboxPage() {
       setSearchParams(prev => { prev.delete('token'); return prev; }, { replace: true });
     })();
   }, [tokenParam, user?.id]);
+
+  // Reset live estimated profit whenever the right panel closes or thread changes
+  const showRightPanelCheck = showDetails && !!selectedId && selectedId !== 'support';
+  useEffect(() => {
+    if (!showRightPanelCheck) setLiveEstimatedProfit(null);
+  }, [showRightPanelCheck]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -323,7 +330,7 @@ export default function InboxPage() {
       </div>
       <div className="flex-1 min-w-0">
         {selectedThread ? (
-          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={!!showRightPanel} isMobile={false} onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => setShowDetails(true)} />
+          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={!!showRightPanel} isMobile={false} onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => setShowDetails(true)} displayProfit={showRightPanel && liveEstimatedProfit !== null ? liveEstimatedProfit : null} />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center bg-white">
             <MessageSquare className="w-12 h-12 text-gray-300 mb-4" />
@@ -334,7 +341,7 @@ export default function InboxPage() {
       </div>
       {showRightPanel && (
         <div className="w-[320px] shrink-0">
-          <InboxInquiryPanel thread={selectedThread} onClose={() => setShowDetails(false)} onSignNDA={handleSignNDA} isOperator={isOperator} onOpenAgreement={() => setShowNDAModal(true)} />
+          <InboxInquiryPanel thread={selectedThread} onClose={() => setShowDetails(false)} onSignNDA={handleSignNDA} isOperator={isOperator} onOpenAgreement={() => setShowNDAModal(true)} onEstimatedProfitChange={(p) => setLiveEstimatedProfit(p)} />
         </div>
       )}
       <MessagingSettingsModal open={showSettings} onClose={() => setShowSettings(false)} />
