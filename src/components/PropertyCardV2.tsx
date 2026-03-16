@@ -28,7 +28,9 @@ export default function PropertyCardV2({
 }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [addedToCRM, setAddedToCRM] = useState(() => localStorage.getItem(`crm_${listing.id}`) === 'true');
+  const [addedToCRM, setAddedToCRM] = useState(
+    () => localStorage.getItem(`crm_${listing.id}`) === 'true',
+  );
 
   const handleAction = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -97,39 +99,39 @@ export default function PropertyCardV2({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* Image — aspect-[4/3] keeps height consistent at any card width */}
-      <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted">
+      {/* Image — 1:1 square ratio, Airbnb standard */}
+      <div className="relative w-full aspect-square overflow-hidden bg-muted">
         <img
           src={resolvedImage}
           alt={`Property in ${listing.city}`}
           loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
           onError={(e) => {
             (e.target as HTMLImageElement).src =
-              `https://placehold.co/800x600/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`;
+              `https://placehold.co/600x600/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`;
           }}
         />
 
-        {/* Top-left badges */}
+        {/* Badges — white pill, bg-white/90 is a valid Tailwind class */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
           {showSavedBadge && (
-            <span className="bg-white/92 backdrop-blur-sm text-[10px] font-semibold px-2 py-0.5 rounded-full text-foreground shadow-sm">
+            <span className="bg-white/90 text-[10px] font-semibold px-2 py-0.5 rounded-full text-foreground shadow-sm">
               Saved
             </span>
           )}
           {listing.featured && (
-            <span className="bg-white/92 backdrop-blur-sm text-[10px] font-semibold px-2 py-0.5 rounded-full text-amber-700 shadow-sm">
+            <span className="bg-white/90 text-[10px] font-semibold px-2 py-0.5 rounded-full text-amber-700 shadow-sm">
               ⭐ Featured
             </span>
           )}
           {listing.landlordApproved && (
-            <span className="bg-white/92 backdrop-blur-sm text-[10px] font-semibold px-2 py-0.5 rounded-full text-emerald-700 flex items-center gap-1 shadow-sm">
+            <span className="bg-white/90 text-[10px] font-semibold px-2 py-0.5 rounded-full text-emerald-700 flex items-center gap-1 shadow-sm">
               <CheckCircle className="w-2.5 h-2.5" /> SA Approved
             </span>
           )}
         </div>
 
-        {/* Heart — top right */}
+        {/* Heart */}
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -137,21 +139,21 @@ export default function PropertyCardV2({
             if (forceSignUp) { navigate('/signup'); return; }
             onToggleFav();
           }}
-          className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/92 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-sm"
+          className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-sm"
         >
           <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-primary text-primary' : 'text-foreground/50'}`} />
         </button>
       </div>
 
-      {/* Card body — uniform padding, no variable-height elements */}
-      <div className="p-4">
-        {/* Title row */}
+      {/* Body */}
+      <div className="p-3.5">
+        {/* Title + CRM toggle */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="text-[13px] font-semibold text-foreground leading-snug truncate">
+            <h3 className="text-[12px] font-semibold text-foreground leading-snug truncate">
               {listing.name}
             </h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-0.5 truncate">
+            <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-0.5 truncate">
               <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
               {listing.city} · {listing.postcode}
             </p>
@@ -170,13 +172,13 @@ export default function PropertyCardV2({
           )}
         </div>
 
-        {/* Stats — 2×2 grid, fixed label + value sizes */}
-        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+        {/* Stats — 2×2 compact grid */}
+        <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-2">
           <div>
             <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide leading-none">
               Rent / mo
             </p>
-            <p className="text-[13px] font-bold text-foreground mt-1 leading-none">
+            <p className="text-[12px] font-bold text-foreground mt-1 leading-none">
               £{listing.rent.toLocaleString()}
             </p>
           </div>
@@ -184,7 +186,7 @@ export default function PropertyCardV2({
             <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide leading-none">
               Est. profit
             </p>
-            <p className="text-[13px] font-bold text-emerald-600 mt-1 leading-none">
+            <p className="text-[12px] font-bold text-emerald-600 mt-1 leading-none">
               £{listing.profit.toLocaleString()}
             </p>
           </div>
@@ -207,28 +209,19 @@ export default function PropertyCardV2({
         </div>
 
         {/* CTAs */}
-        <div className="flex gap-1.5 mt-4">
+        <div className="flex gap-1.5 mt-3">
           {forceSignUp ? (
             <>
-              <button
-                onClick={handleAction}
-                className="flex-1 bg-foreground text-background h-8 rounded-lg text-[11px] font-semibold hover:opacity-90 transition-opacity"
-              >
+              <button onClick={handleAction} className="flex-1 bg-foreground text-background h-8 rounded-lg text-[11px] font-semibold hover:opacity-90 transition-opacity">
                 Inquire
               </button>
-              <button
-                onClick={handleAction}
-                className="flex-1 border border-border h-8 rounded-lg text-[11px] font-medium text-foreground hover:bg-muted transition-colors"
-              >
+              <button onClick={handleAction} className="flex-1 border border-border h-8 rounded-lg text-[11px] font-medium text-foreground hover:bg-muted transition-colors">
                 View
               </button>
             </>
           ) : (
             <>
-              <button
-                onClick={handleInquire}
-                className="flex-1 bg-foreground text-background h-8 rounded-lg text-[11px] font-semibold hover:opacity-90 transition-opacity"
-              >
+              <button onClick={handleInquire} className="flex-1 bg-foreground text-background h-8 rounded-lg text-[11px] font-semibold hover:opacity-90 transition-opacity">
                 Inquire
               </button>
               <Link
