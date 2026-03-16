@@ -44,6 +44,22 @@ UPDATE profiles SET tier = 'free';
 
 Go to **hub.nfstay.com/admin** → Dashboard → scroll to "Testing" section → click **"Reset all inbox & payments for testing"** → confirm in the dialog.
 
+### Deploy the Edge Function (one-time)
+
+The admin button calls a Supabase Edge Function (`reset-for-testing`). If you see "Reset failed: the Edge Function may not be deployed", deploy it once:
+
+**Option A — CLI (recommended):**
+```bash
+cd marketplace10
+npx supabase link --project-ref asazddtvjvmckouxcmmo
+npx supabase functions deploy reset-for-testing
+```
+
+**Option B — Dashboard:**
+Go to Supabase → Edge Functions → Deploy a new function → name it `reset-for-testing` → paste the code from `supabase/functions/reset-for-testing/index.ts`.
+
+After deploy, the admin button works immediately. No extra DB wiring needed — the function runs inside Supabase and has direct access to the project database via the service role.
+
 ---
 
 ## After running

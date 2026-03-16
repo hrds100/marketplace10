@@ -44,7 +44,11 @@ export default function AdminDashboard() {
       toast.success('Reset complete. All inbox and tier data cleared.');
       setShowResetDialog(false);
     } catch (err) {
-      toast.error(`Reset failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      const isNotDeployed = msg.includes('Failed to send') || msg.includes('Failed to fetch') || msg.includes('not found');
+      toast.error(isNotDeployed
+        ? 'Reset failed: the Edge Function may not be deployed. See docs/runbooks/RESET_ALL_FOR_TESTING.md to deploy it once.'
+        : `Reset failed: ${msg}`);
     } finally {
       setResetting(false);
     }
