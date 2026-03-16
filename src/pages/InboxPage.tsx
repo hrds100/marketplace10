@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MessageSquare, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -191,6 +191,18 @@ export default function InboxPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads', filter: `landlord_id=eq.${user.id}` }, () => loadThreads())
       .subscribe();
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
+  }, [user?.id, loadThreads]);
+
+  // Visibility-based 6s poll fallback — ensures new threads appear even if Realtime fails
+  useEffect(() => {
+    if (!user?.id) return;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const start = () => { if (!intervalId) intervalId = setInterval(loadThreads, 6000); };
+    const stop = () => { if (intervalId) { clearInterval(intervalId); intervalId = null; } };
+    const onVis = () => { document.visibilityState === 'visible' ? start() : stop(); };
+    if (document.visibilityState === 'visible') start();
+    document.addEventListener('visibilitychange', onVis);
+    return () => { stop(); document.removeEventListener('visibilitychange', onVis); };
   }, [user?.id, loadThreads]);
 
   const allThreads = [SUPPORT_THREAD, ...dbThreads];

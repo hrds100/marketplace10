@@ -55,7 +55,7 @@ interface Props {
 
 export default function ChatWindow({ thread, onBack, onToggleDetails, showDetailsOpen, isMobile, onOpenNDA }: Props) {
   const { user } = useAuth();
-  const { tier, refreshTier } = useUserTier();
+  const { tier, loading: tierLoading, refreshTier } = useUserTier();
   const paid = isPaidTier(tier);
 
   // Derive role from thread membership (not from profiles.role)
@@ -147,6 +147,18 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [thread.id, thread.isSupport, thread.termsAccepted, user?.id, mapRow]);
+
+  // Visibility-based 5s poll fallback — ensures messages appear even if Realtime fails
+  useEffect(() => {
+    if (thread.isSupport) return;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const start = () => { if (!intervalId) intervalId = setInterval(loadMessages, 5000); };
+    const stop = () => { if (intervalId) { clearInterval(intervalId); intervalId = null; } };
+    const onVisChange = () => { document.visibilityState === 'visible' ? start() : stop(); };
+    if (document.visibilityState === 'visible') start();
+    document.addEventListener('visibilitychange', onVisChange);
+    return () => { stop(); document.removeEventListener('visibilitychange', onVisChange); };
+  }, [thread.id, thread.isSupport, loadMessages]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
@@ -338,8 +350,12 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       {/* Input bar — role-aware */}
       <div className="relative border-t border-gray-200 bg-white px-4 py-3 flex items-end gap-2 shrink-0">
         <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
-        {/* LANDLORD: NDA unsigned → "Sign NDA to reply" button instead of input */}
-        {isCurrentUserLandlord && !thread.termsAccepted ? (
+        {/* While tier is loading, show neutral placeholder so we don't flash wrong UI */}
+        {tierLoading && isCurrentUserOperator ? (
+          <div className="flex-1 text-sm text-muted-foreground py-2 px-3">Checking access…</div>
+        ) :
+        /* LANDLORD: NDA unsigned → "Sign NDA to reply" button instead of input */
+        isCurrentUserLandlord && !thread.termsAccepted ? (
           <button
             onClick={() => onOpenNDA?.()}
             className="flex-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm font-semibold py-2 px-4 flex items-center justify-center gap-2 transition-colors"

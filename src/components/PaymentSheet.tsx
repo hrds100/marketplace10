@@ -17,16 +17,24 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   const [visible, setVisible] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframeTimedOut, setIframeTimedOut] = useState(false);
   const [pollTimedOut, setPollTimedOut] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const iframeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (open) {
       setVisible(true);
       setPaymentComplete(false);
       setIframeLoaded(false);
+      setIframeTimedOut(false);
       setPollTimedOut(false);
+      // 8s iframe load timeout
+      iframeTimerRef.current = setTimeout(() => {
+        setIframeTimedOut(true);
+      }, 8000);
     }
+    return () => { if (iframeTimerRef.current) clearTimeout(iframeTimerRef.current); };
   }, [open]);
 
   const handleClose = useCallback(() => {
@@ -101,6 +109,8 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
 
   const handleIframeLoad = (e: React.SyntheticEvent<HTMLIFrameElement>) => {
     setIframeLoaded(true);
+    setIframeTimedOut(false);
+    if (iframeTimerRef.current) clearTimeout(iframeTimerRef.current);
     try {
       const url = (e.target as HTMLIFrameElement).contentWindow?.location?.href || '';
       if (url.includes('thank') || url.includes('Thank')) handlePaymentSuccess();
@@ -173,6 +183,14 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
                     <p className="text-sm text-muted-foreground">Preparing secure checkout…</p>
+                    {iframeTimedOut && (
+                      <button
+                        onClick={() => window.open(funnelUrl, '_blank')}
+                        className="mt-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
+                      >
+                        Open checkout in new tab
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
