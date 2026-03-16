@@ -688,6 +688,111 @@ export type Database = {
         }
         Relationships: []
       }
+      lessons: {
+        Row: {
+          id: string
+          title: string
+          content: string | null
+          module_id: string | null
+          order: number
+          created_at: string | null
+          updated_at: string | null
+          emoji: string | null
+          estimated_minutes: number | null
+          tier_required: string
+          is_published: boolean
+        }
+        Insert: {
+          id?: string
+          title: string
+          content?: string | null
+          module_id?: string | null
+          order?: number
+          created_at?: string | null
+          updated_at?: string | null
+          emoji?: string | null
+          estimated_minutes?: number | null
+          tier_required?: string
+          is_published?: boolean
+        }
+        Update: {
+          id?: string
+          title?: string
+          content?: string | null
+          module_id?: string | null
+          order?: number
+          created_at?: string | null
+          updated_at?: string | null
+          emoji?: string | null
+          estimated_minutes?: number | null
+          tier_required?: string
+          is_published?: boolean
+        }
+        Relationships: []
+      }
+      modules: {
+        Row: {
+          id: string
+          title: string
+          emoji: string | null
+          description: string | null
+          xp_reward: number
+          order_index: number
+          is_locked: boolean
+          tier_required: string
+          learning_outcomes: string[] | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id: string
+          title: string
+          emoji?: string | null
+          description?: string | null
+          xp_reward?: number
+          order_index?: number
+          is_locked?: boolean
+          tier_required?: string
+          learning_outcomes?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          emoji?: string | null
+          description?: string | null
+          xp_reward?: number
+          order_index?: number
+          is_locked?: boolean
+          tier_required?: string
+          learning_outcomes?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          id: string
+          user_id: string
+          achievement_id: string
+          unlocked_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          achievement_id: string
+          unlocked_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          achievement_id?: string
+          unlocked_at?: string | null
+        }
+        Relationships: []
+      }
       user_progress: {
         Row: {
           completed: boolean | null
