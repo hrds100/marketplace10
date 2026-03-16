@@ -4,6 +4,7 @@ import { X, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { useUserTier } from '@/hooks/useUserTier';
 import { getFunnelUrl, isPaidTier } from '@/lib/ghl';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ListingShape {
   id: string;
@@ -52,30 +53,40 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
     setTimeout(() => onClose(), 300);
   }, [onClose]);
 
-  // Post-payment success handler
+  // Post-payment success handler — polls DB directly for tier change
   const handlePaymentSuccess = useCallback(() => {
     if (paymentComplete) return; // prevent double-fire
     setPaymentComplete(true);
 
-    // Poll for tier update (GHL webhook → n8n → Supabase may take a few seconds)
     let attempts = 0;
     pollRef.current = setInterval(async () => {
       attempts++;
-      await refreshTier();
-      if (attempts >= 10) {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('tier')
+          .eq('id', user!.id)
+          .single();
+
+        if (data?.tier && data.tier !== 'free') {
+          if (pollRef.current) clearInterval(pollRef.current);
+          setTimeout(() => {
+            handleClose();
+            window.location.href = '/dashboard/inbox';
+          }, 1500);
+          return;
+        }
+      } catch (e) {
+        console.error('Tier poll error:', e);
+      }
+
+      if (attempts >= 15) {
         if (pollRef.current) clearInterval(pollRef.current);
         handleClose();
         window.location.href = '/dashboard/inbox';
       }
     }, 1000);
-
-    // Hard redirect after 10s regardless
-    setTimeout(() => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      handleClose();
-      window.location.href = '/dashboard/inbox';
-    }, 10000);
-  }, [handleClose, refreshTier, paymentComplete]);
+  }, [handleClose, user, paymentComplete]);
 
   // Listen for postMessage from GHL iframe (payment success signal)
   useEffect(() => {

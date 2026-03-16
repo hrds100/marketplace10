@@ -31,5 +31,5 @@ export function useUserTier() {
     fetchTier();
   }, [user?.id]);
 
-  return { tier, loading, refetch: fetchTier };
+  return { tier, loading, refetch: fetchTier, refreshTier: fetchTier };
 }
