@@ -62,8 +62,8 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const isCurrentUserOperator = !thread.isSupport && user?.id === thread.operatorId;
   const isCurrentUserLandlord = !thread.isSupport && user?.id === thread.landlordId;
 
-  // Re-check tier on mount to catch missed webhook updates
-  useEffect(() => { if (!paid && isCurrentUserOperator) refreshTier(); }, []);
+  // Always refetch tier when operator opens/switches thread — prevents stale paid=true
+  useEffect(() => { if (isCurrentUserOperator) refreshTier(); }, [thread.id, isCurrentUserOperator]);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +166,12 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const handleSend = async () => {
     if (!input.trim() || !user?.id) return;
     // Enforce payment gate: operator cannot send first message without paying
-    if (isCurrentUserOperator && !paid && !hasExistingMessages) return;
+    if (isCurrentUserOperator && !paid && !hasExistingMessages) {
+      // Defensive: refetch tier in case it's stale, then open payment sheet
+      refreshTier();
+      setPaymentSheetOpen(true);
+      return;
+    }
     const body = input.trim();
     setInput('');
 
