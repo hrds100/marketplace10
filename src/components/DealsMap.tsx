@@ -18,7 +18,6 @@ interface Coords {
 
 const geocodeCache = new Map<string, [number, number]>();
 
-// City-centre fallbacks for common UK cities
 const cityFallbacks: Record<string, [number, number]> = {
   london: [51.5074, -0.1278],
   manchester: [53.4808, -2.2426],
@@ -81,13 +80,13 @@ export default function DealsMap({ listings, hoveredId }: Props) {
         coords.reduce((s, c) => s + c.lat, 0) / coords.length,
         coords.reduce((s, c) => s + c.lng, 0) / coords.length,
       ]
-    : [52.5, -1.5]; // UK centre fallback
+    : [52.5, -1.5];
 
   return (
     <MapContainer
       center={centre}
       zoom={coords.length > 1 ? 6 : 12}
-      style={{ height: '100%', width: '100%', borderRadius: '16px' }}
+      style={{ height: '100%', width: '100%' }}
       zoomControl={true}
       scrollWheelZoom={true}
     >
@@ -113,14 +112,14 @@ export default function DealsMap({ listings, hoveredId }: Props) {
             }}
           >
             <Popup>
-              <div className="text-xs min-w-[160px]">
-                <p className="font-semibold text-[13px] mb-1">{listing.name}</p>
-                <p className="text-muted-foreground mb-1.5">{listing.city} · {listing.postcode}</p>
-                <div className="flex justify-between">
+              <div className="text-xs min-w-[180px]">
+                <p className="font-semibold text-sm mb-1">{listing.name}</p>
+                <p className="text-muted-foreground mb-2">{listing.city} · {listing.postcode}</p>
+                <div className="flex justify-between py-0.5">
                   <span className="text-muted-foreground">Rent</span>
                   <span className="font-medium">£{listing.rent.toLocaleString()}/mo</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between py-0.5">
                   <span className="text-muted-foreground">Profit</span>
                   <span className="font-bold text-emerald-600">£{listing.profit.toLocaleString()}</span>
                 </div>
