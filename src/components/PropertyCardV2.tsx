@@ -100,7 +100,7 @@ export default function PropertyCardV2({
       onMouseLeave={onMouseLeave}
     >
       {/* Image — 1:1 square ratio, Airbnb standard */}
-      <div className="relative w-full aspect-square overflow-hidden bg-muted">
+      <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted">
         <img
           src={resolvedImage}
           alt={`Property in ${listing.city}`}
@@ -108,7 +108,7 @@ export default function PropertyCardV2({
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
           onError={(e) => {
             (e.target as HTMLImageElement).src =
-              `https://placehold.co/600x600/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`;
+              `https://placehold.co/600x450/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`;
           }}
         />
 
