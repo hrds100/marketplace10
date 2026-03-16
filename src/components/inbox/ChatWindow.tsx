@@ -326,7 +326,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         </div>
       )}
 
-      {/* OPERATOR PAYMENT GATE — only for operators, only on new threads */}
+      {/* OPERATOR PAYMENT GATE — visible only when operator + free tier + thread has no messages (hasExistingMessages false) */}
       {isCurrentUserOperator && !paid && !hasExistingMessages && (
         <div className="flex items-center justify-between bg-amber-50 border-t border-amber-200 px-4 py-3 shrink-0">
           <div className="flex items-center gap-2 text-sm text-amber-800">

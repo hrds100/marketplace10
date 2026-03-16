@@ -51,6 +51,8 @@
 - **Called from**: `CRMPage.tsx` onDrop
 
 ## GoHighLevel (GHL) — Payments
+All payments are processed through GoHighLevel only; tier updates are performed by n8n. Do not add direct Stripe or other payment integrations.
+
 **Location ID**: `eFBsWXY3BmWDGIRez13x`
 **API Token**: Private Integration Token (stored in n8n, not in frontend)
 

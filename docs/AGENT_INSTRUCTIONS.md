@@ -31,12 +31,34 @@ You report to Hugo. You execute what is asked, cleanly and completely. You do no
 ## 3. BEFORE EVERY TASK
 
 1. Run `git log -1 --format="%ci"` to get current date. Never assume.
-2. Read relevant docs:
-   - `docs/STACK.md` — always
-   - `docs/AGENT_INSTRUCTIONS.md` — always (this file)
-   - `docs/MESSAGING.md` — **required if task touches inbox, chat, messages, chat_threads, chat_messages, or InboxPage**
-   - `docs/ARCHITECTURE.md`, `docs/DATABASE.md`, `docs/INTEGRATIONS.md`, `docs/CHANGELOG.md` — as relevant
+2. Read docs by task scope (entire project):
+   - **Always:** `docs/STACK.md`, `docs/AGENT_INSTRUCTIONS.md` (this file).
+   - **If task touches inbox, chat, messages, chat_threads, chat_messages, or InboxPage:** `docs/MESSAGING.md`, `docs/INTEGRATIONS.md` (GHL + n8n).
+   - **If task touches payments, tier, GHL funnel, or checkout:** `docs/INTEGRATIONS.md`, `docs/STACK.md`.
+   - Payments are processed only via GoHighLevel (funnel + n8n tier webhook). Do not implement or suggest Stripe or any other direct payment provider.
+   - **If task touches DB schema, RLS, or new tables:** `docs/DATABASE.md`; if chat-related also `docs/MESSAGING.md`.
+   - **If task touches roles, actors, or flow (who pays / who signs):** `docs/DOMAIN.md`.
+   - **When in doubt:** also read `docs/ARCHITECTURE.md`, `docs/DATABASE.md`, `docs/INTEGRATIONS.md`, `docs/CHANGELOG.md` for the area you're touching.
 3. Read the actual source files you will modify. Never edit code you haven't opened.
+
+### 3a. Domain & terms (DDD)
+
+- **`docs/DOMAIN.md`** is the single source of truth for project-wide concepts and actors (Tenant, Landlord, Deal, Thread, Message, NDA, Tier, Payment, etc.).
+- All docs and prompts must use these terms consistently. When the task touches roles or flows (e.g. who signs NDA, who pays), read DOMAIN.md and reference it in the prompt so the right behavior is implemented.
+
+### 3b. Full-flow / cross-cutting tasks
+
+- A task is **cross-cutting** if it touches more than one of: UI, auth, payments (GHL/tier), DB/RLS, n8n, inbox/messaging.
+- For cross-cutting tasks:
+  1. **Audit:** List every system and doc in the path (e.g. UI → Supabase → RLS → n8n/GHL). Read those docs and the key source files before writing the implementation prompt.
+  2. **One-shot prompt:** The prompt to Claude must include: (i) mandatory doc list for that task, (ii) mandatory file list, (iii) numbered steps for the **entire** flow, (iv) "Implement in one pass. Do not ship in installments. Flag only blockers at the end."
+- Prefer a single end-to-end prompt so the feature is complete in one round.
+
+### 3c. Acceptance scenarios (BDD)
+
+- **`docs/ACCEPTANCE.md`** holds Given/When/Then scenarios for all major flows (auth, deals, inbox, payments, CRM, admin).
+- For feature or flow work, the prompt must include the **relevant** acceptance scenarios. Claude implements so that these behaviors hold; add or adjust tests if needed.
+- Ensures the right behavior is built, not just "the right concepts" (see DOMAIN.md).
 
 ## 4. ENV VARS
 
@@ -85,6 +107,7 @@ Use them instead of terminal commands wherever possible (Rule 17).
 7. **STEP 6** — Output the Section 9 report.
 
 > **Exception for large features (e.g. Messaging):** Hugo may say "go end-to-end" — in that case, Claude works through the entire feature autonomously, completing all steps without stopping for confirmation. Flag any blockers at the END in the output report, not mid-build.
+> **Cross-cutting features:** The prompt from Perplexity should request this end-to-end pass by default (see Section 3b) so the feature is complete in one round, not split into installments.
 </workflow>
 
 <rules>
@@ -183,6 +206,7 @@ Do not put the report outside the code block. Do not split it across multiple bl
 - Perplexity audits GitHub + Vercel before every task.
 - Perplexity verifies Claude's output before the next task.
 - If a task contradicts the code, flag it — don't blindly execute.
+- **For feature- or flow-level work (e.g. messaging, payments, auth):** Before writing the prompt, perform a **full-flow audit** (which systems and docs are in scope; which files are touched). The prompt must require Claude to read those docs and files and to implement the full flow in **one pass**; no "part 1 / part 2" unless Hugo explicitly asks for phases. Include relevant acceptance scenarios from `docs/ACCEPTANCE.md` so the right behavior is built.
 
 ## 13. THIRD-PARTY PLATFORM REFERENCE
 
