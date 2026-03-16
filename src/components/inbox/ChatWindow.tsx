@@ -235,7 +235,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       if (isFirstMessage) onOpenDetails?.();
 
       // n8n webhooks — fire-and-forget after DB success
-      const n8nBase = (import.meta.env.VITE_N8N_WEBHOOK_URL || '').replace(/\/$/, '');
+      const n8nBase = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
       if (n8nBase) {
         const ac = new AbortController();
         const timeout = setTimeout(() => ac.abort(), 5000);
