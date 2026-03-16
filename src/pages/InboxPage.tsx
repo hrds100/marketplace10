@@ -4,6 +4,7 @@ import { MessageSquare, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import ThreadList from '@/components/inbox/ThreadList';
 import ChatWindow from '@/components/inbox/ChatWindow';
+import ClaimAccountBanner from '@/components/ClaimAccountBanner';
 import InboxInquiryPanel from '@/components/inbox/InboxInquiryPanel';
 import MessagingSettingsModal from '@/components/inbox/MessagingSettingsModal';
 import AgreementModal from '@/components/inbox/AgreementModal';
@@ -45,16 +46,27 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>('operator');
+  const [landlordProfile, setLandlordProfile] = useState<{ whatsapp: string } | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
-    supabase.from('profiles').select('role').eq('id', user.id).single()
-      .then(({ data }) => { if (data?.role) setUserRole(data.role); });
+    (supabase.from('profiles') as any)
+      .select('role, whatsapp')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }: { data: Record<string, unknown> | null }) => {
+        if (data?.role) setUserRole(data.role as string);
+        // Magic-link landlords have an @nfstay.internal email — show claim banner
+        if (user.email?.endsWith('@nfstay.internal')) {
+          setLandlordProfile({ whatsapp: (data as any)?.whatsapp || '' });
+        }
+      });
   }, [user?.id]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const dealQueryParam = searchParams.get('deal');
   const tokenParam = searchParams.get('token');
+  const threadParam = searchParams.get('thread');
   const { threadId: inquiryThreadId } = useInquiry(dealQueryParam);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -104,6 +116,14 @@ export default function InboxPage() {
       setSearchParams(prev => { prev.delete('token'); return prev; }, { replace: true });
     })();
   }, [tokenParam, user?.id]);
+
+  // Magic login: ?thread= → auto-select thread (set by MagicLoginPage after auto-login)
+  useEffect(() => {
+    if (!threadParam) return;
+    setSelectedId(threadParam);
+    setShowDetails(true);
+    setSearchParams(prev => { prev.delete('thread'); return prev; }, { replace: true });
+  }, [threadParam]);
 
   // Reset live estimated profit whenever the right panel closes or thread changes
   const showRightPanelCheck = showDetails && !!selectedId && selectedId !== 'support';
@@ -322,9 +342,17 @@ export default function InboxPage() {
   }
 
   const showRightPanel = showDetails && selectedThread && !selectedThread.isSupport;
+  const showClaimBanner = landlordProfile !== null; // email @nfstay.internal = unclaimed
 
   return (
-    <div className="h-full w-full flex overflow-hidden flex-1">
+    <div className="h-full w-full flex flex-col overflow-hidden flex-1">
+      {showClaimBanner && (
+        <ClaimAccountBanner
+          phone={landlordProfile!.whatsapp}
+          onClaimed={() => setLandlordProfile(null)}
+        />
+      )}
+    <div className="flex-1 flex overflow-hidden">
       <div className={`shrink-0 ${leftPanelCollapsed ? 'w-14' : 'w-[320px]'} transition-all duration-200`}>
         <ThreadList threads={allThreads} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} onArchive={handleArchiveThread} isCollapsed={leftPanelCollapsed} onExpand={() => setLeftPanelCollapsed(false)} onCollapse={() => setLeftPanelCollapsed(true)} />
       </div>
@@ -353,6 +381,7 @@ export default function InboxPage() {
           onSign={handleSignNDA}
         />
       )}
+    </div>
     </div>
   );
 }

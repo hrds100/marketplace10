@@ -58,5 +58,13 @@ export function useAuth() {
     await supabase.auth.signOut();
   }, []);
 
-  return { ...state, signUp, signIn, signOut };
+  const setSession = useCallback(async (accessToken: string, refreshToken: string) => {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    return { data, error };
+  }, []);
+
+  return { ...state, signUp, signIn, signOut, setSession };
 }

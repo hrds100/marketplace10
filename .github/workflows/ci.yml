@@ -42,3 +42,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+
+  deploy-functions:
+    name: Deploy Edge Functions
+    runs-on: ubuntu-latest
+    # Only deploy on pushes to main (not on PRs)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [typecheck, test, lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: |
+          supabase functions deploy landlord-magic-login --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
+          supabase functions deploy claim-landlord-account --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
