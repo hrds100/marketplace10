@@ -74,7 +74,7 @@
 - [x] Property type selector
 
 ### Payments
-- [x] SamCart integration: £47/mo → £997 lifetime → £597/yr
+- [x] GHL payment funnel: £67/mo → £997 lifetime → £397/yr
 - [x] Tier update webhook ready
 - [x] Pricing page / tier display
 
@@ -144,7 +144,7 @@
 - [ ] Supabase Auth integration (replace localStorage)
 
 ### Payments
-- [ ] SamCart webhook handler (tier upgrade callback)
+- [x] GHL webhook → n8n tier update (live)
 - [ ] Gated content per tier (free vs paid)
 - [ ] Billing portal / manage subscription
 

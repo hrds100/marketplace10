@@ -27,7 +27,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE public.profiles SET tier = '{{ $json.tier }}', samcart_cust_id = '{{ $json.contactId }}', updated_at = NOW() WHERE id = (SELECT id FROM auth.users WHERE email = '{{ $json.contactEmail }}' LIMIT 1) RETURNING id, tier;",
+        "query": "UPDATE public.profiles SET tier = '{{ $json.tier }}', updated_at = NOW() WHERE id = (SELECT id FROM auth.users WHERE email = '{{ $json.contactEmail }}' LIMIT 1) RETURNING id, tier;",
         "options": {}
       },
       "id": "update-profile-tier",

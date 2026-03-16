@@ -14,7 +14,6 @@ User accounts and preferences. Created on signup.
 | tier | text | 'free' | free / monthly / yearly / lifetime |
 | suspended | boolean | false | Admin can suspend users |
 | whatsapp_verified | boolean | false | OTP verification status |
-| samcart_cust_id | text | null | Legacy payment ID |
 | notif_whatsapp_new_deals | boolean | true | Notification pref |
 | notif_whatsapp_daily | boolean | true | Notification pref |
 | notif_email_daily | boolean | true | Notification pref |
