@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, Mail, Phone } from 'lucide-react';
+import { X, User, Mail, Phone, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -14,6 +14,7 @@ export default function ClaimAccountBanner({ phone, onClaimed }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -47,7 +48,7 @@ export default function ClaimAccountBanner({ phone, onClaimed }: Props) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), name: name.trim() }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), name: name.trim(), password: password || undefined }),
       });
 
       const data = await res.json();
@@ -139,6 +140,18 @@ export default function ClaimAccountBanner({ phone, onClaimed }: Props) {
                 />
               </div>
             </div>
+            <div>
+              <label className="text-xs font-medium text-amber-700 flex items-center gap-1.5 mb-1">
+                <Lock className="w-3 h-3" /> Password <span className="font-normal text-amber-500">(optional — to log in later)</span>
+              </label>
+              <input
+                type="password"
+                placeholder="Create a password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full h-9 px-3 rounded-md border border-amber-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
             <button
               type="submit"
@@ -148,7 +161,7 @@ export default function ClaimAccountBanner({ phone, onClaimed }: Props) {
               {loading ? 'Claiming…' : 'Claim account'}
             </button>
             <p className="text-xs text-amber-600 text-center">
-              Once claimed, you can log in anytime with your email and reset your password.
+              Your WhatsApp is already verified. Add a password to log in anytime at hub.nfstay.com.
             </p>
           </form>
         </div>

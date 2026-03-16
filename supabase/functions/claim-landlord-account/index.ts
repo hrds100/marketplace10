@@ -17,7 +17,7 @@ serve(async (req) => {
       })
     }
 
-    const { email, name } = await req.json()
+    const { email, name, password } = await req.json()
     if (!email || !name) {
       return new Response(JSON.stringify({ error: 'Email and name are required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -46,25 +46,51 @@ serve(async (req) => {
 
     const phone: string = user.user_metadata?.phone || user.user_metadata?.whatsapp || ''
 
-    // 1. Update auth email (admin API — no confirmation email needed, phone verified via WhatsApp)
-    const { error: emailErr } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      email,
-      email_confirm: true,
-    })
-    if (emailErr) {
+    // 1. Check email not already taken in profiles
+    const { data: existing } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .neq('id', user.id)
+      .maybeSingle()
+    if (existing) {
       return new Response(
-        JSON.stringify({ error: emailErr.message.includes('already') ? 'That email is already in use.' : emailErr.message }),
+        JSON.stringify({ error: 'That email is already in use.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // 2. Update profile
+    // 2. Update auth.users + auth.identities email via SECURITY DEFINER fn
+    //    (GoTrue admin.updateUserById email-change is broken on this project)
+    const { error: emailErr } = await supabaseAdmin.rpc('admin_set_user_email', {
+      p_user_id: user.id,
+      p_email: email,
+    })
+    if (emailErr) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to update email: ' + emailErr.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // 3. Set password if provided (GoTrue admin password update works fine)
+    if (password) {
+      const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(user.id, { password })
+      if (pwErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to set password: ' + pwErr.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
+    // 4. Update profile
     await supabaseAdmin
       .from('profiles')
-      .update({ name })
+      .update({ name, email })
       .eq('id', user.id)
 
-    // 3. Link ALL property threads matching this landlord's phone to their account
+    // 5. Link ALL property threads matching this landlord's phone to their account
     if (phone) {
       const { data: props } = await supabaseAdmin
         .from('properties')
