@@ -194,7 +194,17 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           headers: { 'Content-Type': 'application/json' },
           body: payload,
           signal: ac.signal,
-        }).catch(() => {}).finally(() => clearTimeout(timeout));
+        }).then(res => {
+          if (res.ok) {
+            console.log(`[NFsTay webhook] ✅ ${endpoint} fired successfully`);
+          } else {
+            console.warn(`[NFsTay webhook] ⚠️ ${endpoint} returned ${res.status}`);
+          }
+        }).catch(err => {
+          if (err.name !== 'AbortError') {
+            console.warn(`[NFsTay webhook] ❌ ${endpoint} failed:`, err.message);
+          }
+        }).finally(() => clearTimeout(timeout));
       }
     } catch (err) {
       setMessages(prev => prev.filter(m => m.id !== optimisticId));
