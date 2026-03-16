@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, ChevronRight, ChevronLeft, Plus, LayoutGrid, Send } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronLeft, Plus, LayoutGrid, Send, LockKeyhole } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserTier } from '@/hooks/useUserTier';
+import { isPaidTier } from '@/lib/ghl';
 import type { Thread, Message } from './types';
 import MessageBubble from './MessageBubble';
 import QuickRepliesModal from './QuickRepliesModal';
 import ChatEmptyState from './ChatEmptyState';
+import PaymentSheet from '@/components/PaymentSheet';
 
 // ── Masking utility ──────────────────────────────────────────────
 interface MaskResult { maskedBody: string; isMasked: boolean; maskType: string }
@@ -51,10 +54,13 @@ interface Props {
 
 export default function ChatWindow({ thread, onBack, onToggleDetails, showDetailsOpen, isMobile }: Props) {
   const { user } = useAuth();
+  const { tier, refreshTier } = useUserTier();
+  const paid = isPaidTier(tier);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -301,18 +307,69 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         </div>
       )}
 
+      {/* Locked input banner — free tier */}
+      {!paid && !thread.isSupport && (
+        <div className="flex items-center justify-between bg-amber-50 border-t border-amber-200 px-4 py-3 shrink-0">
+          <div className="flex items-center gap-2 text-sm text-amber-800">
+            <LockKeyhole className="h-4 w-4 shrink-0" />
+            <span>Send your first message — upgrade to unlock</span>
+          </div>
+          <button
+            onClick={() => setPaymentSheetOpen(true)}
+            className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shrink-0 transition-colors"
+          >
+            Unlock Now
+          </button>
+        </div>
+      )}
+
       {/* Input bar */}
       <div className="relative border-t border-gray-200 bg-white px-4 py-3 flex items-end gap-2 shrink-0">
         <QuickRepliesModal open={showQuickReplies} onClose={() => setShowQuickReplies(false)} onSelect={text => setInput(text)} />
-        <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
-        <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
-        <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
-          className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px]" style={{ minHeight: 36 }} />
-        <button onClick={handleSend} disabled={!input.trim()}
-          className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
+        {paid && (
+          <>
+            <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"><Plus className="w-5 h-5 text-muted-foreground" /></button>
+            <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
+          </>
+        )}
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={e => { if (paid) setInput(e.target.value); }}
+          onKeyDown={paid ? handleKeyDown : undefined}
+          onClick={!paid ? () => setPaymentSheetOpen(true) : undefined}
+          placeholder={paid ? 'Write a message...' : 'Unlock to send messages'}
+          rows={1}
+          disabled={!paid}
+          aria-disabled={!paid}
+          className={`flex-1 resize-none text-sm placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] ${
+            paid ? 'bg-transparent text-foreground' : 'bg-gray-50 text-gray-400 opacity-50 cursor-not-allowed'
+          }`}
+          style={{ minHeight: 36 }}
+        />
+        <button
+          onClick={paid ? handleSend : () => setPaymentSheetOpen(true)}
+          disabled={paid ? !input.trim() : false}
+          className={`p-2 rounded-lg transition-colors shrink-0 ${
+            !paid ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            : input.trim() ? 'bg-foreground text-background hover:opacity-90'
+            : 'bg-foreground text-background opacity-40 cursor-not-allowed'
+          }`}
+        >
           <Send className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Payment sheet — opens when free user tries to unlock */}
+      <PaymentSheet
+        open={paymentSheetOpen}
+        onOpenChange={setPaymentSheetOpen}
+        onUnlocked={() => {
+          setPaymentSheetOpen(false);
+          refreshTier();
+          setTimeout(() => inputRef.current?.focus(), 300);
+        }}
+      />
     </div>
   );
 }

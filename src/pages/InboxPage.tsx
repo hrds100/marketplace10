@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MessageSquare, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import ThreadList from '@/components/inbox/ThreadList';
@@ -7,6 +8,7 @@ import InboxInquiryPanel from '@/components/inbox/InboxInquiryPanel';
 import MessagingSettingsModal from '@/components/inbox/MessagingSettingsModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useInquiry } from '@/hooks/useInquiry';
 import type { Thread } from '@/components/inbox/types';
 
 // Support thread is always pinned, never from DB
@@ -48,10 +50,24 @@ export default function InboxPage() {
     supabase.from('profiles').select('role').eq('id', user.id).single()
       .then(({ data }) => { if (data?.role) setUserRole(data.role); });
   }, [user?.id]);
+  const [searchParams] = useSearchParams();
+  const dealQueryParam = searchParams.get('deal');
+  const { threadId: inquiryThreadId } = useInquiry(dealQueryParam);
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Auto-select thread created from Inquire Now navigation
+  useEffect(() => {
+    if (inquiryThreadId && !selectedId) {
+      setSelectedId(inquiryThreadId);
+      setShowDetails(true);
+      // Refresh thread list to include the new thread
+      loadThreads();
+    }
+  }, [inquiryThreadId]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);

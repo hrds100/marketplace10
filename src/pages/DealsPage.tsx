@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, X } from 'lucide-react';
 import PropertyCard from '@/components/PropertyCard';
-import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
@@ -48,18 +48,11 @@ export default function DealsPage() {
   const [page, setPage] = useState(1);
   const perPage = 12;
 
-  // ── Page-level inquiry panel state ──
-  const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
-  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleInquire = useCallback((listing: ListingShape) => {
-    setInquiryListing(listing);
-    setInquiryOpen(true);
-  }, []);
-
-  const handleCloseInquiry = useCallback(() => {
-    setInquiryOpen(false);
-  }, []);
+    navigate(`/dashboard/inbox?deal=${listing.id}`);
+  }, [navigate]);
 
   const { data: dbProperties, isLoading } = useQuery({
     queryKey: ['properties'],
@@ -210,7 +203,7 @@ export default function DealsPage() {
       )}
 
       {/* Single page-level inquiry panel */}
-      <InquiryPanel open={inquiryOpen} listing={inquiryListing} onClose={handleCloseInquiry} />
+      {/* InquiryPanel removed — Inquire Now now navigates to inbox */}
     </div>
   );
 }

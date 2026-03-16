@@ -1,8 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Heart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import PropertyCard from '@/components/PropertyCard';
-import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { useFavourites } from '@/hooks/useFavourites';
 import { listings as mockListings } from '@/data/mockData';
@@ -61,17 +60,11 @@ export default function FavouritesPage() {
     enabled: favIds.length > 0,
   });
 
-  const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
-  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleInquire = useCallback((listing: ListingShape) => {
-    setInquiryListing(listing);
-    setInquiryOpen(true);
-  }, []);
-
-  const handleCloseInquiry = useCallback(() => {
-    setInquiryOpen(false);
-  }, []);
+    navigate(`/dashboard/inbox?deal=${listing.id}`);
+  }, [navigate]);
 
   if (favIds.length === 0) {
     return (
@@ -95,7 +88,7 @@ export default function FavouritesPage() {
           <PropertyCard key={l.id} listing={l} isFav={true} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} showSavedBadge />
         ))}
       </div>
-      <InquiryPanel open={inquiryOpen} listing={inquiryListing} onClose={handleCloseInquiry} />
+      {/* InquiryPanel removed — Inquire Now navigates to inbox */}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus, Sparkles, X } from 'lucide-react';
 import { faqItems } from '@/data/mockData';
@@ -9,7 +9,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchPexelsPhotos } from '@/lib/pexels';
 import PropertyCard from '@/components/PropertyCard';
-import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 
 export default function DealDetail() {
@@ -86,17 +85,11 @@ export default function DealDetail() {
   }, [justAddedToCrm]);
 
   // Inquiry panel state
-  const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
-  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleInquire = useCallback((l: ListingShape) => {
-    setInquiryListing(l);
-    setInquiryOpen(true);
-  }, []);
-
-  const handleCloseInquiry = useCallback(() => {
-    setInquiryOpen(false);
-  }, []);
+    navigate(`/dashboard/inbox?deal=${l.id}`);
+  }, [navigate]);
 
   // Build images: user photos first, Pexels fills remaining slots
   const userPhotos: string[] = Array.isArray(listing?.photos) ? (listing.photos as string[]) : [];
@@ -425,7 +418,7 @@ export default function DealDetail() {
         </div>
       )}
 
-      <InquiryPanel open={inquiryOpen} listing={inquiryListing} onClose={handleCloseInquiry} />
+      {/* InquiryPanel removed — Inquire Now navigates to inbox */}
     </div>
   );
 }
