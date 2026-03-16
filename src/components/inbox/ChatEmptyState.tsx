@@ -37,10 +37,10 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
   ].filter(Boolean).join(', ').replace(', ·', ' ·') || thread.propertyTitle;
 
   return (
-    <div className="h-full flex flex-col items-center justify-start px-6 pt-12 pb-6 gap-5">
+    <div className="h-full flex flex-col items-center justify-start px-8 pt-10 pb-6 gap-4">
       {/* Property image with live dot */}
       <div className="relative">
-        <div className="w-24 h-24 rounded-2xl bg-gray-100 overflow-hidden shadow-sm">
+        <div className="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden shadow-sm">
           <img
             src={thread.propertyImage || fallbackImage}
             alt=""
@@ -48,53 +48,59 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
             onError={e => { (e.target as HTMLImageElement).src = fallbackImage; }}
           />
         </div>
-        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
+        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
       </div>
 
-      {/* Property row — clickable, opens right panel */}
+      {/* Property row — subtle clickable metadata, opens right panel */}
       <button
         onClick={onOpenDetails}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-base text-foreground font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors max-w-lg shadow-sm"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors max-w-md"
       >
         <span className="truncate">{propertyLine}</span>
-        <ChevronRight className="w-4 h-4 shrink-0 text-gray-400" />
+        <ChevronRight className="w-3 h-3 shrink-0 text-gray-400" />
       </button>
 
-      {/* Headline */}
-      <h2 className="text-3xl font-bold text-gray-900 text-center max-w-md leading-tight tracking-tight">
+      {/* Headline — dominant */}
+      <h2 className="text-4xl md:text-5xl font-bold text-gray-900 text-center max-w-xl leading-[1.1] tracking-tight">
         Inquire about this property below
       </h2>
 
-      {/* Supporting copy */}
-      <p className="text-sm text-muted-foreground text-center max-w-sm">
+      {/* Supporting copy — light, small */}
+      <p className="text-base text-muted-foreground text-center max-w-sm">
         Message the landlord or agent and ask what matters first.
       </p>
 
-      {/* Large centered composer box */}
-      <div className="w-full max-w-lg mt-2">
+      {/* Large centered composer box — hero element */}
+      <div className="w-full max-w-[900px] mt-4">
         <div className="rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-          <div className="px-4 pt-4 pb-2">
+          <div className="px-6 pt-5 pb-3">
             <textarea
               ref={inputRef}
               value={inputValue}
               onChange={e => onInputChange(e.target.value)}
               onKeyDown={onKeyDown}
               placeholder={PLACEHOLDERS[placeholderIdx]}
-              rows={3}
-              className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none transition-all"
-              style={{ minHeight: 72 }}
+              rows={4}
+              className="w-full resize-none bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none transition-all leading-relaxed"
+              style={{ minHeight: 120 }}
             />
           </div>
-          <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
             <div className="flex items-center gap-1">
-              <button className="p-2 rounded-lg hover:bg-secondary transition-colors"><Plus className="w-4 h-4 text-muted-foreground" /></button>
-              <button className="p-2 rounded-lg hover:bg-secondary transition-colors" onClick={onOpenQuickReplies}><LayoutGrid className="w-4 h-4 text-muted-foreground" /></button>
+              {/* Plus: attach files/images (preserves existing upload behavior) */}
+              <button className="p-2.5 rounded-lg hover:bg-secondary transition-colors" title="Attach files">
+                <Plus className="w-5 h-5 text-muted-foreground" />
+              </button>
+              {/* Templates / Quick replies (preserves existing QuickRepliesModal) */}
+              <button className="p-2.5 rounded-lg hover:bg-secondary transition-colors" onClick={onOpenQuickReplies} title="Quick replies & templates">
+                <LayoutGrid className="w-5 h-5 text-muted-foreground" />
+              </button>
             </div>
             <button
               onClick={onSend}
-              className={`p-2 rounded-lg transition-colors ${inputValue.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}
+              className={`p-2.5 rounded-lg transition-colors ${inputValue.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-5 h-5" />
             </button>
           </div>
         </div>
