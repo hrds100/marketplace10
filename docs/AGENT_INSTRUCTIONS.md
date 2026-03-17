@@ -105,6 +105,7 @@ Claude then:
 | Feature or flow work | + `docs/ACCEPTANCE.md` |
 | Bug / "X not working" | + `docs/runbooks/DIAGNOSE_BEFORE_FIX.md` |
 | Unknown / cross-cutting | + `docs/ARCHITECTURE.md` + `docs/DATABASE.md` + `docs/INTEGRATIONS.md` + `docs/CHANGELOG.md` |
+| **NFStay module** (any `/nfstay` route, `nfs_` table, `nfs-` function) | + `docs/nfstay/AGENT_INSTRUCTIONS.md` + `docs/nfstay/BOUNDARIES.md` + task-specific NFStay docs (see `docs/nfstay/README.md`) |
 
 ### 3b. Mandatory pre-task steps
 
@@ -575,3 +576,52 @@ When any task involves a third-party platform, Claude MUST attempt API/MCP execu
 ### Stripe (via GHL)
 - **Test card:** 4242 4242 4242 4242 / any future date / any CVC
 - **Enable test mode:** GHL → Funnels → [funnel] → Settings → Payment mode → Test
+
+---
+
+## 21. MULTI-AGENT COORDINATION
+
+Multiple AI agents may work on this repo concurrently. Follow these rules to avoid conflicts.
+
+### File ownership — do not touch files owned by another agent
+
+| Files | Owner | Why |
+|-------|-------|-----|
+| `supabase/functions/**` | Claude Code (magic link agent) | Deployed via Supabase CLI, not Vercel. Has working session logic that breaks if reverted |
+| `src/components/ClaimAccountBanner.tsx` | Claude Code (magic link agent) | Tied to edge function contract |
+| `src/pages/MagicLoginPage.tsx` | Claude Code (magic link agent) | Handles `/inbox?token=` magic link flow |
+
+**If you need to modify an owned file, coordinate with Hugo first.** Do not silently revert, reformat, or "fix" files you don't own.
+
+### Route protection — do not change these routes
+
+| Route | Component | Why |
+|-------|-----------|-----|
+| `/inbox` | `MagicLoginPage` | WhatsApp magic links point here. Changing this breaks landlord auto-login |
+
+### Branch hygiene
+
+1. **Always `git pull origin main` before branching.** Stale branches cause merge conflicts and old styling.
+2. **Never force-push to someone else's branch.**
+3. **After merging to main, delete the feature branch** to avoid stale preview URLs.
+
+### Edge functions are NOT deployed by Vercel
+
+Supabase edge functions (`supabase/functions/*`) are deployed separately via:
+```bash
+SUPABASE_ACCESS_TOKEN=<PAT> supabase functions deploy <name> --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
+```
+
+The file on disk can differ from what's deployed. **Do not assume the file represents the live version.** Do not "fix" edge function files unless you are the owner and will redeploy.
+
+### Status check protocol
+
+When Hugo asks for a status check, respond with:
+
+```
+FILES MODIFIED: [list every file touched]
+BRANCH: [branch name]
+WHAT WORKS: [confirmed working]
+WHAT'S BROKEN: [known issues]
+PROTECTED FILES TOUCHED: [yes/no — list if yes]
+```

@@ -4,7 +4,6 @@ import { MessageSquare, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import ThreadList from '@/components/inbox/ThreadList';
 import ChatWindow from '@/components/inbox/ChatWindow';
-import ClaimAccountBanner from '@/components/ClaimAccountBanner';
 import InboxInquiryPanel from '@/components/inbox/InboxInquiryPanel';
 import MessagingSettingsModal from '@/components/inbox/MessagingSettingsModal';
 import AgreementModal from '@/components/inbox/AgreementModal';
@@ -46,20 +45,15 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>('operator');
-  const [landlordProfile, setLandlordProfile] = useState<{ whatsapp: string } | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
     (supabase.from('profiles') as any)
-      .select('role, whatsapp')
+      .select('role')
       .eq('id', user.id)
       .single()
       .then(({ data }: { data: Record<string, unknown> | null }) => {
         if (data?.role) setUserRole(data.role as string);
-        // Magic-link landlords have an @nfstay.internal email — show claim banner
-        if (user.email?.endsWith('@nfstay.internal')) {
-          setLandlordProfile({ whatsapp: (data as any)?.whatsapp || '' });
-        }
       });
   }, [user?.id]);
 
@@ -342,16 +336,9 @@ export default function InboxPage() {
   }
 
   const showRightPanel = showDetails && selectedThread && !selectedThread.isSupport;
-  const showClaimBanner = landlordProfile !== null; // email @nfstay.internal = unclaimed
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden flex-1">
-      {showClaimBanner && (
-        <ClaimAccountBanner
-          phone={landlordProfile!.whatsapp}
-          onClaimed={() => setLandlordProfile(null)}
-        />
-      )}
     <div className="flex-1 flex overflow-hidden">
       <div className={`shrink-0 ${leftPanelCollapsed ? 'w-14' : 'w-[320px]'} transition-all duration-200`}>
         <ThreadList threads={allThreads} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} onArchive={handleArchiveThread} isCollapsed={leftPanelCollapsed} onExpand={() => setLeftPanelCollapsed(false)} onCollapse={() => setLeftPanelCollapsed(true)} />
