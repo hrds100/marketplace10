@@ -76,7 +76,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={`relative flex items-center gap-2 h-10 rounded-full transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+                className={`relative flex items-center gap-2 h-10 rounded-full transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                 title={collapsed ? item.label : undefined}
               >
                 <div className="relative flex-shrink-0">
@@ -136,3 +136,4 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
     </>
   );
 }
+
