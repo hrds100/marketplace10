@@ -261,10 +261,30 @@
 ### Step 3.6 — Promo code CRUD + validation
 → Operator creates codes. Traveler applies them.
 
-### Step 3.7 — Email Edge Function
-→ Create `supabase/functions/nfs-email-send/`
+### Step 3.7 — Email setup + Edge Function
+
+**Pre-requisite: Tajul must verify domains in Resend first.**
+
+Tajul does this (agent gives exact steps):
+
+```
+Step 1 — Go to https://resend.com/domains
+Step 2 — Click "Add Domain"
+Step 3 — Type: hub.nfstay.com → click Add
+Step 4 — Resend shows 3 DNS records (2 DKIM + 1 SPF/MX). Add all 3 in your DNS provider.
+Step 5 — Click "Verify" in Resend. Wait for green checkmarks.
+Step 6 — Repeat Steps 2-5 for nfstay.app
+Step 7 — Tell the agent both domains show "Verified" in Resend.
+NOTE: Do NOT add nfstay.com — that is a separate business.
+```
+
+No new API key needed — `nfs-email-send` uses the existing shared `RESEND_API_KEY`.
+
+Then the agent:
+→ Creates `supabase/functions/nfs-email-send/`
+→ Sends from `bookings@nfstay.app` for NFStay booking emails (marketplace10 uses `notifications@hub.nfstay.com`)
 → Booking confirmation template
-→ Ask Tajul for Resend API key. Deploy once provided.
+→ Deploys once Tajul confirms domains are verified
 
 ### Step 3.8 — Phase 3 verification
 - [ ] Operator can create reservation manually

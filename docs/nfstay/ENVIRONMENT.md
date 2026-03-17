@@ -37,14 +37,15 @@ Set via `npx supabase secrets set KEY=VALUE` or Supabase Dashboard.
 | `NFS_HOSPITABLE_PARTNER_SECRET` | Hospitable partner API | Captured from VPS |
 | `NFS_HOSPITABLE_BEARER_TOKEN` | Hospitable API auth | Captured (may expire) |
 | `NFS_HOSPITABLE_WEBHOOK_SECRET` | Verify Hospitable webhooks | Captured from VPS |
-| `NFS_RESEND_API_KEY` | Email sending via Resend | Not yet created |
+| ~~`NFS_RESEND_API_KEY`~~ | ~~Removed — use shared `RESEND_API_KEY`~~ | N/A |
 | `NFS_CF_API_TOKEN` | Cloudflare API for custom domains | Captured from VPS |
 | `NFS_CF_ZONE_ID` | Cloudflare zone for nfstay.app | Captured from VPS |
 
 ### Notes
 - All NFStay secrets use the `NFS_` prefix to distinguish from marketplace10 secrets.
-- Existing secrets (`RESEND_API_KEY`, `ADMIN_EMAIL`) belong to marketplace10 — do not modify.
-- Edge Function secrets are available to all Edge Functions in the project. Use the `NFS_` prefix to avoid confusion.
+- **Exception: `RESEND_API_KEY` is shared.** Both marketplace10 and NFStay use the same Resend API key. The `nfs-email-send` Edge Function uses it with a different `from` domain (`nfstay.app` vs `nfstay.com`).
+- Do not create a separate `NFS_RESEND_API_KEY` — it's unnecessary and creates confusion.
+- Edge Function secrets are available to all Edge Functions in the project.
 
 ---
 
