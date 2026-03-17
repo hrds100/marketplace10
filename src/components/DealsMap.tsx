@@ -250,5 +250,5 @@ export default function DealsMap({ listings, hoveredId }: Props) {
     );
   }
 
-  return <div ref={containerRef} style={{ height: '100%', width: '100%' }} />;
+  return <div ref={containerRef} style={{ height: '100%', width: '100%', borderRadius: '16px', overflow: 'hidden' }} />;
 }
