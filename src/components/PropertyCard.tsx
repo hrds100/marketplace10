@@ -103,7 +103,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     const funded = 64;
     return (
       <div
-        className="bg-card rounded-2xl overflow-hidden border-[1.5px]"
+        className="bg-card rounded-2xl overflow-hidden border-[1.5px] h-full flex flex-col"
         style={{
           borderColor: '#C9A842',
           boxShadow: '0 4px 24px rgba(191,149,63,0.15)',
@@ -124,7 +124,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             </span>
           </div>
         </div>
-        <div className="p-3.5 pt-3 flex flex-col" style={{ minHeight: '248px' }}>
+        <div className="p-3.5 pt-3 flex flex-col flex-1">
           <h3 className="text-[15px] font-bold text-foreground">{listing.name}</h3>
           <p className="text-[13px] text-muted-foreground mt-0.5">{listing.city} · {listing.postcode}</p>
           <div className="mt-3 mb-2">
@@ -150,19 +150,21 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>12.4%</span>
             </div>
           </div>
-          {forceSignUp ? (
-            <button onClick={handleAction}
-              className="w-full mt-3 h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
-              style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
-              Invest Online <Zap className="w-4 h-4" />
-            </button>
-          ) : (
-            <Link to={`/deals/${listing.id}`}
-              className="w-full mt-3 h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
-              style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
-              Invest Online <Zap className="w-4 h-4" />
-            </Link>
-          )}
+          <div className="mt-auto pt-3">
+            {forceSignUp ? (
+              <button onClick={handleAction}
+                className="w-full h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
+                style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
+                Invest Online <Zap className="w-4 h-4" />
+              </button>
+            ) : (
+              <Link to={`/deals/${listing.id}`}
+                className="w-full h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
+                style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
+                Invest Online <Zap className="w-4 h-4" />
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -170,7 +172,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
 
   // ─── REGULAR CARD ────────────────────────────────────
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover">
+    <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover h-full flex flex-col">
       <div className="relative h-[200px] overflow-hidden">
         <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy" className="w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
@@ -186,7 +188,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         </button>
       </div>
 
-      <div className="p-3.5 pt-3">
+      <div className="p-3.5 pt-3 flex flex-col flex-1">
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-[15px] font-bold text-foreground leading-tight">{listing.name}</h3>
