@@ -25,7 +25,7 @@ serve(async (req) => {
       .update({ status: "inactive" })
       .eq("status", "live")
       .lt("created_at", cutoff14)
-      .select("id, name");
+      .select("id, name, city, contact_email, submitted_by");
 
     // Properties 7-14 days → on-offer
     const cutoff7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -35,7 +35,50 @@ serve(async (req) => {
       .eq("status", "live")
       .lt("created_at", cutoff7)
       .gte("created_at", cutoff14)
-      .select("id, name");
+      .select("id, name, city, contact_email, submitted_by");
+
+    // Send expiry emails and in-app notifications (non-blocking)
+    const sendNotifications = async (properties: typeof expired, newStatus: string, days: string) => {
+      if (!properties?.length) return;
+      for (const p of properties) {
+        // Email
+        if (p.contact_email) {
+          try {
+            const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+            if (RESEND_API_KEY) {
+              await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${RESEND_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  from: "NFsTay <notifications@hub.nfstay.com>",
+                  to: p.contact_email,
+                  subject: `Your deal has expired — ${p.city}`,
+                  html: `<h2>Deal expired</h2><p>Your property "${p.name}" in ${p.city} has been moved to <strong>${newStatus}</strong> after ${days} days.</p><p><a href="https://hub.nfstay.com/dashboard/deals">View on NFsTay →</a></p>`,
+                }),
+              });
+            }
+          } catch { /* silent */ }
+        }
+        // In-app notification
+        if (p.submitted_by) {
+          try {
+            await adminClient.from("notifications").insert({
+              user_id: p.submitted_by,
+              type: "deal_expired",
+              title: "Deal expired",
+              body: `Your deal "${p.name}" in ${p.city} has been moved to ${newStatus}.`,
+              property_id: p.id,
+            });
+          } catch { /* silent */ }
+        }
+      }
+    };
+
+    await sendNotifications(expired, "inactive", "14");
+    await sendNotifications(onOffer, "on offer", "7");
 
     return new Response(JSON.stringify({
       success: true,
