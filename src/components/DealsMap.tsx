@@ -66,16 +66,27 @@ function getGoogleMaps(): Promise<typeof google> {
   if (!apiKey) {
     return Promise.reject(new Error('VITE_GOOGLE_MAPS_API_KEY not set'));
   }
-  const loader = new Loader({ apiKey, version: 'weekly' });
+  const loader = new Loader({ apiKey, version: 'weekly', libraries: ['marker'] });
   loaderPromise = loader.load();
   return loaderPromise;
+}
+
+function createMarkerIcon(isHovered: boolean): google.maps.Symbol {
+  return {
+    path: google.maps.SymbolPath.CIRCLE,
+    scale: isHovered ? 10 : 7,
+    fillColor: isHovered ? '#059669' : '#00D084',
+    fillOpacity: 1,
+    strokeColor: 'white',
+    strokeWeight: 2.5,
+  };
 }
 
 export default function DealsMap({ listings, hoveredId }: Props) {
   const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map());
+  const markersRef = useRef<Map<string, google.maps.Marker>>(new Map());
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const [coords, setCoords] = useState<ResolvedCoord[]>([]);
   const [mapReady, setMapReady] = useState(false);
@@ -85,13 +96,11 @@ export default function DealsMap({ listings, hoveredId }: Props) {
   useEffect(() => {
     let cancelled = false;
     getGoogleMaps()
-      .then(async (g) => {
+      .then((g) => {
         if (cancelled || !mapRef.current) return;
-        const { Map, InfoWindow } = g.maps;
-        const map = new Map(mapRef.current, {
+        const map = new g.maps.Map(mapRef.current, {
           center: { lat: 52.5, lng: -1.5 },
           zoom: 6,
-          mapId: 'nfstay-deals-map',
           disableDefaultUI: false,
           zoomControl: true,
           mapTypeControl: false,
@@ -104,7 +113,7 @@ export default function DealsMap({ listings, hoveredId }: Props) {
           ],
         });
         googleMapRef.current = map;
-        infoWindowRef.current = new InfoWindow();
+        infoWindowRef.current = new g.maps.InfoWindow();
         setMapReady(true);
       })
       .catch(() => {
@@ -131,21 +140,17 @@ export default function DealsMap({ listings, hoveredId }: Props) {
     return () => { cancelled = true; };
   }, [listings]);
 
-  // Create/update markers
-  const createMarkerElement = useCallback((isHovered: boolean) => {
-    const el = document.createElement('div');
-    const size = isHovered ? 24 : 16;
-    el.style.width = `${size}px`;
-    el.style.height = `${size}px`;
-    el.style.borderRadius = '50%';
-    el.style.backgroundColor = isHovered ? '#059669' : '#00D084';
-    el.style.border = '2.5px solid white';
-    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
-    el.style.cursor = 'pointer';
-    el.style.transition = 'all 150ms ease';
-    return el;
-  }, []);
+  // Navigate handler for info window button
+  const handleNavigate = useCallback((id: string) => {
+    navigate(`/deals/${id}`);
+  }, [navigate]);
 
+  useEffect(() => {
+    (window as Record<string, unknown>).__nfstayNav = (id: string) => handleNavigate(id);
+    return () => { delete (window as Record<string, unknown>).__nfstayNav; };
+  }, [handleNavigate]);
+
+  // Create/update markers
   useEffect(() => {
     if (!mapReady || !googleMapRef.current) return;
     const map = googleMapRef.current;
@@ -155,7 +160,7 @@ export default function DealsMap({ listings, hoveredId }: Props) {
     const currentIds = new Set(coords.map(c => c.id));
     existingMarkers.forEach((marker, id) => {
       if (!currentIds.has(id)) {
-        marker.map = null;
+        marker.setMap(null);
         existingMarkers.delete(id);
       }
     });
@@ -166,27 +171,28 @@ export default function DealsMap({ listings, hoveredId }: Props) {
       let marker = existingMarkers.get(id);
 
       if (!marker) {
-        marker = new google.maps.marker.AdvancedMarkerElement({
+        marker = new google.maps.Marker({
           map,
           position: { lat, lng },
-          content: createMarkerElement(isHovered),
+          icon: createMarkerIcon(isHovered),
+          zIndex: isHovered ? 999 : 1,
         });
 
         marker.addListener('click', () => {
           if (infoWindowRef.current) {
             infoWindowRef.current.setContent(`
-              <div style="font-family: system-ui, sans-serif; min-width: 180px; padding: 4px;">
-                <p style="font-weight: 600; font-size: 13px; margin: 0 0 4px 0;">${listing.name}</p>
-                <p style="color: #888; font-size: 12px; margin: 0 0 8px 0;">${listing.city} · ${listing.postcode}</p>
-                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; border-top: 1px solid #eee;">
-                  <span style="color: #888;">Rent</span>
-                  <span style="font-weight: 500;">£${listing.rent.toLocaleString()}/mo</span>
+              <div style="font-family:system-ui,sans-serif;min-width:180px;padding:4px;">
+                <p style="font-weight:600;font-size:13px;margin:0 0 4px;">${listing.name}</p>
+                <p style="color:#888;font-size:12px;margin:0 0 8px;">${listing.city} · ${listing.postcode}</p>
+                <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid #eee;">
+                  <span style="color:#888;">Rent</span>
+                  <span style="font-weight:500;">£${listing.rent.toLocaleString()}/mo</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0;">
-                  <span style="color: #888;">Profit</span>
-                  <span style="font-weight: 700; color: #059669;">£${listing.profit.toLocaleString()}</span>
+                <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;">
+                  <span style="color:#888;">Profit</span>
+                  <span style="font-weight:700;color:#059669;">£${listing.profit.toLocaleString()}</span>
                 </div>
-                <button onclick="window.__nfstayNavigate('${id}')" style="margin-top: 8px; width: 100%; padding: 6px; background: #059669; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                <button onclick="window.__nfstayNav('${id}')" style="margin-top:8px;width:100%;padding:6px;background:#059669;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
                   View Deal
                 </button>
               </div>
@@ -197,8 +203,9 @@ export default function DealsMap({ listings, hoveredId }: Props) {
 
         existingMarkers.set(id, marker);
       } else {
-        marker.position = { lat, lng };
-        marker.content = createMarkerElement(isHovered);
+        marker.setPosition({ lat, lng });
+        marker.setIcon(createMarkerIcon(isHovered));
+        marker.setZIndex(isHovered ? 999 : 1);
       }
     });
 
@@ -213,29 +220,17 @@ export default function DealsMap({ listings, hoveredId }: Props) {
         map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
       }
     }
-  }, [coords, hoveredId, mapReady, createMarkerElement]);
+  }, [coords, hoveredId, mapReady]);
 
-  // Navigate handler for info window button
-  useEffect(() => {
-    (window as unknown as Record<string, unknown>).__nfstayNavigate = (id: string) => {
-      navigate(`/deals/${id}`);
-    };
-    return () => {
-      delete (window as unknown as Record<string, unknown>).__nfstayNavigate;
-    };
-  }, [navigate]);
-
-  // Update marker appearance on hover change
+  // Update marker icons on hover change only
   useEffect(() => {
     if (!mapReady) return;
     markersRef.current.forEach((marker, id) => {
       const isHovered = hoveredId === id;
-      marker.content = createMarkerElement(isHovered);
-      if (isHovered) {
-        marker.zIndex = 999;
-      }
+      marker.setIcon(createMarkerIcon(isHovered));
+      marker.setZIndex(isHovered ? 999 : 1);
     });
-  }, [hoveredId, mapReady, createMarkerElement]);
+  }, [hoveredId, mapReady]);
 
   if (error) {
     return (
