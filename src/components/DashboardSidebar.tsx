@@ -1,4 +1,4 @@
-import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,7 +26,8 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
   const setCollapsed = (v: boolean) => { setInternalCollapsed(v); onCollapse?.(v); };
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isAdmin, user } = useAuth();
+  const { signOut, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -58,16 +59,17 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
 
   return (
     <>
-      {/* Desktop sidebar — frosted glass matching top nav */}
-      <aside className={`hidden md:flex fixed left-0 top-0 h-screen bg-white/80 dark:bg-card/80 backdrop-blur-xl border-r border-border/30 z-[100] flex-col transition-all duration-300 ease-out ${collapsed ? 'w-16' : 'w-56'}`}>
-        <div className={`h-14 flex items-center border-b border-border/30 ${collapsed ? 'justify-center px-2' : 'px-5'}`}>
-          {!collapsed && <Link to="/dashboard/deals" className="text-[17px] font-extrabold text-foreground tracking-tight hover:opacity-70 transition-opacity">NFsTay</Link>}
-          <button onClick={() => setCollapsed(!collapsed)} className={`p-1.5 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors ${collapsed ? '' : 'ml-auto'}`}>
+      {/* Desktop sidebar — no logo, starts below persistent top bar */}
+      <aside className={`hidden md:flex fixed left-0 top-14 h-[calc(100vh-3.5rem)] bg-white/80 dark:bg-card/80 backdrop-blur-xl border-r border-border/30 z-[100] flex-col transition-all duration-300 ease-out ${collapsed ? 'w-16' : 'w-56'}`}>
+
+        {/* Collapse toggle */}
+        <div className={`h-10 flex items-center border-b border-border/30 ${collapsed ? 'justify-center px-2' : 'justify-end px-3'}`}>
+          <button onClick={() => setCollapsed(!collapsed)} className="p-1.5 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
             {collapsed ? <ChevronRight className="w-4 h-4 text-muted-foreground" /> : <ChevronLeft className="w-4 h-4 text-muted-foreground" />}
           </button>
         </div>
 
-        <nav className="flex-1 py-3 px-2 space-y-0.5">
+        <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
           {navItems.map(item => {
             const isActive = location.pathname === item.to || (item.to === '/dashboard/deals' && location.pathname === '/dashboard');
             return (
@@ -112,7 +114,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
         </div>
       </aside>
 
-      {/* Mobile bottom tab — same frosted glass */}
+      {/* Mobile bottom tab */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-[60px] bg-white/80 dark:bg-card/80 backdrop-blur-xl border-t border-border/30 z-[110] flex justify-around items-center">
         {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[6]].map(item => {
           const isActive = location.pathname === item.to;
