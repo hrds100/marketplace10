@@ -44,7 +44,11 @@ import NfsOperatorDashboard from "./pages/nfstay/NfsOperatorDashboard";
 import NfsOnboarding from "./pages/nfstay/NfsOnboarding";
 import NfsOperatorSettings from "./pages/nfstay/NfsOperatorSettings";
 import NfsProperties from "./pages/nfstay/NfsProperties";
+import NfsPropertyNew from "./pages/nfstay/NfsPropertyNew";
+import NfsPropertyDetail from "./pages/nfstay/NfsPropertyDetail";
 import NfsReservations from "./pages/nfstay/NfsReservations";
+import NfsSearch from "./pages/nfstay/NfsSearch";
+import NfsPropertyView from "./pages/nfstay/NfsPropertyView";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -122,9 +126,14 @@ const App = () => (
             <Route index element={<NfsOperatorDashboard />} />
             <Route path="onboarding" element={<NfsOnboarding />} />
             <Route path="properties" element={<NfsProperties />} />
+            <Route path="properties/new" element={<NfsPropertyNew />} />
+            <Route path="properties/:id" element={<NfsPropertyDetail />} />
             <Route path="reservations" element={<NfsReservations />} />
             <Route path="settings" element={<NfsOperatorSettings />} />
           </Route>
+          {/* NFStay traveler-facing routes — standalone (no operator layout) */}
+          <Route path="/nfstay/search" element={<NfsSearch />} />
+          <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

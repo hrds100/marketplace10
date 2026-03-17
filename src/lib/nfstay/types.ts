@@ -77,6 +77,106 @@ export interface NfsOperator {
   updated_at: string;
 }
 
+export interface NfsPropertyImage {
+  url: string;
+  caption?: string;
+  order: number;
+}
+
+export interface NfsProperty {
+  id: string;
+  operator_id: string;
+
+  // Status
+  status: 'draft' | 'completed';
+  listing_status: 'listed' | 'unlisted' | 'archived' | 'draft';
+  source: 'airbnb' | 'nfstay';
+  current_step: string;
+  completed_steps: string[];
+
+  // Basics
+  property_type: string | null;
+  rental_type: string | null;
+  accommodation_type: string | null;
+  size_value: number | null;
+  size_unit: string | null;
+
+  // Location
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postal_code: string | null;
+  street: string | null;
+  lat: number | null;
+  lng: number | null;
+  timezone: string | null;
+
+  // Guest / Rooms
+  max_guests: number | null;
+  allow_children: boolean;
+  room_counts: unknown[];
+  room_sections: unknown[];
+
+  // Photos
+  images: NfsPropertyImage[];
+
+  // Amenities
+  amenities: Record<string, boolean>;
+
+  // Description
+  public_title: string | null;
+  internal_title: string | null;
+  description: string | null;
+
+  // House Rules
+  check_in_time: string | null;
+  check_out_time: string | null;
+  max_pets: number | null;
+  rules: string | null;
+  cancellation_policy: string | null;
+
+  // Availability
+  availability_window: string;
+  advance_notice: number;
+  minimum_stay: number;
+  date_ranges: unknown[];
+  blocked_date_ranges: unknown[];
+
+  // iCal
+  inbound_calendars: unknown[];
+  outbound_calendar_url: string | null;
+
+  // Fees & Taxes
+  cleaning_fee: { enabled: boolean; amount?: number };
+  extra_guest_fee: { enabled: boolean; amount?: number; after_guests?: number };
+  custom_fees: unknown[];
+  custom_taxes: unknown[];
+
+  // Discounts
+  weekly_discount: { enabled: boolean; percentage?: number };
+  monthly_discount: { enabled: boolean; percentage?: number };
+
+  // Rates
+  base_rate_currency: string;
+  base_rate_amount: number;
+  daily_rates: Record<string, number>;
+  custom_rates: unknown[];
+  synced_rate_modifier: unknown | null;
+
+  // Hospitable (Phase 5)
+  hospitable_property_id: string | null;
+  hospitable_connected: boolean;
+  hospitable_last_sync_at: string | null;
+  hospitable_sync_status: string;
+  hospitable_connection_id: string | null;
+  hospitable_customer_id: string | null;
+  hospitable_platform_mappings: unknown[];
+
+  created_at: string;
+  updated_at: string;
+}
+
 export interface NfsOperatorUser {
   id: string;
   profile_id: string;

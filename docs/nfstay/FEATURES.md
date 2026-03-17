@@ -31,17 +31,17 @@
 
 | Feature | Status | System | Notes |
 |---------|--------|--------|-------|
-| Property creation wizard (10 steps) | Planned | Frontend + Supabase | `nfs_properties` table |
-| Photo upload | Planned | Supabase Storage | `nfs-images` bucket |
-| Property list (operator) | Planned | Frontend + Supabase | Filter, sort, bulk actions |
-| Property detail/edit (operator) | Planned | Frontend + Supabase | All 10 property sections |
-| Draft vs listed vs archived | Planned | Supabase | `listing_status` column |
-| Bulk edit / bulk status update | Planned | Supabase RPC | Batch operations |
-| Traveler search page | Planned | Frontend + Supabase | Full-text search, filters |
-| Google Maps search view | Planned | Frontend | `@googlemaps/js-api-loader` |
-| Property markers + clustering | Planned | Frontend | `@googlemaps/markerclusterer` |
-| Places autocomplete | Planned | Frontend | `usePlacesAutocomplete` hook |
-| Traveler property detail page | Planned | Frontend | Gallery, map, amenities, rules, booking widget |
+| Property creation wizard (10 steps) | Done | Frontend + Supabase | `nfs_properties` table |
+| Photo upload | Done | Supabase Storage | `nfs-images` bucket |
+| Property list (operator) | Done | Frontend + Supabase | Filter, sort, bulk actions |
+| Property detail/edit (operator) | Done | Frontend + Supabase | Tabs: overview, details, photos, availability, pricing |
+| Draft vs listed vs archived | Done | Supabase | `listing_status` column |
+| Bulk edit / bulk status update | Done | Supabase RPC | `nfs_bulk_update_listing_status` function |
+| Traveler search page | Done | Frontend + Supabase | Text search, filters, grid/map toggle |
+| Google Maps search view | Done | Frontend | `@googlemaps/js-api-loader` |
+| Property markers + clustering | Done | Frontend | `@googlemaps/markerclusterer` |
+| Places autocomplete | Done | Frontend | `NfsPlacesAutocomplete` component |
+| Traveler property detail page | Done | Frontend | Gallery, map, amenities, rules, booking widget placeholder |
 
 ## Phase 3 — Reservations + Pricing
 

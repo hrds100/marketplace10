@@ -6,6 +6,24 @@
 
 ## 2026-03-17
 
+### Phase 2 — Properties + Maps
+- Property creation wizard (10 steps): basics, location, guests/rooms, photos, amenities, description, house rules, availability, pricing, review & publish
+- Property list page with status filters, text search, bulk status updates
+- Property detail/edit page with 5 tabs (overview, details, photos, availability, pricing)
+- Photo upload to Supabase Storage (`nfs-images` bucket) with gallery, reorder, caption, delete
+- Traveler search page with filters, grid/map view toggle
+- Google Maps integration: search map with markers/clustering, property map, Places autocomplete
+- Traveler property detail page with photo gallery, amenities, house rules, location map, booking placeholder
+- 7 new hooks: use-nfs-properties, use-nfs-property, use-nfs-property-mutation, use-nfs-property-wizard, use-nfs-property-search, use-nfs-image-upload, use-nfs-google-maps
+- NfsProperty + NfsPropertyImage TypeScript types added
+- Property wizard constants, step labels, amenity categories added
+- Migration file created: `20260317130000_nfs_phase2_properties.sql` (awaiting execution)
+- Bulk status update RPC: `nfs_bulk_update_listing_status`
+- 5 new pages, 10 wizard steps, 3 map components, 3 shared property components
+- Routes wired in App.tsx (additive only — operator + traveler routes)
+- Packages installed: `@googlemaps/js-api-loader`, `@googlemaps/markerclusterer`
+- TypeScript: zero errors
+
 ### Phase 1 — Step 1.6 verification complete
 - **Bug fix:** Signup now shows user-visible error if `nfs_operators` INSERT fails (was silently swallowed)
 - **Bug fix:** Settings success toast auto-clears after 3 seconds (was persistent)
