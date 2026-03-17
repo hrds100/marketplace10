@@ -77,8 +77,8 @@ const App = () => (
           <Route path="/deals/:id" element={<DealDetail />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="deals" replace />} />
-            <Route path="deals" element={<DealsPage />} />
-            <Route path="deals-v2" element={<DealsPageV2 />} />
+            <Route path="deals" element={<DealsPageV2 />} />
+            <Route path="deals-v2" element={<DealsPage />} />
             <Route path="inbox" element={<InboxPage />} />
             <Route path="favourites" element={<FavouritesPage />} />
             <Route path="crm" element={<CRMPage />} />
@@ -113,3 +113,4 @@ const App = () => (
 );
 
 export default App;
+
