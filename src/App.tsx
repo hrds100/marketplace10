@@ -37,6 +37,7 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminUniversity from "./pages/admin/AdminUniversity";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
+import TestingDesign from "./pages/TestingDesign";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -108,6 +109,7 @@ const App = () => (
             <Route path="settings" element={<AdminSettings />} />
             <Route path="notifications" element={<AdminNotifications />} />
           </Route>
+          <Route path="/testing/design" element={<TestingDesign />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
