@@ -49,7 +49,7 @@ export default function DashboardTopNav() {
 
   const isActive = (to: string) =>
     location.pathname === to ||
-    (to === '/dashboard/deals' && (location.pathname === '/dashboard' || location.pathname === '/dashboard/deals-v2'));
+    (to === '/dashboard/deals' && (location.pathname === '/dashboard' || location.pathname === '/dashboard/deals'));
 
   return (
     <>
@@ -176,3 +176,4 @@ export default function DashboardTopNav() {
     </>
   );
 }
+
