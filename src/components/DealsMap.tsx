@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader } from '@googlemaps/js-api-loader';
 import type { ListingShape } from '@/components/InquiryPanel';
 
 interface Props {
@@ -41,9 +40,7 @@ async function geocodePostcode(postcode: string, city: string): Promise<[number,
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(clean)}`, {
-      signal: controller.signal,
-    });
+    const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(clean)}`, { signal: controller.signal });
     clearTimeout(timeout);
     const data = await res.json();
     if (data.status === 200 && data.result) {
@@ -52,196 +49,182 @@ async function geocodePostcode(postcode: string, city: string): Promise<[number,
       return coords;
     }
   } catch {
-    // fall through to city fallback
+    // fall through
   }
   const cityKey = city.toLowerCase().trim();
   return cityFallbacks[cityKey] ?? null;
 }
 
-let loaderPromise: Promise<typeof google> | null = null;
+// Load Google Maps script once
+let scriptLoaded = false;
+let scriptPromise: Promise<void> | null = null;
 
-function getGoogleMaps(): Promise<typeof google> {
-  if (loaderPromise) return loaderPromise;
+function loadGoogleMaps(): Promise<void> {
+  if (scriptLoaded && window.google?.maps) return Promise.resolve();
+  if (scriptPromise) return scriptPromise;
+
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    return Promise.reject(new Error('VITE_GOOGLE_MAPS_API_KEY not set'));
-  }
-  const loader = new Loader({ apiKey, version: 'weekly' });
-  loaderPromise = loader.load();
-  return loaderPromise;
+  if (!apiKey) return Promise.reject(new Error('No API key'));
+
+  scriptPromise = new Promise<void>((resolve, reject) => {
+    // Check if already loaded by another script
+    if (window.google?.maps) {
+      scriptLoaded = true;
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => { scriptLoaded = true; resolve(); };
+    script.onerror = () => reject(new Error('Google Maps failed to load'));
+    document.head.appendChild(script);
+  });
+  return scriptPromise;
 }
 
 export default function DealsMap({ listings, hoveredId }: Props) {
   const navigate = useNavigate();
-  const mapRef = useRef<HTMLDivElement>(null);
-  const googleMapRef = useRef<google.maps.Map | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<Map<string, google.maps.Marker>>(new Map());
-  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const infoRef = useRef<google.maps.InfoWindow | null>(null);
   const [coords, setCoords] = useState<ResolvedCoord[]>([]);
-  const [mapReady, setMapReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState(false);
 
-  const createMarkerIcon = useCallback((isHovered: boolean): google.maps.Symbol | undefined => {
-    if (typeof google === 'undefined') return undefined;
-    return {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: isHovered ? 10 : 7,
-      fillColor: isHovered ? '#059669' : '#00D084',
-      fillOpacity: 1,
-      strokeColor: 'white',
-      strokeWeight: 2.5,
-    };
-  }, []);
-
-  // Initialize Google Maps
+  // Load script + init map
   useEffect(() => {
     let cancelled = false;
-    getGoogleMaps()
-      .then((g) => {
-        if (cancelled || !mapRef.current) return;
-        const map = new g.maps.Map(mapRef.current, {
+    loadGoogleMaps()
+      .then(() => {
+        if (cancelled || !containerRef.current || !window.google?.maps) return;
+        const map = new window.google.maps.Map(containerRef.current, {
           center: { lat: 52.5, lng: -1.5 },
           zoom: 6,
-          disableDefaultUI: false,
+          disableDefaultUI: true,
           zoomControl: true,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
           gestureHandling: 'greedy',
           styles: [
             { featureType: 'poi', stylers: [{ visibility: 'off' }] },
             { featureType: 'transit', stylers: [{ visibility: 'off' }] },
           ],
         });
-        googleMapRef.current = map;
-        infoWindowRef.current = new g.maps.InfoWindow();
-        setMapReady(true);
+        mapInstanceRef.current = map;
+        infoRef.current = new window.google.maps.InfoWindow();
+        setReady(true);
       })
-      .catch(() => {
-        if (!cancelled) setError('Map could not load');
-      });
+      .catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
   }, []);
 
-  // Geocode listings
+  // Geocode
   useEffect(() => {
     if (!listings.length) { setCoords([]); return; }
     let cancelled = false;
-    const resolve = async () => {
+    (async () => {
       const results: ResolvedCoord[] = [];
       for (const l of listings) {
         const c = await geocodePostcode(l.postcode ?? '', l.city ?? '');
-        if (c && !cancelled) {
-          results.push({ id: l.id, lat: c[0], lng: c[1], listing: l });
-        }
+        if (c && !cancelled) results.push({ id: l.id, lat: c[0], lng: c[1], listing: l });
       }
       if (!cancelled) setCoords(results);
-    };
-    resolve();
+    })();
     return () => { cancelled = true; };
   }, [listings]);
 
-  // Navigate handler for info window button
-  const handleNavigate = useCallback((id: string) => {
-    navigate(`/deals/${id}`);
-  }, [navigate]);
+  // Click handler
+  const onNav = useCallback((id: string) => navigate(`/deals/${id}`), [navigate]);
 
+  // Sync markers
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__nfstayNav = (id: string) => handleNavigate(id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return () => { delete (window as any).__nfstayNav; };
-  }, [handleNavigate]);
+    if (!ready || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    const existing = markersRef.current;
+    const g = window.google.maps;
 
-  // Create/update markers
-  useEffect(() => {
-    if (!mapReady || !googleMapRef.current) return;
-    const map = googleMapRef.current;
-    const existingMarkers = markersRef.current;
+    // Remove stale
+    const ids = new Set(coords.map(c => c.id));
+    existing.forEach((m, id) => { if (!ids.has(id)) { m.setMap(null); existing.delete(id); } });
 
-    // Remove markers for listings no longer present
-    const currentIds = new Set(coords.map(c => c.id));
-    existingMarkers.forEach((marker, id) => {
-      if (!currentIds.has(id)) {
-        marker.setMap(null);
-        existingMarkers.delete(id);
-      }
-    });
-
-    // Add/update markers
+    // Upsert
     coords.forEach(({ id, lat, lng, listing }) => {
-      const isHovered = hoveredId === id;
-      let marker = existingMarkers.get(id);
+      const hovered = hoveredId === id;
+      const icon: google.maps.Symbol = {
+        path: g.SymbolPath.CIRCLE,
+        scale: hovered ? 10 : 7,
+        fillColor: hovered ? '#059669' : '#00D084',
+        fillOpacity: 1,
+        strokeColor: '#fff',
+        strokeWeight: 2.5,
+      };
 
+      let marker = existing.get(id);
       if (!marker) {
-        marker = new google.maps.Marker({
-          map,
-          position: { lat, lng },
-          icon: createMarkerIcon(isHovered),
-          zIndex: isHovered ? 999 : 1,
-        });
-
+        marker = new g.Marker({ map, position: { lat, lng }, icon, zIndex: hovered ? 999 : 1 });
         marker.addListener('click', () => {
-          if (infoWindowRef.current) {
-            infoWindowRef.current.setContent(`
-              <div style="font-family:system-ui,sans-serif;min-width:180px;padding:4px;">
-                <p style="font-weight:600;font-size:13px;margin:0 0 4px;">${listing.name}</p>
-                <p style="color:#888;font-size:12px;margin:0 0 8px;">${listing.city} · ${listing.postcode}</p>
-                <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid #eee;">
-                  <span style="color:#888;">Rent</span>
-                  <span style="font-weight:500;">£${listing.rent.toLocaleString()}/mo</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;">
-                  <span style="color:#888;">Profit</span>
-                  <span style="font-weight:700;color:#059669;">£${listing.profit.toLocaleString()}</span>
-                </div>
-                <button onclick="window.__nfstayNav('${id}')" style="margin-top:8px;width:100%;padding:6px;background:#059669;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
-                  View Deal
-                </button>
-              </div>
-            `);
-            infoWindowRef.current.open(map, marker);
-          }
+          if (!infoRef.current) return;
+          infoRef.current.setContent(
+            `<div style="font-family:system-ui;min-width:180px;padding:4px">` +
+            `<p style="font-weight:600;font-size:13px;margin:0 0 4px">${listing.name}</p>` +
+            `<p style="color:#888;font-size:12px;margin:0 0 8px">${listing.city} · ${listing.postcode}</p>` +
+            `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid #eee">` +
+            `<span style="color:#888">Rent</span><span style="font-weight:500">£${listing.rent.toLocaleString()}/mo</span></div>` +
+            `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">` +
+            `<span style="color:#888">Profit</span><span style="font-weight:700;color:#059669">£${listing.profit.toLocaleString()}</span></div>` +
+            `</div>`
+          );
+          infoRef.current.open(map, marker);
         });
-
-        existingMarkers.set(id, marker);
+        // Navigate on double-click instead of window hack
+        marker.addListener('dblclick', () => onNav(id));
+        existing.set(id, marker);
       } else {
         marker.setPosition({ lat, lng });
-        marker.setIcon(createMarkerIcon(isHovered));
-        marker.setZIndex(isHovered ? 999 : 1);
+        marker.setIcon(icon);
+        marker.setZIndex(hovered ? 999 : 1);
       }
     });
 
     // Fit bounds
     if (coords.length > 0) {
-      const bounds = new google.maps.LatLngBounds();
+      const bounds = new g.LatLngBounds();
       coords.forEach(c => bounds.extend({ lat: c.lat, lng: c.lng }));
       if (coords.length === 1) {
-        map.setCenter({ lat: coords[0].lat, lng: coords[0].lng });
+        map.setCenter(coords[0]);
         map.setZoom(13);
       } else {
-        map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+        map.fitBounds(bounds, 40);
       }
     }
-  }, [coords, hoveredId, mapReady]);
+  }, [coords, hoveredId, ready, onNav]);
 
-  // Update marker icons on hover change only
+  // Hover-only update
   useEffect(() => {
-    if (!mapReady) return;
+    if (!ready || !window.google?.maps) return;
+    const g = window.google.maps;
     markersRef.current.forEach((marker, id) => {
-      const isHovered = hoveredId === id;
-      marker.setIcon(createMarkerIcon(isHovered));
-      marker.setZIndex(isHovered ? 999 : 1);
+      const hovered = hoveredId === id;
+      marker.setIcon({
+        path: g.SymbolPath.CIRCLE,
+        scale: hovered ? 10 : 7,
+        fillColor: hovered ? '#059669' : '#00D084',
+        fillOpacity: 1,
+        strokeColor: '#fff',
+        strokeWeight: 2.5,
+      });
+      marker.setZIndex(hovered ? 999 : 1);
     });
-  }, [hoveredId, mapReady]);
+  }, [hoveredId, ready]);
 
   if (error) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-muted/20">
-        <p className="text-sm text-muted-foreground">{error}</p>
+        <p className="text-sm text-muted-foreground">Map could not load</p>
       </div>
     );
   }
 
-  return <div ref={mapRef} style={{ height: '100%', width: '100%' }} />;
+  return <div ref={containerRef} style={{ height: '100%', width: '100%' }} />;
 }
