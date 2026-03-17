@@ -96,7 +96,7 @@ export default function PropertyCardV2({
   return (
     <div
       className={`bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 group ${listing.prime ? 'border-[1.5px]' : ''}`}
-      style={listing.prime ? { borderColor: '#C5A55A' } : undefined}
+      style={listing.prime ? { borderColor: '#D4AF37', boxShadow: '0 0 12px rgba(212,175,55,0.15), 0 0 4px rgba(212,175,55,0.1)' } : undefined}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -126,7 +126,7 @@ export default function PropertyCardV2({
             </span>
           )}
           {listing.prime && (
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-sm inline-flex items-center gap-0.5" style={{ background: '#F5E6B8', color: '#8B7332' }}>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-sm inline-flex items-center gap-0.5" style={{ background: 'linear-gradient(135deg, #F7E7A0, #EDD56A)', color: '#7A6520', border: '1px solid rgba(212,175,55,0.3)' }}>
               ✓ Prime
             </span>
           )}
