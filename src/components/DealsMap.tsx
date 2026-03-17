@@ -137,7 +137,7 @@ export default function DealsMap({ listings, hoveredId }: Props) {
   // Click handler
   const onNav = useCallback((id: string) => navigate(`/deals/${id}`), [navigate]);
 
-  // Sync markers
+  // Sync markers — only when coords change (NOT on hover)
   useEffect(() => {
     if (!ready || !mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
@@ -150,19 +150,17 @@ export default function DealsMap({ listings, hoveredId }: Props) {
 
     // Upsert
     coords.forEach(({ id, lat, lng, listing }) => {
-      const hovered = hoveredId === id;
-      const icon: google.maps.Symbol = {
-        path: g.SymbolPath.CIRCLE,
-        scale: hovered ? 10 : 7,
-        fillColor: hovered ? '#059669' : '#00D084',
-        fillOpacity: 1,
-        strokeColor: '#fff',
-        strokeWeight: 2.5,
-      };
-
       let marker = existing.get(id);
       if (!marker) {
-        marker = new g.Marker({ map, position: { lat, lng }, icon, zIndex: hovered ? 999 : 1 });
+        const icon: google.maps.Symbol = {
+          path: g.SymbolPath.CIRCLE,
+          scale: 7,
+          fillColor: '#00D084',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2.5,
+        };
+        marker = new g.Marker({ map, position: { lat, lng }, icon, zIndex: 1 });
         marker.addListener('click', () => {
           if (!infoRef.current) return;
           infoRef.current.setContent(
@@ -177,17 +175,14 @@ export default function DealsMap({ listings, hoveredId }: Props) {
           );
           infoRef.current.open(map, marker);
         });
-        // Navigate on double-click instead of window hack
         marker.addListener('dblclick', () => onNav(id));
         existing.set(id, marker);
       } else {
         marker.setPosition({ lat, lng });
-        marker.setIcon(icon);
-        marker.setZIndex(hovered ? 999 : 1);
       }
     });
 
-    // Fit bounds
+    // Fit bounds on initial load only
     if (coords.length > 0) {
       const bounds = new g.LatLngBounds();
       coords.forEach(c => bounds.extend({ lat: c.lat, lng: c.lng }));
@@ -198,48 +193,59 @@ export default function DealsMap({ listings, hoveredId }: Props) {
         map.fitBounds(bounds, 40);
       }
     }
-  }, [coords, hoveredId, ready, onNav]);
+  }, [coords, ready, onNav]);
 
-  // Hover — highlight marker + smooth pan/zoom, stay on last property when mouse leaves
+  // Hover — smooth pan/zoom to property, stay when mouse leaves
+  const zoomIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     if (!ready || !mapInstanceRef.current || !window.google?.maps) return;
     const map = mapInstanceRef.current;
     const g = window.google.maps;
 
+    // Clear any running zoom animation
+    if (zoomIntervalRef.current) {
+      clearInterval(zoomIntervalRef.current);
+      zoomIntervalRef.current = null;
+    }
+
+    // Update all marker icons
     markersRef.current.forEach((marker, id) => {
       const hovered = hoveredId === id;
       marker.setIcon({
         path: g.SymbolPath.CIRCLE,
-        scale: hovered ? 10 : 7,
+        scale: hovered ? 11 : 7,
         fillColor: hovered ? '#059669' : '#00D084',
         fillOpacity: 1,
         strokeColor: '#fff',
-        strokeWeight: 2.5,
+        strokeWeight: hovered ? 3 : 2.5,
       });
       marker.setZIndex(hovered ? 999 : 1);
 
+      // Smooth pan + zoom to hovered marker
       if (hovered) {
         const pos = marker.getPosition();
         if (pos) {
-          // Smooth pan
           map.panTo(pos);
-          // Gentle zoom — 0.5 level steps with longer intervals for smoothness
-          const target = 13;
+          const target = 14;
           const current = map.getZoom() ?? 6;
           if (current < target) {
             let step = current;
-            const interval = setInterval(() => {
-              step += 0.5;
+            zoomIntervalRef.current = setInterval(() => {
+              step += 0.3;
               map.setZoom(step);
-              if (step >= target) clearInterval(interval);
-            }, 150);
+              if (step >= target) {
+                if (zoomIntervalRef.current) clearInterval(zoomIntervalRef.current);
+                zoomIntervalRef.current = null;
+              }
+            }, 60);
           }
         }
       }
     });
 
-    // When mouse leaves a card (hoveredId = null), do NOT zoom back out.
-    // Stay on the last property the user was looking at.
+    // When hoveredId is null (mouse left card) — do nothing.
+    // Map stays exactly where it is, showing the last property.
   }, [hoveredId, ready]);
 
   if (error) {
