@@ -99,14 +99,24 @@ export default function DealsPageV2() {
   }, [dbProperties]);
 
   const liveCount = listings.filter(l => l.status === 'live').length;
-  const featured = listings.filter(l => l.featured);
-  const featuredIds = new Set(featured.map(l => l.id));
+
+  // Top section: Prime first, then Featured, fill remaining slots with regular
+  const highlighted = useMemo(() => {
+    const prime = listings.filter(l => l.prime);
+    const featured = listings.filter(l => l.featured && !l.prime);
+    const topIds = new Set([...prime, ...featured].map(l => l.id));
+    // If we have fewer than 2 highlighted, fill with regular properties
+    const regular = listings.filter(l => !topIds.has(l.id));
+    const combined = [...prime, ...featured];
+    while (combined.length < 2 && regular.length > 0) {
+      combined.push(regular.shift()!);
+    }
+    return combined;
+  }, [listings]);
+  const highlightedIds = new Set(highlighted.map(l => l.id));
 
   const filtered = useMemo(() => {
-    let result =
-      featured.length > 0
-        ? listings.filter(l => !featuredIds.has(l.id))
-        : [...listings];
+    let result = listings.filter(l => !highlightedIds.has(l.id));
     if (activeTab !== 'All') {
       const statusMap: Record<string, string> = {
         Live: 'live',
@@ -121,7 +131,7 @@ export default function DealsPageV2() {
     else if (sort === 'rent') result.sort((a, b) => a.rent - b.rent);
     else result.sort((a, b) => a.daysAgo - b.daysAgo);
     return result;
-  }, [activeTab, city, type, sort, listings, featured.length]);
+  }, [activeTab, city, type, sort, listings, highlightedIds]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const pageListings = filtered.slice((page - 1) * perPage, page * perPage);
@@ -133,8 +143,8 @@ export default function DealsPageV2() {
   };
 
   const mapListings = useMemo(
-    () => [...featured, ...pageListings],
-    [featured, pageListings],
+    () => [...highlighted, ...pageListings],
+    [highlighted, pageListings],
   );
 
   return (
@@ -197,18 +207,18 @@ export default function DealsPageV2() {
                 <option value="rent">Lowest rent</option>
               </select>
               <span className="text-xs text-muted-foreground">
-                {filtered.length + featured.length} deals
+                {filtered.length + highlighted.length} deals
               </span>
             </div>
 
-            {/* Featured */}
-            {featured.length > 0 && (
+            {/* Highlighted: Prime → Featured → Regular fill */}
+            {highlighted.length > 0 && (
               <div className="mb-8">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Featured
+                  Top Picks
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {featured.map(l => (
+                  {highlighted.map(l => (
                     <div
                       key={l.id}
                       onMouseEnter={() => setHoveredId(l.id)}
