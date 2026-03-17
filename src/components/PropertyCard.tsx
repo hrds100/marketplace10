@@ -93,7 +93,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type);
 
   return (
-    <div className={`bg-card rounded-2xl overflow-hidden card-hover ${listing.prime ? 'border-[1.5px]' : 'border border-border'}`} style={listing.prime ? { borderColor: '#C5A55A' } : undefined}>
+    <div className={`bg-card rounded-2xl overflow-hidden card-hover ${listing.prime ? 'border-[1.5px]' : 'border border-border'}`} style={listing.prime ? { borderColor: '#D4AF37', boxShadow: '0 0 12px rgba(212,175,55,0.15), 0 0 4px rgba(212,175,55,0.1)' } : undefined}>
       {/* Photo */}
       <div className="relative h-[200px] overflow-hidden">
         <img
@@ -107,7 +107,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
           {listing.featured && <span className="badge-green-fill text-[11px]">Featured</span>}
           {listing.prime && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ background: '#F5E6B8', color: '#8B7332' }}>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold shadow-sm" style={{ background: 'linear-gradient(135deg, #F7E7A0, #EDD56A)', color: '#7A6520', border: '1px solid rgba(212,175,55,0.3)' }}>
               <ShieldCheck className="w-3 h-3" /> Prime
             </span>
           )}
