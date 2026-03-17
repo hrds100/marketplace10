@@ -6,6 +6,13 @@
 
 ## 2026-03-17
 
+### Infrastructure — Supabase storage bucket created
+- Created `nfs-images` storage bucket in Supabase Dashboard
+  - Public read access (anon SELECT)
+  - Authenticated upload (authenticated INSERT)
+  - Authenticated delete (authenticated DELETE)
+- Bucket is NFStay-owned per BOUNDARIES.md §4
+
 ### Phase 1 — Operator settings page (6 tabs)
 - Created `src/pages/nfstay/NfsOperatorSettings.tsx` — tabbed settings page
 - Created 6 settings tab components in `src/components/nfstay/settings/`:
