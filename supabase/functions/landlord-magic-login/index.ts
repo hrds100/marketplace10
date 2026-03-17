@@ -39,7 +39,7 @@ serve(async (req) => {
       )
     }
 
-    // 2. Get phone from thread → property (no phone column in invite needed)
+    // 2. Get phone from thread → property
     const { data: thread } = await supabaseAdmin
       .from('chat_threads')
       .select('property_id')
@@ -59,9 +59,9 @@ serve(async (req) => {
     const cleanPhone = phone.replace(/\D/g, '')
     const internalEmail = `landlord_${cleanPhone}@nfstay.internal`
 
-    // 3. Look up existing landlord by phone in profiles (whatsapp field)
-    //    This handles re-taps without needing a landlord_user_id column
+    // 3. Look up existing landlord by phone in profiles
     let userId = ''
+    let loginEmail = internalEmail
 
     if (cleanPhone) {
       const { data: existingProfile } = await supabaseAdmin
@@ -69,11 +69,14 @@ serve(async (req) => {
         .select('id')
         .eq('whatsapp', phone)
         .maybeSingle()
-      if (existingProfile?.id) userId = existingProfile.id
+      if (existingProfile?.id) {
+        userId = existingProfile.id
+        const { data: { user: existingUser } } = await supabaseAdmin.auth.admin.getUserById(userId)
+        if (existingUser?.email) loginEmail = existingUser.email
+      }
     }
 
     if (!userId) {
-      // First tap — create Supabase account for this landlord
       const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
         email: internalEmail,
         email_confirm: true,
@@ -87,36 +90,63 @@ serve(async (req) => {
       }
 
       userId = created.user.id
-
-      // Create profile — whatsapp_verified:true bypasses OTP gate
-      await supabaseAdmin.from('profiles').upsert({
-        id: userId,
-        name: phone,
-        whatsapp: phone,
-        whatsapp_verified: true,
-      })
     }
 
-    // 4. Link the thread to this landlord so loadThreads() finds it
+    // Ensure profile has whatsapp_verified:true (bypasses OTP gate)
+    if (loginEmail === internalEmail) {
+      await supabaseAdmin.from('profiles').upsert({
+        id: userId, name: phone, whatsapp: phone, whatsapp_verified: true,
+      }, { onConflict: 'id', ignoreDuplicates: false })
+    } else {
+      await supabaseAdmin.from('profiles')
+        .update({ whatsapp_verified: true })
+        .eq('id', userId)
+    }
+
+    // 4. Link the thread to this landlord
     await supabaseAdmin
       .from('chat_threads')
       .update({ landlord_id: userId })
       .eq('id', invite.thread_id)
 
-    // 5. Create a fresh session
-    const { data: sessionData, error: sessionErr } = await supabaseAdmin.auth.admin.createSession({
-      user_id: userId,
+    // 5. Session via generateLink + GoTrue /verify (createSession not in esm.sh@2)
+    const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: loginEmail,
     })
 
-    if (sessionErr || !sessionData?.session) {
-      return new Response(JSON.stringify({ error: 'Failed to create session' }), {
+    if (linkErr || !linkData?.properties?.hashed_token) {
+      return new Response(JSON.stringify({ error: 'Failed to generate link: ' + linkErr?.message }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
+    const verifyType = linkData.properties.verification_type ?? 'magiclink'
+    const verifyRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`, {
+      method: 'POST',
+      headers: {
+        'apikey': Deno.env.get('SUPABASE_ANON_KEY')!,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: verifyType,
+        token: linkData.properties.email_otp,
+        email: loginEmail,
+      }),
+    })
+
+    if (!verifyRes.ok) {
+      const errBody = await verifyRes.text()
+      return new Response(JSON.stringify({ error: 'Failed to verify token: ' + errBody }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const sessionData = await verifyRes.json()
+
     return new Response(JSON.stringify({
-      access_token: sessionData.session.access_token,
-      refresh_token: sessionData.session.refresh_token,
+      access_token: sessionData.access_token,
+      refresh_token: sessionData.refresh_token,
       thread_id: invite.thread_id,
       user_id: userId,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

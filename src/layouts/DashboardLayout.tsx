@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useOutletContext, Link, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import DashboardTopNav from '@/components/DashboardTopNav';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PaymentSuccessRefresher from '@/components/PaymentSuccessRefresher';
+import ClaimAccountBanner from '@/components/ClaimAccountBanner';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const FULL_BLEED_ROUTES = ['/dashboard/inbox'];
 const TOP_NAV_ROUTES = ['/dashboard/deals'];
@@ -45,11 +47,32 @@ function MinimalTopBar() {
 }
 
 export default function DashboardLayout() {
+  const { user } = useAuth();
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [landlordPhone, setLandlordPhone] = useState<string | null>(null);
   const isFullBleed = FULL_BLEED_ROUTES.some(r => location.pathname.startsWith(r));
   const isTopNav = TOP_NAV_ROUTES.some(r => location.pathname === r || location.pathname === r + '/');
   const marginClass = sidebarCollapsed ? 'md:ml-16' : 'md:ml-56';
+
+  // Detect unclaimed landlord accounts (email ends with @nfstay.internal)
+  useEffect(() => {
+    if (!user?.id || !user.email?.endsWith('@nfstay.internal')) {
+      setLandlordPhone(null);
+      return;
+    }
+    (supabase.from('profiles') as any)
+      .select('whatsapp')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }: { data: Record<string, unknown> | null }) => {
+        setLandlordPhone((data?.whatsapp as string) || '');
+      });
+  }, [user?.id, user?.email]);
+
+  const claimBanner = landlordPhone !== null ? (
+    <ClaimAccountBanner phone={landlordPhone} onClaimed={() => setLandlordPhone(null)} />
+  ) : null;
 
   return (
     <ProtectedRoute>
@@ -58,6 +81,7 @@ export default function DashboardLayout() {
         <div className="h-screen flex flex-col animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
           <PaymentSuccessRefresher />
           <DashboardTopNav />
+          {claimBanner}
           <main className="flex-1 flex flex-col overflow-hidden">
             <Outlet context={{ sidebarCollapsed, setSidebarCollapsed }} />
           </main>
@@ -67,6 +91,7 @@ export default function DashboardLayout() {
         <div className="h-screen flex flex-col animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
           <PaymentSuccessRefresher />
           <MinimalTopBar />
+          {claimBanner}
           <div className="flex-1 flex overflow-hidden relative">
             <DashboardSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
             {isFullBleed ? (
