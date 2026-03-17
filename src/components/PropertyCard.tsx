@@ -130,7 +130,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           {onAddToCRM && (
             <button
               onClick={handleAddToCRM}
-              className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
+              className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : listing.prime ? 'bg-[#D4AF37] text-white hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
             >
               {addedToCRM ? (
                 <><X className="w-3.5 h-3.5" /> Remove from CRM</>
@@ -149,8 +149,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
             <span className="text-xs text-muted-foreground">Est. monthly profit</span>
             <div className="flex items-center gap-2">
-              <span className="text-[13px] font-bold text-accent-foreground">£{listing.profit}</span>
-              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary font-medium hover:underline" onClick={e => e.stopPropagation()}>
+              <span className={`text-[13px] font-bold ${listing.prime ? 'text-[#8B7332]' : 'text-accent-foreground'}`}>£{listing.profit}</span>
+              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className={`text-[10px] font-medium hover:underline ${listing.prime ? 'text-[#C5A55A]' : 'text-primary'}`} onClick={e => e.stopPropagation()}>
                 Airdna verified ✓
               </a>
             </div>
@@ -174,13 +174,13 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <>
               <button
                 onClick={handleAction}
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity"
+                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${listing.prime ? 'bg-gradient-to-r from-[#C5A55A] to-[#D4AF37]' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
               >
                 Visit Listing
               </button>
               <button
                 onClick={handleAction}
-                className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors"
+                className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${listing.prime ? 'border border-[#D4AF37] text-[#8B7332] hover:bg-[#F5E6B8]/30' : 'border border-border text-foreground hover:bg-secondary'}`}
               >
                 Inquire Now
               </button>
@@ -189,11 +189,11 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <>
               <Link
                 to={`/deals/${listing.id}`}
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity"
+                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${listing.prime ? 'bg-gradient-to-r from-[#C5A55A] to-[#D4AF37]' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
               >
                 Visit Listing
               </Link>
-              <button onClick={handleInquire} className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
+              <button onClick={handleInquire} className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${listing.prime ? 'border border-[#D4AF37] text-[#8B7332] hover:bg-[#F5E6B8]/30' : 'border border-border text-foreground hover:bg-secondary'}`}>
                 Inquire Now
               </button>
             </>
