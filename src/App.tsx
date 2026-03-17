@@ -38,10 +38,6 @@ import AdminUniversity from "./pages/admin/AdminUniversity";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 import TestingDesign from "./pages/TestingDesign";
-import InvestMarketplacePage from "./pages/invest/InvestMarketplacePage";
-import InvestPortfolioPage from "./pages/invest/InvestPortfolioPage";
-import InvestPayoutsPage from "./pages/invest/InvestPayoutsPage";
-import InvestProposalsPage from "./pages/invest/InvestProposalsPage";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -94,10 +90,6 @@ const App = () => (
             <Route path="list-a-deal" element={<ListADealPage />} />
             <Route path="booking-site" element={<BookingSitePage />} />
             <Route path="settings" element={<SettingsPage />} />
-            <Route path="invest/marketplace" element={<InvestMarketplacePage />} />
-            <Route path="invest/portfolio" element={<InvestPortfolioPage />} />
-            <Route path="invest/payouts" element={<InvestPayoutsPage />} />
-            <Route path="invest/proposals" element={<InvestProposalsPage />} />
           </Route>
           <Route path="/university/:moduleId" element={<DashboardLayout />}>
             <Route index element={<ModuleOverviewPage />} />
