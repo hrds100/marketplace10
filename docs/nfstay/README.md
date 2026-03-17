@@ -7,11 +7,15 @@
 
 ## Required Reading Order
 
-1. **[AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md)** — Read FIRST. Every session. No exceptions.
-2. **[BOUNDARIES.md](BOUNDARIES.md)** — What belongs to NFStay vs marketplace10 vs shared infra.
+1. **[AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md)** — Operating law. Rules, deployment gates, escalation, definition of done.
+2. **[BOUNDARIES.md](BOUNDARIES.md)** — Protection law. What NFStay can and cannot touch. Non-negotiable.
 3. **[ARCHITECTURE.md](ARCHITECTURE.md)** — How NFStay fits in the ecosystem.
 4. **[DATABASE.md](DATABASE.md)** — All `nfs_` tables, RLS, and schema rules.
 5. **[DOMAIN.md](DOMAIN.md)** — Terms, actors, and concepts.
+
+## For Tajul (VA Operating NFStay)
+
+Copy the hotkey from **[HOTKEY_TAJUL.md](HOTKEY_TAJUL.md)** into the agent's system prompt. The hotkey handles workflow and approval. All detailed rules live in AGENT_INSTRUCTIONS.md and BOUNDARIES.md — the hotkey forces the agent to read them.
 
 ## By Task Type
 
@@ -44,13 +48,17 @@
 | [WHITE_LABEL.md](WHITE_LABEL.md) | Subdomain/custom domain white-label system |
 | [ROUTES.md](ROUTES.md) | All frontend routes and middleware |
 | [ACCEPTANCE.md](ACCEPTANCE.md) | BDD scenarios (Given/When/Then) |
-| [BOUNDARIES.md](BOUNDARIES.md) | NFStay vs marketplace10 vs shared |
+| [BOUNDARIES.md](BOUNDARIES.md) | Protection law — safe zones, protected files/tables/systems |
 | [SHARED_INFRASTRUCTURE.md](SHARED_INFRASTRUCTURE.md) | What is reused from the wider ecosystem |
 | [ENVIRONMENT.md](ENVIRONMENT.md) | All env vars and secrets |
 | [DECISIONS.md](DECISIONS.md) | Architecture decision records |
 | [HANDOFF.md](HANDOFF.md) | Onboarding checklist for new agents/devs |
 | [CHANGELOG.md](CHANGELOG.md) | Change history |
 | [runbooks/DIAGNOSE_BEFORE_FIX.md](runbooks/DIAGNOSE_BEFORE_FIX.md) | Bug diagnosis protocol |
+
+---
+
+| [HOTKEY_TAJUL.md](HOTKEY_TAJUL.md) | Lean runtime prompt for Tajul (workflow + approval only) |
 
 ---
 

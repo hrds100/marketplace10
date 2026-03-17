@@ -1,11 +1,22 @@
 # NFStay — Boundaries
 
-> What belongs to NFStay. What belongs to marketplace10. What is shared. What must never be coupled.
-> **Read this file on every NFStay task.** This is the file that stops accidental cross-wiring.
+> What belongs to NFStay. What belongs to marketplace10. What is shared. What must never be touched.
+> **Read this file on every NFStay task.** This is the protection law.
 
 ---
 
-## 1. THE RULE
+## 1. NON-NEGOTIABLE PROTECTION RULES
+
+**marketplace10 (hub.nfstay.com) is a live production system that generates revenue.**
+**NFStay work must NEVER break, modify, or interfere with it.**
+
+This is the most important rule in the entire NFStay documentation. Everything else is secondary.
+
+If any task risks affecting hub.nfstay.com → STOP. Escalate to Hugo. No exceptions.
+
+---
+
+## 2. THE MODEL
 
 NFStay is a **separate apartment in the same building.**
 
@@ -16,7 +27,55 @@ NFStay is a **separate apartment in the same building.**
 
 ---
 
-## 2. WHAT BELONGS TO NFSTAY
+## 3. WHAT BELONGS TO MARKETPLACE10 — DO NOT TOUCH
+
+### Protected tables — never modify, alter, add columns, or write to these
+
+| Table | NFStay access |
+|-------|--------------|
+| `profiles` | **Read-only.** Read `id`, `name`, `email`. Never write or add columns. |
+| `properties` | **None.** This is marketplace10's property listings. NFStay uses `nfs_properties`. |
+| `crm_deals` | **None.** |
+| `chat_threads` | **None.** |
+| `chat_messages` | **None.** |
+| `modules` | **None.** |
+| `lessons` | **None.** |
+| `user_progress` | **None.** |
+| `user_achievements` | **None.** |
+| `user_favourites` | **None.** |
+| `message_templates` | **None.** |
+| `landlord_invites` | **None.** |
+| `agreement_acceptances` | **None.** |
+| `ai_settings` | **None.** |
+| `admin_audit_log` | **None.** |
+| `otps` | **None.** |
+| `inquiries` | **None.** |
+| `notifications` | **INSERT only.** NFStay may add notification rows. Never ALTER the table schema. |
+
+### Protected code — marketplace10 owns these
+
+| Layer | marketplace10 owns |
+|-------|-------------------|
+| **Frontend (legacy)** | Everything in `src/` |
+| **Frontend routes** | `app/(hub)/*`, `/dashboard/*`, `/admin/*`, `/inbox/*`, `/university/*` |
+| **Components** | `components/` (except `components/nfstay/` and `components/ui/`) |
+| **Hooks** | `hooks/` (except `hooks/nfstay/`) |
+| **Services/lib** | `lib/` (except `lib/nfstay/`) |
+| **Documentation** | `docs/` (except `docs/nfstay/`) |
+| **Domains** | `hub.nfstay.com` |
+
+### Protected systems — never modify these
+
+| System | Why |
+|--------|-----|
+| Any existing n8n workflow that does NOT start with `nfs-` | marketplace10 automation — breaking it breaks the live site |
+| Any existing Edge Function that does NOT start with `nfs-` | marketplace10 backend — breaking it breaks auth, email, etc. |
+| Any existing Supabase secret (`RESEND_API_KEY`, `ADMIN_EMAIL`) | Shared secrets — overwriting them breaks marketplace10 email |
+| GoHighLevel (anything) | marketplace10-only integration — NFStay never touches GHL |
+
+---
+
+## 4. WHAT BELONGS TO NFSTAY
 
 Everything prefixed with `nfs_` or in an `nfstay/` directory:
 
@@ -27,39 +86,22 @@ Everything prefixed with `nfs_` or in an `nfstay/` directory:
 | **Components** | `components/nfstay/*` |
 | **Hooks** | `hooks/nfstay/*` |
 | **Services/lib** | `lib/nfstay/*` |
-| **Edge Functions** | All `nfs-*` functions (9 functions) |
-| **n8n workflows** | All `nfs-*` workflows (9 workflows) |
+| **Edge Functions** | All `nfs-*` functions |
+| **n8n workflows** | All `nfs-*` workflows |
 | **Storage buckets** | `nfs-images`, `nfs-branding` |
 | **Documentation** | `docs/nfstay/*` |
 | **Domains** | `nfstay.app`, `*.nfstay.app` |
 
 ---
 
-## 3. WHAT BELONGS TO MARKETPLACE10
-
-Everything NOT prefixed with `nfs_` or in `nfstay/`:
-
-| Layer | marketplace10 owns |
-|-------|-------------------|
-| **Database** | `profiles`, `properties`, `crm_deals`, `chat_threads`, `chat_messages`, `modules`, `lessons`, `user_progress`, `user_achievements`, `user_favourites`, `message_templates`, `landlord_invites`, `agreement_acceptances`, `notifications`, `ai_settings`, `admin_audit_log`, `otps`, `inquiries` |
-| **Frontend routes** | `app/(hub)/*`, `/dashboard/*`, `/admin/*`, `/inbox/*`, `/university/*` |
-| **Components** | `components/` (except `components/nfstay/` and `components/ui/`) |
-| **Hooks** | `hooks/` (except `hooks/nfstay/`) |
-| **Edge Functions** | `landlord-magic-login`, `claim-landlord-account`, `send-email` |
-| **n8n workflows** | All non-`nfs-` workflows |
-| **Documentation** | `docs/` (except `docs/nfstay/`) |
-| **Domains** | `hub.nfstay.com` |
-
----
-
-## 4. WHAT IS SHARED INFRASTRUCTURE
+## 5. WHAT IS SHARED INFRASTRUCTURE
 
 Neither module "owns" these — they are building-level services:
 
 | Shared thing | Details |
 |-------------|---------|
 | **Supabase Auth** | `auth.users` — managed by Supabase |
-| **`profiles` table** | Identity bridge — both modules read it. marketplace10 manages it. NFStay never writes to it. |
+| **`profiles` table** | Identity bridge — both modules read it. marketplace10 manages it. NFStay reads only. |
 | **`notifications` table** | Both modules INSERT. Neither modifies schema. |
 | **Supabase project** | Same database, same connection, same RLS engine |
 | **Vercel project** | Same deployment, same build pipeline |
@@ -69,11 +111,11 @@ Neither module "owns" these — they are building-level services:
 | **Auth hooks** | Shared Supabase auth utilities |
 | **Tailwind config** | Same design tokens, colors, typography |
 | **Google Maps API key** | Same key for both modules |
-| **Middleware** | One file handles routing for both modules |
+| **Middleware** | `middleware.ts` — one file handles routing for both modules |
 
 ---
 
-## 5. WHAT MUST NEVER BE COUPLED
+## 6. WHAT MUST NEVER BE COUPLED
 
 ### Hard boundaries — violating these is a bug
 
@@ -100,20 +142,60 @@ Neither module "owns" these — they are building-level services:
 
 ---
 
-## 6. HOW TO CHECK BOUNDARIES
+## 7. HOW TO CHECK BOUNDARIES
 
 Before any NFStay change, ask:
 
 1. **Am I touching a non-`nfs_` table?** → Stop. Check if it's `profiles` (read OK) or `notifications` (insert OK). Anything else → don't touch.
 2. **Am I importing from a non-`nfstay/` directory?** → Only OK if it's `components/ui/`, shared auth, or shared utilities.
-3. **Am I modifying middleware?** → Check that marketplace10 routing still works.
-4. **Am I adding an env var?** → Use `NFS_` prefix for NFStay-specific vars.
+3. **Am I modifying middleware?** → STOP. Requires Hugo's approval. A mistake breaks hub.nfstay.com.
+4. **Am I adding an env var?** → Use `NFS_` prefix for NFStay-specific vars. Never overwrite existing vars.
 5. **Am I creating a migration?** → Include `nfs_` in the filename.
 6. **Am I creating an n8n workflow?** → Use `nfs-` prefix in the name.
+7. **Am I modifying a shared UI component?** → STOP. Create a wrapper in `components/nfstay/` instead.
 
 ---
 
-## 7. EXTRACTION TEST
+## 8. NFSTAY SAFE ZONE
+
+The agent may freely create, modify, and delete files in these locations:
+
+| Location | What lives there |
+|----------|-----------------|
+| `app/(nfstay)/` | NFStay routes and pages |
+| `components/nfstay/` | NFStay components |
+| `hooks/nfstay/` | NFStay hooks |
+| `lib/nfstay/` | NFStay services, utils, types |
+| `docs/nfstay/` | NFStay documentation |
+| `supabase/functions/nfs-*/` | NFStay Edge Functions |
+| `supabase/migrations/*nfs*` | NFStay database migrations |
+| All `nfs_*` database tables | NFStay schema |
+| `nfs-*` n8n workflows | NFStay automation |
+| `nfs-images`, `nfs-branding` buckets | NFStay storage |
+
+**If a file is NOT in this list → it is outside the safe zone → escalate before touching it.**
+
+---
+
+## 9. HUGO-APPROVAL-REQUIRED ITEMS
+
+These items require Hugo's explicit approval before any agent proceeds:
+
+| Item | Why |
+|------|-----|
+| **`middleware.ts`** | Routes traffic for hub.nfstay.com — mistake breaks production |
+| **Any SQL DDL** (CREATE TABLE, ALTER TABLE, DROP) | Modifies live database — irreversible |
+| **`supabase functions deploy`** | Deploys to live Supabase |
+| **`supabase secrets set`** | Could overwrite marketplace10 secrets |
+| **Activating n8n workflows** | Could process live traffic immediately |
+| **`git push origin main`** | Deploys to production |
+| **Any file outside the safe zone (§8)** | Could break marketplace10 |
+| **New integrations not in `INTEGRATIONS.md`** | Architecture decision |
+| **Changes to shared infrastructure** | Affects both modules |
+
+---
+
+## 10. EXTRACTION TEST
 
 NFStay should be extractable to its own repo by:
 
