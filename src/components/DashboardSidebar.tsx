@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
+import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, MessageSquare, Globe } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,7 @@ const navItems = [
   { to: '/dashboard/affiliates', icon: Users, label: 'Affiliates' },
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
   { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
+  { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site' },
   { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 

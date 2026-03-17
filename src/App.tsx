@@ -23,6 +23,7 @@ import LessonPage from "./pages/LessonPage";
 import AffiliatesPage from "./pages/AffiliatesPage";
 import ListADealPage from "./pages/ListADealPage";
 import SettingsPage from "./pages/SettingsPage";
+import BookingSitePage from "./pages/BookingSitePage";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminListings from "./pages/admin/AdminListings";
@@ -86,6 +87,7 @@ const App = () => (
             <Route path="university" element={<UniversityPage />} />
             <Route path="affiliates" element={<AffiliatesPage />} />
             <Route path="list-a-deal" element={<ListADealPage />} />
+            <Route path="booking-site" element={<BookingSitePage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="/university/:moduleId" element={<DashboardLayout />}>
