@@ -200,7 +200,7 @@ export default function DealsMap({ listings, hoveredId }: Props) {
     }
   }, [coords, hoveredId, ready, onNav]);
 
-  // Hover — highlight marker + pan/zoom to it
+  // Hover — highlight marker + smooth pan/zoom, stay on last property when mouse leaves
   useEffect(() => {
     if (!ready || !mapInstanceRef.current || !window.google?.maps) return;
     const map = mapInstanceRef.current;
@@ -221,42 +221,26 @@ export default function DealsMap({ listings, hoveredId }: Props) {
       if (hovered) {
         const pos = marker.getPosition();
         if (pos) {
+          // Smooth pan
           map.panTo(pos);
-          // Smooth animated zoom — step by step
+          // Gentle zoom — 0.5 level steps with longer intervals for smoothness
           const target = 13;
           const current = map.getZoom() ?? 6;
           if (current < target) {
             let step = current;
             const interval = setInterval(() => {
-              step += 1;
+              step += 0.5;
               map.setZoom(step);
               if (step >= target) clearInterval(interval);
-            }, 120);
+            }, 150);
           }
         }
       }
     });
 
-    // Smooth zoom back out when hover ends
-    if (!hoveredId && coords.length > 1) {
-      const current = map.getZoom() ?? 13;
-      const bounds = new g.LatLngBounds();
-      coords.forEach(c => bounds.extend({ lat: c.lat, lng: c.lng }));
-      if (current > 8) {
-        let step = current;
-        const interval = setInterval(() => {
-          step -= 1;
-          map.setZoom(step);
-          if (step <= 8) {
-            clearInterval(interval);
-            map.fitBounds(bounds, 40);
-          }
-        }, 80);
-      } else {
-        map.fitBounds(bounds, 40);
-      }
-    }
-  }, [hoveredId, ready, coords]);
+    // When mouse leaves a card (hoveredId = null), do NOT zoom back out.
+    // Stay on the last property the user was looking at.
+  }, [hoveredId, ready]);
 
   if (error) {
     return (

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Outlet, useLocation, useOutletContext, Link, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { Outlet, useLocation, useOutletContext, Link, NavLink, useNavigate } from 'react-router-dom';
+import { Heart } from 'lucide-react';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import DashboardTopNav from '@/components/DashboardTopNav';
 import NotificationBell from '@/components/NotificationBell';
+import BurgerMenu from '@/components/BurgerMenu';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PaymentSuccessRefresher from '@/components/PaymentSuccessRefresher';
 import ClaimAccountBanner from '@/components/ClaimAccountBanner';
@@ -24,8 +25,8 @@ export function useDashboardContext() {
 
 /* Minimal top bar for sidebar pages — logo at same position as top nav */
 function MinimalTopBar() {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const location = useLocation();
+  const isFavActive = location.pathname === '/dashboard/favourites';
   return (
     <header className="h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
       <Link
@@ -35,14 +36,15 @@ function MinimalTopBar() {
         NFsTay
       </Link>
       <div className="ml-auto flex items-center gap-1">
-        <NotificationBell />
-        <button
-          onClick={async () => { await signOut(); navigate('/signin'); }}
-          className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
-          title="Sign out"
+        <NavLink
+          to="/dashboard/favourites"
+          className={`p-2 rounded-lg transition-all duration-200 ${isFavActive ? 'text-red-500 bg-red-50' : 'text-muted-foreground hover:text-red-500 hover:bg-red-50'}`}
+          title="Favourites"
         >
-          <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
-        </button>
+          <Heart className="w-[18px] h-[18px]" strokeWidth={1.8} fill={isFavActive ? 'currentColor' : 'none'} />
+        </NavLink>
+        <NotificationBell />
+        <BurgerMenu />
       </div>
     </header>
   );

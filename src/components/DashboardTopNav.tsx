@@ -4,19 +4,19 @@ import {
   PlusCircle, Settings, LogOut, MessageSquare, Menu, X, Globe,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
+import BurgerMenu from '@/components/BurgerMenu';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
-const navItems = [
+const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; pro?: boolean }> = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
   { to: '/dashboard/inbox', icon: MessageSquare, label: 'Inbox' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
-  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
+  { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
+  { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', pro: true },
   { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
-  { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
-  { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site' },
-  { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
+  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
 ];
 
 export default function DashboardTopNav() {
@@ -78,6 +78,11 @@ export default function DashboardTopNav() {
             >
               <item.icon className="w-[15px] h-[15px]" strokeWidth={1.8} />
               <span>{item.label}</span>
+              {item.pro && (
+                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full leading-none" style={{ background: 'linear-gradient(135deg, #FDF5D6, #E8D478)', color: '#8B6914' }}>
+                  ✨ HOT
+                </span>
+              )}
               {item.to === '/dashboard/inbox' && unreadCount > 0 && (
                 <span className={`text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 ${
                   isActive(item.to)
@@ -108,14 +113,15 @@ export default function DashboardTopNav() {
             <PlusCircle className="w-[15px] h-[15px]" strokeWidth={1.8} />
             Submit a Deal
           </button>
-          <NotificationBell />
-          <button
-            onClick={handleLogout}
-            className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-secondary"
-            title="Sign out"
+          <NavLink
+            to="/dashboard/favourites"
+            className={`p-2 rounded-lg transition-all duration-200 ${isActive('/dashboard/favourites') ? 'text-red-500 bg-red-50' : 'text-muted-foreground hover:text-red-500 hover:bg-red-50'}`}
+            title="Favourites"
           >
-            <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
-          </button>
+            <Heart className="w-[18px] h-[18px]" strokeWidth={1.8} fill={isActive('/dashboard/favourites') ? 'currentColor' : 'none'} />
+          </NavLink>
+          <NotificationBell />
+          <BurgerMenu />
         </div>
 
         {/* Mobile hamburger */}
