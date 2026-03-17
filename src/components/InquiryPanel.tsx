@@ -16,6 +16,7 @@ export interface ListingShape {
   type: string;
   status: 'live' | 'on-offer' | 'inactive';
   featured: boolean;
+  prime: boolean;
   daysAgo: number;
   image: string;
   landlordApproved: boolean;

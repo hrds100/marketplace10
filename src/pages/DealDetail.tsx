@@ -133,6 +133,7 @@ export default function DealDetail() {
         type: p.type as string,
         status: (p.status as 'live' | 'on-offer' | 'inactive') || 'inactive',
         featured: !!p.featured,
+        prime: !!(p as Record<string, unknown>).prime,
         daysAgo: Math.max(0, Math.floor((Date.now() - new Date(p.created_at as string).getTime()) / 86400000)),
         image: ((p.photos as string[] | null)?.[0]) || `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent((p.city as string) || 'Property')}`,
         landlordApproved: p.sa_approved === 'yes',
