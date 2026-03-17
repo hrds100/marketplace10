@@ -6,6 +6,13 @@
 
 ## 2026-03-17
 
+### Phase 2 — DB migration executed
+- `nfs_properties` table confirmed live in Supabase (60 columns)
+- RLS policies verified: `nfs_properties_operator_access` (ALL), `nfs_properties_public_read` (SELECT)
+- RPC function verified: `nfs_bulk_update_listing_status`
+- Indexes verified: operator, listing_status, location, full-text search
+- Phase 2 status updated to COMPLETE
+
 ### Phase 2 — Properties + Maps
 - Property creation wizard (10 steps): basics, location, guests/rooms, photos, amenities, description, house rules, availability, pricing, review & publish
 - Property list page with status filters, text search, bulk status updates
