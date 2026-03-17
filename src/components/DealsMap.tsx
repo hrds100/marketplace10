@@ -66,20 +66,9 @@ function getGoogleMaps(): Promise<typeof google> {
   if (!apiKey) {
     return Promise.reject(new Error('VITE_GOOGLE_MAPS_API_KEY not set'));
   }
-  const loader = new Loader({ apiKey, version: 'weekly', libraries: ['marker'] });
+  const loader = new Loader({ apiKey, version: 'weekly' });
   loaderPromise = loader.load();
   return loaderPromise;
-}
-
-function createMarkerIcon(isHovered: boolean): google.maps.Symbol {
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    scale: isHovered ? 10 : 7,
-    fillColor: isHovered ? '#059669' : '#00D084',
-    fillOpacity: 1,
-    strokeColor: 'white',
-    strokeWeight: 2.5,
-  };
 }
 
 export default function DealsMap({ listings, hoveredId }: Props) {
@@ -91,6 +80,18 @@ export default function DealsMap({ listings, hoveredId }: Props) {
   const [coords, setCoords] = useState<ResolvedCoord[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const createMarkerIcon = useCallback((isHovered: boolean): google.maps.Symbol | undefined => {
+    if (typeof google === 'undefined') return undefined;
+    return {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: isHovered ? 10 : 7,
+      fillColor: isHovered ? '#059669' : '#00D084',
+      fillOpacity: 1,
+      strokeColor: 'white',
+      strokeWeight: 2.5,
+    };
+  }, []);
 
   // Initialize Google Maps
   useEffect(() => {
@@ -146,8 +147,10 @@ export default function DealsMap({ listings, hoveredId }: Props) {
   }, [navigate]);
 
   useEffect(() => {
-    (window as Record<string, unknown>).__nfstayNav = (id: string) => handleNavigate(id);
-    return () => { delete (window as Record<string, unknown>).__nfstayNav; };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__nfstayNav = (id: string) => handleNavigate(id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return () => { delete (window as any).__nfstayNav; };
   }, [handleNavigate]);
 
   // Create/update markers
