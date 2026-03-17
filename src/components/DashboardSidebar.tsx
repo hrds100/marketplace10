@@ -64,7 +64,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
 
         {/* Collapse toggle */}
         <div className={`h-10 flex items-center border-b border-border/30 ${collapsed ? 'justify-center px-2' : 'justify-end px-3'}`}>
-          <button onClick={() => setCollapsed(!collapsed)} className="p-1.5 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
+          <button onClick={() => setCollapsed(!collapsed)} className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
             {collapsed ? <ChevronRight className="w-4 h-4 text-muted-foreground" /> : <ChevronLeft className="w-4 h-4 text-muted-foreground" />}
           </button>
         </div>
@@ -76,13 +76,13 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={`relative flex items-center gap-2 h-10 rounded-full transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+                className={`relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                 title={collapsed ? item.label : undefined}
               >
                 <div className="relative flex-shrink-0">
                   <item.icon className="w-[15px] h-[15px]" strokeWidth={1.8} />
                   {item.to === '/dashboard/inbox' && unreadCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-lg w-4 h-4 flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -102,12 +102,12 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
 
         <div className="p-2 border-t border-border/30 space-y-0.5">
           {isAdmin && (
-            <NavLink to="/admin" className={`flex items-center gap-2 h-10 rounded-full transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`} title={collapsed ? 'Admin' : undefined}>
+            <NavLink to="/admin" className={`flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`} title={collapsed ? 'Admin' : undefined}>
               <Settings className="w-[15px] h-[15px]" strokeWidth={1.8} />
               {!collapsed && <span className="text-[13px]">Admin View</span>}
             </NavLink>
           )}
-          <button onClick={handleLogout} className={`flex items-center gap-2 h-10 rounded-full transition-all duration-200 w-full ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`} title={collapsed ? 'Sign out' : undefined}>
+          <button onClick={handleLogout} className={`flex items-center gap-2 h-10 rounded-lg transition-all duration-200 w-full ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`} title={collapsed ? 'Sign out' : undefined}>
             <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
             {!collapsed && <span className="text-[13px]">Sign Out</span>}
           </button>
@@ -123,7 +123,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
               <div className="relative">
                 <item.icon className={`w-[22px] h-[22px] ${isActive ? 'text-primary' : 'text-muted-foreground'}`} strokeWidth={1.75} />
                 {item.to === '/dashboard/inbox' && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-lg w-3.5 h-3.5 flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -136,4 +136,5 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
     </>
   );
 }
+
 
