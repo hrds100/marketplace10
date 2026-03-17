@@ -322,16 +322,18 @@ export default function DealsPageV2() {
         </div>
 
         {/* Right: map */}
-        <div className="hidden lg:block w-[45%] max-w-[700px] flex-shrink-0 border-l border-border/30">
-          <Suspense
-            fallback={
-              <div className="w-full h-full bg-muted/30 animate-pulse flex items-center justify-center">
-                <span className="text-sm text-muted-foreground">Loading map…</span>
-              </div>
-            }
-          >
-            <DealsMap listings={mapListings} hoveredId={hoveredId} />
-          </Suspense>
+        <div className="hidden lg:block w-[45%] max-w-[700px] flex-shrink-0 border-l border-border/30 p-3">
+          <div className="w-full h-full rounded-2xl overflow-hidden border border-border/30">
+            <Suspense
+              fallback={
+                <div className="w-full h-full bg-muted/30 animate-pulse flex items-center justify-center rounded-2xl">
+                  <span className="text-sm text-muted-foreground">Loading map…</span>
+                </div>
+              }
+            >
+              <DealsMap listings={mapListings} hoveredId={hoveredId} />
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>
