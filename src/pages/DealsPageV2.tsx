@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, X } from 'lucide-react';
-import PropertyCardV2 from '@/components/PropertyCardV2';
+import PropertyCard from '@/components/PropertyCard';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
@@ -22,7 +21,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
   const image =
     photos && photos.length > 0
       ? photos[0]
-      : `https://placehold.co/800x600/1a1a2e/ffffff?text=${encodeURIComponent(p.city || 'Property')}`;
+      : `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(p.city || 'Property')}`;
   return {
     id: p.id,
     name: p.name,
@@ -42,22 +41,22 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
 
 function CardSkeleton() {
   return (
-    <div className="bg-card rounded-xl overflow-hidden animate-pulse">
-      <div className="w-full aspect-[4/3] bg-muted" />
-      <div className="p-3.5 space-y-3">
-        <div className="h-3 bg-muted rounded w-3/4" />
-        <div className="h-2.5 bg-muted rounded w-1/2" />
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 mt-2.5">
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className="space-y-1.5">
-              <div className="h-2 bg-muted rounded w-2/3" />
-              <div className="h-3 bg-muted rounded w-1/2" />
+    <div className="bg-card border border-border rounded-2xl overflow-hidden animate-pulse">
+      <div className="h-[200px] bg-muted" />
+      <div className="p-3.5 pt-3 space-y-3">
+        <div className="h-4 bg-muted rounded w-3/4" />
+        <div className="h-3 bg-muted rounded w-1/2" />
+        <div className="space-y-2 mt-3">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="flex justify-between py-[7px] border-b border-border/50">
+              <div className="h-3 bg-muted rounded w-1/3" />
+              <div className="h-3 bg-muted rounded w-1/4" />
             </div>
           ))}
         </div>
-        <div className="flex gap-1.5 mt-3">
-          <div className="flex-1 h-8 bg-muted rounded-lg" />
-          <div className="flex-1 h-8 bg-muted rounded-lg" />
+        <div className="flex gap-2 mt-3">
+          <div className="flex-1 h-[38px] bg-muted rounded-lg" />
+          <div className="flex-1 h-[38px] bg-muted rounded-lg" />
         </div>
       </div>
     </div>
@@ -70,7 +69,6 @@ export default function DealsPageV2() {
   const [city, setCity] = useState('');
   const [type, setType] = useState('');
   const [sort, setSort] = useState('newest');
-  const [showAlert, setShowAlert] = useState(true);
   const [page, setPage] = useState(1);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const perPage = 12;
@@ -129,15 +127,8 @@ export default function DealsPageV2() {
   const cities = [...new Set(listings.map(l => l.city))].sort();
   const types = [...new Set(listings.map(l => l.type))].sort();
 
-  const handleAddToCRM = (listing: ListingShape) => {
-    toast.success(`${listing.name} added to CRM`);
-  };
-
-  const handleAlertClick = () => {
-    setCity('Manchester');
-    setActiveTab('All');
-    setPage(1);
-    setShowAlert(false);
+  const handleAddToCRM = () => {
+    // Toast handled inside PropertyCard
   };
 
   const mapListings = useMemo(
@@ -148,45 +139,21 @@ export default function DealsPageV2() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
 
-      {/* ── HEADER — sits above the split ───────────────────────── */}
-      <div className="px-6 md:px-8 pt-5 pb-4 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Deals</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {liveCount} landlord-approved properties across the UK
-            </p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            {showAlert && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 flex items-center gap-2">
-                <Bell className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                <span className="text-[13px] font-medium text-emerald-900">3 new in Manchester</span>
-                <button onClick={handleAlertClick} className="text-[13px] text-emerald-700 font-semibold hover:underline">View</button>
-                <button onClick={() => setShowAlert(false)} className="text-emerald-500 hover:text-emerald-700">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-            <button
-              onClick={() => navigate('/dashboard/list-a-deal')}
-              className="bg-foreground text-background px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
-            >
-              + Submit a Deal
-            </button>
-          </div>
-        </div>
+      {/* ── HEADER — subtitle only, no "Deals" title ───────────── */}
+      <div className="px-6 md:px-8 pt-4 pb-3 flex-shrink-0">
+        <p className="text-sm text-muted-foreground">
+          {liveCount} landlord-approved properties across the UK
+        </p>
       </div>
 
       {/* ── SPLIT — filter+cards left, map right ────────────────── */}
-      {/* Map top edge aligns exactly with the filter bar */}
       <div className="flex flex-1 overflow-hidden border-t border-border/30">
 
         {/* Left: scrollable card list */}
         <div className="flex-1 min-w-0 overflow-y-auto">
           <div className="px-6 md:px-8 py-5">
 
-            {/* Filter bar — same vertical level as map top */}
+            {/* Filter bar */}
             <div className="flex items-center gap-2 mb-6 flex-wrap">
               <div className="flex gap-0.5 bg-muted p-1 rounded-lg">
                 {tabs.map(t => (
@@ -239,18 +206,21 @@ export default function DealsPageV2() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                   Featured
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {featured.map(l => (
-                    <PropertyCardV2
+                    <div
                       key={l.id}
-                      listing={l}
-                      isFav={isFav(l.id)}
-                      onToggleFav={() => toggle(l.id)}
-                      onAddToCRM={() => handleAddToCRM(l)}
-                      onInquire={handleInquire}
                       onMouseEnter={() => setHoveredId(l.id)}
                       onMouseLeave={() => setHoveredId(null)}
-                    />
+                    >
+                      <PropertyCard
+                        listing={l}
+                        isFav={isFav(l.id)}
+                        onToggleFav={() => toggle(l.id)}
+                        onAddToCRM={handleAddToCRM}
+                        onInquire={handleInquire}
+                      />
+                    </div>
                   ))}
                 </div>
                 <div className="mt-8 border-t border-border" />
@@ -259,22 +229,25 @@ export default function DealsPageV2() {
 
             {/* Card grid */}
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {[0, 1, 2, 3, 4, 5].map(i => <CardSkeleton key={i} />)}
               </div>
             ) : pageListings.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {pageListings.map(l => (
-                  <PropertyCardV2
+                  <div
                     key={l.id}
-                    listing={l}
-                    isFav={isFav(l.id)}
-                    onToggleFav={() => toggle(l.id)}
-                    onAddToCRM={() => handleAddToCRM(l)}
-                    onInquire={handleInquire}
                     onMouseEnter={() => setHoveredId(l.id)}
                     onMouseLeave={() => setHoveredId(null)}
-                  />
+                  >
+                    <PropertyCard
+                      listing={l}
+                      isFav={isFav(l.id)}
+                      onToggleFav={() => toggle(l.id)}
+                      onAddToCRM={handleAddToCRM}
+                      onInquire={handleInquire}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -337,7 +310,7 @@ export default function DealsPageV2() {
           </div>
         </div>
 
-        {/* Right: map — top edge aligns with filter bar */}
+        {/* Right: map */}
         <div className="hidden lg:block w-[45%] max-w-[700px] flex-shrink-0 border-l border-border/30">
           <Suspense
             fallback={
