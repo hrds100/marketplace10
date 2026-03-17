@@ -207,8 +207,8 @@ export default function AdminSubmissions() {
                         toast.success(newVal ? 'Marked as Prime' : 'Removed Prime');
                         if (user) logAdminAction(user.id, { action: newVal ? 'add_prime' : 'remove_prime', target_table: 'properties', target_id: s.id, metadata: { name: s.name } });
                       }}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${(s as Record<string, unknown>).prime ? 'border border-[#C5A55A]' : 'bg-secondary text-muted-foreground border border-border hover:border-[#C5A55A]'}`}
-                      style={(s as Record<string, unknown>).prime ? { background: '#F5E6B8', color: '#8B7332', borderColor: '#C5A55A' } : undefined}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${(s as Record<string, unknown>).prime ? 'border border-[#C9A842]' : 'bg-secondary text-muted-foreground border border-border hover:border-[#C9A842]'}`}
+                      style={(s as Record<string, unknown>).prime ? { background: 'linear-gradient(135deg, #FDF5D6, #F5E6A3, #E8D478)', color: '#8B6914', borderColor: '#C9A842' } : undefined}
                     >
                       {(s as Record<string, unknown>).prime ? '✓ Prime' : '+ Prime'}
                     </button>

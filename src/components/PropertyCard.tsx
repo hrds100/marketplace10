@@ -20,6 +20,17 @@ interface Props {
   forceSignUp?: boolean;
 }
 
+// Premium gold palette
+const GOLD = {
+  gradient: 'linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C)',
+  buttonGradient: 'linear-gradient(135deg, #BF953F 0%, #D4AC2B 30%, #F0D55E 50%, #D4AC2B 70%, #BF953F 100%)',
+  badge: 'linear-gradient(135deg, #FDF5D6, #F5E6A3, #E8D478)',
+  border: '#C9A842',
+  glow: '0 0 16px rgba(191,149,63,0.18), 0 2px 8px rgba(191,149,63,0.1)',
+  text: '#8B6914',
+  textLight: '#A67C00',
+};
+
 export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, showSavedBadge, forceSignUp }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -42,7 +53,6 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const handleAddToCRM = async () => {
     if (!user) { toast.error('Sign in to add deals to your CRM'); return; }
 
-    // TOGGLE OFF — remove from CRM
     if (addedToCRM) {
       const { error } = await supabase.from('crm_deals').delete()
         .eq('user_id', user.id).eq('property_id', listing.id);
@@ -53,7 +63,6 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       return;
     }
 
-    // TOGGLE ON — add to CRM (resolve photo if placeholder)
     let photoUrl = resolvedImage;
     if (!photoUrl || photoUrl.includes('placehold.co')) {
       const pexels = await fetchPexelsPhotos(listing.city, listing.type, 1);
@@ -91,9 +100,13 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
 
   const airdnaUrl = `https://www.airdna.co`;
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type);
+  const isPrime = listing.prime;
 
   return (
-    <div className={`bg-card rounded-2xl overflow-hidden card-hover ${listing.prime ? 'border-[1.5px]' : 'border border-border'}`} style={listing.prime ? { borderColor: '#E8C547', boxShadow: '0 0 14px rgba(232,197,71,0.2), 0 0 5px rgba(232,197,71,0.12)' } : undefined}>
+    <div
+      className={`bg-card rounded-2xl overflow-hidden card-hover ${isPrime ? 'border-[1.5px]' : 'border border-border'}`}
+      style={isPrime ? { borderColor: GOLD.border, boxShadow: GOLD.glow } : undefined}
+    >
       {/* Photo */}
       <div className="relative h-[200px] overflow-hidden">
         <img
@@ -106,8 +119,11 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         <div className="absolute top-2.5 left-2.5 flex gap-1.5">
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
           {listing.featured && <span className="badge-green-fill text-[11px]">Featured</span>}
-          {listing.prime && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold shadow-sm" style={{ background: 'linear-gradient(135deg, #FBE88A, #F0D04A)', color: '#7A6520', border: '1px solid rgba(232,197,71,0.4)' }}>
+          {isPrime && (
+            <span
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold shadow-md"
+              style={{ background: GOLD.badge, color: GOLD.text, border: `1px solid ${GOLD.border}` }}
+            >
               <ShieldCheck className="w-3 h-3" /> Prime
             </span>
           )}
@@ -130,7 +146,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           {onAddToCRM && (
             <button
               onClick={handleAddToCRM}
-              className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : listing.prime ? 'bg-[#E8C547] text-white hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
+              className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : isPrime ? 'text-white hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
+              style={!addedToCRM && isPrime ? { background: GOLD.buttonGradient } : undefined}
             >
               {addedToCRM ? (
                 <><X className="w-3.5 h-3.5" /> Remove from CRM</>
@@ -149,8 +166,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
             <span className="text-xs text-muted-foreground">Est. monthly profit</span>
             <div className="flex items-center gap-2">
-              <span className={`text-[13px] font-bold ${listing.prime ? 'text-[#9A7D1A]' : 'text-accent-foreground'}`}>£{listing.profit}</span>
-              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className={`text-[10px] font-medium hover:underline ${listing.prime ? 'text-[#DAA520]' : 'text-primary'}`} onClick={e => e.stopPropagation()}>
+              <span className={`text-[13px] font-bold ${isPrime ? '' : 'text-accent-foreground'}`} style={isPrime ? { color: GOLD.textLight } : undefined}>£{listing.profit}</span>
+              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className={`text-[10px] font-medium hover:underline ${isPrime ? '' : 'text-primary'}`} style={isPrime ? { color: GOLD.border } : undefined} onClick={e => e.stopPropagation()}>
                 Airdna verified ✓
               </a>
             </div>
@@ -174,13 +191,15 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <>
               <button
                 onClick={handleAction}
-                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${listing.prime ? 'bg-gradient-to-r from-[#E8C547] via-[#F0D75E] to-[#DAA520]' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
+                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${isPrime ? '' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
+                style={isPrime ? { background: GOLD.buttonGradient } : undefined}
               >
                 Visit Listing
               </button>
               <button
                 onClick={handleAction}
-                className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${listing.prime ? 'border border-[#E8C547] text-[#9A7D1A] hover:bg-[#FBF3D5]/40' : 'border border-border text-foreground hover:bg-secondary'}`}
+                className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${isPrime ? 'hover:bg-amber-50/40' : 'border border-border text-foreground hover:bg-secondary'}`}
+                style={isPrime ? { border: `1px solid ${GOLD.border}`, color: GOLD.text } : undefined}
               >
                 Inquire Now
               </button>
@@ -189,11 +208,16 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <>
               <Link
                 to={`/deals/${listing.id}`}
-                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${listing.prime ? 'bg-gradient-to-r from-[#E8C547] via-[#F0D75E] to-[#DAA520]' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
+                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${isPrime ? '' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
+                style={isPrime ? { background: GOLD.buttonGradient } : undefined}
               >
                 Visit Listing
               </Link>
-              <button onClick={handleInquire} className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${listing.prime ? 'border border-[#E8C547] text-[#9A7D1A] hover:bg-[#FBF3D5]/40' : 'border border-border text-foreground hover:bg-secondary'}`}>
+              <button
+                onClick={handleInquire}
+                className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${isPrime ? 'hover:bg-amber-50/40' : 'border border-border text-foreground hover:bg-secondary'}`}
+                style={isPrime ? { border: `1px solid ${GOLD.border}`, color: GOLD.text } : undefined}
+              >
                 Inquire Now
               </button>
             </>
@@ -204,4 +228,3 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     </div>
   );
 }
-
