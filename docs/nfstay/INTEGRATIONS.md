@@ -129,8 +129,12 @@ Google Cloud Console may restrict the key to specific domains. Need to add `hub.
 |-----------|-------------|-----------|
 | `NFS_RESEND_API_KEY` | Edge Function secret | Create new Resend account |
 
-### Status: Not yet configured
-Need to create Resend account, add nfstay.com domain, and configure DKIM/SPF DNS records.
+### Status: Code complete, awaiting deployment
+- API key provided by Tajul (`NFS_RESEND_API_KEY`)
+- Edge Function code written: `supabase/functions/nfs-email-send/index.ts`
+- 3 email types: booking_confirmation, booking_cancelled, operator_new_booking
+- Deployment pending: `supabase secrets set NFS_RESEND_API_KEY=...` + `supabase functions deploy nfs-email-send`
+- From address uses `onboarding@resend.dev` (sandbox) until verified domain configured
 
 ### Shared with marketplace10
 **Partially.** marketplace10 already uses Resend for email (Edge Function `send-email`). NFStay will use a separate Edge Function (`nfs-email-send`) but may share the same Resend account/API key. The domain may differ (nfstay.com vs nfstay.app).

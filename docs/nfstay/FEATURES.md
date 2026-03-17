@@ -54,7 +54,7 @@
 | Pricing engine | Done | Frontend utility | `src/lib/nfstay/pricing.ts` — base rate × nights + fees − discounts |
 | Promo code CRUD | Done | Frontend + Supabase | Create, activate/deactivate, delete |
 | Promo code validation | Done | Supabase query | Check code, dates, usage limits |
-| Booking confirmation email | Planned | n8n + Resend | `nfs-booking-notification` workflow — needs Resend key |
+| Booking confirmation email | Done | Edge Function + Resend | `nfs-email-send` — 3 templates, awaiting deployment |
 | Reservation export (CSV) | Planned | Frontend | Client-side generation |
 
 ## Phase 4 — Payments (Stripe)

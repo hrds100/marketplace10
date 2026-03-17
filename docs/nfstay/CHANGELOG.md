@@ -6,6 +6,14 @@
 
 ## 2026-03-17
 
+### Phase 3 — Step 3.7: Email Edge Function (nfs-email-send)
+- Created `supabase/functions/nfs-email-send/index.ts`
+- Uses `NFS_RESEND_API_KEY` (separate from marketplace10's `RESEND_API_KEY`)
+- 3 email types: `booking_confirmation`, `booking_cancelled`, `operator_new_booking`
+- Clean HTML email templates with responsive design
+- CORS headers for Supabase client calls
+- Status: code complete, awaiting deployment (`supabase functions deploy nfs-email-send`)
+
 ### Phase 3 — Steps 3.2–3.6: Reservations frontend + pricing + promo codes
 - Pricing utility: `src/lib/nfstay/pricing.ts` — calculates base rate × nights + fees − discounts
 - Operator create reservation page with guest info, dates, pricing, status
