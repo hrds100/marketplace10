@@ -93,7 +93,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type);
 
   return (
-    <div className={`bg-card rounded-2xl overflow-hidden card-hover ${listing.prime ? 'border-[1.5px]' : 'border border-border'}`} style={listing.prime ? { borderColor: '#D4AF37', boxShadow: '0 0 12px rgba(212,175,55,0.15), 0 0 4px rgba(212,175,55,0.1)' } : undefined}>
+    <div className={`bg-card rounded-2xl overflow-hidden card-hover ${listing.prime ? 'border-[1.5px]' : 'border border-border'}`} style={listing.prime ? { borderColor: '#E8C547', boxShadow: '0 0 14px rgba(232,197,71,0.2), 0 0 5px rgba(232,197,71,0.12)' } : undefined}>
       {/* Photo */}
       <div className="relative h-[200px] overflow-hidden">
         <img
@@ -107,7 +107,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
           {listing.featured && <span className="badge-green-fill text-[11px]">Featured</span>}
           {listing.prime && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold shadow-sm" style={{ background: 'linear-gradient(135deg, #F7E7A0, #EDD56A)', color: '#7A6520', border: '1px solid rgba(212,175,55,0.3)' }}>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold shadow-sm" style={{ background: 'linear-gradient(135deg, #FBE88A, #F0D04A)', color: '#7A6520', border: '1px solid rgba(232,197,71,0.4)' }}>
               <ShieldCheck className="w-3 h-3" /> Prime
             </span>
           )}
@@ -130,7 +130,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           {onAddToCRM && (
             <button
               onClick={handleAddToCRM}
-              className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : listing.prime ? 'bg-[#D4AF37] text-white hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
+              className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : listing.prime ? 'bg-[#E8C547] text-white hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
             >
               {addedToCRM ? (
                 <><X className="w-3.5 h-3.5" /> Remove from CRM</>
@@ -149,8 +149,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
             <span className="text-xs text-muted-foreground">Est. monthly profit</span>
             <div className="flex items-center gap-2">
-              <span className={`text-[13px] font-bold ${listing.prime ? 'text-[#8B7332]' : 'text-accent-foreground'}`}>£{listing.profit}</span>
-              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className={`text-[10px] font-medium hover:underline ${listing.prime ? 'text-[#C5A55A]' : 'text-primary'}`} onClick={e => e.stopPropagation()}>
+              <span className={`text-[13px] font-bold ${listing.prime ? 'text-[#9A7D1A]' : 'text-accent-foreground'}`}>£{listing.profit}</span>
+              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className={`text-[10px] font-medium hover:underline ${listing.prime ? 'text-[#DAA520]' : 'text-primary'}`} onClick={e => e.stopPropagation()}>
                 Airdna verified ✓
               </a>
             </div>
@@ -174,13 +174,13 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <>
               <button
                 onClick={handleAction}
-                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${listing.prime ? 'bg-gradient-to-r from-[#C5A55A] to-[#D4AF37]' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
+                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${listing.prime ? 'bg-gradient-to-r from-[#E8C547] via-[#F0D75E] to-[#DAA520]' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
               >
                 Visit Listing
               </button>
               <button
                 onClick={handleAction}
-                className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${listing.prime ? 'border border-[#D4AF37] text-[#8B7332] hover:bg-[#F5E6B8]/30' : 'border border-border text-foreground hover:bg-secondary'}`}
+                className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${listing.prime ? 'border border-[#E8C547] text-[#9A7D1A] hover:bg-[#FBF3D5]/40' : 'border border-border text-foreground hover:bg-secondary'}`}
               >
                 Inquire Now
               </button>
@@ -189,11 +189,11 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <>
               <Link
                 to={`/deals/${listing.id}`}
-                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${listing.prime ? 'bg-gradient-to-r from-[#C5A55A] to-[#D4AF37]' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
+                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${listing.prime ? 'bg-gradient-to-r from-[#E8C547] via-[#F0D75E] to-[#DAA520]' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
               >
                 Visit Listing
               </Link>
-              <button onClick={handleInquire} className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${listing.prime ? 'border border-[#D4AF37] text-[#8B7332] hover:bg-[#F5E6B8]/30' : 'border border-border text-foreground hover:bg-secondary'}`}>
+              <button onClick={handleInquire} className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${listing.prime ? 'border border-[#E8C547] text-[#9A7D1A] hover:bg-[#FBF3D5]/40' : 'border border-border text-foreground hover:bg-secondary'}`}>
                 Inquire Now
               </button>
             </>
