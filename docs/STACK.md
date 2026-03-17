@@ -42,20 +42,30 @@ _Last updated: 2026-03-15_
 | ai_settings | AI model + prompt config | model_pricing, model_university, model_description, system_prompt_* |
 | admin_audit_log | Persistent admin action log | user_id, action, target_table, target_id, metadata, created_at |
 
-## n8n Webhooks
+## n8n Webhooks (marketplace10 — DO NOT TOUCH for NFStay work)
 
-| Endpoint | Trigger | Called From |
-|----------|---------|------------|
-| POST /webhook/ai-university-chat | User sends chat in lesson | LessonPage.tsx via useAIChat |
-| POST /webhook/airbnb-pricing | Deal submitted | ListADealPage.tsx handleSubmit |
-| POST /webhook/ai-generate-listing | "Generate description" clicked | ListADealPage.tsx generateDesc |
-| POST /webhook/notify-admin-new-deal | New deal submitted | ListADealPage.tsx handleSubmit |
-| POST /webhook/notify-admin-edit | Deal edited by member | MyListingsPanel.tsx handleSaveEdit |
-| POST /webhook/send-otp | Phone verification | SignUp.tsx |
-| POST /webhook/verify-otp | OTP code check | VerifyOtp.tsx |
-| POST /webhook/move-crm-stage | CRM drag-drop | CRMPage.tsx onDrop |
-| POST /webhook/inbox-new-message | Operator sends message → WhatsApp to landlord | ChatWindow.tsx handleSend |
-| POST /webhook/inbox-landlord-replied | Landlord sends message → WhatsApp to operator | ChatWindow.tsx handleSend |
+> **WARNING:** The n8n instance is shared with the NFStay booking module.
+> NFStay booking workflows use the `nfs-` prefix. Never create workflows without that prefix.
+> Never modify the workflows below — they power the live site.
+> Full protection rules: `docs/nfstay/BOUNDARIES.md`
+
+| Endpoint | Trigger | Called From | Workflow ID |
+|----------|---------|------------|-------------|
+| POST /webhook/ai-university-chat | User sends chat in lesson | LessonPage.tsx via useAIChat | `XiMELMXjcbDZMu5A` |
+| POST /webhook/airbnb-pricing | Deal submitted | ListADealPage.tsx handleSubmit | `184Jaq4jUer6PUMR` |
+| POST /webhook/ai-generate-listing | "Generate description" clicked | ListADealPage.tsx generateDesc | `rSuLokg3MQp1bgdV` |
+| POST /webhook/notify-admin-new-deal | New deal submitted | ListADealPage.tsx handleSubmit | `LqWhsAcWyOjS489q` |
+| POST /webhook/notify-admin-edit | Deal edited by member | MyListingsPanel.tsx handleSaveEdit | `X93UQismVkONON2h` |
+| POST /webhook/send-otp | Phone verification | SignUp.tsx | `CJzp4FAb2YX5uHqO` |
+| POST /webhook/verify-otp | OTP code check | VerifyOtp.tsx | `Zp9rlVCp4EJvrFMV` |
+| POST /webhook/inbox-new-message | Operator sends message → WhatsApp to landlord | ChatWindow.tsx handleSend | `J6hWjodwJlqXHme1` |
+| POST /webhook/inbox-landlord-replied | Landlord sends message → WhatsApp to operator | ChatWindow.tsx handleSend | `BrwfLUE2LPj9jovR` |
+| POST /webhook/inbox-tenant-message | Tenant sends message | ChatWindow.tsx handleSend | `UBuNLDn0mO0md39Y` |
+| POST /webhook/signup-welcome | New user registered | Auth flow | `bI0vzTqncMjCs5jO` |
+| POST /webhook/estimate-profit | AI profit estimation | ListADealPage.tsx | `3EDIQKRea9nGzxve` |
+| POST /webhook/samcart | Payment tier update | SamCart/GHL | `rFFWUhp5PvgGEIHV` |
+| POST /webhook/csv-bulk-properties | Bulk property import | Admin | `yXP6L90l7kSXWQbq` |
+| POST /webhook/ghl-payment-success | GHL payment processed | GHL automation | `wsDjAdpWnjqnO7ML` |
 
 ## GHL Products
 

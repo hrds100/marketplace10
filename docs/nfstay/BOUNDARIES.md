@@ -68,10 +68,50 @@ NFStay is a **separate apartment in the same building.**
 
 | System | Why |
 |--------|-----|
-| Any existing n8n workflow that does NOT start with `nfs-` | marketplace10 automation — breaking it breaks the live site |
+| Any existing n8n workflow listed in the marketplace10 inventory below | marketplace10 automation — breaking it breaks the live site |
 | Any existing Edge Function that does NOT start with `nfs-` | marketplace10 backend — breaking it breaks auth, email, etc. |
 | Any existing Supabase secret (`RESEND_API_KEY`, `ADMIN_EMAIL`) | Shared secrets — overwriting them breaks marketplace10 email |
+| Any existing n8n credential (especially Supabase credentials) | Shared credentials — modifying them breaks all workflows |
 | GoHighLevel (anything) | marketplace10-only integration — NFStay never touches GHL |
+
+### Protected n8n workflows — NEVER touch these
+
+These are live marketplace10 workflows. Editing, deactivating, or duplicating them will break hub.nfstay.com.
+
+| ID | Name | Webhook path | What it does |
+|----|------|-------------|-------------|
+| `3EDIQKRea9nGzxve` | marketplace10 -- Estimate Profit | `estimate-profit` | AI pricing for deal submissions |
+| `CJzp4FAb2YX5uHqO` | marketplace10 -- Send OTP | `send-otp` | Phone verification on signup |
+| `Zp9rlVCp4EJvrFMV` | marketplace10 -- Verify OTP | `verify-otp` | OTP code validation |
+| `bI0vzTqncMjCs5jO` | marketplace10 -- Signup Welcome Email | `signup-welcome` | Welcome email on registration |
+| `rSuLokg3MQp1bgdV` | marketplace10 -- AI Generate Listing | `ai-generate-listing` | AI property descriptions |
+| `l2WiP9r4AIUaR9jK` | marketplace10 -- AI Lesson Content | `ai-lesson-content` | University lesson AI |
+| `rFFWUhp5PvgGEIHV` | marketplace10 -- SamCart Webhook | `samcart` | Payment tier updates |
+| `yXP6L90l7kSXWQbq` | marketplace10 -- CSV Bulk Properties | `csv-bulk-properties` | Bulk property import |
+| `wsDjAdpWnjqnO7ML` | NFsTay -- GHL Payment -> Tier Update | `ghl-payment-success` | GHL payment processing |
+
+### Protected marketplace10 inbox workflows — NEVER touch these
+
+These handle the live inbox/messaging system on hub.nfstay.com. They are named "NFsTay --" because that's the brand, but they belong to marketplace10, NOT to the NFStay booking module.
+
+| ID | Name | Webhook path | What it does |
+|----|------|-------------|-------------|
+| `BrwfLUE2LPj9jovR` | NFsTay -- Landlord Replied | `inbox-landlord-replied` | WhatsApp notification when landlord replies |
+| `J6hWjodwJlqXHme1` | NFsTay -- New Message | `inbox-new-message` | WhatsApp notification for new messages |
+| `UBuNLDn0mO0md39Y` | NFsTay -- Tenant New Message | `inbox-tenant-message` | WhatsApp notification for tenant messages |
+| `LqWhsAcWyOjS489q` | NFsTay -- Notify Admin New Deal | `notify-admin-new-deal` | Admin notification on deal submission |
+| `X93UQismVkONON2h` | NFsTay -- Notify Admin Edit | `notify-admin-edit` | Admin notification on deal edit |
+| `XiMELMXjcbDZMu5A` | NFsTay -- University AI Chat | `ai-university-chat` | University AI chat responses |
+| `184Jaq4jUer6PUMR` | NFsTay -- Airbnb Pricing Engine | `airbnb-pricing` | Airbnb pricing analysis |
+
+### n8n protection rules for NFStay booking module agents
+
+1. **NEVER edit, deactivate, rename, or duplicate any workflow listed above.**
+2. **NEVER modify existing n8n credentials.** If NFStay needs a Supabase connection in n8n, create a NEW credential named "NFStay Supabase" — do not touch the existing one.
+3. **NEVER use webhook paths that already exist.** All NFStay booking module webhooks must use the `nfs-` prefix (e.g., `nfs-hospitable-webhook`, `nfs-booking-notification`).
+4. **NEVER create a workflow without the `nfs-` prefix** in its name.
+5. **Before activating any n8n workflow**, verify its webhook path does not collide with any path listed above. Duplicate webhook paths cause silent failures — only one workflow receives the request.
+6. **If unsure whether a workflow belongs to marketplace10 or NFStay booking module**, check this list. If it's not in this list and doesn't start with `nfs-`, assume it belongs to marketplace10 and don't touch it.
 
 ---
 
