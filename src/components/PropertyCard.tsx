@@ -1,4 +1,4 @@
-import { Heart, CheckCircle, X, ShieldCheck } from 'lucide-react';
+import { Heart, CheckCircle, X, Gem } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { ListingShape } from '@/components/InquiryPanel';
@@ -124,7 +124,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold shadow-md"
               style={{ background: GOLD.badge, color: GOLD.text, border: `1px solid ${GOLD.border}` }}
             >
-              <ShieldCheck className="w-3 h-3" /> Prime
+              <Gem className="w-3 h-3" /> Joint Venture
             </span>
           )}
         </div>
