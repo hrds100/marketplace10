@@ -6,6 +6,31 @@
 
 ## 2026-03-17
 
+### Phase 4 — Stripe Payments (Full Integration)
+
+**Database:**
+- Created migration `20260317150000_nfs_phase4_stripe.sql`
+- New tables: `nfs_stripe_accounts` (Connect data, earnings, capabilities), `nfs_webhook_events` (idempotency)
+- RLS: operator access for stripe_accounts, service-only for webhook_events
+
+**Edge Functions:**
+- `nfs-stripe-checkout`: Creates Stripe Checkout Session with Connect destination charge + platform fee
+- `nfs-stripe-connect-oauth`: Full OAuth flow (authorize → callback → disconnect) with CSRF state protection
+- `nfs-stripe-webhook`: Handles checkout.session.completed, payment_intent.succeeded/failed, charge.refunded, account.updated, transfer.created with idempotency
+
+**Frontend:**
+- `SettingsStripe.tsx`: Real Connect OAuth button, connection status, capabilities display, earnings summary, disconnect
+- `NfsBookingWidget.tsx`: Guest email/name fields, creates reservation + redirects to Stripe Checkout
+- `NfsPaymentSuccess.tsx` / `NfsPaymentCancel.tsx`: Post-checkout result pages
+- `NfsReservationDetail.tsx`: Rich payment status badges, Stripe ID display, refund info
+
+**Hooks & Types:**
+- `use-nfs-stripe.ts`: `useNfsStripeAccount`, `useNfsStripeConnect`, `useNfsStripeCheckout`
+- `NfsStripeAccount`, `NfsWebhookEvent` types added to `types.ts`
+- Payment routes added to `constants.ts` and `App.tsx`
+
+**Status:** Code complete, awaiting deployment. TypeScript: zero errors.
+
 ### Phase 3 — Step 3.8: Verification + Promo Codes in Settings
 - Wired `NfsPromoCodeManager` into operator settings as "Promo Codes" tab (7 tabs total)
 - Phase 3 verification checklist passed: all 7 items confirmed

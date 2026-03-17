@@ -61,15 +61,15 @@
 
 | Feature | Status | System | Notes |
 |---------|--------|--------|-------|
-| Stripe Checkout (traveler) | Planned | Edge Function | `nfs-stripe-checkout` |
-| Payment success/cancel pages | Planned | Frontend | Post-checkout redirect |
-| Stripe Connect OAuth (operator) | Planned | Edge Function | `nfs-stripe-connect-oauth` |
+| Stripe Checkout (traveler) | Done | Edge Function | `nfs-stripe-checkout` — creates Checkout Session with Connect destination charge |
+| Payment success/cancel pages | Done | Frontend | `/nfstay/payment/success` and `/nfstay/payment/cancel` |
+| Stripe Connect OAuth (operator) | Done | Edge Function | `nfs-stripe-connect-oauth` — authorize + callback + disconnect |
 | Operator earnings dashboard | Planned | Frontend + Edge Function | Query Stripe API |
-| Operator payout info | Planned | Frontend + Edge Function | Stripe dashboard link |
-| Stripe Connect disconnect | Planned | Edge Function | Clear `nfs_stripe_accounts` |
-| Platform webhook handler | Planned | Edge Function | `nfs-stripe-webhook` |
-| Connect webhook handler | Planned | Edge Function | `nfs-stripe-connect-webhook` |
-| Webhook idempotency | Planned | Supabase | `nfs_webhook_events` table |
+| Operator payout info | Done | Frontend | Stripe Dashboard link from settings |
+| Stripe Connect disconnect | Done | Edge Function | Deauthorize + clear `nfs_stripe_accounts` |
+| Platform webhook handler | Done | Edge Function | `nfs-stripe-webhook` — handles checkout.session.completed, payment_intent.*, charge.refunded, account.updated, transfer.created |
+| Connect webhook handler | Done | Edge Function | Handled in `nfs-stripe-webhook` (account.updated events) |
+| Webhook idempotency | Done | Supabase | `nfs_webhook_events` table — dedup by `external_event_id` |
 
 ## Phase 5 — Integrations (Hospitable + iCal)
 

@@ -51,6 +51,8 @@ import NfsReservationDetail from "./pages/nfstay/NfsReservationDetail";
 import NfsCreateReservation from "./pages/nfstay/NfsCreateReservation";
 import NfsSearch from "./pages/nfstay/NfsSearch";
 import NfsPropertyView from "./pages/nfstay/NfsPropertyView";
+import NfsPaymentSuccess from "./pages/nfstay/NfsPaymentSuccess";
+import NfsPaymentCancel from "./pages/nfstay/NfsPaymentCancel";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -138,6 +140,8 @@ const App = () => (
           {/* NFStay traveler-facing routes — standalone (no operator layout) */}
           <Route path="/nfstay/search" element={<NfsSearch />} />
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
+          <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />
+          <Route path="/nfstay/payment/cancel" element={<NfsPaymentCancel />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

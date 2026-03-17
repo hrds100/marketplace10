@@ -13,6 +13,8 @@ export const NFS_ROUTES = {
   ONBOARDING: '/nfstay/onboarding',
   SEARCH: '/nfstay/search',
   PROPERTY_VIEW: '/nfstay/property/:id',
+  PAYMENT_SUCCESS: '/nfstay/payment/success',
+  PAYMENT_CANCEL: '/nfstay/payment/cancel',
 } as const;
 
 export const NFS_ONBOARDING_STEPS = [

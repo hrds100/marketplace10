@@ -35,8 +35,12 @@
 | Platform | `https://[supabase-url]/functions/v1/nfs-stripe-webhook` | payment_intent.*, charge.*, refund.*, dispute.* |
 | Connect | `https://[supabase-url]/functions/v1/nfs-stripe-connect-webhook` | account.updated, payout.*, capability.* |
 
-### Status: Not yet configured
-Requires Hugo to create webhook endpoints in Stripe Dashboard and share signing secrets. See `INTEGRATION_ACCESS_REQUIREMENTS.md`.
+### Status: Code complete, awaiting deployment
+- Edge Functions written: `nfs-stripe-checkout`, `nfs-stripe-connect-oauth`, `nfs-stripe-webhook`
+- Test keys provided by Tajul (publishable, secret, Connect client ID)
+- Frontend integration complete: SettingsStripe (Connect OAuth), NfsBookingWidget (Checkout), payment pages
+- **Deployment pending:** `supabase secrets set` for NFS_STRIPE_SECRET_KEY, NFS_STRIPE_WEBHOOK_SECRET, NFS_STRIPE_CLIENT_ID
+- **Webhook endpoint needs creation** in Stripe Dashboard pointing to `nfs-stripe-webhook`
 
 ### Shared with marketplace10
 **No.** marketplace10 uses GoHighLevel for payments, not Stripe. NFStay has its own Stripe account and flows. Completely separate.
@@ -219,7 +223,7 @@ See `docs/nfstay/WEBHOOKS.md` for the complete list.
 
 | Integration | Phase | Status | Blocker? |
 |-------------|-------|--------|----------|
-| Stripe | 4 | Not configured | Hugo needs to create webhook endpoints |
+| Stripe | 4 | Code complete | Awaiting deployment + webhook endpoint creation |
 | Hospitable | 5 | Credentials captured | Bearer token may be expired |
 | Google Maps | 2 | Key captured | May need referrer update |
 | Email (Resend) | 3 | Not configured | Need Resend account |

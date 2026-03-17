@@ -145,12 +145,38 @@ export default function NfsReservationDetail() {
           <span className="text-2xl font-bold">
             {reservation.payment_currency} {Number(reservation.total_amount).toFixed(2)}
           </span>
-          <span className="text-sm text-muted-foreground">{paymentLabel}</span>
+          <span className={`text-sm font-medium px-2.5 py-1 rounded-full ${
+            reservation.payment_status === 'paid'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+              : reservation.payment_status === 'failed'
+                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                : reservation.payment_status === 'refunded' || reservation.payment_status === 'partially_refunded'
+                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+          }`}>
+            {paymentLabel}
+          </span>
         </div>
+        {reservation.stripe_payment_intent_id && (
+          <p className="text-xs text-muted-foreground font-mono">
+            Stripe: {reservation.stripe_payment_intent_id}
+          </p>
+        )}
+        {reservation.payment_processed_at && (
+          <p className="text-xs text-muted-foreground">
+            Paid on {formatDate(reservation.payment_processed_at)}
+          </p>
+        )}
         {reservation.promo_code && (
           <p className="text-sm text-muted-foreground">
             Promo: <span className="font-mono">{reservation.promo_code}</span>
             {reservation.promo_discount_amount && ` (−${reservation.payment_currency} ${Number(reservation.promo_discount_amount).toFixed(2)})`}
+          </p>
+        )}
+        {reservation.refund_amount != null && Number(reservation.refund_amount) > 0 && (
+          <p className="text-sm text-purple-600">
+            Refunded: {reservation.payment_currency} {Number(reservation.refund_amount).toFixed(2)}
+            {reservation.refund_reason && ` — ${reservation.refund_reason}`}
           </p>
         )}
       </div>

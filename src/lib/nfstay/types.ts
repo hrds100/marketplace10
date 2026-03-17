@@ -304,3 +304,68 @@ export interface NfsGuestSession {
   expires_at: string;
   created_at: string;
 }
+
+// ============================================================================
+// Phase 4 — Stripe Payments
+// ============================================================================
+
+export interface NfsStripeAccount {
+  id: string;
+  operator_id: string;
+
+  // Stripe Connect
+  connect_account_id: string | null;
+  access_token: string | null;
+  refresh_token: string | null;
+  stripe_user_id: string | null;
+  stripe_publishable_key: string | null;
+  oauth_state: string | null;
+  oauth_code_verifier: string | null;
+
+  // Account status
+  connection_status: string;
+  account_status: string;
+  details_submitted: boolean;
+  payouts_enabled: boolean;
+  charges_enabled: boolean;
+  currently_due: string[];
+  past_due: string[];
+
+  // Fee config
+  platform_fee_pct: number;
+  stripe_fee_pct: number;
+  stripe_fee_fixed: number;
+
+  // Earnings
+  total_earned: number;
+  total_platform_fees: number;
+  total_transferred: number;
+  total_paid_out: number;
+  pending_amount: number;
+  last_payout_date: string | null;
+  last_payout_amount: number | null;
+
+  // Lifecycle
+  connected_at: string | null;
+  disconnected_at: string | null;
+  onboarding_completed: boolean;
+  last_error: unknown | null;
+
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NfsWebhookEvent {
+  id: string;
+  source: 'stripe' | 'stripe_connect' | 'hospitable';
+  external_event_id: string;
+  event_type: string;
+  processed: boolean;
+  success: boolean | null;
+  error: string | null;
+  data: Record<string, unknown>;
+  processed_at: string | null;
+  retry_count: number;
+  last_retry_at: string | null;
+  created_at: string;
+}
