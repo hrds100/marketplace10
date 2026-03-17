@@ -1,15 +1,14 @@
-import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Loader } from '@googlemaps/js-api-loader';
 import type { ListingShape } from '@/components/InquiryPanel';
-import 'leaflet/dist/leaflet.css';
 
 interface Props {
   listings: ListingShape[];
   hoveredId: string | null;
 }
 
-interface Coords {
+interface ResolvedCoord {
   id: string;
   lat: number;
   lng: number;
@@ -40,7 +39,12 @@ async function geocodePostcode(postcode: string, city: string): Promise<[number,
   const clean = postcode.replace(/\s+/g, '').toUpperCase();
   if (geocodeCache.has(clean)) return geocodeCache.get(clean)!;
   try {
-    const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(clean)}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(clean)}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
     const data = await res.json();
     if (data.status === 200 && data.result) {
       const coords: [number, number] = [data.result.latitude, data.result.longitude];
@@ -54,15 +58,67 @@ async function geocodePostcode(postcode: string, city: string): Promise<[number,
   return cityFallbacks[cityKey] ?? null;
 }
 
+let loaderPromise: Promise<typeof google> | null = null;
+
+function getGoogleMaps(): Promise<typeof google> {
+  if (loaderPromise) return loaderPromise;
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    return Promise.reject(new Error('VITE_GOOGLE_MAPS_API_KEY not set'));
+  }
+  const loader = new Loader({ apiKey, version: 'weekly' });
+  loaderPromise = loader.load();
+  return loaderPromise;
+}
+
 export default function DealsMap({ listings, hoveredId }: Props) {
   const navigate = useNavigate();
-  const [coords, setCoords] = useState<Coords[]>([]);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const googleMapRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map());
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const [coords, setCoords] = useState<ResolvedCoord[]>([]);
+  const [mapReady, setMapReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Initialize Google Maps
   useEffect(() => {
-    if (!listings.length) return;
+    let cancelled = false;
+    getGoogleMaps()
+      .then(async (g) => {
+        if (cancelled || !mapRef.current) return;
+        const { Map, InfoWindow } = g.maps;
+        const map = new Map(mapRef.current, {
+          center: { lat: 52.5, lng: -1.5 },
+          zoom: 6,
+          mapId: 'nfstay-deals-map',
+          disableDefaultUI: false,
+          zoomControl: true,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          gestureHandling: 'greedy',
+          styles: [
+            { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+            { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+          ],
+        });
+        googleMapRef.current = map;
+        infoWindowRef.current = new InfoWindow();
+        setMapReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Map could not load');
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Geocode listings
+  useEffect(() => {
+    if (!listings.length) { setCoords([]); return; }
     let cancelled = false;
     const resolve = async () => {
-      const results: Coords[] = [];
+      const results: ResolvedCoord[] = [];
       for (const l of listings) {
         const c = await geocodePostcode(l.postcode ?? '', l.city ?? '');
         if (c && !cancelled) {
@@ -75,59 +131,119 @@ export default function DealsMap({ listings, hoveredId }: Props) {
     return () => { cancelled = true; };
   }, [listings]);
 
-  const centre: [number, number] = coords.length > 0
-    ? [
-        coords.reduce((s, c) => s + c.lat, 0) / coords.length,
-        coords.reduce((s, c) => s + c.lng, 0) / coords.length,
-      ]
-    : [52.5, -1.5];
+  // Create/update markers
+  const createMarkerElement = useCallback((isHovered: boolean) => {
+    const el = document.createElement('div');
+    const size = isHovered ? 24 : 16;
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
+    el.style.borderRadius = '50%';
+    el.style.backgroundColor = isHovered ? '#059669' : '#00D084';
+    el.style.border = '2.5px solid white';
+    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+    el.style.cursor = 'pointer';
+    el.style.transition = 'all 150ms ease';
+    return el;
+  }, []);
 
-  return (
-    <MapContainer
-      center={centre}
-      zoom={coords.length > 1 ? 6 : 12}
-      style={{ height: '100%', width: '100%' }}
-      zoomControl={true}
-      scrollWheelZoom={true}
-    >
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-      />
-      {coords.map(({ id, lat, lng, listing }) => {
-        const isHovered = hoveredId === id;
-        return (
-          <CircleMarker
-            key={id}
-            center={[lat, lng]}
-            radius={isHovered ? 12 : 8}
-            pathOptions={{
-              fillColor: isHovered ? '#059669' : '#00D084',
-              color: 'white',
-              weight: 2,
-              fillOpacity: 1,
-            }}
-            eventHandlers={{
-              click: () => navigate(`/deals/${id}`),
-            }}
-          >
-            <Popup>
-              <div className="text-xs min-w-[180px]">
-                <p className="font-semibold text-sm mb-1">{listing.name}</p>
-                <p className="text-muted-foreground mb-2">{listing.city} · {listing.postcode}</p>
-                <div className="flex justify-between py-0.5">
-                  <span className="text-muted-foreground">Rent</span>
-                  <span className="font-medium">£{listing.rent.toLocaleString()}/mo</span>
+  useEffect(() => {
+    if (!mapReady || !googleMapRef.current) return;
+    const map = googleMapRef.current;
+    const existingMarkers = markersRef.current;
+
+    // Remove markers for listings no longer present
+    const currentIds = new Set(coords.map(c => c.id));
+    existingMarkers.forEach((marker, id) => {
+      if (!currentIds.has(id)) {
+        marker.map = null;
+        existingMarkers.delete(id);
+      }
+    });
+
+    // Add/update markers
+    coords.forEach(({ id, lat, lng, listing }) => {
+      const isHovered = hoveredId === id;
+      let marker = existingMarkers.get(id);
+
+      if (!marker) {
+        marker = new google.maps.marker.AdvancedMarkerElement({
+          map,
+          position: { lat, lng },
+          content: createMarkerElement(isHovered),
+        });
+
+        marker.addListener('click', () => {
+          if (infoWindowRef.current) {
+            infoWindowRef.current.setContent(`
+              <div style="font-family: system-ui, sans-serif; min-width: 180px; padding: 4px;">
+                <p style="font-weight: 600; font-size: 13px; margin: 0 0 4px 0;">${listing.name}</p>
+                <p style="color: #888; font-size: 12px; margin: 0 0 8px 0;">${listing.city} · ${listing.postcode}</p>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; border-top: 1px solid #eee;">
+                  <span style="color: #888;">Rent</span>
+                  <span style="font-weight: 500;">£${listing.rent.toLocaleString()}/mo</span>
                 </div>
-                <div className="flex justify-between py-0.5">
-                  <span className="text-muted-foreground">Profit</span>
-                  <span className="font-bold text-emerald-600">£{listing.profit.toLocaleString()}</span>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0;">
+                  <span style="color: #888;">Profit</span>
+                  <span style="font-weight: 700; color: #059669;">£${listing.profit.toLocaleString()}</span>
                 </div>
+                <button onclick="window.__nfstayNavigate('${id}')" style="margin-top: 8px; width: 100%; padding: 6px; background: #059669; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                  View Deal
+                </button>
               </div>
-            </Popup>
-          </CircleMarker>
-        );
-      })}
-    </MapContainer>
-  );
+            `);
+            infoWindowRef.current.open(map, marker);
+          }
+        });
+
+        existingMarkers.set(id, marker);
+      } else {
+        marker.position = { lat, lng };
+        marker.content = createMarkerElement(isHovered);
+      }
+    });
+
+    // Fit bounds
+    if (coords.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      coords.forEach(c => bounds.extend({ lat: c.lat, lng: c.lng }));
+      if (coords.length === 1) {
+        map.setCenter({ lat: coords[0].lat, lng: coords[0].lng });
+        map.setZoom(13);
+      } else {
+        map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+      }
+    }
+  }, [coords, hoveredId, mapReady, createMarkerElement]);
+
+  // Navigate handler for info window button
+  useEffect(() => {
+    (window as unknown as Record<string, unknown>).__nfstayNavigate = (id: string) => {
+      navigate(`/deals/${id}`);
+    };
+    return () => {
+      delete (window as unknown as Record<string, unknown>).__nfstayNavigate;
+    };
+  }, [navigate]);
+
+  // Update marker appearance on hover change
+  useEffect(() => {
+    if (!mapReady) return;
+    markersRef.current.forEach((marker, id) => {
+      const isHovered = hoveredId === id;
+      marker.content = createMarkerElement(isHovered);
+      if (isHovered) {
+        marker.zIndex = 999;
+      }
+    });
+  }, [hoveredId, mapReady, createMarkerElement]);
+
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted/20">
+        <p className="text-sm text-muted-foreground">{error}</p>
+      </div>
+    );
+  }
+
+  return <div ref={mapRef} style={{ height: '100%', width: '100%' }} />;
 }

@@ -27,6 +27,7 @@ _Last updated: 2026-03-15_
 | Uptime Monitoring | UptimeRobot | uptimerobot.com | — | — | hub.nfstay.com/api/health |
 | CI Pipeline | GitHub Actions | github.com/hrds100/marketplace10/actions | — | — | `.github/workflows/ci.yml` (typecheck + test + lint) |
 | Health Check | Supabase Edge Fn | hub.nfstay.com/api/health | — | — | supabase/functions/health/index.ts |
+| Maps | Google Maps | maps.googleapis.com | — | VITE_GOOGLE_MAPS_API_KEY | src/components/DealsMap.tsx |
 
 ## Supabase Tables
 
