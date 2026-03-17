@@ -166,6 +166,57 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
         `),
       };
 
+    // ─── AFFILIATE EMAILS ────────────────────────────────
+    case 'payout-requested-admin':
+      return {
+        to: ADMIN_EMAIL,
+        subject: `Payout Request — ${data.name} (£${Number(data.amount).toFixed(2)})`,
+        html: layout('Payout Requested', `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            An agent has requested a payout.
+          </p>
+          ${row('Agent', String(data.name))}
+          ${row('Amount', `£${Number(data.amount).toFixed(2)}`)}
+          ${row('PayPal', String(data.paypal || '—'))}
+          ${row('Email', String(data.email))}
+          ${btn('Review Payouts →', `${BASE_URL}/admin/affiliates`)}
+        `),
+      };
+
+    case 'payout-sent-member':
+      return {
+        to: String(data.email),
+        subject: `Payout sent — £${Number(data.amount).toFixed(2)} 💰`,
+        html: layout('Payout Sent', `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            Your commission payout has been sent.
+          </p>
+          ${row('Amount', `£${Number(data.amount).toFixed(2)}`)}
+          ${row('Method', String(data.method || 'PayPal'))}
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:16px 0 0;">
+            It may take 1-2 business days to arrive. Keep referring — your next payout is every Tuesday!
+          </p>
+          ${btn('View Dashboard →', `${BASE_URL}/dashboard/affiliates`)}
+        `),
+      };
+
+    case 'new-referral-agent':
+      return {
+        to: String(data.agentEmail),
+        subject: `New referral signup — ${data.referredName || 'someone'} joined via your link! 🎉`,
+        html: layout('New Referral', `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            Someone just signed up using your referral link.
+          </p>
+          ${row('New User', String(data.referredName || data.referredEmail || 'Anonymous'))}
+          ${row('Your Total Signups', String(data.totalSignups || '—'))}
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:16px 0 0;">
+            When they subscribe, you'll earn commission automatically.
+          </p>
+          ${btn('View Your Dashboard →', `${BASE_URL}/dashboard/affiliates`)}
+        `),
+      };
+
     default:
       throw new Error(`Unknown email type: ${type}`);
   }
