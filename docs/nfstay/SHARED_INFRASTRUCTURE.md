@@ -59,19 +59,26 @@
 - **Credential store:** Same n8n credential vault
 - **Execution engine:** Same Node.js runtime
 
-### What NFStay owns
-- All `nfs-*` workflows (9 workflows)
-- NFStay-specific credentials (`NFStay Hospitable`, `NFStay Supabase`)
+### What NFStay booking module owns
+- All `nfs-*` workflows (created during build, none exist yet)
+- NFStay-specific credentials: create NEW credentials named with "NFStay" prefix (e.g., "NFStay Supabase", "NFStay Hospitable") — NEVER modify existing credentials
 
-### Assumptions
-- n8n instance has enough execution capacity for NFStay workflows alongside marketplace10
-- Webhook paths don't collide (all NFStay webhooks use `nfs-` prefix)
-- n8n version supports all required nodes (HTTP Request, Supabase, Cron, Webhook)
+### Critical n8n rules
+1. **NEVER modify existing n8n credentials.** The Supabase credential is shared — changing it breaks marketplace10 OTP, signup, deal submissions, and messaging.
+2. **NEVER edit or deactivate any existing workflow.** Full inventory in `BOUNDARIES.md`.
+3. **All NFStay booking module workflows MUST use `nfs-` prefix** in both name and webhook path.
+4. **Before activating a workflow**, verify its webhook path doesn't collide with any existing path. Collisions cause silent failures.
+5. **Create NEW credentials** for NFStay integrations — never reuse marketplace10 credentials.
 
 ### Risks
 - n8n downtime affects both modules
 - Resource contention if too many workflows execute simultaneously
-- Duplicate active workflows (already observed: 2x "NFsTay -- Landlord Replied", 2x "NFsTay -- New Message") — needs cleanup
+- Credential modification would break both modules simultaneously
+
+### Cleanup done (2026-03-17)
+- Deactivated "NFsTay -- Test Echo" — was stealing webhook calls from production workflows
+- Deactivated duplicate "NFsTay -- Landlord Replied" (Sa3qQgBRabtXHEDT) — kept BrwfLUE2LPj9jovR
+- Deactivated duplicate "NFsTay -- New Message" (OHE0twdHzWJOii4Q) — kept J6hWjodwJlqXHme1
 
 ---
 
