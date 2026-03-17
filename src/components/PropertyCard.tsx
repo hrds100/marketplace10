@@ -98,13 +98,14 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const isPrime = listing.prime;
 
   // ─── JV CARD (Style 4: Floating + Shimmer + Progress) ───
+  // Exact match to Card 4 from /testing/design
   if (isPrime) {
-    const funded = 64; // Will be dynamic later
+    const funded = 64;
     return (
       <div
         className="bg-card rounded-2xl overflow-hidden border-[1.5px]"
         style={{
-          borderColor: GOLD.border,
+          borderColor: '#C9A842',
           boxShadow: '0 4px 24px rgba(191,149,63,0.15)',
           animation: 'jv-float 4s ease-in-out infinite',
         }}
@@ -112,81 +113,50 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         <div className="relative h-[200px] overflow-hidden">
           <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy" className="w-full h-full object-cover"
             onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
-          <div className="absolute top-2.5 left-2.5 flex gap-1.5">
-            {listing.featured && <span className="badge-green-fill text-[11px]">Featured</span>}
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold" style={{ background: GOLD.badge, color: GOLD.badgeText, border: `1px solid ${GOLD.border}` }}>
+          <div className="absolute top-2.5 left-2.5">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold" style={{ background: '#1A1A2E', color: '#F0D55E', border: '1px solid #C9A842' }}>
               💎 Exclusive JV
             </span>
           </div>
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (forceSignUp) { navigate('/signup'); return; } onToggleFav(); }}
-            className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isFav ? 'bg-accent-light' : 'bg-black/30'}`}
-          >
-            <Heart className={`w-4 h-4 ${isFav ? 'fill-primary text-primary' : 'text-white'}`} />
-          </button>
           <div className="absolute bottom-2.5 right-2.5">
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ background: 'rgba(191,149,63,0.9)' }}>
               {funded}% funded
             </span>
           </div>
         </div>
-
         <div className="p-3.5 pt-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-[15px] font-bold text-foreground leading-tight">{listing.name}</h3>
-              <p className="text-[13px] text-muted-foreground mt-0.5">{listing.city} · {listing.postcode}</p>
-            </div>
-            {onAddToCRM && (
-              <button onClick={handleAddToCRM}
-                className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : 'text-white hover:opacity-90'}`}
-                style={!addedToCRM ? { background: GOLD.buttonGradient } : undefined}>
-                {addedToCRM ? <><X className="w-3.5 h-3.5" /> Remove from CRM</> : '+ Add to CRM'}
-              </button>
-            )}
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-3 mb-2">
+          <h3 className="text-[15px] font-bold text-foreground">{listing.name}</h3>
+          <p className="text-[13px] text-muted-foreground mt-0.5">{listing.city}</p>
+          <div className="mt-2 mb-2">
             <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${funded}%`, background: 'linear-gradient(90deg, #BF953F, #F0D55E, #BF953F)' }} />
             </div>
             <div className="flex justify-between mt-1">
               <span className="text-[10px] text-muted-foreground">{funded}% funded</span>
-              <span className="text-[10px] font-medium" style={{ color: GOLD.textLight }}>Target: £45,000</span>
+              <span className="text-[10px] font-medium" style={{ color: '#A67C00' }}>Target: £45,000</span>
             </div>
           </div>
-
-          <div className="space-y-0">
-            <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-              <span className="text-xs text-muted-foreground">Min. investment</span>
-              <span className="text-[13px] font-bold" style={{ color: GOLD.textLight }}>£500</span>
-            </div>
-            <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-              <span className="text-xs text-muted-foreground">Est. monthly profit</span>
-              <span className="text-[13px] font-bold" style={{ color: GOLD.textLight }}>£{listing.profit}</span>
-            </div>
-            <div className="flex justify-between items-center py-[7px]">
-              <span className="text-xs text-muted-foreground">Projected ROI</span>
-              <span className="text-[13px] font-bold" style={{ color: GOLD.textLight }}>12.4%</span>
-            </div>
+          <div className="flex justify-between items-center py-[7px] border-b border-border/50">
+            <span className="text-xs text-muted-foreground">Min. investment</span>
+            <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£500</span>
           </div>
-
-          <div className="flex gap-2 mt-3">
-            {forceSignUp ? (
-              <button onClick={handleAction}
-                className="flex-1 h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
-                style={{ background: GOLD.shimmerBtn, backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
-                Invest Online <Zap className="w-4 h-4" />
-              </button>
-            ) : (
-              <Link to={`/deals/${listing.id}`}
-                className="flex-1 h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
-                style={{ background: GOLD.shimmerBtn, backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
-                Invest Online <Zap className="w-4 h-4" />
-              </Link>
-            )}
+          <div className="flex justify-between items-center py-[7px]">
+            <span className="text-xs text-muted-foreground">Projected ROI</span>
+            <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>12.4%</span>
           </div>
+          {forceSignUp ? (
+            <button onClick={handleAction}
+              className="w-full mt-3 h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
+              style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
+              Invest Online <Zap className="w-4 h-4" />
+            </button>
+          ) : (
+            <Link to={`/deals/${listing.id}`}
+              className="w-full mt-3 h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
+              style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
+              Invest Online <Zap className="w-4 h-4" />
+            </Link>
+          )}
         </div>
       </div>
     );
