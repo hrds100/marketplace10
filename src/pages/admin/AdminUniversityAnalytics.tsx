@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Users, BookOpen, Trophy, Zap, ChevronDown, ChevronRight, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -20,22 +19,10 @@ interface UserProgressSummary {
 const PAGE_SIZE = 20;
 
 export default function AdminUniversityAnalytics() {
-  const { user } = useAuth();
   const [page, setPage] = useState(0);
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [resettingUser, setResettingUser] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState<{ userId: string; email: string } | null>(null);
-
-  // Admin guard
-  const { data: profile } = useQuery({
-    queryKey: ['admin-profile', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-      return data;
-    },
-    enabled: !!user,
-  });
 
   // Fetch all modules
   const { data: modules = [] } = useQuery({
@@ -257,10 +244,6 @@ export default function AdminUniversityAnalytics() {
     URL.revokeObjectURL(url);
     toast.success('CSV exported');
   }, [allUserProgress]);
-
-  if (profile?.role !== 'admin') {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Admin access required.</div>;
-  }
 
   const topModuleTitle = modules.find(m => m.id === topModule)?.title ?? topModule;
 
