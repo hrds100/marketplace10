@@ -231,18 +231,9 @@ export default function AffiliatesPage() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {isAgent ? `Your code: ${profile.referral_code}` : 'Earn commission by referring people to NFsTay.'}
+            {profile?.referral_code ? `Your code: ${profile.referral_code}` : 'Earn commission by referring people to NFsTay.'}
           </p>
         </div>
-        {!isAgent && (
-          <button
-            onClick={() => becomeMutation.mutate()}
-            disabled={becomeMutation.isPending}
-            className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md hover:opacity-95 transition-all disabled:opacity-50"
-          >
-            {becomeMutation.isPending ? 'Setting up...' : 'Join — It\'s Free'}
-          </button>
-        )}
       </div>
 
       {/* ─── TOP ROW: Calculator + Top Agents ────────────── */}
@@ -396,8 +387,8 @@ export default function AffiliatesPage() {
         </div>
       </div>
 
-      {/* ─── AGENT DASHBOARD (only if joined) ────────────── */}
-      {isAgent && (
+      {/* ─── AGENT DASHBOARD ────────────── */}
+      {profile && (
         <>
           {/* Stats bar */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -81,7 +81,7 @@ export default function DashboardTopNav() {
               <span>{item.label}</span>
               {item.pro && (
                 <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full leading-none" style={{ background: 'linear-gradient(135deg, #FDF5D6, #E8D478)', color: '#8B6914' }}>
-                  ✨ PRO
+                  ✨ HOT
                 </span>
               )}
               {item.to === '/dashboard/inbox' && unreadCount > 0 && (
