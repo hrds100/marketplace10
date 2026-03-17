@@ -6,6 +6,13 @@
 
 ## 2026-03-17
 
+### Phase 3 — Step 3.8: Verification + Promo Codes in Settings
+- Wired `NfsPromoCodeManager` into operator settings as "Promo Codes" tab (7 tabs total)
+- Phase 3 verification checklist passed: all 7 items confirmed
+- EXECUTION_PLAN.md: Phase 3 status updated to COMPLETE
+- Email Edge Function code complete, awaiting deployment
+- TypeScript: zero errors
+
 ### Phase 3 — Step 3.7: Email Edge Function (nfs-email-send)
 - Created `supabase/functions/nfs-email-send/index.ts`
 - Uses `NFS_RESEND_API_KEY` (separate from marketplace10's `RESEND_API_KEY`)

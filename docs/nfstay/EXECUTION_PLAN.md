@@ -38,7 +38,7 @@
 |-------|--------|-------|
 | Phase 1 — Foundation | COMPLETE | Bug fixes, placeholders, DB tables live, Step 1.6 verified |
 | Phase 2 — Properties + Maps | COMPLETE | All frontend built. DB migration executed. Table, RLS, indexes, RPC verified. |
-| Phase 3 — Reservations + Pricing | IN PROGRESS | Step 3.1 done (migration + types). Migration awaiting execution. |
+| Phase 3 — Reservations + Pricing | COMPLETE | All steps done. DB live. Email Edge Function awaiting deployment. |
 | Phase 4 — Payments (Stripe) | NOT STARTED | Tajul provides Stripe keys |
 | Phase 5 — Integrations (Hospitable + iCal) | NOT STARTED | Tajul provides Hospitable credentials |
 | Phase 6 — White-Label + Analytics | NOT STARTED | Tajul handles DNS + domains |
