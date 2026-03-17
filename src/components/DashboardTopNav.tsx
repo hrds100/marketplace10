@@ -1,7 +1,7 @@
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, Heart, Kanban, GraduationCap, Users,
-  PlusCircle, Settings, LogOut, MessageSquare, Menu, X,
+  PlusCircle, Settings, LogOut, MessageSquare, Menu, X, Globe,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
   { to: '/dashboard/affiliates', icon: Users, label: 'Affiliates' },
   { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
+  { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site' },
   { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
