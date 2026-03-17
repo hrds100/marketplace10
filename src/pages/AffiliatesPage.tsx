@@ -267,6 +267,13 @@ export default function AffiliatesPage() {
                 type="range" min={1} max={100} value={calcReferrals}
                 onChange={e => setCalcReferrals(Number(e.target.value))}
                 className="w-full mt-2 accent-emerald-500"
+                style={{
+                  height: '6px',
+                  background: `linear-gradient(to right, #10b981 ${calcReferrals}%, #e5e7eb ${calcReferrals}%)`,
+                  borderRadius: '4px',
+                  WebkitAppearance: 'none',
+                  appearance: 'none' as never,
+                }}
               />
               <div className="flex justify-between mt-4">
                 <div>
