@@ -37,7 +37,7 @@ Set via `npx supabase secrets set KEY=VALUE` or Supabase Dashboard.
 | `NFS_HOSPITABLE_PARTNER_SECRET` | Hospitable partner API | Captured from VPS |
 | `NFS_HOSPITABLE_BEARER_TOKEN` | Hospitable API auth | Captured (may expire) |
 | `NFS_HOSPITABLE_WEBHOOK_SECRET` | Verify Hospitable webhooks | Captured from VPS |
-| ~~`NFS_RESEND_API_KEY`~~ | ~~Removed — use shared `RESEND_API_KEY`~~ | N/A |
+| `RESEND_API_KEY` (shared) | Email via Resend — shared with marketplace10 | **Set** (live in Supabase) |
 | `NFS_CF_API_TOKEN` | Cloudflare API for custom domains | Captured from VPS |
 | `NFS_CF_ZONE_ID` | Cloudflare zone for nfstay.app | Captured from VPS |
 
@@ -72,6 +72,7 @@ marketplace10 env vars are documented in `docs/ENV.md`. Do not duplicate that li
 NFStay reuses these shared vars (already set, no action needed):
 - `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` — same Supabase project
 - `VITE_N8N_WEBHOOK_URL` — same n8n instance
+- `RESEND_API_KEY` — same Resend account (NFStay sends from `@nfstay.app`, marketplace10 from `@hub.nfstay.com`)
 
 NFStay does **not** use: `VITE_GHL_FUNNEL_URL`, `VITE_PEXELS_API_KEY`.
 
@@ -85,7 +86,7 @@ For the full shared var list, see `docs/ENV.md`.
 |-------|----------------|
 | 1 (Foundation) | None new — uses existing Supabase vars |
 | 2 (Properties) | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (already set) |
-| 3 (Reservations) | `NFS_RESEND_API_KEY` |
+| 3 (Reservations) | `RESEND_API_KEY` (already set) — just need `nfstay.app` domain verified in Resend |
 | 4 (Stripe) | `NEXT_PUBLIC_NFS_STRIPE_PUBLISHABLE_KEY`, `NFS_STRIPE_SECRET_KEY`, `NFS_STRIPE_WEBHOOK_SECRET`, `NFS_STRIPE_CONNECT_WEBHOOK_SECRET`, `NFS_STRIPE_CLIENT_ID` |
 | 5 (Hospitable) | `NFS_HOSPITABLE_*` (4 secrets) |
 | 6 (White-label) | `NFS_CF_API_TOKEN`, `NFS_CF_ZONE_ID` |
