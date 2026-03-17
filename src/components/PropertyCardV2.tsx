@@ -127,7 +127,7 @@ export default function PropertyCardV2({
           )}
           {listing.prime && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-md inline-flex items-center gap-0.5" style={{ background: 'linear-gradient(135deg, #FDF5D6, #F5E6A3, #E8D478)', color: '#8B6914', border: '1px solid #C9A842' }}>
-              ✓ Prime
+              💎 Joint Venture
             </span>
           )}
           {listing.landlordApproved && (

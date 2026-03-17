@@ -204,13 +204,13 @@ export default function AdminSubmissions() {
                         const newVal = !(s as Record<string, unknown>).prime;
                         await supabase.from('properties').update({ prime: newVal } as any).eq('id', s.id);
                         queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
-                        toast.success(newVal ? 'Marked as Prime' : 'Removed Prime');
+                        toast.success(newVal ? 'Marked as Joint Venture' : 'Removed Joint Venture');
                         if (user) logAdminAction(user.id, { action: newVal ? 'add_prime' : 'remove_prime', target_table: 'properties', target_id: s.id, metadata: { name: s.name } });
                       }}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${(s as Record<string, unknown>).prime ? 'border border-[#C9A842]' : 'bg-secondary text-muted-foreground border border-border hover:border-[#C9A842]'}`}
                       style={(s as Record<string, unknown>).prime ? { background: 'linear-gradient(135deg, #FDF5D6, #F5E6A3, #E8D478)', color: '#8B6914', borderColor: '#C9A842' } : undefined}
                     >
-                      {(s as Record<string, unknown>).prime ? '✓ Prime' : '+ Prime'}
+                      {(s as Record<string, unknown>).prime ? '💎 Joint Venture' : '+ Joint Venture'}
                     </button>
                   </div>
                 </div>
