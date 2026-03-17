@@ -2,6 +2,42 @@
 
 ## [Unreleased]
 
+## [2026-03-17] — NFStay Module + Google Maps + n8n Cleanup
+
+### Added
+- **Booking Site page** (#14): Split-panel editor at `/dashboard/booking-site` — operators customize brand name, colors, logo, hero content with live preview. Desktop/mobile toggle. Mockup only, no backend.
+- **Google Maps on Deals page** (#15): Replaced Leaflet/CARTO map with Google Maps. Smooth animated zoom on card hover, green circle markers, info popup with deal details.
+- **NFStay documentation infrastructure** (#12): 18 documentation files in `docs/nfstay/` — agent instructions, architecture, database schema (11 tables), domain model, features, integrations, webhooks, white-label, routes, acceptance scenarios, boundaries, shared infrastructure, environment vars, decisions, handoff, changelog, diagnosis runbook.
+- **NFStay execution plan** (#13): 6-phase build roadmap from zero to production. Tajul authority model — Tajul approves everything, Hugo only for final production merge.
+- **Dev commands**: `npm run check` (typecheck + lint + test), `npm run clean` (clear build cache).
+- **n8n workflow protection protocol** (#16): Full inventory of 16 protected workflows with IDs and webhook paths. 6 protection rules for NFStay agents.
+
+### Fixed
+- **n8n webhook collisions**: Deactivated "Test Echo" workflow that was stealing production webhook calls from 3 live workflows. Deactivated duplicate "Landlord Replied" and "New Message" workflows (kept newer copies).
+
+### Docs
+- Added `VITE_GOOGLE_MAPS_API_KEY` to Vercel env vars and `docs/STACK.md`
+- Updated `docs/AGENT_INSTRUCTIONS.md` — added NFStay module scoping, dev commands, clickable test URL requirement
+- Updated `docs/nfstay/BOUNDARIES.md` — full n8n workflow inventory and protection rules
+- Updated `docs/nfstay/SHARED_INFRASTRUCTURE.md` — credential protection, cleanup log
+- Closed stale PR #10
+
+## [2026-03-16] — Landlord Magic Link + University Fixes
+
+### Added
+- **Landlord magic link auto-login** (#7): WhatsApp magic links auto-login landlords to inbox. Edge functions `landlord-magic-login` and `claim-landlord-account`. MagicLoginPage handles `/inbox?token=` flow.
+- **Deals page V2** (#8): Airbnb-style card layout with split view (cards left, map right). Filter bar, featured section, pagination.
+
+### Fixed
+- **University admin** (#9, #11): Consolidated admin tabs, fixed 0-lesson count bug, removed broken admin guard from Modules and Analytics pages.
+- **Sticky session** (#5): Skip login screen if user is already authenticated.
+- **Inbox redirect** (#4): `/inbox` route works for GHL magic link template.
+- **Magic link redirect** (#3): Preserve URL through signin flow.
+- **n8n fallback** (#2): Webhooks fire without env var set.
+
+### Docs
+- Hugo interaction protocol + feature branch workflow (#1)
+
 ## [2026-03-15] — Inbox UI + Production Safety
 
 ### Added
