@@ -187,3 +187,120 @@ export interface NfsOperatorUser {
   accepted_at: string | null;
   created_at: string;
 }
+
+// ============================================================================
+// Phase 3 — Reservations + Pricing
+// ============================================================================
+
+export type NfsReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show' | 'expired';
+export type NfsPaymentStatus = 'pending' | 'paid' | 'partially_refunded' | 'refunded' | 'failed';
+export type NfsBookingSource = 'main_platform' | 'white_label' | 'operator_direct';
+
+export interface NfsReservation {
+  id: string;
+  property_id: string;
+  operator_id: string | null;
+  created_by: string | null;
+
+  // Guest info
+  guest_email: string | null;
+  guest_first_name: string | null;
+  guest_last_name: string | null;
+  guest_phone: string | null;
+  guest_address: string | null;
+  guest_city: string | null;
+  guest_country: string | null;
+
+  // Booking
+  booking_source: NfsBookingSource;
+  operator_domain: string | null;
+  check_in: string;
+  check_out: string;
+  check_in_time: string;
+  check_out_time: string;
+  guest_message: string;
+  status: NfsReservationStatus;
+
+  // Guests
+  adults: number;
+  children: number;
+  infants: number;
+  pets: number;
+
+  // Pricing
+  total_amount: number;
+  discounts: unknown[];
+  add_ons: unknown[];
+  custom_fees: unknown[];
+  synced_rate_modifier: unknown | null;
+  expiration: unknown | null;
+  block_dates: boolean;
+
+  // Payment
+  payment_status: NfsPaymentStatus;
+  stripe_charge_id: string | null;
+  stripe_payment_intent_id: string | null;
+  stripe_transfer_id: string | null;
+  stripe_refund_id: string | null;
+  payment_currency: string;
+  payment_amounts: Record<string, unknown>;
+  payment_fee_breakdown: unknown[];
+  payment_processed_at: string | null;
+  refund_amount: number | null;
+  refund_status: string | null;
+  refund_reason: string | null;
+  refund_at: string | null;
+  promo_code: string | null;
+  promo_discount_amount: number | null;
+
+  // Guest session
+  guest_token: string | null;
+  is_linked_to_user: boolean;
+  linked_at: string | null;
+
+  // Hospitable (Phase 5)
+  hospitable_reservation_id: string | null;
+  hospitable_platform: string | null;
+  hospitable_platform_id: string | null;
+  hospitable_connection_id: string | null;
+  hospitable_status: string | null;
+  hospitable_financials: unknown | null;
+  hospitable_status_history: unknown[];
+  hospitable_last_sync_at: string | null;
+
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
+
+export type NfsPromoCodeStatus = 'active' | 'expired' | 'inactive' | 'draft';
+export type NfsDiscountType = 'fixed' | 'percentage';
+
+export interface NfsPromoCode {
+  id: string;
+  operator_id: string;
+  name: string | null;
+  code: string;
+  discount_type: NfsDiscountType;
+  value: number;
+  currency: string | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  limited_uses: boolean;
+  max_uses: number | null;
+  current_uses: number;
+  status: NfsPromoCodeStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NfsGuestSession {
+  id: string;
+  token: string;
+  session_data: Record<string, unknown>;
+  linked_reservations: string[];
+  linked_user_id: string | null;
+  linked_at: string | null;
+  expires_at: string;
+  created_at: string;
+}

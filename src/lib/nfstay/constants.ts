@@ -7,6 +7,8 @@ export const NFS_ROUTES = {
   PROPERTY_NEW: '/nfstay/properties/new',
   PROPERTY_DETAIL: '/nfstay/properties/:id',
   RESERVATIONS: '/nfstay/reservations',
+  RESERVATION_DETAIL: '/nfstay/reservations/:id',
+  CREATE_RESERVATION: '/nfstay/create-reservation',
   SETTINGS: '/nfstay/settings',
   ONBOARDING: '/nfstay/onboarding',
   SEARCH: '/nfstay/search',
@@ -70,3 +72,40 @@ export const NFS_AMENITY_CATEGORIES = {
   entertainment: ['tv', 'gym', 'game_room'],
   other: ['elevator', 'wheelchair_access', 'ev_charger'],
 } as const;
+
+// ============================================================================
+// Phase 3 — Reservations + Pricing
+// ============================================================================
+
+export const NFS_RESERVATION_STATUSES = [
+  'pending', 'confirmed', 'cancelled', 'completed', 'no_show', 'expired',
+] as const;
+
+export const NFS_PAYMENT_STATUSES = [
+  'pending', 'paid', 'partially_refunded', 'refunded', 'failed',
+] as const;
+
+export const NFS_BOOKING_SOURCES = [
+  'main_platform', 'white_label', 'operator_direct',
+] as const;
+
+export const NFS_RESERVATION_STATUS_LABELS: Record<(typeof NFS_RESERVATION_STATUSES)[number], string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  cancelled: 'Cancelled',
+  completed: 'Completed',
+  no_show: 'No Show',
+  expired: 'Expired',
+};
+
+export const NFS_PAYMENT_STATUS_LABELS: Record<(typeof NFS_PAYMENT_STATUSES)[number], string> = {
+  pending: 'Pending',
+  paid: 'Paid',
+  partially_refunded: 'Partially Refunded',
+  refunded: 'Refunded',
+  failed: 'Failed',
+};
+
+export const NFS_PROMO_CODE_STATUSES = [
+  'active', 'expired', 'inactive', 'draft',
+] as const;

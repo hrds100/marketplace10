@@ -6,6 +6,18 @@
 
 ## 2026-03-17
 
+### Phase 3 — Step 3.1: Reservations DB migration + types
+- Created migration `20260317140000_nfs_phase3_reservations.sql` (awaiting execution)
+- Tables: `nfs_reservations` (booking records, guest info, payment, Hospitable sync)
+- Tables: `nfs_promo_codes` (operator discount codes with validation)
+- Tables: `nfs_guest_sessions` (anonymous guest tracking, service-role only)
+- RLS policies: operator access, traveler read-own, public promo validation, service-only sessions
+- RPC: `nfs_check_availability` (date overlap check for double-booking prevention)
+- Indexes: property+status, dates, guest email, operator, hospitable ID, promo operator, session token
+- TypeScript types added: `NfsReservation`, `NfsPromoCode`, `NfsGuestSession` + status/source types
+- Constants added: reservation statuses, payment statuses, booking sources, promo code statuses + labels
+- Routes added to constants: `RESERVATION_DETAIL`, `CREATE_RESERVATION`
+
 ### Phase 2 — DB migration executed
 - `nfs_properties` table confirmed live in Supabase (60 columns)
 - RLS policies verified: `nfs_properties_operator_access` (ALL), `nfs_properties_public_read` (SELECT)
