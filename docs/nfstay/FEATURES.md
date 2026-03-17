@@ -1,0 +1,116 @@
+# NFStay — Feature Inventory
+
+> Complete list of every NFStay feature. Tracks build phase, status, and system ownership.
+> Update this file in the same commit as any feature change.
+
+---
+
+## Feature Status Key
+
+- **Planned** — Designed but not started
+- **In Progress** — Currently being built
+- **Done** — Shipped and working
+- **Blocked** — Cannot proceed (reason noted)
+
+---
+
+## Phase 1 — Core Foundation
+
+| Feature | Status | System | Notes |
+|---------|--------|--------|-------|
+| Operator signup (Supabase Auth) | Planned | Supabase Auth | Shared auth, creates `nfs_operators` row |
+| Operator login | Planned | Supabase Auth | Shared auth |
+| Magic link email verification | Planned | Edge Function + Resend | `nfs_auth_tokens` table |
+| Onboarding wizard (8 steps) | Planned | Frontend + Supabase | Persists to `nfs_operators` columns |
+| Operator dashboard layout | Planned | Frontend | Sidebar, nav, basic layout |
+| Operator settings (profile, contact, branding basics) | Planned | Frontend + Supabase | Updates `nfs_operators` |
+| Multi-user access (invite, roles) | Planned | Supabase | `nfs_operator_users` table |
+| Account switcher | Planned | Frontend | Query `nfs_operator_users` |
+
+## Phase 2 — Properties + Maps
+
+| Feature | Status | System | Notes |
+|---------|--------|--------|-------|
+| Property creation wizard (10 steps) | Planned | Frontend + Supabase | `nfs_properties` table |
+| Photo upload | Planned | Supabase Storage | `nfs-images` bucket |
+| Property list (operator) | Planned | Frontend + Supabase | Filter, sort, bulk actions |
+| Property detail/edit (operator) | Planned | Frontend + Supabase | All 10 property sections |
+| Draft vs listed vs archived | Planned | Supabase | `listing_status` column |
+| Bulk edit / bulk status update | Planned | Supabase RPC | Batch operations |
+| Traveler search page | Planned | Frontend + Supabase | Full-text search, filters |
+| Google Maps search view | Planned | Frontend | `@googlemaps/js-api-loader` |
+| Property markers + clustering | Planned | Frontend | `@googlemaps/markerclusterer` |
+| Places autocomplete | Planned | Frontend | `usePlacesAutocomplete` hook |
+| Traveler property detail page | Planned | Frontend | Gallery, map, amenities, rules, booking widget |
+
+## Phase 3 — Reservations + Pricing
+
+| Feature | Status | System | Notes |
+|---------|--------|--------|-------|
+| Operator create reservation | Planned | Frontend + Supabase | Manual reservation flow |
+| Reservation list + calendar view | Planned | Frontend + Supabase | Filter by status, date range |
+| Reservation detail page | Planned | Frontend + Supabase | Status, guest info, payment |
+| Traveler availability check | Planned | Supabase RPC | Check conflicts in `nfs_reservations` |
+| Pricing engine | Planned | Edge Function | Base rate, daily rates, fees, discounts, add-ons |
+| Promo code CRUD | Planned | Frontend + Supabase | `nfs_promo_codes` table |
+| Promo code validation | Planned | Supabase query | Check code, apply discount |
+| Booking confirmation email | Planned | n8n + Resend | `nfs-booking-notification` workflow |
+| Reservation export (CSV) | Planned | Frontend | Client-side generation |
+
+## Phase 4 — Payments (Stripe)
+
+| Feature | Status | System | Notes |
+|---------|--------|--------|-------|
+| Stripe Checkout (traveler) | Planned | Edge Function | `nfs-stripe-checkout` |
+| Payment success/cancel pages | Planned | Frontend | Post-checkout redirect |
+| Stripe Connect OAuth (operator) | Planned | Edge Function | `nfs-stripe-connect-oauth` |
+| Operator earnings dashboard | Planned | Frontend + Edge Function | Query Stripe API |
+| Operator payout info | Planned | Frontend + Edge Function | Stripe dashboard link |
+| Stripe Connect disconnect | Planned | Edge Function | Clear `nfs_stripe_accounts` |
+| Platform webhook handler | Planned | Edge Function | `nfs-stripe-webhook` |
+| Connect webhook handler | Planned | Edge Function | `nfs-stripe-connect-webhook` |
+| Webhook idempotency | Planned | Supabase | `nfs_webhook_events` table |
+
+## Phase 5 — Integrations (Hospitable + iCal)
+
+| Feature | Status | System | Notes |
+|---------|--------|--------|-------|
+| Hospitable OAuth connect | Planned | Edge Function | `nfs-hospitable-oauth` |
+| Initial full sync | Planned | n8n | `nfs-hospitable-init-sync` |
+| Listing sync (ongoing) | Planned | n8n | `nfs-hospitable-listing-sync` |
+| Reservation sync (ongoing) | Planned | n8n | `nfs-hospitable-reservation-sync` |
+| Manual resync | Planned | n8n | `nfs-hospitable-manual-sync` |
+| Retry failed syncs | Planned | n8n (cron) | `nfs-hospitable-retry` |
+| Hospitable disconnect | Planned | Edge Function | Update connection status |
+| Hospitable connection UI | Planned | Frontend | Settings tab |
+| iCal public feed | Planned | Edge Function | `nfs-ical-feed` |
+| iCal inbound sync config | Planned | Frontend + Supabase | `inbound_calendars` JSONB |
+| iCal inbound sync execution | Planned | n8n (cron) | `nfs-ical-sync` |
+| iCal outbound URL display | Planned | Frontend | Generate URL for operators |
+
+## Phase 6 — White-Label + Domain + Analytics
+
+| Feature | Status | System | Notes |
+|---------|--------|--------|-------|
+| Subdomain routing (`*.nfstay.app`) | Planned | Vercel middleware | Rewrite to `/white-label/*` |
+| Custom domain routing | Planned | Vercel middleware + API | Check `nfs_operators` for domain |
+| White-label storefront (search) | Planned | Frontend | Operator-branded search page |
+| White-label property detail | Planned | Frontend | Operator-branded |
+| White-label booking flow | Planned | Frontend | Operator-branded checkout |
+| Custom domain verification | Planned | Edge Function | `nfs-domain-verify` |
+| Cloudflare SaaS provisioning | Planned | Edge Function | Cloudflare API |
+| Analytics: page view tracking | Planned | Frontend + Supabase | `nfs_analytics` table |
+| Analytics: booking event tracking | Planned | Edge Function | On payment webhook |
+| Operator analytics dashboard | Planned | Frontend + Supabase RPC | Stats, trends, performance |
+| `nfstay.app` domain routing | Planned | Vercel + DNS | Traveler-facing |
+| Cleanup expired tokens/sessions | Planned | n8n (cron) | `nfs-cleanup-expired` |
+
+---
+
+## Shared with marketplace10
+
+No features are shared. NFStay features are completely independent from marketplace10 features (marketplace, CRM, university, inbox). They share infrastructure (auth, Supabase, Vercel) but not functionality.
+
+---
+
+*End of NFStay Feature Inventory.*

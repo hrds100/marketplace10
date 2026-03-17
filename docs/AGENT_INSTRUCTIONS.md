@@ -105,6 +105,7 @@ Claude then:
 | Feature or flow work | + `docs/ACCEPTANCE.md` |
 | Bug / "X not working" | + `docs/runbooks/DIAGNOSE_BEFORE_FIX.md` |
 | Unknown / cross-cutting | + `docs/ARCHITECTURE.md` + `docs/DATABASE.md` + `docs/INTEGRATIONS.md` + `docs/CHANGELOG.md` |
+| **NFStay module** (any `/nfstay` route, `nfs_` table, `nfs-` function) | + `docs/nfstay/AGENT_INSTRUCTIONS.md` + `docs/nfstay/BOUNDARIES.md` + task-specific NFStay docs (see `docs/nfstay/README.md`) |
 
 ### 3b. Mandatory pre-task steps
 
