@@ -9,7 +9,7 @@ const navItems = [
   { to: '/dashboard/inbox', icon: MessageSquare, label: 'Inbox' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
   { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
-  { to: '/dashboard/affiliates', icon: Users, label: 'Affiliates' },
+  { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
   { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
   { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site' },

@@ -13,7 +13,7 @@ const navItems = [
   { to: '/dashboard/inbox', icon: MessageSquare, label: 'Inbox' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
   { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
-  { to: '/dashboard/affiliates', icon: Users, label: 'Affiliates' },
+  { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
   { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
   { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site' },
   { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
