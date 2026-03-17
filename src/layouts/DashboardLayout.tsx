@@ -19,7 +19,7 @@ export function useDashboardContext() {
 
 export default function DashboardLayout() {
   const location = useLocation();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const isFullBleed = FULL_BLEED_ROUTES.some(r => location.pathname.startsWith(r));
   const isTopNav = TOP_NAV_ROUTES.some(r => location.pathname === r || location.pathname === r + '/');
   const marginClass = sidebarCollapsed ? 'md:ml-16' : 'md:ml-56';
@@ -27,7 +27,6 @@ export default function DashboardLayout() {
   return (
     <ProtectedRoute>
       {isTopNav ? (
-        /* ── Top-nav layout: deals page — no sidebar, full viewport ── */
         <div className="h-screen flex flex-col animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
           <PaymentSuccessRefresher />
           <DashboardTopNav />
@@ -36,7 +35,6 @@ export default function DashboardLayout() {
           </main>
         </div>
       ) : (
-        /* ── Sidebar layout: all other pages ─────────────────────── */
         <div className="min-h-screen animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
           <PaymentSuccessRefresher />
           <DashboardSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
