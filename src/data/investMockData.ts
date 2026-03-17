@@ -1,0 +1,168 @@
+// Mock data for NFsTay Investment module
+
+export const mockProperties = [
+  {
+    id: 1,
+    title: 'Seseh Beachfront Villa',
+    location: 'Seseh, Bali',
+    country: 'Indonesia',
+    image: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&q=80',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+    ],
+    pricePerShare: 100,
+    totalShares: 1000,
+    sharesSold: 720,
+    annualYield: 12.4,
+    monthlyRent: 8500,
+    propertyValue: 450000,
+    status: 'open' as const,
+    type: 'Villa',
+    bedrooms: 4,
+    bathrooms: 3,
+    area: 320,
+    description: 'A stunning 4-bedroom beachfront villa in the heart of Seseh, Bali. Fully managed with proven Airbnb income, offering investors exposure to one of Southeast Asia\'s fastest-growing tourism markets.',
+    highlights: ['Beachfront location', 'Fully furnished', 'Property management included', 'Proven rental income'],
+    documents: ['Investment Memorandum', 'Title Deed', 'Financial Projections', 'Management Agreement'],
+    occupancyRate: 87,
+    yearBuilt: 2022,
+  },
+  {
+    id: 2,
+    title: 'Marina Gate Apartment',
+    location: 'Dubai Marina, Dubai',
+    country: 'UAE',
+    image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80',
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&q=80',
+      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+    ],
+    pricePerShare: 250,
+    totalShares: 800,
+    sharesSold: 800,
+    annualYield: 9.8,
+    monthlyRent: 12000,
+    propertyValue: 680000,
+    status: 'funded' as const,
+    type: 'Apartment',
+    bedrooms: 2,
+    bathrooms: 2,
+    area: 145,
+    description: 'Premium 2-bedroom apartment in Dubai Marina with panoramic views. Consistent rental demand from business travellers and tourists. Fully funded and generating returns.',
+    highlights: ['Marina views', 'High rental demand', 'Tax-free income', 'Premium location'],
+    documents: ['Investment Memorandum', 'Title Deed', 'Rental History'],
+    occupancyRate: 92,
+    yearBuilt: 2021,
+  },
+  {
+    id: 3,
+    title: 'KAEC Waterfront Residence',
+    location: 'King Abdullah Economic City',
+    country: 'Saudi Arabia',
+    image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80',
+    ],
+    pricePerShare: 150,
+    totalShares: 1200,
+    sharesSold: 340,
+    annualYield: 14.2,
+    monthlyRent: 9200,
+    propertyValue: 520000,
+    status: 'open' as const,
+    type: 'Residence',
+    bedrooms: 3,
+    bathrooms: 3,
+    area: 210,
+    description: 'A modern 3-bedroom waterfront residence in Saudi Arabia\'s flagship economic city. Early-stage investment opportunity with exceptional projected yields as the city scales.',
+    highlights: ['Vision 2030 growth area', 'Waterfront living', 'Early investor advantage', 'Government-backed development'],
+    documents: ['Investment Memorandum', 'Financial Projections', 'Development Plan'],
+    occupancyRate: 74,
+    yearBuilt: 2024,
+  },
+];
+
+export const mockPortfolio = {
+  totalInvested: 2750,
+  totalValue: 3120,
+  totalEarnings: 1840,
+  pendingPayouts: 420,
+  holdings: [
+    {
+      propertyId: 1,
+      propertyTitle: 'Seseh Beachfront Villa',
+      location: 'Seseh, Bali',
+      image: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&q=80',
+      sharesOwned: 15,
+      sharePrice: 100,
+      currentValue: 1680,
+      invested: 1500,
+      totalEarned: 980,
+      monthlyYield: 127.50,
+      annualYield: 12.4,
+      lastPayout: '2026-03-01',
+      status: 'earning' as const,
+    },
+    {
+      propertyId: 2,
+      propertyTitle: 'Marina Gate Apartment',
+      location: 'Dubai Marina, Dubai',
+      image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80',
+      sharesOwned: 5,
+      sharePrice: 250,
+      currentValue: 1440,
+      invested: 1250,
+      totalEarned: 860,
+      monthlyYield: 102.08,
+      annualYield: 9.8,
+      lastPayout: '2026-03-01',
+      status: 'earning' as const,
+    },
+  ],
+};
+
+export const mockPayouts = [
+  { id: 'p1', propertyTitle: 'Seseh Beachfront Villa', propertyId: 1, date: '2026-03-01', sharesOwned: 15, amount: 127.50, currency: 'USDC', status: 'claimable' as const, method: null },
+  { id: 'p2', propertyTitle: 'Marina Gate Apartment', propertyId: 2, date: '2026-03-01', sharesOwned: 5, amount: 102.08, currency: 'USDC', status: 'claimable' as const, method: null },
+  { id: 'p3', propertyTitle: 'Seseh Beachfront Villa', propertyId: 1, date: '2026-02-01', sharesOwned: 15, amount: 127.50, currency: 'USDC', status: 'claimed' as const, method: 'bank_transfer' },
+  { id: 'p4', propertyTitle: 'Marina Gate Apartment', propertyId: 2, date: '2026-02-01', sharesOwned: 5, amount: 102.08, currency: 'USDC', status: 'claimed' as const, method: 'usdc' },
+  { id: 'p5', propertyTitle: 'Seseh Beachfront Villa', propertyId: 1, date: '2026-01-01', sharesOwned: 15, amount: 127.50, currency: 'USDC', status: 'paid' as const, method: 'bank_transfer' },
+  { id: 'p6', propertyTitle: 'Marina Gate Apartment', propertyId: 2, date: '2026-01-01', sharesOwned: 5, amount: 102.08, currency: 'USDC', status: 'paid' as const, method: 'stay_token' },
+];
+
+export const mockProposals = {
+  active: [
+    {
+      id: 'prop-1', propertyTitle: 'Seseh Beachfront Villa', propertyId: 1,
+      title: 'Pool renovation and garden landscaping',
+      description: 'Proposal to upgrade the infinity pool with new tiling and add tropical landscaping to increase nightly rates by an estimated 15%.',
+      type: 'Renovation' as const, createdAt: '2026-03-10', endsAt: '2026-03-24',
+      votesYes: 482, votesNo: 118, totalVotes: 720, quorum: 500,
+      userVoted: null as 'yes' | 'no' | null,
+    },
+    {
+      id: 'prop-2', propertyTitle: 'Marina Gate Apartment', propertyId: 2,
+      title: 'Switch property manager to Hospitable',
+      description: 'Current property manager charges 20% commission. Hospitable integration would reduce costs to 12% and improve guest communication.',
+      type: 'Management' as const, createdAt: '2026-03-12', endsAt: '2026-03-26',
+      votesYes: 310, votesNo: 245, totalVotes: 800, quorum: 400,
+      userVoted: null as 'yes' | 'no' | null,
+    },
+  ],
+  past: [
+    { id: 'prop-3', propertyTitle: 'Seseh Beachfront Villa', propertyId: 1, title: 'Increase nightly rate by 10% for peak season', description: 'Align pricing with market comparables during June-September peak period.', type: 'Pricing' as const, createdAt: '2026-01-15', endsAt: '2026-01-29', votesYes: 580, votesNo: 90, totalVotes: 720, quorum: 500, result: 'approved' as const },
+    { id: 'prop-4', propertyTitle: 'Marina Gate Apartment', propertyId: 2, title: 'List property on Booking.com', description: 'Expand distribution by adding Booking.com alongside existing Airbnb listing.', type: 'Distribution' as const, createdAt: '2025-12-01', endsAt: '2025-12-15', votesYes: 620, votesNo: 44, totalVotes: 800, quorum: 400, result: 'approved' as const },
+    { id: 'prop-5', propertyTitle: 'Seseh Beachfront Villa', propertyId: 1, title: 'Convert to long-term rental', description: 'Switch from short-term Airbnb to 12-month tenancy agreement.', type: 'Strategy' as const, createdAt: '2025-11-01', endsAt: '2025-11-15', votesYes: 120, votesNo: 540, totalVotes: 720, quorum: 500, result: 'rejected' as const },
+  ],
+};
+
+export type InvestProperty = typeof mockProperties[number];
+export type PortfolioHolding = typeof mockPortfolio.holdings[number];
+export type Payout = typeof mockPayouts[number];
+export type ActiveProposal = typeof mockProposals.active[number];
+export type PastProposal = typeof mockProposals.past[number];
