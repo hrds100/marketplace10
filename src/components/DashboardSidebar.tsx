@@ -10,9 +10,8 @@ const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; high
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
   { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
-  { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
-  { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
   { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', highlight: true },
+  { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
 ];
 
 const investSubItems = [
@@ -157,19 +156,27 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
           </div>
         </nav>
 
-        {isAdmin && (
-          <div className="p-2 border-t border-border/30">
+        <div className="p-2 border-t border-border/30 space-y-0.5">
+          {isAdmin && (
             <NavLink to="/admin" className={`flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`} title={collapsed ? 'Admin' : undefined}>
               <Settings className="w-[15px] h-[15px]" strokeWidth={1.8} />
               {!collapsed && <span className="text-[13px]">Admin View</span>}
             </NavLink>
-          </div>
-        )}
+          )}
+          <NavLink to="/dashboard/settings" className={({ isActive }) => `flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`} title={collapsed ? 'Settings' : undefined}>
+            <Settings className="w-[15px] h-[15px]" strokeWidth={1.8} />
+            {!collapsed && <span className="text-[13px]">Settings</span>}
+          </NavLink>
+          <button onClick={handleLogout} className={`flex items-center gap-2 h-10 rounded-lg transition-all duration-200 w-full ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10`} title={collapsed ? 'Sign out' : undefined}>
+            <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
+            {!collapsed && <span className="text-[13px]">Sign Out</span>}
+          </button>
+        </div>
       </aside>
 
       {/* Mobile bottom tab */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-[60px] bg-white/80 dark:bg-card/80 backdrop-blur-xl border-t border-border/30 z-[110] flex justify-around items-center">
-        {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[6]].map(item => {
+        {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[4]].map(item => {
           const isActive = location.pathname === item.to;
           return (
             <NavLink key={item.to} to={item.to} className="relative flex flex-col items-center gap-0.5">

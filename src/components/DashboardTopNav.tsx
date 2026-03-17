@@ -1,7 +1,7 @@
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, Heart, Kanban, GraduationCap, Users,
-  PlusCircle, Settings, LogOut, MessageSquare, Menu, X, Globe,
+  PlusCircle, Settings, LogOut, MessageSquare, Menu, X, Globe, TrendingUp,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import BurgerMenu from '@/components/BurgerMenu';
@@ -9,15 +9,15 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
-const navItems = [
+const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; pro?: boolean }> = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
   { to: '/dashboard/inbox', icon: MessageSquare, label: 'Inbox' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
   { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
-  { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
+  { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', pro: true },
   { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
-  { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site' },
+  { to: '/dashboard/invest/marketplace', icon: TrendingUp, label: 'Investors' },
 ];
 
 export default function DashboardTopNav() {
@@ -79,6 +79,11 @@ export default function DashboardTopNav() {
             >
               <item.icon className="w-[15px] h-[15px]" strokeWidth={1.8} />
               <span>{item.label}</span>
+              {item.pro && (
+                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full leading-none" style={{ background: 'linear-gradient(135deg, #FDF5D6, #E8D478)', color: '#8B6914' }}>
+                  ✨ PRO
+                </span>
+              )}
               {item.to === '/dashboard/inbox' && unreadCount > 0 && (
                 <span className={`text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 ${
                   isActive(item.to)
@@ -102,6 +107,17 @@ export default function DashboardTopNav() {
               Admin
             </NavLink>
           )}
+          <NavLink
+            to="/dashboard/favourites"
+            className={`p-2 rounded-lg transition-all duration-200 ${
+              isActive('/dashboard/favourites')
+                ? 'text-red-500 bg-red-50 dark:bg-red-500/10'
+                : 'text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'
+            }`}
+            title="Favourites"
+          >
+            <Heart className="w-[18px] h-[18px]" strokeWidth={1.8} fill={isActive('/dashboard/favourites') ? 'currentColor' : 'none'} />
+          </NavLink>
           <button
             onClick={() => navigate('/dashboard/list-a-deal')}
             className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-[7px] rounded-lg text-[13px] font-semibold hover:from-emerald-600 hover:to-teal-700 shadow-md transition-all flex items-center gap-1.5"
