@@ -1,4 +1,4 @@
-import { Heart, CheckCircle, X, Gem } from 'lucide-react';
+import { Heart, CheckCircle, X, Gem, Zap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { ListingShape } from '@/components/InquiryPanel';
@@ -20,13 +20,24 @@ interface Props {
   forceSignUp?: boolean;
 }
 
-// Premium gold palette
+// JV card CSS animations (injected once)
+const JV_STYLES_ID = 'jv-card-styles';
+if (typeof document !== 'undefined' && !document.getElementById(JV_STYLES_ID)) {
+  const style = document.createElement('style');
+  style.id = JV_STYLES_ID;
+  style.textContent = `
+    @keyframes jv-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+    @keyframes jv-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+  `;
+  document.head.appendChild(style);
+}
+
 const GOLD = {
-  gradient: 'linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C)',
   buttonGradient: 'linear-gradient(135deg, #BF953F 0%, #D4AC2B 30%, #F0D55E 50%, #D4AC2B 70%, #BF953F 100%)',
-  badge: 'linear-gradient(135deg, #FDF5D6, #F5E6A3, #E8D478)',
+  shimmerBtn: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)',
+  badge: '#1A1A2E',
+  badgeText: '#F0D55E',
   border: '#C9A842',
-  glow: '0 0 16px rgba(191,149,63,0.18), 0 2px 8px rgba(191,149,63,0.1)',
   text: '#8B6914',
   textLight: '#A67C00',
 };
@@ -45,41 +56,28 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const handleAction = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (forceSignUp) {
-      navigate('/signup');
-    }
+    if (forceSignUp) navigate('/signup');
   };
 
   const handleAddToCRM = async () => {
     if (!user) { toast.error('Sign in to add deals to your CRM'); return; }
-
     if (addedToCRM) {
-      const { error } = await supabase.from('crm_deals').delete()
-        .eq('user_id', user.id).eq('property_id', listing.id);
+      const { error } = await supabase.from('crm_deals').delete().eq('user_id', user.id).eq('property_id', listing.id);
       if (error) { toast.error('Failed to remove — ' + error.message); return; }
       localStorage.removeItem(`crm_${listing.id}`);
       setAddedToCRM(false);
       toast.success('Removed from CRM');
       return;
     }
-
     let photoUrl = resolvedImage;
     if (!photoUrl || photoUrl.includes('placehold.co')) {
       const pexels = await fetchPexelsPhotos(listing.city, listing.type, 1);
       if (pexels[0]) photoUrl = pexels[0];
     }
     const { error } = await supabase.from('crm_deals').insert({
-      user_id: user.id,
-      name: listing.name,
-      city: listing.city,
-      postcode: listing.postcode,
-      rent: listing.rent,
-      profit: listing.profit,
-      type: listing.type,
-      stage: 'New Lead',
-      notes: 'Added from deals page',
-      photo_url: photoUrl || null,
-      property_id: listing.id || null,
+      user_id: user.id, name: listing.name, city: listing.city, postcode: listing.postcode,
+      rent: listing.rent, profit: listing.profit, type: listing.type, stage: 'New Lead',
+      notes: 'Added from deals page', photo_url: photoUrl || null, property_id: listing.id || null,
     });
     if (error) { toast.error('Failed to add — ' + error.message); return; }
     localStorage.setItem(`crm_${listing.id}`, 'true');
@@ -91,10 +89,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const handleInquire = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (forceSignUp) {
-      navigate('/signup');
-      return;
-    }
+    if (forceSignUp) { navigate('/signup'); return; }
     onInquire?.(listing);
   };
 
@@ -102,31 +97,110 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type);
   const isPrime = listing.prime;
 
+  // ─── JV CARD (Style 4: Floating + Shimmer + Progress) ───
+  if (isPrime) {
+    const funded = 64; // Will be dynamic later
+    return (
+      <div
+        className="bg-card rounded-2xl overflow-hidden border-[1.5px]"
+        style={{
+          borderColor: GOLD.border,
+          boxShadow: '0 4px 24px rgba(191,149,63,0.15)',
+          animation: 'jv-float 4s ease-in-out infinite',
+        }}
+      >
+        <div className="relative h-[200px] overflow-hidden">
+          <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy" className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
+          <div className="absolute top-2.5 left-2.5 flex gap-1.5">
+            {listing.featured && <span className="badge-green-fill text-[11px]">Featured</span>}
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold" style={{ background: GOLD.badge, color: GOLD.badgeText, border: `1px solid ${GOLD.border}` }}>
+              💎 Exclusive JV
+            </span>
+          </div>
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (forceSignUp) { navigate('/signup'); return; } onToggleFav(); }}
+            className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isFav ? 'bg-accent-light' : 'bg-black/30'}`}
+          >
+            <Heart className={`w-4 h-4 ${isFav ? 'fill-primary text-primary' : 'text-white'}`} />
+          </button>
+          <div className="absolute bottom-2.5 right-2.5">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ background: 'rgba(191,149,63,0.9)' }}>
+              {funded}% funded
+            </span>
+          </div>
+        </div>
+
+        <div className="p-3.5 pt-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-[15px] font-bold text-foreground leading-tight">{listing.name}</h3>
+              <p className="text-[13px] text-muted-foreground mt-0.5">{listing.city} · {listing.postcode}</p>
+            </div>
+            {onAddToCRM && (
+              <button onClick={handleAddToCRM}
+                className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : 'text-white hover:opacity-90'}`}
+                style={!addedToCRM ? { background: GOLD.buttonGradient } : undefined}>
+                {addedToCRM ? <><X className="w-3.5 h-3.5" /> Remove from CRM</> : '+ Add to CRM'}
+              </button>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          <div className="mt-3 mb-2">
+            <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${funded}%`, background: 'linear-gradient(90deg, #BF953F, #F0D55E, #BF953F)' }} />
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[10px] text-muted-foreground">{funded}% funded</span>
+              <span className="text-[10px] font-medium" style={{ color: GOLD.textLight }}>Target: £45,000</span>
+            </div>
+          </div>
+
+          <div className="space-y-0">
+            <div className="flex justify-between items-center py-[7px] border-b border-border/50">
+              <span className="text-xs text-muted-foreground">Min. investment</span>
+              <span className="text-[13px] font-bold" style={{ color: GOLD.textLight }}>£500</span>
+            </div>
+            <div className="flex justify-between items-center py-[7px] border-b border-border/50">
+              <span className="text-xs text-muted-foreground">Est. monthly profit</span>
+              <span className="text-[13px] font-bold" style={{ color: GOLD.textLight }}>£{listing.profit}</span>
+            </div>
+            <div className="flex justify-between items-center py-[7px]">
+              <span className="text-xs text-muted-foreground">Projected ROI</span>
+              <span className="text-[13px] font-bold" style={{ color: GOLD.textLight }}>12.4%</span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-3">
+            {forceSignUp ? (
+              <button onClick={handleAction}
+                className="flex-1 h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
+                style={{ background: GOLD.shimmerBtn, backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
+                Invest Online <Zap className="w-4 h-4" />
+              </button>
+            ) : (
+              <Link to={`/deals/${listing.id}`}
+                className="flex-1 h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
+                style={{ background: GOLD.shimmerBtn, backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
+                Invest Online <Zap className="w-4 h-4" />
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── REGULAR CARD ────────────────────────────────────
   return (
-    <div
-      className={`bg-card rounded-2xl overflow-hidden card-hover ${isPrime ? 'border-[1.5px]' : 'border border-border'}`}
-      style={isPrime ? { borderColor: GOLD.border, boxShadow: GOLD.glow } : undefined}
-    >
-      {/* Photo */}
+    <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover">
       <div className="relative h-[200px] overflow-hidden">
-        <img
-          src={resolvedImage}
-          alt={`Property in ${listing.city}`}
-          loading="lazy"
-          className="w-full h-full object-cover"
-          onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }}
-        />
+        <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy" className="w-full h-full object-cover"
+          onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
         <div className="absolute top-2.5 left-2.5 flex gap-1.5">
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
           {listing.featured && <span className="badge-green-fill text-[11px]">Featured</span>}
-          {isPrime && (
-            <span
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold shadow-md"
-              style={{ background: GOLD.badge, color: GOLD.text, border: `1px solid ${GOLD.border}` }}
-            >
-              <Gem className="w-3 h-3" /> Joint Venture
-            </span>
-          )}
         </div>
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (forceSignUp) { navigate('/signup'); return; } onToggleFav(); }}
@@ -136,7 +210,6 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         </button>
       </div>
 
-      {/* Body */}
       <div className="p-3.5 pt-3">
         <div className="flex items-start justify-between">
           <div>
@@ -144,16 +217,9 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <p className="text-[13px] text-muted-foreground mt-0.5">{listing.city} · {listing.postcode}</p>
           </div>
           {onAddToCRM && (
-            <button
-              onClick={handleAddToCRM}
-              className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : isPrime ? 'text-white hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90'}`}
-              style={!addedToCRM && isPrime ? { background: GOLD.buttonGradient } : undefined}
-            >
-              {addedToCRM ? (
-                <><X className="w-3.5 h-3.5" /> Remove from CRM</>
-              ) : (
-                '+ Add to CRM'
-              )}
+            <button onClick={handleAddToCRM}
+              className={`text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded-full ${addedToCRM ? 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive' : 'bg-primary text-primary-foreground hover:opacity-90'}`}>
+              {addedToCRM ? <><X className="w-3.5 h-3.5" /> Remove from CRM</> : '+ Add to CRM'}
             </button>
           )}
         </div>
@@ -166,8 +232,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
             <span className="text-xs text-muted-foreground">Est. monthly profit</span>
             <div className="flex items-center gap-2">
-              <span className={`text-[13px] font-bold ${isPrime ? '' : 'text-accent-foreground'}`} style={isPrime ? { color: GOLD.textLight } : undefined}>£{listing.profit}</span>
-              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className={`text-[10px] font-medium hover:underline ${isPrime ? '' : 'text-primary'}`} style={isPrime ? { color: GOLD.border } : undefined} onClick={e => e.stopPropagation()}>
+              <span className="text-[13px] font-bold text-accent-foreground">£{listing.profit}</span>
+              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary font-medium hover:underline" onClick={e => e.stopPropagation()}>
                 Airdna verified ✓
               </a>
             </div>
@@ -189,42 +255,25 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         <div className="flex gap-2 mt-3">
           {forceSignUp ? (
             <>
-              <button
-                onClick={handleAction}
-                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${isPrime ? '' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
-                style={isPrime ? { background: GOLD.buttonGradient } : undefined}
-              >
+              <button onClick={handleAction} className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
                 Visit Listing
               </button>
-              <button
-                onClick={handleAction}
-                className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${isPrime ? 'hover:bg-amber-50/40' : 'border border-border text-foreground hover:bg-secondary'}`}
-                style={isPrime ? { border: `1px solid ${GOLD.border}`, color: GOLD.text } : undefined}
-              >
+              <button onClick={handleAction} className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
                 Inquire Now
               </button>
             </>
           ) : (
             <>
-              <Link
-                to={`/deals/${listing.id}`}
-                className={`flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity ${isPrime ? '' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}
-                style={isPrime ? { background: GOLD.buttonGradient } : undefined}
-              >
+              <Link to={`/deals/${listing.id}`} className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
                 Visit Listing
               </Link>
-              <button
-                onClick={handleInquire}
-                className={`flex-1 h-[38px] rounded-lg text-[13px] font-medium transition-colors ${isPrime ? 'hover:bg-amber-50/40' : 'border border-border text-foreground hover:bg-secondary'}`}
-                style={isPrime ? { border: `1px solid ${GOLD.border}`, color: GOLD.text } : undefined}
-              >
+              <button onClick={handleInquire} className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
                 Inquire Now
               </button>
             </>
           )}
         </div>
       </div>
-      {/* NO modal rendered here — modal lives at page level */}
     </div>
   );
 }
