@@ -124,10 +124,10 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             </span>
           </div>
         </div>
-        <div className="p-3.5 pt-3">
+        <div className="p-3.5 pt-3 flex flex-col" style={{ minHeight: '248px' }}>
           <h3 className="text-[15px] font-bold text-foreground">{listing.name}</h3>
-          <p className="text-[13px] text-muted-foreground mt-0.5">{listing.city}</p>
-          <div className="mt-2 mb-2">
+          <p className="text-[13px] text-muted-foreground mt-0.5">{listing.city} · {listing.postcode}</p>
+          <div className="mt-3 mb-2">
             <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${funded}%`, background: 'linear-gradient(90deg, #BF953F, #F0D55E, #BF953F)' }} />
             </div>
@@ -136,13 +136,19 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               <span className="text-[10px] font-medium" style={{ color: '#A67C00' }}>Target: £45,000</span>
             </div>
           </div>
-          <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-            <span className="text-xs text-muted-foreground">Min. investment</span>
-            <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£500</span>
-          </div>
-          <div className="flex justify-between items-center py-[7px]">
-            <span className="text-xs text-muted-foreground">Projected ROI</span>
-            <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>12.4%</span>
+          <div className="flex-1 space-y-0">
+            <div className="flex justify-between items-center py-[7px] border-b border-border/50">
+              <span className="text-xs text-muted-foreground">Min. investment</span>
+              <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£500</span>
+            </div>
+            <div className="flex justify-between items-center py-[7px] border-b border-border/50">
+              <span className="text-xs text-muted-foreground">Est. monthly profit</span>
+              <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£{listing.profit}</span>
+            </div>
+            <div className="flex justify-between items-center py-[7px]">
+              <span className="text-xs text-muted-foreground">Projected ROI</span>
+              <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>12.4%</span>
+            </div>
           </div>
           {forceSignUp ? (
             <button onClick={handleAction}
