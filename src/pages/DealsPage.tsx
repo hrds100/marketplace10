@@ -31,6 +31,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     type: p.type,
     status: p.status as 'live' | 'on-offer' | 'inactive',
     featured: p.featured,
+    prime: (p as Record<string, unknown>).prime === true,
     daysAgo,
     image,
     landlordApproved: (p as Record<string, unknown>).sa_approved === 'yes',

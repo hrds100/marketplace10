@@ -1,4 +1,4 @@
-import { Heart, CheckCircle, X } from 'lucide-react';
+import { Heart, CheckCircle, X, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { ListingShape } from '@/components/InquiryPanel';
@@ -93,7 +93,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type);
 
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover">
+    <div className={`bg-card rounded-2xl overflow-hidden card-hover ${listing.prime ? 'border-[1.5px]' : 'border border-border'}`} style={listing.prime ? { borderColor: '#C5A55A' } : undefined}>
       {/* Photo */}
       <div className="relative h-[200px] overflow-hidden">
         <img
@@ -103,9 +103,14 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           className="w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }}
         />
-        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
+        <div className="absolute top-2.5 left-2.5 flex gap-1.5">
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
           {listing.featured && <span className="badge-green-fill text-[11px]">Featured</span>}
+          {listing.prime && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ background: '#F5E6B8', color: '#8B7332' }}>
+              <ShieldCheck className="w-3 h-3" /> Prime
+            </span>
+          )}
         </div>
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (forceSignUp) { navigate('/signup'); return; } onToggleFav(); }}

@@ -45,7 +45,7 @@ export default function AffiliatesPage() {
   const [copied, setCopied] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
   const [calcMode, setCalcMode] = useState<'subscriptions' | 'jv'>('subscriptions');
-  const [calcPlan, setCalcPlan] = useState<'yearly' | 'monthly' | 'lifetime'>('yearly');
+  const [calcPlan, setCalcPlan] = useState<'yearly' | 'monthly' | 'lifetime'>('lifetime');
   const [calcReferrals, setCalcReferrals] = useState(10);
   const [calcDealAmount, setCalcDealAmount] = useState(6000);
   const [calcDeals, setCalcDeals] = useState(3);
