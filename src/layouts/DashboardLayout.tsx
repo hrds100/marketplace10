@@ -3,6 +3,7 @@ import { Outlet, useLocation, useOutletContext, Link, useNavigate } from 'react-
 import { LogOut } from 'lucide-react';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import DashboardTopNav from '@/components/DashboardTopNav';
+import NotificationBell from '@/components/NotificationBell';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PaymentSuccessRefresher from '@/components/PaymentSuccessRefresher';
 import ClaimAccountBanner from '@/components/ClaimAccountBanner';
@@ -33,7 +34,8 @@ function MinimalTopBar() {
       >
         NFsTay
       </Link>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
+        <NotificationBell />
         <button
           onClick={async () => { await signOut(); navigate('/signin'); }}
           className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"

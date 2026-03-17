@@ -3,6 +3,7 @@ import {
   LayoutGrid, Heart, Kanban, GraduationCap, Users,
   PlusCircle, Settings, LogOut, MessageSquare, Menu, X, Globe,
 } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -107,6 +108,7 @@ export default function DashboardTopNav() {
             <PlusCircle className="w-[15px] h-[15px]" strokeWidth={1.8} />
             Submit a Deal
           </button>
+          <NotificationBell />
           <button
             onClick={handleLogout}
             className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-secondary"

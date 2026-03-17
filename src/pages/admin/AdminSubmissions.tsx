@@ -51,6 +51,17 @@ export default function AdminSubmissions() {
         },
       }).catch(() => {});
     }
+
+    // In-app notification for member (non-blocking)
+    if (submission?.submitted_by) {
+      (supabase.from('notifications') as any).insert({
+        user_id: submission.submitted_by,
+        type: 'deal_approved',
+        title: 'Deal approved',
+        body: `Your deal "${submission.name}" in ${submission.city} is now live.`,
+        property_id: id,
+      }).then(() => {}).catch(() => {});
+    }
   };
 
   const reject = async (id: string) => {
@@ -62,6 +73,27 @@ export default function AdminSubmissions() {
 
     // Audit log (fire-and-forget)
     if (user) logAdminAction(user.id, { action: 'reject_deal', target_table: 'properties', target_id: id, metadata: { city: submission?.city, name: submission?.name } });
+
+    // Email member on rejection (non-blocking)
+    if (submission?.contact_email) {
+      supabase.functions.invoke('send-email', {
+        body: {
+          type: 'deal-rejected-member',
+          data: { memberEmail: submission.contact_email, name: submission.name, city: submission.city },
+        },
+      }).catch(() => {});
+    }
+
+    // In-app notification for member (non-blocking)
+    if (submission?.submitted_by) {
+      (supabase.from('notifications') as any).insert({
+        user_id: submission.submitted_by,
+        type: 'deal_rejected',
+        title: 'Deal not approved',
+        body: `Your deal "${submission.name}" in ${submission.city} was not approved.`,
+        property_id: id,
+      }).then(() => {}).catch(() => {});
+    }
   };
 
   const statusLabel = (status: string) => {

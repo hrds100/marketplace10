@@ -84,7 +84,22 @@ export default function SignUp() {
           .eq('id', userId);
       }
 
-      // 2. Send WhatsApp OTP via GHL
+      // 2. Send welcome email + notify admin (non-blocking)
+      supabase.functions.invoke('send-email', {
+        body: { type: 'welcome-member', data: { email: cleanEmail, name: cleanName } },
+      }).catch(() => {});
+      supabase.functions.invoke('send-email', {
+        body: { type: 'new-signup-admin', data: { email: cleanEmail, name: cleanName, phone: fullPhone } },
+      }).catch(() => {});
+
+      // In-app notification for admin (non-blocking)
+      (supabase.from('notifications') as any).insert({
+        type: 'new_signup',
+        title: 'New user signed up',
+        body: `${cleanName} (${cleanEmail}) just created an account.`,
+      }).then(() => {}).catch(() => {});
+
+      // 3. Send WhatsApp OTP via GHL
       try {
         await sendOtp(fullPhone);
         toast.success('Account created! Check WhatsApp for your code.');
@@ -92,7 +107,7 @@ export default function SignUp() {
         toast.success('Account created! Sending verification code...');
       }
 
-      // 3. Redirect to OTP page
+      // 4. Redirect to OTP page
       navigate(`/verify-otp?phone=${encodeURIComponent(fullPhone)}&name=${encodeURIComponent(data.name)}&email=${encodeURIComponent(data.email)}`);
     } catch {
       toast.error('Something went wrong. Please try again.');
