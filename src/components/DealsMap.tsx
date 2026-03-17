@@ -222,16 +222,39 @@ export default function DealsMap({ listings, hoveredId }: Props) {
         const pos = marker.getPosition();
         if (pos) {
           map.panTo(pos);
-          if (map.getZoom()! < 12) map.setZoom(12);
+          // Smooth animated zoom — step by step
+          const target = 13;
+          const current = map.getZoom() ?? 6;
+          if (current < target) {
+            let step = current;
+            const interval = setInterval(() => {
+              step += 1;
+              map.setZoom(step);
+              if (step >= target) clearInterval(interval);
+            }, 120);
+          }
         }
       }
     });
 
-    // Zoom back out when hover ends
+    // Smooth zoom back out when hover ends
     if (!hoveredId && coords.length > 1) {
+      const current = map.getZoom() ?? 13;
       const bounds = new g.LatLngBounds();
       coords.forEach(c => bounds.extend({ lat: c.lat, lng: c.lng }));
-      map.fitBounds(bounds, 40);
+      if (current > 8) {
+        let step = current;
+        const interval = setInterval(() => {
+          step -= 1;
+          map.setZoom(step);
+          if (step <= 8) {
+            clearInterval(interval);
+            map.fitBounds(bounds, 40);
+          }
+        }, 80);
+      } else {
+        map.fitBounds(bounds, 40);
+      }
     }
   }, [hoveredId, ready, coords]);
 
