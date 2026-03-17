@@ -68,9 +68,9 @@ export default function DashboardTopNav() {
             <NavLink
               key={item.to}
               to={item.to}
-              className={`relative flex items-center gap-1.5 px-3 py-[7px] rounded-full text-[13px] transition-all duration-200 whitespace-nowrap ${
+              className={`relative flex items-center gap-1.5 px-3 py-[7px] rounded-lg text-[13px] transition-all duration-200 whitespace-nowrap ${
                 isActive(item.to)
-                  ? 'bg-accent-light text-primary font-semibold'
+                  ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary'
                   : 'text-muted-foreground font-medium hover:text-foreground hover:bg-secondary'
               }`}
             >
@@ -94,7 +94,7 @@ export default function DashboardTopNav() {
           {isAdmin && (
             <NavLink
               to="/admin"
-              className="text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-full hover:bg-secondary"
+              className="text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-secondary"
             >
               Admin
             </NavLink>
@@ -108,7 +108,7 @@ export default function DashboardTopNav() {
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-secondary"
+            className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-secondary"
             title="Sign out"
           >
             <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
@@ -176,4 +176,5 @@ export default function DashboardTopNav() {
     </>
   );
 }
+
 
