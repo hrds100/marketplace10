@@ -281,9 +281,9 @@ export default function AffiliatesPage() {
                 </label>
                 <div className="inline-flex items-center bg-emerald-50 rounded-lg p-0.5">
                   {([
+                    { key: 'lifetime' as const, label: 'Lifetime' },
                     { key: 'yearly' as const, label: 'Yearly' },
                     { key: 'monthly' as const, label: 'Monthly' },
-                    { key: 'lifetime' as const, label: 'Lifetime' },
                   ]).map(p => (
                     <button
                       key={p.key}
