@@ -47,6 +47,8 @@ import NfsProperties from "./pages/nfstay/NfsProperties";
 import NfsPropertyNew from "./pages/nfstay/NfsPropertyNew";
 import NfsPropertyDetail from "./pages/nfstay/NfsPropertyDetail";
 import NfsReservations from "./pages/nfstay/NfsReservations";
+import NfsReservationDetail from "./pages/nfstay/NfsReservationDetail";
+import NfsCreateReservation from "./pages/nfstay/NfsCreateReservation";
 import NfsSearch from "./pages/nfstay/NfsSearch";
 import NfsPropertyView from "./pages/nfstay/NfsPropertyView";
 
@@ -129,6 +131,8 @@ const App = () => (
             <Route path="properties/new" element={<NfsPropertyNew />} />
             <Route path="properties/:id" element={<NfsPropertyDetail />} />
             <Route path="reservations" element={<NfsReservations />} />
+            <Route path="reservations/:id" element={<NfsReservationDetail />} />
+            <Route path="create-reservation" element={<NfsCreateReservation />} />
             <Route path="settings" element={<NfsOperatorSettings />} />
           </Route>
           {/* NFStay traveler-facing routes — standalone (no operator layout) */}

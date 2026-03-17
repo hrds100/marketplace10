@@ -6,6 +6,24 @@
 
 ## 2026-03-17
 
+### Phase 3 — Steps 3.2–3.6: Reservations frontend + pricing + promo codes
+- Pricing utility: `src/lib/nfstay/pricing.ts` — calculates base rate × nights + fees − discounts
+- Operator create reservation page with guest info, dates, pricing, status
+- Reservation list page with status filters, text search, list/calendar view toggle
+- Calendar view with monthly grid and color-coded reservation bars
+- Reservation detail page with guest info, dates, payment, status actions (confirm, cancel, complete, no-show)
+- Traveler booking widget on property detail page: date picker, guest count, availability check, pricing breakdown
+- Promo code validation input for travelers (checks code validity, dates, usage limits)
+- Promo code CRUD manager for operators (create, activate/deactivate, delete)
+- Availability check hook using `nfs_check_availability` RPC with fallback query
+- 6 new hooks: use-nfs-reservations, use-nfs-reservation, use-nfs-reservation-mutation, use-nfs-availability, use-nfs-pricing, use-nfs-promo-codes
+- 5 new components: NfsReservationCard, NfsCalendarView, NfsBookingWidget, NfsPromoCodeInput, NfsPromoCodeManager
+- 2 new pages: NfsCreateReservation, NfsReservationDetail
+- 1 replaced page: NfsReservations (was placeholder, now full list + calendar)
+- 1 updated page: NfsPropertyView (replaced "Phase 3" placeholder with real booking widget)
+- Routes wired: `/nfstay/reservations/:id`, `/nfstay/create-reservation`
+- TypeScript: zero errors
+
 ### Phase 3 — Step 3.1: Reservations DB migration + types
 - Created migration `20260317140000_nfs_phase3_reservations.sql` (awaiting execution)
 - Tables: `nfs_reservations` (booking records, guest info, payment, Hospitable sync)

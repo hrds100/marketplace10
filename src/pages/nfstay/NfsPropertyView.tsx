@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useNfsProperty } from '@/hooks/nfstay/use-nfs-property';
 import NfsPhotoGallery from '@/components/nfstay/properties/NfsPhotoGallery';
 import NfsPropertyMap from '@/components/nfstay/maps/NfsPropertyMap';
+import NfsBookingWidget from '@/components/nfstay/reservations/NfsBookingWidget';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Users, BedDouble, Bath, Maximize, MapPin } from 'lucide-react';
 
@@ -140,20 +141,9 @@ export default function NfsPropertyView() {
             )}
           </div>
 
-          {/* Booking widget placeholder */}
+          {/* Booking widget */}
           <div className="lg:col-span-1">
-            <div className="sticky top-6 rounded-xl border border-border/40 bg-white dark:bg-card p-5 space-y-4">
-              <p className="text-2xl font-bold">
-                {property.base_rate_currency} {property.base_rate_amount}
-                <span className="text-sm font-normal text-muted-foreground"> / night</span>
-              </p>
-              {property.cleaning_fee?.enabled && property.cleaning_fee.amount && (
-                <p className="text-sm text-muted-foreground">+ {property.base_rate_currency} {property.cleaning_fee.amount} cleaning fee</p>
-              )}
-              <div className="border-t border-border/40 pt-4">
-                <p className="text-sm text-muted-foreground text-center">Booking coming in Phase 3</p>
-              </div>
-            </div>
+            <NfsBookingWidget property={property} />
           </div>
         </div>
       </div>

@@ -47,14 +47,14 @@
 
 | Feature | Status | System | Notes |
 |---------|--------|--------|-------|
-| Operator create reservation | Planned | Frontend + Supabase | Manual reservation flow |
-| Reservation list + calendar view | Planned | Frontend + Supabase | Filter by status, date range |
-| Reservation detail page | Planned | Frontend + Supabase | Status, guest info, payment |
-| Traveler availability check | Planned | Supabase RPC | Check conflicts in `nfs_reservations` |
-| Pricing engine | Planned | Edge Function | Base rate, daily rates, fees, discounts, add-ons |
-| Promo code CRUD | Planned | Frontend + Supabase | `nfs_promo_codes` table |
-| Promo code validation | Planned | Supabase query | Check code, apply discount |
-| Booking confirmation email | Planned | n8n + Resend | `nfs-booking-notification` workflow |
+| Operator create reservation | Done | Frontend + Supabase | Manual reservation flow with guest info, dates, pricing |
+| Reservation list + calendar view | Done | Frontend + Supabase | Filter by status, text search, list/calendar toggle |
+| Reservation detail page | Done | Frontend + Supabase | Status, guest info, payment, status actions |
+| Traveler availability check | Done | Supabase RPC | `nfs_check_availability` with fallback query |
+| Pricing engine | Done | Frontend utility | `src/lib/nfstay/pricing.ts` — base rate × nights + fees − discounts |
+| Promo code CRUD | Done | Frontend + Supabase | Create, activate/deactivate, delete |
+| Promo code validation | Done | Supabase query | Check code, dates, usage limits |
+| Booking confirmation email | Planned | n8n + Resend | `nfs-booking-notification` workflow — needs Resend key |
 | Reservation export (CSV) | Planned | Frontend | Client-side generation |
 
 ## Phase 4 — Payments (Stripe)
