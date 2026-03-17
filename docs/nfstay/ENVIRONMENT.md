@@ -11,7 +11,7 @@ Set in **Vercel Dashboard → marketplace10 → Settings → Environment Variabl
 | Variable | Purpose | Example | Status |
 |----------|---------|---------|--------|
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps + Places (shared with marketplace10) | `AIzaSy...` | Captured |
-| `NEXT_PUBLIC_NFS_STRIPE_PUBLISHABLE_KEY` | Stripe frontend (NFStay-specific) | `pk_live_...` | Needs Hugo |
+| `NEXT_PUBLIC_NFS_STRIPE_PUBLISHABLE_KEY` | Stripe frontend (NFStay-specific) | `pk_test_...` | Provided (test key) — set in Vercel Preview+Dev |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (shared) | `https://asazddtvjvmckouxcmmo.supabase.co` | Already set |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (shared) | `eyJ...` | Already set |
 
@@ -29,15 +29,15 @@ Set via `npx supabase secrets set KEY=VALUE` or Supabase Dashboard.
 
 | Secret | Purpose | Status |
 |--------|---------|--------|
-| `NFS_STRIPE_SECRET_KEY` | Stripe API (server-side) | Needs Hugo |
-| `NFS_STRIPE_WEBHOOK_SECRET` | Verify Stripe platform webhooks | Needs Hugo |
-| `NFS_STRIPE_CONNECT_WEBHOOK_SECRET` | Verify Stripe Connect webhooks | Needs Hugo |
-| `NFS_STRIPE_CLIENT_ID` | Stripe Connect OAuth | Needs Hugo |
+| `NFS_STRIPE_SECRET_KEY` | Stripe API (server-side) | Provided (test key) — pending `supabase secrets set` |
+| `NFS_STRIPE_WEBHOOK_SECRET` | Verify Stripe platform webhooks | Pending — create webhook endpoint in Stripe Dashboard first |
+| `NFS_STRIPE_CONNECT_WEBHOOK_SECRET` | Verify Stripe Connect webhooks | Pending — create webhook endpoint in Stripe Dashboard first |
+| `NFS_STRIPE_CLIENT_ID` | Stripe Connect OAuth | Provided (test) — pending `supabase secrets set` |
 | `NFS_HOSPITABLE_PARTNER_ID` | Hospitable partner API | Captured from VPS |
 | `NFS_HOSPITABLE_PARTNER_SECRET` | Hospitable partner API | Captured from VPS |
 | `NFS_HOSPITABLE_BEARER_TOKEN` | Hospitable API auth | Captured (may expire) |
 | `NFS_HOSPITABLE_WEBHOOK_SECRET` | Verify Hospitable webhooks | Captured from VPS |
-| `NFS_RESEND_API_KEY` | Email sending via Resend | Not yet created |
+| `NFS_RESEND_API_KEY` | Email sending via Resend | Provided — pending `supabase secrets set` |
 | `NFS_CF_API_TOKEN` | Cloudflare API for custom domains | Captured from VPS |
 | `NFS_CF_ZONE_ID` | Cloudflare zone for nfstay.app | Captured from VPS |
 
