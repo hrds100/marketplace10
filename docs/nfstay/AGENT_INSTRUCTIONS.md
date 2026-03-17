@@ -106,6 +106,20 @@ When any NFStay change affects:
 - Always open a PR first.
 - Assume main is protected even if it is not.
 
+### 4.1a Clickable test URL (mandatory)
+
+After every `git push`, you **must**:
+1. Wait for Vercel to post the preview URL on the PR (check with `gh pr view [number] --comments | grep Preview`)
+2. Include the **real** Vercel preview URL in your response — do NOT guess it from the branch name (Vercel truncates long names)
+3. Include a **TEST HERE** link pointing to the **exact page that changed** (e.g. `/nfstay/properties`, `/dashboard/booking-site`), not just the root URL
+4. The person reviewing must be able to click one link and immediately see what changed
+
+Example:
+```
+🔗 PREVIEW:  https://marketplace10-git-feat-nfs-booki-e0b6e8-hugos-projects-f8cc36a8.vercel.app
+🧪 TEST HERE: https://marketplace10-git-feat-nfs-booki-e0b6e8-hugos-projects-f8cc36a8.vercel.app/dashboard/booking-site
+```
+
 ### 4.2 Production deployment gates
 
 These actions are **irreversible** and require **Hugo's explicit approval** before execution:

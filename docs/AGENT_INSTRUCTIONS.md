@@ -372,22 +372,24 @@ Every completed task must output this report:
 🌿 BRANCH:   [branch name]
 📦 COMMIT:   [short hash] — [message]
 🔁 CI:       running → github.com/hrds100/marketplace10/actions
-🔗 PREVIEW:  https://marketplace10-git-[branch]-hugos-projects-f8cc36a8.vercel.app
+🔗 PREVIEW:  [real Vercel preview URL — see rules below]
+🧪 TEST HERE: [clickable URL pointing to the exact page that changed, e.g. preview-url/dashboard/deals]
 
-👀 WHAT TO CHECK ON THE PREVIEW
-[1–3 bullet points — what Hugo should click/test in plain English]
+👀 WHAT TO CHECK
+[1–3 bullet points — what to click/test in plain English]
 
-📋 IF HUGO MUST DO SOMETHING
+📋 MANUAL STEPS (if any)
 [numbered steps in simple language, OR "Nothing — Claude handled everything."]
 
-⚠️ ISSUES: [anything for Hugo, or "None"]
+⚠️ ISSUES: [anything, or "None"]
 🔑 ENV VARS NEEDED: [new Vercel vars, or "None"]
 ```
 
 **Rules:**
+- **CLICKABLE TEST URL is mandatory.** After every push, fetch the real Vercel preview URL from the PR comments (`gh pr view [number] --comments | grep Preview`). Do NOT guess the URL from the branch name — Vercel truncates long branch names. The URL must point to the **exact page that changed** (e.g. `/dashboard/deals`, `/dashboard/booking-site`), not just the root.
 - Preview URL is mandatory on every response that includes a push. No exceptions.
 - "What to check" must be written as if explaining to someone who has never used the app before.
-- "If Hugo must do something" uses the Section 6 manual step format.
+- "Manual steps" uses the Section 6 format.
 - ROOT CAUSE line added for bug tasks only, immediately after WHAT WAS DONE.
 
 ---
