@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useOutletContext, Link, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import DashboardTopNav from '@/components/DashboardTopNav';
 import NotificationBell from '@/components/NotificationBell';
+import BurgerMenu from '@/components/BurgerMenu';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PaymentSuccessRefresher from '@/components/PaymentSuccessRefresher';
 import ClaimAccountBanner from '@/components/ClaimAccountBanner';
@@ -24,8 +24,6 @@ export function useDashboardContext() {
 
 /* Minimal top bar for sidebar pages — logo at same position as top nav */
 function MinimalTopBar() {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
   return (
     <header className="h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
       <Link
@@ -36,13 +34,7 @@ function MinimalTopBar() {
       </Link>
       <div className="ml-auto flex items-center gap-1">
         <NotificationBell />
-        <button
-          onClick={async () => { await signOut(); navigate('/signin'); }}
-          className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
-          title="Sign out"
-        >
-          <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
-        </button>
+        <BurgerMenu />
       </div>
     </header>
   );

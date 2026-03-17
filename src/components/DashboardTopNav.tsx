@@ -4,6 +4,7 @@ import {
   PlusCircle, Settings, LogOut, MessageSquare, Menu, X, Globe,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
+import BurgerMenu from '@/components/BurgerMenu';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,11 +13,11 @@ const navItems = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
   { to: '/dashboard/inbox', icon: MessageSquare, label: 'Inbox' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
+  { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
   { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
-  { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
   { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
+  { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
   { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site' },
-  { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function DashboardTopNav() {
@@ -109,13 +110,7 @@ export default function DashboardTopNav() {
             Submit a Deal
           </button>
           <NotificationBell />
-          <button
-            onClick={handleLogout}
-            className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-secondary"
-            title="Sign out"
-          >
-            <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
-          </button>
+          <BurgerMenu />
         </div>
 
         {/* Mobile hamburger */}

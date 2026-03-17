@@ -1,19 +1,25 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, MessageSquare, Globe } from 'lucide-react';
+import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, ChevronDown, MessageSquare, Globe, TrendingUp, Store, Wallet, Receipt, Vote } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
-const navItems = [
+const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; highlight?: boolean }> = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
   { to: '/dashboard/inbox', icon: MessageSquare, label: 'Inbox' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
-  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
-  { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
+  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
   { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
-  { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site' },
-  { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
+  { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
+  { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', highlight: true },
+];
+
+const investSubItems = [
+  { to: '/dashboard/invest/marketplace', icon: Store, label: 'Marketplace' },
+  { to: '/dashboard/invest/portfolio', icon: Wallet, label: 'Portfolio' },
+  { to: '/dashboard/invest/payouts', icon: Receipt, label: 'Payouts' },
+  { to: '/dashboard/invest/proposals', icon: Vote, label: 'Proposals' },
 ];
 
 interface SidebarProps {
@@ -30,6 +36,8 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
   const { signOut, isAdmin } = useAuth();
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [investOpen, setInvestOpen] = useState(() => location.pathname.startsWith('/dashboard/invest'));
+  const isInvestActive = location.pathname.startsWith('/dashboard/invest');
 
   useEffect(() => {
     if (!user?.id) return;
@@ -89,8 +97,15 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
                   )}
                 </div>
                 {!collapsed && (
-                  <div className="flex flex-col">
-                    <span className="text-[13px] leading-tight">{item.label}</span>
+                  <div className="flex flex-col flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13px] leading-tight">{item.label}</span>
+                      {item.highlight && (
+                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full leading-none" style={{ background: 'linear-gradient(135deg, #FDF5D6, #E8D478)', color: '#8B6914' }}>
+                          ✨ PRO
+                        </span>
+                      )}
+                    </div>
                     {item.to === '/dashboard/university' && (
                       <span className="text-[9px] font-medium leading-tight" style={{ color: '#1DB954' }}>AI Powered</span>
                     )}
@@ -99,20 +114,57 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
               </NavLink>
             );
           })}
+
+          {/* Investors expandable group */}
+          <div className="mt-1 pt-1 border-t border-border/20">
+            {collapsed ? (
+              <NavLink
+                to="/dashboard/invest/marketplace"
+                className={`relative flex items-center justify-center h-10 rounded-lg transition-all duration-200 px-2 ${isInvestActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+                title="Investors"
+              >
+                <TrendingUp className="w-[15px] h-[15px]" strokeWidth={1.8} />
+              </NavLink>
+            ) : (
+              <>
+                <button
+                  onClick={() => setInvestOpen(!investOpen)}
+                  className={`flex items-center gap-2 h-10 w-full rounded-lg transition-all duration-200 px-3 ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+                >
+                  <TrendingUp className="w-[15px] h-[15px] flex-shrink-0" strokeWidth={1.8} />
+                  <span className="text-[13px] leading-tight flex-1 text-left">Investors</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${investOpen ? 'rotate-180' : ''}`} strokeWidth={2} />
+                </button>
+                <div className={`overflow-hidden transition-all duration-200 ease-out ${investOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <div className="pl-4 space-y-0.5 py-0.5">
+                    {investSubItems.map(item => {
+                      const isActive = location.pathname === item.to;
+                      return (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          className={`flex items-center gap-2 h-9 rounded-lg transition-all duration-200 px-3 ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+                        >
+                          <item.icon className="w-[14px] h-[14px]" strokeWidth={1.8} />
+                          <span className="text-[12px] leading-tight">{item.label}</span>
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </nav>
 
-        <div className="p-2 border-t border-border/30 space-y-0.5">
-          {isAdmin && (
+        {isAdmin && (
+          <div className="p-2 border-t border-border/30">
             <NavLink to="/admin" className={`flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`} title={collapsed ? 'Admin' : undefined}>
               <Settings className="w-[15px] h-[15px]" strokeWidth={1.8} />
               {!collapsed && <span className="text-[13px]">Admin View</span>}
             </NavLink>
-          )}
-          <button onClick={handleLogout} className={`flex items-center gap-2 h-10 rounded-lg transition-all duration-200 w-full ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`} title={collapsed ? 'Sign out' : undefined}>
-            <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
-            {!collapsed && <span className="text-[13px]">Sign Out</span>}
-          </button>
-        </div>
+          </div>
+        )}
       </aside>
 
       {/* Mobile bottom tab */}
