@@ -217,31 +217,31 @@ export default function AffiliatesPage() {
     <div className="p-6 md:p-8 space-y-6">
 
       {/* ─── HEADER + JOIN CTA ───────────────────────────── */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-[28px] font-bold text-foreground">Become An Agent</h1>
+          <div className="flex items-center flex-wrap gap-x-5 gap-y-2">
+            <h1 className="text-[28px] font-bold text-foreground">Become An Agent</h1>
+            <div className="hidden sm:flex items-center gap-3 text-[12px] text-muted-foreground">
+              <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">1</span> Share your link</span>
+              <span className="text-border">→</span>
+              <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">2</span> User joins</span>
+              <span className="text-border">→</span>
+              <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">3</span> You get paid</span>
+            </div>
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isAgent ? `Your code: ${profile.referral_code}` : 'Earn commission by referring people to NFsTay.'}
           </p>
         </div>
-        <div className="flex items-center gap-6">
-          <div className="hidden sm:flex items-center gap-4 text-[12px] text-muted-foreground">
-            <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">1</span> Share your link</span>
-            <span className="text-border">→</span>
-            <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">2</span> User joins</span>
-            <span className="text-border">→</span>
-            <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">3</span> You get paid</span>
-          </div>
-          {!isAgent && (
-            <button
-              onClick={() => becomeMutation.mutate()}
-              disabled={becomeMutation.isPending}
-              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md hover:opacity-95 transition-all disabled:opacity-50"
-            >
-              {becomeMutation.isPending ? 'Setting up...' : 'Join — It\'s Free'}
-            </button>
-          )}
-        </div>
+        {!isAgent && (
+          <button
+            onClick={() => becomeMutation.mutate()}
+            disabled={becomeMutation.isPending}
+            className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md hover:opacity-95 transition-all disabled:opacity-50"
+          >
+            {becomeMutation.isPending ? 'Setting up...' : 'Join — It\'s Free'}
+          </button>
+        )}
       </div>
 
       {/* ─── TOP ROW: Calculator + Top Agents ────────────── */}
@@ -273,12 +273,12 @@ export default function AffiliatesPage() {
                 If you refer <span className="font-bold text-foreground">{calcReferrals}</span> people on Monthly (£67/mo)
               </label>
               <input
-                type="range" min={1} max={100} value={calcReferrals}
+                type="range" min={1} max={200} value={calcReferrals}
                 onChange={e => setCalcReferrals(Number(e.target.value))}
                 className="w-full mt-2 accent-emerald-500"
                 style={{
                   height: '6px',
-                  background: `linear-gradient(to right, #10b981 ${calcReferrals}%, #e5e7eb ${calcReferrals}%)`,
+                  background: `linear-gradient(to right, #10b981 ${(calcReferrals / 200) * 100}%, #e5e7eb ${(calcReferrals / 200) * 100}%)`,
                   borderRadius: '4px',
                   WebkitAppearance: 'none',
                   appearance: 'none' as never,
