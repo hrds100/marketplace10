@@ -9,7 +9,6 @@ const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; high
   { to: '/dashboard/inbox', icon: MessageSquare, label: 'Inbox' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
-  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
   { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', highlight: true },
   { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
 ];
@@ -157,6 +156,15 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
         </nav>
 
         <div className="p-2 border-t border-border/30 space-y-0.5">
+          <NavLink to="/dashboard/university" className={({ isActive }) => `flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`} title={collapsed ? 'University' : undefined}>
+            <GraduationCap className="w-[15px] h-[15px]" strokeWidth={1.8} />
+            {!collapsed && (
+              <div className="flex flex-col">
+                <span className="text-[13px] leading-tight">University</span>
+                <span className="text-[9px] font-medium leading-tight" style={{ color: '#1DB954' }}>AI Powered</span>
+              </div>
+            )}
+          </NavLink>
           {isAdmin && (
             <NavLink to="/admin" className={`flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`} title={collapsed ? 'Admin' : undefined}>
               <Settings className="w-[15px] h-[15px]" strokeWidth={1.8} />
