@@ -45,6 +45,7 @@ export default function AffiliatesPage() {
   const [copied, setCopied] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
   const [calcMode, setCalcMode] = useState<'subscriptions' | 'jv'>('subscriptions');
+  const [calcPlan, setCalcPlan] = useState<'yearly' | 'monthly'>('yearly');
   const [calcReferrals, setCalcReferrals] = useState(10);
   const [calcDealAmount, setCalcDealAmount] = useState(6000);
   const [calcDeals, setCalcDeals] = useState(3);
@@ -267,11 +268,33 @@ export default function AffiliatesPage() {
             </button>
           </div>
 
-          {calcMode === 'subscriptions' ? (
+          {calcMode === 'subscriptions' ? (() => {
+            const price = calcPlan === 'yearly' ? 397 : 67;
+            const label = calcPlan === 'yearly' ? 'Annual (£397/yr)' : 'Monthly (£67/mo)';
+            const commission = calcReferrals * price * 0.40;
+            const yearlyIncome = calcPlan === 'yearly' ? commission : commission * 12;
+            return (
             <>
-              <label className="text-xs text-muted-foreground">
-                If you refer <span className="font-bold text-foreground">{calcReferrals}</span> people on Monthly (£67/mo)
-              </label>
+              <div className="flex items-center gap-2 mb-3">
+                <label className="text-xs text-muted-foreground">
+                  If you refer <span className="font-bold text-foreground">{calcReferrals}</span> people on
+                </label>
+                <div className="inline-flex items-center bg-emerald-50 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setCalcPlan('yearly')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${calcPlan === 'yearly' ? 'bg-emerald-500 text-white shadow-sm' : 'text-emerald-700 hover:text-emerald-800'}`}
+                  >
+                    Yearly
+                  </button>
+                  <button
+                    onClick={() => setCalcPlan('monthly')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${calcPlan === 'monthly' ? 'bg-emerald-500 text-white shadow-sm' : 'text-emerald-700 hover:text-emerald-800'}`}
+                  >
+                    Monthly
+                  </button>
+                </div>
+                <span className="text-xs text-muted-foreground">({label})</span>
+              </div>
               <input
                 type="range" min={1} max={200} value={calcReferrals}
                 onChange={e => setCalcReferrals(Number(e.target.value))}
@@ -286,19 +309,20 @@ export default function AffiliatesPage() {
               />
               <div className="flex justify-between mt-4">
                 <div>
-                  <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Monthly income</div>
-                  <div className="text-2xl font-extrabold text-emerald-600">£{(calcReferrals * 67 * 0.40).toFixed(0)}<span className="text-sm font-medium text-muted-foreground">/mo</span></div>
+                  <div className="text-[11px] text-muted-foreground uppercase tracking-wider">{calcPlan === 'yearly' ? 'Yearly income' : 'Monthly income'}</div>
+                  <div className="text-2xl font-extrabold text-emerald-600">£{commission.toFixed(0)}<span className="text-sm font-medium text-muted-foreground">{calcPlan === 'yearly' ? '/yr' : '/mo'}</span></div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Yearly income</div>
-                  <div className="text-2xl font-extrabold text-foreground">£{(calcReferrals * 67 * 0.40 * 12).toFixed(0)}<span className="text-sm font-medium text-muted-foreground">/yr</span></div>
+                  <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Yearly total</div>
+                  <div className="text-2xl font-extrabold text-foreground">£{yearlyIncome.toFixed(0)}<span className="text-sm font-medium text-muted-foreground">/yr</span></div>
                 </div>
               </div>
               <p className="text-[11px] text-muted-foreground mt-3">
                 You earn <strong>40% recurring commission</strong> on every subscription from your referral link. Monthly (£67), Annual (£397), or Lifetime (£997).
               </p>
             </>
-          ) : (
+            );
+          })() : (
             <>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
