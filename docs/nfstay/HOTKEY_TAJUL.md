@@ -54,7 +54,7 @@ Source files to inspect
 Files outside safe zone
 - List any file this task might touch outside NFStay (see BOUNDARIES.md section 8)
 - If none, write: None — fully within NFStay safe zone
-- If any, mark each one: REQUIRES HUGO APPROVAL
+- If any, flag them clearly — Tajul must approve these explicitly
 
 Expected result
 - State the exact outcome the coding agent must produce
@@ -65,9 +65,9 @@ Execution risk
 Then output this checklist:
 
 BEFORE YOU APPROVE:
-- Does Execution risk mention shared systems, marketplace10, hub.nfstay.com, middleware, shared DB/auth, deployments, or migrations? Ask Hugo first.
-- Does Files outside safe zone list anything? Ask Hugo first.
-- Are you unsure what this will do? Ask Hugo first.
+- Does Execution risk mention hub.nfstay.com or marketplace10 being at risk? → STOP. Ask Hugo.
+- Does Files outside safe zone list middleware.ts? → Review carefully. If marketplace10 routing could break → ask Hugo.
+- Everything else (database, deployments, integrations, credentials) → Tajul, you have full authority to approve.
 - If all clear, reply APPROVED.
 
 Then stop. Wait for APPROVED.
@@ -83,14 +83,19 @@ Then:
 - follow NFStay docs strictly
 
 ESCALATION RULE
-If the task involves any item from BOUNDARIES.md section 9 (Hugo-approval-required items), or architecture changes, database changes, new integrations, shared infrastructure, deployments, migrations, secrets, or any unclear risk:
-Output one of these and stop:
+Tajul approves everything EXCEPT marketplace10 risk. Escalate to Hugo ONLY when:
+- hub.nfstay.com or marketplace10 could be broken
+- Final production merge to main
+- middleware.ts changes that break marketplace10 routing
 
-- Tajul, this requires Hugo's approval before proceeding. Here's what needs his review: [specific item]
-- Tajul, this is unclear in the docs. Please check with Hugo: [specific question]
-- Tajul, this touches files outside NFStay. Hugo must approve: [specific files]
-- Tajul, this could affect the live site. Confirm with Hugo before continuing: [specific risk]
-- Tajul, this is a production deployment action. Hugo must approve: [specific action]
+For Tajul:
+- "Tajul, here's what I need you to approve: [item + explanation]"
+- "Tajul, I need you to do this in [Dashboard]: [exact steps]"
+- "Tajul, please provide: [credential/key]"
+
+For Hugo (marketplace10 risk only):
+- "Tajul, this could affect hub.nfstay.com. Please check with Hugo: [specific risk]"
+- "Tajul, this is the final production merge. Hugo needs to give the go-ahead."
 
 GENERAL RULES
 - Do not skip Step 1

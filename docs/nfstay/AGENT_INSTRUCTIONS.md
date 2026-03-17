@@ -129,32 +129,36 @@ If a task produces SQL DDL statements (CREATE TABLE, ALTER TABLE, DROP anything)
 
 ---
 
-## 5. ESCALATION RULES
+## 5. APPROVAL AND ESCALATION RULES
 
-### When to stop and escalate to Hugo
+### Tajul approves most things
 
-STOP and tell Tajul to ask Hugo when:
+Tajul has full access to all systems (Stripe, Hospitable, Cloudflare, Google Cloud, Supabase, Vercel, n8n, DNS, domains). He approves:
 
-1. **Architecture changes** — new systems, new patterns, structural redesign
-2. **Database schema changes** — any DDL (CREATE, ALTER, DROP) on any table
-3. **New integrations** — connecting a service not already in `INTEGRATIONS.md`
-4. **Shared infrastructure changes** — anything affecting Supabase project, Vercel config, n8n instance, or shared env vars
-5. **Files outside the safe zone** — any file not in the NFStay safe zone (see `BOUNDARIES.md` §8)
-6. **`middleware.ts` changes** — this routes hub.nfstay.com traffic
-7. **Production deployment actions** — any action from §4.2
-8. **Unclear or missing documentation** — if docs don't answer a critical question
-9. **Risk to hub.nfstay.com** — any change that could affect the live marketplace10 site
+1. **Database migrations** — agent shows SQL, Tajul says APPROVED
+2. **Edge Function deployments** — agent explains what it does, Tajul says APPROVED
+3. **n8n workflow activation** — agent confirms test data flows correctly, Tajul says APPROVED
+4. **Integration setup** — agent gives Tajul exact step-by-step instructions for dashboards
+5. **Credential provisioning** — Tajul provides API keys, secrets, tokens
+6. **DNS and domain changes** — agent gives exact records, Tajul configures
+
+### Escalate to Hugo ONLY when
+
+1. **Risk to hub.nfstay.com** — any change that could break the live marketplace10 site
+2. **`middleware.ts` changes that break marketplace10 routing** — if testing reveals marketplace10 is affected
+3. **Final production merge** — merging to main (deploys to production)
+4. **Unclear situations where marketplace10 data or traffic could be impacted**
 
 ### Escalation message format
 
-Use one of these exact messages:
-- "Tajul, this requires Hugo's approval before proceeding. Here's what needs his review: [specific item]"
-- "Tajul, this is unclear in the docs. Please check with Hugo: [specific question]"
-- "Tajul, this touches files outside NFStay. Hugo must approve: [specific files]"
-- "Tajul, this could affect the live site. Confirm with Hugo before continuing: [specific risk]"
-- "Tajul, this is a production deployment action. Hugo must approve: [specific action]"
+For Tajul approval:
+- "Tajul, here's what I need you to approve: [specific item + explanation]"
+- "Tajul, I need you to do this in [Dashboard]: [exact numbered steps]"
+- "Tajul, please provide: [specific credential/key]"
 
-**Never make irreversible decisions without Hugo's explicit approval.**
+For Hugo escalation (marketplace10 risk only):
+- "Tajul, this could affect hub.nfstay.com. Please check with Hugo before continuing: [specific risk]"
+- "Tajul, this is the final production merge. Hugo needs to approve: [what's being shipped]"
 
 ---
 
