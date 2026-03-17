@@ -14,9 +14,9 @@ const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; pro?
   { to: '/dashboard/inbox', icon: MessageSquare, label: 'Inbox' },
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
-  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
   { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', pro: true },
   { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
+  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
 ];
 
 export default function DashboardTopNav() {
