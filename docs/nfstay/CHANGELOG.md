@@ -6,6 +6,21 @@
 
 ## 2026-03-17
 
+### Phase 1 — Directory scaffolding + operator signup flow
+- Created NFStay isolated directory structure:
+  - `src/pages/nfstay/` — operator pages
+  - `src/components/nfstay/` — NFStay components (layout, sidebar, guard)
+  - `src/hooks/nfstay/` — NFStay hooks (use-nfs-operator)
+  - `src/lib/nfstay/` — NFStay types, constants
+- Operator signup page at `/nfstay/signup` (sign up + sign in modes)
+- Operator dashboard placeholder at `/nfstay` with quick action cards
+- `NfsOperatorLayout` — layout with sidebar, top bar, auth guard
+- `NfsOperatorGuard` — auth guard without marketplace10 WhatsApp OTP requirement
+- `NfsOperatorSidebar` — collapsible sidebar with nav items
+- `useNfsOperator` hook — fetches operator record from `nfs_operators`
+- Routes wired into `App.tsx` (additive only — no existing routes modified)
+- TypeScript compiles with zero errors
+
 ### Phase 1 — Core foundation migration created
 - Created `supabase/migrations/20260317120000_nfs_phase1_core_tables.sql`
 - Tables: `nfs_operators`, `nfs_operator_users`, `nfs_auth_tokens`

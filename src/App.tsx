@@ -37,6 +37,10 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminUniversity from "./pages/admin/AdminUniversity";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
+// NFStay — operator module (isolated, see docs/nfstay/BOUNDARIES.md)
+import NfsOperatorLayout from "./components/nfstay/NfsOperatorLayout";
+import NfsOperatorSignup from "./pages/nfstay/NfsOperatorSignup";
+import NfsOperatorDashboard from "./pages/nfstay/NfsOperatorDashboard";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -107,6 +111,11 @@ const App = () => (
             <Route path="affiliates" element={<AdminAffiliates />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="notifications" element={<AdminNotifications />} />
+          </Route>
+          {/* NFStay operator routes — isolated module */}
+          <Route path="/nfstay/signup" element={<NfsOperatorSignup />} />
+          <Route path="/nfstay" element={<NfsOperatorLayout />}>
+            <Route index element={<NfsOperatorDashboard />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
