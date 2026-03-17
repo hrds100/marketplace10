@@ -311,6 +311,17 @@ jobs:
 
 **No PR may merge if any check fails.** This is enforced by GitHub branch protection — not by asking nicely.
 
+### Dev commands
+
+| Command | What it does | When to use |
+|---------|-------------|-------------|
+| `npm run check` | Runs typecheck + lint + test in one command | **Before every push.** Catches everything CI will catch, but locally. |
+| `npm run clean` | Removes `dist/`, `.vite/`, and Vite cache | When the dev server behaves strangely or builds fail for no reason. |
+| `npm run dev` | Starts local dev server (port 8080) | Development. |
+| `npm run build` | Production build | Verify build works before pushing. |
+
+**`npm run check` is mandatory before every push.** If it fails locally, CI will also fail. Fix it before pushing — don't push and hope.
+
 When a CI check fails after Phase 2 execution:
 1. Claude reads the failure log.
 2. Claude identifies the root cause.

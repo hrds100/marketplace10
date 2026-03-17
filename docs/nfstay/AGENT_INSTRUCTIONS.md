@@ -141,6 +141,17 @@ If a task produces SQL DDL statements (CREATE TABLE, ALTER TABLE, DROP anything)
 3. Do not let the coding agent run it until Hugo approves
 4. Migration files must include `nfs` in the filename
 
+### 4.4 Dev commands
+
+| Command | What it does | When to use |
+|---------|-------------|-------------|
+| `npm run check` | Runs typecheck + lint + test in one command | **Before every push.** Mandatory. |
+| `npm run clean` | Clears build cache | When dev server behaves strangely |
+| `npm run dev` | Starts local dev server | Development |
+| `npm run build` | Production build | Verify build before pushing |
+
+**`npm run check` must pass before every push.** If it fails, fix it — don't push broken code.
+
 ---
 
 ## 5. APPROVAL AND ESCALATION RULES

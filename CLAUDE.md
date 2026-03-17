@@ -27,8 +27,9 @@ n8n-workflows/    ← workflow JSON exports
 ## Core Commands
 ```bash
 npm run dev          # local dev server (port 8080)
-npx tsc --noEmit     # typecheck (MUST pass before every push)
+npm run check        # typecheck + lint + test (run before every push)
 npm run build        # production build
+npm run clean        # clear build cache if things get weird
 git push origin main # auto-deploys to Vercel → hub.nfstay.com
 ```
 
