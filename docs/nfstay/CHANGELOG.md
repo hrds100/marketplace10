@@ -6,6 +6,20 @@
 
 ## 2026-03-17
 
+### Phase 1 — Operator settings page (6 tabs)
+- Created `src/pages/nfstay/NfsOperatorSettings.tsx` — tabbed settings page
+- Created 6 settings tab components in `src/components/nfstay/settings/`:
+  - SettingsProfile (name, persona, brand, legal name, subdomain)
+  - SettingsContact (email, phone, WhatsApp, Telegram)
+  - SettingsBranding (accent color, logo, favicon, hero headline/subheadline, about bio)
+  - SettingsSocial (Google Business, Airbnb, Instagram, Facebook, X, TikTok, YouTube)
+  - SettingsStripe (placeholder — Phase 4)
+  - SettingsAnalytics (Google Analytics ID, Meta Pixel ID, SEO title/description)
+- Created `src/hooks/nfstay/use-nfs-operator-update.ts` — reusable save hook with success/error state
+- Expanded `NfsOperator` type to include all 48 DATABASE.md fields
+- Route `/nfstay/settings` wired in App.tsx (additive only)
+- TypeScript compiles with zero errors
+
 ### Phase 1 — 8-step onboarding wizard
 - Created `src/pages/nfstay/NfsOnboarding.tsx` — wizard orchestrator with progress bar
 - Created 8 step components in `src/components/nfstay/onboarding/`:
