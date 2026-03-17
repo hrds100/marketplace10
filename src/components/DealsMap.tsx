@@ -200,10 +200,12 @@ export default function DealsMap({ listings, hoveredId }: Props) {
     }
   }, [coords, hoveredId, ready, onNav]);
 
-  // Hover-only update
+  // Hover — highlight marker + pan/zoom to it
   useEffect(() => {
-    if (!ready || !window.google?.maps) return;
+    if (!ready || !mapInstanceRef.current || !window.google?.maps) return;
+    const map = mapInstanceRef.current;
     const g = window.google.maps;
+
     markersRef.current.forEach((marker, id) => {
       const hovered = hoveredId === id;
       marker.setIcon({
@@ -215,8 +217,23 @@ export default function DealsMap({ listings, hoveredId }: Props) {
         strokeWeight: 2.5,
       });
       marker.setZIndex(hovered ? 999 : 1);
+
+      if (hovered) {
+        const pos = marker.getPosition();
+        if (pos) {
+          map.panTo(pos);
+          if (map.getZoom()! < 12) map.setZoom(12);
+        }
+      }
     });
-  }, [hoveredId, ready]);
+
+    // Zoom back out when hover ends
+    if (!hoveredId && coords.length > 1) {
+      const bounds = new g.LatLngBounds();
+      coords.forEach(c => bounds.extend({ lat: c.lat, lng: c.lng }));
+      map.fitBounds(bounds, 40);
+    }
+  }, [hoveredId, ready, coords]);
 
   if (error) {
     return (
