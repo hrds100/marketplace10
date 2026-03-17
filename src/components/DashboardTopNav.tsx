@@ -13,7 +13,6 @@ const navItems = [
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
   { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
   { to: '/dashboard/affiliates', icon: Users, label: 'Affiliates' },
-  { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
   { to: '/dashboard/favourites', icon: Heart, label: 'Favourites' },
   { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
@@ -91,7 +90,7 @@ export default function DashboardTopNav() {
         </nav>
 
         {/* Right side — desktop */}
-        <div className="hidden md:flex items-center gap-1 flex-shrink-0 ml-4">
+        <div className="hidden md:flex items-center gap-2 flex-shrink-0 ml-4">
           {isAdmin && (
             <NavLink
               to="/admin"
@@ -101,8 +100,15 @@ export default function DashboardTopNav() {
             </NavLink>
           )}
           <button
+            onClick={() => navigate('/dashboard/list-a-deal')}
+            className="bg-primary text-primary-foreground px-4 py-[7px] rounded-full text-[13px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5"
+          >
+            <PlusCircle className="w-[15px] h-[15px]" strokeWidth={1.8} />
+            Submit a Deal
+          </button>
+          <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+            className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
             title="Sign out"
           >
             <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
@@ -145,7 +151,14 @@ export default function DashboardTopNav() {
                 )}
               </NavLink>
             ))}
-            <div className="border-t border-border mt-2 pt-2">
+            <div className="border-t border-border mt-2 pt-2 space-y-0.5">
+              <button
+                onClick={() => { setMobileOpen(false); navigate('/dashboard/list-a-deal'); }}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-primary hover:bg-primary/10 w-full"
+              >
+                <PlusCircle className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                <span>Submit a Deal</span>
+              </button>
               {isAdmin && (
                 <NavLink to="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted">
                   <Settings className="w-[18px] h-[18px]" strokeWidth={1.75} />
