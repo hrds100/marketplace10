@@ -169,7 +169,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <>
               <button
                 onClick={handleAction}
-                className="flex-1 bg-nfstay-black text-nfstay-black-foreground h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity"
+                className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity"
               >
                 Visit Listing
               </button>
@@ -184,7 +184,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <>
               <Link
                 to={`/deals/${listing.id}`}
-                className="flex-1 bg-nfstay-black text-nfstay-black-foreground h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity"
+                className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity"
               >
                 Visit Listing
               </Link>
@@ -199,3 +199,4 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     </div>
   );
 }
+
