@@ -6,6 +6,25 @@
 
 ## 2026-03-17
 
+### Phase 1 — 8-step onboarding wizard
+- Created `src/pages/nfstay/NfsOnboarding.tsx` — wizard orchestrator with progress bar
+- Created 8 step components in `src/components/nfstay/onboarding/`:
+  - StepAccountSetup (first/last name)
+  - StepPersona (owner vs property manager)
+  - StepUsageIntent (direct booking, rental mgmt, widget, undecided)
+  - StepBusiness (brand name, legal name, subdomain)
+  - StepLandingPage (hero headline, subheadline, about bio)
+  - StepWebsiteCustomization (accent color picker, logo URL)
+  - StepContactInfo (email, phone, WhatsApp)
+  - StepPaymentMethods (Stripe placeholder — Phase 4)
+- Created `src/hooks/nfstay/use-nfs-onboarding.ts` — step state, save, skip, back, navigate
+- Each step persists fields to `nfs_operators` via Supabase UPDATE
+- Steps can be skipped (except account_setup), tracked in `onboarding_skipped_steps`
+- Wizard resumes at the current `onboarding_step` on return visits
+- Dashboard auto-redirects to onboarding when `onboarding_step !== 'completed'`
+- Route `/nfstay/onboarding` wired in App.tsx (additive only)
+- TypeScript compiles with zero errors
+
 ### Phase 1 — Directory scaffolding + operator signup flow
 - Created NFStay isolated directory structure:
   - `src/pages/nfstay/` — operator pages

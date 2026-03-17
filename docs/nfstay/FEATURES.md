@@ -18,11 +18,11 @@
 
 | Feature | Status | System | Notes |
 |---------|--------|--------|-------|
-| Operator signup (Supabase Auth) | Planned | Supabase Auth | Shared auth, creates `nfs_operators` row |
-| Operator login | Planned | Supabase Auth | Shared auth |
+| Operator signup (Supabase Auth) | Done | Supabase Auth | Shared auth, creates `nfs_operators` row |
+| Operator login | Done | Supabase Auth | Shared auth |
 | Magic link email verification | Planned | Edge Function + Resend | `nfs_auth_tokens` table |
-| Onboarding wizard (8 steps) | Planned | Frontend + Supabase | Persists to `nfs_operators` columns |
-| Operator dashboard layout | Planned | Frontend | Sidebar, nav, basic layout |
+| Onboarding wizard (8 steps) | Done | Frontend + Supabase | Persists to `nfs_operators` columns |
+| Operator dashboard layout | Done | Frontend | Sidebar, nav, basic layout |
 | Operator settings (profile, contact, branding basics) | Planned | Frontend + Supabase | Updates `nfs_operators` |
 | Multi-user access (invite, roles) | Planned | Supabase | `nfs_operator_users` table |
 | Account switcher | Planned | Frontend | Query `nfs_operator_users` |

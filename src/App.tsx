@@ -41,6 +41,7 @@ import NotFound from "./pages/NotFound";
 import NfsOperatorLayout from "./components/nfstay/NfsOperatorLayout";
 import NfsOperatorSignup from "./pages/nfstay/NfsOperatorSignup";
 import NfsOperatorDashboard from "./pages/nfstay/NfsOperatorDashboard";
+import NfsOnboarding from "./pages/nfstay/NfsOnboarding";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -116,6 +117,7 @@ const App = () => (
           <Route path="/nfstay/signup" element={<NfsOperatorSignup />} />
           <Route path="/nfstay" element={<NfsOperatorLayout />}>
             <Route index element={<NfsOperatorDashboard />} />
+            <Route path="onboarding" element={<NfsOnboarding />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

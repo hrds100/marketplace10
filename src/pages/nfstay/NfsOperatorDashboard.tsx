@@ -1,8 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useNfsOperator } from '@/hooks/nfstay/use-nfs-operator';
-import { Button } from '@/components/ui/button';
 import { NFS_ROUTES } from '@/lib/nfstay/constants';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Building2, CalendarDays, Settings } from 'lucide-react';
 
 export default function NfsOperatorDashboard() {
@@ -39,6 +38,11 @@ export default function NfsOperatorDashboard() {
     );
   }
 
+  // Auto-redirect to onboarding if not completed
+  if (operator.onboarding_step !== 'completed') {
+    return <Navigate to={NFS_ROUTES.ONBOARDING} replace />;
+  }
+
   const displayName = [operator.first_name, operator.last_name].filter(Boolean).join(' ') || user?.email || 'Operator';
 
   return (
@@ -48,16 +52,7 @@ export default function NfsOperatorDashboard() {
           Welcome back, {displayName}
         </h1>
         <p className="text-muted-foreground mt-1">
-          {operator.onboarding_step !== 'completed' ? (
-            <>
-              Complete your setup to get started.{' '}
-              <Link to={NFS_ROUTES.ONBOARDING} className="text-primary hover:underline font-medium">
-                Continue onboarding
-              </Link>
-            </>
-          ) : (
-            'Manage your properties and reservations.'
-          )}
+          Manage your properties and reservations.
         </p>
       </div>
 
