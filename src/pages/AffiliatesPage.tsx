@@ -217,22 +217,31 @@ export default function AffiliatesPage() {
     <div className="p-6 md:p-8 space-y-6">
 
       {/* ─── HEADER + JOIN CTA ───────────────────────────── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-[28px] font-bold text-foreground">Become An Agent</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isAgent ? `Your code: ${profile.referral_code}` : 'Earn commission by referring people to NFsTay.'}
           </p>
         </div>
-        {!isAgent && (
-          <button
-            onClick={() => becomeMutation.mutate()}
-            disabled={becomeMutation.isPending}
-            className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md hover:opacity-95 transition-all disabled:opacity-50"
-          >
-            {becomeMutation.isPending ? 'Setting up...' : 'Join — It\'s Free'}
-          </button>
-        )}
+        <div className="flex items-center gap-6">
+          <div className="hidden sm:flex items-center gap-4 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">1</span> Share your link</span>
+            <span className="text-border">→</span>
+            <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">2</span> User joins</span>
+            <span className="text-border">→</span>
+            <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">3</span> You get paid</span>
+          </div>
+          {!isAgent && (
+            <button
+              onClick={() => becomeMutation.mutate()}
+              disabled={becomeMutation.isPending}
+              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md hover:opacity-95 transition-all disabled:opacity-50"
+            >
+              {becomeMutation.isPending ? 'Setting up...' : 'Join — It\'s Free'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ─── TOP ROW: Calculator + Top Agents ────────────── */}
@@ -329,7 +338,7 @@ export default function AffiliatesPage() {
             <p className="text-sm opacity-80 py-6 text-center">Be the first on the leaderboard!</p>
           ) : (
             <div className="space-y-0">
-              {leaderboard.map((a: { id: string; name: string; position: number; total_earned: number; user_id: string }) => {
+              {leaderboard.map((a: { id: string; name: string; position: number; total_earned: number; total_signups?: number; user_id: string }) => {
                 const isMe = a.user_id === user?.id;
                 return (
                   <div key={a.id} className={`flex items-center gap-3 py-2.5 border-b border-white/10 last:border-0 ${isMe ? 'bg-white/10 -mx-2 px-2 rounded-lg' : ''}`}>
@@ -340,7 +349,7 @@ export default function AffiliatesPage() {
                       {a.name?.split(' ')[0] || 'Agent'} {(a.name?.split(' ')[1] || '')[0] ? (a.name?.split(' ')[1] || '')[0] + '.' : ''}
                       {isMe && <span className="text-[10px] ml-1 opacity-70">(you)</span>}
                     </span>
-                    <span className="text-sm font-bold">£{Number(a.total_earned).toFixed(0)}</span>
+                    <span className="text-sm font-medium opacity-80">{a.total_signups || 0} referrals</span>
                   </div>
                 );
               })}
