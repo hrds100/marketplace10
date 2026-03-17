@@ -45,7 +45,7 @@ export default function AffiliatesPage() {
   const [copied, setCopied] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
   const [calcMode, setCalcMode] = useState<'subscriptions' | 'jv'>('subscriptions');
-  const [calcPlan, setCalcPlan] = useState<'yearly' | 'monthly'>('yearly');
+  const [calcPlan, setCalcPlan] = useState<'yearly' | 'monthly' | 'lifetime'>('yearly');
   const [calcReferrals, setCalcReferrals] = useState(10);
   const [calcDealAmount, setCalcDealAmount] = useState(6000);
   const [calcDeals, setCalcDeals] = useState(3);
@@ -269,10 +269,10 @@ export default function AffiliatesPage() {
           </div>
 
           {calcMode === 'subscriptions' ? (() => {
-            const price = calcPlan === 'yearly' ? 397 : 67;
-            const label = calcPlan === 'yearly' ? 'Annual (£397/yr)' : 'Monthly (£67/mo)';
+            const price = calcPlan === 'lifetime' ? 997 : calcPlan === 'yearly' ? 397 : 67;
+            const label = calcPlan === 'lifetime' ? 'Lifetime (£997)' : calcPlan === 'yearly' ? 'Annual (£397/yr)' : 'Monthly (£67/mo)';
             const commission = calcReferrals * price * 0.40;
-            const yearlyIncome = calcPlan === 'yearly' ? commission : commission * 12;
+            const yearlyIncome = calcPlan === 'monthly' ? commission * 12 : commission;
             return (
             <>
               <div className="flex items-center gap-2 mb-3">
@@ -280,18 +280,19 @@ export default function AffiliatesPage() {
                   If you refer <span className="font-bold text-foreground">{calcReferrals}</span> people on
                 </label>
                 <div className="inline-flex items-center bg-emerald-50 rounded-lg p-0.5">
-                  <button
-                    onClick={() => setCalcPlan('yearly')}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${calcPlan === 'yearly' ? 'bg-emerald-500 text-white shadow-sm' : 'text-emerald-700 hover:text-emerald-800'}`}
-                  >
-                    Yearly
-                  </button>
-                  <button
-                    onClick={() => setCalcPlan('monthly')}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${calcPlan === 'monthly' ? 'bg-emerald-500 text-white shadow-sm' : 'text-emerald-700 hover:text-emerald-800'}`}
-                  >
-                    Monthly
-                  </button>
+                  {([
+                    { key: 'yearly' as const, label: 'Yearly' },
+                    { key: 'monthly' as const, label: 'Monthly' },
+                    { key: 'lifetime' as const, label: 'Lifetime' },
+                  ]).map(p => (
+                    <button
+                      key={p.key}
+                      onClick={() => setCalcPlan(p.key)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${calcPlan === p.key ? 'bg-emerald-500 text-white shadow-sm' : 'text-emerald-700 hover:text-emerald-800'}`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
                 <span className="text-xs text-muted-foreground">({label})</span>
               </div>
@@ -309,13 +310,26 @@ export default function AffiliatesPage() {
               />
               <div className="flex justify-between mt-4">
                 <div>
-                  <div className="text-[11px] text-muted-foreground uppercase tracking-wider">{calcPlan === 'yearly' ? 'Yearly income' : 'Monthly income'}</div>
-                  <div className="text-2xl font-extrabold text-emerald-600">£{commission.toFixed(0)}<span className="text-sm font-medium text-muted-foreground">{calcPlan === 'yearly' ? '/yr' : '/mo'}</span></div>
+                  <div className="text-[11px] text-muted-foreground uppercase tracking-wider">
+                    {calcPlan === 'lifetime' ? 'Total earned' : calcPlan === 'yearly' ? 'Yearly income' : 'Monthly income'}
+                  </div>
+                  <div className="text-2xl font-extrabold text-emerald-600">
+                    £{commission.toFixed(0)}
+                    {calcPlan !== 'lifetime' && <span className="text-sm font-medium text-muted-foreground">{calcPlan === 'yearly' ? '/yr' : '/mo'}</span>}
+                  </div>
                 </div>
+                {calcPlan !== 'lifetime' && (
                 <div className="text-right">
                   <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Yearly total</div>
                   <div className="text-2xl font-extrabold text-foreground">£{yearlyIncome.toFixed(0)}<span className="text-sm font-medium text-muted-foreground">/yr</span></div>
                 </div>
+                )}
+                {calcPlan === 'lifetime' && (
+                <div className="text-right">
+                  <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Per referral</div>
+                  <div className="text-2xl font-extrabold text-foreground">£{(997 * 0.40).toFixed(0)}<span className="text-sm font-medium text-muted-foreground"> one-time</span></div>
+                </div>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground mt-3">
                 You earn <strong>40% recurring commission</strong> on every subscription from your referral link. Monthly (£67), Annual (£397), or Lifetime (£997).
