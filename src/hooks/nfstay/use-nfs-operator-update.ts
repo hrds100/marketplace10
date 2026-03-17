@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNfsOperator } from '@/hooks/nfstay/use-nfs-operator';
 
@@ -15,6 +15,15 @@ export function useNfsOperatorUpdate(): UseNfsOperatorUpdateReturn {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const successTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Auto-clear success message after 3 seconds
+  useEffect(() => {
+    if (success) {
+      successTimer.current = setTimeout(() => setSuccess(false), 3000);
+    }
+    return () => { if (successTimer.current) clearTimeout(successTimer.current); };
+  }, [success]);
 
   const clearStatus = useCallback(() => {
     setError(null);

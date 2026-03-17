@@ -6,6 +6,16 @@
 
 ## 2026-03-17
 
+### Phase 1 — Step 1.6 verification complete
+- **Bug fix:** Signup now shows user-visible error if `nfs_operators` INSERT fails (was silently swallowed)
+- **Bug fix:** Settings success toast auto-clears after 3 seconds (was persistent)
+- **Placeholder pages:** Added `/nfstay/properties` and `/nfstay/reservations` (Phase 2/3 placeholders)
+- **Routes wired:** Properties and Reservations routes added to App.tsx (additive only)
+- **Database tables live:** `nfs_operators`, `nfs_operator_users`, `nfs_auth_tokens` created in Supabase
+- **`nfs-images` bucket live:** Created in Supabase Storage
+- **EXECUTION_PLAN.md:** Phase 1 status updated to COMPLETE
+- **TypeScript:** zero errors
+
 ### Infrastructure — Supabase storage bucket created
 - Created `nfs-images` storage bucket in Supabase Dashboard
   - Public read access (anon SELECT)

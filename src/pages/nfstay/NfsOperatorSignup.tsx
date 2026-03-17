@@ -64,8 +64,9 @@ export default function NfsOperatorSignup() {
       });
 
       if (insertErr) {
-        // Table may not exist yet — log but don't block signup
+        setError('Account created but operator setup failed. Please sign out and back in, or contact support.');
         console.error('Failed to create operator record:', insertErr.message);
+        return;
       }
 
       if (data.session) {

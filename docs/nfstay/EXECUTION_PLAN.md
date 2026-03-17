@@ -36,7 +36,7 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 1 — Foundation | NOT STARTED | |
+| Phase 1 — Foundation | COMPLETE | Bug fixes, placeholders, DB tables live, Step 1.6 verified |
 | Phase 2 — Properties + Maps | NOT STARTED | |
 | Phase 3 — Reservations + Pricing | NOT STARTED | |
 | Phase 4 — Payments (Stripe) | NOT STARTED | Tajul provides Stripe keys |
