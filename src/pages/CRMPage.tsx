@@ -155,10 +155,12 @@ export default function CRMPage() {
           <h1 className="text-[28px] font-bold text-foreground">CRM Pipeline</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage your rent-to-rent acquisition pipeline.</p>
         </div>
-        <button onClick={() => setShowAddForm(true)} className="h-11 px-5 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
-          <Plus className="w-4 h-4" /> Add Your Own Deal
-        </button>
-        <p className="text-sm text-muted-foreground mt-1">Add your own deal to the CRM and keep track of all your prospects & portfolio.</p>
+        <div className="flex flex-col items-end gap-1.5">
+          <button onClick={() => setShowAddForm(true)} className="h-11 px-5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold text-sm inline-flex items-center gap-2 hover:from-emerald-600 hover:to-teal-700 shadow-md transition-all">
+            <Plus className="w-4 h-4" /> Add Your Own Deal
+          </button>
+          <p className="text-xs text-muted-foreground">Track your prospects & portfolio</p>
+        </div>
       </div>
 
       <div className="flex gap-3 mb-6 flex-wrap items-center">
@@ -340,3 +342,4 @@ export default function CRMPage() {
     </div>
   );
 }
+
