@@ -6,6 +6,13 @@
 
 ## 2026-03-17
 
+### Phase 1 — Core foundation migration created
+- Created `supabase/migrations/20260317120000_nfs_phase1_core_tables.sql`
+- Tables: `nfs_operators`, `nfs_operator_users`, `nfs_auth_tokens`
+- RLS policies for all 3 tables (operator owner access, team access, service-role-only for tokens)
+- `updated_at` auto-trigger via `nfs_set_updated_at()` function
+- **Status: awaiting Hugo's SQL review before execution**
+
 ### Documentation infrastructure created
 - Created complete `docs/nfstay/` directory with 17 documentation files
 - Files cover: agent instructions, architecture, database schema, domain model, features, integrations, webhooks, white-label, routes, acceptance scenarios, boundaries, shared infrastructure, environment vars, decisions, handoff, changelog, and diagnosis runbook
