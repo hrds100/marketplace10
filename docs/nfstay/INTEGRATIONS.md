@@ -124,16 +124,32 @@ Google Cloud Console may restrict the key to specific domains. Need to add `hub.
 | Transactional send | Edge Function `nfs-email-send` (calls Resend API) |
 | Triggered sends | n8n workflows (booking notification, payout notification) |
 
+### Domains and from addresses
+
+| Domain | Used by | From address | Purpose |
+|--------|---------|-------------|---------|
+| `hub.nfstay.com` | marketplace10 | `notifications@hub.nfstay.com` | Deal approvals, admin notifications, welcome emails |
+| `nfstay.app` | NFStay booking module | `bookings@nfstay.app` | Booking confirmations, magic links, payout notifications, invitations |
+
+Both domains must be verified in Resend with DKIM + SPF DNS records.
+**Note:** `nfstay.com` is a separate business — never use it for emails.
+
 ### Access required
 | Credential | Where stored | Who has it |
 |-----------|-------------|-----------|
-| `NFS_RESEND_API_KEY` | Edge Function secret | Create new Resend account |
+| `RESEND_API_KEY` | Supabase Edge Function secret | Already set (marketplace10 — shared) |
 
-### Status: Not yet configured
-Need to create Resend account, add nfstay.com domain, and configure DKIM/SPF DNS records.
+**One Resend API key for both modules.** The same key works for sending from any verified domain. No need for a separate `NFS_RESEND_API_KEY` — use the existing `RESEND_API_KEY`. The Edge Functions differentiate by using different `from` addresses.
+
+### Status: Domains need verification
+- Resend account exists (marketplace10 already uses it)
+- `hub.nfstay.com` domain: **needs to be added and verified in Resend**
+- `nfstay.app` domain: **needs to be added and verified in Resend**
+- Currently sending from `onboarding@resend.dev` (Resend sandbox) — emails may land in spam
+- See `docs/nfstay/EXECUTION_PLAN.md` for setup instructions (Phase 3)
 
 ### Shared with marketplace10
-**Partially.** marketplace10 already uses Resend for email (Edge Function `send-email`). NFStay will use a separate Edge Function (`nfs-email-send`) but may share the same Resend account/API key. The domain may differ (nfstay.com vs nfstay.app).
+**Yes — same Resend account, same API key.** marketplace10's `send-email` Edge Function and NFStay's `nfs-email-send` Edge Function both use `RESEND_API_KEY`. They send from different domains (`hub.nfstay.com` vs `nfstay.app`) to keep emails visually distinct.
 
 ---
 
