@@ -118,7 +118,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
             {collapsed ? (
               <button
                 onClick={() => { setCollapsed(false); setInvestOpen(true); }}
-                className={`relative flex items-center justify-center h-10 rounded-lg transition-all duration-200 px-2 w-full ${isInvestActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+                className={`relative flex items-center justify-center h-10 rounded-lg transition-all duration-200 px-2 w-full ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                 title="JV Partners"
               >
                 <TrendingUp className="w-[15px] h-[15px]" strokeWidth={1.8} />
@@ -127,7 +127,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
               <>
                 <button
                   onClick={() => setInvestOpen(!investOpen)}
-                  className={`flex items-center gap-2 h-10 w-full rounded-lg transition-all duration-200 px-3 ${isInvestActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+                  className={`flex items-center gap-2 h-10 w-full rounded-lg transition-all duration-200 px-3 ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                 >
                   <TrendingUp className="w-[15px] h-[15px] flex-shrink-0" strokeWidth={1.8} />
                   <span className="text-[13px] leading-tight flex-1 text-left">JV Partners</span>

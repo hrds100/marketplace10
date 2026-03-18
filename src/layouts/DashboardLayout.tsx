@@ -8,11 +8,13 @@ import BurgerMenu from '@/components/BurgerMenu';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PaymentSuccessRefresher from '@/components/PaymentSuccessRefresher';
 import ClaimAccountBanner from '@/components/ClaimAccountBanner';
+import InvestSubNav from '@/components/InvestSubNav';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 const FULL_BLEED_ROUTES = ['/dashboard/inbox'];
 const TOP_NAV_ROUTES = ['/dashboard/deals'];
+const INVEST_ROUTES_PREFIX = '/dashboard/invest';
 
 export interface DashboardContext {
   sidebarCollapsed: boolean;
@@ -57,6 +59,7 @@ export default function DashboardLayout() {
   const [landlordPhone, setLandlordPhone] = useState<string | null>(null);
   const isFullBleed = FULL_BLEED_ROUTES.some(r => location.pathname.startsWith(r));
   const isTopNav = TOP_NAV_ROUTES.some(r => location.pathname === r || location.pathname === r + '/');
+  const isInvest = location.pathname.startsWith(INVEST_ROUTES_PREFIX);
   const marginClass = sidebarCollapsed ? 'md:ml-16' : 'md:ml-56';
 
   // Detect unclaimed landlord accounts (email ends with @nfstay.internal)
@@ -98,17 +101,20 @@ export default function DashboardLayout() {
           {claimBanner}
           <div className="flex-1 flex overflow-hidden relative">
             <DashboardSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
-            {isFullBleed ? (
-              <main className={`${marginClass} flex-1 flex flex-col transition-all duration-300 ease-out overflow-hidden`}>
-                <Outlet context={{ sidebarCollapsed, setSidebarCollapsed }} />
-              </main>
-            ) : (
-              <main className={`${marginClass} flex-1 overflow-y-auto transition-all duration-300 ease-out pb-20 md:pb-8`}>
-                <div className="max-w-[1440px] mx-auto p-6 md:p-8">
+            <div className={`${marginClass} flex-1 flex flex-col transition-all duration-300 ease-out overflow-hidden`}>
+              {isInvest && <InvestSubNav />}
+              {isFullBleed ? (
+                <main className="flex-1 flex flex-col overflow-hidden">
                   <Outlet context={{ sidebarCollapsed, setSidebarCollapsed }} />
-                </div>
-              </main>
-            )}
+                </main>
+              ) : (
+                <main className="flex-1 overflow-y-auto pb-20 md:pb-8">
+                  <div className="max-w-[1440px] mx-auto p-6 md:p-8">
+                    <Outlet context={{ sidebarCollapsed, setSidebarCollapsed }} />
+                  </div>
+                </main>
+              )}
+            </div>
           </div>
         </div>
       )}
