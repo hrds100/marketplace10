@@ -11,6 +11,7 @@ const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; high
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
   { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', highlight: true },
   { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
+  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
 ];
 
 const investSubItems = [
@@ -83,8 +84,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={`relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
-                title={collapsed ? item.label : undefined}
+                className={`group/nav relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
               >
                 <div className="relative flex-shrink-0">
                   <item.icon className="w-[15px] h-[15px]" strokeWidth={1.8} />
@@ -109,6 +109,13 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
                     )}
                   </div>
                 )}
+                {/* Styled tooltip on hover when collapsed */}
+                {collapsed && (
+                  <div className="absolute left-full ml-2 px-2.5 py-1.5 bg-foreground text-background text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-150 z-[200] shadow-lg pointer-events-none">
+                    {item.label}
+                    <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-foreground rotate-45" />
+                  </div>
+                )}
               </NavLink>
             );
           })}
@@ -118,10 +125,10 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
             {collapsed ? (
               <button
                 onClick={() => { setCollapsed(false); setInvestOpen(true); }}
-                className={`relative flex items-center justify-center h-10 rounded-lg transition-all duration-200 px-2 w-full ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
-                title="JV Partners"
+                className={`group/nav relative flex items-center justify-center h-10 rounded-lg transition-all duration-200 px-2 w-full ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
               >
                 <TrendingUp className="w-[15px] h-[15px]" strokeWidth={1.8} />
+                <div className="absolute left-full ml-2 px-2.5 py-1.5 bg-foreground text-background text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-150 z-[200] shadow-lg pointer-events-none">JV Partners<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-foreground rotate-45" /></div>
               </button>
             ) : (
               <>
@@ -156,28 +163,22 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
         </nav>
 
         <div className="p-2 border-t border-border/30 space-y-0.5">
-          <NavLink to="/dashboard/university" className={({ isActive }) => `flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`} title={collapsed ? 'University' : undefined}>
-            <GraduationCap className="w-[15px] h-[15px]" strokeWidth={1.8} />
-            {!collapsed && (
-              <div className="flex flex-col">
-                <span className="text-[13px] leading-tight">University</span>
-                <span className="text-[9px] font-medium leading-tight" style={{ color: '#1DB954' }}>AI Powered</span>
-              </div>
-            )}
-          </NavLink>
           {isAdmin && (
-            <NavLink to="/admin" className={`flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`} title={collapsed ? 'Admin' : undefined}>
+            <NavLink to="/admin" className={`group/nav relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`}>
               <Settings className="w-[15px] h-[15px]" strokeWidth={1.8} />
               {!collapsed && <span className="text-[13px]">Admin View</span>}
+              {collapsed && <div className="absolute left-full ml-2 px-2.5 py-1.5 bg-foreground text-background text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-150 z-[200] shadow-lg pointer-events-none">Admin<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-foreground rotate-45" /></div>}
             </NavLink>
           )}
-          <NavLink to="/dashboard/settings" className={({ isActive }) => `flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`} title={collapsed ? 'Settings' : undefined}>
+          <NavLink to="/dashboard/settings" className={({ isActive }) => `group/nav relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}>
             <Settings className="w-[15px] h-[15px]" strokeWidth={1.8} />
             {!collapsed && <span className="text-[13px]">Settings</span>}
+            {collapsed && <div className="absolute left-full ml-2 px-2.5 py-1.5 bg-foreground text-background text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-150 z-[200] shadow-lg pointer-events-none">Settings<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-foreground rotate-45" /></div>}
           </NavLink>
-          <button onClick={handleLogout} className={`flex items-center gap-2 h-10 rounded-lg transition-all duration-200 w-full ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10`} title={collapsed ? 'Sign out' : undefined}>
+          <button onClick={handleLogout} className={`group/nav relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 w-full ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10`}>
             <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
             {!collapsed && <span className="text-[13px]">Sign Out</span>}
+            {collapsed && <div className="absolute left-full ml-2 px-2.5 py-1.5 bg-foreground text-background text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-150 z-[200] shadow-lg pointer-events-none">Sign Out<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-foreground rotate-45" /></div>}
           </button>
         </div>
       </aside>
