@@ -37,7 +37,7 @@ function TopBar() {
         NFsTay
       </Link>
 
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex items-center gap-3">
         {isAdmin && (
           <Link to="/admin" className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-secondary hidden md:block">
             Admin
