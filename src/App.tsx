@@ -44,6 +44,7 @@ import AdminInvestCommissionSettings from "./pages/admin/invest/AdminInvestCommi
 import AdminInvestPayouts from "./pages/admin/invest/AdminInvestPayouts";
 import AdminInvestProposals from "./pages/admin/invest/AdminInvestProposals";
 import AdminInvestBoost from "./pages/admin/invest/AdminInvestBoost";
+import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 import TestingDesign from "./pages/TestingDesign";
@@ -116,7 +117,23 @@ const App = () => (
             <Route path=":lessonId" element={<LessonPage />} />
           </Route>
           <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
-            <Route index element={<AdminDashboard />} />
+            {/* Workspace selector */}
+            <Route index element={<AdminWorkspaceSelector />} />
+
+            {/* Marketplace workspace */}
+            <Route path="marketplace" element={<AdminDashboard />} />
+            <Route path="marketplace/listings" element={<AdminListings />} />
+            <Route path="marketplace/properties" element={<AdminListings />} />
+            <Route path="marketplace/submissions" element={<AdminSubmissions />} />
+            <Route path="marketplace/users" element={<AdminUsers />} />
+            <Route path="marketplace/university" element={<AdminUniversity />} />
+            <Route path="marketplace/pricing" element={<AdminPricing />} />
+            <Route path="marketplace/faq" element={<AdminFAQ />} />
+            <Route path="marketplace/affiliates" element={<AdminAffiliates />} />
+            <Route path="marketplace/settings" element={<AdminSettings />} />
+            <Route path="marketplace/notifications" element={<AdminNotifications />} />
+
+            {/* Legacy routes (without /marketplace/) -- keep working */}
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="listings" element={<AdminListings />} />
             <Route path="properties" element={<AdminListings />} />
@@ -128,6 +145,8 @@ const App = () => (
             <Route path="affiliates" element={<AdminAffiliates />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="notifications" element={<AdminNotifications />} />
+
+            {/* Investment workspace */}
             <Route path="invest" element={<AdminInvestDashboard />} />
             <Route path="invest/properties" element={<AdminInvestProperties />} />
             <Route path="invest/orders" element={<AdminInvestOrders />} />
@@ -137,6 +156,9 @@ const App = () => (
             <Route path="invest/payouts" element={<AdminInvestPayouts />} />
             <Route path="invest/proposals" element={<AdminInvestProposals />} />
             <Route path="invest/boost" element={<AdminInvestBoost />} />
+
+            {/* Booking workspace (placeholder) */}
+            <Route path="booking" element={<div className="text-center py-20"><h2 className="text-2xl font-bold mb-2">Booking Site Admin</h2><p className="text-muted-foreground">Coming Soon — Tajul is building this</p></div>} />
           </Route>
           <Route path="/testing/design" element={<TestingDesign />} />
           <Route path="*" element={<NotFound />} />
