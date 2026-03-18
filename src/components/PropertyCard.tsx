@@ -209,9 +209,9 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           </div>
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
             <span className="text-xs text-muted-foreground">Est. monthly profit</span>
-            <div className="flex items-center gap-2">
+            <div className="text-right">
               <span className="text-[13px] font-bold text-accent-foreground">£{listing.profit}</span>
-              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary font-medium hover:underline" onClick={e => e.stopPropagation()}>
+              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className="block text-[10px] text-primary font-medium hover:underline -mt-0.5" onClick={e => e.stopPropagation()}>
                 Airdna verified ✓
               </a>
             </div>
