@@ -6,6 +6,15 @@
 
 ## 2026-03-18
 
+### Edge Functions deployed (4 NFStay functions)
+- Deployed `nfs-email-send` v1 — transactional emails via Resend (booking confirmation, cancellation, operator notification)
+- Deployed `nfs-stripe-checkout` v1 — creates Stripe Checkout sessions with Connect destination charges
+- Deployed `nfs-stripe-connect-oauth` v1 — operator Stripe Connect OAuth (authorize, callback, disconnect)
+- Deployed `nfs-stripe-webhook` v1 — processes Stripe events (checkout.session.completed, payment_intent, charge.refunded, account.updated, transfer.created) with idempotency
+- All 4 functions: ACTIVE, JWT verification disabled (public endpoints)
+- Marketplace10 functions: untouched (same versions + timestamps)
+- Note: `nfs-stripe-webhook` will return 500 until `NFS_STRIPE_WEBHOOK_SECRET` is set (requires Stripe Dashboard webhook creation first)
+
 ### Phase 4 — DB migration executed
 - Ran `20260317150000_nfs_phase4_stripe.sql` via Supabase Management API
 - Tables confirmed live: `nfs_stripe_accounts`, `nfs_webhook_events`
