@@ -66,11 +66,14 @@ if (typeof window !== 'undefined') {
   }
 }
 
+import { FavouritesProvider } from '@/hooks/useFavourites';
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Sonner />
       <BrowserRouter>
+      <FavouritesProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
@@ -120,6 +123,7 @@ const App = () => (
           <Route path="/testing/design" element={<TestingDesign />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+      </FavouritesProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

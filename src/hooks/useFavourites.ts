@@ -1,6 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import React from 'react';
 
 const LS_KEY = 'nfstay-favourites';
 
@@ -17,12 +19,20 @@ function saveLocal(ids: Set<string>) {
   localStorage.setItem(LS_KEY, JSON.stringify([...ids]));
 }
 
-export function useFavourites() {
+interface FavouritesContextValue {
+  favourites: Set<string>;
+  toggle: (id: string) => Promise<void>;
+  isFav: (id: string) => boolean;
+  loading: boolean;
+}
+
+const FavouritesContext = createContext<FavouritesContextValue | null>(null);
+
+export function FavouritesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [favourites, setFavourites] = useState<Set<string>>(loadLocal);
   const [loading, setLoading] = useState(true);
 
-  // Load from Supabase when user is logged in
   useEffect(() => {
     if (!user) {
       setFavourites(loadLocal());
@@ -41,7 +51,6 @@ export function useFavourites() {
         setFavourites(ids);
         saveLocal(ids);
       } else {
-        // Migrate localStorage favourites to Supabase on first login
         const local = loadLocal();
         if (local.size > 0) {
           const rows = [...local].map(pid => ({ user_id: user.id, property_id: pid }));
@@ -56,12 +65,10 @@ export function useFavourites() {
     load();
   }, [user?.id]);
 
-  // Ref tracks latest favourites so async DB calls never read stale state
   const favsRef = useRef(favourites);
   useEffect(() => { favsRef.current = favourites; }, [favourites]);
 
   const toggle = useCallback(async (id: string) => {
-    // Read current state from ref BEFORE updating
     const wasFav = favsRef.current.has(id);
 
     setFavourites(prev => {
@@ -88,5 +95,17 @@ export function useFavourites() {
 
   const isFav = useCallback((id: string) => favourites.has(id), [favourites]);
 
-  return { favourites, toggle, isFav, loading };
+  const value = { favourites, toggle, isFav, loading };
+
+  return React.createElement(FavouritesContext.Provider, { value }, children);
+}
+
+export function useFavourites(): FavouritesContextValue {
+  const ctx = useContext(FavouritesContext);
+  if (!ctx) {
+    // Fallback for components outside the provider (shouldn't happen in normal use)
+    // This keeps backwards compatibility
+    throw new Error('useFavourites must be used within FavouritesProvider');
+  }
+  return ctx;
 }
