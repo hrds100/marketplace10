@@ -476,16 +476,24 @@ function InvestCardContent({
       </div>
 
       {/* TSA */}
-      <label className="flex items-start gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={tsaAgreed}
-          onChange={(e) => setTsaAgreed(e.target.checked)}
-          className="mt-1 h-4 w-4 rounded border-border accent-primary"
-        />
-        <span className="text-xs text-muted-foreground">
+      <label className="flex items-start gap-3 cursor-pointer group">
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={tsaAgreed}
+          onClick={() => setTsaAgreed(!tsaAgreed)}
+          className={cn(
+            'mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2 transition-all duration-200',
+            tsaAgreed
+              ? 'border-primary bg-primary'
+              : 'border-muted-foreground/30 bg-background hover:border-primary/50 group-hover:border-primary/50'
+          )}
+        >
+          {tsaAgreed && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+        </button>
+        <span className="text-xs text-muted-foreground leading-relaxed">
           I agree to the{' '}
-          <a href="#" className="text-primary underline hover:no-underline">
+          <a href="#" className="text-primary font-medium underline decoration-primary/30 hover:decoration-primary transition-colors">
             Token Sale Agreement
           </a>{' '}
           and terms of investment.
@@ -543,6 +551,7 @@ function ProfitCalculator({
   initialCalcAmount: number;
   setInitialCalcAmount: (v: number) => void;
 }) {
+  const [chartVersion, setChartVersion] = useState(1);
   const appreciationRate = 5.2;
   const dividendYield = property.annualYield;
   const holdingYears = 5;
@@ -559,8 +568,144 @@ function ProfitCalculator({
   const sharesCalc = Math.floor(initialCalcAmount / property.pricePerShare);
   const monthlyIncome = ((property.monthlyRent / property.totalShares) * sharesCalc).toFixed(2);
   const yearlyIncome = (sharesCalc * property.pricePerShare * (dividendYield / 100)).toFixed(2);
+  const totalGain = maxValue - initialCalcAmount;
 
   const quickAmounts = [500, 1000, 2500, 5000];
+
+  // Chart version renderers
+  function ChartV1() {
+    // Stacked horizontal bars — each year as a full-width row
+    return (
+      <div className="space-y-2">
+        {[{ year: 0, value: initialCalcAmount, label: 'Today' }, ...projections.map(p => ({ ...p, label: `Year ${p.year}` }))].map((p) => {
+          const widthPct = maxValue > 0 ? (p.value / maxValue) * 100 : 0;
+          const gain = p.value - initialCalcAmount;
+          return (
+            <div key={p.label} className="flex items-center gap-3">
+              <span className="text-xs font-medium text-muted-foreground w-12 text-right shrink-0">{p.label}</span>
+              <div className="flex-1 h-8 rounded-lg bg-muted/30 dark:bg-muted/20 overflow-hidden relative">
+                <div
+                  className={cn('h-full rounded-lg transition-all duration-700 flex items-center px-3', p.year === 0 ? 'bg-muted-foreground/20' : 'bg-gradient-to-r from-primary to-primary/70')}
+                  style={{ width: `${Math.max(widthPct, 8)}%` }}
+                >
+                  <span className={cn('text-[11px] font-bold whitespace-nowrap', p.year === 0 ? 'text-muted-foreground' : 'text-white')}>
+                    ${(p.value / 1000).toFixed(1)}k
+                  </span>
+                </div>
+                {gain > 0 && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-primary font-medium">
+                    +${(gain / 1000).toFixed(1)}k
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  function ChartV2() {
+    // Area-style stepped line using CSS
+    const points = [{ year: 0, value: initialCalcAmount }, ...projections];
+    return (
+      <div className="relative rounded-xl bg-gradient-to-b from-primary/5 to-transparent border p-4" style={{ height: 200 }}>
+        <div className="absolute inset-x-4 bottom-8 top-4 flex items-end">
+          {points.map((p, i) => {
+            const heightPct = maxValue > 0 ? (p.value / maxValue) * 100 : 10;
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full relative group">
+                <div className="absolute -top-1 text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity bg-background rounded px-1.5 py-0.5 shadow-sm z-10">
+                  ${p.value.toLocaleString()}
+                </div>
+                <div className="w-full bg-primary/15 relative" style={{ height: `${heightPct}%`, minHeight: 4 }}>
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary" />
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background z-10" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="absolute inset-x-4 bottom-2 flex">
+          {points.map((p, i) => (
+            <span key={i} className="flex-1 text-center text-[10px] font-medium text-muted-foreground">
+              {p.year === 0 ? 'Now' : `Y${p.year}`}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function ChartV3() {
+    // Big number cards — each year as a card in a row
+    return (
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {[{ year: 0, value: initialCalcAmount }, ...projections].map((p) => {
+          const gain = p.value - initialCalcAmount;
+          const gainPct = initialCalcAmount > 0 ? ((gain / initialCalcAmount) * 100).toFixed(0) : '0';
+          return (
+            <div key={p.year} className={cn('rounded-xl p-3 text-center transition-all', p.year === 0 ? 'bg-muted/40 dark:bg-muted/20' : 'border border-primary/15 bg-primary/[0.03]')}>
+              <p className="text-[10px] font-medium text-muted-foreground mb-1">{p.year === 0 ? 'Today' : `Year ${p.year}`}</p>
+              <p className={cn('text-sm font-bold', p.year === 0 ? 'text-foreground' : 'text-primary')}>${(p.value / 1000).toFixed(1)}k</p>
+              {gain > 0 && <p className="text-[9px] text-primary mt-0.5">+{gainPct}%</p>}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  function ChartV4() {
+    // Single hero comparison: Today vs Year 5 with arrow
+    return (
+      <div className="flex items-center justify-center gap-6 py-4">
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground mb-1">You invest</p>
+          <p className="text-3xl font-bold">${(initialCalcAmount / 1000).toFixed(1)}k</p>
+          <p className="text-xs text-muted-foreground mt-1">Today</p>
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <ArrowRight className="h-6 w-6 text-primary" />
+          <span className="text-xs font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">5 years</span>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground mb-1">You could have</p>
+          <p className="text-3xl font-bold text-primary">${(maxValue / 1000).toFixed(1)}k</p>
+          <p className="text-xs text-primary mt-1 font-semibold">+{totalROI}% return</p>
+        </div>
+      </div>
+    );
+  }
+
+  function ChartV5() {
+    // Timeline with connecting line and milestone dots
+    return (
+      <div className="relative py-2">
+        {/* Connecting line */}
+        <div className="absolute top-1/2 left-6 right-6 h-0.5 bg-gradient-to-r from-muted-foreground/20 via-primary/50 to-primary" />
+        <div className="flex justify-between relative">
+          {[{ year: 0, value: initialCalcAmount }, ...projections].map((p, i) => {
+            const gain = p.value - initialCalcAmount;
+            return (
+              <div key={p.year} className="flex flex-col items-center relative z-10">
+                <div className={cn('text-center mb-2', i === 0 ? '' : 'text-primary')}>
+                  <p className="text-xs font-bold">${(p.value / 1000).toFixed(1)}k</p>
+                  {gain > 0 && <p className="text-[9px] text-primary">+${(gain / 1000).toFixed(1)}k</p>}
+                </div>
+                <div className={cn(
+                  'w-4 h-4 rounded-full border-2 border-background',
+                  i === 0 ? 'bg-muted-foreground/30' : 'bg-primary',
+                  i === projections.length ? 'ring-4 ring-primary/20' : ''
+                )} />
+                <p className="text-[10px] font-medium text-muted-foreground mt-2">{p.year === 0 ? 'Now' : `Y${p.year}`}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card className="rounded-2xl">
@@ -576,8 +721,8 @@ function ProfitCalculator({
       <CardContent className="space-y-6">
         {/* Amount input — compact with quick-select pills */}
         <div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 rounded-xl border bg-muted/30 px-4 py-2.5 focus-within:ring-2 focus-within:ring-primary focus-within:border-primary flex-1 max-w-[200px]">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 rounded-xl border bg-muted/30 px-4 py-2.5 focus-within:ring-2 focus-within:ring-primary focus-within:border-primary w-44">
               <span className="text-base font-semibold text-muted-foreground">$</span>
               <input
                 type="number"
@@ -613,62 +758,47 @@ function ProfitCalculator({
           </p>
         </div>
 
-        {/* Two-column: Chart left, Results right */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Left — Visual projection */}
-          <div className="rounded-xl border bg-muted/20 dark:bg-muted/10 p-5">
+        {/* Chart + Results side by side */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+          {/* Left — Chart (3 cols) */}
+          <div className="lg:col-span-3 rounded-xl border bg-muted/10 dark:bg-muted/5 p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold">5-Year Growth</p>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <p className="text-sm font-semibold">5-Year Projection</p>
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-primary" />
-                  {appreciationRate}% appreciation
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-primary/40" />
-                  {dividendYield}% yield
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  {appreciationRate}% + {dividendYield}% yield
                 </span>
               </div>
             </div>
-            <div className="flex items-end gap-2" style={{ height: 140 }}>
-              {/* Starting value bar */}
-              <div className="flex flex-1 flex-col items-center gap-1.5">
-                <span className="text-[11px] font-semibold text-muted-foreground">
-                  ${(initialCalcAmount / 1000).toFixed(1)}k
-                </span>
-                <div
-                  className="w-full rounded-lg bg-muted-foreground/20 transition-all duration-500"
-                  style={{ height: maxValue > 0 ? `${(initialCalcAmount / maxValue) * 100}%` : '10%', minHeight: 12 }}
+
+            {/* Versioned chart */}
+            {chartVersion === 1 && <ChartV1 />}
+            {chartVersion === 2 && <ChartV2 />}
+            {chartVersion === 3 && <ChartV3 />}
+            {chartVersion === 4 && <ChartV4 />}
+            {chartVersion === 5 && <ChartV5 />}
+
+            {/* Version arrows */}
+            <div className="flex items-center justify-center gap-1.5 mt-4 pt-3 border-t border-border/40">
+              {[1, 2, 3, 4, 5].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setChartVersion(v)}
+                  className={cn(
+                    'w-2 h-2 rounded-full transition-all',
+                    chartVersion === v
+                      ? 'bg-primary w-5'
+                      : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                  )}
+                  aria-label={`Chart style ${v}`}
                 />
-                <span className="text-[11px] font-medium text-muted-foreground">Start</span>
-              </div>
-              {/* Year bars */}
-              {projections.map((p) => {
-                const heightPct = maxValue > 0 ? (p.value / maxValue) * 100 : 0;
-                const gain = p.value - initialCalcAmount;
-                return (
-                  <div key={p.year} className="group relative flex flex-1 flex-col items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-primary">
-                      ${(p.value / 1000).toFixed(1)}k
-                    </span>
-                    <div
-                      className="w-full rounded-lg bg-gradient-to-t from-primary to-primary/70 transition-all duration-500 relative"
-                      style={{ height: `${heightPct}%`, minHeight: 12 }}
-                    >
-                      {/* Hover tooltip */}
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block rounded bg-foreground text-background text-[10px] font-medium px-2 py-1 whitespace-nowrap z-10">
-                        +${gain.toLocaleString()}
-                      </div>
-                    </div>
-                    <span className="text-[11px] font-medium text-muted-foreground">Y{p.year}</span>
-                  </div>
-                );
-              })}
+              ))}
             </div>
           </div>
 
-          {/* Right — Results summary */}
-          <div className="space-y-3">
+          {/* Right — Results (2 cols) */}
+          <div className="lg:col-span-2 space-y-3">
             <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4">
               <p className="text-xs text-muted-foreground mb-1">Total Return (5 Years)</p>
               <p className="text-2xl font-bold text-primary">{totalROI}%</p>
@@ -676,28 +806,30 @@ function ProfitCalculator({
                 ${initialCalcAmount.toLocaleString()} &rarr; ${maxValue.toLocaleString()}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border p-3.5">
-                <p className="text-xs text-muted-foreground mb-0.5">Monthly Income</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="rounded-xl border p-3">
+                <p className="text-[11px] text-muted-foreground mb-0.5">Monthly</p>
                 <p className="text-base font-bold">${monthlyIncome}</p>
               </div>
-              <div className="rounded-xl border p-3.5">
-                <p className="text-xs text-muted-foreground mb-0.5">Yearly Income</p>
+              <div className="rounded-xl border p-3">
+                <p className="text-[11px] text-muted-foreground mb-0.5">Yearly</p>
                 <p className="text-base font-bold">${yearlyIncome}</p>
               </div>
             </div>
             <div className="rounded-xl bg-muted/50 dark:bg-muted/30 p-3.5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">Projected Value (Year 5)</p>
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Year 5 Value</p>
                   <p className="text-lg font-bold text-primary">${maxValue.toLocaleString()}</p>
                 </div>
-                <TrendingUp className="h-5 w-5 text-primary" />
+                <div className="text-right">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Total Gain</p>
+                  <p className="text-sm font-bold text-primary">+${totalGain.toLocaleString()}</p>
+                </div>
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Projections are based on {appreciationRate}% annual appreciation and {dividendYield}% dividend yield.
-              Past performance does not guarantee future results.
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Based on {appreciationRate}% appreciation + {dividendYield}% yield. Past performance does not guarantee future results.
             </p>
           </div>
         </div>
@@ -758,23 +890,25 @@ function DocumentsSection() {
           Documents
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
-        {property.documents.map((doc) => (
-          <div
-            key={doc}
-            className="group flex items-center justify-between rounded-lg border px-4 py-3 transition-all duration-200 hover:bg-primary hover:border-primary cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <FileText className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
-              <span className="text-sm font-medium group-hover:text-white transition-colors">{doc}</span>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {property.documents.map((doc) => (
+            <div
+              key={doc}
+              className="group flex items-center justify-between rounded-lg border px-4 py-3 transition-all duration-200 hover:bg-primary hover:border-primary cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <FileText className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors flex-shrink-0" />
+                <span className="text-sm font-medium group-hover:text-white transition-colors truncate">{doc}</span>
+              </div>
+              <Button size="sm" variant="ghost" className="gap-1 text-xs group-hover:text-white group-hover:hover:bg-white/20 transition-colors flex-shrink-0 ml-2">
+                <Download className="h-3.5 w-3.5" />
+                PDF
+              </Button>
             </div>
-            <Button size="sm" variant="ghost" className="gap-1 text-xs group-hover:text-white group-hover:hover:bg-white/20 transition-colors">
-              <Download className="h-3.5 w-3.5" />
-              PDF
-            </Button>
-          </div>
-        ))}
-        <p className="pt-1 text-xs text-muted-foreground italic">
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground italic">
           Full documents available to partners only.
         </p>
       </CardContent>
@@ -886,14 +1020,20 @@ function Version1({
               You are part of the decision-making. Tap to see how it works.
             </p>
           </div>
+          {!jvExpanded && (
+            <span className="text-sm mr-1 animate-[bounce_1.5s_infinite]" aria-hidden="true">
+              👆
+            </span>
+          )}
           <div
             className={cn(
-              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all',
+              'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all',
               'bg-primary/10 text-primary',
-              'group-hover:bg-primary/15 group-hover:ring-1 group-hover:ring-primary/30'
+              'group-hover:bg-primary group-hover:text-white',
+              !jvExpanded && 'animate-[pulse_2s_ease-in-out_infinite]'
             )}
           >
-            <span>See how it works</span>
+            <span>{jvExpanded ? 'Close' : 'Click to learn more'}</span>
             <ChevronDown
               className={cn(
                 'h-3.5 w-3.5 transition-transform duration-300',
