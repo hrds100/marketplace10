@@ -93,6 +93,7 @@ export default function DealsMap({ listings, hoveredId }: Props) {
   const [coords, setCoords] = useState<ResolvedCoord[]>([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
+  const initialBoundsSetRef = useRef(false);
 
   // Load script + init map
   useEffect(() => {
@@ -182,8 +183,8 @@ export default function DealsMap({ listings, hoveredId }: Props) {
       }
     });
 
-    // Fit bounds on initial load only
-    if (coords.length > 0) {
+    // Fit bounds only on first load
+    if (coords.length > 0 && !initialBoundsSetRef.current) {
       const bounds = new g.LatLngBounds();
       coords.forEach(c => bounds.extend({ lat: c.lat, lng: c.lng }));
       if (coords.length === 1) {
@@ -192,6 +193,7 @@ export default function DealsMap({ listings, hoveredId }: Props) {
       } else {
         map.fitBounds(bounds, 40);
       }
+      initialBoundsSetRef.current = true;
     }
   }, [coords, ready, onNav]);
 
@@ -222,24 +224,31 @@ export default function DealsMap({ listings, hoveredId }: Props) {
       });
       marker.setZIndex(hovered ? 999 : 1);
 
-      // Smooth pan + zoom to hovered marker
+      // Pan + zoom to hovered marker
       if (hovered) {
         const pos = marker.getPosition();
         if (pos) {
+          // Always pan to the property
           map.panTo(pos);
-          const target = 14;
+          // Zoom in if not already close enough
           const current = map.getZoom() ?? 6;
-          if (current < target) {
+          const target = 14;
+          if (current < target - 1) {
+            // Zoom in smoothly
             let step = current;
             zoomIntervalRef.current = setInterval(() => {
-              step += 0.3;
+              step += 0.5;
               map.setZoom(step);
               if (step >= target) {
                 if (zoomIntervalRef.current) clearInterval(zoomIntervalRef.current);
                 zoomIntervalRef.current = null;
               }
-            }, 60);
+            }, 80);
+          } else if (current < target) {
+            // Almost there — just set it
+            map.setZoom(target);
           }
+          // If already at target zoom, panTo is enough
         }
       }
     });
