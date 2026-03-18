@@ -6,6 +6,15 @@
 
 ## 2026-03-18
 
+### nfstay.app Traveler Routing
+
+- Fixed: `nfstay.app` now shows NFStay traveler search page instead of marketplace10 landing
+- `NfsWhiteLabelRouter` handles `type: 'main'` → renders traveler routes
+- Added `isMainSite` to `WhiteLabelContext` in `use-nfs-white-label.ts`
+- Routes: `/` → search, `/search` → search, `/property/:id` → detail, `/payment/*` → payment pages
+- No middleware changes — pure client-side hostname detection
+- hub.nfstay.com behavior: UNCHANGED
+
 ### DNS + Credentials Setup
 
 **DNS (Cloudflare — nfstay.app zone):**

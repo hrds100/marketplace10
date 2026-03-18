@@ -9,6 +9,7 @@ interface WhiteLabelContext {
   loading: boolean;
   error: string | null;
   isWhiteLabel: boolean;
+  isMainSite: boolean;
 }
 
 const defaultContext: WhiteLabelContext = {
@@ -17,6 +18,7 @@ const defaultContext: WhiteLabelContext = {
   loading: true,
   error: null,
   isWhiteLabel: false,
+  isMainSite: false,
 };
 
 export const NfsWhiteLabelContext = createContext<WhiteLabelContext>(defaultContext);
@@ -40,6 +42,7 @@ export function useNfsWhiteLabelDetection(): WhiteLabelContext {
   const [error, setError] = useState<string | null>(null);
 
   const isWhiteLabel = mode.type === 'subdomain' || mode.type === 'custom';
+  const isMainSite = mode.type === 'main';
 
   useEffect(() => {
     if (!isWhiteLabel) {
@@ -69,5 +72,5 @@ export function useNfsWhiteLabelDetection(): WhiteLabelContext {
     return () => { cancelled = true; };
   }, [mode, isWhiteLabel]);
 
-  return { mode, operator, loading, error, isWhiteLabel };
+  return { mode, operator, loading, error, isWhiteLabel, isMainSite };
 }
