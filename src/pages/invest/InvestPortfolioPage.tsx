@@ -380,52 +380,52 @@ export default function InvestPortfolioPage() {
                 )}
               >
                 <CardContent className="p-4">
-                  {/* Compact Row */}
-                  <div
-                    className="flex items-center gap-4 cursor-pointer"
-                    onClick={() => toggleCollapse(h.propertyId)}
-                  >
-                    <img
-                      src={h.image}
-                      alt={h.propertyTitle}
-                      className="h-14 w-20 rounded-lg object-cover flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-sm truncate">{h.propertyTitle}</h4>
-                        {isCollapsed ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        ) : (
-                          <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        )}
+                  {/* Main layout: left content + right boost card */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Left — property info + metrics */}
+                    <div className="flex-1 min-w-0 space-y-4">
+                      {/* Compact header row */}
+                      <div
+                        className="flex items-center gap-4 cursor-pointer"
+                        onClick={() => toggleCollapse(h.propertyId)}
+                      >
+                        <img
+                          src={h.image}
+                          alt={h.propertyTitle}
+                          className="h-14 w-20 rounded-lg object-cover flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-sm truncate">{h.propertyTitle}</h4>
+                            {isCollapsed ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            ) : (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{h.location}</p>
+                          <div className="flex items-center gap-3 mt-1 text-sm flex-wrap">
+                            <span>
+                              <span className="text-muted-foreground">Shares: </span>
+                              <span className="font-medium">{h.sharesOwned}</span>
+                            </span>
+                            <span>
+                              <span className="text-muted-foreground">Value: </span>
+                              <span className="font-medium">{formatCurrency(h.currentValue)}</span>
+                            </span>
+                            <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 text-xs">
+                              {h.annualYield}% APY
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs text-muted-foreground">
+                              Property {idx + 1} of {holdingsCount}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">{h.location}</p>
-                      <div className="flex items-center gap-3 mt-1 text-sm flex-wrap">
-                        <span>
-                          <span className="text-muted-foreground">Shares: </span>
-                          <span className="font-medium">{h.sharesOwned}</span>
-                        </span>
-                        <span>
-                          <span className="text-muted-foreground">Value: </span>
-                          <span className="font-medium">{formatCurrency(h.currentValue)}</span>
-                        </span>
-                        <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 text-xs">
-                          {h.annualYield}% APY
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs text-muted-foreground">
-                          Property {idx + 1} of {holdingsCount}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Expanded Details (default) */}
-                  {!isCollapsed && (
-                    <div className="mt-4 pt-4 border-t space-y-4 animate-in slide-in-from-top-2 duration-200">
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        {/* Left — metrics + buttons */}
-                        <div className="flex-1 space-y-4">
-                          {/* Metrics grid */}
+                      {/* Expanded metrics + buttons */}
+                      {!isCollapsed && (
+                        <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                             <div>
                               <p className="text-muted-foreground">Current Value</p>
@@ -461,76 +461,76 @@ export default function InvestPortfolioPage() {
                             </div>
                           </div>
 
-                        </div>
-
-                        {/* Right — Boost card */}
-                        <div className="sm:w-64 flex-shrink-0">
-                          <div className="rounded-xl border border-primary/30 bg-background p-4 space-y-3 shadow-sm">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-base font-bold">Boosted APR: {(h.annualYield * 1.5).toFixed(1)}%</p>
-                                <p className="text-xs text-muted-foreground">Not Boosted</p>
-                              </div>
-                              <span className="text-xl">{'\uD83D\uDE80'}</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                              <div>
-                                <p className="text-base font-bold">${(h.sharesOwned * h.sharePrice).toLocaleString()}</p>
-                                <p className="text-[10px] text-muted-foreground">Your Shares</p>
-                              </div>
-                              <div>
-                                <p className="text-base font-bold">{(h.annualYield * 6 + 30).toFixed(0)}%</p>
-                                <p className="text-[10px] text-muted-foreground">6YR Expected ROI</p>
-                              </div>
-                              <div>
-                                <p className="text-base font-bold">Monthly</p>
-                                <p className="text-[10px] text-muted-foreground">Payout Frequency</p>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <p className="text-[10px] text-muted-foreground">Cost of Booster</p>
-                                <p className="text-sm font-bold">0.275 USDC</p>
-                              </div>
-                              <div>
-                                <p className="text-[10px] text-muted-foreground">Stay Earned</p>
-                                <p className="text-sm font-bold">0 STAY</p>
-                              </div>
-                            </div>
+                          {/* Action buttons */}
+                          <div className="flex gap-2 flex-wrap items-center">
+                            <Button variant="outline" size="sm" className="gap-1.5">
+                              <Eye className="h-3.5 w-3.5" />
+                              View Property
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-1.5">
+                              <ArrowUpRight className="h-3.5 w-3.5" />
+                              Buy More Shares
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-1.5">
+                              <FileText className="h-3.5 w-3.5" />
+                              Submit Proposal
+                            </Button>
+                            {activeProposal && (
+                              <Button variant="outline" size="sm" className="gap-1.5">
+                                <Vote className="h-3.5 w-3.5" />
+                                Cast Vote
+                              </Button>
+                            )}
                           </div>
                         </div>
-                      </div>
+                      )}
+                    </div>
 
-                      {/* All action buttons — one row, aligned */}
-                      <div className="flex gap-2 flex-wrap items-center">
-                        <Button variant="outline" size="sm" className="gap-1.5">
-                          <Eye className="h-3.5 w-3.5" />
-                          View Property
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1.5">
-                          <ArrowUpRight className="h-3.5 w-3.5" />
-                          Buy More Shares
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1.5">
-                          <FileText className="h-3.5 w-3.5" />
-                          Submit Proposal
-                        </Button>
-                        {activeProposal && (
-                          <Button variant="outline" size="sm" className="gap-1.5">
-                            <Vote className="h-3.5 w-3.5" />
-                            Cast Vote
+                    {/* Right — Boost card (always visible, aligned with property title) */}
+                    <div className="sm:w-64 flex-shrink-0">
+                      <div className="rounded-xl border border-primary/30 bg-background p-4 space-y-3 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-base font-bold">Boosted APR: {(h.annualYield * 1.5).toFixed(1)}%</p>
+                            <p className="text-xs text-muted-foreground">Not Boosted</p>
+                          </div>
+                          <span className="text-xl">{'\uD83D\uDE80'}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <p className="text-base font-bold">${(h.sharesOwned * h.sharePrice).toLocaleString()}</p>
+                            <p className="text-[10px] text-muted-foreground">Your Shares</p>
+                          </div>
+                          <div>
+                            <p className="text-base font-bold">{(h.annualYield * 6 + 30).toFixed(0)}%</p>
+                            <p className="text-[10px] text-muted-foreground">6YR Expected ROI</p>
+                          </div>
+                          <div>
+                            <p className="text-base font-bold">Monthly</p>
+                            <p className="text-[10px] text-muted-foreground">Payout Frequency</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Cost of Booster</p>
+                            <p className="text-sm font-bold">0.275 USDC</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Stay Earned</p>
+                            <p className="text-sm font-bold">0 STAY</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <Button size="sm" className="w-full bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white text-xs rounded-full">
+                            Boost APR {'\uD83D\uDE80'}
                           </Button>
-                        )}
-                        <Button size="sm" className="gap-1.5 bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white rounded-full">
-                          <Rocket className="h-3.5 w-3.5" />
-                          Boost APR
-                        </Button>
-                        <Button size="sm" variant="outline" className="gap-1.5 rounded-full border-primary/30 text-primary hover:bg-primary/10">
-                          Claim
-                        </Button>
+                          <Button size="sm" variant="outline" className="w-full text-xs rounded-full border-primary/30 text-primary hover:bg-primary/10">
+                            Claim
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             );
