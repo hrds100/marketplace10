@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAllPayoutClaims } from '@/hooks/useInvestData';
-import { DollarSign, Clock, CheckCircle2, AlertTriangle, Search, Zap } from 'lucide-react';
+import { DollarSign, Clock, CheckCircle2, AlertTriangle, Search, Zap, Download } from 'lucide-react';
+import { exportToCSV } from '@/lib/csvExport';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -110,7 +111,10 @@ export default function AdminInvestPayouts() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[28px] font-bold text-foreground">Payouts</h1>
-        <div className="flex flex-col items-end">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered as any[], 'payouts')}>
+            <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+          </Button>
           <Button
             onClick={handleBatch}
             disabled={batchTriggered}

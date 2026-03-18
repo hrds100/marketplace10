@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useAllShareholders } from '@/hooks/useInvestData';
-import { Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, Download } from 'lucide-react';
+import { exportToCSV } from '@/lib/csvExport';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
@@ -111,7 +113,12 @@ export default function AdminInvestShareholders() {
 
   return (
     <div>
-      <h1 className="text-[28px] font-bold text-foreground mb-6">Shareholders</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-[28px] font-bold text-foreground">Shareholders</h1>
+        <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered as any[], 'shareholders')}>
+          <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+        </Button>
+      </div>
 
       {/* Filter bar */}
       <div className="flex flex-wrap gap-3 mb-6">

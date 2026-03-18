@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAllCommissions } from '@/hooks/useInvestData';
-import { DollarSign, Clock, CheckCircle2, Wallet, Search } from 'lucide-react';
+import { DollarSign, Clock, CheckCircle2, Wallet, Search, Download } from 'lucide-react';
+import { exportToCSV } from '@/lib/csvExport';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -82,7 +83,12 @@ export default function AdminInvestCommissions() {
 
   return (
     <div>
-      <h1 className="text-[28px] font-bold text-foreground mb-6">Commissions</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-[28px] font-bold text-foreground">Commissions</h1>
+        <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered as any[], 'commissions')}>
+          <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+        </Button>
+      </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

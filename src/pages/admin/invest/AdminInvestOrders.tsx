@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useInvestOrders } from '@/hooks/useInvestData';
-import { Check, Pencil, X, Link2, Search } from 'lucide-react';
+import { Check, Pencil, X, Link2, Search, Download } from 'lucide-react';
+import { exportToCSV } from '@/lib/csvExport';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -101,7 +102,12 @@ export default function AdminInvestOrders() {
 
   return (
     <div>
-      <h1 className="text-[28px] font-bold text-foreground mb-6">Investment Orders</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-[28px] font-bold text-foreground">Investment Orders</h1>
+        <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered as any[], 'investment-orders')}>
+          <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+        </Button>
+      </div>
 
       {/* Filter bar */}
       <div className="flex flex-wrap gap-3 mb-6">
