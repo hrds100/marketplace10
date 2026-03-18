@@ -17,8 +17,8 @@ const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; high
 const investSubItems = [
   { to: '/dashboard/invest/marketplace', icon: Store, label: 'Marketplace' },
   { to: '/dashboard/invest/portfolio', icon: Wallet, label: 'Portfolio' },
-  { to: '/dashboard/invest/payouts', icon: Receipt, label: 'Payouts' },
   { to: '/dashboard/invest/proposals', icon: Vote, label: 'Proposals' },
+  { to: '/dashboard/invest/payouts', icon: Receipt, label: 'Payouts' },
 ];
 
 interface SidebarProps {
