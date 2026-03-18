@@ -4,7 +4,7 @@
 
 ---
 
-## Last Updated: 2026-03-18
+## Last Updated: 2026-03-19
 
 ---
 
@@ -12,11 +12,27 @@
 
 | Page | Route | Status | Data Source |
 |------|-------|--------|------------|
-| Marketplace | /dashboard/invest/marketplace | UI complete | Mock (investMockData.ts) |
+| Marketplace | /dashboard/invest/marketplace | UI complete | Hybrid (Supabase first, mock fallback) |
 | Portfolio | /dashboard/invest/portfolio | UI complete | Mock |
 | Proposals | /dashboard/invest/proposals | UI complete | Mock |
 | Payouts | /dashboard/invest/payouts | UI complete | Mock |
 | Become An Agent | /dashboard/affiliates | UI complete | Partial real data (aff_profiles exists) |
+
+## Admin Pages
+
+| Page | Route | Status | Data Source |
+|------|-------|--------|------------|
+| AdminInvestDashboard | /admin/invest | UI complete | Real (stats wired to Supabase queries) |
+| AdminInvestProperties | /admin/invest/properties | UI complete | Real (full CRUD wired to Supabase) |
+| AdminInvestCommissionSettings | /admin/invest/commissions | UI complete | Real (global rates wired to Supabase) |
+| Other admin invest pages | various | UI complete | Mock data |
+
+## Frontend Hooks & Utilities
+
+| File | Status | Notes |
+|------|--------|-------|
+| useInvestData.ts | Created | 20+ React Query hooks for all invest tables |
+| useWallet.ts | Created | Particle Network placeholder/stub |
 
 ## UI Features Completed
 
@@ -73,19 +89,19 @@
 
 | Feature | Current State | Needs |
 |---------|--------------|-------|
-| Properties | Hardcoded in investMockData.ts | Supabase inv_properties |
-| Holdings | Hardcoded 2 properties | Supabase inv_shareholdings |
-| Orders | No order flow | Supabase inv_orders + payment integration |
-| Payouts | Hardcoded 6 entries | Supabase inv_payouts + rent contract sync |
-| Proposals | Hardcoded 2 active + 3 past | Supabase inv_proposals + voting |
-| Votes | useState only (resets on reload) | Supabase inv_votes |
+| Holdings | Hardcoded 2 properties | Wire to Supabase inv_shareholdings via useInvestData hooks |
+| Orders | No live order flow | Wire inv-process-order edge function + payment integration |
+| Payouts (user-facing) | Hardcoded 6 entries | Wire to Supabase inv_payouts + submit-payout-claim edge function |
+| Proposals | Hardcoded 2 active + 3 past | Wire to Supabase inv_proposals + voting hooks |
+| Votes | useState only (resets on reload) | Wire to Supabase inv_votes |
 | Boost | Static card with fake data | Blockchain booster contract integration |
-| Commissions | No real tracking | Supabase aff_commissions + n8n workflows |
-| Referral tracking | No tracking | ?ref=CODE → profiles.referred_by |
+| Referral tracking | No tracking | ?ref=CODE → profiles.referred_by (column exists) |
 | Notifications | None | n8n + Resend email + WhatsApp |
-| Admin (invest) | No invest-specific admin pages | New admin pages needed |
-| Commission settings | No UI | New admin page needed |
+| Portfolio page data | Mock | Wire useInvestData hooks to real shareholdings/payouts |
+| Payouts page data | Mock | Wire useInvestData hooks to real payout records |
+| Proposals page data | Mock | Wire useInvestData hooks to real proposals/votes |
 | Rank system | Derived from mock holdings count | Derived from real inv_shareholdings count |
+| Other admin invest pages | Mock data | Wire remaining admin pages to Supabase |
 
 ---
 
@@ -106,20 +122,43 @@ All contracts are on BNB Chain mainnet. No changes needed. We only build fronten
 
 ## Database Status
 
+ALL 14 tables created with Row Level Security (RLS) enabled.
+
 | Table | Status |
 |-------|--------|
-| inv_properties | Not created |
-| inv_shareholdings | Not created |
-| inv_orders | Not created |
-| inv_payouts | Not created |
-| inv_proposals | Not created |
-| inv_votes | Not created |
-| inv_boost_status | Not created |
-| aff_profiles | Not created (AffiliatesPage uses mock) |
-| aff_commissions | Not created |
-| aff_commission_settings | Not created |
-| aff_events | Not created |
-| aff_payout_requests | Not created |
+| inv_properties | Created + RLS |
+| inv_shareholdings | Created + RLS |
+| inv_orders | Created + RLS |
+| inv_payouts | Created + RLS |
+| inv_proposals | Created + RLS |
+| inv_votes | Created + RLS |
+| inv_boost_status | Created + RLS |
+| inv_documents | Created + RLS |
+| inv_activity_log | Created + RLS |
+| aff_profiles | Created + RLS |
+| aff_commissions | Created + RLS |
+| aff_commission_settings | Created + RLS |
+| aff_events | Created + RLS |
+| aff_payout_requests | Created + RLS |
+
+### Profile Columns Added
+- `wallet_address` added to profiles
+- `referred_by` added to profiles
+
+### Seed Data
+- 1 property seeded (inv_properties)
+- 3 global commission rates seeded (aff_commission_settings)
+
+---
+
+## Edge Function Status
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| inv-process-order | Created | Handles share purchase order processing |
+| submit-payout-claim | Created | User-initiated payout claim submission |
+| revolut-webhook | Created | Receives Revolut payment callbacks |
+| save-bank-details | Created | Stores user bank details for payouts |
 
 ---
 
@@ -127,13 +166,11 @@ All contracts are on BNB Chain mainnet. No changes needed. We only build fronten
 
 | Workflow | Status |
 |----------|--------|
+| inv-tuesday-payout-batch | JSON export created |
+| inv-commission-subscription | JSON export created |
 | inv-share-purchase | Not created |
-| inv-commission-investment | Not created |
 | inv-rent-sync | Not created |
-| inv-payout-process | Not created |
 | inv-proposal-sync | Not created |
 | inv-boost-sync | Not created |
-| aff-commission-subscription | Not created |
-| aff-payout-batch | Not created |
 | inv-notify-email | Not created |
 | inv-notify-whatsapp | Not created |
