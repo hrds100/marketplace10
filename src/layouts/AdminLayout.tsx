@@ -65,7 +65,7 @@ export default function AdminLayout() {
   }, [user]);
 
   const links = workspace === 'invest' ? investLinks : marketplaceLinks;
-  const workspaceLabel = workspace === 'invest' ? 'Investments' : workspace === 'booking' ? 'Booking Site' : 'Marketplace';
+  const workspaceLabel = workspace === 'invest' ? 'JV Partners' : workspace === 'booking' ? 'Booking Site' : 'Marketplace';
 
   return (
     <div className="min-h-screen bg-background">

@@ -138,7 +138,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           </div>
           <div className="flex-1 space-y-0">
             <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-              <span className="text-xs text-muted-foreground">Min. investment</span>
+              <span className="text-xs text-muted-foreground">Min. contribution</span>
               <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£500</span>
             </div>
             <div className="flex justify-between items-center py-[7px] border-b border-border/50">
@@ -146,7 +146,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£{listing.profit}</span>
             </div>
             <div className="flex justify-between items-center py-[7px]">
-              <span className="text-xs text-muted-foreground">Projected ROI</span>
+              <span className="text-xs text-muted-foreground">Est. Returns</span>
               <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>12.4%</span>
             </div>
           </div>
@@ -155,13 +155,13 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               <button onClick={handleAction}
                 className="w-full h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
                 style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
-                Invest Online <Zap className="w-4 h-4" />
+                Partner Now <Zap className="w-4 h-4" />
               </button>
             ) : (
               <Link to={`/deals/${listing.id}`}
                 className="w-full h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
                 style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
-                Invest Online <Zap className="w-4 h-4" />
+                Partner Now <Zap className="w-4 h-4" />
               </Link>
             )}
           </div>

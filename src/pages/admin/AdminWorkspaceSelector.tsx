@@ -16,8 +16,8 @@ const workspaces = [
   },
   {
     id: 'invest',
-    title: 'Investments',
-    description: 'Properties, orders, shareholders, commissions, payouts, boost',
+    title: 'JV Partners',
+    description: 'Properties, orders, partners, commissions, payouts, boost',
     icon: TrendingUp,
     to: '/admin/invest',
     color: 'text-amber-500',

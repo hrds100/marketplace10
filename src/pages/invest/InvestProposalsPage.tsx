@@ -323,7 +323,7 @@ export default function InvestProposalsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Governance Proposals</h1>
         <p className="text-sm text-muted-foreground">
-          Vote on property decisions and shape your investment outcomes.
+          Vote on property decisions and shape your partnership outcomes.
         </p>
       </div>
 

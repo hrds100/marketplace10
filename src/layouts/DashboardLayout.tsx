@@ -48,7 +48,7 @@ function TopBar() {
           className="hidden md:flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-secondary"
         >
           <Gem className="w-[13px] h-[13px] text-blue-400" strokeWidth={2} />
-          Invest in Airbnbs from £500
+          Partner on Airbnbs from £500
         </Link>
         <button
           onClick={() => navigate('/dashboard/list-a-deal')}
@@ -112,7 +112,7 @@ export default function DashboardLayout() {
           {/* ── Main content ────────────────────────────────── */}
           <div className={`${marginClass} flex-1 flex flex-col transition-all duration-300 ease-out overflow-hidden`}>
 
-            {/* Invest sub-nav (only on invest pages) */}
+            {/* JV Partners sub-nav */}
             {isInvest && <InvestSubNav />}
 
             {isFullBleed ? (

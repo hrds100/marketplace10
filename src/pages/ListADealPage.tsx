@@ -553,7 +553,7 @@ export default function ListADealPage() {
             </AccordionSection>
 
             {/* ── Media ── */}
-            <AccordionSection id="media" title="Media & Description" description="Photos and listing text to attract investors."
+            <AccordionSection id="media" title="Media & Description" description="Photos and listing text to attract partners."
               isOpen={openSections.has('media')} isComplete={sectionComplete['media']()} onToggle={() => toggleSection('media')}
               summary={summaries['media']()}>
               <div className="space-y-5">

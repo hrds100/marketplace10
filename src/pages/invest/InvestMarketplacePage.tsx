@@ -401,7 +401,7 @@ function InvestCardContent({
 
       {/* Dollar input */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium">Investment amount</label>
+        <label className="mb-1.5 block text-sm font-medium">Contribution amount</label>
         <div className="flex items-center gap-2 rounded-lg border px-3 py-2 focus-within:ring-2 focus-within:ring-primary">
           <span className="text-sm font-semibold text-muted-foreground">$</span>
           <input
@@ -495,7 +495,7 @@ function InvestCardContent({
           <a href="#" className="text-primary font-medium underline decoration-primary/30 hover:decoration-primary transition-colors">
             Token Sale Agreement
           </a>{' '}
-          and terms of investment.
+          and terms of partnership.
         </span>
       </label>
 
@@ -937,7 +937,7 @@ function AgentReferralLink() {
             </div>
             <h3 className="text-lg font-bold mb-1">Work with us</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Share your personal link with friends and earn instant commission on every investment they make.
+              Share your personal link with friends and earn instant commission on every partnership they join.
             </p>
           </div>
 

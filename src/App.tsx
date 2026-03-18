@@ -146,7 +146,7 @@ const App = () => (
             <Route path="settings" element={<AdminSettings />} />
             <Route path="notifications" element={<AdminNotifications />} />
 
-            {/* Investment workspace */}
+            {/* JV Partners workspace */}
             <Route path="invest" element={<AdminInvestDashboard />} />
             <Route path="invest/properties" element={<AdminInvestProperties />} />
             <Route path="invest/orders" element={<AdminInvestOrders />} />

@@ -10,9 +10,9 @@ const PROPERTY = {
   profit: 680,
   type: 'Terraced House',
   daysAgo: 3,
-  roi: '12.4%',
+  returns: '12.4%',
   funded: 64,
-  minInvest: 500,
+  minContribution: 500,
   target: 45000,
 };
 
@@ -25,9 +25,9 @@ const PROPERTY2 = {
   profit: 520,
   type: 'Apartment',
   daysAgo: 5,
-  roi: '9.8%',
+  returns: '9.8%',
   funded: 42,
-  minInvest: 250,
+  minContribution: 250,
   target: 32000,
 };
 
@@ -92,11 +92,11 @@ function Card1() {
         <div className="mt-3">
           <Row label="Monthly rent" value={`£${PROPERTY.rent.toLocaleString()}/mo`} />
           <Row label="Est. profit" value={`£${PROPERTY.profit}/mo`} gold />
-          <Row label="Projected ROI" value={PROPERTY.roi} gold />
+          <Row label="Est. Returns" value={PROPERTY.returns} gold />
         </div>
         <div className="flex gap-2 mt-3">
           <button className="flex-1 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90" style={{ background: 'linear-gradient(135deg, #BF953F, #D4AC2B, #F0D55E, #D4AC2B, #BF953F)' }}>
-            Invest Now
+            Partner Now
           </button>
           <button className="flex-1 h-[38px] rounded-lg text-[13px] font-medium hover:bg-amber-50/40" style={{ border: '1px solid #C9A842', color: '#8B6914' }}>
             View Details
@@ -135,12 +135,12 @@ function Card2() {
             <span className="text-[13px] font-bold" style={{ color: '#F0D55E' }}>£{PROPERTY.profit}/mo</span>
           </div>
           <div className="flex justify-between py-[7px]">
-            <span className="text-xs text-white/50">Projected ROI</span>
-            <span className="text-[13px] font-bold" style={{ color: '#F0D55E' }}>{PROPERTY.roi}</span>
+            <span className="text-xs text-white/50">Est. Returns</span>
+            <span className="text-[13px] font-bold" style={{ color: '#F0D55E' }}>{PROPERTY.returns}</span>
           </div>
         </div>
         <button className="w-full mt-3 text-[#1A1A2E] shadow-lg h-[40px] rounded-lg text-[13px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-90" style={{ background: 'linear-gradient(135deg, #BF953F, #FCF6BA, #B38728)' }}>
-          <Gem className="w-3.5 h-3.5" /> Invest Now
+          <Gem className="w-3.5 h-3.5" /> Partner Now
         </button>
       </div>
     </div>
@@ -165,10 +165,10 @@ function Card3() {
         <div className="mt-3">
           <Row label="Monthly rent" value={`£${PROPERTY2.rent.toLocaleString()}/mo`} />
           <Row label="Est. profit" value={`£${PROPERTY2.profit}/mo`} gold />
-          <Row label="Projected ROI" value={PROPERTY2.roi} gold />
+          <Row label="Est. Returns" value={PROPERTY2.returns} gold />
         </div>
         <button className="w-full mt-3 text-white h-[40px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center gap-1.5 hover:opacity-90 shadow-md" style={{ background: 'linear-gradient(135deg, #BF953F, #D4AC2B, #F0D55E, #D4AC2B, #BF953F)' }}>
-          Start Investing <ArrowRight className="w-3.5 h-3.5" />
+          Start Partnership <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
@@ -202,20 +202,20 @@ function Card4() {
             <span className="text-[10px] font-medium" style={{ color: '#A67C00' }}>Target: £{PROPERTY.target.toLocaleString()}</span>
           </div>
         </div>
-        <Row label="Min. investment" value={`£${PROPERTY.minInvest}`} gold />
-        <Row label="Projected ROI" value={PROPERTY.roi} gold />
+        <Row label="Min. contribution" value={`£${PROPERTY.minContribution}`} gold />
+        <Row label="Est. Returns" value={PROPERTY.returns} gold />
         <button
           className="w-full mt-3 text-white h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
           style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'shimmer 3s ease-in-out infinite', color: '#5C4000' }}
         >
-          Invest Online <Zap className="w-4 h-4" />
+          Partner Now <Zap className="w-4 h-4" />
         </button>
       </div>
     </div>
   );
 }
 
-// ─── CARD 5: Investment Focus (ROI big) ─────────────
+// ─── CARD 5: Returns Focus ─────────────
 function Card5() {
   return (
     <div className="bg-card rounded-2xl overflow-hidden border border-border">
@@ -223,8 +223,8 @@ function Card5() {
         <img src={PROPERTY2.image} className="w-full h-full object-cover" alt="" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-3 left-3.5">
-          <span className="text-[28px] font-extrabold text-white">{PROPERTY2.roi}</span>
-          <p className="text-[11px] text-white/70 -mt-0.5">Projected annual ROI</p>
+          <span className="text-[28px] font-extrabold text-white">{PROPERTY2.returns}</span>
+          <p className="text-[11px] text-white/70 -mt-0.5">Est. Annual Returns</p>
         </div>
         <div className="absolute top-2.5 left-2.5">
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ background: 'linear-gradient(135deg, #FDF5D6, #E8D478)', color: '#8B6914' }}>
@@ -234,14 +234,14 @@ function Card5() {
       </div>
       <div className="p-3.5">
         <h3 className="text-[15px] font-bold text-foreground">{PROPERTY2.name}</h3>
-        <p className="text-[13px] text-muted-foreground mt-0.5">{PROPERTY2.city} · Min £{PROPERTY2.minInvest}</p>
+        <p className="text-[13px] text-muted-foreground mt-0.5">{PROPERTY2.city} · Min £{PROPERTY2.minContribution}</p>
         <div className="mt-2">
           <ProgressBar percent={PROPERTY2.funded} gold />
           <p className="text-[10px] text-muted-foreground mt-1">{PROPERTY2.funded}% funded — £{PROPERTY2.target.toLocaleString()} target</p>
         </div>
         <div className="flex gap-2 mt-3">
           <button className="flex-1 h-[38px] rounded-lg text-[13px] font-semibold text-white inline-flex items-center justify-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90">
-            Invest from £{PROPERTY2.minInvest}
+            Partner from £{PROPERTY2.minContribution}
           </button>
         </div>
       </div>
@@ -265,20 +265,20 @@ function Card6() {
         <p className="text-[13px] text-muted-foreground mt-0.5">{PROPERTY.city}</p>
         <div className="grid grid-cols-3 gap-3 mt-4 mb-4">
           <div className="text-center">
-            <div className="text-[18px] font-extrabold" style={{ color: '#A67C00' }}>{PROPERTY.roi}</div>
-            <div className="text-[9px] text-muted-foreground uppercase tracking-wider">ROI</div>
+            <div className="text-[18px] font-extrabold" style={{ color: '#A67C00' }}>{PROPERTY.returns}</div>
+            <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Returns</div>
           </div>
           <div className="text-center border-x border-border">
             <div className="text-[18px] font-extrabold text-foreground">£{PROPERTY.profit}</div>
             <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Profit/mo</div>
           </div>
           <div className="text-center">
-            <div className="text-[18px] font-extrabold text-foreground">£{PROPERTY.minInvest}</div>
-            <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Min invest</div>
+            <div className="text-[18px] font-extrabold text-foreground">£{PROPERTY.minContribution}</div>
+            <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Min. contribution</div>
           </div>
         </div>
         <button className="w-full h-[42px] rounded-lg text-[13px] font-bold inline-flex items-center justify-center gap-1.5 text-white hover:opacity-90" style={{ background: 'linear-gradient(135deg, #BF953F, #D4AC2B, #F0D55E, #D4AC2B, #BF953F)' }}>
-          Hands-Off Investment <ChevronRight className="w-4 h-4" />
+          Hands-Off Partnership <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -293,7 +293,7 @@ function Card7() {
         <img src={PROPERTY2.image} className="w-full h-full object-cover opacity-80" alt="" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#1a1a2e]" />
         <div className="absolute top-3 right-3">
-          <span className="text-[24px] font-black text-white">{PROPERTY2.roi}</span>
+          <span className="text-[24px] font-black text-white">{PROPERTY2.returns}</span>
           <p className="text-[9px] text-white/50 text-right uppercase tracking-wider">Annual Return</p>
         </div>
       </div>
@@ -311,7 +311,7 @@ function Card7() {
           </div>
           <div className="flex justify-between py-2">
             <span className="text-[11px] text-white/40">Min. invest</span>
-            <span className="text-[13px] font-semibold text-white">£{PROPERTY2.minInvest}</span>
+            <span className="text-[13px] font-semibold text-white">£{PROPERTY2.minContribution}</span>
           </div>
         </div>
         <div className="mt-3">
@@ -319,7 +319,7 @@ function Card7() {
           <p className="text-[9px] text-white/30 mt-1">{PROPERTY2.funded}% funded</p>
         </div>
         <button className="w-full mt-3 h-[40px] rounded-lg text-[13px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-90" style={{ background: 'linear-gradient(135deg, #BF953F, #FCF6BA, #B38728)', color: '#1a1a2e' }}>
-          Invest Immediately <ArrowRight className="w-3.5 h-3.5" />
+          Partner Now <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
@@ -344,8 +344,8 @@ function Card8() {
         <p className="text-[13px] text-muted-foreground mt-0.5">{PROPERTY.city}</p>
         <div className="flex items-center gap-4 mt-3 py-3 px-3 rounded-xl" style={{ background: 'linear-gradient(135deg, #FDF5D6, #FBF1C7)' }}>
           <div>
-            <div className="text-[20px] font-extrabold" style={{ color: '#8B6914' }}>{PROPERTY.roi}</div>
-            <div className="text-[9px] text-muted-foreground">Annual ROI</div>
+            <div className="text-[20px] font-extrabold" style={{ color: '#8B6914' }}>{PROPERTY.returns}</div>
+            <div className="text-[9px] text-muted-foreground">Est. Returns</div>
           </div>
           <div className="w-px h-8" style={{ background: '#D4AC2B' }} />
           <div>
@@ -375,7 +375,7 @@ function Card9() {
           <img src={PROPERTY2.image} className="w-full h-full object-cover" alt="" />
           <div className="absolute top-2.5 left-2.5 flex gap-1.5">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white/90 rounded-full text-[11px] font-semibold shadow-sm" style={{ color: '#8B6914' }}>
-              <Shield className="w-3 h-3" /> Secured Investment
+              <Shield className="w-3 h-3" /> Secured Partnership
             </span>
           </div>
         </div>
@@ -384,8 +384,8 @@ function Card9() {
           <p className="text-[13px] text-muted-foreground mt-0.5">{PROPERTY2.city}</p>
           <div className="mt-3">
             <Row label="Monthly profit" value={`£${PROPERTY2.profit}/mo`} gold />
-            <Row label="Annual ROI" value={PROPERTY2.roi} gold />
-            <Row label="Min. investment" value={`£${PROPERTY2.minInvest}`} />
+            <Row label="Est. Returns" value={PROPERTY2.returns} gold />
+            <Row label="Min. contribution" value={`£${PROPERTY2.minContribution}`} />
           </div>
           <div className="mt-2">
             <ProgressBar percent={PROPERTY2.funded} gold />
@@ -415,8 +415,8 @@ function Card10() {
             <h3 className="text-[15px] font-bold text-white mt-1">{PROPERTY.name}</h3>
           </div>
           <div className="text-right">
-            <div className="text-[22px] font-black text-white">{PROPERTY.roi}</div>
-            <div className="text-[9px] text-white/60">ROI</div>
+            <div className="text-[22px] font-black text-white">{PROPERTY.returns}</div>
+            <div className="text-[9px] text-white/60">Returns</div>
           </div>
         </div>
       </div>
@@ -426,15 +426,15 @@ function Card10() {
           <span className="text-[14px] font-bold" style={{ color: '#A67C00' }}>£{PROPERTY.profit}</span>
         </div>
         <div className="flex items-center justify-between py-2">
-          <span className="text-xs text-muted-foreground">Invest from</span>
-          <span className="text-[14px] font-bold text-foreground">£{PROPERTY.minInvest}</span>
+          <span className="text-xs text-muted-foreground">Partner from</span>
+          <span className="text-[14px] font-bold text-foreground">£{PROPERTY.minContribution}</span>
         </div>
         <div className="mt-1">
           <ProgressBar percent={PROPERTY.funded} gold />
           <p className="text-[10px] text-muted-foreground mt-1">{PROPERTY.funded}% funded — limited spots</p>
         </div>
         <button className="w-full mt-3 h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 text-white hover:opacity-90 shadow-lg" style={{ background: 'linear-gradient(135deg, #BF953F, #D4AC2B, #F0D55E, #D4AC2B, #BF953F)' }}>
-          Invest Now <ArrowRight className="w-4 h-4" />
+          Partner Now <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -458,8 +458,8 @@ function Card11() {
         <p className="text-[13px] text-gray-500 mt-0.5">{PROPERTY2.city} · {PROPERTY2.type}</p>
         <div className="grid grid-cols-2 gap-3 mt-4">
           <div className="rounded-xl p-3" style={{ background: '#FDF8E8' }}>
-            <div className="text-[20px] font-extrabold" style={{ color: '#8B6914' }}>{PROPERTY2.roi}</div>
-            <div className="text-[10px] text-gray-500">Annual ROI</div>
+            <div className="text-[20px] font-extrabold" style={{ color: '#8B6914' }}>{PROPERTY2.returns}</div>
+            <div className="text-[10px] text-gray-500">Est. Returns</div>
           </div>
           <div className="rounded-xl p-3" style={{ background: '#FDF8E8' }}>
             <div className="text-[20px] font-extrabold" style={{ color: '#8B6914' }}>£{PROPERTY2.profit}</div>
@@ -467,9 +467,9 @@ function Card11() {
           </div>
         </div>
         <button className="w-full mt-4 h-[44px] rounded-xl text-[14px] font-bold text-white inline-flex items-center justify-center gap-2 hover:opacity-90 shadow-md" style={{ background: 'linear-gradient(135deg, #BF953F, #D4AC2B, #F0D55E, #D4AC2B, #BF953F)' }}>
-          Start Investing Today <TrendingUp className="w-4 h-4" />
+          Start Partnership Today <TrendingUp className="w-4 h-4" />
         </button>
-        <p className="text-[10px] text-center text-gray-400 mt-2">From £{PROPERTY2.minInvest} · {PROPERTY2.funded}% funded</p>
+        <p className="text-[10px] text-center text-gray-400 mt-2">From £{PROPERTY2.minContribution} · {PROPERTY2.funded}% funded</p>
       </div>
     </div>
   );
@@ -494,11 +494,11 @@ function Card12() {
         <p className="text-[13px] text-muted-foreground">{PROPERTY.city}</p>
         <div className="mt-3 flex items-center justify-between">
           <div>
-            <div className="text-[22px] font-black" style={{ color: '#8B6914' }}>{PROPERTY.roi}</div>
-            <div className="text-[9px] text-muted-foreground">Annual ROI</div>
+            <div className="text-[22px] font-black" style={{ color: '#8B6914' }}>{PROPERTY.returns}</div>
+            <div className="text-[9px] text-muted-foreground">Est. Returns</div>
           </div>
           <button className="h-[40px] px-6 rounded-lg text-[13px] font-bold text-white inline-flex items-center gap-1.5 hover:opacity-90 shadow-md" style={{ background: 'linear-gradient(135deg, #BF953F, #D4AC2B, #F0D55E, #D4AC2B, #BF953F)' }}>
-            Invest <ArrowRight className="w-3.5 h-3.5" />
+            Partner <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -534,7 +534,7 @@ export default function TestingDesign() {
               <Card4 />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">5 — ROI Focus (Green CTA)</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">5 — Returns Focus (Green CTA)</p>
               <Card5 />
             </div>
             <div>

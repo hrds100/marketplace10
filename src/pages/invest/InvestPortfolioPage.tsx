@@ -84,11 +84,11 @@ function getReachedMilestones(count: number) {
 // ---------------------------------------------------------------------------
 
 const ACHIEVEMENTS = [
-  { id: 'first-property', name: 'First Property', description: 'Invested in your first property', icon: Home, unlocked: true },
+  { id: 'first-property', name: 'First Property', description: 'Contributed in your first property', icon: Home, unlocked: true },
   { id: 'active-partner', name: 'Active Partner', description: 'Participated in the NFStay JV program', icon: Users, unlocked: true },
-  { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Invested in 3+ properties', icon: Building2, unlocked: false },
-  { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Invested in 5+ properties', icon: Award, unlocked: false },
-  { id: 'property-titan', name: 'Property Titan', description: 'Invested in 10+ properties', icon: Crown, unlocked: false },
+  { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Contributed in 3+ properties', icon: Building2, unlocked: false },
+  { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Contributed in 5+ properties', icon: Award, unlocked: false },
+  { id: 'property-titan', name: 'Property Titan', description: 'Contributed in 10+ properties', icon: Crown, unlocked: false },
   { id: 'first-payout', name: 'First Payout', description: 'Received your first rental income', icon: Banknote, unlocked: false },
   { id: 'proposal-voter', name: 'Proposal Voter', description: 'Voted on a governance proposal', icon: Vote, unlocked: false },
   { id: 'early-investor', name: 'Early Investor', description: 'Among the first 100 investors', icon: Sparkles, unlocked: false },
@@ -137,13 +137,13 @@ export default function InvestPortfolioPage() {
     : 0;
 
   // ROI progress
-  const roiTarget = mockPortfolio.totalInvested;
+  const roiTarget = mockPortfolio.totalContributed;
   const profitTarget = roiTarget * 1.5;
   const roiProgress = Math.min((mockPortfolio.totalEarnings / profitTarget) * 100, 100);
   const roiMarkerPct = (roiTarget / profitTarget) * 100;
 
   const summaryItems = [
-    { label: 'Total Invested', value: mockPortfolio.totalInvested, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Total Contributed', value: mockPortfolio.totalContributed, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
     { label: 'Total Earnings', value: mockPortfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10' },
     { label: 'Pending Payouts', value: mockPortfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10' },
   ];
@@ -212,7 +212,7 @@ export default function InvestPortfolioPage() {
 
                 {/* ROI Progress */}
                 <div className="pt-3 border-t space-y-2">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">ROI Progress</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Returns Progress</p>
                   <div className="relative">
                     <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                       <div
@@ -226,7 +226,7 @@ export default function InvestPortfolioPage() {
                       style={{ left: `${roiMarkerPct}%`, transform: 'translateX(-50%)' }}
                     >
                       <div className="w-px h-2 bg-muted-foreground/40" />
-                      <span className="text-[9px] text-muted-foreground mt-0.5">ROI</span>
+                      <span className="text-[9px] text-muted-foreground mt-0.5">Returns</span>
                     </div>
                     {/* Profit marker */}
                     <div
@@ -238,7 +238,7 @@ export default function InvestPortfolioPage() {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    {formatCurrency(mockPortfolio.totalEarnings)} earned of {formatCurrency(roiTarget)} to reach ROI
+                    {formatCurrency(mockPortfolio.totalEarnings)} earned of {formatCurrency(roiTarget)} target returns
                   </p>
                 </div>
               </CardContent>
@@ -452,7 +452,7 @@ export default function InvestPortfolioPage() {
                               </p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Invested</p>
+                              <p className="text-muted-foreground">Contributed</p>
                               <p className="font-semibold">{formatCurrency(h.invested)}</p>
                             </div>
                             <div>
@@ -503,7 +503,7 @@ export default function InvestPortfolioPage() {
                           </div>
                           <div>
                             <p className="text-base font-bold">{(h.annualYield * 6 + 30).toFixed(0)}%</p>
-                            <p className="text-[10px] text-muted-foreground">6YR Expected ROI</p>
+                            <p className="text-[10px] text-muted-foreground">6YR Est. Returns</p>
                           </div>
                           <div>
                             <p className="text-base font-bold">Monthly</p>

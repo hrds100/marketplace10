@@ -225,7 +225,7 @@ export default function AdminSettings() {
                   placeholder="You are NFsTay's property listing writer..."
                   className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                 />
-                <p className="text-[10px] text-muted-foreground mt-1">This prompt generates listing descriptions when users click "Generate description with AI". Keep it UK-focused and investor-oriented.</p>
+                <p className="text-[10px] text-muted-foreground mt-1">This prompt generates listing descriptions when users click "Generate description with AI". Keep it UK-focused and partner-oriented.</p>
               </div>
 
               <button
