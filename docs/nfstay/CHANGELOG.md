@@ -6,6 +6,25 @@
 
 ## 2026-03-18
 
+### DNS + Credentials Setup
+
+**DNS (Cloudflare — nfstay.app zone):**
+- Updated `nfstay.app` A record from old VPS IP (`31.97.118.211`) → Vercel (`76.76.21.21`)
+- `*.nfstay.app` A record already pointed to Vercel — no change needed
+- `connect.nfstay.app` CNAME (Cloudflare for SaaS fallback) — kept as-is
+- `_dmarc.nfstay.app` TXT — kept as-is
+
+**Credentials provided by Tajul:**
+- Cloudflare API Token (`NFS_CF_API_TOKEN`) — awaiting Supabase secret set
+- Cloudflare Zone ID (`NFS_CF_ZONE_ID`) — awaiting Supabase secret set
+- Google Maps API Key (`VITE_GOOGLE_MAPS_API_KEY`) — awaiting Vercel env var set
+
+**Documentation fix:**
+- Corrected ENVIRONMENT.md: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` → `VITE_GOOGLE_MAPS_API_KEY` (matches actual Vite code)
+- Corrected ENVIRONMENT.md: `NEXT_PUBLIC_SUPABASE_*` → `VITE_SUPABASE_*` (matches actual Vite code)
+
+**Status:** DNS live. Supabase secrets and Vercel env var require manual setup (instructions below in this session).
+
 ### Phase 6 — White-Label + Domain + Analytics (Steps 6.1–6.8)
 
 **Architecture Decision:**

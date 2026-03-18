@@ -10,15 +10,15 @@ Set in **Vercel Dashboard → marketplace10 → Settings → Environment Variabl
 
 | Variable | Purpose | Example | Status |
 |----------|---------|---------|--------|
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps + Places (shared with marketplace10) | `AIzaSy...` | Captured |
+| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps + Places (shared with marketplace10) | `AIzaSy...` | **NEEDS SET** in Vercel — key provided |
 | `NEXT_PUBLIC_NFS_STRIPE_PUBLISHABLE_KEY` | Stripe frontend (NFStay-specific) | `pk_test_...` | Provided (test key) — set in Vercel Preview+Dev |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (shared) | `https://asazddtvjvmckouxcmmo.supabase.co` | Already set |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (shared) | `eyJ...` | Already set |
+| `VITE_SUPABASE_URL` | Supabase project URL (shared) | `https://asazddtvjvmckouxcmmo.supabase.co` | Already set |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon key (shared) | `eyJ...` | Already set |
 
 ### Notes
-- `NEXT_PUBLIC_*` vars are exposed to the browser. Never put secrets here.
-- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is shared with marketplace10 — same var, same key.
-- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are already set for marketplace10. NFStay uses the same values.
+- `VITE_*` vars are exposed to the browser (Vite convention). Never put secrets here.
+- `VITE_GOOGLE_MAPS_API_KEY` is shared with marketplace10 — same var, same key. Code references: `use-nfs-google-maps.ts`, `NfsSearchMap.tsx`, `NfsPropertyMap.tsx`, `NfsPlacesAutocomplete.tsx`.
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are already set for marketplace10. NFStay uses the same values.
 - `NEXT_PUBLIC_NFS_STRIPE_PUBLISHABLE_KEY` is NFStay-specific — marketplace10 uses GHL for payments.
 
 ---
@@ -38,8 +38,8 @@ Set via `npx supabase secrets set KEY=VALUE` or Supabase Dashboard.
 | `NFS_HOSPITABLE_BEARER_TOKEN` | Hospitable API auth (for n8n workflows) | **NEEDS SET** in n8n env vars |
 | `NFS_HOSPITABLE_WEBHOOK_SECRET` | Verify Hospitable webhooks | **NEEDS SET** in Supabase |
 | `NFS_RESEND_API_KEY` | Email sending via Resend | **SET** |
-| `NFS_CF_API_TOKEN` | Cloudflare API for custom domains | Captured from VPS |
-| `NFS_CF_ZONE_ID` | Cloudflare zone for nfstay.app | Captured from VPS |
+| `NFS_CF_API_TOKEN` | Cloudflare API for custom domains | **NEEDS SET** in Supabase — token provided by Tajul |
+| `NFS_CF_ZONE_ID` | Cloudflare zone for nfstay.app | **NEEDS SET** in Supabase — zone ID provided by Tajul |
 
 ### Notes
 - All NFStay secrets use the `NFS_` prefix to distinguish from marketplace10 secrets.
