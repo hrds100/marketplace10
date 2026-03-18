@@ -1,0 +1,99 @@
+{
+  "name": "nfs-hospitable-reservation-sync",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nfs-hospitable-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "nfs-res-webhook-trigger",
+      "name": "Hospitable Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and route reservation events\nconst body = $input.first().json.body || $input.first().json;\nconst eventType = body.event || body.type || '';\n\nconst reservationEvents = ['reservation.created', 'reservation.updated', 'reservation.cancelled'];\nif (!reservationEvents.includes(eventType)) {\n  return [{ json: { skip: true, reason: `Not a reservation event: ${eventType}` } }];\n}\n\nconst reservation = body.data || body.reservation || body.payload || {};\n\nreturn [{\n  json: {\n    skip: false,\n    eventType,\n    customerId: body.customer_id || '',\n    reservationId: reservation.id || reservation.reservation_id || '',\n    reservation,\n    isCancellation: eventType === 'reservation.cancelled',\n    webhookId: body.id || body.webhook_id || crypto.randomUUID()\n  }\n}];"
+      },
+      "id": "nfs-parse-res-webhook",
+      "name": "Parse Reservation Webhook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{ "value1": "={{ $json.skip }}", "value2": true }]
+        }
+      },
+      "id": "nfs-res-check-skip",
+      "name": "Is Reservation Event?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ { \"received\": true, \"skipped\": true } }",
+        "options": { "responseCode": 200 }
+      },
+      "id": "nfs-res-skip-response",
+      "name": "Skip Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [910, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Idempotency check for reservation webhooks\nconst webhookId = $input.first().json.webhookId;\nconst supabaseUrl = $env.SUPABASE_URL;\nconst serviceKey = $env.SUPABASE_SERVICE_ROLE_KEY;\n\nconst checkRes = await fetch(\n  `${supabaseUrl}/rest/v1/nfs_webhook_events?external_event_id=eq.${webhookId}&select=id`,\n  {\n    headers: {\n      'apikey': serviceKey,\n      'Authorization': `Bearer ${serviceKey}`,\n      'Accept': 'application/json'\n    }\n  }\n);\nconst existing = await checkRes.json();\n\nif (existing && existing.length > 0) {\n  return [{ json: { ...($input.first().json), duplicate: true } }];\n}\n\nawait fetch(\n  `${supabaseUrl}/rest/v1/nfs_webhook_events`,\n  {\n    method: 'POST',\n    headers: {\n      'apikey': serviceKey,\n      'Authorization': `Bearer ${serviceKey}`,\n      'Content-Type': 'application/json',\n      'Prefer': 'return=minimal'\n    },\n    body: JSON.stringify({\n      source: 'hospitable',\n      external_event_id: webhookId,\n      event_type: $input.first().json.eventType,\n      data: $input.first().json.reservation,\n      processed: false\n    })\n  }\n);\n\nreturn [{ json: { ...($input.first().json), duplicate: false } }];"
+      },
+      "id": "nfs-res-idempotency",
+      "name": "Idempotency Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [910, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Upsert reservation to nfs_reservations\nconst data = $input.first().json;\nif (data.duplicate) {\n  return [{ json: { action: 'skipped_duplicate', reservationId: data.reservationId } }];\n}\n\nconst supabaseUrl = $env.SUPABASE_URL;\nconst serviceKey = $env.SUPABASE_SERVICE_ROLE_KEY;\nconst res = data.reservation;\n\nif (data.isCancellation) {\n  await fetch(\n    `${supabaseUrl}/rest/v1/nfs_reservations?hospitable_reservation_id=eq.${data.reservationId}`,\n    {\n      method: 'PATCH',\n      headers: {\n        'apikey': serviceKey,\n        'Authorization': `Bearer ${serviceKey}`,\n        'Content-Type': 'application/json',\n        'Prefer': 'return=minimal'\n      },\n      body: JSON.stringify({\n        status: 'cancelled',\n        hospitable_status: 'cancelled',\n        hospitable_last_sync_at: new Date().toISOString()\n      })\n    }\n  );\n\n  // Mark processed\n  await fetch(\n    `${supabaseUrl}/rest/v1/nfs_webhook_events?external_event_id=eq.${data.webhookId}`,\n    {\n      method: 'PATCH',\n      headers: {\n        'apikey': serviceKey,\n        'Authorization': `Bearer ${serviceKey}`,\n        'Content-Type': 'application/json',\n        'Prefer': 'return=minimal'\n      },\n      body: JSON.stringify({ processed: true, success: true, processed_at: new Date().toISOString() })\n    }\n  );\n\n  return [{ json: { action: 'cancelled', reservationId: data.reservationId } }];\n}\n\n// Upsert\nconst mapped = {\n  check_in: res.check_in || res.start_date,\n  check_out: res.check_out || res.end_date,\n  guest_first_name: res.guest?.first_name || '',\n  guest_last_name: res.guest?.last_name || '',\n  guest_email: res.guest?.email || '',\n  guest_phone: res.guest?.phone || '',\n  adults: res.guests?.adults || res.number_of_guests || 1,\n  children: res.guests?.children || 0,\n  total_amount: res.total_price || res.financials?.total || 0,\n  hospitable_status: res.status || 'confirmed',\n  hospitable_financials: res.financials || {},\n  hospitable_last_sync_at: new Date().toISOString(),\n  status: res.status === 'cancelled' ? 'cancelled' : 'confirmed'\n};\n\nconst checkRes = await fetch(\n  `${supabaseUrl}/rest/v1/nfs_reservations?hospitable_reservation_id=eq.${data.reservationId}&select=id`,\n  {\n    headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Accept': 'application/json' }\n  }\n);\nconst existing = await checkRes.json();\n\nif (existing && existing.length > 0) {\n  await fetch(\n    `${supabaseUrl}/rest/v1/nfs_reservations?id=eq.${existing[0].id}`,\n    {\n      method: 'PATCH',\n      headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },\n      body: JSON.stringify(mapped)\n    }\n  );\n}\n\n// Mark processed\nawait fetch(\n  `${supabaseUrl}/rest/v1/nfs_webhook_events?external_event_id=eq.${data.webhookId}`,\n  {\n    method: 'PATCH',\n    headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },\n    body: JSON.stringify({ processed: true, success: true, processed_at: new Date().toISOString() })\n  }\n);\n\nreturn [{ json: { action: existing?.length > 0 ? 'updated' : 'no_match', reservationId: data.reservationId } }];"
+      },
+      "id": "nfs-upsert-reservation",
+      "name": "Upsert Reservation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1130, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ { \"received\": true, \"action\": \"{{ $json.action }}\" } }",
+        "options": { "responseCode": 200 }
+      },
+      "id": "nfs-res-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1350, 400]
+    }
+  ],
+  "connections": {
+    "Hospitable Webhook": { "main": [[{ "node": "Parse Reservation Webhook", "type": "main", "index": 0 }]] },
+    "Parse Reservation Webhook": { "main": [[{ "node": "Is Reservation Event?", "type": "main", "index": 0 }]] },
+    "Is Reservation Event?": {
+      "main": [
+        [{ "node": "Skip Response", "type": "main", "index": 0 }],
+        [{ "node": "Idempotency Check", "type": "main", "index": 0 }]
+      ]
+    },
+    "Idempotency Check": { "main": [[{ "node": "Upsert Reservation", "type": "main", "index": 0 }]] },
+    "Upsert Reservation": { "main": [[{ "node": "Webhook Response", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "nfstay" }],
+  "active": false
+}
