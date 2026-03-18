@@ -63,7 +63,7 @@
 | **Claimable** | Payout is ready to withdraw (holdback period passed). |
 | **Claimed** | User initiated withdrawal. Transaction pending. |
 | **Paid** | Funds delivered (USDC sent, bank transfer completed). |
-| **Bank Transfer** | Manual payout to user's bank account. Admin processes. |
+| **Bank Transfer** | Payout to user's bank account worldwide (200+ countries via Revolut). Weekly Tuesday batch, Hugo approves via Face ID. Uses local rails (UK/EU/US) or SWIFT (international). |
 | **USDC Payout** | Direct USDC transfer from treasury to user's wallet. |
 
 ## Rank System

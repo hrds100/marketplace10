@@ -41,11 +41,16 @@ No admin involvement. No batch. Instant.
 
 1. User opens Payouts page → sees claimable amount
 2. Clicks "Claim" → selects "Bank Transfer"
-3. **First time only:** modal shows bank details form
-   - GBP: Account Name, Sort Code (XX-XX-XX), Account Number (8 digits)
-   - EUR: Account Name, IBAN, BIC/SWIFT
+3. **First time only:** modal shows bank details form (location-aware)
+   - User selects their country → form adapts fields:
+     - **UK:** Account Name, Sort Code (XX-XX-XX), Account Number (8 digits)
+     - **EU / SEPA:** Account Name, IBAN, BIC/SWIFT
+     - **US:** Account Name, Routing Number (9 digits), Account Number
+     - **International (SWIFT):** Account Name, IBAN or Account Number, BIC/SWIFT, Bank Name
+   - User selects preferred payout currency (GBP, EUR, USD, or local)
    - Saved to `user_bank_accounts` table
    - WhatsApp + email confirmation sent to user
+   - Revolut supports payouts to 200+ countries via local rails or SWIFT
 4. Edge Function `submit-payout-claim`:
    - Validates bank details exist
    - Calculates amount server-side (NEVER from frontend)
@@ -65,8 +70,9 @@ No admin involvement. No batch. Instant.
 10. Builds Revolut payment draft:
     - POST /payment-drafts
     - All claims in one batch
-    - Separate GBP and EUR payments
+    - Groups payments by currency (GBP, EUR, USD, etc.)
     - Each payment references: "NFsTay Payout 2026-W12"
+    - Revolut auto-selects fastest rail: local (UK/EU/US) or SWIFT (international)
 11. Updates all claims: status → 'processing', saves draft_id
 12. Logs to `payout_audit_log` (event: batch_sent)
 13. Sends WhatsApp to Hugo:
@@ -74,8 +80,10 @@ No admin involvement. No batch. Instant.
     NFsTay Payout Batch Submitted ✅
     Week: 2026-W12
     Payees: 15
-    GBP Total: £4,230
-    EUR Total: €890
+    GBP: £4,230 (8 payees)
+    EUR: €890 (3 payees)
+    USD: $1,200 (2 payees)
+    Other: £340 equiv (2 payees — SWIFT)
     Largest: £420 → John Smith
 
     👉 Open Revolut app → Review → Approve with Face ID
@@ -92,7 +100,9 @@ No admin involvement. No batch. Instant.
 **SAME DAY (automatic):**
 
 19. GBP: Faster Payments — arrives same day
-20. EUR: SEPA — arrives next business day
+20. EUR: SEPA — arrives same day or next business day
+21. USD: ACH/Wire — arrives same day (wire) or 1-2 days (ACH)
+22. International (SWIFT): arrives 1-5 business days depending on corridor
 21. Revolut fires webhook for each completed/failed transaction
 22. Edge Function `revolut-webhook`:
     - Verifies HMAC-SHA256 signature

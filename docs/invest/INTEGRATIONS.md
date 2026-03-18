@@ -57,12 +57,17 @@
 
 ## Revolut Business API
 
+Supports worldwide payouts to 200+ countries via local rails (UK Faster Payments, SEPA, ACH) and SWIFT.
+
 | Item | Details |
 |------|---------|
 | Production URL | `https://b2b.revolut.com/api/1.0` |
 | Sandbox URL | `https://sandbox-b2b.revolut.com/api/1.0` |
 | Auth | Bearer token (`REVOLUT_API_KEY`) |
 | Webhook verification | HMAC-SHA256 with `REVOLUT_WEBHOOK_SECRET` |
+| Supported currencies | GBP, EUR, USD, and 25+ others |
+| Payment rails | Faster Payments (UK), SEPA (EU), ACH/Wire (US), SWIFT (international) |
+| Delivery time | Same day (local) to 1-5 days (SWIFT) |
 
 ### Endpoints Used
 

@@ -145,16 +145,23 @@
    ↓
 🔄 Modal opens with options:
 
-   🏦 Bank Transfer (GBP or EUR)
-   ├── First time? Enter bank details (sort code + account number)
+   🏦 Bank Transfer (Worldwide — 200+ countries)
+   ├── First time? Select your country → form adapts:
+   │     🇬🇧 UK: Sort code + Account number
+   │     🇪🇺 EU: IBAN + BIC
+   │     🇺🇸 US: Routing number + Account number
+   │     🌍 Other: IBAN or Account number + BIC + Bank name
+   ├── Choose payout currency (GBP, EUR, USD, or local)
    ├── System saves details securely
    ├── WhatsApp confirms: "Bank details saved ✅"
    ├── Claim submitted → status: PENDING
    ├── Tuesday 5am: n8n batches all bank claims
    ├── Sends batch to Revolut as a payment draft
-   ├── Hugo gets WhatsApp: "Batch ready — 15 payees, £4,230 total"
+   ├── Hugo gets WhatsApp: "Batch ready — 15 payees, £4,230 GBP + €890 + $1,200"
    ├── Hugo opens Revolut app → approves with Face ID
-   ├── Revolut sends the money (same day for GBP, next day for EUR)
+   ├── Revolut sends via fastest rail (local or SWIFT)
+   │     🇬🇧 GBP: same day  |  🇪🇺 EUR: same/next day
+   │     🇺🇸 USD: same day   |  🌍 SWIFT: 1-5 days
    ├── User gets WhatsApp: "Your payout of £42.50 has arrived ✅"
    └── Bank statement shows: "NFsTay Payout"
 
@@ -292,7 +299,7 @@
 💵 Agent opens Payouts page → sees commissions available
    ↓
    Same 4 options as investors:
-   🏦 Bank Transfer (Tuesday batch via Revolut)
+   🏦 Bank Transfer (Tuesday batch via Revolut — worldwide, 200+ countries)
    💲 USDC (instant to wallet)
    🪙 STAY Token (instant swap)
    🌱 LP Token (farm for extra yield)

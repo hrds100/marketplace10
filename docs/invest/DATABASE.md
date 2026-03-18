@@ -222,24 +222,41 @@ Activity tracking for affiliate dashboard.
 ## Shared Infrastructure Tables
 
 ### user_bank_accounts
-Bank details for payouts via Revolut.
+Bank details for payouts via Revolut. Supports worldwide payouts (200+ countries via SWIFT).
 
 | Column | Type | Notes |
 |--------|------|-------|
 | id | UUID PRIMARY KEY DEFAULT gen_random_uuid() | |
 | user_id | UUID REFERENCES auth.users(id) NOT NULL | |
-| currency | TEXT NOT NULL CHECK (currency IN ('GBP', 'EUR')) | |
-| account_name | TEXT NOT NULL | |
-| account_number | TEXT | GBP only — 8 digits |
-| sort_code | TEXT | GBP only — 6 digits |
-| iban | TEXT | EUR only |
-| bic | TEXT | EUR only |
-| bank_country | TEXT NOT NULL | ISO 2-letter code |
+| currency | TEXT NOT NULL | GBP, EUR, USD, BRL, THB, NGN, etc. — any Revolut-supported currency |
+| account_name | TEXT NOT NULL | Full legal name on the bank account |
+| account_number | TEXT | UK (8 digits), US (up to 17 digits), or local account number |
+| sort_code | TEXT | UK only — 6 digits (XX-XX-XX) |
+| routing_number | TEXT | US only — 9 digits (ABA routing) |
+| iban | TEXT | EU / international — up to 34 chars |
+| bic | TEXT | SWIFT/BIC code — 8 or 11 chars (required for international SWIFT) |
+| bank_name | TEXT | Name of the bank (helps Revolut route correctly) |
+| bank_country | TEXT NOT NULL | ISO 2-letter code (GB, US, BR, TH, NG, etc.) |
+| bank_address | TEXT | Optional — some countries require for SWIFT |
 | revolut_counterparty_id | TEXT | Populated after Revolut registration |
 | revolut_counterparty_account_id | TEXT | Returned alongside counterparty_id |
 | is_verified | BOOLEAN DEFAULT false | Set true after first successful payout |
 | created_at | TIMESTAMPTZ DEFAULT now() | |
 | updated_at | TIMESTAMPTZ DEFAULT now() | |
+
+**Country-specific required fields:**
+
+| Region | Required fields |
+|--------|----------------|
+| UK | account_name, account_number, sort_code, bank_country=GB |
+| EU / SEPA | account_name, iban, bic, bank_country |
+| US | account_name, account_number, routing_number, bank_country=US |
+| International (SWIFT) | account_name, iban OR account_number, bic, bank_name, bank_country |
+
+**Notes:**
+- Revolut sends via the fastest rail available: local rails for UK/EU/US, SWIFT for everywhere else
+- Currency is what the partner wants to receive in — Revolut auto-converts from GBP if needed
+- bank_address is only required for some SWIFT corridors (Revolut will error if missing — save and retry)
 
 ### payout_claims
 Unified payout claims for all user types. Processed in weekly Revolut batch.
@@ -250,7 +267,7 @@ Unified payout claims for all user types. Processed in weekly Revolut batch.
 | user_id | UUID REFERENCES auth.users(id) NOT NULL | |
 | user_type | TEXT NOT NULL CHECK (user_type IN ('investor', 'affiliate', 'subscriber')) | |
 | amount_entitled | NUMERIC NOT NULL | ALWAYS calculated server-side |
-| currency | TEXT NOT NULL CHECK (currency IN ('GBP', 'EUR')) | |
+| currency | TEXT NOT NULL | GBP, EUR, USD, or any Revolut-supported currency |
 | bank_account_id | UUID REFERENCES user_bank_accounts(id) | |
 | status | TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'paid', 'failed', 'cancelled')) | |
 | week_ref | TEXT NOT NULL | ISO week format: "2026-W12" |
