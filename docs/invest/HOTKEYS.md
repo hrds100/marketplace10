@@ -72,6 +72,8 @@ RULES
 - All affiliate tables: aff_ prefix
 - All n8n workflows: inv- or aff- prefix
 
+The user will describe the task below:
+
 ## HOTKEY END
 
 ---
