@@ -75,35 +75,36 @@
 
 | Feature | Status | System | Notes |
 |---------|--------|--------|-------|
-| Hospitable OAuth connect | Planned | Edge Function | `nfs-hospitable-oauth` |
-| Initial full sync | Planned | n8n | `nfs-hospitable-init-sync` |
-| Listing sync (ongoing) | Planned | n8n | `nfs-hospitable-listing-sync` |
-| Reservation sync (ongoing) | Planned | n8n | `nfs-hospitable-reservation-sync` |
-| Manual resync | Planned | n8n | `nfs-hospitable-manual-sync` |
-| Retry failed syncs | Planned | n8n (cron) | `nfs-hospitable-retry` |
-| Hospitable disconnect | Planned | Edge Function | Update connection status |
-| Hospitable connection UI | Planned | Frontend | Settings tab |
-| iCal public feed | Planned | Edge Function | `nfs-ical-feed` |
-| iCal inbound sync config | Planned | Frontend + Supabase | `inbound_calendars` JSONB |
-| iCal inbound sync execution | Planned | n8n (cron) | `nfs-ical-sync` |
-| iCal outbound URL display | Planned | Frontend | Generate URL for operators |
+| Hospitable OAuth connect | Done | Edge Function | `nfs-hospitable-oauth` — authorize, callback, disconnect, resync |
+| Initial full sync | Done | n8n | `nfs-hospitable-init-sync` — listings + reservations |
+| Listing sync (ongoing) | Done | n8n | `nfs-hospitable-listing-sync` — webhook with idempotency |
+| Reservation sync (ongoing) | Done | n8n | `nfs-hospitable-reservation-sync` — webhook with idempotency |
+| Manual resync | Done | n8n | `nfs-hospitable-manual-sync` — on-demand from settings |
+| Retry failed syncs | Done | n8n (cron) | `nfs-hospitable-retry` — every 30 min |
+| Hospitable disconnect | Done | Edge Function | Deactivates connection |
+| Hospitable connection UI | Done | Frontend | Settings tab with status, health, sync stats |
+| iCal public feed | Done | Edge Function | `nfs-ical-feed` — RFC 5545 ICS format |
+| iCal inbound sync config | Done | Frontend + Supabase | `PropertyCalendars` component — add/remove feeds |
+| iCal inbound sync execution | Planned | n8n (cron) | `nfs-ical-sync` — not yet built |
+| iCal outbound URL display | Done | Frontend | Copy-to-clipboard in Calendars tab |
 
 ## Phase 6 — White-Label + Domain + Analytics
 
 | Feature | Status | System | Notes |
 |---------|--------|--------|-------|
-| Subdomain routing (`*.nfstay.app`) | Planned | Vercel middleware | Rewrite to `/white-label/*` |
-| Custom domain routing | Planned | Vercel middleware + API | Check `nfs_operators` for domain |
-| White-label storefront (search) | Planned | Frontend | Operator-branded search page |
-| White-label property detail | Planned | Frontend | Operator-branded |
-| White-label booking flow | Planned | Frontend | Operator-branded checkout |
-| Custom domain verification | Planned | Edge Function | `nfs-domain-verify` |
-| Cloudflare SaaS provisioning | Planned | Edge Function | Cloudflare API |
-| Analytics: page view tracking | Planned | Frontend + Supabase | `nfs_analytics` table |
-| Analytics: booking event tracking | Planned | Edge Function | On payment webhook |
-| Operator analytics dashboard | Planned | Frontend + Supabase RPC | Stats, trends, performance |
-| `nfstay.app` domain routing | Planned | Vercel + DNS | Traveler-facing |
-| Cleanup expired tokens/sessions | Planned | n8n (cron) | `nfs-cleanup-expired` |
+| Subdomain routing (`*.nfstay.app`) | Done | Client-side hostname router | `detectWhiteLabelMode()` in `lib/nfstay/white-label.ts` |
+| Custom domain routing | Done | Client-side hostname router | Queries `nfs_operators.custom_domain` |
+| White-label landing page | Done | Frontend | Operator hero, about, FAQs, CTA |
+| White-label storefront (search) | Done | Frontend | Operator-branded, filters by operator_id |
+| White-label property detail | Done | Frontend | Operator-branded with booking widget |
+| White-label booking flow | Done | Frontend | Uses existing `NfsBookingWidget` with `white_label` booking source |
+| Custom domain verification | Done | Edge Function | `nfs-domain-verify` — DNS check + Cloudflare SSL provisioning |
+| Domain settings UI | Done | Frontend | Subdomain + custom domain management in settings |
+| Analytics: tracking hook | Done | Frontend + Supabase | `useNfsAnalyticsTrack()` — page views, property views, booking events |
+| Operator analytics dashboard | Done | Frontend | `/nfstay/analytics` — stats, daily chart, top properties, traffic sources |
+| `nfstay.app` domain routing | Done | Client-side | Detected as `type: 'main'` — serves traveler routes |
+| Cleanup expired tokens/sessions | Done | n8n (cron) | `nfs-cleanup-expired` — daily, 3 cleanup tasks |
+| `nfs_analytics` DB migration | Done | Supabase | Migration file created, awaiting execution |
 
 ---
 

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Building2, CalendarDays, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Building2, CalendarDays, Settings, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { NFS_ROUTES } from '@/lib/nfstay/constants';
 
 interface NfsOperatorSidebarProps {
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard', path: NFS_ROUTES.DASHBOARD, icon: Home },
   { label: 'Properties', path: NFS_ROUTES.PROPERTIES, icon: Building2 },
   { label: 'Reservations', path: NFS_ROUTES.RESERVATIONS, icon: CalendarDays },
+  { label: 'Analytics', path: NFS_ROUTES.ANALYTICS, icon: BarChart3 },
   { label: 'Settings', path: NFS_ROUTES.SETTINGS, icon: Settings },
 ] as const;
 

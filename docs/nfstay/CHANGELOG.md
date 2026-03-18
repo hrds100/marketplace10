@@ -6,6 +6,52 @@
 
 ## 2026-03-18
 
+### Phase 6 — White-Label + Domain + Analytics (Steps 6.1–6.8)
+
+**Architecture Decision:**
+- White-label routing is **client-side** (hostname detection in React), NOT middleware-based
+- This eliminates all marketplace10 risk — no middleware.ts changes needed
+- `detectWhiteLabelMode()` checks `window.location.hostname` and routes accordingly
+
+**Database:**
+- Created migration `20260318160000_nfs_phase6_analytics.sql` (awaiting execution)
+- New table: `nfs_analytics` (page views, property views, booking events)
+- RLS: `nfs_analytics_operator_read` (operators see own data only)
+
+**White-Label System:**
+- `lib/nfstay/white-label.ts`: Hostname detection (hub, main, subdomain, custom, dev)
+- `NfsWhiteLabelProvider`: Context provider resolves operator for white-label domains
+- `NfsWhiteLabelRouter`: Conditionally renders white-label vs normal routes
+- `NfsWhiteLabelLayout`: Branded header/footer with operator logo, colors, contact, social
+
+**White-Label Pages:**
+- `NfsWlLanding`: Operator landing page (hero, about, FAQs, CTA)
+- `NfsWlSearch`: Operator-scoped property search (filters by operator_id)
+- `NfsWlProperty`: Branded property detail with booking widget (tracks `white_label` booking source)
+- `NfsWlPaymentSuccess` / `NfsWlPaymentCancel`: Post-checkout pages
+
+**Edge Function (code complete, awaiting deployment):**
+- `nfs-domain-verify`: DNS verification (CNAME/A record check) + Cloudflare SaaS SSL provisioning
+
+**Settings:**
+- `SettingsDomain`: New Domain tab (subdomain management + custom domain verification)
+- `NfsOperatorSettings`: Now 10 tabs (added Domain between Hospitable and Analytics)
+
+**Analytics:**
+- `useNfsAnalyticsTrack()`: Fire-and-forget event tracking hook
+- `useNfsAnalyticsSummary()`: Query hook with aggregation (views, conversions, top properties)
+- `NfsAnalytics`: Operator analytics dashboard (stat cards, daily chart, top properties, traffic sources)
+- Analytics route `/nfstay/analytics` added to sidebar nav
+
+**Booking Widget Update:**
+- `NfsBookingWidget` now accepts `bookingSource` and `operatorDomain` props
+- White-label bookings tracked as `booking_source: 'white_label'` with domain
+
+**n8n Workflow (JSON export, awaiting import + activation):**
+- `nfs-cleanup-expired`: Daily cron — deletes expired auth tokens, guest sessions, expires stale pending reservations
+
+**Status:** Code complete (all 6 phases). Awaiting: DB migration, Edge Function deployments, n8n imports, DNS config. TypeScript: zero errors.
+
 ### Phase 5 — Hospitable + iCal Integration (Steps 5.1–5.6)
 
 **Database:**

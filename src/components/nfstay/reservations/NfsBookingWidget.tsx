@@ -11,9 +11,11 @@ import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface Props {
   property: NfsProperty;
+  bookingSource?: 'main_platform' | 'white_label' | 'operator_direct';
+  operatorDomain?: string;
 }
 
-export default function NfsBookingWidget({ property }: Props) {
+export default function NfsBookingWidget({ property, bookingSource = 'main_platform', operatorDomain }: Props) {
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [adults, setAdults] = useState(1);
@@ -55,7 +57,8 @@ export default function NfsBookingWidget({ property }: Props) {
         payment_currency: pricing.currency,
         guest_email: guestEmail,
         guest_first_name: guestFirstName || undefined,
-        booking_source: 'main_platform',
+        booking_source: bookingSource,
+        operator_domain: operatorDomain || undefined,
         status: 'pending',
         payment_status: 'pending',
       } as any);

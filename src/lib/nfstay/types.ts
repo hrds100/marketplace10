@@ -25,6 +25,7 @@ export interface NfsOperator {
   custom_domain_dns_verified: boolean;
   custom_domain_dns_method: string | null;
   custom_domain_dns_checked_at: string | null;
+  custom_domain_cf: Record<string, unknown>;
 
   // Branding
   accent_color: string | null;
@@ -407,5 +408,26 @@ export interface NfsWebhookEvent {
   processed_at: string | null;
   retry_count: number;
   last_retry_at: string | null;
+  created_at: string;
+}
+
+// ============================================================================
+// Phase 6 — Analytics
+// ============================================================================
+
+export interface NfsAnalyticsEvent {
+  id: string;
+  operator_id: string;
+  property_id: string | null;
+  event_type: string;
+  user_agent: string | null;
+  ip_address: string | null;
+  referrer: string | null;
+  session_id: string | null;
+  device_type: string | null;
+  view_source: string;
+  reservation_id: string | null;
+  booking_data: Record<string, unknown>;
+  timestamp: string;
   created_at: string;
 }

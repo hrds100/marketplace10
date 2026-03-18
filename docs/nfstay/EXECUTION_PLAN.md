@@ -40,8 +40,8 @@
 | Phase 2 — Properties + Maps | COMPLETE | All frontend built. DB migration executed. Table, RLS, indexes, RPC verified. |
 | Phase 3 — Reservations + Pricing | COMPLETE | All steps done. DB live. Email Edge Function awaiting deployment. |
 | Phase 4 — Payments (Stripe) | DB LIVE, FUNCTIONS DEPLOYED | DB + secrets + 4 Edge Functions live. Pending: Stripe webhook endpoints + Vercel publishable key. |
-| Phase 5 — Integrations (Hospitable + iCal) | NOT STARTED | Tajul provides Hospitable credentials |
-| Phase 6 — White-Label + Analytics | NOT STARTED | Tajul handles DNS + domains |
+| Phase 5 — Integrations (Hospitable + iCal) | CODE COMPLETE | Awaiting: DB migration, Edge Function deploys, n8n imports, secrets |
+| Phase 6 — White-Label + Analytics | CODE COMPLETE | Awaiting: DB migration, Edge Function deploy, n8n import, DNS config |
 
 ---
 

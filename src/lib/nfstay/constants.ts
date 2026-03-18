@@ -15,7 +15,22 @@ export const NFS_ROUTES = {
   PROPERTY_VIEW: '/nfstay/property/:id',
   PAYMENT_SUCCESS: '/nfstay/payment/success',
   PAYMENT_CANCEL: '/nfstay/payment/cancel',
+  ANALYTICS: '/nfstay/analytics',
 } as const;
+
+// White-label routes (used on *.nfstay.app and custom domains)
+export const NFS_WL_ROUTES = {
+  LANDING: '/',
+  SEARCH: '/search',
+  PROPERTY: '/property/:id',
+  PAYMENT_SUCCESS: '/payment/success',
+  PAYMENT_CANCEL: '/payment/cancel',
+} as const;
+
+// Reserved subdomains that operators cannot claim
+export const NFS_RESERVED_SUBDOMAINS = [
+  'www', 'api', 'connect', 'cd', 'admin', 'app', 'mail', 'staging', 'dev',
+] as const;
 
 export const NFS_ONBOARDING_STEPS = [
   'account_setup',

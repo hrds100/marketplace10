@@ -53,6 +53,9 @@ import NfsSearch from "./pages/nfstay/NfsSearch";
 import NfsPropertyView from "./pages/nfstay/NfsPropertyView";
 import NfsPaymentSuccess from "./pages/nfstay/NfsPaymentSuccess";
 import NfsPaymentCancel from "./pages/nfstay/NfsPaymentCancel";
+import NfsAnalytics from "./pages/nfstay/NfsAnalytics";
+import NfsWhiteLabelProvider from "./components/nfstay/white-label/NfsWhiteLabelProvider";
+import NfsWhiteLabelRouter from "./components/nfstay/white-label/NfsWhiteLabelRouter";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -82,6 +85,8 @@ const App = () => (
     <TooltipProvider>
       <Sonner />
       <BrowserRouter>
+        <NfsWhiteLabelProvider>
+        <NfsWhiteLabelRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
@@ -136,6 +141,7 @@ const App = () => (
             <Route path="reservations/:id" element={<NfsReservationDetail />} />
             <Route path="create-reservation" element={<NfsCreateReservation />} />
             <Route path="settings" element={<NfsOperatorSettings />} />
+            <Route path="analytics" element={<NfsAnalytics />} />
           </Route>
           {/* NFStay traveler-facing routes — standalone (no operator layout) */}
           <Route path="/nfstay/search" element={<NfsSearch />} />
@@ -144,6 +150,8 @@ const App = () => (
           <Route path="/nfstay/payment/cancel" element={<NfsPaymentCancel />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </NfsWhiteLabelRouter>
+        </NfsWhiteLabelProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
