@@ -233,7 +233,7 @@ export default function DealsPageV2() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                   Top Picks
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {highlighted.map(l => (
                     <div
                       key={l.id}
@@ -257,11 +257,11 @@ export default function DealsPageV2() {
 
             {/* Card grid */}
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {[0, 1, 2, 3, 4, 5].map(i => <CardSkeleton key={i} />)}
               </div>
             ) : pageListings.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {pageListings.map(l => (
                   <div
                     key={l.id}
@@ -340,7 +340,7 @@ export default function DealsPageV2() {
         </div>
 
         {/* Right: map */}
-        <div className="hidden lg:block w-[45%] max-w-[700px] flex-shrink-0 p-3">
+        <div className="hidden lg:block w-[25%] max-w-[400px] flex-shrink-0 p-3">
           <div className="w-full h-full rounded-2xl overflow-hidden border border-border/30 shadow-sm">
             <Suspense
               fallback={
