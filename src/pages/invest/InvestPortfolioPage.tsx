@@ -60,11 +60,11 @@ const RANK_LADDER: { min: number; label: string }[] = [
 ];
 
 const MILESTONES = [
-  { min: 3, label: 'Multi Co-Host' },
-  { min: 5, label: 'Official Host' },
-  { min: 10, label: 'Superhost' },
-  { min: 15, label: 'Elite Superhost' },
-  { min: 25, label: 'Host Empire' },
+  { min: 3, label: 'Co-Host', tier: '◆', tierCount: 1 },
+  { min: 5, label: 'Official Host', tier: '◆', tierCount: 2 },
+  { min: 10, label: 'Superhost', tier: '◆', tierCount: 3 },
+  { min: 15, label: 'Elite Superhost', tier: '◆', tierCount: 4 },
+  { min: 25, label: 'Host Empire', tier: '★', tierCount: 5 },
 ];
 
 function getCurrentRank(count: number) {
@@ -90,7 +90,7 @@ function getReachedMilestones(count: number) {
 const ACHIEVEMENTS = [
   { id: 'first-property', name: 'First Property', description: 'Invested in your first property', icon: Home, unlocked: true },
   { id: 'active-partner', name: 'Active Partner', description: 'Participated in the NFStay JV program', icon: Users, unlocked: true },
-  { id: 'multi-cohost', name: 'Multi Co-Host', description: 'Invested in 3+ properties', icon: Building2, unlocked: false },
+  { id: 'multi-cohost', name: 'Co-Host', description: 'Invested in 3+ properties', icon: Building2, unlocked: false },
   { id: 'official-host', name: 'Official Host', description: 'Invested in 5+ properties', icon: Award, unlocked: false },
   { id: 'superhost', name: 'Superhost', description: 'Invested in 10+ properties', icon: Crown, unlocked: false },
   { id: 'first-payout', name: 'First Payout', description: 'Received your first rental income', icon: Banknote, unlocked: false },
@@ -259,16 +259,24 @@ export default function InvestPortfolioPage() {
 
                         {/* Label */}
                         <div className="pt-0.5">
-                          <p
-                            className={cn(
-                              'text-sm',
-                              isReached && 'font-bold text-foreground',
-                              isNext && 'font-medium text-foreground',
-                              !isReached && !isNext && 'text-muted-foreground'
-                            )}
-                          >
-                            {milestone.label}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={cn(
+                                'text-sm',
+                                isReached && 'font-bold text-foreground',
+                                isNext && 'font-medium text-foreground',
+                                !isReached && !isNext && 'text-muted-foreground'
+                              )}
+                            >
+                              {milestone.label}
+                            </p>
+                            <span className={cn(
+                              'text-[10px] tracking-wider leading-none',
+                              isReached ? 'text-primary' : isNext ? 'text-primary/70' : 'text-muted-foreground/40'
+                            )}>
+                              {Array.from({ length: milestone.tierCount }, () => milestone.tier).join('')}
+                            </span>
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             {milestone.min} {milestone.min === 1 ? 'property' : 'properties'}
                           </p>
