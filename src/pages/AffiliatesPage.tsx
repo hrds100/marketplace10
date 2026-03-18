@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe } from 'lucide-react';
+import { useMyAffiliateProfile } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +43,8 @@ function getNextTuesday() {
 export default function AffiliatesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { data: realAffProfile } = useMyAffiliateProfile();
+  // TODO: Wire realAffProfile to replace mock affiliate data when available
   const [copied, setCopied] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
   const [calcMode, setCalcMode] = useState<'subscriptions' | 'jv'>('subscriptions');

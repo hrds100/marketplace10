@@ -83,12 +83,16 @@ function typeBadgeColor(type: string): string {
 
 export default function InvestProposalsPage() {
   const { data: realProposals = [] } = useProposals();
-  // TODO: Replace mockProposals with realProposals when data exists
+
+  // Use real proposals if available
+  const realActiveProposals = realProposals.filter((p: any) => !p.result && new Date(p.ends_at) > new Date());
+  const realPastProposals = realProposals.filter((p: any) => p.result);
 
   // Local mutable state for active proposals (so votes update in place)
+  const activeSource = realActiveProposals.length > 0 ? realActiveProposals : mockProposals.active;
   const [activeProposals, setActiveProposals] = useState<ActiveProposalWithVote[]>(
     () =>
-      mockProposals.active.map((p) => ({
+      activeSource.map((p: any) => ({
         ...p,
         userVoted: p.userVoted as VoteChoice | null,
       }))
@@ -102,7 +106,7 @@ export default function InvestProposalsPage() {
     choice: null,
   });
 
-  const pastProposals: PastProposal[] = mockProposals.past;
+  const pastProposals: PastProposal[] = realPastProposals.length > 0 ? realPastProposals as PastProposal[] : mockProposals.past;
 
   // Submit proposal state
   const [submitOpen, setSubmitOpen] = useState(false);

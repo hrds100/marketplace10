@@ -29,7 +29,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockPayouts, mockPortfolio } from '@/data/investMockData';
+import { mockPayouts } from '@/data/investMockData';
 
 type ClaimMethod = 'bank_transfer' | 'usdc' | 'stay_token' | 'lp_token';
 type ClaimStep = 'choose' | 'processing' | 'success';
@@ -299,14 +299,24 @@ const payoutPropertyImages: Record<number, string> = {
 export default function InvestPayoutsPage() {
   const { data: realPayouts = [] } = useMyPayouts();
   const { data: bankAccount } = useMyBankAccount();
-  // TODO: Replace mockPayouts with realPayouts when data exists
+
+  // Use real payouts if available, otherwise mock
+  const payouts = (realPayouts.length > 0 ? realPayouts.map((p: any) => ({
+    id: p.id,
+    propertyTitle: p.inv_properties?.title || 'Property',
+    propertyId: p.property_id,
+    date: p.period_date,
+    sharesOwned: p.shares_owned || 0,
+    amount: Number(p.amount || 0),
+    currency: 'USDC',
+    status: p.status as 'claimable' | 'claimed' | 'paid',
+    method: p.claim_method,
+  })) : mockPayouts) as PayoutItem[];
 
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState<PayoutItem | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<ClaimMethod | null>(null);
   const [claimStep, setClaimStep] = useState<ClaimStep>('choose');
-
-  const payouts = mockPayouts as PayoutItem[];
 
   const handleClaim = (payout: PayoutItem) => {
     setSelectedPayout(payout);
@@ -350,7 +360,7 @@ export default function InvestPayoutsPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Total Earned</span>
-                <span className="font-bold">{formatCurrency(mockPortfolio.totalEarnings)}</span>
+                <span className="font-bold">{formatCurrency(payouts.reduce((sum, p) => sum + p.amount, 0))}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Pending Items</span>

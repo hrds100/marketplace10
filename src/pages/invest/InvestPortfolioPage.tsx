@@ -124,11 +124,35 @@ const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
 export default function InvestPortfolioPage() {
   const { data: realHoldings = [] } = useMyHoldings();
   const { data: realProperties = [] } = useInvestProperties();
-  // TODO: Replace mockPortfolio with realHoldings when data exists
+
+  // Build real portfolio from Supabase data
+  const realHoldingsData = realHoldings.length > 0 ? realHoldings : null;
+
+  const portfolio = realHoldingsData ? {
+    totalContributed: realHoldingsData.reduce((sum: number, h: any) => sum + Number(h.invested_amount || 0), 0),
+    totalValue: realHoldingsData.reduce((sum: number, h: any) => sum + Number(h.current_value || h.invested_amount || 0), 0),
+    totalEarnings: realHoldingsData.reduce((sum: number, h: any) => sum + Number(h.total_earned || 0), 0),
+    pendingPayouts: 0, // Will be populated when inv_payouts has data
+    holdings: realHoldingsData.map((h: any) => ({
+      propertyId: h.property_id,
+      propertyTitle: h.inv_properties?.title || 'Property',
+      location: h.inv_properties?.location || '',
+      image: h.inv_properties?.image || '',
+      sharesOwned: h.shares_owned,
+      sharePrice: h.inv_properties?.price_per_share || 100,
+      currentValue: Number(h.current_value || h.invested_amount || 0),
+      invested: Number(h.invested_amount || 0),
+      totalEarned: Number(h.total_earned || 0),
+      monthlyYield: h.inv_properties ? (Number(h.inv_properties.monthly_rent || 0) / Number(h.inv_properties.total_shares || 1)) * h.shares_owned : 0,
+      annualYield: Number(h.inv_properties?.annual_yield || 0),
+      lastPayout: h.last_payout_date || '2026-03-01',
+      status: 'earning' as const,
+    })),
+  } : { ...mockPortfolio, totalContributed: mockPortfolio.totalInvested };
 
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
 
-  const holdingsCount = mockPortfolio.holdings.length;
+  const holdingsCount = portfolio.holdings.length;
   const currentRank = getCurrentRank(holdingsCount);
   const nextMilestone = getNextMilestone(holdingsCount);
   const reachedMilestones = getReachedMilestones(holdingsCount);
@@ -142,15 +166,15 @@ export default function InvestPortfolioPage() {
     : 0;
 
   // ROI progress
-  const roiTarget = mockPortfolio.totalContributed;
+  const roiTarget = portfolio.totalContributed;
   const profitTarget = roiTarget * 1.5;
-  const roiProgress = Math.min((mockPortfolio.totalEarnings / profitTarget) * 100, 100);
+  const roiProgress = Math.min((portfolio.totalEarnings / profitTarget) * 100, 100);
   const roiMarkerPct = (roiTarget / profitTarget) * 100;
 
   const summaryItems = [
-    { label: 'Total Contributed', value: mockPortfolio.totalContributed, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'Total Earnings', value: mockPortfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-    { label: 'Pending Payouts', value: mockPortfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { label: 'Total Contributed', value: portfolio.totalContributed, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Total Earnings', value: portfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { label: 'Pending Payouts', value: portfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10' },
   ];
 
   const toggleCollapse = (propertyId: number) => {
@@ -243,7 +267,7 @@ export default function InvestPortfolioPage() {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    {formatCurrency(mockPortfolio.totalEarnings)} earned of {formatCurrency(roiTarget)} target returns
+                    {formatCurrency(portfolio.totalEarnings)} earned of {formatCurrency(roiTarget)} target returns
                   </p>
                 </div>
               </CardContent>
@@ -371,7 +395,7 @@ export default function InvestPortfolioPage() {
             </Badge>
           </div>
 
-          {mockPortfolio.holdings.map((h, idx) => {
+          {portfolio.holdings.map((h, idx) => {
             const isCollapsed = collapsedIds.has(h.propertyId);
             const gain = ((h.currentValue - h.invested) / h.invested) * 100;
             const activeProposal = hasActiveProposal(h.propertyId);
