@@ -5,7 +5,7 @@
 //   Stripe → POST /nfs-stripe-webhook → Verify signature → Process event → Update DB
 //
 // Idempotency: Checks nfs_webhook_events.external_event_id before processing
-// Requires: NFS_STRIPE_SECRET_KEY, NFS_STRIPE_WEBHOOK_SECRET
+// Requires: NFS_STRIPE_SECRET_KEY, NFS_STRIPE_WEBHOOK_SECRET, NFS_STRIPE_CONNECT_WEBHOOK_SECRET
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -13,6 +13,7 @@ import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno';
 
 const NFS_STRIPE_SECRET_KEY = Deno.env.get('NFS_STRIPE_SECRET_KEY');
 const NFS_STRIPE_WEBHOOK_SECRET = Deno.env.get('NFS_STRIPE_WEBHOOK_SECRET');
+const NFS_STRIPE_CONNECT_WEBHOOK_SECRET = Deno.env.get('NFS_STRIPE_CONNECT_WEBHOOK_SECRET');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -46,7 +47,16 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing stripe-signature header' }), { status: 400 });
     }
 
-    const event = stripe.webhooks.constructEvent(body, signature, NFS_STRIPE_WEBHOOK_SECRET);
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, NFS_STRIPE_WEBHOOK_SECRET);
+    } catch (platformErr) {
+      if (NFS_STRIPE_CONNECT_WEBHOOK_SECRET) {
+        event = stripe.webhooks.constructEvent(body, signature, NFS_STRIPE_CONNECT_WEBHOOK_SECRET);
+      } else {
+        throw platformErr;
+      }
+    }
 
     // Idempotency check
     const { data: existing } = await supabase
