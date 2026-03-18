@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { User, Shield, CreditCard, Bell, LogOut } from 'lucide-react';
+import { User, Shield, CreditCard, Bell, LogOut, Wallet } from 'lucide-react';
+import BankDetailsForm from '@/components/BankDetailsForm';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserTier } from '@/hooks/useUserTier';
@@ -12,6 +13,7 @@ const settingsTabs = [
   { id: 'security', label: 'Security', icon: Shield },
   { id: 'membership', label: 'Membership', icon: CreditCard },
   { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'payouts', label: 'Payout Settings', icon: Wallet },
   { id: 'signout', label: 'Sign out', icon: LogOut },
 ];
 
@@ -361,6 +363,44 @@ export default function SettingsPage() {
                   <div className="w-20 flex justify-center">
                     <Toggle on={true} disabled />
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'payouts' && (
+            <div>
+              <h2 className="text-[22px] font-bold text-foreground mb-6">Payout Settings</h2>
+
+              {/* Wallet Address */}
+              <div className="max-w-[480px] mb-8">
+                <h3 className="text-sm font-bold text-foreground mb-3">Wallet Address</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">EVM Wallet Address</label>
+                    <input placeholder="0x..." className="input-nfstay w-full" />
+                    <p className="text-[11px] text-muted-foreground mt-1">Connected via Particle</p>
+                  </div>
+                  <button className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Save Wallet</button>
+                </div>
+              </div>
+
+              {/* Bank Details */}
+              <div className="max-w-[480px] mb-8">
+                <h3 className="text-sm font-bold text-foreground mb-3">Bank Details</h3>
+                <BankDetailsForm />
+              </div>
+
+              {/* Preferred Claim Method */}
+              <div className="max-w-[480px]">
+                <h3 className="text-sm font-bold text-foreground mb-3">Preferred Claim Method</h3>
+                <div className="space-y-2">
+                  {(['Bank Transfer', 'USDC', 'STAY Token'] as const).map((method) => (
+                    <label key={method} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors cursor-pointer">
+                      <input type="radio" name="claimMethod" value={method} defaultChecked={method === 'Bank Transfer'} className="accent-primary" />
+                      <span className="text-sm font-medium text-foreground">{method}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
             </div>

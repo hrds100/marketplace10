@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap, CreditCard, HelpCircle, UserCheck, Settings, Bell } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap, CreditCard, HelpCircle, UserCheck, Settings, Bell, TrendingUp, Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-const adminLinks = [
+type AdminLink =
+  | { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; separator?: false }
+  | { to: string; label: string; icon: null; separator: true };
+
+const adminLinks: AdminLink[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { to: '/admin/listings', label: 'Listings', icon: List },
   { to: '/admin/users', label: 'Users', icon: Users },
@@ -15,6 +19,16 @@ const adminLinks = [
   { to: '/admin/faq', label: 'FAQ', icon: HelpCircle },
   { to: '/admin/affiliates', label: 'Affiliates', icon: UserCheck },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
+  { to: 'separator', label: 'Investment', icon: null, separator: true },
+  { to: '/admin/invest', label: 'Invest Dashboard', icon: TrendingUp, exact: true },
+  { to: '/admin/invest/properties', label: 'Properties', icon: Building2 },
+  { to: '/admin/invest/orders', label: 'Orders', icon: ShoppingCart },
+  { to: '/admin/invest/shareholders', label: 'Shareholders', icon: Users },
+  { to: '/admin/invest/commissions', label: 'Commissions', icon: Coins },
+  { to: '/admin/invest/commission-settings', label: 'Commission Settings', icon: Sliders },
+  { to: '/admin/invest/payouts', label: 'Payouts', icon: Banknote },
+  { to: '/admin/invest/proposals', label: 'Proposals', icon: Vote },
+  { to: '/admin/invest/boost', label: 'Boost', icon: Rocket },
 ];
 
 export default function AdminLayout() {
@@ -44,7 +58,14 @@ export default function AdminLayout() {
       <nav className="h-[64px] bg-card border-b border-border flex items-center px-6 gap-6">
         <span className="text-lg font-extrabold text-foreground tracking-tight">NFsTay</span>
         <div className="flex gap-1 overflow-x-auto flex-1" style={{ scrollbarWidth: 'none' }}>
-          {adminLinks.map(l => {
+          {adminLinks.map((l, i) => {
+            if (l.separator) {
+              return (
+                <span key={`sep-${i}`} className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap select-none">
+                  {l.label}
+                </span>
+              );
+            }
             const isActive = l.exact
               ? location.pathname === l.to
               : location.pathname === l.to || (location.pathname.startsWith(l.to + '/') && l.to !== '/admin');

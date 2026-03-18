@@ -35,6 +35,15 @@ import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminUniversity from "./pages/admin/AdminUniversity";
+import AdminInvestDashboard from "./pages/admin/invest/AdminInvestDashboard";
+import AdminInvestProperties from "./pages/admin/invest/AdminInvestProperties";
+import AdminInvestOrders from "./pages/admin/invest/AdminInvestOrders";
+import AdminInvestShareholders from "./pages/admin/invest/AdminInvestShareholders";
+import AdminInvestCommissions from "./pages/admin/invest/AdminInvestCommissions";
+import AdminInvestCommissionSettings from "./pages/admin/invest/AdminInvestCommissionSettings";
+import AdminInvestPayouts from "./pages/admin/invest/AdminInvestPayouts";
+import AdminInvestProposals from "./pages/admin/invest/AdminInvestProposals";
+import AdminInvestBoost from "./pages/admin/invest/AdminInvestBoost";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 import TestingDesign from "./pages/TestingDesign";
@@ -119,6 +128,15 @@ const App = () => (
             <Route path="affiliates" element={<AdminAffiliates />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="notifications" element={<AdminNotifications />} />
+            <Route path="invest" element={<AdminInvestDashboard />} />
+            <Route path="invest/properties" element={<AdminInvestProperties />} />
+            <Route path="invest/orders" element={<AdminInvestOrders />} />
+            <Route path="invest/shareholders" element={<AdminInvestShareholders />} />
+            <Route path="invest/commissions" element={<AdminInvestCommissions />} />
+            <Route path="invest/commission-settings" element={<AdminInvestCommissionSettings />} />
+            <Route path="invest/payouts" element={<AdminInvestPayouts />} />
+            <Route path="invest/proposals" element={<AdminInvestProposals />} />
+            <Route path="invest/boost" element={<AdminInvestBoost />} />
           </Route>
           <Route path="/testing/design" element={<TestingDesign />} />
           <Route path="*" element={<NotFound />} />
