@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useOutletContext, Link, useNavigate } from 'react-router-dom';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Gem } from 'lucide-react';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import NotificationBell from '@/components/NotificationBell';
 import BurgerMenu from '@/components/BurgerMenu';
@@ -43,6 +43,14 @@ function TopBar() {
             Admin
           </Link>
         )}
+        <button
+          onClick={() => navigate('/dashboard/invest/marketplace')}
+          className="hidden md:flex px-3.5 py-[6px] rounded-lg text-[12px] font-semibold shadow-sm transition-all items-center gap-1.5 hover:opacity-90 text-white"
+          style={{ background: 'linear-gradient(135deg, #BF953F, #D4AC2B, #F0D55E, #D4AC2B, #BF953F)' }}
+        >
+          <Gem className="w-[13px] h-[13px]" strokeWidth={2} />
+          Invest in Airbnbs from £500
+        </button>
         <button
           onClick={() => navigate('/dashboard/list-a-deal')}
           className="hidden md:flex bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3.5 py-[6px] rounded-lg text-[12px] font-semibold hover:from-emerald-600 hover:to-teal-700 shadow-sm transition-all items-center gap-1.5"
