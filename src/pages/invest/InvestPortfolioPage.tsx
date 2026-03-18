@@ -53,388 +53,9 @@ const mockTransactions = [
   { id: 't8', date: '2026-01-01', action: 'Claimed $102.08 rent', property: 'Marina Gate Apartment', type: 'payout' as const },
 ];
 
-// ─── VERSION 1: Overview Dashboard ────────────────────────────────────────────
+// ─── VERSION 1: Final — Split View (polished pick) ────────────────────────────
 
 function Version1() {
-  const summaryCards = [
-    {
-      title: 'Total Invested',
-      value: mockPortfolio.totalInvested,
-      icon: Wallet,
-      color: 'text-blue-500',
-      bg: 'bg-blue-500/10',
-    },
-    {
-      title: 'Current Value',
-      value: mockPortfolio.totalValue,
-      icon: DollarSign,
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-500/10',
-      trend: +13.5,
-    },
-    {
-      title: 'Total Earnings',
-      value: mockPortfolio.totalEarnings,
-      icon: PiggyBank,
-      color: 'text-amber-500',
-      bg: 'bg-amber-500/10',
-      trend: +8.2,
-    },
-    {
-      title: 'Pending Payouts',
-      value: mockPortfolio.pendingPayouts,
-      icon: Clock,
-      color: 'text-purple-500',
-      bg: 'bg-purple-500/10',
-    },
-  ];
-
-  return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {summaryCards.map((card) => (
-          <Card key={card.title} className="relative overflow-hidden">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">{card.title}</p>
-                  <p className="text-2xl font-bold">{formatCurrency(card.value)}</p>
-                </div>
-                <div className={cn('p-3 rounded-xl', card.bg)}>
-                  <card.icon className={cn('h-5 w-5', card.color)} />
-                </div>
-              </div>
-              {card.trend !== undefined && (
-                <div className="flex items-center gap-1 mt-2 text-xs text-emerald-500">
-                  <TrendingUp className="h-3 w-3" />
-                  <span>+{card.trend}%</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Holdings */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Your Holdings</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {mockPortfolio.holdings.map((holding) => {
-            const gainPct = (
-              ((holding.currentValue - holding.invested) / holding.invested) *
-              100
-            ).toFixed(1);
-            const progressValue = (holding.currentValue / (holding.invested * 2)) * 100;
-
-            return (
-              <Card key={holding.propertyId} className="overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="relative h-44 overflow-hidden">
-                  <img
-                    src={holding.image}
-                    alt={holding.propertyTitle}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <Badge className="absolute top-3 right-3 bg-emerald-500/90 text-white border-0">
-                    {holding.status}
-                  </Badge>
-                </div>
-                <CardContent className="p-5 space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-base">{holding.propertyTitle}</h4>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <MapPin className="h-3 w-3" />
-                      {holding.location}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Shares Owned</p>
-                      <p className="font-medium">{holding.sharesOwned}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Current Value</p>
-                      <p className="font-medium">{formatCurrency(holding.currentValue)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Monthly Yield</p>
-                      <p className="font-medium text-emerald-600">{formatCurrency(holding.monthlyYield)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Annual Yield</p>
-                      <p className="font-medium text-emerald-600">{holding.annualYield}%</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Growth</span>
-                      <span className="text-emerald-500">+{gainPct}%</span>
-                    </div>
-                    <Progress value={Math.min(progressValue, 100)} className="h-1.5" />
-                  </div>
-
-                  <Button variant="outline" size="sm" className="w-full gap-2">
-                    <Eye className="h-4 w-4" />
-                    View Property
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── VERSION 2: Big Numbers ───────────────────────────────────────────────────
-
-function Version2() {
-  return (
-    <div className="space-y-6">
-      {/* Hero Banner */}
-      <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
-        <CardContent className="p-8 text-center">
-          <p className="text-sm text-muted-foreground mb-1">Total Portfolio Value</p>
-          <h2 className="text-5xl font-bold tracking-tight">{formatCurrency(mockPortfolio.totalValue)}</h2>
-          <div className="flex items-center justify-center gap-1.5 mt-2">
-            <TrendingUp className="h-5 w-5 text-emerald-500" />
-            <span className="text-lg font-semibold text-emerald-500">+{gainPercent}%</span>
-            <span className="text-sm text-muted-foreground ml-1">all time</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Mini Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-500/10">
-              <Wallet className="h-4 w-4 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Invested</p>
-              <p className="text-lg font-bold">{formatCurrency(mockPortfolio.totalInvested)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-amber-500/10">
-              <Coins className="h-4 w-4 text-amber-500" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Earned</p>
-              <p className="text-lg font-bold">{formatCurrency(mockPortfolio.totalEarnings)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-purple-500/10">
-              <Clock className="h-4 w-4 text-purple-500" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Pending Payouts</p>
-              <p className="text-lg font-bold">{formatCurrency(mockPortfolio.pendingPayouts)}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Holdings Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Holdings</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Property</TableHead>
-                <TableHead className="text-right">Shares</TableHead>
-                <TableHead className="text-right">Invested</TableHead>
-                <TableHead className="text-right">Value</TableHead>
-                <TableHead className="text-right">Yield</TableHead>
-                <TableHead className="text-right">Last Payout</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockPortfolio.holdings.map((h) => (
-                <TableRow
-                  key={h.propertyId}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={h.image}
-                        alt={h.propertyTitle}
-                        className="h-10 w-14 rounded-md object-cover"
-                      />
-                      <div>
-                        <p className="font-medium text-sm">{h.propertyTitle}</p>
-                        <p className="text-xs text-muted-foreground">{h.location}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right font-medium">{h.sharesOwned}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(h.invested)}</TableCell>
-                  <TableCell className="text-right font-medium">{formatCurrency(h.currentValue)}</TableCell>
-                  <TableCell className="text-right text-emerald-600">{h.annualYield}%</TableCell>
-                  <TableCell className="text-right text-sm text-muted-foreground">
-                    {new Date(h.lastPayout).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge
-                      variant="outline"
-                      className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                    >
-                      {h.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// ─── VERSION 3: Card Grid ─────────────────────────────────────────────────────
-
-function Version3() {
-  return (
-    <div className="space-y-6">
-      {/* Holdings — visual-first cards */}
-      <div className="space-y-4">
-        {mockPortfolio.holdings.map((h) => {
-          const gain = ((h.currentValue - h.invested) / h.invested) * 100;
-          const progressValue = (h.totalEarned / h.invested) * 100;
-
-          return (
-            <Card key={h.propertyId} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="flex flex-col md:flex-row">
-                {/* Image — left 40% */}
-                <div className="relative w-full md:w-[40%] h-56 md:h-auto overflow-hidden">
-                  <img
-                    src={h.image}
-                    alt={h.propertyTitle}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent md:bg-gradient-to-r" />
-                  <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4">
-                    <Badge className="bg-white/90 text-foreground border-0 font-medium">
-                      <Building2 className="h-3 w-3 mr-1" />
-                      {h.sharesOwned} shares
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Details — right 60% */}
-                <div className="flex-1 p-5 md:p-6 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="text-lg font-semibold">{h.propertyTitle}</h4>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                        <MapPin className="h-3 w-3" />
-                        {h.location}
-                      </p>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 capitalize"
-                    >
-                      {h.status}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Current Value</p>
-                      <p className="text-base font-bold">{formatCurrency(h.currentValue)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Invested</p>
-                      <p className="text-base font-bold">{formatCurrency(h.invested)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Monthly Yield</p>
-                      <p className="text-base font-bold text-emerald-600">
-                        {formatCurrency(h.monthlyYield)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Annual Return</p>
-                      <p className="text-base font-bold text-emerald-600">{h.annualYield}%</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Earnings vs. Invested</span>
-                      <span className="text-emerald-500">{progressValue.toFixed(0)}%</span>
-                    </div>
-                    <Progress value={Math.min(progressValue, 100)} className="h-2" />
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-1 text-sm text-emerald-500">
-                      <TrendingUp className="h-4 w-4" />
-                      <span className="font-medium">+{gain.toFixed(1)}% gain</span>
-                    </div>
-                    <Button variant="ghost" size="sm" className="gap-1.5 text-primary">
-                      View Property
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Portfolio Summary Footer */}
-      <Card className="bg-muted/50 border-dashed">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Invested</p>
-              <p className="text-lg font-bold mt-0.5">{formatCurrency(mockPortfolio.totalInvested)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Current Value</p>
-              <p className="text-lg font-bold mt-0.5">{formatCurrency(mockPortfolio.totalValue)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Earnings</p>
-              <p className="text-lg font-bold mt-0.5 text-emerald-600">
-                {formatCurrency(mockPortfolio.totalEarnings)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Pending</p>
-              <p className="text-lg font-bold mt-0.5">{formatCurrency(mockPortfolio.pendingPayouts)}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// ─── VERSION 4: Split View ────────────────────────────────────────────────────
-
-function Version4() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const summaryItems = [
@@ -591,9 +212,547 @@ function Version4() {
   );
 }
 
-// ─── VERSION 5: Tabbed Portfolio ──────────────────────────────────────────────
+// ─── VERSION 2: Overview Dashboard ────────────────────────────────────────────
+
+function Version2() {
+  const summaryCards = [
+    {
+      title: 'Total Invested',
+      value: mockPortfolio.totalInvested,
+      icon: Wallet,
+      color: 'text-blue-500',
+      bg: 'bg-blue-500/10',
+    },
+    {
+      title: 'Current Value',
+      value: mockPortfolio.totalValue,
+      icon: DollarSign,
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-500/10',
+      trend: +13.5,
+    },
+    {
+      title: 'Total Earnings',
+      value: mockPortfolio.totalEarnings,
+      icon: PiggyBank,
+      color: 'text-amber-500',
+      bg: 'bg-amber-500/10',
+      trend: +8.2,
+    },
+    {
+      title: 'Pending Payouts',
+      value: mockPortfolio.pendingPayouts,
+      icon: Clock,
+      color: 'text-purple-500',
+      bg: 'bg-purple-500/10',
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {summaryCards.map((card) => (
+          <Card key={card.title} className="relative overflow-hidden">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">{card.title}</p>
+                  <p className="text-2xl font-bold">{formatCurrency(card.value)}</p>
+                </div>
+                <div className={cn('p-3 rounded-xl', card.bg)}>
+                  <card.icon className={cn('h-5 w-5', card.color)} />
+                </div>
+              </div>
+              {card.trend !== undefined && (
+                <div className="flex items-center gap-1 mt-2 text-xs text-emerald-500">
+                  <TrendingUp className="h-3 w-3" />
+                  <span>+{card.trend}%</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Holdings */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Your Holdings</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {mockPortfolio.holdings.map((holding) => {
+            const gainPct = (
+              ((holding.currentValue - holding.invested) / holding.invested) *
+              100
+            ).toFixed(1);
+            const progressValue = (holding.currentValue / (holding.invested * 2)) * 100;
+
+            return (
+              <Card key={holding.propertyId} className="overflow-hidden group hover:shadow-lg transition-shadow">
+                <div className="relative h-44 overflow-hidden">
+                  <img
+                    src={holding.image}
+                    alt={holding.propertyTitle}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <Badge className="absolute top-3 right-3 bg-emerald-500/90 text-white border-0">
+                    {holding.status}
+                  </Badge>
+                </div>
+                <CardContent className="p-5 space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-base">{holding.propertyTitle}</h4>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <MapPin className="h-3 w-3" />
+                      {holding.location}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Shares Owned</p>
+                      <p className="font-medium">{holding.sharesOwned}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Current Value</p>
+                      <p className="font-medium">{formatCurrency(holding.currentValue)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Monthly Yield</p>
+                      <p className="font-medium text-emerald-600">{formatCurrency(holding.monthlyYield)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Annual Yield</p>
+                      <p className="font-medium text-emerald-600">{holding.annualYield}%</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Growth</span>
+                      <span className="text-emerald-500">+{gainPct}%</span>
+                    </div>
+                    <Progress value={Math.min(progressValue, 100)} className="h-1.5" />
+                  </div>
+
+                  <Button variant="outline" size="sm" className="w-full gap-2">
+                    <Eye className="h-4 w-4" />
+                    View Property
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── VERSION 3: Big Numbers ───────────────────────────────────────────────────
+
+function Version3() {
+  return (
+    <div className="space-y-6">
+      {/* Hero Banner */}
+      <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
+        <CardContent className="p-8 text-center">
+          <p className="text-sm text-muted-foreground mb-1">Total Portfolio Value</p>
+          <h2 className="text-5xl font-bold tracking-tight">{formatCurrency(mockPortfolio.totalValue)}</h2>
+          <div className="flex items-center justify-center gap-1.5 mt-2">
+            <TrendingUp className="h-5 w-5 text-emerald-500" />
+            <span className="text-lg font-semibold text-emerald-500">+{gainPercent}%</span>
+            <span className="text-sm text-muted-foreground ml-1">all time</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Mini Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-blue-500/10">
+              <Wallet className="h-4 w-4 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Total Invested</p>
+              <p className="text-lg font-bold">{formatCurrency(mockPortfolio.totalInvested)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-amber-500/10">
+              <Coins className="h-4 w-4 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Total Earned</p>
+              <p className="text-lg font-bold">{formatCurrency(mockPortfolio.totalEarnings)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-purple-500/10">
+              <Clock className="h-4 w-4 text-purple-500" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Pending Payouts</p>
+              <p className="text-lg font-bold">{formatCurrency(mockPortfolio.pendingPayouts)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Holdings Table */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Holdings</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Property</TableHead>
+                <TableHead className="text-right">Shares</TableHead>
+                <TableHead className="text-right">Invested</TableHead>
+                <TableHead className="text-right">Value</TableHead>
+                <TableHead className="text-right">Yield</TableHead>
+                <TableHead className="text-right">Last Payout</TableHead>
+                <TableHead className="text-right">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mockPortfolio.holdings.map((h) => (
+                <TableRow
+                  key={h.propertyId}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={h.image}
+                        alt={h.propertyTitle}
+                        className="h-10 w-14 rounded-md object-cover"
+                      />
+                      <div>
+                        <p className="font-medium text-sm">{h.propertyTitle}</p>
+                        <p className="text-xs text-muted-foreground">{h.location}</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right font-medium">{h.sharesOwned}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(h.invested)}</TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(h.currentValue)}</TableCell>
+                  <TableCell className="text-right text-emerald-600">{h.annualYield}%</TableCell>
+                  <TableCell className="text-right text-sm text-muted-foreground">
+                    {new Date(h.lastPayout).toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Badge
+                      variant="outline"
+                      className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                    >
+                      {h.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── VERSION 4: Card Grid ─────────────────────────────────────────────────────
+
+function Version4() {
+  return (
+    <div className="space-y-6">
+      {/* Holdings — visual-first cards */}
+      <div className="space-y-4">
+        {mockPortfolio.holdings.map((h) => {
+          const gain = ((h.currentValue - h.invested) / h.invested) * 100;
+          const progressValue = (h.totalEarned / h.invested) * 100;
+
+          return (
+            <Card key={h.propertyId} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="flex flex-col md:flex-row">
+                {/* Image — left 40% */}
+                <div className="relative w-full md:w-[40%] h-56 md:h-auto overflow-hidden">
+                  <img
+                    src={h.image}
+                    alt={h.propertyTitle}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent md:bg-gradient-to-r" />
+                  <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4">
+                    <Badge className="bg-white/90 text-foreground border-0 font-medium">
+                      <Building2 className="h-3 w-3 mr-1" />
+                      {h.sharesOwned} shares
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Details — right 60% */}
+                <div className="flex-1 p-5 md:p-6 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="text-lg font-semibold">{h.propertyTitle}</h4>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <MapPin className="h-3 w-3" />
+                        {h.location}
+                      </p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 capitalize"
+                    >
+                      {h.status}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Current Value</p>
+                      <p className="text-base font-bold">{formatCurrency(h.currentValue)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Invested</p>
+                      <p className="text-base font-bold">{formatCurrency(h.invested)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Monthly Yield</p>
+                      <p className="text-base font-bold text-emerald-600">
+                        {formatCurrency(h.monthlyYield)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Annual Return</p>
+                      <p className="text-base font-bold text-emerald-600">{h.annualYield}%</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Earnings vs. Invested</span>
+                      <span className="text-emerald-500">{progressValue.toFixed(0)}%</span>
+                    </div>
+                    <Progress value={Math.min(progressValue, 100)} className="h-2" />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-1 text-sm text-emerald-500">
+                      <TrendingUp className="h-4 w-4" />
+                      <span className="font-medium">+{gain.toFixed(1)}% gain</span>
+                    </div>
+                    <Button variant="ghost" size="sm" className="gap-1.5 text-primary">
+                      View Property
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Portfolio Summary Footer */}
+      <Card className="bg-muted/50 border-dashed">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Invested</p>
+              <p className="text-lg font-bold mt-0.5">{formatCurrency(mockPortfolio.totalInvested)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Current Value</p>
+              <p className="text-lg font-bold mt-0.5">{formatCurrency(mockPortfolio.totalValue)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Earnings</p>
+              <p className="text-lg font-bold mt-0.5 text-emerald-600">
+                {formatCurrency(mockPortfolio.totalEarnings)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Pending</p>
+              <p className="text-lg font-bold mt-0.5">{formatCurrency(mockPortfolio.pendingPayouts)}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── VERSION 5: Split View ────────────────────────────────────────────────────
 
 function Version5() {
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const summaryItems = [
+    { label: 'Portfolio Value', value: mockPortfolio.totalValue, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'Total Invested', value: mockPortfolio.totalInvested, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Total Earnings', value: mockPortfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { label: 'Pending Payouts', value: mockPortfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      {/* Left — Portfolio Summary (40%) */}
+      <div className="lg:col-span-2 space-y-4">
+        <Card className="bg-gradient-to-br from-primary/5 to-background">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              Portfolio Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {summaryItems.map((item) => (
+              <div key={item.label} className="flex items-center gap-3">
+                <div className={cn('p-2.5 rounded-lg', item.bg)}>
+                  <item.icon className={cn('h-4 w-4', item.color)} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <p className="text-xl font-bold">{formatCurrency(item.value)}</p>
+                </div>
+              </div>
+            ))}
+
+            <div className="pt-3 border-t">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Overall Gain</span>
+                <div className="flex items-center gap-1 text-emerald-500 font-semibold">
+                  <TrendingUp className="h-4 w-4" />
+                  +{gainPercent}%
+                </div>
+              </div>
+              <Progress
+                value={parseFloat(gainPercent)}
+                className="h-2 mt-2"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Right — Holdings List (60%) */}
+      <div className="lg:col-span-3 space-y-3">
+        <h3 className="text-base font-semibold mb-1">Holdings</h3>
+        {mockPortfolio.holdings.map((h) => {
+          const isExpanded = expandedId === h.propertyId;
+          const gain = ((h.currentValue - h.invested) / h.invested) * 100;
+
+          return (
+            <Card
+              key={h.propertyId}
+              className={cn(
+                'overflow-hidden transition-all cursor-pointer',
+                isExpanded && 'ring-1 ring-primary/30'
+              )}
+              onClick={() => setExpandedId(isExpanded ? null : h.propertyId)}
+            >
+              <CardContent className="p-4">
+                {/* Compact Row */}
+                <div className="flex items-center gap-4">
+                  <img
+                    src={h.image}
+                    alt={h.propertyTitle}
+                    className="h-14 w-20 rounded-lg object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm truncate">{h.propertyTitle}</h4>
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{h.location}</p>
+                    <div className="flex items-center gap-4 mt-1 text-sm">
+                      <span>
+                        <span className="text-muted-foreground">Shares: </span>
+                        <span className="font-medium">{h.sharesOwned}</span>
+                      </span>
+                      <span>
+                        <span className="text-muted-foreground">Value: </span>
+                        <span className="font-medium">{formatCurrency(h.currentValue)}</span>
+                      </span>
+                      <span className="text-emerald-500 font-medium">{h.annualYield}% APY</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="mt-4 pt-4 border-t space-y-4 animate-in slide-in-from-top-2 duration-200">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Invested</p>
+                        <p className="font-semibold">{formatCurrency(h.invested)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Current Value</p>
+                        <p className="font-semibold">{formatCurrency(h.currentValue)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Gain</p>
+                        <p className="font-semibold text-emerald-500">
+                          +{formatCurrency(h.currentValue - h.invested)} ({gain.toFixed(1)}%)
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Total Earned</p>
+                        <p className="font-semibold">{formatCurrency(h.totalEarned)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Monthly Yield</p>
+                        <p className="font-semibold text-emerald-600">{formatCurrency(h.monthlyYield)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Last Payout</p>
+                        <p className="font-semibold">
+                          {new Date(h.lastPayout).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <Eye className="h-3.5 w-3.5" />
+                        View Property
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                        Buy More Shares
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── VERSION 6: Tabbed Portfolio ──────────────────────────────────────────────
+
+function Version6() {
   const inlineMetrics = [
     { label: 'Invested', value: mockPortfolio.totalInvested },
     { label: 'Value', value: mockPortfolio.totalValue },
@@ -818,9 +977,9 @@ function Version5() {
   );
 }
 
-// ─── VERSION 6: Bento Grid ───────────────────────────────────────────────────
+// ─── VERSION 7: Bento Grid ───────────────────────────────────────────────────
 
-function Version6() {
+function Version7() {
   const totalMonthly = mockPortfolio.holdings.reduce((s, h) => s + h.monthlyYield, 0);
 
   return (
@@ -881,9 +1040,9 @@ function Version6() {
   );
 }
 
-// ─── VERSION 7: Glassmorphism ────────────────────────────────────────────────
+// ─── VERSION 8: Glassmorphism ────────────────────────────────────────────────
 
-function Version7() {
+function Version8() {
   return (
     <div className="min-h-screen rounded-3xl bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 p-8 text-white">
       <h2 className="text-3xl font-bold mb-1">My Portfolio</h2>
@@ -939,9 +1098,9 @@ function Version7() {
   );
 }
 
-// ─── VERSION 8: Neubrutalism ─────────────────────────────────────────────────
+// ─── VERSION 9: Neubrutalism ─────────────────────────────────────────────────
 
-function Version8() {
+function Version9() {
   return (
     <div className="space-y-5">
       <div className="border-2 border-black bg-yellow-300 p-6 shadow-[6px_6px_0px_black] rounded-lg">
@@ -995,9 +1154,9 @@ function Version8() {
   );
 }
 
-// ─── VERSION 9: Dark Luxury ──────────────────────────────────────────────────
+// ─── VERSION 10: Dark Luxury ──────────────────────────────────────────────────
 
-function Version9() {
+function Version10() {
   return (
     <div className="min-h-screen rounded-3xl bg-slate-950 p-8 text-white">
       <div className="max-w-4xl mx-auto space-y-12">
@@ -1051,9 +1210,9 @@ function Version9() {
   );
 }
 
-// ─── VERSION 10: Animated ────────────────────────────────────────────────────
+// ─── VERSION 11: Animated ────────────────────────────────────────────────────
 
-function Version10() {
+function Version11() {
   return (
     <div className="space-y-6">
       {/* Value banner with pulse */}
@@ -1120,9 +1279,9 @@ function Version10() {
   );
 }
 
-// ─── VERSION 11: Magazine ────────────────────────────────────────────────────
+// ─── VERSION 12: Magazine ────────────────────────────────────────────────────
 
-function Version11() {
+function Version12() {
   return (
     <div className="space-y-10 font-serif">
       <div className="border-b-2 border-foreground pb-4">
@@ -1172,9 +1331,9 @@ function Version11() {
   );
 }
 
-// ─── VERSION 12: Terminal ────────────────────────────────────────────────────
+// ─── VERSION 13: Terminal ────────────────────────────────────────────────────
 
-function Version12() {
+function Version13() {
   return (
     <div className="min-h-screen rounded-2xl bg-[#0a0e14] p-6 font-mono text-green-400">
       <div className="space-y-4">
@@ -1222,9 +1381,9 @@ ROI             +${gainPercent}%`}</pre>
   );
 }
 
-// ─── VERSION 13: Gamified ────────────────────────────────────────────────────
+// ─── VERSION 14: Gamified ────────────────────────────────────────────────────
 
-function Version13() {
+function Version14() {
   const level = Math.floor(mockPortfolio.holdings.reduce((s, h) => s + h.sharesOwned, 0) / 5);
   const totalMonthly = mockPortfolio.holdings.reduce((s, h) => s + h.monthlyYield, 0);
 
@@ -1298,9 +1457,9 @@ function Version13() {
   );
 }
 
-// ─── VERSION 14: Split/Swipe ─────────────────────────────────────────────────
+// ─── VERSION 15: Split/Swipe ─────────────────────────────────────────────────
 
-function Version14() {
+function Version15() {
   return (
     <div className="space-y-0">
       {/* Dark top section */}
@@ -1355,9 +1514,9 @@ function Version14() {
   );
 }
 
-// ─── VERSION 15: Apple ───────────────────────────────────────────────────────
+// ─── VERSION 16: Apple ───────────────────────────────────────────────────────
 
-function Version15() {
+function Version16() {
   return (
     <div className="space-y-20 py-12">
       <div className="text-center space-y-4 max-w-3xl mx-auto">
@@ -1403,9 +1562,9 @@ function Version15() {
 }
 
 
-// ─── VERSION 16: Spacious & Breathing ─────────────────────────────────────────
+// ─── VERSION 17: Spacious & Breathing ─────────────────────────────────────────
 
-function Version16() {
+function Version17() {
   return (
     <div className="space-y-12 p-12">
       <div className="text-center space-y-4">
@@ -1451,9 +1610,9 @@ function Version16() {
   );
 }
 
-// ─── VERSION 17: Tight & Dense ────────────────────────────────────────────────
+// ─── VERSION 18: Tight & Dense ────────────────────────────────────────────────
 
-function Version17() {
+function Version18() {
   return (
     <div className="space-y-2 text-sm">
       <div className="flex items-center gap-4 border-b pb-2 text-xs">
@@ -1472,9 +1631,9 @@ function Version17() {
   );
 }
 
-// ─── VERSION 18: Hero-Led ─────────────────────────────────────────────────────
+// ─── VERSION 19: Hero-Led ─────────────────────────────────────────────────────
 
-function Version18() {
+function Version19() {
   return (
     <div className="space-y-6">
       <Card className="bg-gradient-to-br from-primary/15 via-primary/5 to-background border-primary/20 overflow-hidden">
@@ -1496,9 +1655,9 @@ function Version18() {
   );
 }
 
-// ─── VERSION 19: Sidebar Command ──────────────────────────────────────────────
+// ─── VERSION 20: Sidebar Command ──────────────────────────────────────────────
 
-function Version19() {
+function Version20() {
   const [selectedId, setSelectedId] = useState<number>(mockPortfolio.holdings[0]?.propertyId ?? 0);
   const selected = mockPortfolio.holdings.find((h) => h.propertyId === selectedId) ?? mockPortfolio.holdings[0];
   return (
@@ -1515,9 +1674,9 @@ function Version19() {
   );
 }
 
-// ─── VERSION 20: Step-by-Step ─────────────────────────────────────────────────
+// ─── VERSION 21: Step-by-Step ─────────────────────────────────────────────────
 
-function Version20() {
+function Version21() {
   const [step, setStep] = useState(1);
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -1529,9 +1688,9 @@ function Version20() {
   );
 }
 
-// ─── VERSION 21: Horizontal Scroll ────────────────────────────────────────────
+// ─── VERSION 22: Horizontal Scroll ────────────────────────────────────────────
 
-function Version21() {
+function Version22() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-6"><h2 className="text-2xl font-bold">{formatCurrency(mockPortfolio.totalValue)}</h2><span className="text-emerald-500 font-semibold">+{gainPercent}%</span></div>
@@ -1542,9 +1701,9 @@ function Version21() {
   );
 }
 
-// ─── VERSION 22: Stacked Layers ───────────────────────────────────────────────
+// ─── VERSION 23: Stacked Layers ───────────────────────────────────────────────
 
-function Version22() {
+function Version23() {
   return (
     <div className="max-w-4xl mx-auto space-y-2">
       <Card className="rounded-2xl shadow-xl relative z-30"><CardContent className="p-8 text-center"><p className="text-sm text-muted-foreground">Portfolio Value</p><h2 className="text-5xl font-bold">{formatCurrency(mockPortfolio.totalValue)}</h2><p className="text-emerald-500 font-semibold mt-2">+{gainPercent}% overall gain</p></CardContent></Card>
@@ -1554,9 +1713,9 @@ function Version22() {
   );
 }
 
-// ─── VERSION 23: Grid Mosaic ──────────────────────────────────────────────────
+// ─── VERSION 24: Grid Mosaic ──────────────────────────────────────────────────
 
-function Version23() {
+function Version24() {
   return (
     <div className="grid grid-cols-4 auto-rows-[140px] gap-3">
       <Card className="col-span-2 row-span-2 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary/10 to-background"><CardContent className="text-center p-6"><p className="text-sm text-muted-foreground">Total Portfolio Value</p><p className="text-5xl font-bold mt-2">{formatCurrency(mockPortfolio.totalValue)}</p><p className="text-emerald-500 font-semibold mt-2">+{gainPercent}%</p></CardContent></Card>
@@ -1568,9 +1727,9 @@ function Version23() {
   );
 }
 
-// ─── VERSION 24: Inline Everything ────────────────────────────────────────────
+// ─── VERSION 25: Inline Everything ────────────────────────────────────────────
 
-function Version24() {
+function Version25() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   return (
     <div className="max-w-3xl mx-auto space-y-3">
@@ -1580,9 +1739,9 @@ function Version24() {
   );
 }
 
-// ─── VERSION 25: Floating Panels ──────────────────────────────────────────────
+// ─── VERSION 26: Floating Panels ──────────────────────────────────────────────
 
-function Version25() {
+function Version26() {
   return (
     <div className="pb-20">
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b mb-6"><div className="flex items-center justify-between px-4 py-3"><div className="flex items-center gap-3"><span className="font-bold">{formatCurrency(mockPortfolio.totalValue)}</span><span className="text-emerald-500 text-sm font-semibold">+{gainPercent}%</span></div><div className="flex gap-4 text-xs"><span>Invested: <strong>{formatCurrency(mockPortfolio.totalInvested)}</strong></span><span>Earned: <strong className="text-emerald-600">{formatCurrency(mockPortfolio.totalEarnings)}</strong></span><span>Pending: <strong>{formatCurrency(mockPortfolio.pendingPayouts)}</strong></span></div></div></div>
@@ -1622,6 +1781,7 @@ const versions = [
   { id: 23, label: '23', component: Version23 },
   { id: 24, label: '24', component: Version24 },
   { id: 25, label: '25', component: Version25 },
+  { id: 26, label: '26', component: Version26 },
 ];
 
 export default function InvestPortfolioPage() {

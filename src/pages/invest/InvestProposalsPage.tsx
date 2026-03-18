@@ -252,9 +252,197 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 1 — Card Stack ────────────────────────────────────────────
+  // ─── VERSION 1 — Final: Timeline Sidebar Command + Property Images ─────
+
+  const proposalPropertyImages: Record<number, string> = {
+    1: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=200&q=80',
+    2: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=200&q=80',
+  };
 
   function Version1() {
+    const [filterType, setFilterType] = useState<string>('all');
+    const filtered = filterType === 'all' ? activeProposals : activeProposals.filter((p) => p.type === filterType);
+    const filteredPast = filterType === 'all' ? pastProposals : pastProposals.filter((p) => p.type === filterType);
+    const types = ['all', ...Array.from(new Set([...activeProposals.map((p) => p.type), ...pastProposals.map((p) => p.type)]))];
+
+    // Merge active and past chronologically (newest first)
+    const timeline = useMemo(() => {
+      const items: Array<
+        | { kind: 'active'; data: ActiveProposalWithVote }
+        | { kind: 'past'; data: PastProposal }
+      > = [
+        ...filtered.map((d) => ({ kind: 'active' as const, data: d })),
+        ...filteredPast.map((d) => ({ kind: 'past' as const, data: d })),
+      ];
+      items.sort(
+        (a, b) =>
+          new Date(b.data.createdAt).getTime() - new Date(a.data.createdAt).getTime()
+      );
+      return items;
+    }, [filtered, filteredPast]);
+
+    return (
+      <div className="flex gap-6">
+        {/* Left sticky sidebar */}
+        <div className="w-80 flex-shrink-0 space-y-4 sticky top-6 self-start">
+          {/* Governance Stats */}
+          <Card className="border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Gavel className="h-4 w-4 text-primary" />
+                Governance
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Active</span>
+                <span className="font-bold">{stats.activeCount}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Your Votes</span>
+                <span className="font-bold">{stats.votesCast}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Past</span>
+                <span className="font-bold">{pastProposals.length}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Filter by Type */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filter by Type
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {types.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setFilterType(t)}
+                  className={cn(
+                    'w-full text-left px-3 py-1.5 rounded text-sm transition capitalize',
+                    filterType === t
+                      ? 'bg-primary/10 text-primary font-medium'
+                      : 'hover:bg-muted'
+                  )}
+                >
+                  {t}
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right main area — Timeline */}
+        <div className="flex-1">
+          <div className="relative pl-8">
+            {/* Timeline line */}
+            <div className="absolute left-3 top-0 bottom-0 w-px bg-border" />
+
+            <div className="space-y-6">
+              {timeline.map((item) => {
+                const isActive = item.kind === 'active';
+                const p = item.data;
+
+                return (
+                  <div key={p.id} className="relative">
+                    {/* Dot */}
+                    <div
+                      className={cn(
+                        'absolute -left-5 top-2 w-3 h-3 rounded-full border-2',
+                        isActive
+                          ? 'bg-emerald-500 border-emerald-400'
+                          : 'bg-muted-foreground/40 border-muted-foreground/30'
+                      )}
+                    />
+
+                    <Card
+                      className={cn(
+                        isActive
+                          ? 'border-emerald-500/30 bg-emerald-500/[0.03]'
+                          : 'border-muted opacity-75'
+                      )}
+                    >
+                      <CardContent className="pt-5 space-y-3">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {/* Property image thumbnail */}
+                              <img
+                                src={proposalPropertyImages[p.propertyId] || ''}
+                                alt={p.propertyTitle}
+                                className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
+                              />
+                              <Badge variant="outline" className="text-[11px]">{p.propertyTitle}</Badge>
+                              <Badge variant="outline" className={cn('text-[11px]', typeBadgeColor(p.type))}>{p.type}</Badge>
+                              {isActive && (
+                                <Badge className="text-[11px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                                  Active
+                                </Badge>
+                              )}
+                            </div>
+                            <h3 className={cn('font-semibold', isActive ? 'text-base' : 'text-sm')}>
+                              {p.title}
+                            </h3>
+                            {isActive && (
+                              <p className="text-sm text-muted-foreground">
+                                {(p as ActiveProposalWithVote).description}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {p.createdAt}
+                          </span>
+                        </div>
+
+                        {isActive ? (
+                          <>
+                            <VoteBar
+                              yes={(p as ActiveProposalWithVote).votesYes}
+                              no={(p as ActiveProposalWithVote).votesNo}
+                              total={(p as ActiveProposalWithVote).totalVotes}
+                            />
+                            <QuorumBar
+                              current={
+                                (p as ActiveProposalWithVote).votesYes +
+                                (p as ActiveProposalWithVote).votesNo
+                              }
+                              quorum={(p as ActiveProposalWithVote).quorum}
+                            />
+                            <div className="flex items-center justify-between">
+                              <Badge variant="outline" className="text-xs text-amber-400 border-amber-500/30">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Ends in {daysUntil((p as ActiveProposalWithVote).endsAt)} days
+                              </Badge>
+                              <VoteButtons proposal={p as ActiveProposalWithVote} />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {(p as PastProposal).votesYes} yes / {(p as PastProposal).votesNo} no
+                            </span>
+                            <ResultBadge result={(p as PastProposal).result} />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── VERSION 2 — Card Stack ────────────────────────────────────────────
+
+  function Version2() {
     return (
       <div className="space-y-8">
         {/* Active Proposals */}
@@ -331,9 +519,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 2 — Dashboard Grid ────────────────────────────────────────
+  // ─── VERSION 3 — Dashboard Grid ────────────────────────────────────────
 
-  function Version2() {
+  function Version3() {
     const [pastOpen, setPastOpen] = useState(false);
 
     return (
@@ -431,9 +619,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 3 — Timeline ──────────────────────────────────────────────
+  // ─── VERSION 4 — Timeline ──────────────────────────────────────────────
 
-  function Version3() {
+  function Version4() {
     // Merge active and past chronologically (newest first)
     const timeline = useMemo(() => {
       const items: Array<
@@ -545,9 +733,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 4 — Tabbed View ───────────────────────────────────────────
+  // ─── VERSION 5 — Tabbed View ───────────────────────────────────────────
 
-  function Version4() {
+  function Version5() {
     const myVotes = activeProposals.filter((p) => p.userVoted !== null);
 
     return (
@@ -669,9 +857,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 5 — Minimal List ──────────────────────────────────────────
+  // ─── VERSION 6 — Minimal List ──────────────────────────────────────────
 
-  function Version5() {
+  function Version6() {
     return (
       <div className="space-y-6">
         {/* Top bar with filter */}
@@ -738,9 +926,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 6 — Bento Grid ────────────────────────────────────────────
+  // ─── VERSION 7 — Bento Grid ────────────────────────────────────────────
 
-  function Version6() {
+  function Version7() {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-4 gap-3 auto-rows-[100px]">
@@ -802,9 +990,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 7 — Glassmorphism ─────────────────────────────────────────
+  // ─── VERSION 8 — Glassmorphism ─────────────────────────────────────────
 
-  function Version7() {
+  function Version8() {
     return (
       <div className="min-h-screen rounded-3xl bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 p-8 text-white">
         <h2 className="text-3xl font-bold mb-1">Governance</h2>
@@ -874,9 +1062,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 8 — Neubrutalism ──────────────────────────────────────────
+  // ─── VERSION 9 — Neubrutalism ──────────────────────────────────────────
 
-  function Version8() {
+  function Version9() {
     return (
       <div className="space-y-5">
         <div className="border-2 border-black bg-pink-300 p-6 shadow-[6px_6px_0px_black] rounded-lg">
@@ -933,9 +1121,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 9 — Dark Luxury ───────────────────────────────────────────
+  // ─── VERSION 10 — Dark Luxury ───────────────────────────────────────────
 
-  function Version9() {
+  function Version10() {
     return (
       <div className="min-h-screen rounded-3xl bg-slate-950 p-8 text-white">
         <div className="max-w-3xl mx-auto space-y-12">
@@ -986,9 +1174,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 10 — Animated ─────────────────────────────────────────────
+  // ─── VERSION 11 — Animated ─────────────────────────────────────────────
 
-  function Version10() {
+  function Version11() {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-3 gap-4">
@@ -1053,9 +1241,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 11 — Magazine ─────────────────────────────────────────────
+  // ─── VERSION 12 — Magazine ─────────────────────────────────────────────
 
-  function Version11() {
+  function Version12() {
     return (
       <div className="space-y-10 font-serif">
         <div className="border-b-2 border-foreground pb-4">
@@ -1110,9 +1298,9 @@ export default function InvestProposalsPage() {
     );
   }
 
-  // ─── VERSION 12 — Terminal ─────────────────────────────────────────────
+  // ─── VERSION 13 — Terminal ─────────────────────────────────────────────
 
-  function Version12() {
+  function Version13() {
     return (
       <div className="min-h-screen rounded-2xl bg-[#0a0e14] p-6 font-mono text-green-400">
         <div className="space-y-4">
@@ -1174,9 +1362,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 13 — Gamified ─────────────────────────────────────────────
+  // ─── VERSION 14 — Gamified ─────────────────────────────────────────────
 
-  function Version13() {
+  function Version14() {
     const governanceLevel = stats.votesCast * 2 + pastProposals.length;
 
     return (
@@ -1248,9 +1436,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 14 — Split/Swipe ──────────────────────────────────────────
+  // ─── VERSION 15 — Split/Swipe ──────────────────────────────────────────
 
-  function Version14() {
+  function Version15() {
     return (
       <div className="space-y-0">
         <div className="bg-slate-900 text-white p-8 rounded-t-2xl">
@@ -1305,9 +1493,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 15 — Apple ────────────────────────────────────────────────
+  // ─── VERSION 16 — Apple ────────────────────────────────────────────────
 
-  function Version15() {
+  function Version16() {
     return (
       <div className="space-y-20 py-12">
         <div className="text-center space-y-4 max-w-3xl mx-auto">
@@ -1388,9 +1576,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
   }
 
 
-  // ─── VERSION 16 — Spacious & Breathing ──────────────────────────────────
+  // ─── VERSION 17 — Spacious & Breathing ──────────────────────────────────
 
-  function Version16() {
+  function Version17() {
     return (
       <div className="space-y-12 p-12">
         <div className="text-center space-y-4">
@@ -1431,9 +1619,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 17 — Tight & Dense ─────────────────────────────────────────
+  // ─── VERSION 18 — Tight & Dense ─────────────────────────────────────────
 
-  function Version17() {
+  function Version18() {
     return (
       <div className="space-y-2 text-sm">
         <div className="flex items-center gap-4 border-b pb-2 text-xs">
@@ -1450,9 +1638,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 18 — Hero-Led ──────────────────────────────────────────────
+  // ─── VERSION 19 — Hero-Led ──────────────────────────────────────────────
 
-  function Version18() {
+  function Version19() {
     const featured = activeProposals[0];
     const rest = activeProposals.slice(1);
     return (
@@ -1475,9 +1663,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 19 — Sidebar Command ───────────────────────────────────────
+  // ─── VERSION 20 — Sidebar Command ───────────────────────────────────────
 
-  function Version19() {
+  function Version20() {
     const [filterType, setFilterType] = useState<string>('all');
     const filtered = filterType === 'all' ? activeProposals : activeProposals.filter((p) => p.type === filterType);
     const types = ['all', ...Array.from(new Set(activeProposals.map((p) => p.type)))];
@@ -1494,9 +1682,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 20 — Step-by-Step ──────────────────────────────────────────
+  // ─── VERSION 21 — Step-by-Step ──────────────────────────────────────────
 
-  function Version20() {
+  function Version21() {
     const [step, setStep] = useState(1);
     return (
       <div className="max-w-3xl mx-auto space-y-6">
@@ -1508,9 +1696,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 21 — Horizontal Scroll ─────────────────────────────────────
+  // ─── VERSION 22 — Horizontal Scroll ─────────────────────────────────────
 
-  function Version21() {
+  function Version22() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4"><h2 className="text-2xl font-bold">Governance</h2><Badge variant="secondary">{activeProposals.length} active</Badge></div>
@@ -1520,9 +1708,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 22 — Stacked Layers ────────────────────────────────────────
+  // ─── VERSION 23 — Stacked Layers ────────────────────────────────────────
 
-  function Version22() {
+  function Version23() {
     return (
       <div className="max-w-4xl mx-auto space-y-2">
         <Card className="rounded-2xl shadow-xl relative z-30"><CardContent className="p-8 text-center"><p className="text-sm text-muted-foreground">Governance</p><h2 className="text-4xl font-bold mt-2">{stats.activeCount} Active Proposals</h2><p className="text-muted-foreground mt-2">{stats.votesCast} of your votes cast</p></CardContent></Card>
@@ -1531,9 +1719,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 23 — Grid Mosaic ───────────────────────────────────────────
+  // ─── VERSION 24 — Grid Mosaic ───────────────────────────────────────────
 
-  function Version23() {
+  function Version24() {
     return (
       <div className="grid grid-cols-4 auto-rows-[140px] gap-3">
         <Card className="col-span-2 row-span-2 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary/10 to-background"><CardContent className="text-center p-6"><Gavel className="h-8 w-8 mx-auto text-primary mb-2" /><p className="text-4xl font-bold">{stats.activeCount}</p><p className="text-muted-foreground">Active Proposals</p><p className="text-sm text-muted-foreground mt-2">{stats.votesCast} votes cast</p></CardContent></Card>
@@ -1545,9 +1733,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 24 — Inline Everything ─────────────────────────────────────
+  // ─── VERSION 25 — Inline Everything ─────────────────────────────────────
 
-  function Version24() {
+  function Version25() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     return (
       <div className="max-w-3xl mx-auto space-y-3">
@@ -1558,9 +1746,9 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
     );
   }
 
-  // ─── VERSION 25 — Floating Panels ───────────────────────────────────────
+  // ─── VERSION 26 — Floating Panels ───────────────────────────────────────
 
-  function Version25() {
+  function Version26() {
     return (
       <div className="pb-20">
         <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b mb-6"><div className="flex items-center justify-between px-4 py-3"><div className="flex items-center gap-3"><Gavel className="h-4 w-4 text-primary" /><span className="font-bold">Governance</span></div><div className="flex gap-4 text-xs"><span>Active: <strong>{stats.activeCount}</strong></span><span>Your Votes: <strong>{stats.votesCast}</strong></span><span>Past: <strong>{pastProposals.length}</strong></span></div></div></div>
@@ -1589,7 +1777,7 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-1">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25].map((v) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26].map((v) => (
             <Button
               key={v}
               size="sm"
@@ -1629,6 +1817,7 @@ APPROVAL RATE      ${Math.round(pastProposals.filter((p) => p.result === 'approv
       {version === 23 && <Version23 />}
       {version === 24 && <Version24 />}
       {version === 25 && <Version25 />}
+      {version === 26 && <Version26 />}
 
       {/* Confirmation Dialog (shared across all versions) */}
       <Dialog open={voteDialog.open} onOpenChange={(open) => !open && cancelVote()}>

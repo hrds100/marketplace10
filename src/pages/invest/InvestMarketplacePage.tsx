@@ -370,10 +370,121 @@ function ROISlider({
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 1 — Classic Split
+// VERSION 1 — Final: Compact Sidebar (polished pick)
 // ---------------------------------------------------------------------------
 
-function Version1({
+function Version1({ onInvest }: { onInvest: () => void }) {
+  const [sliderShares, setSliderShares] = useState(5);
+
+  return (
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+      {/* Left panel — 35% */}
+      <div className="lg:col-span-4">
+        <div className="sticky top-6 space-y-5">
+          <div className="overflow-hidden rounded-2xl">
+            <img
+              src={property.images[0]}
+              alt={property.title}
+              className="h-56 w-full object-cover"
+            />
+          </div>
+
+          <div>
+            <h1 className="text-xl font-bold">{property.title}</h1>
+            <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5" />
+              {property.location}
+            </div>
+          </div>
+
+          <PropertyBadges />
+
+          <Card className="rounded-2xl shadow-md">
+            <CardContent className="space-y-4 pt-5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Share price</span>
+                <span className="text-xl font-bold">${property.pricePerShare}</span>
+              </div>
+              <div className="space-y-1.5">
+                <Progress value={fundedPercent} className="h-2.5" />
+                <p className="text-xs text-muted-foreground">
+                  {fundedPercent}% funded &middot; {sharesRemaining} left
+                </p>
+              </div>
+              <ROISlider shares={sliderShares} setShares={setSliderShares} />
+              <Button className="w-full gap-2" size="lg" onClick={onInvest}>
+                <Shield className="h-4 w-4" />
+                Invest Now
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Right panel — 65% */}
+      <div className="space-y-6 lg:col-span-8">
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle>Description</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="leading-relaxed text-muted-foreground">{property.description}</p>
+          </CardContent>
+        </Card>
+
+        {/* Metrics grid */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <MetricCard icon={TrendingUp} label="Annual Yield" value={`${property.annualYield}%`} />
+          <MetricCard icon={BarChart3} label="Occupancy" value={`${property.occupancyRate}%`} />
+          <MetricCard icon={DollarSign} label="Monthly Rent" value={`$${property.monthlyRent.toLocaleString()}`} />
+          <MetricCard icon={PieChart} label="Total Shares" value={property.totalShares.toString()} />
+          <MetricCard icon={Star} label="Property Value" value={`$${(property.propertyValue / 1000).toFixed(0)}k`} />
+          <MetricCard icon={Percent} label="Funded" value={`${fundedPercent}%`} />
+        </div>
+
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle>Highlights</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <HighlightsList />
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle>Documents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DocumentsList />
+          </CardContent>
+        </Card>
+
+        {/* Earnings chart placeholder */}
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle>Earnings Projection</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex h-48 items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/20">
+              <div className="text-center text-muted-foreground">
+                <BarChart3 className="mx-auto mb-2 h-8 w-8" />
+                <p className="text-sm">Earnings chart will appear here</p>
+                <p className="text-xs">Projected {property.annualYield}% annual return</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// VERSION 2 — Classic Split
+// ---------------------------------------------------------------------------
+
+function Version2({
   onInvest,
 }: {
   onInvest: () => void;
@@ -483,10 +594,10 @@ function Version1({
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 2 — Full-Width Hero
+// VERSION 3 — Full-Width Hero
 // ---------------------------------------------------------------------------
 
-function Version2({ onInvest }: { onInvest: () => void }) {
+function Version3({ onInvest }: { onInvest: () => void }) {
   const [sliderShares, setSliderShares] = useState(5);
 
   return (
@@ -616,10 +727,10 @@ function Version2({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 3 — Dashboard Cards
+// VERSION 4 — Dashboard Cards
 // ---------------------------------------------------------------------------
 
-function Version3({ onInvest }: { onInvest: () => void }) {
+function Version4({ onInvest }: { onInvest: () => void }) {
   const monthlyPerShare = (property.monthlyRent / property.totalShares).toFixed(2);
 
   return (
@@ -757,10 +868,10 @@ function Version3({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 4 — Compact Sidebar
+// VERSION 5 — Compact Sidebar
 // ---------------------------------------------------------------------------
 
-function Version4({ onInvest }: { onInvest: () => void }) {
+function Version5({ onInvest }: { onInvest: () => void }) {
   const [sliderShares, setSliderShares] = useState(5);
 
   return (
@@ -868,10 +979,10 @@ function Version4({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 5 — Story Flow
+// VERSION 6 — Story Flow
 // ---------------------------------------------------------------------------
 
-function Version5({ onInvest }: { onInvest: () => void }) {
+function Version6({ onInvest }: { onInvest: () => void }) {
   const [sliderShares, setSliderShares] = useState(5);
 
   return (
@@ -1014,10 +1125,10 @@ function Version5({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 6 — Bento Grid
+// VERSION 7 — Bento Grid
 // ---------------------------------------------------------------------------
 
-function Version6({ onInvest }: { onInvest: () => void }) {
+function Version7({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">{property.title}</h1>
@@ -1084,10 +1195,10 @@ function Version6({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 7 — Glassmorphism
+// VERSION 8 — Glassmorphism
 // ---------------------------------------------------------------------------
 
-function Version7({ onInvest }: { onInvest: () => void }) {
+function Version8({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="min-h-screen rounded-3xl bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 p-8 text-white">
       <h1 className="text-4xl font-bold tracking-tight mb-2">{property.title}</h1>
@@ -1145,10 +1256,10 @@ function Version7({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 8 — Neubrutalism
+// VERSION 9 — Neubrutalism
 // ---------------------------------------------------------------------------
 
-function Version8({ onInvest }: { onInvest: () => void }) {
+function Version9({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-6">
       <div className="border-2 border-black bg-yellow-300 p-6 shadow-[6px_6px_0px_black] rounded-lg">
@@ -1212,10 +1323,10 @@ function Version8({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 9 — Dark Luxury
+// VERSION 10 — Dark Luxury
 // ---------------------------------------------------------------------------
 
-function Version9({ onInvest }: { onInvest: () => void }) {
+function Version10({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="min-h-screen rounded-3xl bg-slate-950 p-8 text-white">
       <div className="mx-auto max-w-4xl space-y-12">
@@ -1272,10 +1383,10 @@ function Version9({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 10 — Animated
+// VERSION 11 — Animated
 // ---------------------------------------------------------------------------
 
-function Version10({ onInvest }: { onInvest: () => void }) {
+function Version11({ onInvest }: { onInvest: () => void }) {
   const [sliderShares, setSliderShares] = useState(5);
 
   return (
@@ -1342,10 +1453,10 @@ function Version10({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 11 — Magazine
+// VERSION 12 — Magazine
 // ---------------------------------------------------------------------------
 
-function Version11({ onInvest }: { onInvest: () => void }) {
+function Version12({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-10 font-serif">
       {/* Editorial header */}
@@ -1407,10 +1518,10 @@ function Version11({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 12 — Terminal
+// VERSION 13 — Terminal
 // ---------------------------------------------------------------------------
 
-function Version12({ onInvest }: { onInvest: () => void }) {
+function Version13({ onInvest }: { onInvest: () => void }) {
   const monthly = (property.monthlyRent / property.totalShares).toFixed(2);
 
   return (
@@ -1482,10 +1593,10 @@ function Version12({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 13 — Gamified
+// VERSION 14 — Gamified
 // ---------------------------------------------------------------------------
 
-function Version13({ onInvest }: { onInvest: () => void }) {
+function Version14({ onInvest }: { onInvest: () => void }) {
   const xpFromInvest = Math.round(property.annualYield * 100);
   const tierLevel = fundedPercent > 75 ? 'GOLD' : fundedPercent > 50 ? 'SILVER' : 'BRONZE';
   const tierColor = tierLevel === 'GOLD' ? 'text-yellow-400' : tierLevel === 'SILVER' ? 'text-slate-300' : 'text-amber-600';
@@ -1572,10 +1683,10 @@ function Version13({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 14 — Split/Swipe
+// VERSION 15 — Split/Swipe
 // ---------------------------------------------------------------------------
 
-function Version14({ onInvest }: { onInvest: () => void }) {
+function Version15({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-0">
       {/* Top half: dark */}
@@ -1643,10 +1754,10 @@ function Version14({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 15 — Apple
+// VERSION 16 — Apple
 // ---------------------------------------------------------------------------
 
-function Version15({ onInvest }: { onInvest: () => void }) {
+function Version16({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-20 py-12">
       {/* Hero — massive centered type */}
@@ -1725,10 +1836,10 @@ function Version15({ onInvest }: { onInvest: () => void }) {
 
 
 // ---------------------------------------------------------------------------
-// VERSION 16 — Spacious & Breathing
+// VERSION 17 — Spacious & Breathing
 // ---------------------------------------------------------------------------
 
-function Version16({ onInvest }: { onInvest: () => void }) {
+function Version17({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-12 p-12">
       <div className="text-center space-y-4">
@@ -1780,10 +1891,10 @@ function Version16({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 17 — Tight & Dense
+// VERSION 18 — Tight & Dense
 // ---------------------------------------------------------------------------
 
-function Version17({ onInvest }: { onInvest: () => void }) {
+function Version18({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-2 text-sm">
       <div className="flex items-center justify-between border-b pb-2">
@@ -1855,10 +1966,10 @@ function Version17({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 18 — Hero-Led
+// VERSION 19 — Hero-Led
 // ---------------------------------------------------------------------------
 
-function Version18({ onInvest }: { onInvest: () => void }) {
+function Version19({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-6">
       <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden rounded-b-3xl">
@@ -1889,10 +2000,10 @@ function Version18({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 19 — Sidebar Command
+// VERSION 20 — Sidebar Command
 // ---------------------------------------------------------------------------
 
-function Version19({ onInvest }: { onInvest: () => void }) {
+function Version20({ onInvest }: { onInvest: () => void }) {
   const [sliderShares, setSliderShares] = useState(5);
   return (
     <div className="flex gap-6">
@@ -1925,10 +2036,10 @@ function Version19({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 20 — Step-by-Step
+// VERSION 21 — Step-by-Step
 // ---------------------------------------------------------------------------
 
-function Version20({ onInvest }: { onInvest: () => void }) {
+function Version21({ onInvest }: { onInvest: () => void }) {
   const [step, setStep] = useState(1);
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -1944,10 +2055,10 @@ function Version20({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 21 — Horizontal Scroll
+// VERSION 22 — Horizontal Scroll
 // ---------------------------------------------------------------------------
 
-function Version21({ onInvest }: { onInvest: () => void }) {
+function Version22({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold">{property.title}</h1><p className="flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-3 w-3" /> {property.location}</p></div><Button className="gap-2" onClick={onInvest}><DollarSign className="h-4 w-4" /> Invest Now</Button></div>
@@ -1960,10 +2071,10 @@ function Version21({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 22 — Stacked Layers
+// VERSION 23 — Stacked Layers
 // ---------------------------------------------------------------------------
 
-function Version22({ onInvest }: { onInvest: () => void }) {
+function Version23({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-2 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold text-center mb-6">{property.title}</h1>
@@ -1978,10 +2089,10 @@ function Version22({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 23 — Grid Mosaic
+// VERSION 24 — Grid Mosaic
 // ---------------------------------------------------------------------------
 
-function Version23({ onInvest }: { onInvest: () => void }) {
+function Version24({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between"><h1 className="text-2xl font-bold">{property.title}</h1><Button className="gap-2" onClick={onInvest}><DollarSign className="h-4 w-4" /> Invest</Button></div>
@@ -2001,10 +2112,10 @@ function Version23({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 24 — Inline Everything
+// VERSION 25 — Inline Everything
 // ---------------------------------------------------------------------------
 
-function Version24({ onInvest }: { onInvest: () => void }) {
+function Version25({ onInvest }: { onInvest: () => void }) {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const toggle = (section: string) => setExpandedSection(expandedSection === section ? null : section);
   return (
@@ -2025,10 +2136,10 @@ function Version24({ onInvest }: { onInvest: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// VERSION 25 — Floating Panels
+// VERSION 26 — Floating Panels
 // ---------------------------------------------------------------------------
 
-function Version25({ onInvest }: { onInvest: () => void }) {
+function Version26({ onInvest }: { onInvest: () => void }) {
   return (
     <div className="pb-20">
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b mb-6"><div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3"><div className="flex items-center gap-4"><h2 className="font-bold text-sm">{property.title}</h2><Badge variant="secondary" className="text-xs">{property.type}</Badge></div><div className="flex items-center gap-6 text-sm"><div><span className="text-muted-foreground mr-1">Price:</span><span className="font-bold">${property.pricePerShare}</span></div><div><span className="text-muted-foreground mr-1">Yield:</span><span className="font-bold text-primary">{property.annualYield}%</span></div><div><span className="text-muted-foreground mr-1">Funded:</span><span className="font-bold">{fundedPercent}%</span></div></div></div></div>
@@ -2063,7 +2174,7 @@ export default function InvestMarketplacePage() {
         <div className="mb-8 flex items-center gap-3">
           <span className="text-sm font-medium text-muted-foreground">Layout</span>
           <div className="flex flex-wrap gap-1.5">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25].map((v) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26].map((v) => (
               <button
                 key={v}
                 onClick={() => setVersion(v)}
@@ -2079,31 +2190,32 @@ export default function InvestMarketplacePage() {
             ))}
           </div>
           <span className="ml-2 text-xs text-muted-foreground">
-            {version === 1 && 'Classic Split'}
-            {version === 2 && 'Full-Width Hero'}
-            {version === 3 && 'Dashboard Cards'}
-            {version === 4 && 'Compact Sidebar'}
-            {version === 5 && 'Story Flow'}
-            {version === 6 && 'Bento Grid'}
-            {version === 7 && 'Glassmorphism'}
-            {version === 8 && 'Neubrutalism'}
-            {version === 9 && 'Dark Luxury'}
-            {version === 10 && 'Animated'}
-            {version === 11 && 'Magazine'}
-            {version === 12 && 'Terminal'}
-            {version === 13 && 'Gamified'}
-            {version === 14 && 'Split/Swipe'}
-            {version === 15 && 'Apple'}
-            {version === 16 && 'Spacious'}
-            {version === 17 && 'Dense'}
-            {version === 18 && 'Hero-Led'}
-            {version === 19 && 'Sidebar'}
-            {version === 20 && 'Step-by-Step'}
-            {version === 21 && 'Horizontal'}
-            {version === 22 && 'Stacked'}
-            {version === 23 && 'Mosaic'}
-            {version === 24 && 'Inline'}
-            {version === 25 && 'Floating'}
+            {version === 1 && 'Final — Compact Sidebar'}
+            {version === 2 && 'Classic Split'}
+            {version === 3 && 'Full-Width Hero'}
+            {version === 4 && 'Dashboard Cards'}
+            {version === 5 && 'Compact Sidebar'}
+            {version === 6 && 'Story Flow'}
+            {version === 7 && 'Bento Grid'}
+            {version === 8 && 'Glassmorphism'}
+            {version === 9 && 'Neubrutalism'}
+            {version === 10 && 'Dark Luxury'}
+            {version === 11 && 'Animated'}
+            {version === 12 && 'Magazine'}
+            {version === 13 && 'Terminal'}
+            {version === 14 && 'Gamified'}
+            {version === 15 && 'Split/Swipe'}
+            {version === 16 && 'Apple'}
+            {version === 17 && 'Spacious'}
+            {version === 18 && 'Dense'}
+            {version === 19 && 'Hero-Led'}
+            {version === 20 && 'Sidebar'}
+            {version === 21 && 'Step-by-Step'}
+            {version === 22 && 'Horizontal'}
+            {version === 23 && 'Stacked'}
+            {version === 24 && 'Mosaic'}
+            {version === 25 && 'Inline'}
+            {version === 26 && 'Floating'}
           </span>
         </div>
 
@@ -2133,6 +2245,7 @@ export default function InvestMarketplacePage() {
         {version === 23 && <Version23 onInvest={openInvest} />}
         {version === 24 && <Version24 onInvest={openInvest} />}
         {version === 25 && <Version25 onInvest={openInvest} />}
+        {version === 26 && <Version26 onInvest={openInvest} />}
       </div>
 
       <InvestModal open={investOpen} onOpenChange={setInvestOpen} />

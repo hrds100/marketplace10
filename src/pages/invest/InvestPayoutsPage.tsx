@@ -296,9 +296,174 @@ function ClaimModal({
   );
 }
 
-// ─── Version 1: Summary + Table ─────────────────────────────────────────────────
+// ─── Version 1: Final — Sidebar Command + Clean Visuals + Property Images ────
+
+const payoutPropertyImages: Record<number, string> = {
+  1: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=200&q=80',
+  2: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=200&q=80',
+};
 
 function Version1({
+  payouts,
+  onClaim,
+}: {
+  payouts: PayoutItem[];
+  onClaim: (payout: PayoutItem) => void;
+}) {
+  const claimable = payouts.filter((p) => p.status === 'claimable');
+  const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
+  const history = payouts.filter((p) => p.status !== 'claimable');
+
+  return (
+    <div className="flex gap-6">
+      {/* Left sticky sidebar */}
+      <div className="w-80 flex-shrink-0 space-y-4 sticky top-6 self-start">
+        {/* Payout Summary Card */}
+        <Card className="border-green-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-green-500" />
+              </div>
+              Payout Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Available to Claim</span>
+              <span className="font-bold text-green-500">{formatCurrency(totalClaimable)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total Earned</span>
+              <span className="font-bold">{formatCurrency(mockPortfolio.totalEarnings)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Pending Items</span>
+              <span className="font-bold">{claimable.length}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Claim Buttons */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Quick Claim</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {claimable.map((p) => (
+              <Button
+                key={p.id}
+                variant="outline"
+                size="sm"
+                className="w-full justify-between"
+                onClick={() => onClaim(p)}
+              >
+                <span className="truncate">{p.propertyTitle}</span>
+                <span className="text-green-500 font-bold">{formatCurrency(p.amount)}</span>
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Right main area */}
+      <div className="flex-1 space-y-6">
+        {/* Claimable Payouts Section */}
+        <h2 className="text-xl font-bold">Claimable Payouts</h2>
+        <div className="space-y-3">
+          {claimable.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6 text-center text-muted-foreground">
+                No payouts available to claim right now.
+              </CardContent>
+            </Card>
+          ) : (
+            claimable.map((payout) => (
+              <Card key={payout.id} className="border-green-500/20">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={payoutPropertyImages[payout.propertyId] || ''}
+                        alt={payout.propertyTitle}
+                        className="h-12 w-12 rounded-lg object-cover flex-shrink-0"
+                      />
+                      <div>
+                        <p className="font-medium">{payout.propertyTitle}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDate(payout.date)} &middot; {payout.sharesOwned} shares
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-green-500">
+                          {formatCurrency(payout.amount)}
+                        </p>
+                        <StatusBadge status={payout.status} />
+                      </div>
+                      <Button size="sm" onClick={() => onClaim(payout)}>
+                        Claim
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* History Table */}
+        <h2 className="text-xl font-bold">History</h2>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Property</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Method</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {history.map((payout) => (
+                  <TableRow key={payout.id}>
+                    <TableCell className="text-sm">{formatDate(payout.date)}</TableCell>
+                    <TableCell className="text-sm">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={payoutPropertyImages[payout.propertyId] || ''}
+                          alt={payout.propertyTitle}
+                          className="h-8 w-8 rounded object-cover flex-shrink-0"
+                        />
+                        <span className="font-medium">{payout.propertyTitle}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-right font-mono">
+                      {formatCurrency(payout.amount)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {payout.method ? methodLabels[payout.method] || payout.method : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={payout.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ─── Version 2: Summary + Table ─────────────────────────────────────────────────
+
+function Version2({
   payouts,
   onClaim,
 }: {
@@ -430,7 +595,7 @@ function Version1({
 
 // ─── Version 2: Timeline ─────────────────────────────────────────────────────────
 
-function Version2({
+function Version3({
   payouts,
   onClaim,
 }: {
@@ -541,7 +706,7 @@ function Version2({
 
 // ─── Version 3: Split Cards ──────────────────────────────────────────────────────
 
-function Version3({
+function Version4({
   payouts,
   onClaim,
 }: {
@@ -656,7 +821,7 @@ function Version3({
 
 // ─── Version 4: Minimal Table ────────────────────────────────────────────────────
 
-function Version4({
+function Version5({
   payouts,
   onClaim,
 }: {
@@ -770,7 +935,7 @@ function Version4({
 
 // ─── Version 5: Property Grouped ─────────────────────────────────────────────────
 
-function Version5({
+function Version6({
   payouts,
   onClaim,
 }: {
@@ -954,7 +1119,7 @@ function Version5({
 
 // ─── Version 6: Bento Grid ───────────────────────────────────────────────────────
 
-function Version6({
+function Version7({
   payouts,
   onClaim,
 }: {
@@ -1029,7 +1194,7 @@ function Version6({
 
 // ─── Version 7: Glassmorphism ────────────────────────────────────────────────────
 
-function Version7({
+function Version8({
   payouts,
   onClaim,
 }: {
@@ -1091,7 +1256,7 @@ function Version7({
 
 // ─── Version 8: Neubrutalism ─────────────────────────────────────────────────────
 
-function Version8({
+function Version9({
   payouts,
   onClaim,
 }: {
@@ -1145,7 +1310,7 @@ function Version8({
 
 // ─── Version 9: Dark Luxury ──────────────────────────────────────────────────────
 
-function Version9({
+function Version10({
   payouts,
   onClaim,
 }: {
@@ -1200,7 +1365,7 @@ function Version9({
 
 // ─── Version 10: Animated ────────────────────────────────────────────────────────
 
-function Version10({
+function Version11({
   payouts,
   onClaim,
 }: {
@@ -1264,7 +1429,7 @@ function Version10({
 
 // ─── Version 11: Magazine ────────────────────────────────────────────────────────
 
-function Version11({
+function Version12({
   payouts,
   onClaim,
 }: {
@@ -1336,7 +1501,7 @@ function Version11({
 
 // ─── Version 12: Terminal ────────────────────────────────────────────────────────
 
-function Version12({
+function Version13({
   payouts,
   onClaim,
 }: {
@@ -1407,7 +1572,7 @@ PENDING ITEMS  ${claimable.length}`}</pre>
 
 // ─── Version 13: Gamified ────────────────────────────────────────────────────────
 
-function Version13({
+function Version14({
   payouts,
   onClaim,
 }: {
@@ -1502,7 +1667,7 @@ function Version13({
 
 // ─── Version 14: Split/Swipe ─────────────────────────────────────────────────────
 
-function Version14({
+function Version15({
   payouts,
   onClaim,
 }: {
@@ -1564,7 +1729,7 @@ function Version14({
 
 // ─── Version 15: Apple ───────────────────────────────────────────────────────────
 
-function Version15({
+function Version16({
   payouts,
   onClaim,
 }: {
@@ -1624,7 +1789,7 @@ function Version15({
 
 // ─── Version 16: Spacious & Breathing ───────────────────────────────────────────
 
-function Version16({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
+function Version17({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
   const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
   const history = payouts.filter((p) => p.status !== 'claimable');
@@ -1665,7 +1830,7 @@ function Version16({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payo
 
 // ─── Version 17: Tight & Dense ──────────────────────────────────────────────────
 
-function Version17({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
+function Version18({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
   const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
 
@@ -1698,7 +1863,7 @@ function Version17({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payo
 
 // ─── Version 18: Hero-Led ───────────────────────────────────────────────────────
 
-function Version18({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
+function Version19({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
   const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
   const history = payouts.filter((p) => p.status !== 'claimable');
@@ -1725,7 +1890,7 @@ function Version18({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payo
 
 // ─── Version 19: Sidebar Command ────────────────────────────────────────────────
 
-function Version19({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
+function Version20({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
   const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
   const history = payouts.filter((p) => p.status !== 'claimable');
@@ -1748,7 +1913,7 @@ function Version19({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payo
 
 // ─── Version 20: Step-by-Step ───────────────────────────────────────────────────
 
-function Version20({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
+function Version21({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
   const [step, setStep] = useState(1);
   const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
@@ -1766,7 +1931,7 @@ function Version20({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payo
 
 // ─── Version 21: Horizontal Scroll ──────────────────────────────────────────────
 
-function Version21({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
+function Version22({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
   const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
   const history = payouts.filter((p) => p.status !== 'claimable');
@@ -1782,7 +1947,7 @@ function Version21({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payo
 
 // ─── Version 22: Stacked Layers ─────────────────────────────────────────────────
 
-function Version22({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
+function Version23({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
   const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
   const history = payouts.filter((p) => p.status !== 'claimable');
@@ -1798,7 +1963,7 @@ function Version22({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payo
 
 // ─── Version 23: Grid Mosaic ────────────────────────────────────────────────────
 
-function Version23({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
+function Version24({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
   const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
   const history = payouts.filter((p) => p.status !== 'claimable');
@@ -1816,7 +1981,7 @@ function Version23({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payo
 
 // ─── Version 24: Inline Everything ──────────────────────────────────────────────
 
-function Version24({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
+function Version25({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
@@ -1831,7 +1996,7 @@ function Version24({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payo
 
 // ─── Version 25: Floating Panels ────────────────────────────────────────────────
 
-function Version25({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
+function Version26({ payouts, onClaim }: { payouts: PayoutItem[]; onClaim: (payout: PayoutItem) => void }) {
   const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
   const history = payouts.filter((p) => p.status !== 'claimable');
@@ -1880,7 +2045,7 @@ export default function InvestPayoutsPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-1">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25].map((v) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26].map((v) => (
             <button
               key={v}
               onClick={() => setVersion(v)}
@@ -1923,6 +2088,7 @@ export default function InvestPayoutsPage() {
       {version === 23 && <Version23 payouts={payouts} onClaim={handleClaim} />}
       {version === 24 && <Version24 payouts={payouts} onClaim={handleClaim} />}
       {version === 25 && <Version25 payouts={payouts} onClaim={handleClaim} />}
+      {version === 26 && <Version26 payouts={payouts} onClaim={handleClaim} />}
 
       {/* Claim Modal (shared across all versions) */}
       <ClaimModal
