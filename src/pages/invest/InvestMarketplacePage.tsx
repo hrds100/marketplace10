@@ -216,7 +216,7 @@ function VersionSwitcher({
   setVersion: (v: 1 | 2) => void;
 }) {
   return (
-    <div className="fixed right-4 top-4 z-50 flex gap-1 rounded-lg border bg-background/90 p-1 shadow-lg backdrop-blur-sm">
+    <div className="flex gap-1 rounded-lg border bg-background/90 p-1 shadow-sm backdrop-blur-sm w-fit ml-auto mb-4">
       {([1, 2] as const).map((v) => (
         <button
           key={v}
