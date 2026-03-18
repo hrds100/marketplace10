@@ -1020,7 +1020,7 @@ function Version2({
 // ---------------------------------------------------------------------------
 
 export default function InvestMarketplacePage() {
-  const [version, setVersion] = useState<1 | 2>(1);
+  const version = 1 as const;
   const [jvExpanded, setJvExpanded] = useState(false);
   const [currentImage, setCurrentImage] = useState(0);
   const [investAmount, setInvestAmount] = useState(500);
@@ -1045,39 +1045,21 @@ export default function InvestMarketplacePage() {
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
-      <VersionSwitcher version={version} setVersion={setVersion} />
-
-      {version === 1 ? (
-        <Version1
-          jvExpanded={jvExpanded}
-          setJvExpanded={setJvExpanded}
-          currentImage={currentImage}
-          setCurrentImage={setCurrentImage}
-          investAmount={investAmount}
-          setInvestAmount={setInvestAmount}
-          paymentMethod={paymentMethod}
-          setPaymentMethod={setPaymentMethod}
-          tsaAgreed={tsaAgreed}
-          setTsaAgreed={setTsaAgreed}
-          onInvest={handleInvest}
-          initialCalcAmount={initialCalcAmount}
-          setInitialCalcAmount={setInitialCalcAmount}
-        />
-      ) : (
-        <Version2
-          currentImage={currentImage}
-          setCurrentImage={setCurrentImage}
-          investAmount={investAmount}
-          setInvestAmount={setInvestAmount}
-          paymentMethod={paymentMethod}
-          setPaymentMethod={setPaymentMethod}
-          tsaAgreed={tsaAgreed}
-          setTsaAgreed={setTsaAgreed}
-          onInvest={handleInvest}
-          initialCalcAmount={initialCalcAmount}
-          setInitialCalcAmount={setInitialCalcAmount}
-        />
-      )}
+      <Version1
+        jvExpanded={jvExpanded}
+        setJvExpanded={setJvExpanded}
+        currentImage={currentImage}
+        setCurrentImage={setCurrentImage}
+        investAmount={investAmount}
+        setInvestAmount={setInvestAmount}
+        paymentMethod={paymentMethod}
+        setPaymentMethod={setPaymentMethod}
+        tsaAgreed={tsaAgreed}
+        setTsaAgreed={setTsaAgreed}
+        onInvest={handleInvest}
+        initialCalcAmount={initialCalcAmount}
+        setInitialCalcAmount={setInitialCalcAmount}
+      />
 
       <InvestModal open={investOpen} onOpenChange={setInvestOpen} />
     </div>
