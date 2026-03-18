@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-03-18
+
+### Phase 4 — DB migration executed
+- Ran `20260317150000_nfs_phase4_stripe.sql` via Supabase Management API
+- Tables confirmed live: `nfs_stripe_accounts`, `nfs_webhook_events`
+- RLS policies verified: `nfs_stripe_accounts_operator_access`, `nfs_webhook_events_service_only`
+- Indexes verified: operator (unique), connect_account_id, event lookup, source+type
+- Stripe secrets confirmed SET: `NFS_STRIPE_SECRET_KEY`, `NFS_STRIPE_CLIENT_ID`, `NFS_RESEND_API_KEY`
+- Phase 3 DB confirmed already live (executed in previous session)
+
+---
+
 ## 2026-03-17
 
 ### Phase 4 — Stripe Payments (Full Integration)
