@@ -116,13 +116,13 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
           {/* Investors expandable group */}
           <div className="mt-1 pt-1 border-t border-border/20">
             {collapsed ? (
-              <NavLink
-                to="/dashboard/invest/marketplace"
-                className={`relative flex items-center justify-center h-10 rounded-lg transition-all duration-200 px-2 ${isInvestActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+              <button
+                onClick={() => { setCollapsed(false); setInvestOpen(true); }}
+                className={`relative flex items-center justify-center h-10 rounded-lg transition-all duration-200 px-2 w-full ${isInvestActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                 title="Investors"
               >
                 <TrendingUp className="w-[15px] h-[15px]" strokeWidth={1.8} />
-              </NavLink>
+              </button>
             ) : (
               <>
                 <button

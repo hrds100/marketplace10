@@ -1,7 +1,7 @@
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, Heart, Kanban, GraduationCap, Users,
-  PlusCircle, Settings, LogOut, MessageSquare, Menu, X, Globe,
+  PlusCircle, Settings, LogOut, MessageSquare, Menu, X, Globe, TrendingUp,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import BurgerMenu from '@/components/BurgerMenu';
@@ -17,6 +17,7 @@ const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; pro?
   { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', pro: true },
   { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
   { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
+  { to: '/dashboard/invest/marketplace', icon: TrendingUp, label: 'Investors' },
 ];
 
 export default function DashboardTopNav() {
