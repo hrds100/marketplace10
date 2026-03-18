@@ -67,7 +67,7 @@ const jvSteps = [
     step: 1,
     icon: FileText,
     title: 'A decision is proposed',
-    desc: 'You, another partner, or the management team can propose something — like replacing a bed, upgrading furniture, increasing rent, or changing management.',
+    desc: 'You, another partner, or the management team can propose something, like replacing a bed, upgrading furniture, increasing the Airbnb nightly rate, changing the management company, or even proposing yourself as the new manager.',
   },
   {
     step: 2,
