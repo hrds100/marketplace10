@@ -5,6 +5,7 @@ import SettingsContact from '@/components/nfstay/settings/SettingsContact';
 import SettingsBranding from '@/components/nfstay/settings/SettingsBranding';
 import SettingsSocial from '@/components/nfstay/settings/SettingsSocial';
 import SettingsStripe from '@/components/nfstay/settings/SettingsStripe';
+import SettingsHospitable from '@/components/nfstay/settings/SettingsHospitable';
 import SettingsAnalytics from '@/components/nfstay/settings/SettingsAnalytics';
 import NfsPromoCodeManager from '@/components/nfstay/reservations/NfsPromoCodeManager';
 
@@ -49,6 +50,7 @@ export default function NfsOperatorSettings() {
           <TabsTrigger value="social">Social</TabsTrigger>
           <TabsTrigger value="promo">Promo Codes</TabsTrigger>
           <TabsTrigger value="stripe">Stripe</TabsTrigger>
+          <TabsTrigger value="hospitable">Hospitable</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
@@ -70,6 +72,9 @@ export default function NfsOperatorSettings() {
           </TabsContent>
           <TabsContent value="stripe">
             <SettingsStripe />
+          </TabsContent>
+          <TabsContent value="hospitable">
+            <SettingsHospitable />
           </TabsContent>
           <TabsContent value="analytics">
             <SettingsAnalytics operator={operator} />
