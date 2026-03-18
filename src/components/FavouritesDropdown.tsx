@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Heart } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Heart, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useFavourites } from '@/hooks/useFavourites';
@@ -20,7 +20,7 @@ export default function FavouritesDropdown() {
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { favourites } = useFavourites();
+  const { favourites, toggle } = useFavourites();
 
   // Close on click outside
   useEffect(() => {
@@ -31,11 +31,14 @@ export default function FavouritesDropdown() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Fetch property data when dropdown opens
+  // Fetch property data whenever favourites change (real-time)
   useEffect(() => {
-    if (!open || favourites.size === 0) return;
-    setLoading(true);
+    if (favourites.size === 0) {
+      setProperties([]);
+      return;
+    }
     const ids = [...favourites];
+    setLoading(true);
     supabase
       .from('properties')
       .select('id, name, city, rent_monthly, profit_est, photos')
@@ -44,25 +47,29 @@ export default function FavouritesDropdown() {
         setProperties((data as FavProperty[]) || []);
         setLoading(false);
       });
-  }, [open, favourites]);
+  }, [favourites]);
 
   const handleClick = (propertyId: string) => {
     setOpen(false);
     const isDealsPage = location.pathname === '/dashboard/deals' || location.pathname === '/dashboard';
     if (isDealsPage) {
-      // Already on deals — scroll to card
       const el = document.getElementById(`property-${propertyId}`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Brief highlight
         el.style.transition = 'box-shadow 0.3s';
         el.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.4)';
         setTimeout(() => { el.style.boxShadow = ''; }, 2000);
       }
     } else {
-      // Navigate to deals page with hash
       navigate(`/dashboard/deals#property-${propertyId}`);
     }
+  };
+
+  const handleRemove = (e: React.MouseEvent, propertyId: string) => {
+    e.stopPropagation();
+    toggle(propertyId);
+    // Optimistic UI — remove from local list immediately
+    setProperties(prev => prev.filter(p => p.id !== propertyId));
   };
 
   const count = favourites.size;
@@ -74,6 +81,7 @@ export default function FavouritesDropdown() {
     if (count > prevCountRef.current) {
       setFlashBadge(true);
       const timer = setTimeout(() => setFlashBadge(false), 2000);
+      prevCountRef.current = count;
       return () => clearTimeout(timer);
     }
     prevCountRef.current = count;
@@ -109,7 +117,7 @@ export default function FavouritesDropdown() {
 
           {/* List */}
           <div className="max-h-[380px] overflow-y-auto">
-            {loading ? (
+            {loading && properties.length === 0 ? (
               <div className="py-8 text-center">
                 <span className="text-sm text-muted-foreground">Loading...</span>
               </div>
@@ -123,10 +131,10 @@ export default function FavouritesDropdown() {
               properties.map((p, i) => {
                 const photo = p.photos?.[0] || `https://placehold.co/96x96/f3f4f6/9ca3af?text=${encodeURIComponent(p.city || '?')}`;
                 return (
-                  <button
+                  <div
                     key={p.id}
+                    className={`group flex items-center gap-3 px-4 py-3 hover:bg-gray-50/80 transition-colors cursor-pointer ${i < properties.length - 1 ? 'border-b border-border/10' : ''}`}
                     onClick={() => handleClick(p.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50/80 transition-colors ${i < properties.length - 1 ? 'border-b border-border/10' : ''}`}
                   >
                     <img
                       src={photo}
@@ -138,11 +146,18 @@ export default function FavouritesDropdown() {
                       <p className="text-[13px] font-medium text-foreground truncate">{p.name}</p>
                       <p className="text-[11px] text-muted-foreground">{p.city}</p>
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right flex-shrink-0 mr-1">
                       <p className="text-[12px] font-medium text-foreground">£{p.rent_monthly?.toLocaleString()}<span className="text-muted-foreground font-normal">/mo</span></p>
                       <p className="text-[11px] font-semibold text-emerald-600">£{p.profit_est?.toLocaleString()}</p>
                     </div>
-                  </button>
+                    <button
+                      onClick={(e) => handleRemove(e, p.id)}
+                      className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-muted-foreground hover:text-red-500"
+                      title="Remove from favourites"
+                    >
+                      <X className="w-3.5 h-3.5" strokeWidth={2} />
+                    </button>
+                  </div>
                 );
               })
             )}
