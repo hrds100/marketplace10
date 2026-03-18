@@ -62,18 +62,33 @@ const mockActivity = [
   { event: 'Purchase', price: '$2,000', from: 'Market', to: '0x4a6b...c3e9', date: 'Mar 8, 2026' },
 ];
 
-const jvFeatures = [
-  { icon: Vote, title: 'You Vote', desc: 'Cast your vote on every major property decision.' },
-  { icon: Star, title: 'You Suggest', desc: 'Propose changes — rent adjustments, renovations, platforms.' },
-  { icon: Bell, title: 'You Get Notified', desc: 'Real-time updates on occupancy, payouts, and proposals.' },
-  { icon: Wrench, title: 'You Can Change Mgmt', desc: 'If the majority votes, the property manager changes.' },
+const jvSteps = [
+  {
+    step: 1,
+    icon: FileText,
+    title: 'A decision is proposed',
+    desc: 'You, another partner, or the management team can propose something — like replacing a bed, upgrading furniture, increasing rent, or changing management.',
+  },
+  {
+    step: 2,
+    icon: Bell,
+    title: 'You get notified',
+    desc: 'All partners receive a WhatsApp and email notification with a link back to the platform when a new proposal is created.',
+  },
+  {
+    step: 3,
+    icon: Vote,
+    title: 'You decide',
+    desc: 'You review the proposal, understand what is being suggested, and cast your vote. Once the voting period ends, the majority decision is applied.',
+  },
 ];
 
-const jvBullets = [
-  'Increase rent to match market rates',
-  'Replace furniture or upgrade amenities',
-  'Switch property manager if underperforming',
-  'Move to a new booking platform',
+const jvExamples = [
+  'Replace a bed or sofa',
+  'Increase rent',
+  'Upgrade furniture',
+  'Change management',
+  'Change booking strategy or platform',
 ];
 
 // ---------------------------------------------------------------------------
@@ -787,65 +802,113 @@ function Version1({
       <div
         className={cn(
           'mb-8 rounded-2xl border transition-all duration-300',
-          'border-primary/30 shadow-[0_0_15px_rgba(56,161,105,0.12)] bg-primary/[0.03]'
+          'border-primary/30 bg-primary/[0.02]',
+          jvExpanded
+            ? 'shadow-[0_0_20px_rgba(56,161,105,0.15)]'
+            : 'shadow-[0_0_10px_rgba(56,161,105,0.08)] hover:shadow-[0_0_20px_rgba(56,161,105,0.18)]'
         )}
       >
         <button
           onClick={() => setJvExpanded(!jvExpanded)}
-          className="flex w-full items-center gap-3 px-5 py-4 text-left"
+          className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-primary/[0.02] rounded-2xl"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-            <Users className="h-4 w-4 text-primary" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 ring-2 ring-primary/20">
+            <Users className="h-4.5 w-4.5 text-primary" />
           </div>
-          <div className="flex-1">
-            <span className="text-sm font-semibold">Active JV Partnership</span>
-            <span className="ml-2 text-sm text-muted-foreground">
-              — You're not a silent investor. You vote on every major decision.
-            </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold">Active JV Partnership</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              You are part of the decision-making. Tap to see how it works.
+            </p>
           </div>
-          <Badge
-            variant="secondary"
-            className="gap-1 text-xs cursor-pointer hover:bg-muted"
-          >
-            Learn More
-            {jvExpanded ? (
-              <ChevronUp className="h-3 w-3" />
-            ) : (
-              <ChevronDown className="h-3 w-3" />
+          <div
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all',
+              'bg-primary/10 text-primary',
+              'group-hover:bg-primary/15 group-hover:ring-1 group-hover:ring-primary/30'
             )}
-          </Badge>
+          >
+            <span>See how it works</span>
+            <ChevronDown
+              className={cn(
+                'h-3.5 w-3.5 transition-transform duration-300',
+                jvExpanded && 'rotate-180'
+              )}
+            />
+          </div>
         </button>
 
         <div
           className={cn(
-            'overflow-hidden transition-all duration-300',
-            jvExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+            'overflow-hidden transition-all duration-300 ease-out',
+            jvExpanded ? 'max-h-[700px] opacity-100' : 'max-h-0 opacity-0'
           )}
         >
-          <div className="space-y-4 px-5 pb-5">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {jvFeatures.map((f) => (
-                <div
-                  key={f.title}
-                  className="rounded-xl border bg-background p-3 text-center"
-                >
-                  <f.icon className="mx-auto mb-1.5 h-5 w-5 text-primary" />
-                  <p className="text-xs font-semibold">{f.title}</p>
-                  <p className="mt-0.5 text-[10px] text-muted-foreground">{f.desc}</p>
+          <div className="px-5 pb-6 pt-1">
+            {/* Separator */}
+            <div className="mb-5 h-px bg-border/60" />
+
+            {/* Your Role + How It Works layout */}
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+
+              {/* YOUR ROLE — standalone card */}
+              <div className="lg:col-span-3">
+                <div className="h-full rounded-xl border border-primary/20 bg-primary/[0.04] p-4">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 mb-3">
+                    <Shield className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="text-sm font-semibold mb-1.5">Your Role</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    When you invest in this property, you become part of the partnership and take part in important decisions.
+                  </p>
                 </div>
-              ))}
+              </div>
+
+              {/* HOW IT WORKS — 3 step cards */}
+              <div className="lg:col-span-9">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  How it works
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {jvSteps.map((s) => (
+                    <div key={s.step} className="rounded-xl border bg-background p-4 relative">
+                      {/* Step number */}
+                      <div className="absolute -top-2.5 left-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                        {s.step}
+                      </div>
+                      <div className="flex items-center gap-2 mb-2 mt-1">
+                        <s.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                        <p className="text-sm font-semibold">{s.title}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {s.desc}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <ul className="grid grid-cols-2 gap-1.5 text-xs text-muted-foreground">
-              {jvBullets.map((b) => (
-                <li key={b} className="flex items-center gap-1.5">
-                  <ArrowRight className="h-3 w-3 text-primary" />
-                  {b}
-                </li>
-              ))}
-            </ul>
-            <p className="text-xs text-muted-foreground italic">
-              Management starts with NFsTay. If the majority votes to change, it changes.
-            </p>
+
+            {/* Examples + Management note */}
+            <div className="mt-5 rounded-xl bg-muted/40 dark:bg-muted/20 px-4 py-3.5">
+              <p className="text-xs font-semibold text-foreground mb-2">
+                Examples of decisions you may vote on
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {jvExamples.map((ex) => (
+                  <span
+                    key={ex}
+                    className="inline-flex items-center gap-1 rounded-full bg-background border px-3 py-1 text-[11px] text-muted-foreground"
+                  >
+                    <CheckCircle2 className="h-3 w-3 text-primary" />
+                    {ex}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] text-muted-foreground border-t border-border/50 pt-2.5">
+                Management starts with NFsTay. If the majority votes to change it, it changes.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -946,29 +1009,64 @@ function Version2({
           This isn't passive investing. You become an active partner with voting rights on
           every major property decision.
         </p>
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
-          {jvFeatures.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-xl border bg-background p-4 text-center"
-            >
-              <f.icon className="mx-auto mb-2 h-6 w-6 text-primary" />
-              <p className="text-sm font-semibold">{f.title}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{f.desc}</p>
+
+        {/* Your Role + How It Works */}
+        <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-12">
+          {/* Your Role */}
+          <div className="lg:col-span-3">
+            <div className="h-full rounded-xl border border-primary/20 bg-primary/[0.04] p-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 mb-3">
+                <Shield className="h-4 w-4 text-primary" />
+              </div>
+              <p className="text-sm font-semibold mb-1.5">Your Role</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                When you invest in this property, you become part of the partnership and take part in important decisions.
+              </p>
             </div>
-          ))}
+          </div>
+
+          {/* Steps */}
+          <div className="lg:col-span-9">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              How it works
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {jvSteps.map((s) => (
+                <div key={s.step} className="rounded-xl border bg-background p-4 relative">
+                  <div className="absolute -top-2.5 left-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                    {s.step}
+                  </div>
+                  <div className="flex items-center gap-2 mb-2 mt-1">
+                    <s.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                    <p className="text-sm font-semibold">{s.title}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-        <ul className="mt-5 grid grid-cols-2 gap-1.5 text-sm text-muted-foreground">
-          {jvBullets.map((b) => (
-            <li key={b} className="flex items-center gap-1.5">
-              <ArrowRight className="h-3.5 w-3.5 text-primary" />
-              {b}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 text-xs text-muted-foreground italic">
-          Management starts with NFsTay. If the majority votes to change, it changes.
-        </p>
+
+        {/* Examples + Management note */}
+        <div className="mt-5 rounded-xl bg-muted/40 dark:bg-muted/20 px-4 py-3.5">
+          <p className="text-xs font-semibold text-foreground mb-2">
+            Examples of decisions you may vote on
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {jvExamples.map((ex) => (
+              <span
+                key={ex}
+                className="inline-flex items-center gap-1 rounded-full bg-background border px-3 py-1 text-[11px] text-muted-foreground"
+              >
+                <CheckCircle2 className="h-3 w-3 text-primary" />
+                {ex}
+              </span>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] text-muted-foreground border-t border-border/50 pt-2.5">
+            Management starts with NFsTay. If the majority votes to change it, it changes.
+          </p>
+        </div>
       </div>
 
       {/* SECTION 2: Property Showcase */}
