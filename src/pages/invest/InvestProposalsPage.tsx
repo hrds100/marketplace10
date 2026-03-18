@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -18,10 +19,16 @@ import {
   ThumbsUp,
   ThumbsDown,
   Gavel,
+  PlusCircle,
+  Coins,
+  Loader2,
+  ChevronDown,
+  MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   mockProposals,
+  mockProperties,
   type ActiveProposal,
   type PastProposal,
 } from '@/data/investMockData';
@@ -92,6 +99,44 @@ export default function InvestProposalsPage() {
   });
 
   const pastProposals: PastProposal[] = mockProposals.past;
+
+  // Submit proposal state
+  const [submitOpen, setSubmitOpen] = useState(false);
+  const [submitStep, setSubmitStep] = useState<'form' | 'approving' | 'submitting' | 'success'>('form');
+  const [submitPropertyId, setSubmitPropertyId] = useState<number | null>(null);
+  const [submitDescription, setSubmitDescription] = useState('');
+  const [propertyDropdownOpen, setPropertyDropdownOpen] = useState(false);
+  const proposalFee = 10; // ~10 USDC in STAY tokens
+
+  const selectedProperty = mockProperties.find((p) => p.id === submitPropertyId);
+
+  function openSubmitModal() {
+    setSubmitStep('form');
+    setSubmitPropertyId(null);
+    setSubmitDescription('');
+    setSubmitOpen(true);
+  }
+
+  function handleSubmitProposal() {
+    if (!submitPropertyId || !submitDescription.trim()) return;
+    setSubmitStep('approving');
+    // Simulate approve step (1.5s)
+    setTimeout(() => {
+      setSubmitStep('submitting');
+      // Simulate on-chain submission (2s)
+      setTimeout(() => {
+        setSubmitStep('success');
+      }, 2000);
+    }, 1500);
+  }
+
+  function closeSubmitModal() {
+    setSubmitOpen(false);
+    setSubmitStep('form');
+    setSubmitPropertyId(null);
+    setSubmitDescription('');
+    setPropertyDropdownOpen(false);
+  }
 
   // Derived stats
   const stats = useMemo(() => {
@@ -334,6 +379,23 @@ export default function InvestProposalsPage() {
               ))}
             </CardContent>
           </Card>
+
+          {/* Submit a Proposal */}
+          <Card className="border-dashed">
+            <CardContent className="pt-5 space-y-3">
+              <Button className="w-full gap-2" onClick={openSubmitModal}>
+                <PlusCircle className="h-4 w-4" />
+                Submit a Proposal
+              </Button>
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Coins className="h-3 w-3" />
+                <span>Fee: ~{proposalFee} USDC in STAY tokens</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                You must own shares in a property to submit a proposal. Proposals are open for 30 days.
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right main area — Timeline */}
@@ -476,6 +538,208 @@ export default function InvestProposalsPage() {
               Confirm {voteDialog.choice === 'yes' ? 'Yes' : 'No'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Submit Proposal Modal */}
+      <Dialog open={submitOpen} onOpenChange={(open) => !open && closeSubmitModal()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {submitStep === 'success' ? 'Proposal Submitted' : 'Submit a Proposal'}
+            </DialogTitle>
+            {submitStep === 'form' && (
+              <DialogDescription>
+                Propose a decision for shareholders to vote on. Your proposal will be open for 30 days.
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          {/* Form step */}
+          {submitStep === 'form' && (
+            <div className="space-y-4 py-2">
+              {/* Property selector */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Property</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setPropertyDropdownOpen(!propertyDropdownOpen)}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm text-left transition-colors',
+                      'hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20',
+                      submitPropertyId ? 'border-border' : 'border-dashed border-muted-foreground/30'
+                    )}
+                  >
+                    {selectedProperty ? (
+                      <>
+                        <img
+                          src={selectedProperty.image}
+                          alt={selectedProperty.title}
+                          className="h-9 w-9 rounded-lg object-cover flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{selectedProperty.title}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="h-2.5 w-2.5" />
+                            {selectedProperty.location}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Choose a property...</span>
+                    )}
+                    <ChevronDown className={cn(
+                      'h-4 w-4 text-muted-foreground ml-auto transition-transform',
+                      propertyDropdownOpen && 'rotate-180'
+                    )} />
+                  </button>
+
+                  {propertyDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-card border rounded-lg shadow-lg overflow-hidden">
+                      {mockProperties.map((prop) => (
+                        <button
+                          key={prop.id}
+                          type="button"
+                          onClick={() => {
+                            setSubmitPropertyId(prop.id);
+                            setPropertyDropdownOpen(false);
+                          }}
+                          className={cn(
+                            'w-full flex items-center gap-3 px-3 py-2.5 text-sm text-left hover:bg-muted transition-colors',
+                            submitPropertyId === prop.id && 'bg-primary/5'
+                          )}
+                        >
+                          <img
+                            src={prop.image}
+                            alt={prop.title}
+                            className="h-9 w-9 rounded-lg object-cover flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{prop.title}</p>
+                            <p className="text-xs text-muted-foreground">{prop.location}</p>
+                          </div>
+                          {submitPropertyId === prop.id && (
+                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Proposal Description</label>
+                <textarea
+                  value={submitDescription}
+                  onChange={(e) => setSubmitDescription(e.target.value)}
+                  placeholder="Describe what you're proposing and why shareholders should vote for it..."
+                  rows={4}
+                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Be clear and specific. Good proposals explain the expected impact on rental income or property value.
+                </p>
+              </div>
+
+              {/* Fee notice */}
+              <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2.5">
+                <Coins className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                <div className="text-xs">
+                  <p className="font-medium text-amber-600 dark:text-amber-400">
+                    Proposal fee: ~{proposalFee} USDC in STAY tokens
+                  </p>
+                  <p className="text-muted-foreground mt-0.5">
+                    STAY tokens will be deducted from your wallet to prevent spam proposals.
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={closeSubmitModal}>
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!submitPropertyId || !submitDescription.trim()}
+                  onClick={handleSubmitProposal}
+                  className="gap-2"
+                >
+                  <Gavel className="h-4 w-4" />
+                  Submit Proposal
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {/* Approving step */}
+          {submitStep === 'approving' && (
+            <div className="py-8 flex flex-col items-center gap-4 text-center">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-primary animate-spin" />
+              </div>
+              <div>
+                <p className="font-semibold">Approving STAY tokens (1/2)</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Please confirm the approval in your wallet...
+                </p>
+              </div>
+              <Progress value={33} className="h-1.5 w-48" />
+            </div>
+          )}
+
+          {/* Submitting step */}
+          {submitStep === 'submitting' && (
+            <div className="py-8 flex flex-col items-center gap-4 text-center">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-primary animate-spin" />
+              </div>
+              <div>
+                <p className="font-semibold">Submitting proposal (2/2)</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Creating your proposal on-chain...
+                </p>
+              </div>
+              <Progress value={66} className="h-1.5 w-48" />
+            </div>
+          )}
+
+          {/* Success step */}
+          {submitStep === 'success' && (
+            <div className="py-8 flex flex-col items-center gap-4 text-center">
+              <div className="h-14 w-14 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+              </div>
+              <div>
+                <p className="font-semibold text-lg">Proposal submitted!</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Your proposal for <span className="font-medium text-foreground">{selectedProperty?.title}</span> is now live.
+                  Shareholders have 30 days to vote.
+                </p>
+              </div>
+              {selectedProperty && (
+                <div className="flex items-center gap-3 rounded-lg bg-muted px-4 py-3">
+                  <img
+                    src={selectedProperty.image}
+                    alt={selectedProperty.title}
+                    className="h-10 w-10 rounded-lg object-cover"
+                  />
+                  <div className="text-left text-sm">
+                    <p className="font-medium">{selectedProperty.title}</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                      {submitDescription}
+                    </p>
+                  </div>
+                </div>
+              )}
+              <DialogFooter className="w-full">
+                <Button className="w-full" onClick={closeSubmitModal}>
+                  Done
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
