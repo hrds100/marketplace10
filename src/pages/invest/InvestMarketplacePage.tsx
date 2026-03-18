@@ -1016,60 +1016,79 @@ function Version1({
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
       {/* JV Banner */}
-      <div
-        className={cn(
-          'mb-8 rounded-2xl border transition-all duration-300',
-          'border-primary/30 bg-primary/[0.02]',
-          jvExpanded
-            ? 'shadow-[0_0_20px_rgba(56,161,105,0.15)]'
-            : 'shadow-[0_0_10px_rgba(56,161,105,0.08)] hover:shadow-[0_0_20px_rgba(56,161,105,0.18)]'
-        )}
-      >
-        <button
-          onClick={() => setJvExpanded(!jvExpanded)}
-          className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-primary/[0.02] rounded-2xl"
-        >
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 ring-2 ring-primary/20 flex-shrink-0">
-            <Users className="h-4 w-4 text-primary" />
-            {/* Ripple ping — earthquake-like attention grabber */}
-            {!jvExpanded && (
-              <>
-                <span className="absolute inset-0 rounded-xl bg-primary/20 animate-ping" />
-                <span className="absolute -inset-1 rounded-xl bg-primary/10 animate-[ping_1.5s_ease-in-out_infinite_0.5s]" />
-              </>
-            )}
+      <div className="relative mb-8">
+        {/* Pointing finger — outside the box, bounces left-right */}
+        {!jvExpanded && (
+          <div className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 pointer-events-none hidden lg:block">
+            <span
+              className="text-2xl block"
+              style={{ animation: 'jv-finger 1.2s ease-in-out infinite' }}
+              aria-hidden="true"
+            >
+              👉
+            </span>
+            <style>{`
+              @keyframes jv-finger {
+                0%, 100% { transform: translateX(0px); }
+                50% { transform: translateX(8px); }
+              }
+            `}</style>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-base font-semibold">Active JV Partnership</p>
+        )}
+
+        <div
+          className={cn(
+            'rounded-2xl border transition-all duration-500',
+            jvExpanded
+              ? 'border-primary/20 bg-primary/[0.02] shadow-sm'
+              : 'border-primary/30 bg-primary/[0.02] shadow-[0_0_10px_rgba(56,161,105,0.08)] hover:shadow-[0_0_20px_rgba(56,161,105,0.18)]'
+          )}
+        >
+          <button
+            onClick={() => setJvExpanded(!jvExpanded)}
+            className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-primary/[0.02] rounded-2xl"
+          >
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 ring-2 ring-primary/20 flex-shrink-0">
+              <Users className="h-4 w-4 text-primary" />
+              {/* Ripple ping — only when collapsed */}
               {!jvExpanded && (
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
-                </span>
+                <>
+                  <span className="absolute inset-0 rounded-xl bg-primary/20 animate-ping" />
+                  <span className="absolute -inset-1 rounded-xl bg-primary/10 animate-[ping_1.5s_ease-in-out_infinite_0.5s]" />
+                </>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {jvExpanded ? 'How your partnership works.' : 'You are part of the decision-making. Click to see how it works.'}
-            </p>
-          </div>
-          <div
-            className={cn(
-              'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all flex-shrink-0',
-              jvExpanded
-                ? 'bg-muted text-muted-foreground hover:bg-muted/80'
-                : 'bg-primary text-white shadow-sm shadow-primary/25 group-hover:shadow-md group-hover:shadow-primary/30'
-            )}
-          >
-            <span>{jvExpanded ? 'Close' : 'Click here'}</span>
-            <ChevronDown
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-base font-semibold">Active JV Partnership</p>
+                {!jvExpanded && (
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {jvExpanded ? 'How your partnership works.' : 'You are part of the decision-making. Click to see how it works.'}
+              </p>
+            </div>
+            <div
               className={cn(
-                'h-3.5 w-3.5 transition-transform duration-300',
-                jvExpanded && 'rotate-180'
+                'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all flex-shrink-0',
+                jvExpanded
+                  ? 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  : 'bg-primary text-white shadow-sm shadow-primary/25 group-hover:shadow-md group-hover:shadow-primary/30'
               )}
-            />
-          </div>
-        </button>
+            >
+              <span>{jvExpanded ? 'Close' : 'Click here to learn more'}</span>
+              <ChevronDown
+                className={cn(
+                  'h-3.5 w-3.5 transition-transform duration-300',
+                  jvExpanded && 'rotate-180'
+                )}
+              />
+            </div>
+          </button>
 
         <div
           className={cn(
@@ -1143,6 +1162,7 @@ function Version1({
               </p>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
