@@ -312,7 +312,7 @@ export default function DealsPageV2() {
         </div>
 
         {/* Right: map */}
-        <div className="hidden lg:block w-[25%] max-w-[400px] flex-shrink-0 p-3">
+        <div className="hidden lg:block w-[35%] max-w-[520px] flex-shrink-0 p-3">
           <div className="w-full h-full rounded-2xl overflow-hidden border border-border/30 shadow-sm">
             <Suspense
               fallback={
