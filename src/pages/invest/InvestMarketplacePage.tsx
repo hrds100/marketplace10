@@ -441,31 +441,35 @@ function InvestCardContent({
           <button
             onClick={() => setPaymentMethod('card')}
             className={cn(
-              'flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left transition-all',
+              'flex items-center gap-3 rounded-lg border px-3.5 py-3 text-left transition-all',
               paymentMethod === 'card'
-                ? 'border-primary bg-primary/5'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
                 : 'border-border hover:bg-muted/50'
             )}
           >
-            <CreditCard className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <img src="/images/payment/visa.svg" alt="Visa" className="h-5 w-auto" />
+              <img src="/images/payment/mc.svg" alt="Mastercard" className="h-5 w-auto" />
+            </div>
             <div>
-              <p className="text-sm font-medium">Card</p>
-              <p className="text-[10px] text-muted-foreground">Visa / MC</p>
+              <p className="text-sm font-medium">Credit / Debit Card</p>
             </div>
           </button>
           <button
             onClick={() => setPaymentMethod('crypto')}
             className={cn(
-              'flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left transition-all',
+              'flex items-center gap-3 rounded-lg border px-3.5 py-3 text-left transition-all',
               paymentMethod === 'crypto'
-                ? 'border-primary bg-primary/5'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
                 : 'border-border hover:bg-muted/50'
             )}
           >
-            <Coins className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <img src="/images/payment/usdc.svg" alt="USDC" className="h-5 w-5 rounded-full" />
+              <img src="/images/payment/bnb.webp" alt="BNB" className="h-5 w-5 rounded-full" />
+            </div>
             <div>
-              <p className="text-sm font-medium">Crypto</p>
-              <p className="text-[10px] text-muted-foreground">USDC / BNB</p>
+              <p className="text-sm font-medium">Cryptocurrency</p>
             </div>
           </button>
         </div>
@@ -556,88 +560,145 @@ function ProfitCalculator({
   const monthlyIncome = ((property.monthlyRent / property.totalShares) * sharesCalc).toFixed(2);
   const yearlyIncome = (sharesCalc * property.pricePerShare * (dividendYield / 100)).toFixed(2);
 
+  const quickAmounts = [500, 1000, 2500, 5000];
+
   return (
     <Card className="rounded-2xl">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <PieChart className="h-5 w-5 text-primary" />
           How much can you earn?
         </CardTitle>
+        <p className="text-sm text-muted-foreground mt-1">
+          See your projected returns based on historical performance.
+        </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Input */}
+        {/* Amount input — compact with quick-select pills */}
         <div>
-          <label className="mb-1.5 block text-sm font-medium">Initial Amount</label>
-          <div className="flex items-center gap-2 rounded-lg border px-3 py-2 focus-within:ring-2 focus-within:ring-primary">
-            <span className="text-sm font-semibold text-muted-foreground">$</span>
-            <input
-              type="number"
-              min={0}
-              value={initialCalcAmount || ''}
-              onChange={(e) => {
-                const v = parseInt(e.target.value, 10);
-                setInitialCalcAmount(isNaN(v) ? 0 : Math.max(0, v));
-              }}
-              className="flex-1 bg-transparent text-lg font-semibold outline-none"
-            />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 rounded-xl border bg-muted/30 px-4 py-2.5 focus-within:ring-2 focus-within:ring-primary focus-within:border-primary flex-1 max-w-[200px]">
+              <span className="text-base font-semibold text-muted-foreground">$</span>
+              <input
+                type="number"
+                min={0}
+                value={initialCalcAmount || ''}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  setInitialCalcAmount(isNaN(v) ? 0 : Math.max(0, v));
+                }}
+                className="w-full bg-transparent text-base font-bold outline-none"
+                placeholder="1,000"
+              />
+            </div>
+            <div className="flex gap-1.5">
+              {quickAmounts.map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => setInitialCalcAmount(amt)}
+                  className={cn(
+                    'rounded-lg px-3 py-2 text-xs font-medium transition-all',
+                    initialCalcAmount === amt
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground dark:bg-muted/30'
+                  )}
+                >
+                  ${amt >= 1000 ? `${amt / 1000}k` : amt}
+                </button>
+              ))}
+            </div>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            = {sharesCalc} share{sharesCalc !== 1 ? 's' : ''} at ${property.pricePerShare}/share
+          </p>
         </div>
 
-        {/* Rates */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-lg bg-muted/50 p-3 text-center dark:bg-muted/30">
-            <p className="text-[11px] text-muted-foreground">Appreciation</p>
-            <p className="text-sm font-bold">{appreciationRate}%</p>
+        {/* Two-column: Chart left, Results right */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Left — Visual projection */}
+          <div className="rounded-xl border bg-muted/20 dark:bg-muted/10 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold">5-Year Growth</p>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  {appreciationRate}% appreciation
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-primary/40" />
+                  {dividendYield}% yield
+                </span>
+              </div>
+            </div>
+            <div className="flex items-end gap-2" style={{ height: 140 }}>
+              {/* Starting value bar */}
+              <div className="flex flex-1 flex-col items-center gap-1.5">
+                <span className="text-[11px] font-semibold text-muted-foreground">
+                  ${(initialCalcAmount / 1000).toFixed(1)}k
+                </span>
+                <div
+                  className="w-full rounded-lg bg-muted-foreground/20 transition-all duration-500"
+                  style={{ height: maxValue > 0 ? `${(initialCalcAmount / maxValue) * 100}%` : '10%', minHeight: 12 }}
+                />
+                <span className="text-[11px] font-medium text-muted-foreground">Start</span>
+              </div>
+              {/* Year bars */}
+              {projections.map((p) => {
+                const heightPct = maxValue > 0 ? (p.value / maxValue) * 100 : 0;
+                const gain = p.value - initialCalcAmount;
+                return (
+                  <div key={p.year} className="group relative flex flex-1 flex-col items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-primary">
+                      ${(p.value / 1000).toFixed(1)}k
+                    </span>
+                    <div
+                      className="w-full rounded-lg bg-gradient-to-t from-primary to-primary/70 transition-all duration-500 relative"
+                      style={{ height: `${heightPct}%`, minHeight: 12 }}
+                    >
+                      {/* Hover tooltip */}
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block rounded bg-foreground text-background text-[10px] font-medium px-2 py-1 whitespace-nowrap z-10">
+                        +${gain.toLocaleString()}
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground">Y{p.year}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="rounded-lg bg-muted/50 p-3 text-center dark:bg-muted/30">
-            <p className="text-[11px] text-muted-foreground">Dividend Yield</p>
-            <p className="text-sm font-bold">{dividendYield}%</p>
-          </div>
-          <div className="rounded-lg bg-muted/50 p-3 text-center dark:bg-muted/30">
-            <p className="text-[11px] text-muted-foreground">Hold Period</p>
-            <p className="text-sm font-bold">{holdingYears} years</p>
-          </div>
-        </div>
 
-        {/* CSS Bar Chart */}
-        <div>
-          <p className="mb-3 text-sm font-medium">Year-by-Year Projection</p>
-          <div className="flex items-end justify-between gap-3" style={{ height: 160 }}>
-            {projections.map((p) => {
-              const heightPct = maxValue > 0 ? (p.value / maxValue) * 100 : 0;
-              return (
-                <div key={p.year} className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[10px] font-semibold text-primary">
-                    ${(p.value / 1000).toFixed(1)}k
-                  </span>
-                  <div
-                    className="w-full rounded-t bg-primary transition-all"
-                    style={{ height: `${heightPct}%`, minHeight: 8 }}
-                  />
-                  <span className="text-[11px] text-muted-foreground">Y{p.year}</span>
+          {/* Right — Results summary */}
+          <div className="space-y-3">
+            <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4">
+              <p className="text-xs text-muted-foreground mb-1">Total Return (5 Years)</p>
+              <p className="text-2xl font-bold text-primary">{totalROI}%</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                ${initialCalcAmount.toLocaleString()} &rarr; ${maxValue.toLocaleString()}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border p-3.5">
+                <p className="text-xs text-muted-foreground mb-0.5">Monthly Income</p>
+                <p className="text-base font-bold">${monthlyIncome}</p>
+              </div>
+              <div className="rounded-xl border p-3.5">
+                <p className="text-xs text-muted-foreground mb-0.5">Yearly Income</p>
+                <p className="text-base font-bold">${yearlyIncome}</p>
+              </div>
+            </div>
+            <div className="rounded-xl bg-muted/50 dark:bg-muted/30 p-3.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Projected Value (Year 5)</p>
+                  <p className="text-lg font-bold text-primary">${maxValue.toLocaleString()}</p>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Overview */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-lg border p-3">
-            <p className="text-[11px] text-muted-foreground">ROI</p>
-            <p className="text-sm font-bold text-primary">{totalROI}%</p>
-          </div>
-          <div className="rounded-lg border p-3">
-            <p className="text-[11px] text-muted-foreground">Monthly Income</p>
-            <p className="text-sm font-bold">${monthlyIncome}</p>
-          </div>
-          <div className="rounded-lg border p-3">
-            <p className="text-[11px] text-muted-foreground">Yearly Income</p>
-            <p className="text-sm font-bold">${yearlyIncome}</p>
-          </div>
-          <div className="rounded-lg border p-3">
-            <p className="text-[11px] text-muted-foreground">Total Value (5Y)</p>
-            <p className="text-sm font-bold text-primary">${maxValue.toLocaleString()}</p>
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Projections are based on {appreciationRate}% annual appreciation and {dividendYield}% dividend yield.
+              Past performance does not guarantee future results.
+            </p>
           </div>
         </div>
       </CardContent>
@@ -701,13 +762,13 @@ function DocumentsSection() {
         {property.documents.map((doc) => (
           <div
             key={doc}
-            className="flex items-center justify-between rounded-lg border px-4 py-3 transition hover:bg-muted/50 dark:hover:bg-muted/30"
+            className="group flex items-center justify-between rounded-lg border px-4 py-3 transition-all duration-200 hover:bg-primary hover:border-primary cursor-pointer"
           >
             <div className="flex items-center gap-3">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{doc}</span>
+              <FileText className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
+              <span className="text-sm font-medium group-hover:text-white transition-colors">{doc}</span>
             </div>
-            <Button size="sm" variant="ghost" className="gap-1 text-xs">
+            <Button size="sm" variant="ghost" className="gap-1 text-xs group-hover:text-white group-hover:hover:bg-white/20 transition-colors">
               <Download className="h-3.5 w-3.5" />
               PDF
             </Button>
@@ -742,13 +803,17 @@ function AgentReferralLink() {
         </div>
         <Button
           size="sm"
-          variant="outline"
-          className="gap-1.5 text-xs"
+          className={cn(
+            "gap-1.5 text-xs transition-all",
+            copied
+              ? "bg-primary text-white"
+              : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
+          )}
           onClick={handleCopy}
         >
           {copied ? (
             <>
-              <Check className="h-3.5 w-3.5 text-primary" />
+              <Check className="h-3.5 w-3.5" />
               Copied!
             </>
           ) : (
@@ -816,8 +881,8 @@ function Version1({
             <Users className="h-4.5 w-4.5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold">Active JV Partnership</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-base font-semibold">Active JV Partnership</p>
+            <p className="text-sm text-muted-foreground mt-0.5">
               You are part of the decision-making. Tap to see how it works.
             </p>
           </div>
@@ -857,8 +922,8 @@ function Version1({
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 mb-3">
                     <Shield className="h-4 w-4 text-primary" />
                   </div>
-                  <p className="text-sm font-semibold mb-1.5">Your Role</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+                  <p className="text-base font-semibold mb-1.5">Your Role</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     When you invest in this property, you become part of the partnership and take part in important decisions.
                   </p>
                 </div>
@@ -880,7 +945,7 @@ function Version1({
                         <s.icon className="h-4 w-4 text-primary flex-shrink-0" />
                         <p className="text-sm font-semibold">{s.title}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
+                      <p className="text-[13px] text-muted-foreground leading-relaxed">
                         {s.desc}
                       </p>
                     </div>
