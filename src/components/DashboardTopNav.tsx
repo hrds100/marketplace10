@@ -2,10 +2,11 @@ import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, Heart, Kanban, GraduationCap, Users,
   PlusCircle, Settings, LogOut, MessageSquare, Menu, X, Globe, TrendingUp,
+  Store, Wallet, Receipt, Vote, ChevronDown,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import BurgerMenu from '@/components/BurgerMenu';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,7 +18,13 @@ const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; pro?
   { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', pro: true },
   { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
   { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
-  { to: '/dashboard/invest/marketplace', icon: TrendingUp, label: 'Investors' },
+];
+
+const jvSubItems = [
+  { to: '/dashboard/invest/marketplace', icon: Store, label: 'Marketplace' },
+  { to: '/dashboard/invest/portfolio', icon: Wallet, label: 'Portfolio' },
+  { to: '/dashboard/invest/payouts', icon: Receipt, label: 'Payouts' },
+  { to: '/dashboard/invest/proposals', icon: Vote, label: 'Proposals' },
 ];
 
 export default function DashboardTopNav() {
@@ -95,6 +102,9 @@ export default function DashboardTopNav() {
               )}
             </NavLink>
           ))}
+
+          {/* JV Partners dropdown */}
+          <JVPartnersDropdown isActive={isActive} />
         </nav>
 
         {/* Right side — desktop */}
@@ -184,6 +194,54 @@ export default function DashboardTopNav() {
         </div>
       )}
     </>
+  );
+}
+
+function JVPartnersDropdown({ isActive }: { isActive: (path: string) => boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isJVActive = isActive('/dashboard/invest');
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`relative flex items-center gap-1.5 px-3 py-[7px] rounded-lg text-[13px] transition-all duration-200 whitespace-nowrap ${
+          isJVActive
+            ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary'
+            : 'text-muted-foreground font-medium hover:text-foreground hover:bg-secondary'
+        }`}
+      >
+        <TrendingUp className="w-[15px] h-[15px]" strokeWidth={1.8} />
+        <span>JV Partners</span>
+        <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={2} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-10 w-[180px] bg-white border border-border/50 rounded-xl shadow-xl z-[200] overflow-hidden py-1">
+          {jvSubItems.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium transition-colors ${
+                isActive(item.to) ? 'text-primary bg-accent-light' : 'text-foreground hover:bg-gray-50'
+              }`}
+            >
+              <item.icon className="w-4 h-4 text-muted-foreground" strokeWidth={1.8} />
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
