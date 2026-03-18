@@ -18,6 +18,7 @@
 | 8 | aff-payout-batch | aff- | Cron (every Tuesday 10am) | Process pending affiliate payout requests |
 | 9 | inv-notify-email | inv- | Internal trigger | Send email via Resend |
 | 10 | inv-notify-whatsapp | inv- | Internal trigger | Send WhatsApp via n8n |
+| 11 | inv-tuesday-payout-batch | inv- | Cron (Tuesday 05:00 UK) | Query pending claims → register counterparties → create Revolut payment draft → notify Hugo |
 
 ---
 
@@ -38,6 +39,10 @@
 | Agent payout sent | Agent | Agent | Agent |
 | Admin: new order pending | Admin | Admin | Admin |
 | Admin: payout request | Admin | Admin | Admin |
+| Bank details saved | — | User | — |
+| Payout batch ready for approval | — | Admin (Hugo) | — |
+| Bank payout completed | — | User | User |
+| Bank payout failed | — | Admin (Hugo) | — |
 
 ---
 
@@ -47,6 +52,40 @@
 |------|-----|
 | Subscription payments | GHL processes payments. Webhook fires to n8n aff-commission-subscription |
 | Card purchases for shares | May use GHL funnel (same as subscription flow) |
+
+---
+
+## Revolut Business API
+
+| Item | Details |
+|------|---------|
+| Production URL | `https://b2b.revolut.com/api/1.0` |
+| Sandbox URL | `https://sandbox-b2b.revolut.com/api/1.0` |
+| Auth | Bearer token (`REVOLUT_API_KEY`) |
+| Webhook verification | HMAC-SHA256 with `REVOLUT_WEBHOOK_SECRET` |
+
+### Endpoints Used
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | /counterparty | Register a user's bank account as a Revolut counterparty |
+| POST | /payment-drafts | Create a batch payment draft for Hugo to approve |
+| — | Webhook handler | Receives payment status updates from Revolut |
+
+### Edge Functions
+
+| Function | Purpose |
+|----------|---------|
+| submit-payout-claim | Validates claim, calculates amount server-side, writes to payout_claims |
+| save-bank-details | Saves user bank details to user_bank_accounts |
+| revolut-webhook | Receives Revolut webhook, verifies HMAC, updates claim statuses |
+
+---
+
+## Commission Claim Methods
+
+- **Crypto claims (USDC / STAY / LP):** Immediate, on-chain. Treasury wallet sends directly to user wallet.
+- **Bank claims:** Go through the weekly Revolut batch. Processed every Tuesday at 05:00 AM UK time. Hugo approves via Revolut Face ID before funds are released.
 
 ---
 

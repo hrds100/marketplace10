@@ -27,6 +27,7 @@ USER (Browser)
     ├── Supabase (Database + Auth)
     │   ├── inv_* tables (investment data)
     │   ├── aff_* tables (commission data)
+    │   ├── Shared tables (user_bank_accounts, payout_claims, payout_audit_log)
     │   ├── profiles (shared user identity)
     │   └── RLS policies per table
     │
@@ -54,6 +55,9 @@ USER (Browser)
 | Commission rate settings | Supabase (`aff_commission_settings`) | Admin-configurable |
 | Referral tracking | Supabase (`aff_profiles` + `profiles.referred_by`) | Off-chain attribution |
 | Payout processing | n8n + treasury wallet | Hybrid: USDC on-chain, bank off-chain |
+| Bank payout claims | Supabase (`payout_claims`) | Weekly batch via Revolut |
+| Bank account storage | Supabase (`user_bank_accounts`) | Counterparty details for Revolut |
+| Payout audit trail | Supabase (`payout_audit_log`) | Immutable event log |
 | Email notifications | n8n + Resend | Off-chain |
 | WhatsApp notifications | n8n | Off-chain |
 | Historical on-chain data | The Graph (4 subgraphs) | Indexed blockchain events |
@@ -111,6 +115,28 @@ USER (Browser)
 
 ---
 
+## Data Flow: Bank Payout (Weekly)
+
+```
+1. User clicks "Claim" → selects "Bank Transfer"
+2. If no bank details → modal shows BankDetailsForm first
+3. Edge Function (submit-payout-claim) validates + calculates amount server-side
+4. Claim saved in payout_claims (status: pending)
+5. Tuesday 05:00 AM: n8n cron fires (inv-tuesday-payout-batch)
+6. n8n queries all pending claims for current week
+7. For new users: registers counterparty with Revolut API
+8. n8n creates Revolut payment draft (all claims in one batch)
+9. Claims updated to status: processing
+10. Hugo receives WhatsApp: "Batch ready — X claims, £Y total"
+11. Hugo opens Revolut app → reviews → approves with Face ID
+12. Revolut processes payments (Faster Payments GBP / SEPA EUR)
+13. Revolut webhook fires → Edge Function (revolut-webhook)
+14. HMAC verified → claims updated to status: paid
+15. Users receive WhatsApp: "Your payout of £X has arrived"
+```
+
+---
+
 ## Admin Capabilities
 
 | Admin Action | Where | Effect |
@@ -122,6 +148,8 @@ USER (Browser)
 | Set global commission rate | Admin > Commission Settings | Write aff_commission_settings |
 | Override per-user rate | Admin > Commission Settings | Write aff_commission_settings with user_id |
 | Approve/reject payouts | Admin > Payouts | Update aff_commissions / inv_payouts |
+| Approve weekly payout batch | Revolut app (Face ID) | Releases bank transfers |
+| View payout audit log | Admin > Payouts | Full history of all payout events |
 | Boost a user's property | Admin > Boost Management | Call booster contract |
 | Moderate proposals | Admin > Proposals | Update inv_proposals |
 | Send notifications | Admin > Notifications | Trigger n8n workflow |

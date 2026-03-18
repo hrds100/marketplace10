@@ -1,6 +1,6 @@
 # Investment Module — Database Schema
 
-> All Supabase tables for the investment module. Prefixed `inv_` (investment) and `aff_` (affiliate).
+> All Supabase tables for the investment module. Prefixed `inv_` (investment) and `aff_` (affiliate). Shared infrastructure tables (user_bank_accounts, payout_claims, payout_audit_log) are unprefixed.
 
 ---
 
@@ -217,20 +217,73 @@ Activity tracking for affiliate dashboard.
 | metadata | JSONB | Additional event data |
 | created_at | TIMESTAMPTZ DEFAULT now() | |
 
-### aff_payout_requests
-Payout requests from agents.
+---
+
+## Shared Infrastructure Tables
+
+### user_bank_accounts
+Bank details for payouts via Revolut.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | id | UUID PRIMARY KEY DEFAULT gen_random_uuid() | |
-| affiliate_id | UUID REFERENCES aff_profiles(id) NOT NULL | |
-| amount | NUMERIC NOT NULL | |
-| method | TEXT NOT NULL | 'bank', 'paypal', 'usdc' |
-| details | JSONB | Bank/PayPal/wallet details |
-| status | TEXT DEFAULT 'pending' | pending, processing, paid, rejected |
-| processed_by | UUID REFERENCES profiles(id) | Admin |
-| processed_at | TIMESTAMPTZ | |
+| user_id | UUID REFERENCES auth.users(id) NOT NULL | |
+| currency | TEXT NOT NULL CHECK (currency IN ('GBP', 'EUR')) | |
+| account_name | TEXT NOT NULL | |
+| account_number | TEXT | GBP only — 8 digits |
+| sort_code | TEXT | GBP only — 6 digits |
+| iban | TEXT | EUR only |
+| bic | TEXT | EUR only |
+| bank_country | TEXT NOT NULL | ISO 2-letter code |
+| revolut_counterparty_id | TEXT | Populated after Revolut registration |
+| revolut_counterparty_account_id | TEXT | Returned alongside counterparty_id |
+| is_verified | BOOLEAN DEFAULT false | Set true after first successful payout |
 | created_at | TIMESTAMPTZ DEFAULT now() | |
+| updated_at | TIMESTAMPTZ DEFAULT now() | |
+
+### payout_claims
+Unified payout claims for all user types. Processed in weekly Revolut batch.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID PRIMARY KEY DEFAULT gen_random_uuid() | |
+| user_id | UUID REFERENCES auth.users(id) NOT NULL | |
+| user_type | TEXT NOT NULL CHECK (user_type IN ('investor', 'affiliate', 'subscriber')) | |
+| amount_entitled | NUMERIC NOT NULL | ALWAYS calculated server-side |
+| currency | TEXT NOT NULL CHECK (currency IN ('GBP', 'EUR')) | |
+| bank_account_id | UUID REFERENCES user_bank_accounts(id) | |
+| status | TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'paid', 'failed', 'cancelled')) | |
+| week_ref | TEXT NOT NULL | ISO week format: "2026-W12" |
+| revolut_payment_draft_id | TEXT | Set when batch is sent |
+| revolut_transaction_id | TEXT | For idempotency |
+| claimed_at | TIMESTAMPTZ DEFAULT now() | |
+| paid_at | TIMESTAMPTZ | |
+| notes | TEXT | |
+| created_at | TIMESTAMPTZ DEFAULT now() | |
+| UNIQUE(user_id, week_ref) | | One claim per user per week |
+
+### payout_audit_log
+Immutable audit trail for all payout events.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID PRIMARY KEY DEFAULT gen_random_uuid() | |
+| claim_id | UUID REFERENCES payout_claims(id) | |
+| user_id | UUID REFERENCES auth.users(id) | |
+| event_type | TEXT NOT NULL | claim_submitted, bank_details_added, batch_sent, payment_completed, payment_failed, webhook_received, security_rejected |
+| old_status | TEXT | |
+| new_status | TEXT | |
+| performed_by | TEXT | 'user', 'system', 'founder', 'revolut_webhook' |
+| metadata | JSONB | Context: amount, IP, etc. |
+| ip_address | TEXT | |
+| created_at | TIMESTAMPTZ DEFAULT now() | |
+
+---
+
+## Profiles Table Note
+
+The shared `profiles` table needs a new column added:
+- `wallet_address TEXT` — user's crypto wallet address for on-chain payouts
 
 ---
 
@@ -253,5 +306,15 @@ Payout requests from agents.
 | aff_commissions | SELECT | Own rows only (via affiliate_id join) |
 | aff_commission_settings | SELECT/UPDATE | Admin only |
 | aff_events | SELECT | Own rows only |
-| aff_payout_requests | SELECT | Own rows only |
-| aff_payout_requests | INSERT | Authenticated agent |
+| user_bank_accounts | SELECT | auth.uid() = user_id |
+| user_bank_accounts | INSERT | auth.uid() = user_id |
+| user_bank_accounts | UPDATE | auth.uid() = user_id AND is_verified = false |
+| user_bank_accounts | DELETE | Service role only |
+| payout_claims | SELECT | auth.uid() = user_id |
+| payout_claims | INSERT | auth.uid() = user_id |
+| payout_claims | UPDATE | Service role only |
+| payout_claims | DELETE | None |
+| payout_audit_log | SELECT | Service role only |
+| payout_audit_log | INSERT | Service role only |
+| payout_audit_log | UPDATE | None |
+| payout_audit_log | DELETE | None |

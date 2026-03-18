@@ -54,6 +54,10 @@ All rules from `docs/AGENT_INSTRUCTIONS.md` apply. These are ADDITIONAL rules fo
 8. **Payouts have a 14-day holdback.** Commissions become claimable 14 days after earning. This is configurable by admin.
 9. **The Graph is the source of truth for on-chain data.** Never query the blockchain directly for historical data — use The Graph subgraph endpoints.
 10. **Mock data files stay until real data is wired.** Don't delete `investMockData.ts` — components fall back to it during development.
+11. **Bank payouts go through Revolut.** Weekly batch every Tuesday at 05:00 AM UK time. Hugo approves via Revolut Face ID. Never bypass the approval step.
+12. **Payout amounts are always server-side calculated.** Never accept claim amounts from the frontend. Edge Function calculates from source tables.
+13. **One bank claim per user per week.** Enforced by UNIQUE(user_id, week_ref) constraint.
+14. **Bank details are locked after first successful payout.** Users cannot change bank details after is_verified = true without admin intervention.
 
 ---
 
@@ -90,6 +94,7 @@ Never push directly to main. Hugo merges when ready.
 | Date | Change | Docs Updated |
 |------|--------|-------------|
 | 2026-03-18 | Initial creation — all 12 docs | All |
+| 2026-03-18 | Added Revolut payout system — 3 new tables (user_bank_accounts, payout_claims, payout_audit_log), removed aff_payout_requests, added Tuesday batch workflow, added 3 Edge Functions | DATABASE.md, INTEGRATIONS.md, ARCHITECTURE.md, STACK.md, AGENT_INVESTMENT_INSTRUCTIONS.md |
 
 ---
 

@@ -67,6 +67,32 @@
 
 ---
 
+## Revolut Business API
+
+| Item | Value |
+|------|-------|
+| Production URL | `https://b2b.revolut.com/api/1.0` |
+| Sandbox URL | `https://sandbox-b2b.revolut.com/api/1.0` |
+| Auth | Bearer token (REVOLUT_API_KEY) |
+| GBP Account ID | To be configured (REVOLUT_ACCOUNT_ID_GBP) |
+| EUR Account ID | To be configured (REVOLUT_ACCOUNT_ID_EUR) |
+| Webhook Secret | REVOLUT_WEBHOOK_SECRET |
+| Webhook Endpoint | Supabase Edge Function: revolut-webhook |
+
+---
+
+## Environment Variables (Revolut)
+
+| Variable | Description |
+|----------|-------------|
+| REVOLUT_API_KEY | Revolut Business API access token |
+| REVOLUT_SANDBOX_API_KEY | Sandbox token for testing |
+| REVOLUT_ACCOUNT_ID_GBP | Revolut GBP account UUID |
+| REVOLUT_ACCOUNT_ID_EUR | Revolut EUR account UUID |
+| REVOLUT_WEBHOOK_SECRET | HMAC secret for webhook verification |
+
+---
+
 ## Frontend Stack (within marketplace10)
 
 | Layer | Technology |
