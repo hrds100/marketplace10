@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAllCommissions } from '@/hooks/useInvestData';
 import { DollarSign, Clock, CheckCircle2, Wallet, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +63,8 @@ const stats = [
 ];
 
 export default function AdminInvestCommissions() {
+  const { data: realCommissions = [] } = useAllCommissions();
+
   const [sourceFilter, setSourceFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [agentSearch, setAgentSearch] = useState('');

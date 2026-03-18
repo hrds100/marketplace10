@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useInvestOrders } from '@/hooks/useInvestData';
 import { Check, Pencil, X, Link2, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,9 @@ const paymentLabels: Record<string, string> = {
 const propertyOptions = ['All', 'Seseh Beachfront Villa', 'Marina Gate Apartment', 'KAEC Waterfront Residence'];
 
 export default function AdminInvestOrders() {
+  // Real data available via realOrders — currently showing mock for UI demo
+  const { data: realOrders = [], isLoading: ordersLoading } = useInvestOrders();
+
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [statusFilter, setStatusFilter] = useState('All');
   const [propertyFilter, setPropertyFilter] = useState('All');

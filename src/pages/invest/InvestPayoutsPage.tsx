@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useMyPayouts, useMyBankAccount } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -296,6 +297,10 @@ const payoutPropertyImages: Record<number, string> = {
 // ─── Main Page Component ─────────────────────────────────────────────────────────
 
 export default function InvestPayoutsPage() {
+  const { data: realPayouts = [] } = useMyPayouts();
+  const { data: bankAccount } = useMyBankAccount();
+  // TODO: Replace mockPayouts with realPayouts when data exists
+
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState<PayoutItem | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<ClaimMethod | null>(null);

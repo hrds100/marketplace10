@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAllShareholders } from '@/hooks/useInvestData';
 import { Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -96,6 +97,8 @@ const mockShareholders: Shareholder[] = [
 const propertyOptions = ['All', 'Seseh Beachfront Villa', 'Marina Gate Apartment', 'KAEC Waterfront Residence'];
 
 export default function AdminInvestShareholders() {
+  const { data: realShareholders = [] } = useAllShareholders();
+
   const [propertyFilter, setPropertyFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
