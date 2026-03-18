@@ -184,7 +184,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
 
       {/* Mobile bottom tab */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-[60px] bg-white/80 dark:bg-card/80 backdrop-blur-xl border-t border-border/30 z-[110] flex justify-around items-center">
-        {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[6]].map(item => {
+        {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[4]].filter(Boolean).map(item => {
           const isActive = location.pathname === item.to;
           return (
             <NavLink key={item.to} to={item.to} className="relative flex flex-col items-center gap-0.5">
