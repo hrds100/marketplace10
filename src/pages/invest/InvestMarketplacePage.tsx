@@ -928,35 +928,53 @@ function AgentReferralLink() {
   }, [referralUrl]);
 
   return (
-    <Card className="rounded-2xl">
-      <CardContent className="flex items-center gap-3 p-4">
-        <Users className="h-5 w-5 flex-shrink-0 text-primary" />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Agent Referral Link</p>
-          <p className="truncate text-xs text-muted-foreground">{referralUrl}</p>
+    <Card className="rounded-2xl overflow-hidden">
+      <CardContent className="p-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2">
+          {/* Left — CTA copy */}
+          <div className="p-6 flex flex-col justify-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-3">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="text-lg font-bold mb-1">Work with us</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Share your personal link with friends and earn instant commission on every investment they make.
+            </p>
+          </div>
+
+          {/* Right — Link + copy */}
+          <div className="p-6 bg-muted/30 dark:bg-muted/15 border-t lg:border-t-0 lg:border-l border-border/50 flex flex-col justify-center gap-3">
+            <p className="text-xs font-medium text-muted-foreground">Your referral link</p>
+            <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5">
+              <p className="truncate text-xs text-muted-foreground flex-1 font-mono">{referralUrl}</p>
+              <Button
+                size="sm"
+                className={cn(
+                  "gap-1.5 text-xs transition-all flex-shrink-0",
+                  copied
+                    ? "bg-primary text-white"
+                    : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
+                )}
+                onClick={handleCopy}
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy Link
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Commission is tracked automatically via your wallet address.
+            </p>
+          </div>
         </div>
-        <Button
-          size="sm"
-          className={cn(
-            "gap-1.5 text-xs transition-all",
-            copied
-              ? "bg-primary text-white"
-              : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
-          )}
-          onClick={handleCopy}
-        >
-          {copied ? (
-            <>
-              <Check className="h-3.5 w-3.5" />
-              Copied!
-            </>
-          ) : (
-            <>
-              <Copy className="h-3.5 w-3.5" />
-              Copy
-            </>
-          )}
-        </Button>
       </CardContent>
     </Card>
   );
@@ -1011,29 +1029,39 @@ function Version1({
           onClick={() => setJvExpanded(!jvExpanded)}
           className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-primary/[0.02] rounded-2xl"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 ring-2 ring-primary/20">
-            <Users className="h-4.5 w-4.5 text-primary" />
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 ring-2 ring-primary/20 flex-shrink-0">
+            <Users className="h-4 w-4 text-primary" />
+            {/* Ripple ping — earthquake-like attention grabber */}
+            {!jvExpanded && (
+              <>
+                <span className="absolute inset-0 rounded-xl bg-primary/20 animate-ping" />
+                <span className="absolute -inset-1 rounded-xl bg-primary/10 animate-[ping_1.5s_ease-in-out_infinite_0.5s]" />
+              </>
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold">Active JV Partnership</p>
+            <div className="flex items-center gap-2">
+              <p className="text-base font-semibold">Active JV Partnership</p>
+              {!jvExpanded && (
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+                </span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              You are part of the decision-making. Tap to see how it works.
+              {jvExpanded ? 'How your partnership works.' : 'You are part of the decision-making. Click to see how it works.'}
             </p>
           </div>
-          {!jvExpanded && (
-            <span className="text-sm mr-1 animate-[bounce_1.5s_infinite]" aria-hidden="true">
-              👆
-            </span>
-          )}
           <div
             className={cn(
-              'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all',
-              'bg-primary/10 text-primary',
-              'group-hover:bg-primary group-hover:text-white',
-              !jvExpanded && 'animate-[pulse_2s_ease-in-out_infinite]'
+              'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all flex-shrink-0',
+              jvExpanded
+                ? 'bg-muted text-muted-foreground hover:bg-muted/80'
+                : 'bg-primary text-white shadow-sm shadow-primary/25 group-hover:shadow-md group-hover:shadow-primary/30'
             )}
           >
-            <span>{jvExpanded ? 'Close' : 'Click to learn more'}</span>
+            <span>{jvExpanded ? 'Close' : 'Click here'}</span>
             <ChevronDown
               className={cn(
                 'h-3.5 w-3.5 transition-transform duration-300',
