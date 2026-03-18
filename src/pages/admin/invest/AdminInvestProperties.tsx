@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, Pencil, ChevronDown } from 'lucide-react';
+import { Plus, Pencil, ChevronDown, Loader2 } from 'lucide-react';
+import { useInvestProperties, useCreateProperty, useUpdateProperty } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,54 +14,27 @@ interface Property {
   title: string;
   location: string;
   country: string;
-  pricePerShare: number;
-  totalShares: number;
-  sharesSold: number;
-  yield: number;
-  monthlyRent: number;
-  propertyValue: number;
+  price_per_share: number;
+  total_shares: number;
+  shares_sold: number;
+  annual_yield: number;
+  monthly_rent: number;
+  property_value: number;
   type: string;
-  beds: number;
-  baths: number;
+  bedrooms: number;
+  bathrooms: number;
   area: number;
-  yearBuilt: number;
+  year_built: number;
   description: string;
   status: 'open' | 'funded' | 'closed';
-  blockchainPropertyId: number;
+  blockchain_property_id: number;
 }
 
-const initialProperties: Property[] = [
-  {
-    id: 1, title: 'Seseh Beachfront Villa', location: 'Bali', country: 'Indonesia',
-    pricePerShare: 100, totalShares: 1000, sharesSold: 720, yield: 12.4,
-    monthlyRent: 4200, propertyValue: 100000, type: 'Villa',
-    beds: 3, baths: 2, area: 180, yearBuilt: 2023,
-    description: 'Luxury beachfront villa in Seseh, Bali with stunning ocean views and private pool.',
-    status: 'open', blockchainPropertyId: 1,
-  },
-  {
-    id: 2, title: 'Marina Gate Apartment', location: 'Dubai', country: 'UAE',
-    pricePerShare: 250, totalShares: 800, sharesSold: 800, yield: 9.8,
-    monthlyRent: 8500, propertyValue: 200000, type: 'Apartment',
-    beds: 2, baths: 2, area: 120, yearBuilt: 2024,
-    description: 'Premium apartment in Dubai Marina with full marina views and premium amenities.',
-    status: 'funded', blockchainPropertyId: 2,
-  },
-  {
-    id: 3, title: 'KAEC Waterfront Residence', location: 'Saudi Arabia', country: 'Saudi Arabia',
-    pricePerShare: 150, totalShares: 1200, sharesSold: 340, yield: 14.2,
-    monthlyRent: 6800, propertyValue: 180000, type: 'Residence',
-    beds: 4, baths: 3, area: 220, yearBuilt: 2025,
-    description: 'Waterfront residence in King Abdullah Economic City with modern design and smart home features.',
-    status: 'open', blockchainPropertyId: 3,
-  },
-];
-
-const emptyProperty: Property = {
-  id: 0, title: '', location: '', country: '', pricePerShare: 0, totalShares: 0,
-  sharesSold: 0, yield: 0, monthlyRent: 0, propertyValue: 0, type: 'Villa',
-  beds: 0, baths: 0, area: 0, yearBuilt: 2025, description: '',
-  status: 'open', blockchainPropertyId: 0,
+const emptyProperty: Omit<Property, 'id'> & { id?: number } = {
+  title: '', location: '', country: '', price_per_share: 0, total_shares: 0,
+  shares_sold: 0, annual_yield: 0, monthly_rent: 0, property_value: 0, type: 'Villa',
+  bedrooms: 0, bathrooms: 0, area: 0, year_built: 2025, description: '',
+  status: 'open', blockchain_property_id: 0,
 };
 
 const statusColors: Record<string, string> = {
@@ -70,14 +44,16 @@ const statusColors: Record<string, string> = {
 };
 
 export default function AdminInvestProperties() {
-  const [properties, setProperties] = useState<Property[]>(initialProperties);
+  const { data: properties = [], isLoading } = useInvestProperties();
+  const createProperty = useCreateProperty();
+  const updateProperty = useUpdateProperty();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Property | null>(null);
-  const [form, setForm] = useState<Property>(emptyProperty);
+  const [form, setForm] = useState<Record<string, unknown>>(emptyProperty as Record<string, unknown>);
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ ...emptyProperty, id: Math.max(...properties.map((p) => p.id)) + 1 });
+    setForm({ ...emptyProperty });
     setModalOpen(true);
   };
 
@@ -87,16 +63,22 @@ export default function AdminInvestProperties() {
     setModalOpen(true);
   };
 
-  const handleSave = () => {
-    if (editing) {
-      setProperties((prev) => prev.map((p) => (p.id === form.id ? form : p)));
-    } else {
-      setProperties((prev) => [...prev, form]);
+  const handleSave = async () => {
+    try {
+      if (editing) {
+        const { id, ...updates } = form;
+        await updateProperty.mutateAsync({ id: editing.id, ...updates });
+      } else {
+        const { id, ...newProp } = form;
+        await createProperty.mutateAsync(newProp);
+      }
+      setModalOpen(false);
+    } catch (err) {
+      console.error('Failed to save property:', err);
     }
-    setModalOpen(false);
   };
 
-  const updateField = (field: keyof Property, value: string | number) => {
+  const updateField = (field: string, value: string | number) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -109,6 +91,11 @@ export default function AdminInvestProperties() {
         </Button>
       </div>
 
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+          <Loader2 className="w-5 h-5 animate-spin" /> Loading properties...
+        </div>
+      ) : (
       <Card className="border-border">
         <CardContent className="p-0">
           <Table>
@@ -126,16 +113,16 @@ export default function AdminInvestProperties() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {properties.map((p) => {
-                const fundedPct = Math.round((p.sharesSold / p.totalShares) * 100);
+              {properties.map((p: Property) => {
+                const fundedPct = p.total_shares ? Math.round((p.shares_sold / p.total_shares) * 100) : 0;
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.title}</TableCell>
                     <TableCell className="text-muted-foreground">{p.location}</TableCell>
-                    <TableCell className="text-right">${p.pricePerShare}</TableCell>
-                    <TableCell className="text-right">{p.totalShares.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{p.sharesSold.toLocaleString()}</TableCell>
-                    <TableCell className="text-right text-emerald-600 font-medium">{p.yield}%</TableCell>
+                    <TableCell className="text-right">${p.price_per_share}</TableCell>
+                    <TableCell className="text-right">{p.total_shares.toLocaleString()}</TableCell>
+                    <TableCell className="text-right">{p.shares_sold.toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-emerald-600 font-medium">{p.annual_yield}%</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Progress value={fundedPct} className="h-2 w-20" />
@@ -159,6 +146,7 @@ export default function AdminInvestProperties() {
           </Table>
         </CardContent>
       </Card>
+      )}
 
       {/* Create / Edit Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
@@ -170,39 +158,39 @@ export default function AdminInvestProperties() {
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="text-sm font-medium text-foreground mb-1.5 block">Title</label>
-              <input className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.title} onChange={(e) => updateField('title', e.target.value)} />
+              <input className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.title as string} onChange={(e) => updateField('title', e.target.value)} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Location</label>
-              <input className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.location} onChange={(e) => updateField('location', e.target.value)} />
+              <input className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.location as string} onChange={(e) => updateField('location', e.target.value)} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Country</label>
-              <input className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.country} onChange={(e) => updateField('country', e.target.value)} />
+              <input className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.country as string} onChange={(e) => updateField('country', e.target.value)} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Price Per Share ($)</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.pricePerShare} onChange={(e) => updateField('pricePerShare', Number(e.target.value))} />
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.price_per_share as number} onChange={(e) => updateField('price_per_share', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Total Shares</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.totalShares} onChange={(e) => updateField('totalShares', Number(e.target.value))} />
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.total_shares as number} onChange={(e) => updateField('total_shares', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Annual Yield (%)</label>
-              <input type="number" step="0.1" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.yield} onChange={(e) => updateField('yield', Number(e.target.value))} />
+              <input type="number" step="0.1" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.annual_yield as number} onChange={(e) => updateField('annual_yield', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Monthly Rent ($)</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.monthlyRent} onChange={(e) => updateField('monthlyRent', Number(e.target.value))} />
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.monthly_rent as number} onChange={(e) => updateField('monthly_rent', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Property Value ($)</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.propertyValue} onChange={(e) => updateField('propertyValue', Number(e.target.value))} />
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.property_value as number} onChange={(e) => updateField('property_value', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Type</label>
-              <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.type} onChange={(e) => updateField('type', e.target.value)}>
+              <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.type as string} onChange={(e) => updateField('type', e.target.value)}>
                 <option>Villa</option>
                 <option>Apartment</option>
                 <option>Residence</option>
@@ -210,23 +198,23 @@ export default function AdminInvestProperties() {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Beds</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.beds} onChange={(e) => updateField('beds', Number(e.target.value))} />
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.bedrooms as number} onChange={(e) => updateField('bedrooms', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Baths</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.baths} onChange={(e) => updateField('baths', Number(e.target.value))} />
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.bathrooms as number} onChange={(e) => updateField('bathrooms', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Area (m²)</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.area} onChange={(e) => updateField('area', Number(e.target.value))} />
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.area as number} onChange={(e) => updateField('area', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Year Built</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.yearBuilt} onChange={(e) => updateField('yearBuilt', Number(e.target.value))} />
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.year_built as number} onChange={(e) => updateField('year_built', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Status</label>
-              <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.status} onChange={(e) => updateField('status', e.target.value as Property['status'])}>
+              <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.status as string} onChange={(e) => updateField('status', e.target.value)}>
                 <option value="open">Open</option>
                 <option value="funded">Funded</option>
                 <option value="closed">Closed</option>
@@ -234,17 +222,20 @@ export default function AdminInvestProperties() {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Blockchain Property ID</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.blockchainPropertyId} onChange={(e) => updateField('blockchainPropertyId', Number(e.target.value))} />
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.blockchain_property_id as number} onChange={(e) => updateField('blockchain_property_id', Number(e.target.value))} />
             </div>
             <div className="col-span-2">
               <label className="text-sm font-medium text-foreground mb-1.5 block">Description</label>
-              <textarea className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm resize-none" value={form.description} onChange={(e) => updateField('description', e.target.value)} />
+              <textarea className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm resize-none" value={form.description as string} onChange={(e) => updateField('description', e.target.value)} />
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>{editing ? 'Save Changes' : 'Create Property'}</Button>
+            <Button onClick={handleSave} disabled={createProperty.isPending || updateProperty.isPending}>
+              {(createProperty.isPending || updateProperty.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {editing ? 'Save Changes' : 'Create Property'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

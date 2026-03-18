@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Save, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Save, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { useCommissionSettings, useUpdateCommissionRate } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,7 @@ interface GlobalRate {
   label: string;
   description: string;
   rate: number;
+  dbId?: string;
 }
 
 interface AgentOverride {
@@ -25,11 +27,17 @@ interface AgentOverride {
   isCustom: boolean;
 }
 
-const initialGlobalRates: GlobalRate[] = [
+const fallbackGlobalRates: GlobalRate[] = [
   { key: 'subscription', label: 'Subscription Commission', description: 'Percentage of subscription fee paid to the referring agent when their referral subscribes to any paid plan.', rate: 40 },
   { key: 'investment_first', label: 'Investment First Purchase', description: 'One-time commission on the first share purchase made by a referred investor. Applied once per referred user per property.', rate: 5 },
   { key: 'investment_recurring', label: 'Investment Recurring', description: 'Ongoing commission on subsequent share purchases by a referred investor. Applied on every purchase after the first.', rate: 2 },
 ];
+
+const rateLabels: Record<string, { label: string; description: string }> = {
+  subscription: { label: 'Subscription Commission', description: 'Percentage of subscription fee paid to the referring agent when their referral subscribes to any paid plan.' },
+  investment_first: { label: 'Investment First Purchase', description: 'One-time commission on the first share purchase made by a referred investor. Applied once per referred user per property.' },
+  investment_recurring: { label: 'Investment Recurring', description: 'Ongoing commission on subsequent share purchases by a referred investor. Applied on every purchase after the first.' },
+};
 
 const initialAgents: AgentOverride[] = [
   { id: 'a1', name: 'Hugo Souza', email: 'hugo@nfstay.com', referralCode: 'HUGO2026', subscriptionRate: 40, firstPurchaseRate: 7, recurringRate: 3, isCustom: true },
@@ -49,7 +57,23 @@ const allUsers = [
 ];
 
 export default function AdminInvestCommissionSettings() {
-  const [globalRates, setGlobalRates] = useState<GlobalRate[]>(initialGlobalRates);
+  const { data: commissionRows = [], isLoading: isLoadingSettings } = useCommissionSettings();
+  const updateCommissionRate = useUpdateCommissionRate();
+
+  // Map DB rows (global defaults only: user_id IS NULL) to GlobalRate shape
+  // DB stores rate as decimal (0.40), UI shows as percentage (40)
+  const globalRates: GlobalRate[] = (() => {
+    const globalRows = commissionRows.filter((r: Record<string, unknown>) => r.user_id === null);
+    if (globalRows.length === 0) return fallbackGlobalRates;
+    return globalRows.map((r: Record<string, unknown>) => ({
+      key: r.commission_type as string,
+      label: rateLabels[r.commission_type as string]?.label || (r.commission_type as string),
+      description: rateLabels[r.commission_type as string]?.description || '',
+      rate: Number(r.rate) * 100,
+      dbId: r.id as string,
+    }));
+  })();
+
   const [agents, setAgents] = useState<AgentOverride[]>(initialAgents);
   const [editingGlobal, setEditingGlobal] = useState<Record<string, number>>({});
   const [modalOpen, setModalOpen] = useState(false);
@@ -66,10 +90,19 @@ export default function AdminInvestCommissionSettings() {
     setEditingGlobal((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleGlobalSave = (key: string) => {
+  const handleGlobalSave = async (key: string) => {
     const value = editingGlobal[key];
     if (value === undefined) return;
-    setGlobalRates((prev) => prev.map((r) => (r.key === key ? { ...r, rate: value } : r)));
+    // Find the DB row id for this commission type
+    const row = globalRates.find((r) => r.key === key);
+    if (row?.dbId) {
+      try {
+        await updateCommissionRate.mutateAsync({ id: row.dbId, rate: value / 100 });
+      } catch (err) {
+        console.error('Failed to update commission rate:', err);
+        return;
+      }
+    }
     setEditingGlobal((prev) => {
       const next = { ...prev };
       delete next[key];
@@ -151,7 +184,11 @@ export default function AdminInvestCommissionSettings() {
           <CardTitle className="text-base">Global Default Rates</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {globalRates.map((r) => {
+          {isLoadingSettings ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" /> Loading rates...
+            </div>
+          ) : globalRates.map((r) => {
             const editValue = editingGlobal[r.key];
             const hasEdit = editValue !== undefined && editValue !== r.rate;
             return (
@@ -189,7 +226,7 @@ export default function AdminInvestCommissionSettings() {
         </CardContent>
       </Card>
 
-      {/* Per-User Overrides */}
+      {/* Per-User Overrides (mock data — no user-commission junction data yet) */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-foreground">Per-User Overrides</h2>
         <Button onClick={openAddOverride} variant="outline" className="gap-2">
