@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Outlet, useLocation, useOutletContext, Link, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useOutletContext, Link, useNavigate } from 'react-router-dom';
+import { PlusCircle } from 'lucide-react';
 import DashboardSidebar from '@/components/DashboardSidebar';
-import DashboardTopNav from '@/components/DashboardTopNav';
 import NotificationBell from '@/components/NotificationBell';
 import BurgerMenu from '@/components/BurgerMenu';
 import FavouritesDropdown from '@/components/FavouritesDropdown';
@@ -12,8 +12,7 @@ import InvestSubNav from '@/components/InvestSubNav';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
-const FULL_BLEED_ROUTES = ['/dashboard/inbox'];
-const TOP_NAV_ROUTES = ['/dashboard/deals'];
+const FULL_BLEED_ROUTES = ['/dashboard/inbox', '/dashboard/deals'];
 const INVEST_ROUTES_PREFIX = '/dashboard/invest';
 
 export interface DashboardContext {
@@ -25,8 +24,10 @@ export function useDashboardContext() {
   return useOutletContext<DashboardContext>();
 }
 
-/* Minimal top bar for sidebar pages — logo at same position as top nav */
-function MinimalTopBar() {
+/* ── Global top bar — always visible, global items only ───────── */
+function TopBar() {
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   return (
     <header className="h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
       <Link
@@ -35,7 +36,20 @@ function MinimalTopBar() {
       >
         NFsTay
       </Link>
-      <div className="ml-auto flex items-center gap-1">
+
+      <div className="ml-auto flex items-center gap-1.5">
+        {isAdmin && (
+          <Link to="/admin" className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-secondary hidden md:block">
+            Admin
+          </Link>
+        )}
+        <button
+          onClick={() => navigate('/dashboard/list-a-deal')}
+          className="hidden md:flex bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3.5 py-[6px] rounded-lg text-[12px] font-semibold hover:from-emerald-600 hover:to-teal-700 shadow-sm transition-all items-center gap-1.5"
+        >
+          <PlusCircle className="w-[14px] h-[14px]" strokeWidth={1.8} />
+          Submit a Deal
+        </button>
         <FavouritesDropdown />
         <NotificationBell />
         <BurgerMenu />
@@ -44,17 +58,17 @@ function MinimalTopBar() {
   );
 }
 
+/* ── Main layout — single consistent structure ────────────────── */
 export default function DashboardLayout() {
   const { user } = useAuth();
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [landlordPhone, setLandlordPhone] = useState<string | null>(null);
   const isFullBleed = FULL_BLEED_ROUTES.some(r => location.pathname.startsWith(r));
-  const isTopNav = TOP_NAV_ROUTES.some(r => location.pathname === r || location.pathname === r + '/');
   const isInvest = location.pathname.startsWith(INVEST_ROUTES_PREFIX);
   const marginClass = sidebarCollapsed ? 'md:ml-16' : 'md:ml-56';
 
-  // Detect unclaimed landlord accounts (email ends with @nfstay.internal)
+  // Detect unclaimed landlord accounts
   useEffect(() => {
     if (!user?.id || !user.email?.endsWith('@nfstay.internal')) {
       setLandlordPhone(null);
@@ -75,41 +89,39 @@ export default function DashboardLayout() {
 
   return (
     <ProtectedRoute>
-      {isTopNav ? (
-        /* ── Deals page: full top nav ──────────────────────────── */
-        <div className="h-screen flex flex-col animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
-          <PaymentSuccessRefresher />
-          <DashboardTopNav />
-          {claimBanner}
-          <main className="flex-1 flex flex-col overflow-hidden">
-            <Outlet context={{ sidebarCollapsed, setSidebarCollapsed }} />
-          </main>
-        </div>
-      ) : (
-        /* ── Other pages: minimal top bar + sidebar below it ──── */
-        <div className="h-screen flex flex-col animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
-          <PaymentSuccessRefresher />
-          <MinimalTopBar />
-          {claimBanner}
-          <div className="flex-1 flex overflow-hidden relative">
-            <DashboardSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
-            <div className={`${marginClass} flex-1 flex flex-col transition-all duration-300 ease-out overflow-hidden`}>
-              {isInvest && <InvestSubNav />}
-              {isFullBleed ? (
-                <main className="flex-1 flex flex-col overflow-hidden">
+      <div className="h-screen flex flex-col animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
+        <PaymentSuccessRefresher />
+
+        {/* ── Top bar — always present ──────────────────────── */}
+        <TopBar />
+        {claimBanner}
+
+        {/* ── Content area — sidebar + main ─────────────────── */}
+        <div className="flex-1 flex overflow-hidden relative">
+
+          {/* ── Left sidebar — always present, collapsed by default ── */}
+          <DashboardSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
+
+          {/* ── Main content ────────────────────────────────── */}
+          <div className={`${marginClass} flex-1 flex flex-col transition-all duration-300 ease-out overflow-hidden`}>
+
+            {/* Invest sub-nav (only on invest pages) */}
+            {isInvest && <InvestSubNav />}
+
+            {isFullBleed ? (
+              <main className="flex-1 flex flex-col overflow-hidden">
+                <Outlet context={{ sidebarCollapsed, setSidebarCollapsed }} />
+              </main>
+            ) : (
+              <main className="flex-1 overflow-y-auto pb-20 md:pb-8">
+                <div className="max-w-[1440px] mx-auto p-6 md:p-8">
                   <Outlet context={{ sidebarCollapsed, setSidebarCollapsed }} />
-                </main>
-              ) : (
-                <main className="flex-1 overflow-y-auto pb-20 md:pb-8">
-                  <div className="max-w-[1440px] mx-auto p-6 md:p-8">
-                    <Outlet context={{ sidebarCollapsed, setSidebarCollapsed }} />
-                  </div>
-                </main>
-              )}
-            </div>
+                </div>
+              </main>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </ProtectedRoute>
   );
 }
