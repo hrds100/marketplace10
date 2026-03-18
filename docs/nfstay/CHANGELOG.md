@@ -6,6 +6,44 @@
 
 ## 2026-03-18
 
+### Phase 5 — Hospitable + iCal Integration (Steps 5.1–5.6)
+
+**Database:**
+- Created migration `20260318150000_nfs_phase5_hospitable.sql` (awaiting Hugo's SQL review)
+- New table: `nfs_hospitable_connections` (OAuth, sync state, health monitoring — 26 columns)
+- RLS: `nfs_hospitable_connections_operator_access`
+- Indexes: operator (unique), hospitable_customer_id, status+sync_status
+
+**Edge Functions (code complete, awaiting deployment):**
+- `nfs-hospitable-oauth`: OAuth flow (authorize, callback, disconnect, resync) with CSRF state
+- `nfs-ical-feed`: Public ICS calendar feed (RFC 5545 format, confirmed reservations + blocked dates)
+- `nfs-stripe-webhook`: Fixed dual-secret verification (platform + Connect webhooks)
+
+**n8n Workflows (JSON exports, awaiting import + activation):**
+- `nfs-hospitable-init-sync`: Full initial sync (listings + reservations from Hospitable → nfs_properties/nfs_reservations)
+- `nfs-hospitable-listing-sync`: Real-time listing webhook handler with idempotency
+- `nfs-hospitable-reservation-sync`: Real-time reservation webhook handler with idempotency
+- `nfs-hospitable-manual-sync`: On-demand full resync triggered from settings UI
+- `nfs-hospitable-retry`: Cron (30 min) auto-retry for failed connections
+
+**Frontend:**
+- `SettingsHospitable.tsx`: Hospitable connection settings tab (connect/disconnect/resync, status display, health monitoring)
+- `PropertyCalendars.tsx`: iCal management on property detail (outbound URL with copy, inbound feed add/remove)
+- `NfsOperatorSettings.tsx`: Added Hospitable tab (now 8 tabs)
+- `NfsPropertyDetail.tsx`: Added Calendars tab (now 6 tabs)
+
+**Hooks & Types:**
+- `use-nfs-hospitable.ts`: `useNfsHospitableConnection`, `useNfsHospitableConnect`
+- `NfsHospitableConnection`, `NfsWebhookEvent` types added to `types.ts`
+- Hospitable fields added to `NfsProperty` and `NfsReservation` types
+
+**Environment (Step 5.7 — manual setup required):**
+- Supabase secrets needed: `NFS_HOSPITABLE_PARTNER_ID`, `NFS_HOSPITABLE_PARTNER_SECRET`, `NFS_HOSPITABLE_WEBHOOK_SECRET`
+- n8n env var needed: `NFS_HOSPITABLE_BEARER_TOKEN`
+- See `ENVIRONMENT.md` for full setup instructions
+
+**Status:** Code complete (Steps 5.1–5.6). Awaiting: DB migration execution, Edge Function deployments, n8n workflow imports, secrets setup. TypeScript: zero errors.
+
 ### Edge Functions deployed (4 NFStay functions)
 - Deployed `nfs-email-send` v1 — transactional emails via Resend (booking confirmation, cancellation, operator notification)
 - Deployed `nfs-stripe-checkout` v1 — creates Stripe Checkout sessions with Connect destination charges

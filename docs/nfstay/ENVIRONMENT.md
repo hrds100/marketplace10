@@ -33,10 +33,10 @@ Set via `npx supabase secrets set KEY=VALUE` or Supabase Dashboard.
 | `NFS_STRIPE_WEBHOOK_SECRET` | Verify Stripe platform webhooks | **SET** (test) |
 | `NFS_STRIPE_CONNECT_WEBHOOK_SECRET` | Verify Stripe Connect webhooks | **SET** (test) |
 | `NFS_STRIPE_CLIENT_ID` | Stripe Connect OAuth | **SET** (test) |
-| `NFS_HOSPITABLE_PARTNER_ID` | Hospitable partner API | Captured from VPS |
-| `NFS_HOSPITABLE_PARTNER_SECRET` | Hospitable partner API | Captured from VPS |
-| `NFS_HOSPITABLE_BEARER_TOKEN` | Hospitable API auth | Captured (may expire) |
-| `NFS_HOSPITABLE_WEBHOOK_SECRET` | Verify Hospitable webhooks | Captured from VPS |
+| `NFS_HOSPITABLE_PARTNER_ID` | Hospitable Partner API (OAuth client ID) | **NEEDS SET** in Supabase |
+| `NFS_HOSPITABLE_PARTNER_SECRET` | Hospitable Partner API (OAuth client secret) | **NEEDS SET** in Supabase |
+| `NFS_HOSPITABLE_BEARER_TOKEN` | Hospitable API auth (for n8n workflows) | **NEEDS SET** in n8n env vars |
+| `NFS_HOSPITABLE_WEBHOOK_SECRET` | Verify Hospitable webhooks | **NEEDS SET** in Supabase |
 | `NFS_RESEND_API_KEY` | Email sending via Resend | **SET** |
 | `NFS_CF_API_TOKEN` | Cloudflare API for custom domains | Captured from VPS |
 | `NFS_CF_ZONE_ID` | Cloudflare zone for nfstay.app | Captured from VPS |
@@ -48,17 +48,22 @@ Set via `npx supabase secrets set KEY=VALUE` or Supabase Dashboard.
 
 ---
 
-## 3. n8n CREDENTIALS
+## 3. n8n ENVIRONMENT VARIABLES
 
-Set in **n8n → Settings → Credentials**.
+Set in **n8n → Settings → Variables** (or via n8n API).
 
-| Credential Name | Type | Purpose | Status |
-|----------------|------|---------|--------|
-| `NFStay Hospitable` | HTTP Header Auth | Bearer token for Hospitable API calls | Needs setup |
-| `NFStay Supabase` | HTTP Header Auth | Service role key for DB operations | Needs setup |
+The NFStay n8n workflows use `{{ $env.VAR_NAME }}` environment variables, NOT credential nodes.
+
+| Variable | Purpose | Status |
+|----------|---------|--------|
+| `SUPABASE_URL` | Supabase REST API base URL | **Already set** (shared with marketplace10 workflows) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (bypasses RLS) | **Already set** (shared with marketplace10 workflows) |
+| `NFS_HOSPITABLE_BEARER_TOKEN` | Hospitable Partner API Bearer token | **NEEDS SET** |
 
 ### Notes
-- n8n credentials are separate from Edge Function secrets
+- n8n env vars are separate from Supabase Edge Function secrets
+- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are already used by marketplace10 n8n workflows — do NOT change them
+- `NFS_HOSPITABLE_BEARER_TOKEN` is NFStay-specific — add it, don't modify existing vars
 - n8n accesses Supabase via the REST API using the service_role key (bypasses RLS)
 - Hospitable API calls from n8n use the Bearer token in Authorization header
 
