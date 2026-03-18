@@ -25,9 +25,11 @@ import {
   Sparkles,
   Lock,
   Check,
+  Rocket,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockPortfolio } from '@/data/investMockData';
+import { mockPortfolio, mockProposals } from '@/data/investMockData';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -36,35 +38,29 @@ import { mockPortfolio } from '@/data/investMockData';
 const formatCurrency = (amount: number) =>
   `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const gainPercent = (
-  ((mockPortfolio.totalValue - mockPortfolio.totalInvested) / mockPortfolio.totalInvested) *
-  100
-).toFixed(1);
+const hasActiveProposal = (propertyId: number) =>
+  mockProposals.active.some((p) => p.propertyId === propertyId);
 
 // ---------------------------------------------------------------------------
 // Rank System
 // ---------------------------------------------------------------------------
 
 const RANK_LADDER: { min: number; label: string }[] = [
-  { min: 1, label: 'Key Holder' },
-  { min: 2, label: 'Co-Host' },
-  { min: 3, label: 'Resident Host' },
-  { min: 4, label: 'Property Host' },
-  { min: 5, label: 'Stay Host' },
-  { min: 6, label: 'Host Operator' },
-  { min: 7, label: 'Portfolio Host' },
-  { min: 8, label: 'Senior Host' },
-  { min: 9, label: 'Primary Host' },
-  { min: 10, label: 'Elite Host' },
-  { min: 11, label: 'Syndicate' },
+  { min: 0, label: 'Noobie' },
+  { min: 1, label: 'Deal Rookie' },
+  { min: 3, label: 'Cashflow Builder' },
+  { min: 5, label: 'Portfolio Boss' },
+  { min: 8, label: 'Empire Builder' },
+  { min: 10, label: 'Property Titan' },
 ];
 
 const MILESTONES = [
-  { min: 3, label: 'Co-Host', tier: '◆', tierCount: 1 },
-  { min: 5, label: 'Official Host', tier: '◆', tierCount: 2 },
-  { min: 10, label: 'Superhost', tier: '◆', tierCount: 3 },
-  { min: 15, label: 'Elite Superhost', tier: '◆', tierCount: 4 },
-  { min: 25, label: 'Host Empire', tier: '★', tierCount: 5 },
+  { min: 0, label: 'Noobie', tier: '', tierCount: 0 },
+  { min: 1, label: 'Deal Rookie', tier: '\u25C6', tierCount: 1 },
+  { min: 3, label: 'Cashflow Builder', tier: '\u25C6', tierCount: 2 },
+  { min: 5, label: 'Portfolio Boss', tier: '\u25C6', tierCount: 3 },
+  { min: 8, label: 'Empire Builder', tier: '\u25C6', tierCount: 4 },
+  { min: 10, label: 'Property Titan', tier: '\u2605', tierCount: 5 },
 ];
 
 function getCurrentRank(count: number) {
@@ -90,20 +86,42 @@ function getReachedMilestones(count: number) {
 const ACHIEVEMENTS = [
   { id: 'first-property', name: 'First Property', description: 'Invested in your first property', icon: Home, unlocked: true },
   { id: 'active-partner', name: 'Active Partner', description: 'Participated in the NFStay JV program', icon: Users, unlocked: true },
-  { id: 'multi-cohost', name: 'Co-Host', description: 'Invested in 3+ properties', icon: Building2, unlocked: false },
-  { id: 'official-host', name: 'Official Host', description: 'Invested in 5+ properties', icon: Award, unlocked: false },
-  { id: 'superhost', name: 'Superhost', description: 'Invested in 10+ properties', icon: Crown, unlocked: false },
+  { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Invested in 3+ properties', icon: Building2, unlocked: false },
+  { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Invested in 5+ properties', icon: Award, unlocked: false },
+  { id: 'property-titan', name: 'Property Titan', description: 'Invested in 10+ properties', icon: Crown, unlocked: false },
   { id: 'first-payout', name: 'First Payout', description: 'Received your first rental income', icon: Banknote, unlocked: false },
   { id: 'proposal-voter', name: 'Proposal Voter', description: 'Voted on a governance proposal', icon: Vote, unlocked: false },
   { id: 'early-investor', name: 'Early Investor', description: 'Among the first 100 investors', icon: Sparkles, unlocked: false },
 ];
 
 // ---------------------------------------------------------------------------
+// Monthly Earnings Data
+// ---------------------------------------------------------------------------
+
+const MONTHLY_EARNINGS = [
+  { month: 'Apr', amount: 0 },
+  { month: 'May', amount: 0 },
+  { month: 'Jun', amount: 0 },
+  { month: 'Jul', amount: 0 },
+  { month: 'Aug', amount: 0 },
+  { month: 'Sep', amount: 0 },
+  { month: 'Oct', amount: 0 },
+  { month: 'Nov', amount: 0 },
+  { month: 'Dec', amount: 0 },
+  { month: 'Jan', amount: 229.58 },
+  { month: 'Feb', amount: 229.58 },
+  { month: 'Mar', amount: 229.58 },
+];
+
+const maxEarning = Math.max(...MONTHLY_EARNINGS.map((m) => m.amount), 1);
+const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
+
+// ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
 
 export default function InvestPortfolioPage() {
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
 
   const holdingsCount = mockPortfolio.holdings.length;
   const currentRank = getCurrentRank(holdingsCount);
@@ -118,12 +136,29 @@ export default function InvestPortfolioPage() {
     ? nextMilestone.min - holdingsCount
     : 0;
 
+  // ROI progress
+  const roiTarget = mockPortfolio.totalInvested;
+  const profitTarget = roiTarget * 1.5;
+  const roiProgress = Math.min((mockPortfolio.totalEarnings / profitTarget) * 100, 100);
+  const roiMarkerPct = (roiTarget / profitTarget) * 100;
+
   const summaryItems = [
-    { label: 'Portfolio Value', value: mockPortfolio.totalValue, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
     { label: 'Total Invested', value: mockPortfolio.totalInvested, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
     { label: 'Total Earnings', value: mockPortfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10' },
     { label: 'Pending Payouts', value: mockPortfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10' },
   ];
+
+  const toggleCollapse = (propertyId: number) => {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(propertyId)) {
+        next.delete(propertyId);
+      } else {
+        next.add(propertyId);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -131,56 +166,29 @@ export default function InvestPortfolioPage() {
         {/* ---------------------------------------------------------------- */}
         {/* 1. HEADER                                                        */}
         {/* ---------------------------------------------------------------- */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">My Portfolio</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Build your hosting portfolio. Your status grows with every property.
-          </p>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">My Portfolio</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Build your hosting portfolio. Your status grows with every property.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-primary/10 text-primary border-0 text-xs gap-1 px-3 py-1">
+              <Shield className="h-3 w-3" />
+              {currentRank}
+            </Badge>
+            {nextMilestone && (
+              <span className="text-xs text-muted-foreground">{propertiesNeeded} more to {nextMilestone.label}</span>
+            )}
+          </div>
         </div>
 
         {/* ---------------------------------------------------------------- */}
         {/* 2. TOP SECTION — 3-column grid                                   */}
         {/* ---------------------------------------------------------------- */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* LEFT — Rank Status Card */}
-          <div className="lg:col-span-4">
-            <Card className="bg-gradient-to-br from-primary/5 to-background h-full rounded-2xl shadow-sm">
-              <CardContent className="p-6 flex flex-col h-full">
-                {/* Rank icon + name */}
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-primary/10">
-                    <Shield className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold">{currentRank}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {holdingsCount} {holdingsCount === 1 ? 'property' : 'properties'} in your portfolio
-                    </p>
-                  </div>
-                </div>
-
-                <div className="border-t my-4" />
-
-                {/* Next milestone */}
-                {nextMilestone && (
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Next milestone</p>
-                    <p className="font-semibold">{nextMilestone.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {propertiesNeeded} more {propertiesNeeded === 1 ? 'property' : 'properties'} to unlock
-                    </p>
-                    <Progress value={milestoneProgress} className="h-2 mt-1" />
-                  </div>
-                )}
-
-                <p className="text-xs text-muted-foreground mt-auto pt-4">
-                  Every new property strengthens your portfolio status.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* CENTER — Portfolio Summary Card */}
+          {/* LEFT — Portfolio Summary Card */}
           <div className="lg:col-span-4">
             <Card className="bg-gradient-to-br from-primary/5 to-background h-full rounded-2xl shadow-sm">
               <CardHeader className="pb-2">
@@ -202,24 +210,79 @@ export default function InvestPortfolioPage() {
                   </div>
                 ))}
 
-                <div className="pt-3 border-t">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Overall Gain</span>
-                    <div className="flex items-center gap-1 text-emerald-500 font-semibold">
-                      <TrendingUp className="h-4 w-4" />
-                      +{gainPercent}%
+                {/* ROI Progress */}
+                <div className="pt-3 border-t space-y-2">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">ROI Progress</p>
+                  <div className="relative">
+                    <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-400 transition-all duration-500"
+                        style={{ width: `${roiProgress}%` }}
+                      />
+                    </div>
+                    {/* ROI marker */}
+                    <div
+                      className="absolute top-3 flex flex-col items-center"
+                      style={{ left: `${roiMarkerPct}%`, transform: 'translateX(-50%)' }}
+                    >
+                      <div className="w-px h-2 bg-muted-foreground/40" />
+                      <span className="text-[9px] text-muted-foreground mt-0.5">ROI</span>
+                    </div>
+                    {/* Profit marker */}
+                    <div
+                      className="absolute top-3 flex flex-col items-center"
+                      style={{ left: '100%', transform: 'translateX(-50%)' }}
+                    >
+                      <div className="w-px h-2 bg-muted-foreground/40" />
+                      <span className="text-[9px] text-muted-foreground mt-0.5">Profit</span>
                     </div>
                   </div>
-                  <Progress
-                    value={parseFloat(gainPercent)}
-                    className="h-2 mt-2"
-                  />
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {formatCurrency(mockPortfolio.totalEarnings)} earned of {formatCurrency(roiTarget)} to reach ROI
+                  </p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* RIGHT — Milestone Progress Card */}
+          {/* CENTER — Monthly Earnings (Horizontal Bars) */}
+          <div className="lg:col-span-4">
+            <Card className="bg-gradient-to-br from-primary/5 to-background h-full rounded-2xl shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Monthly Earnings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {MONTHLY_EARNINGS.map((m) => (
+                  <div key={m.month} className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-7 text-right flex-shrink-0">{m.month}</span>
+                    <div className="flex-1 h-5 rounded bg-muted/30 overflow-hidden relative">
+                      {m.amount > 0 ? (
+                        <div
+                          className="h-full rounded bg-gradient-to-r from-primary to-primary/70 flex items-center justify-end pr-2 transition-all duration-500"
+                          style={{ width: `${Math.max((m.amount / maxEarning) * 100, 20)}%` }}
+                        >
+                          <span className="text-[10px] font-medium text-white">${m.amount.toFixed(0)}</span>
+                        </div>
+                      ) : (
+                        <div className="h-full w-full" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="pt-3 border-t mt-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Net Profit</span>
+                    <span className="font-bold text-emerald-500">{formatCurrency(netProfit)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* RIGHT — Your Journey (Milestone Ladder) */}
           <div className="lg:col-span-4">
             <Card className="h-full rounded-2xl shadow-sm">
               <CardHeader className="pb-2">
@@ -270,12 +333,14 @@ export default function InvestPortfolioPage() {
                             >
                               {milestone.label}
                             </p>
-                            <span className={cn(
-                              'text-[10px] tracking-wider leading-none',
-                              isReached ? 'text-primary' : isNext ? 'text-primary/70' : 'text-muted-foreground/40'
-                            )}>
-                              {Array.from({ length: milestone.tierCount }, () => milestone.tier).join('')}
-                            </span>
+                            {milestone.tierCount > 0 && (
+                              <span className={cn(
+                                'text-[10px] tracking-wider leading-none',
+                                isReached ? 'text-primary' : isNext ? 'text-primary/70' : 'text-muted-foreground/40'
+                              )}>
+                                {Array.from({ length: milestone.tierCount }, () => milestone.tier).join('')}
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             {milestone.min} {milestone.min === 1 ? 'property' : 'properties'}
@@ -302,21 +367,24 @@ export default function InvestPortfolioPage() {
           </div>
 
           {mockPortfolio.holdings.map((h, idx) => {
-            const isExpanded = expandedId === h.propertyId;
+            const isCollapsed = collapsedIds.has(h.propertyId);
             const gain = ((h.currentValue - h.invested) / h.invested) * 100;
+            const activeProposal = hasActiveProposal(h.propertyId);
 
             return (
               <Card
                 key={h.propertyId}
                 className={cn(
-                  'overflow-hidden transition-all cursor-pointer rounded-2xl shadow-sm',
-                  isExpanded && 'ring-1 ring-primary/30'
+                  'overflow-hidden transition-all rounded-2xl shadow-sm',
+                  !isCollapsed && 'ring-1 ring-primary/30'
                 )}
-                onClick={() => setExpandedId(isExpanded ? null : h.propertyId)}
               >
                 <CardContent className="p-4">
                   {/* Compact Row */}
-                  <div className="flex items-center gap-4">
+                  <div
+                    className="flex items-center gap-4 cursor-pointer"
+                    onClick={() => toggleCollapse(h.propertyId)}
+                  >
                     <img
                       src={h.image}
                       alt={h.propertyTitle}
@@ -325,10 +393,10 @@ export default function InvestPortfolioPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h4 className="font-semibold text-sm truncate">{h.propertyTitle}</h4>
-                        {isExpanded ? (
-                          <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        ) : (
+                        {isCollapsed ? (
                           <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        ) : (
+                          <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">{h.location}</p>
@@ -351,52 +419,115 @@ export default function InvestPortfolioPage() {
                     </div>
                   </div>
 
-                  {/* Expanded Details */}
-                  {isExpanded && (
+                  {/* Expanded Details (default) */}
+                  {!isCollapsed && (
                     <div className="mt-4 pt-4 border-t space-y-4 animate-in slide-in-from-top-2 duration-200">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Invested</p>
-                          <p className="font-semibold">{formatCurrency(h.invested)}</p>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        {/* Left — metrics + buttons */}
+                        <div className="flex-1 space-y-4">
+                          {/* Metrics grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Current Value</p>
+                              <p className="font-semibold">{formatCurrency(h.currentValue)}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Monthly Yield</p>
+                              <p className="font-semibold text-emerald-600">{formatCurrency(h.monthlyYield)}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Gain</p>
+                              <p className="font-semibold text-emerald-500">
+                                +{formatCurrency(h.currentValue - h.invested)} ({gain.toFixed(1)}%)
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Last Payout</p>
+                              <p className="font-semibold">
+                                {new Date(h.lastPayout).toLocaleDateString('en-GB', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Invested</p>
+                              <p className="font-semibold">{formatCurrency(h.invested)}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Total Earned</p>
+                              <p className="font-semibold">{formatCurrency(h.totalEarned)}</p>
+                            </div>
+                          </div>
+
+                          {/* Action buttons row */}
+                          <div className="flex gap-2 flex-wrap">
+                            <Button variant="outline" size="sm" className="gap-1.5">
+                              <Eye className="h-3.5 w-3.5" />
+                              View Property
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-1.5">
+                              <ArrowUpRight className="h-3.5 w-3.5" />
+                              Buy More Shares
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-1.5">
+                              <FileText className="h-3.5 w-3.5" />
+                              Submit Proposal
+                            </Button>
+                            {activeProposal && (
+                              <Button variant="outline" size="sm" className="gap-1.5">
+                                <Vote className="h-3.5 w-3.5" />
+                                Cast Vote
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">Current Value</p>
-                          <p className="font-semibold">{formatCurrency(h.currentValue)}</p>
+
+                        {/* Right — Boost card */}
+                        <div className="sm:w-64 flex-shrink-0">
+                          <div className="rounded-xl border border-primary/30 bg-background p-4 space-y-3 shadow-sm">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-base font-bold">Boosted APR: {(h.annualYield * 1.5).toFixed(1)}%</p>
+                                <p className="text-xs text-muted-foreground">Not Boosted</p>
+                              </div>
+                              <span className="text-xl">{'\uD83D\uDE80'}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 border-t pt-3">
+                              <div>
+                                <p className="text-base font-bold">${(h.sharesOwned * h.sharePrice).toLocaleString()}</p>
+                                <p className="text-[10px] text-muted-foreground">Your Shares</p>
+                              </div>
+                              <div>
+                                <p className="text-base font-bold">{(h.annualYield * 6 + 30).toFixed(0)}%</p>
+                                <p className="text-[10px] text-muted-foreground">6YR Expected ROI</p>
+                              </div>
+                              <div>
+                                <p className="text-base font-bold">Monthly</p>
+                                <p className="text-[10px] text-muted-foreground">Payout Frequency</p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 border-t pt-3">
+                              <div>
+                                <p className="text-[10px] text-muted-foreground">Cost of Booster</p>
+                                <p className="text-sm font-bold">0.275 USDC</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-muted-foreground">Stay Earned</p>
+                                <p className="text-sm font-bold">0 STAY</p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                              <Button size="sm" className="w-full bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white text-xs rounded-full">
+                                Boost APR {'\uD83D\uDE80'}
+                              </Button>
+                              <Button size="sm" variant="outline" className="w-full text-xs rounded-full border-primary/30 text-primary hover:bg-primary/10">
+                                Claim
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">Gain</p>
-                          <p className="font-semibold text-emerald-500">
-                            +{formatCurrency(h.currentValue - h.invested)} ({gain.toFixed(1)}%)
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Total Earned</p>
-                          <p className="font-semibold">{formatCurrency(h.totalEarned)}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Monthly Yield</p>
-                          <p className="font-semibold text-emerald-600">{formatCurrency(h.monthlyYield)}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Last Payout</p>
-                          <p className="font-semibold">
-                            {new Date(h.lastPayout).toLocaleDateString('en-GB', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="gap-1.5">
-                          <Eye className="h-3.5 w-3.5" />
-                          View Property
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1.5">
-                          <ArrowUpRight className="h-3.5 w-3.5" />
-                          Buy More Shares
-                        </Button>
                       </div>
                     </div>
                   )}

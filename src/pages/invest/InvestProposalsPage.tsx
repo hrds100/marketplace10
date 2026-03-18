@@ -184,7 +184,7 @@ export default function InvestProposalsPage() {
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs text-muted-foreground">
           <span className="text-emerald-400">{yesPct}% Yes ({yes})</span>
-          <span className="text-red-400">{noPct}% No ({no})</span>
+          <span className="text-muted-foreground">{noPct}% No ({no})</span>
         </div>
         <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden flex">
           {voted > 0 && (
@@ -194,7 +194,7 @@ export default function InvestProposalsPage() {
                 style={{ width: `${pct(yes, voted)}%` }}
               />
               <div
-                className="h-full bg-red-500 transition-all duration-500"
+                className="h-full bg-muted-foreground/40 transition-all duration-500"
                 style={{ width: `${pct(no, voted)}%` }}
               />
             </>
@@ -231,7 +231,7 @@ export default function InvestProposalsPage() {
             'text-sm px-3 py-1.5',
             proposal.userVoted === 'yes'
               ? 'border-emerald-500/40 text-emerald-400'
-              : 'border-red-500/40 text-red-400'
+              : 'border-muted-foreground/40 text-muted-foreground'
           )}
         >
           {proposal.userVoted === 'yes' ? (
@@ -255,7 +255,8 @@ export default function InvestProposalsPage() {
         </Button>
         <Button
           size="sm"
-          variant="destructive"
+          variant="outline"
+          className="text-muted-foreground border-muted-foreground/40 hover:bg-muted"
           onClick={() => openVoteDialog(proposal.id, proposal.title, 'no')}
         >
           <ThumbsDown className="w-3.5 h-3.5 mr-1.5" />
@@ -273,7 +274,7 @@ export default function InvestProposalsPage() {
           'text-xs',
           result === 'approved'
             ? 'border-emerald-500/40 text-emerald-400'
-            : 'border-red-500/40 text-red-400'
+            : 'border-muted-foreground/40 text-muted-foreground'
         )}
       >
         {result === 'approved' ? (
@@ -511,7 +512,7 @@ export default function InvestProposalsPage() {
             <span
               className={cn(
                 'font-semibold',
-                voteDialog.choice === 'yes' ? 'text-emerald-400' : 'text-red-400'
+                voteDialog.choice === 'yes' ? 'text-emerald-400' : 'text-muted-foreground'
               )}
             >
               {voteDialog.choice === 'yes' ? 'Yes' : 'No'}
@@ -526,7 +527,7 @@ export default function InvestProposalsPage() {
               className={cn(
                 voteDialog.choice === 'yes'
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : 'bg-red-600 hover:bg-red-700 text-white'
+                  : 'bg-muted-foreground hover:bg-muted-foreground/80 text-white'
               )}
               onClick={confirmVote}
             >

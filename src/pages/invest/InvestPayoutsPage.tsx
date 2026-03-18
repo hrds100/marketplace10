@@ -406,12 +406,12 @@ export default function InvestPayoutsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-green-500">
-                            {formatCurrency(payout.amount)}
-                          </p>
-                          <StatusBadge status={payout.status} />
-                        </div>
+                        <Badge variant="outline" className="bg-green-500/15 text-green-400 border-green-500/30 shadow-[0_0_8px_rgba(34,197,94,0.2)]">
+                          Claimable
+                        </Badge>
+                        <p className="text-lg font-bold text-green-500 whitespace-nowrap">
+                          {formatCurrency(payout.amount)}
+                        </p>
                         <Button size="sm" onClick={() => handleClaim(payout)}>
                           Claim
                         </Button>
@@ -455,7 +455,7 @@ export default function InvestPayoutsPage() {
                         {formatCurrency(payout.amount)}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {payout.method ? methodLabels[payout.method] || payout.method : '—'}
+                        {payout.method ? methodLabels[payout.method] || payout.method : '\u2014'}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={payout.status} />
