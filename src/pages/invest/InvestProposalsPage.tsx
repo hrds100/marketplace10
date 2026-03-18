@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useProposals } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -81,6 +82,9 @@ function typeBadgeColor(type: string): string {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function InvestProposalsPage() {
+  const { data: realProposals = [] } = useProposals();
+  // TODO: Replace mockProposals with realProposals when data exists
+
   // Local mutable state for active proposals (so votes update in place)
   const [activeProposals, setActiveProposals] = useState<ActiveProposalWithVote[]>(
     () =>

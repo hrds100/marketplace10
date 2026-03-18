@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useMyHoldings, useInvestProperties } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -121,6 +122,10 @@ const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
 // ---------------------------------------------------------------------------
 
 export default function InvestPortfolioPage() {
+  const { data: realHoldings = [] } = useMyHoldings();
+  const { data: realProperties = [] } = useInvestProperties();
+  // TODO: Replace mockPortfolio with realHoldings when data exists
+
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
 
   const holdingsCount = mockPortfolio.holdings.length;

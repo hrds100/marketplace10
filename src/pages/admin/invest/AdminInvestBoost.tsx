@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useInvestProperties } from '@/hooks/useInvestData';
 import { Rocket, Check, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,8 @@ const initialBoosts: BoostEntry[] = [
 ];
 
 export default function AdminInvestBoost() {
+  const { data: realProperties = [] } = useInvestProperties();
+
   const [boosts, setBoosts] = useState<BoostEntry[]>(initialBoosts);
   const [walletAddress, setWalletAddress] = useState('');
   const [propertyId, setPropertyId] = useState('');

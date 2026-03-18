@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAllPayoutClaims } from '@/hooks/useInvestData';
 import { DollarSign, Clock, CheckCircle2, AlertTriangle, Search, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,6 +72,8 @@ const mockPayouts: Payout[] = [
 const weekOptions = ['All', 'W12-2026', 'W11-2026', 'W10-2026'];
 
 export default function AdminInvestPayouts() {
+  const { data: realClaims = [] } = useAllPayoutClaims();
+
   const [payouts, setPayouts] = useState<Payout[]>(mockPayouts);
   const [statusFilter, setStatusFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');

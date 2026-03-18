@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useProposals } from '@/hooks/useInvestData';
 import { Search, XCircle, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,8 @@ const initialProposals: Proposal[] = [
 const propertyOptions = ['All', 'Seseh Beachfront Villa', 'Marina Gate Apartment', 'KAEC Waterfront Residence'];
 
 export default function AdminInvestProposals() {
+  const { data: realProposals = [] } = useProposals();
+
   const [proposals, setProposals] = useState<Proposal[]>(initialProposals);
   const [propertyFilter, setPropertyFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
