@@ -102,6 +102,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   if (isPrime) {
     const funded = 64;
     return (
+      <>
       <div
         className="bg-card rounded-2xl overflow-hidden border-[1.5px] h-full flex flex-col"
         style={{
@@ -167,11 +168,17 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           </div>
         </div>
       </div>
+      {/* Added date — outside the card */}
+      <div className="flex justify-between items-center px-1 pt-1.5">
+        <span className="text-[11px] text-muted-foreground">Added {listing.daysAgo} days ago</span>
+      </div>
+      </>
     );
   }
 
   // ─── REGULAR CARD ────────────────────────────────────
   return (
+    <>
     <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover h-full flex flex-col">
       <div className="relative h-[200px] overflow-hidden">
         <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy" className="w-full h-full object-cover"
@@ -222,14 +229,6 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           </div>
         </div>
 
-        <div className="flex justify-between items-center pt-2 mt-2 border-t border-border/50">
-          <span className="text-[11px] text-muted-foreground">Added {listing.daysAgo} days ago</span>
-          <div className="flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${statusDot()}`} />
-            <span className="text-[11px] text-muted-foreground capitalize">{listing.daysAgo <= 7 ? 'Live' : listing.daysAgo <= 14 ? 'Under offer' : 'Expired'}</span>
-          </div>
-        </div>
-
         <div className="flex gap-2 mt-3">
           {forceSignUp ? (
             <>
@@ -253,5 +252,14 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         </div>
       </div>
     </div>
+    {/* Added date — outside the card */}
+    <div className="flex justify-between items-center px-1 pt-1.5">
+      <span className="text-[11px] text-muted-foreground">Added {listing.daysAgo} days ago</span>
+      <div className="flex items-center gap-1.5">
+        <span className={`w-1.5 h-1.5 rounded-full ${statusDot()}`} />
+        <span className="text-[11px] text-muted-foreground capitalize">{listing.daysAgo <= 7 ? 'Live' : listing.daysAgo <= 14 ? 'Under offer' : 'Expired'}</span>
+      </div>
+    </div>
+    </>
   );
 }

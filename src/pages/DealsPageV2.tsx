@@ -312,8 +312,12 @@ export default function DealsPageV2() {
         </div>
 
         {/* Right: map */}
-        <div className="hidden lg:block w-[35%] max-w-[520px] flex-shrink-0 p-3">
-          <div className="w-full h-full rounded-2xl overflow-hidden border border-border/30 shadow-sm">
+        <div className="hidden lg:flex lg:flex-col w-[35%] max-w-[520px] flex-shrink-0 p-3">
+          <div className="flex items-center gap-2 px-1 pb-2.5">
+            <span className="text-emerald-500 text-lg">📍</span>
+            <span className="text-[14px] font-semibold text-foreground">Deal Locations</span>
+          </div>
+          <div className="flex-1 rounded-2xl overflow-hidden border border-border/30 shadow-sm">
             <Suspense
               fallback={
                 <div className="w-full h-full bg-muted/30 animate-pulse flex items-center justify-center rounded-2xl">
