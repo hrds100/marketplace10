@@ -227,42 +227,14 @@ export default function DealsPageV2() {
               </span>
             </div>
 
-            {/* Highlighted: Prime → Featured → Regular fill */}
-            {highlighted.length > 0 && (
-              <div className="mb-8">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Top Picks
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {highlighted.map(l => (
-                    <div
-                      key={l.id}
-                      id={`property-${l.id}`}
-                      onMouseEnter={() => setHoveredId(l.id)}
-                      onMouseLeave={() => setHoveredId(null)}
-                    >
-                      <PropertyCard
-                        listing={l}
-                        isFav={isFav(l.id)}
-                        onToggleFav={() => toggle(l.id)}
-                        onAddToCRM={handleAddToCRM}
-                        onInquire={handleInquire}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-8 border-t border-border" />
-              </div>
-            )}
-
-            {/* Card grid */}
+            {/* All cards in one continuous grid */}
             {isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {[0, 1, 2, 3, 4, 5].map(i => <CardSkeleton key={i} />)}
               </div>
-            ) : pageListings.length > 0 ? (
+            ) : [...highlighted, ...pageListings].length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {pageListings.map(l => (
+                {[...highlighted, ...pageListings].map(l => (
                   <div
                     key={l.id}
                     id={`property-${l.id}`}
