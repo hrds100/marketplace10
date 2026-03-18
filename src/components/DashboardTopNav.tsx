@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import BurgerMenu from '@/components/BurgerMenu';
+import FavouritesDropdown from '@/components/FavouritesDropdown';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -124,13 +125,7 @@ export default function DashboardTopNav() {
             <PlusCircle className="w-[15px] h-[15px]" strokeWidth={1.8} />
             Submit a Deal
           </button>
-          <NavLink
-            to="/dashboard/favourites"
-            className={`p-2 rounded-lg transition-all duration-200 ${isActive('/dashboard/favourites') ? 'text-red-500 bg-red-50' : 'text-muted-foreground hover:text-red-500 hover:bg-red-50'}`}
-            title="Favourites"
-          >
-            <Heart className="w-[18px] h-[18px]" strokeWidth={1.8} fill={isActive('/dashboard/favourites') ? 'currentColor' : 'none'} />
-          </NavLink>
+          <FavouritesDropdown />
           <NotificationBell />
           <BurgerMenu />
         </div>

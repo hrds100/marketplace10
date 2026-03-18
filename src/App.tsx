@@ -14,7 +14,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import DealsPage from "./pages/DealsPage";
 import DealsPageV2 from "./pages/DealsPageV2";
 import InboxPage from "./pages/InboxPage";
-import FavouritesPage from "./pages/FavouritesPage";
+// FavouritesPage removed — replaced by FavouritesDropdown in top bar
 import DealDetail from "./pages/DealDetail";
 import CRMPage from "./pages/CRMPage";
 import UniversityPage from "./pages/UniversityPage";
@@ -87,7 +87,7 @@ const App = () => (
             <Route path="deals" element={<DealsPageV2 />} />
             <Route path="deals-v2" element={<DealsPage />} />
             <Route path="inbox" element={<InboxPage />} />
-            <Route path="favourites" element={<FavouritesPage />} />
+            {/* Favourites page removed — now a dropdown in top bar */}
             <Route path="crm" element={<CRMPage />} />
             <Route path="university" element={<UniversityPage />} />
             <Route path="affiliates" element={<AffiliatesPage />} />

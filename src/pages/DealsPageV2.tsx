@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import PropertyCard from '@/components/PropertyCard';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { useFavourites } from '@/hooks/useFavourites';
@@ -74,6 +74,22 @@ export default function DealsPageV2() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const perPage = 12;
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Scroll to property when navigated from favourites dropdown
+  useEffect(() => {
+    if (location.hash) {
+      setTimeout(() => {
+        const el = document.getElementById(location.hash.slice(1));
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.style.transition = 'box-shadow 0.3s';
+          el.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.4)';
+          setTimeout(() => { el.style.boxShadow = ''; }, 2000);
+        }
+      }, 500);
+    }
+  }, [location.hash]);
 
   const handleInquire = useCallback(
     (listing: ListingShape) => {
@@ -221,6 +237,7 @@ export default function DealsPageV2() {
                   {highlighted.map(l => (
                     <div
                       key={l.id}
+                      id={`property-${l.id}`}
                       onMouseEnter={() => setHoveredId(l.id)}
                       onMouseLeave={() => setHoveredId(null)}
                     >
@@ -248,6 +265,7 @@ export default function DealsPageV2() {
                 {pageListings.map(l => (
                   <div
                     key={l.id}
+                    id={`property-${l.id}`}
                     onMouseEnter={() => setHoveredId(l.id)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
