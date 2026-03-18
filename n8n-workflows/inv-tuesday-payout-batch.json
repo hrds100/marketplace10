@@ -1,0 +1,74 @@
+{
+  "name": "NFsTay -- Tuesday Payout Batch",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 5 * * 2" }]
+        }
+      },
+      "name": "Tuesday 05:00 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT pc.id, pc.user_id, pc.user_type, pc.amount_entitled, pc.currency, pc.week_ref, uba.account_name, uba.revolut_counterparty_id, uba.revolut_counterparty_account_id, uba.sort_code, uba.account_number, uba.iban, uba.bic, uba.bank_country FROM payout_claims pc JOIN user_bank_accounts uba ON uba.id = pc.bank_account_id WHERE pc.status = 'pending' AND pc.week_ref = TO_CHAR(NOW(), 'IYYY\"-W\"IW')"
+      },
+      "name": "Query Pending Claims",
+      "type": "n8n-nodes-base.postgres",
+      "position": [450, 300],
+      "credentials": { "postgres": { "name": "NFsTay Supabase" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length === 0) { return []; }\nconst gbpTotal = items.filter(i => i.json.currency === 'GBP').reduce((s, i) => s + Number(i.json.amount_entitled), 0);\nconst eurTotal = items.filter(i => i.json.currency === 'EUR').reduce((s, i) => s + Number(i.json.amount_entitled), 0);\nconst maxItem = items.reduce((m, i) => Number(i.json.amount_entitled) > Number(m.json.amount_entitled) ? i : m);\nreturn [{ json: { count: items.length, gbpTotal, eurTotal, maxAmount: maxItem.json.amount_entitled, maxName: maxItem.json.account_name, weekRef: items[0].json.week_ref, claims: items.map(i => i.json) } }];"
+      },
+      "name": "Build Summary",
+      "type": "n8n-nodes-base.code",
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://b2b.revolut.com/api/1.0/payment-drafts",
+        "authentication": "predefinedCredentialType",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{$env.REVOLUT_API_KEY}}" }] },
+        "sendBody": true,
+        "bodyParameters": { "parameters": [{ "name": "title", "value": "=NFsTay Weekly Payout - {{$json.weekRef}}" }] }
+      },
+      "name": "Create Revolut Draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE payout_claims SET status = 'processing' WHERE week_ref = '{{$json.weekRef}}' AND status = 'pending'"
+      },
+      "name": "Update Claims Status",
+      "type": "n8n-nodes-base.postgres",
+      "position": [1050, 300],
+      "credentials": { "postgres": { "name": "NFsTay Supabase" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO payout_audit_log (event_type, performed_by, metadata) VALUES ('batch_sent', 'system', '{\"count\": {{$json.count}}, \"gbp_total\": {{$json.gbpTotal}}, \"eur_total\": {{$json.eurTotal}}}')"
+      },
+      "name": "Audit Log",
+      "type": "n8n-nodes-base.postgres",
+      "position": [1250, 300],
+      "credentials": { "postgres": { "name": "NFsTay Supabase" } }
+    }
+  ],
+  "connections": {
+    "Tuesday 05:00 AM": { "main": [[{ "node": "Query Pending Claims", "type": "main", "index": 0 }]] },
+    "Query Pending Claims": { "main": [[{ "node": "Build Summary", "type": "main", "index": 0 }]] },
+    "Build Summary": { "main": [[{ "node": "Create Revolut Draft", "type": "main", "index": 0 }]] },
+    "Create Revolut Draft": { "main": [[{ "node": "Update Claims Status", "type": "main", "index": 0 }]] },
+    "Update Claims Status": { "main": [[{ "node": "Audit Log", "type": "main", "index": 0 }]] }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "NFsTay -- Subscription Commission",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aff-commission-subscription"
+      },
+      "name": "GHL Payment Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT ap.id as affiliate_id, ap.user_id FROM aff_profiles ap JOIN profiles p ON p.id = ap.user_id WHERE ap.referral_code = '{{$json.body.referral_code}}'"
+      },
+      "name": "Find Affiliate",
+      "type": "n8n-nodes-base.postgres",
+      "position": [450, 300],
+      "credentials": { "postgres": { "name": "NFsTay Supabase" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const affiliate = $input.first()?.json;\nif (!affiliate) return [];\nconst amount = Number('{{$json.body.amount}}');\nconst rate = 0.40; // TODO: fetch from aff_commission_settings\nconst commission = amount * rate;\nreturn [{ json: { affiliate_id: affiliate.affiliate_id, source: 'subscription', source_id: '{{$json.body.payment_id}}', referred_user_id: '{{$json.body.user_id}}', gross_amount: amount, commission_rate: rate, commission_amount: commission, claimable_at: new Date(Date.now() + 14*24*60*60*1000).toISOString() } }];"
+      },
+      "name": "Calculate Commission",
+      "type": "n8n-nodes-base.code",
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO aff_commissions (affiliate_id, source, source_id, referred_user_id, gross_amount, commission_rate, commission_amount, claimable_at) VALUES ('{{$json.affiliate_id}}', '{{$json.source}}', '{{$json.source_id}}', '{{$json.referred_user_id}}', {{$json.gross_amount}}, {{$json.commission_rate}}, {{$json.commission_amount}}, '{{$json.claimable_at}}') ON CONFLICT (source, source_id) DO NOTHING"
+      },
+      "name": "Insert Commission",
+      "type": "n8n-nodes-base.postgres",
+      "position": [850, 300],
+      "credentials": { "postgres": { "name": "NFsTay Supabase" } }
+    }
+  ],
+  "connections": {
+    "GHL Payment Webhook": { "main": [[{ "node": "Find Affiliate", "type": "main", "index": 0 }]] },
+    "Find Affiliate": { "main": [[{ "node": "Calculate Commission", "type": "main", "index": 0 }]] },
+    "Calculate Commission": { "main": [[{ "node": "Insert Commission", "type": "main", "index": 0 }]] }
+  }
+}

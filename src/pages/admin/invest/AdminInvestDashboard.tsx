@@ -1,17 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { DollarSign, Users, Building2, TrendingUp, Clock, Plus, Eye, CreditCard, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-
-const stats = [
-  { icon: DollarSign, label: 'Total Invested', value: '$172,500', color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  { icon: Users, label: 'Total Shareholders', value: '42', color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  { icon: Building2, label: 'Active Properties', value: '3', color: 'text-amber-500', bg: 'bg-amber-500/10' },
-  { icon: TrendingUp, label: 'Monthly Revenue', value: '$8,500', color: 'text-purple-500', bg: 'bg-purple-500/10' },
-  { icon: Clock, label: 'Pending Payouts', value: '$2,340', color: 'text-rose-500', bg: 'bg-rose-500/10' },
-];
+import { useInvestProperties, useInvestOrders, useAllShareholders, useAllPayoutClaims } from '@/hooks/useInvestData';
 
 const activities = [
   'Hugo Souza purchased 5 shares of Seseh Beachfront Villa · 2 min ago',
@@ -35,6 +28,29 @@ const quickActions = [
 
 export default function AdminInvestDashboard() {
   const [clickedAction, setClickedAction] = useState<string | null>(null);
+
+  const { data: properties = [] } = useInvestProperties();
+  const { data: orders = [] } = useInvestOrders();
+  const { data: shareholders = [] } = useAllShareholders();
+  const { data: claims = [] } = useAllPayoutClaims();
+
+  const stats = useMemo(() => {
+    const totalInvested = orders
+      .filter((o: any) => o.status === 'completed')
+      .reduce((sum: number, o: any) => sum + Number(o.amount_paid || 0), 0);
+    const uniqueShareholders = new Set((shareholders as any[]).map((s: any) => s.user_id)).size;
+    const pendingPayouts = claims
+      .filter((c: any) => c.status === 'pending')
+      .reduce((sum: number, c: any) => sum + Number(c.amount_entitled || 0), 0);
+
+    return [
+      { icon: DollarSign, label: 'Total Invested', value: `$${totalInvested.toLocaleString()}`, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+      { icon: Users, label: 'Total Shareholders', value: String(uniqueShareholders), color: 'text-blue-500', bg: 'bg-blue-500/10' },
+      { icon: Building2, label: 'Active Properties', value: String(properties.length), color: 'text-amber-500', bg: 'bg-amber-500/10' },
+      { icon: TrendingUp, label: 'Monthly Revenue', value: '$8,500', color: 'text-purple-500', bg: 'bg-purple-500/10' },
+      { icon: Clock, label: 'Pending Payouts', value: `$${pendingPayouts.toLocaleString()}`, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+    ];
+  }, [orders, shareholders, properties, claims]);
 
   return (
     <div>
