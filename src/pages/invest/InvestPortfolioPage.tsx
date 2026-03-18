@@ -50,8 +50,8 @@ const RANK_LADDER: { min: number; label: string }[] = [
   { min: 1, label: 'Deal Rookie' },
   { min: 3, label: 'Cashflow Builder' },
   { min: 5, label: 'Portfolio Boss' },
-  { min: 8, label: 'Empire Builder' },
-  { min: 10, label: 'Property Titan' },
+  { min: 10, label: 'Empire Builder' },
+  { min: 15, label: 'Property Titan' },
 ];
 
 const MILESTONES = [
@@ -59,8 +59,8 @@ const MILESTONES = [
   { min: 1, label: 'Deal Rookie', tier: '\u25C6', tierCount: 1 },
   { min: 3, label: 'Cashflow Builder', tier: '\u25C6', tierCount: 2 },
   { min: 5, label: 'Portfolio Boss', tier: '\u25C6', tierCount: 3 },
-  { min: 8, label: 'Empire Builder', tier: '\u25C6', tierCount: 4 },
-  { min: 10, label: 'Property Titan', tier: '\u2605', tierCount: 5 },
+  { min: 10, label: 'Empire Builder', tier: '\u25C6', tierCount: 4 },
+  { min: 15, label: 'Property Titan', tier: '\u2605', tierCount: 5 },
 ];
 
 function getCurrentRank(count: number) {
@@ -168,7 +168,7 @@ export default function InvestPortfolioPage() {
         {/* ---------------------------------------------------------------- */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">My Portfolio</h1>
+            <h1 className="text-2xl font-bold tracking-tight">My Airbnb Portfolio</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Build your hosting portfolio. Your status grows with every property.
             </p>
@@ -461,27 +461,6 @@ export default function InvestPortfolioPage() {
                             </div>
                           </div>
 
-                          {/* Action buttons row */}
-                          <div className="flex gap-2 flex-wrap">
-                            <Button variant="outline" size="sm" className="gap-1.5">
-                              <Eye className="h-3.5 w-3.5" />
-                              View Property
-                            </Button>
-                            <Button variant="outline" size="sm" className="gap-1.5">
-                              <ArrowUpRight className="h-3.5 w-3.5" />
-                              Buy More Shares
-                            </Button>
-                            <Button variant="outline" size="sm" className="gap-1.5">
-                              <FileText className="h-3.5 w-3.5" />
-                              Submit Proposal
-                            </Button>
-                            {activeProposal && (
-                              <Button variant="outline" size="sm" className="gap-1.5">
-                                <Vote className="h-3.5 w-3.5" />
-                                Cast Vote
-                              </Button>
-                            )}
-                          </div>
                         </div>
 
                         {/* Right — Boost card */}
@@ -494,7 +473,7 @@ export default function InvestPortfolioPage() {
                               </div>
                               <span className="text-xl">{'\uD83D\uDE80'}</span>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 border-t pt-3">
+                            <div className="grid grid-cols-3 gap-2">
                               <div>
                                 <p className="text-base font-bold">${(h.sharesOwned * h.sharePrice).toLocaleString()}</p>
                                 <p className="text-[10px] text-muted-foreground">Your Shares</p>
@@ -508,7 +487,7 @@ export default function InvestPortfolioPage() {
                                 <p className="text-[10px] text-muted-foreground">Payout Frequency</p>
                               </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 border-t pt-3">
+                            <div className="grid grid-cols-2 gap-2">
                               <div>
                                 <p className="text-[10px] text-muted-foreground">Cost of Booster</p>
                                 <p className="text-sm font-bold">0.275 USDC</p>
@@ -518,16 +497,37 @@ export default function InvestPortfolioPage() {
                                 <p className="text-sm font-bold">0 STAY</p>
                               </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 pt-1">
-                              <Button size="sm" className="w-full bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white text-xs rounded-full">
-                                Boost APR {'\uD83D\uDE80'}
-                              </Button>
-                              <Button size="sm" variant="outline" className="w-full text-xs rounded-full border-primary/30 text-primary hover:bg-primary/10">
-                                Claim
-                              </Button>
-                            </div>
                           </div>
                         </div>
+                      </div>
+
+                      {/* All action buttons — one row, aligned */}
+                      <div className="flex gap-2 flex-wrap items-center">
+                        <Button variant="outline" size="sm" className="gap-1.5">
+                          <Eye className="h-3.5 w-3.5" />
+                          View Property
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-1.5">
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                          Buy More Shares
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-1.5">
+                          <FileText className="h-3.5 w-3.5" />
+                          Submit Proposal
+                        </Button>
+                        {activeProposal && (
+                          <Button variant="outline" size="sm" className="gap-1.5">
+                            <Vote className="h-3.5 w-3.5" />
+                            Cast Vote
+                          </Button>
+                        )}
+                        <Button size="sm" className="gap-1.5 bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white rounded-full">
+                          <Rocket className="h-3.5 w-3.5" />
+                          Boost APR
+                        </Button>
+                        <Button size="sm" variant="outline" className="gap-1.5 rounded-full border-primary/30 text-primary hover:bg-primary/10">
+                          Claim
+                        </Button>
                       </div>
                     </div>
                   )}
