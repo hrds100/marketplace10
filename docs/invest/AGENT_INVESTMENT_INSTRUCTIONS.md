@@ -22,21 +22,76 @@ The investment module includes:
 
 ---
 
-## 2. DOCUMENT INDEX
+## 2. DOCUMENT INDEX (14 docs)
 
-Before any task, read this file PLUS the task-specific docs:
+All documentation lives in `docs/invest/`. Before any task, read this file PLUS the task-specific docs.
+
+### Complete file list
+
+| # | File | Purpose |
+|---|------|---------|
+| 1 | **AGENT_INVESTMENT_INSTRUCTIONS.md** | This file — master protocol, hard rules, commission rules, changelog |
+| 2 | **HOTKEYS.md** | Copy-paste hotkey prompt for the coding agent |
+| 3 | **DOMAIN.md** | Investment terminology dictionary (actors, concepts, ranks, statuses) |
+| 4 | **DATABASE.md** | All table schemas (7 inv_ + 4 aff_ + 3 shared) with RLS policies |
+| 5 | **ARCHITECTURE.md** | System map: blockchain ↔ Supabase ↔ n8n ↔ frontend, data flows |
+| 6 | **PHASES.md** | 7-phase build plan with acceptance criteria per phase |
+| 7 | **INTEGRATIONS.md** | 11 n8n workflows, Revolut API, notification matrix, contract functions |
+| 8 | **ACCEPTANCE.md** | BDD Given/When/Then scenarios for every feature |
+| 9 | **STACK.md** | Contract addresses, wallets, Graph endpoints, APIs, Revolut, env vars |
+| 10 | **BOUNDARIES.md** | What invest owns, what's shared, what must never be touched |
+| 11 | **MODULE_AUDIT.md** | Current state snapshot — what's built, what's mock, what's missing |
+| 12 | **EXECUTION_PLAN.md** | Step-by-step implementation sequence with dependencies |
+| 13 | **PAYOUT_FLOW.md** | Complete crypto + bank payout documentation (Revolut weekly batch) |
+| 14 | **USER_JOURNEY.md** | Every flow explained in simple English with emojis (non-technical) |
+
+### Which docs to read per task
 
 | Task type | Also read |
 |-----------|-----------|
-| **Always** | This file + `docs/invest/BOUNDARIES.md` |
-| Database / schema / RLS | + `docs/invest/DATABASE.md` |
-| Blockchain / contracts / The Graph | + `docs/invest/STACK.md` + `docs/invest/INTEGRATIONS.md` |
-| Commission / affiliate logic | + `docs/invest/DOMAIN.md` + `docs/invest/DATABASE.md` |
-| Specific page wiring | + `docs/invest/ARCHITECTURE.md` + `docs/invest/PHASES.md` |
-| Admin features | + `docs/invest/DATABASE.md` + `docs/invest/BOUNDARIES.md` |
-| Notifications | + `docs/invest/INTEGRATIONS.md` |
-| Feature acceptance | + `docs/invest/ACCEPTANCE.md` |
-| Full picture / planning | + `docs/invest/MODULE_AUDIT.md` + `docs/invest/EXECUTION_PLAN.md` |
+| **Always** | This file + `BOUNDARIES.md` |
+| Database / schema / RLS | + `DATABASE.md` |
+| Blockchain / contracts / The Graph | + `STACK.md` + `INTEGRATIONS.md` |
+| Commission / affiliate logic | + `DOMAIN.md` + `DATABASE.md` |
+| Specific page wiring | + `ARCHITECTURE.md` + `PHASES.md` |
+| Admin features | + `DATABASE.md` + `BOUNDARIES.md` |
+| Payout / claim / Revolut | + `PAYOUT_FLOW.md` + `INTEGRATIONS.md` |
+| Notifications | + `INTEGRATIONS.md` |
+| Feature acceptance | + `ACCEPTANCE.md` |
+| Full picture / planning | + `MODULE_AUDIT.md` + `EXECUTION_PLAN.md` + `USER_JOURNEY.md` |
+| Understanding what exists | + `MODULE_AUDIT.md` |
+| Non-technical overview | + `USER_JOURNEY.md` |
+
+---
+
+## 2b. LEGACY REFERENCE CODEBASE
+
+The original NFStay blockchain app (the working version on app.nfstay.com) lives at:
+
+**Local path:** `/Users/hugo/Downloads/AI Folder/openclaw/nfstay-org/`
+**GitHub:** `https://github.com/NFsTay-Organization/nfstay`
+
+This is the **reference implementation** — all smart contract interactions, ABIs, subgraph queries, wallet connection, boost/farm logic, agent commission tracking, and rent claiming are working in this codebase. When building the investment module, **always check how the legacy app does it first** before writing new code.
+
+### Key reference files
+
+| File | What it contains |
+|------|-----------------|
+| `frontend/src/config.js` | All contract addresses, Graph endpoints, Particle credentials, API URLs |
+| `frontend/src/context/NfstayContext.jsx` | ALL contract interaction functions (buy, sell, boost, vote, claim, withdraw, balances) |
+| `frontend/src/context/subgraphHelper.js` | ALL Graph queries (sales, commissions, rent, proposals, agents, leaderboard) |
+| `frontend/src/utils/abis.js` | ALL contract ABIs (marketplace, RWA, voting, rent, booster, farm, router, ERC20) |
+| `frontend/src/context/helper.js` | Utility functions (encoding, formatting, validation) |
+| `frontend/src/app/portfolio/` | Boost UI: currentApr.js, boostedApr.js, boostedCheckout.js, stayEarned.js, congrats.js |
+| `frontend/src/app/agentHub/` | Agent dashboard: agent.js, analytics.js, properties.js, revenue.js, recentTransaction.js, agentPerformanceFee.js |
+| `frontend/src/app/payouts/` | Payout UI: rentalYieldModal.js (claim flow with 3 options), offRamp.js (Transak fiat off-ramp) |
+| `frontend/src/app/details/payment.js` | Share purchase flow: amount input, card/crypto toggle, SamCart iframe, approval flow |
+| `frontend/src/app/admin/` | Admin panel: orders, subscriptions, rewards, commissions, boost control, rent distribution, notifications |
+| `backend/routes/samcartRoute.js` | SamCart webhook handler: receives payment → extracts wallet/property → calls sendPrimaryShares on-chain |
+| `backend/routes/adminRoute.js` | Admin functions: complete-order, update-order |
+| `backend/models/` | MongoDB models: user, order, subscription, reward |
+
+**Rule:** When implementing any blockchain feature, first read how the legacy app does it, then adapt for our stack (React + Supabase instead of Next.js + MongoDB). The contract calls and ABIs are identical — only the frontend framework and database differ.
 
 ---
 
@@ -94,7 +149,10 @@ Never push directly to main. Hugo merges when ready.
 | Date | Change | Docs Updated |
 |------|--------|-------------|
 | 2026-03-18 | Initial creation — all 12 docs | All |
-| 2026-03-18 | Added Revolut payout system — 3 new tables (user_bank_accounts, payout_claims, payout_audit_log), removed aff_payout_requests, added Tuesday batch workflow, added 3 Edge Functions | DATABASE.md, INTEGRATIONS.md, ARCHITECTURE.md, STACK.md, AGENT_INVESTMENT_INSTRUCTIONS.md |
+| 2026-03-18 | Added Revolut payout system — 3 new tables, removed aff_payout_requests, Tuesday batch workflow, 3 Edge Functions | DATABASE.md, INTEGRATIONS.md, ARCHITECTURE.md, STACK.md, AGENT_INVESTMENT_INSTRUCTIONS.md |
+| 2026-03-18 | Added PAYOUT_FLOW.md — complete crypto + bank payout documentation | PAYOUT_FLOW.md |
+| 2026-03-18 | Added USER_JOURNEY.md — simple English overview of every flow | USER_JOURNEY.md |
+| 2026-03-18 | Updated document index to list all 14 docs + added legacy reference codebase section | AGENT_INVESTMENT_INSTRUCTIONS.md |
 
 ---
 
