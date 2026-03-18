@@ -355,6 +355,46 @@ export interface NfsStripeAccount {
   updated_at: string;
 }
 
+export interface NfsHospitableConnection {
+  id: string;
+  profile_id: string;
+  operator_id: string;
+
+  // Hospitable identity
+  hospitable_customer_id: string;
+  hospitable_connection_id: string | null;
+  channel_info: Record<string, unknown>;
+
+  // OAuth
+  auth_code: string | null;
+  auth_code_expires_at: string | null;
+
+  // Connection status
+  status: 'pending' | 'connected' | 'disconnected' | 'failed';
+  is_active: boolean;
+  connected_at: string | null;
+  disconnected_at: string | null;
+
+  // Sync state
+  last_sync_at: string | null;
+  sync_status: 'pending' | 'syncing' | 'completed' | 'failed';
+  user_metadata: Record<string, unknown>;
+  connected_platforms: unknown[];
+  total_properties: number;
+  total_reservations: number;
+  last_sync_results: Record<string, unknown>;
+  sync_progress: Record<string, unknown>;
+
+  // Health monitoring
+  health_status: 'healthy' | 'warning' | 'error';
+  last_health_check: string | null;
+  last_sync_error: string | null;
+  last_error: unknown | null;
+
+  created_at: string;
+  updated_at: string;
+}
+
 export interface NfsWebhookEvent {
   id: string;
   source: 'stripe' | 'stripe_connect' | 'hospitable';
