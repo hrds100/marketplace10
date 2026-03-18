@@ -103,7 +103,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     const funded = 64;
     return (
       <div
-        className="bg-card rounded-2xl overflow-hidden border-[1.5px] h-full flex flex-col"
+        className="bg-card rounded-2xl overflow-hidden border-[1.5px] flex flex-col"
         style={{
           borderColor: '#C9A842',
           boxShadow: '0 4px 24px rgba(191,149,63,0.15)',
@@ -167,6 +167,10 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           </div>
           <div className="flex justify-between items-center pt-2 mt-2 border-t border-border/50">
             <span className="text-[11px] text-muted-foreground">Added {listing.daysAgo} days ago</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#C9A842' }} />
+              <span className="text-[11px] font-medium" style={{ color: '#C9A842' }}>Live</span>
+            </div>
           </div>
         </div>
       </div>
@@ -175,7 +179,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
 
   // ─── REGULAR CARD ────────────────────────────────────
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover h-full flex flex-col">
+    <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover flex flex-col">
       <div className="relative h-[200px] overflow-hidden">
         <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy" className="w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
