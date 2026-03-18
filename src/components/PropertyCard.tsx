@@ -205,7 +205,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         <div className="mt-3 space-y-0">
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
             <span className="text-xs text-muted-foreground">Monthly rent</span>
-            <span className="text-[13px] font-medium text-foreground">£{listing.rent.toLocaleString()} / month</span>
+            <span className="text-[13px] font-medium text-foreground">£{listing.rent.toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
             <span className="text-xs text-muted-foreground">Est. monthly profit</span>
