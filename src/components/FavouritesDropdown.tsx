@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Heart } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -66,20 +66,35 @@ export default function FavouritesDropdown() {
   };
 
   const count = favourites.size;
+  const [flashBadge, setFlashBadge] = useState(false);
+  const prevCountRef = useRef(count);
+
+  // Flash red badge for 2 seconds when count increases
+  useEffect(() => {
+    if (count > prevCountRef.current) {
+      setFlashBadge(true);
+      const timer = setTimeout(() => setFlashBadge(false), 2000);
+      return () => clearTimeout(timer);
+    }
+    prevCountRef.current = count;
+  }, [count]);
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`relative p-2 rounded-lg transition-all duration-200 ${
-          open ? 'text-red-500 bg-red-50' : 'text-muted-foreground hover:text-red-500 hover:bg-red-50'
+        className={`relative flex items-center gap-1 p-2 rounded-lg transition-all duration-200 ${
+          open ? 'text-red-500 bg-red-50' : 'text-muted-foreground hover:text-muted-foreground/80'
         }`}
         title="Favourites"
       >
-        <Heart className="w-[18px] h-[18px]" strokeWidth={1.8} fill={open || count > 0 ? 'currentColor' : 'none'} />
-        {count > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-            {count > 9 ? '9+' : count}
+        <Heart className="w-[18px] h-[18px]" strokeWidth={1.8} fill={open ? 'currentColor' : 'none'} />
+        {count > 0 && !open && (
+          <span className="text-[11px] font-medium text-muted-foreground">{count}</span>
+        )}
+        {flashBadge && (
+          <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center animate-in zoom-in duration-200">
+            {count}
           </span>
         )}
       </button>
