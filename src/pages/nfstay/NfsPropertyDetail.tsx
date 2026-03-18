@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { NFS_ROUTES, NFS_PROPERTY_TYPES, NFS_RENTAL_TYPES, NFS_CANCELLATION_POLICIES, NFS_AMENITY_CATEGORIES } from '@/lib/nfstay/constants';
 import NfsPhotoGallery from '@/components/nfstay/properties/NfsPhotoGallery';
 import NfsPhotoUpload from '@/components/nfstay/properties/NfsPhotoUpload';
+import PropertyCalendars from '@/components/nfstay/properties/PropertyCalendars';
 import { ChevronLeft, Trash2 } from 'lucide-react';
 import type { NfsProperty, NfsPropertyImage } from '@/lib/nfstay/types';
 
@@ -20,7 +21,7 @@ const STATUS_COLORS: Record<string, string> = {
   archived: 'bg-red-100 text-red-700',
 };
 
-type Tab = 'overview' | 'details' | 'photos' | 'availability' | 'pricing';
+type Tab = 'overview' | 'details' | 'photos' | 'availability' | 'pricing' | 'calendars';
 
 export default function NfsPropertyDetail() {
   const { id } = useParams<{ id: string }>();
@@ -92,6 +93,7 @@ export default function NfsPropertyDetail() {
     { key: 'photos', label: 'Photos' },
     { key: 'availability', label: 'Availability' },
     { key: 'pricing', label: 'Pricing' },
+    { key: 'calendars', label: 'Calendars' },
   ];
 
   const title = property.public_title || property.internal_title || 'Untitled Property';
@@ -187,11 +189,14 @@ export default function NfsPropertyDetail() {
               <p className="font-medium text-sm">{property.minimum_stay} nights</p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Calendar management coming in Phase 3.</p>
+          <p className="text-xs text-muted-foreground">Manage iCal feeds and blocked dates in the Calendars tab.</p>
         </div>
       )}
       {activeTab === 'pricing' && (
         <PricingTab property={property} onUpdate={async (fields) => { await update(property.id, fields); refetch(); }} saving={saving} />
+      )}
+      {activeTab === 'calendars' && (
+        <PropertyCalendars property={property} onUpdate={async (fields) => { await update(property.id, fields); refetch(); }} saving={saving} />
       )}
     </div>
   );
