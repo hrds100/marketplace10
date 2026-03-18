@@ -30,8 +30,8 @@ Set via `npx supabase secrets set KEY=VALUE` or Supabase Dashboard.
 | Secret | Purpose | Status |
 |--------|---------|--------|
 | `NFS_STRIPE_SECRET_KEY` | Stripe API (server-side) | **SET** (test key) |
-| `NFS_STRIPE_WEBHOOK_SECRET` | Verify Stripe platform webhooks | Pending — create webhook endpoint in Stripe Dashboard first |
-| `NFS_STRIPE_CONNECT_WEBHOOK_SECRET` | Verify Stripe Connect webhooks | Pending — create webhook endpoint in Stripe Dashboard first |
+| `NFS_STRIPE_WEBHOOK_SECRET` | Verify Stripe platform webhooks | **SET** (test) |
+| `NFS_STRIPE_CONNECT_WEBHOOK_SECRET` | Verify Stripe Connect webhooks | **SET** (test) |
 | `NFS_STRIPE_CLIENT_ID` | Stripe Connect OAuth | **SET** (test) |
 | `NFS_HOSPITABLE_PARTNER_ID` | Hospitable partner API | Captured from VPS |
 | `NFS_HOSPITABLE_PARTNER_SECRET` | Hospitable partner API | Captured from VPS |
