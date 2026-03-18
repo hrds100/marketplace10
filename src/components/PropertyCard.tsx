@@ -102,9 +102,9 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   if (isPrime) {
     const funded = 64;
     return (
-      <>
+      <div>
       <div
-        className="bg-card rounded-2xl overflow-hidden border-[1.5px] h-full flex flex-col"
+        className="bg-card rounded-2xl overflow-hidden border-[1.5px] flex flex-col"
         style={{
           borderColor: '#C9A842',
           boxShadow: '0 4px 24px rgba(191,149,63,0.15)',
@@ -172,14 +172,14 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       <div className="flex justify-between items-center px-1 pt-1.5">
         <span className="text-[11px] text-muted-foreground">Added {listing.daysAgo} days ago</span>
       </div>
-      </>
+      </div>
     );
   }
 
   // ─── REGULAR CARD ────────────────────────────────────
   return (
-    <>
-    <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover h-full flex flex-col">
+    <div>
+    <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover flex flex-col">
       <div className="relative h-[200px] overflow-hidden">
         <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy" className="w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
@@ -260,6 +260,6 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         <span className="text-[11px] text-muted-foreground capitalize">{listing.daysAgo <= 7 ? 'Live' : listing.daysAgo <= 14 ? 'Under offer' : 'Expired'}</span>
       </div>
     </div>
-    </>
+    </div>
   );
 }
