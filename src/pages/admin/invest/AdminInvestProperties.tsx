@@ -255,7 +255,7 @@ export default function AdminInvestProperties() {
           {editing && (
             <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 mb-2">
               <div className="flex items-center gap-2 mb-3">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
                   From Blockchain — read only
                 </span>
@@ -272,7 +272,7 @@ export default function AdminInvestProperties() {
                 ].map(({ label, value }) => (
                   <div key={label} className="rounded-lg bg-background/60 border border-emerald-500/20 px-3 py-2">
                     <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                      <span className="w-1 h-1 rounded-full bg-emerald-500 inline-block" />
                       {label}
                     </p>
                     <p className="text-sm font-semibold text-foreground">{value}</p>
