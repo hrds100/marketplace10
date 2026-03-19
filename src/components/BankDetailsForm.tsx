@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Building2 } from 'lucide-react';
+import { CheckCircle2, Building2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
+  const { user } = useAuth();
   const [currency, setCurrency] = useState<'GBP' | 'EUR'>('GBP');
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     accountName: '',
     accountNumber: '',
@@ -15,9 +20,32 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
     country: 'GB',
   });
 
-  const handleSave = () => {
-    setSaved(true);
-    onSave?.();
+  const handleSave = async () => {
+    if (!user?.id || !form.accountName) return;
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('save-bank-details', {
+        body: {
+          user_id: user.id,
+          currency,
+          account_name: form.accountName,
+          sort_code: currency === 'GBP' ? form.sortCode : null,
+          account_number: currency === 'GBP' ? form.accountNumber : null,
+          iban: currency === 'EUR' ? form.iban : null,
+          bic: currency === 'EUR' ? form.bic : null,
+          bank_country: form.country,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setSaved(true);
+      toast.success('Bank details saved successfully');
+      onSave?.();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save bank details');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (saved) {
@@ -142,9 +170,9 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
         </select>
       </div>
 
-      <Button className="w-full" onClick={handleSave} disabled={!form.accountName}>
-        <Building2 className="h-4 w-4 mr-2" />
-        Save Bank Details
+      <Button className="w-full" onClick={handleSave} disabled={!form.accountName || saving}>
+        {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Building2 className="h-4 w-4 mr-2" />}
+        {saving ? 'Saving...' : 'Save Bank Details'}
       </Button>
 
       <p className="text-[11px] text-muted-foreground text-center">

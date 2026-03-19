@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Shield, CreditCard, Bell, LogOut, Wallet } from 'lucide-react';
+import { useWallet } from '@/hooks/useWallet';
 import BankDetailsForm from '@/components/BankDetailsForm';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,6 +40,7 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState({ name: '', email: '', whatsapp: '' });
   const [saving, setSaving] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', new_pw: '', confirm: '' });
+  const { address: walletAddress, connected: walletConnected, connect: connectWallet, connecting } = useWallet();
   const [notifs, setNotifs] = useState<NotifPrefs>(defaultNotifs);
 
   // Load profile + notification prefs
@@ -375,13 +377,28 @@ export default function SettingsPage() {
               {/* Wallet Address */}
               <div className="max-w-[480px] mb-8">
                 <h3 className="text-sm font-bold text-foreground mb-3">Wallet Address</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-semibold text-foreground block mb-1.5">EVM Wallet Address</label>
-                    <input placeholder="0x..." className="input-nfstay w-full" />
-                    <p className="text-[11px] text-muted-foreground mt-1">Connected via Particle</p>
-                  </div>
-                  <button className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Save Wallet</button>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Wallet Address</label>
+                  {walletConnected && walletAddress ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={walletAddress}
+                        readOnly
+                        className="flex-1 h-11 rounded-[10px] border border-border bg-muted/50 px-3.5 text-sm font-mono"
+                      />
+                      <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Connected</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => connectWallet().catch(() => {})}
+                      disabled={connecting}
+                      className="h-11 px-6 rounded-[10px] bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {connecting ? 'Connecting...' : 'Connect Wallet'}
+                    </button>
+                  )}
+                  <p className="text-[11px] text-muted-foreground">Connect your wallet to receive crypto payouts (USDC, STAY tokens)</p>
                 </div>
               </div>
 

@@ -158,7 +158,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
                 Partner Now <Zap className="w-4 h-4" />
               </button>
             ) : (
-              <Link to={`/deals/${listing.id}`}
+              <Link to="/dashboard/invest/marketplace"
                 className="w-full h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
                 style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
                 Partner Now <Zap className="w-4 h-4" />
