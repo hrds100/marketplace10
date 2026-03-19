@@ -26,13 +26,19 @@ async function provisionWallet(userId: string) {
   try {
     // 1. Check if wallet already exists
     const { data } = await (supabase.from('profiles') as any)
-      .select('wallet_address')
+      .select('wallet_address, wallet_change_allowed_until')
       .eq('id', userId)
       .single();
 
     if (data?.wallet_address) {
       console.log('[WalletProvisioner] Wallet exists:', data.wallet_address);
-      return; // Already has wallet
+      return; // Already has wallet — NEVER overwrite (may be manually set legacy wallet)
+    }
+
+    // Also skip if wallet change was recently granted (user is managing their own wallet)
+    if (data?.wallet_change_allowed_until && new Date(data.wallet_change_allowed_until) > new Date()) {
+      console.log('[WalletProvisioner] Wallet change window active — skipping auto-creation');
+      return;
     }
 
     console.log('[WalletProvisioner] No wallet — starting creation...');

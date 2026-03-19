@@ -37,8 +37,10 @@ export function useWallet() {
             chainId: 56,
           });
         } else if (!retryAttemptedRef.current) {
-          // No wallet — try creating one from stored JWT (silent retry)
+          // No wallet in DB — try creating one from Particle (silent, only once)
           retryAttemptedRef.current = true;
+          // Clear any stale JWT to prevent overwriting a manually-set wallet later
+          try { sessionStorage.removeItem('particle_jwt'); } catch { /* skip */ }
           retryWalletCreation(user.id);
         }
       });
@@ -67,6 +69,16 @@ export function useWallet() {
 
       const address = await createParticleWallet(jwt);
       if (address) {
+        // Only save if wallet is still empty — NEVER overwrite a manually-set wallet
+        const { data: currentProfile } = await (supabase.from('profiles') as any)
+          .select('wallet_address')
+          .eq('id', userId)
+          .single();
+        if (currentProfile?.wallet_address) {
+          console.log('Wallet already set, skipping overwrite:', currentProfile.wallet_address);
+          destroyIframe();
+          return;
+        }
         await (supabase.from('profiles') as any)
           .update({ wallet_address: address })
           .eq('id', userId);
