@@ -87,9 +87,7 @@ export default function NfsMainNavbar() {
               </div>
 
               <a
-                href="https://hub.nfstay.com/nfstay"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/nfstay"
                 className="hidden sm:flex px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium bg-gradient-to-r from-purple-600 to-teal-500 text-white rounded-full hover:opacity-90 transition-opacity"
               >
                 List Your Property
@@ -130,9 +128,7 @@ export default function NfsMainNavbar() {
             </div>
             <div className="border-t border-gray-100 bg-gradient-to-r from-purple-50/50 to-green-50/50 py-4 sm:py-6 px-4 sm:px-6 space-y-3 sm:space-y-4">
               <a
-                href="https://hub.nfstay.com/nfstay"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/nfstay"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block w-full px-4 py-3 font-medium bg-gradient-to-r from-purple-600 to-teal-500 text-white rounded-xl hover:opacity-90 transition-opacity duration-200 shadow-lg text-center"
               >
@@ -175,7 +171,7 @@ export default function NfsMainNavbar() {
         <div className="p-4">
           {[
             { name: 'Find Stays', desc: 'Browse vacation rentals', href: '/search' },
-            { name: 'List Property', desc: 'Create your booking site free', href: 'https://hub.nfstay.com/nfstay' },
+            { name: 'List Property', desc: 'Create your booking site free', href: '/nfstay' },
           ].map((item) => (
             <a
               key={item.name}

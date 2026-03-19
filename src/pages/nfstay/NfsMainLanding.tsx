@@ -178,9 +178,7 @@ export default function NfsMainLanding() {
             booking. You stay in control: your brand, your guests, your income.
           </p>
           <a
-            href="https://hub.nfstay.com/nfstay"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/nfstay"
             className="inline-flex items-center px-8 py-3 bg-white text-purple-700 font-semibold rounded-full hover:bg-gray-50 transition-colors shadow-lg"
           >
             Get Started Free

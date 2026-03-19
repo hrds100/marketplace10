@@ -12,13 +12,31 @@ import NfsWlSearch from '@/pages/nfstay/white-label/NfsWlSearch';
 import NfsWlProperty from '@/pages/nfstay/white-label/NfsWlProperty';
 import NfsWlPaymentSuccess from '@/pages/nfstay/white-label/NfsWlPaymentSuccess';
 import NfsWlPaymentCancel from '@/pages/nfstay/white-label/NfsWlPaymentCancel';
-// Main site pages — nfstay.app
+// Main site pages — nfstay.app traveler-facing
 import NfsMainLayout from '@/components/nfstay/main-site/NfsMainLayout';
 import NfsMainLanding from '@/pages/nfstay/NfsMainLanding';
 import NfsSearch from '@/pages/nfstay/NfsSearch';
 import NfsPropertyView from '@/pages/nfstay/NfsPropertyView';
 import NfsPaymentSuccess from '@/pages/nfstay/NfsPaymentSuccess';
 import NfsPaymentCancel from '@/pages/nfstay/NfsPaymentCancel';
+// Operator dashboard — also accessible from nfstay.app/nfstay
+import NfsOperatorLayout from '@/components/nfstay/NfsOperatorLayout';
+import NfsOperatorDashboard from '@/pages/nfstay/NfsOperatorDashboard';
+import NfsOnboarding from '@/pages/nfstay/NfsOnboarding';
+import NfsOperatorSettings from '@/pages/nfstay/NfsOperatorSettings';
+import NfsProperties from '@/pages/nfstay/NfsProperties';
+import NfsPropertyNew from '@/pages/nfstay/NfsPropertyNew';
+import NfsPropertyDetail from '@/pages/nfstay/NfsPropertyDetail';
+import NfsReservations from '@/pages/nfstay/NfsReservations';
+import NfsReservationDetail from '@/pages/nfstay/NfsReservationDetail';
+import NfsCreateReservation from '@/pages/nfstay/NfsCreateReservation';
+import NfsAnalytics from '@/pages/nfstay/NfsAnalytics';
+// Auth — needed so operators can sign in from nfstay.app
+import SignIn from '@/pages/SignIn';
+import SignUp from '@/pages/SignUp';
+import VerifyOtp from '@/pages/VerifyOtp';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
 
 interface Props {
   /** Normal app routes (marketplace10 + NFStay operator) */
@@ -37,18 +55,47 @@ export default function NfsWhiteLabelRouter({ children }: Props) {
     );
   }
 
-  // nfstay.app → render main site with layout (navbar + footer)
+  // nfstay.app → render main site (traveler pages) + operator dashboard + auth
   if (isMainSite) {
     return (
       <Routes>
+        {/* ── Traveler-facing pages — wrapped in NfsMainLayout (navbar + footer) ── */}
         <Route element={<NfsMainLayout />}>
           <Route index element={<NfsMainLanding />} />
           <Route path="/search" element={<NfsSearch />} />
           <Route path="/property/:id" element={<NfsPropertyView />} />
           <Route path="/payment/success" element={<NfsPaymentSuccess />} />
           <Route path="/payment/cancel" element={<NfsPaymentCancel />} />
-          <Route path="*" element={<NfsMainLanding />} />
         </Route>
+
+        {/* ── Auth pages — standalone (no main layout) ── */}
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/verify-otp" element={<VerifyOtp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* ── Operator dashboard — nfstay.app/nfstay/* ── */}
+        <Route path="/nfstay" element={<NfsOperatorLayout />}>
+          <Route index element={<NfsOperatorDashboard />} />
+          <Route path="onboarding" element={<NfsOnboarding />} />
+          <Route path="properties" element={<NfsProperties />} />
+          <Route path="properties/new" element={<NfsPropertyNew />} />
+          <Route path="properties/:id" element={<NfsPropertyDetail />} />
+          <Route path="reservations" element={<NfsReservations />} />
+          <Route path="reservations/:id" element={<NfsReservationDetail />} />
+          <Route path="create-reservation" element={<NfsCreateReservation />} />
+          <Route path="settings" element={<NfsOperatorSettings />} />
+          <Route path="analytics" element={<NfsAnalytics />} />
+        </Route>
+        {/* Traveler-facing nfstay search/property (standalone, no operator layout) */}
+        <Route path="/nfstay/search" element={<NfsSearch />} />
+        <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
+        <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />
+        <Route path="/nfstay/payment/cancel" element={<NfsPaymentCancel />} />
+
+        {/* ── Fallback ── */}
+        <Route path="*" element={<NfsMainLanding />} />
       </Routes>
     );
   }
