@@ -11,14 +11,14 @@
 
 ## Quick Answer: What's Missing?
 
-Only **2 items** remain:
+**All integration items are complete.**
 
-| Item | Status | Blocker |
-|------|--------|---------|
-| SamCart API key | Waiting | Email sent to support@samcart.com — they must reply with the key |
-| Particle wallet creation | Deferred | SDK alpha breaks Vite build. JWT infrastructure ready. Needs stable SDK or server-side approach |
+| Item | Status | Date |
+|------|--------|------|
+| SamCart API key | LIVE | 2026-03-19 — key received, set in Supabase secrets, Edge Function redeployed |
+| Particle wallet creation | LIVE | 2026-03-19 — uses auth-core directly (no React wrapper), lazy-loaded, auto-creates at signup |
 
-**Everything else is built, deployed, and live.**
+**Everything is built, deployed, and live.**
 
 ---
 
@@ -117,11 +117,13 @@ Admin workspace selector at `/admin` — 3 workspaces: Marketplace / Investments
 - Webhook registered for payment events
 - 23 accounts accessible
 
-### SamCart ✅ WEBHOOK CONFIGURED (API key missing)
+### SamCart ✅ FULLY LIVE
 - Webhook URL: `https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/inv-samcart-webhook`
-- 2 rules: Checkout Charged + Product Refunded (product-specific for hub.com.investment)
+- 3 rules configured: Checkout Charged + Product Purchased + Product Refunded
 - Legacy webhook ("Notify URL 1") untouched — still serves app.nfstay.com
-- ❌ **SAMCART_API_KEY not received yet** — email sent to support@samcart.com
+- `SAMCART_API_KEY` set in Supabase secrets (2026-03-19)
+- 51 products visible via API (share packages from $100 to $5000 + subscriptions)
+- Edge Function handles both legacy flow (API validation) and direct payload flow
 
 ### GHL (GoHighLevel) ✅ CONNECTED
 - Location: `eFBsWXY3BmWDGIRez13x` (NFsTay)
@@ -130,7 +132,7 @@ Admin workspace selector at `/admin` — 3 workspaces: Marketplace / Investments
 - WhatsApp notifications working (tested with Hugo's contact)
 - Hugo's GHL contact ID: `bXRhraG8yIBwrmCtzfyB`
 
-### Particle Network ⚠️ PARTIAL
+### Particle Network ✅ FULLY LIVE
 - **Project:** NFsTay Investment (new, separate from legacy)
 - Project ID: `470629ca-91af-45fa-a52b-62ed2adf9ef0`
 - Client Key: `cTHFOA18eAs4iRrkgn8lG1QARC8HFkkv5jeYQPc1`
@@ -138,9 +140,10 @@ Admin workspace selector at `/admin` — 3 workspaces: Marketplace / Investments
 - App ID: `a82d525c-85da-4786-a0ed-e4cf110c8377` (Web, domain: hub.nfstay.com)
 - JWKS endpoint deployed + configured in Particle dashboard
 - JWT generator deployed
-- ❌ **Client SDK (`@particle-network/connectkit` / `authkit`) breaks Vite build** — alpha version incompatibility
-- `ParticleProvider` is a pass-through wrapper (no-op) to prevent app crash
-- Wallet creation deferred to when stable SDK is available or server-side API approach
+- **Wallet creation LIVE** (2026-03-19): uses `@particle-network/auth-core` directly (bypasses AuthCoreContextProvider which crashed in Vite). Lazy-loaded 1MB chunk, auto-creates wallet at signup via `WalletProvisioner` in DashboardLayout
+- `ParticleProvider` remains as pass-through wrapper (safe, no-op)
+- CSS overrides in `index.css` hide Particle modal overlays (pn-modal, pn-auth) to prevent click-blocking
+- See `docs/invest/WALLET_ARCHITECTURE.md` for full flow, security model, and troubleshooting
 
 ### The Graph ✅ DEPLOYED + INDEXING
 - Voting: `https://api.studio.thegraph.com/query/95498/votingnfstay/version/latest`
@@ -209,7 +212,7 @@ All contract ABIs in `src/lib/contractAbis.ts`.
 | `PARTICLE_SERVER_KEY` | ✅ |
 | `RESEND_API_KEY` | ✅ |
 | `NFS_RESEND_API_KEY` | ✅ |
-| `SAMCART_API_KEY` | ❌ MISSING — waiting for SamCart support |
+| `SAMCART_API_KEY` | ✅ |
 
 ---
 
@@ -218,7 +221,7 @@ All contract ABIs in `src/lib/contractAbis.ts`.
 | File | Status | Notes |
 |------|--------|-------|
 | `src/hooks/useInvestData.ts` | ✅ | 20+ React Query hooks for all invest tables |
-| `src/hooks/useWallet.ts` | ✅ | Wallet connect (MetaMask fallback, Particle deferred) |
+| `src/hooks/useWallet.ts` | ✅ | Wallet connect (Particle auto-create + MetaMask fallback + retry) |
 | `src/hooks/useCryptoPurchase.ts` | ✅ | Full crypto purchase flow |
 | `src/hooks/useBlockchain.ts` | ✅ | All smart contract read/write calls |
 | `src/lib/particle.ts` | ✅ | Contract addresses, ABIs, config, subgraph endpoints |
