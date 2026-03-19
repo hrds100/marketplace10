@@ -28,13 +28,13 @@ const workspaces = [
   {
     id: 'booking',
     title: 'Booking Site',
-    description: 'Vacation rental booking management',
+    description: 'NFStay reservations, properties, operators',
     icon: Globe,
-    to: '/admin/booking',
+    to: '/admin/nfstay',
     color: 'text-blue-500',
     bg: 'bg-blue-500/10',
-    border: 'border-blue-500/20',
-    active: false,
+    border: 'border-blue-500/20 hover:border-blue-500/40',
+    active: true,
   },
   {
     id: 'architecture',

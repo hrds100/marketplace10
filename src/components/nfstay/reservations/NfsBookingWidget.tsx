@@ -1,13 +1,15 @@
+// NFStay Booking Widget — sticky sidebar on property detail
+// Checks availability, shows pricing, then navigates to /checkout for contact info + payment
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { NfsProperty } from '@/lib/nfstay/types';
 import { useNfsAvailability } from '@/hooks/nfstay/use-nfs-availability';
 import { useNfsPricing } from '@/hooks/nfstay/use-nfs-pricing';
-import { useNfsStripeCheckout } from '@/hooks/nfstay/use-nfs-stripe';
-import { useNfsReservationMutation } from '@/hooks/nfstay/use-nfs-reservation-mutation';
 import NfsPromoCodeInput from './NfsPromoCodeInput';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader2, ArrowRight } from 'lucide-react';
+import { storeBookingIntent } from '@/pages/nfstay/NfsCheckoutPage';
 
 interface Props {
   property: NfsProperty;
@@ -16,19 +18,15 @@ interface Props {
 }
 
 export default function NfsBookingWidget({ property, bookingSource = 'main_platform', operatorDomain }: Props) {
+  const navigate = useNavigate();
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
-  const [guestEmail, setGuestEmail] = useState('');
-  const [guestFirstName, setGuestFirstName] = useState('');
   const { available, checking, error: availError, checkAvailability } = useNfsAvailability();
   const { pricing, setPromoDiscount } = useNfsPricing(property, checkIn, checkOut, adults, children);
-  const { creating: checkoutLoading, error: checkoutError, createCheckoutSession } = useNfsStripeCheckout();
-  const { createReservation, creating: reservationCreating } = useNfsReservationMutation();
 
   const minDate = new Date().toISOString().split('T')[0];
-  const isBooking = checkoutLoading || reservationCreating;
 
   const handleCheckAvailability = async () => {
     if (!checkIn || !checkOut) return;
@@ -39,54 +37,32 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
     setPromoDiscount(discount || undefined);
   };
 
-  const handleBookNow = async () => {
-    if (!pricing || !checkIn || !checkOut || !guestEmail) return;
-
-    try {
-      // Create reservation first
-      const reservation = await createReservation({
-        property_id: property.id,
-        operator_id: property.operator_id,
-        check_in: checkIn,
-        check_out: checkOut,
-        check_in_time: property.check_in_time || '15:00',
-        check_out_time: property.check_out_time || '11:00',
-        adults,
-        children,
-        total_amount: pricing.total,
-        payment_currency: pricing.currency,
-        guest_email: guestEmail,
-        guest_first_name: guestFirstName || undefined,
-        booking_source: bookingSource,
-        operator_domain: operatorDomain || undefined,
-        status: 'pending',
-        payment_status: 'pending',
-      } as any);
-
-      if (!reservation?.id) return;
-
-      // Create checkout session and redirect
-      const url = await createCheckoutSession(reservation.id);
-      if (url) {
-        window.location.href = url;
-      }
-    } catch {
-      // Errors are handled in hooks
-    }
+  const handleReserve = () => {
+    storeBookingIntent({
+      propertyId: property.id,
+      checkIn,
+      checkOut,
+      adults,
+      children,
+      bookingSource,
+      operatorDomain,
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+    });
+    navigate('/checkout');
   };
 
   return (
-    <div className="sticky top-6 rounded-xl border border-border/40 bg-white dark:bg-card p-5 space-y-4">
+    <div className="sticky top-6 rounded-xl border border-border/40 bg-white dark:bg-card p-5 space-y-4 shadow-sm">
       {/* Price header */}
       <p className="text-2xl font-bold">
-        {property.base_rate_currency} {property.base_rate_amount}
+        {property.base_rate_currency} {property.base_rate_amount?.toFixed(2)}
         <span className="text-sm font-normal text-muted-foreground"> / night</span>
       </p>
 
       {/* Dates */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs text-muted-foreground">Check-in</label>
+          <label className="text-xs text-muted-foreground block mb-1">Check-in</label>
           <Input
             type="date"
             min={minDate}
@@ -95,7 +71,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
           />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground">Check-out</label>
+          <label className="text-xs text-muted-foreground block mb-1">Check-out</label>
           <Input
             type="date"
             min={checkIn || minDate}
@@ -108,7 +84,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
       {/* Guests */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs text-muted-foreground">Adults</label>
+          <label className="text-xs text-muted-foreground block mb-1">Adults</label>
           <Input
             type="number"
             min={1}
@@ -118,7 +94,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
           />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground">Children</label>
+          <label className="text-xs text-muted-foreground block mb-1">Children</label>
           <Input
             type="number"
             min={0}
@@ -131,6 +107,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
       {/* Check availability */}
       <Button
         className="w-full"
+        variant="outline"
         onClick={handleCheckAvailability}
         disabled={!checkIn || !checkOut || checking}
       >
@@ -141,7 +118,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
       {/* Availability result */}
       {availError && (
         <div className="flex items-center gap-2 text-sm text-red-600">
-          <AlertCircle className="w-4 h-4" /> {availError}
+          <AlertCircle className="w-4 h-4 flex-shrink-0" /> {availError}
         </div>
       )}
       {available === true && (
@@ -151,11 +128,11 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
       )}
       {available === false && (
         <div className="flex items-center gap-2 text-sm text-red-600">
-          <AlertCircle className="w-4 h-4" /> Not available — dates conflict with an existing booking.
+          <AlertCircle className="w-4 h-4 flex-shrink-0" /> Not available — those dates are already booked.
         </div>
       )}
 
-      {/* Pricing breakdown + booking form */}
+      {/* Pricing breakdown + Reserve button */}
       {pricing && available === true && (
         <div className="border-t border-border/40 pt-4 space-y-3">
           {pricing.lineItems.map((item, i) => (
@@ -169,7 +146,6 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
             </div>
           ))}
 
-          {/* Promo code */}
           <NfsPromoCodeInput onValidated={handlePromoValidated} />
 
           <div className="flex justify-between font-bold text-base border-t border-border/40 pt-2 mt-2">
@@ -177,41 +153,15 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
             <span>{pricing.currency} {pricing.total.toFixed(2)}</span>
           </div>
 
-          {/* Guest info for booking */}
-          <div className="space-y-2 pt-2">
-            <div>
-              <label className="text-xs text-muted-foreground">Your name</label>
-              <Input
-                placeholder="First name"
-                value={guestFirstName}
-                onChange={e => setGuestFirstName(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Your email *</label>
-              <Input
-                type="email"
-                placeholder="email@example.com"
-                value={guestEmail}
-                onChange={e => setGuestEmail(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {checkoutError && (
-            <div className="flex items-center gap-2 text-sm text-red-600">
-              <AlertCircle className="w-4 h-4" /> {checkoutError}
-            </div>
-          )}
-
           <Button
-            className="w-full mt-2"
-            onClick={handleBookNow}
-            disabled={isBooking || !guestEmail}
+            className="w-full mt-2 bg-gradient-to-r from-purple-600 to-teal-500 hover:opacity-90 border-0"
+            onClick={handleReserve}
           >
-            {isBooking ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            {isBooking ? 'Processing...' : `Book Now — ${pricing.currency} ${pricing.total.toFixed(2)}`}
+            Reserve Now <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
+          <p className="text-xs text-center text-muted-foreground">
+            You won't be charged yet — next step: confirm your details
+          </p>
         </div>
       )}
     </div>

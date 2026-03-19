@@ -24,7 +24,7 @@ export default function NfsPropertyView() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
         <h1 className="text-xl font-bold">Property not found</h1>
         <p className="text-sm text-muted-foreground">This property may have been removed or is no longer available.</p>
-        <Button variant="outline" onClick={() => navigate('/nfstay/search')}>
+        <Button variant="outline" onClick={() => navigate('/search')}>
           <ChevronLeft className="w-4 h-4 mr-1" /> Back to search
         </Button>
       </div>
@@ -42,7 +42,7 @@ export default function NfsPropertyView() {
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
         {/* Back nav */}
-        <Button variant="ghost" size="sm" onClick={() => navigate('/nfstay/search')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/search')}>
           <ChevronLeft className="w-4 h-4 mr-1" /> Back to search
         </Button>
 

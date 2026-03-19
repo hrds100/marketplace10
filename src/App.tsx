@@ -71,6 +71,10 @@ import NfsPropertyView from "./pages/nfstay/NfsPropertyView";
 import NfsPaymentSuccess from "./pages/nfstay/NfsPaymentSuccess";
 import NfsPaymentCancel from "./pages/nfstay/NfsPaymentCancel";
 import NfsAnalytics from "./pages/nfstay/NfsAnalytics";
+import NfsCheckoutPage from "./pages/nfstay/NfsCheckoutPage";
+import NfsGuestBookingLookup from "./pages/nfstay/NfsGuestBookingLookup";
+import AdminNfsReservations from "./pages/admin/nfstay/AdminNfsReservations";
+import AdminNfsProperties from "./pages/admin/nfstay/AdminNfsProperties";
 import NfsWhiteLabelProvider from "./components/nfstay/white-label/NfsWhiteLabelProvider";
 import NfsWhiteLabelRouter from "./components/nfstay/white-label/NfsWhiteLabelRouter";
 
@@ -184,8 +188,10 @@ const App = () => (
             <Route path="invest/boost" element={<AdminInvestBoost />} />
             <Route path="invest/endpoints" element={<AdminEndpoints />} />
 
-            {/* Booking workspace (placeholder) */}
-            <Route path="booking" element={<div className="text-center py-20"><h2 className="text-2xl font-bold mb-2">Booking Site Admin</h2><p className="text-muted-foreground">Coming Soon — Tajul is building this</p></div>} />
+            {/* Booking Site (NFStay) workspace */}
+            <Route path="nfstay" element={<AdminNfsReservations />} />
+            <Route path="nfstay/reservations" element={<AdminNfsReservations />} />
+            <Route path="nfstay/properties" element={<AdminNfsProperties />} />
 
             {/* Architecture overview */}
             <Route path="architecture" element={<AdminArchitecture />} />
@@ -209,6 +215,9 @@ const App = () => (
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
           <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />
           <Route path="/nfstay/payment/cancel" element={<NfsPaymentCancel />} />
+          {/* NFStay booking flow — available on hub too */}
+          <Route path="/checkout" element={<NfsCheckoutPage />} />
+          <Route path="/booking" element={<NfsGuestBookingLookup />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </NfsWhiteLabelRouter>
