@@ -15,20 +15,24 @@
 
 ## Auth & Onboarding
 
-### Operator sign-up
+### Operator activation (shared signup)
 ```
 Given I am a new user
-When I sign up with email and password
+When I sign up via the shared /signup flow
 Then a Supabase Auth account is created
 And a profiles row exists
+And a crypto wallet is provisioned (WalletProvisioner)
+And OTP verification is completed
+When I navigate to /nfstay for the first time
+Then NfsOperatorGuard detects no nfs_operators row
+And I am redirected to /nfstay/onboarding
 And an nfs_operators row is created with onboarding_step = 'account_setup'
-And I am redirected to the onboarding wizard
 ```
 
-### Operator login
+### Returning operator login
 ```
-Given I am an existing operator
-When I log in with valid credentials
+Given I am an existing operator with completed onboarding
+When I log in with valid credentials and navigate to /nfstay
 Then I see the NFStay operator dashboard
 And my nfs_operators data is loaded
 ```

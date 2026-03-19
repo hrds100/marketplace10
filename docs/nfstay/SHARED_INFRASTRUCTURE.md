@@ -41,9 +41,10 @@
 - **Middleware:** One `middleware.ts` handles routing for both modules
 
 ### What NFStay owns
-- Routes under `app/(nfstay)/`
+- Pages under `src/pages/nfstay/`, components under `src/components/nfstay/`
+- Routes registered in `src/App.tsx` under `/nfstay/*` (React Router)
 - Domains: `nfstay.app`, `*.nfstay.app` (added to same Vercel project)
-- NFStay-specific env vars (prefixed `NFS_` or `NEXT_PUBLIC_NFS_`)
+- NFStay-specific env vars (prefixed `NFS_` or `VITE_NFS_`)
 
 ### Assumptions
 - Vercel project supports wildcard domains (`*.nfstay.app`)
@@ -112,10 +113,10 @@
 
 ### What NFStay owns
 - `docs/nfstay/` directory
-- `app/(nfstay)/` route group
-- `components/nfstay/`, `hooks/nfstay/`, `lib/nfstay/` directories
+- `src/pages/nfstay/`, `src/components/nfstay/`, `src/hooks/nfstay/`, `src/lib/nfstay/` directories
 - `nfs-*` Edge Function files in `supabase/functions/`
 - `nfs_*` migration files in `supabase/migrations/`
+- `n8n-workflows/nfs-*` workflow JSON exports
 
 ### Assumptions
 - CI runs on all branches (catches NFStay TypeScript errors)
