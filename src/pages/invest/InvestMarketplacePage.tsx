@@ -126,12 +126,22 @@ const jvExamples = [
 // Invest Modal (fallback)
 // ---------------------------------------------------------------------------
 
+interface InvestModalProperty {
+  title: string;
+  pricePerShare: number;
+  totalShares: number;
+  monthlyRent: number;
+  annualYield: number;
+}
+
 function InvestModal({
   open,
   onOpenChange,
+  property,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  property: InvestModalProperty;
 }) {
   const [shares, setShares] = useState(1);
   const [confirmed, setConfirmed] = useState(false);
@@ -1533,7 +1543,7 @@ export default function InvestMarketplacePage() {
         setInitialCalcAmount={setInitialCalcAmount}
       />
 
-      <InvestModal open={investOpen} onOpenChange={setInvestOpen} />
+      <InvestModal open={investOpen} onOpenChange={setInvestOpen} property={property} />
     </div>
   );
 }

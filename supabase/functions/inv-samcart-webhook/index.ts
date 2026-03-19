@@ -198,14 +198,46 @@ serve(async (req) => {
       if (!propertyId) {
         const productName = orderData.cart_items?.[0]?.product_name || ''
         if (productName) {
+          // Strip share count prefix: "500 Shares - Pembroke" → "Pembroke"
+          const cleanProductName = productName
+            .replace(/^\d+\s*-?\s*shares?\s*-?\s*/i, '')
+            .replace(/^rent\s*2\s*rent\s*-\s*shares?\s*-?\s*/i, '')
+            .trim()
+
           const { data: matchedProp } = await supabase
             .from('inv_properties')
             .select('id')
-            .ilike('title', `%${productName}%`)
+            .or(`title.ilike.%${productName}%,title.ilike.%${cleanProductName}%`)
+            .limit(1)
             .maybeSingle()
-          propertyId = matchedProp?.id || 1
+
+          if (matchedProp) {
+            propertyId = matchedProp.id
+          } else {
+            const { data: firstProp } = await supabase
+              .from('inv_properties')
+              .select('id')
+              .eq('status', 'open')
+              .order('id', { ascending: true })
+              .limit(1)
+              .maybeSingle()
+            propertyId = firstProp?.id || null
+          }
         } else {
-          propertyId = 1
+          const { data: firstProp } = await supabase
+            .from('inv_properties')
+            .select('id')
+            .eq('status', 'open')
+            .order('id', { ascending: true })
+            .limit(1)
+            .maybeSingle()
+          propertyId = firstProp?.id || null
+        }
+
+        if (!propertyId) {
+          return new Response(JSON.stringify({ error: 'No active properties found' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
         }
       }
 
@@ -487,14 +519,46 @@ serve(async (req) => {
     let propertyId = propertyIdRaw ? Number(propertyIdRaw) : phonePropertyId
     if (!propertyId) {
       if (productName) {
+        // Strip share count prefix: "500 Shares - Pembroke" → "Pembroke"
+        const cleanProductName = productName
+          .replace(/^\d+\s*-?\s*shares?\s*-?\s*/i, '')
+          .replace(/^rent\s*2\s*rent\s*-\s*shares?\s*-?\s*/i, '')
+          .trim()
+
         const { data: matchedProp } = await supabase
           .from('inv_properties')
           .select('id')
-          .ilike('title', `%${productName}%`)
+          .or(`title.ilike.%${productName}%,title.ilike.%${cleanProductName}%`)
+          .limit(1)
           .maybeSingle()
-        propertyId = matchedProp?.id || 1
+
+        if (matchedProp) {
+          propertyId = matchedProp.id
+        } else {
+          const { data: firstProp } = await supabase
+            .from('inv_properties')
+            .select('id')
+            .eq('status', 'open')
+            .order('id', { ascending: true })
+            .limit(1)
+            .maybeSingle()
+          propertyId = firstProp?.id || null
+        }
       } else {
-        propertyId = 1
+        const { data: firstProp } = await supabase
+          .from('inv_properties')
+          .select('id')
+          .eq('status', 'open')
+          .order('id', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+        propertyId = firstProp?.id || null
+      }
+
+      if (!propertyId) {
+        return new Response(JSON.stringify({ error: 'No active properties found' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
       }
     }
 

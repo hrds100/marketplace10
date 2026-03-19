@@ -360,12 +360,9 @@ function ClaimModal({
   );
 }
 
-// ─── Property Images ────────────────────────────────────────────────────────────
+// ─── Property Image placeholder ─────────────────────────────────────────────────
 
-const payoutPropertyImages: Record<number, string> = {
-  1: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=200&q=80',
-  2: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=200&q=80',
-};
+const PROPERTY_PLACEHOLDER_IMAGE = '/placeholder.svg';
 
 // ─── Main Page Component ─────────────────────────────────────────────────────────
 
@@ -501,7 +498,7 @@ export default function InvestPayoutsPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={payoutPropertyImages[payout.propertyId] || ''}
+                          src={PROPERTY_PLACEHOLDER_IMAGE}
                           alt={payout.propertyTitle}
                           className="h-12 w-12 rounded-lg object-cover flex-shrink-0"
                         />
@@ -551,7 +548,7 @@ export default function InvestPayoutsPage() {
                       <TableCell className="text-sm">
                         <div className="flex items-center gap-2">
                           <img
-                            src={payoutPropertyImages[payout.propertyId] || ''}
+                            src={PROPERTY_PLACEHOLDER_IMAGE}
                             alt={payout.propertyTitle}
                             className="h-8 w-8 rounded object-cover flex-shrink-0"
                           />

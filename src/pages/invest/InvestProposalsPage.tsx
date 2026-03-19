@@ -37,6 +37,7 @@ type VoteChoice = 'yes' | 'no';
 interface ActiveProposal {
   id: string;
   propertyTitle: string;
+  propertyImage: string;
   propertyId: number;
   title: string;
   description: string;
@@ -53,6 +54,7 @@ interface ActiveProposal {
 interface PastProposal {
   id: string;
   propertyTitle: string;
+  propertyImage: string;
   propertyId: number;
   title: string;
   description: string;
@@ -76,6 +78,7 @@ interface VoteDialogState {
 interface ActiveProposalWithVote extends Omit<ActiveProposal, 'userVoted'> {
   votesYes: number;
   votesNo: number;
+  propertyImage: string;
   userVoted: VoteChoice | null;
 }
 
@@ -146,6 +149,7 @@ export default function InvestProposalsPage() {
     .map((p: any) => ({
       id: p.id,
       propertyTitle: p.inv_properties?.title || 'Property',
+      propertyImage: p.inv_properties?.image || '/placeholder.svg',
       propertyId: p.property_id,
       title: p.title,
       description: p.description || '',
@@ -185,6 +189,7 @@ export default function InvestProposalsPage() {
     .map((p: any) => ({
       id: p.id,
       propertyTitle: p.inv_properties?.title || 'Property',
+      propertyImage: p.inv_properties?.image || '/placeholder.svg',
       propertyId: p.property_id,
       title: p.title,
       description: p.description || '',
@@ -399,10 +404,7 @@ export default function InvestProposalsPage() {
 
   // ─── Version 1 Content ─────────────────────────────────────────────────
 
-  const proposalPropertyImages: Record<number, string> = {
-    1: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=200&q=80',
-    2: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=200&q=80',
-  };
+  const PROPERTY_PLACEHOLDER_IMAGE = '/placeholder.svg';
 
   const [filterType, setFilterType] = useState<string>('all');
   const filtered = filterType === 'all' ? activeProposals : activeProposals.filter((p) => p.type === filterType);
@@ -553,7 +555,7 @@ export default function InvestProposalsPage() {
                             <div className="flex flex-wrap items-center gap-2">
                               {/* Property image thumbnail */}
                               <img
-                                src={proposalPropertyImages[p.propertyId] || ''}
+                                src={p.propertyImage || PROPERTY_PLACEHOLDER_IMAGE}
                                 alt={p.propertyTitle}
                                 className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
                               />
