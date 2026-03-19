@@ -80,6 +80,48 @@ export default function VerifyOtp() {
       toastFiredRef.current = true;
       toast.success('WhatsApp verified! Welcome to NFsTay!');
     }
+
+    // Silently create Particle wallet via JWT (non-blocking)
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData?.user?.id;
+      if (userId) {
+        // 1. Get JWT from our Edge Function
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+        const jwtRes = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
+          body: JSON.stringify({ user_id: userId }),
+        });
+        const jwtData = await jwtRes.json();
+
+        if (jwtData.jwt) {
+          // 2. Connect to Particle with JWT — creates embedded wallet silently
+          try {
+            const { connect } = await import('@particle-network/connectkit').catch(() => ({ connect: null }));
+            if (connect) {
+              const result = await (connect as any)({ jwt: jwtData.jwt });
+              // 3. Save wallet address to profile
+              if (result?.address || result?.accounts?.[0]) {
+                const walletAddr = result.address || result.accounts[0];
+                await (supabase.from('profiles') as any)
+                  .update({ wallet_address: walletAddr })
+                  .eq('id', userId);
+              }
+            }
+          } catch (particleErr) {
+            // Particle connect might not be available in this context
+            // Try alternative: use Particle server-side API
+            console.log('Particle wallet creation deferred:', particleErr);
+          }
+        }
+      }
+    } catch (walletErr) {
+      // Never block signup flow if wallet creation fails
+      console.log('Wallet creation skipped (non-blocking):', walletErr);
+    }
+
     setTimeout(() => {
       window.location.href = '/dashboard/deals';
     }, 1500);
