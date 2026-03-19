@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useMyHoldings, useInvestProperties } from '@/hooks/useInvestData';
+import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -124,6 +126,7 @@ const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
 export default function InvestPortfolioPage() {
   const { data: realHoldings = [] } = useMyHoldings();
   const { data: realProperties = [] } = useInvestProperties();
+  const { boostApr, claimBoostRewards, loading: boostLoading } = useBlockchain();
 
   // Build real portfolio from Supabase data
   const realHoldingsData = realHoldings.length > 0 ? realHoldings : null;
@@ -550,10 +553,35 @@ export default function InvestPortfolioPage() {
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 pt-1">
-                          <Button size="sm" className="w-full bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white text-xs rounded-full">
+                          <Button
+                            size="sm"
+                            className="w-full bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white text-xs rounded-full"
+                            disabled={boostLoading}
+                            onClick={async () => {
+                              try {
+                                await boostApr(h.propertyId);
+                                toast.success('APR boosted successfully!');
+                              } catch (err) {
+                                toast.error('Boost failed — wallet may not be connected');
+                              }
+                            }}
+                          >
                             Boost APR {'\uD83D\uDE80'}
                           </Button>
-                          <Button size="sm" variant="outline" className="w-full text-xs rounded-full border-primary/30 text-primary hover:bg-primary/10">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full text-xs rounded-full border-primary/30 text-primary hover:bg-primary/10"
+                            disabled={boostLoading}
+                            onClick={async () => {
+                              try {
+                                await claimBoostRewards(h.propertyId);
+                                toast.success('STAY rewards claimed!');
+                              } catch (err) {
+                                toast.error('Claim failed — no rewards available');
+                              }
+                            }}
+                          >
                             Claim
                           </Button>
                         </div>

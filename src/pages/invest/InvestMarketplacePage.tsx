@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { mockProperties } from '@/data/investMockData';
 import { useInvestProperty } from '@/hooks/useInvestData';
+import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -103,6 +104,7 @@ function InvestModal({
 }) {
   const [shares, setShares] = useState(1);
   const [confirmed, setConfirmed] = useState(false);
+  const { buyShares, loading: blockchainLoading } = useBlockchain();
 
   const total = shares * property.pricePerShare;
   const monthlyIncome = ((property.monthlyRent / property.totalShares) * shares).toFixed(2);
@@ -206,9 +208,23 @@ function InvestModal({
               <Button variant="outline" onClick={() => handleClose(false)}>
                 Cancel
               </Button>
-              <Button className="gap-2" onClick={() => setConfirmed(true)}>
+              <Button
+                className="gap-2"
+                disabled={blockchainLoading}
+                onClick={async () => {
+                  try {
+                    const ethers = await import('ethers').catch(() => null);
+                    if (ethers && (window as any).ethereum) {
+                      await buyShares(1, shares, total);
+                    }
+                  } catch (err) {
+                    console.log('On-chain purchase skipped:', err);
+                  }
+                  setConfirmed(true);
+                }}
+              >
                 <Shield className="h-4 w-4" />
-                Confirm Investment
+                {blockchainLoading ? 'Processing on-chain...' : 'Confirm Investment'}
               </Button>
             </DialogFooter>
           </>
