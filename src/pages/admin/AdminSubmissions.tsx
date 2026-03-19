@@ -51,6 +51,17 @@ export default function AdminSubmissions() {
         },
       }).catch(() => {});
     }
+
+    // In-app notification for member (non-blocking)
+    if (submission?.submitted_by) {
+      (supabase.from('notifications') as any).insert({
+        user_id: submission.submitted_by,
+        type: 'deal_approved',
+        title: 'Deal approved',
+        body: `Your deal "${submission.name}" in ${submission.city} is now live.`,
+        property_id: id,
+      }).then(() => {}).catch(() => {});
+    }
   };
 
   const reject = async (id: string) => {
@@ -62,6 +73,27 @@ export default function AdminSubmissions() {
 
     // Audit log (fire-and-forget)
     if (user) logAdminAction(user.id, { action: 'reject_deal', target_table: 'properties', target_id: id, metadata: { city: submission?.city, name: submission?.name } });
+
+    // Email member on rejection (non-blocking)
+    if (submission?.contact_email) {
+      supabase.functions.invoke('send-email', {
+        body: {
+          type: 'deal-rejected-member',
+          data: { memberEmail: submission.contact_email, name: submission.name, city: submission.city },
+        },
+      }).catch(() => {});
+    }
+
+    // In-app notification for member (non-blocking)
+    if (submission?.submitted_by) {
+      (supabase.from('notifications') as any).insert({
+        user_id: submission.submitted_by,
+        type: 'deal_rejected',
+        title: 'Deal not approved',
+        body: `Your deal "${submission.name}" in ${submission.city} was not approved.`,
+        property_id: id,
+      }).then(() => {}).catch(() => {});
+    }
   };
 
   const statusLabel = (status: string) => {
@@ -135,7 +167,6 @@ export default function AdminSubmissions() {
                   <Detail label="Est. Profit" value={`£${s.profit_est?.toLocaleString()}`} />
                   <Detail label="Deposit" value={s.deposit ? `£${s.deposit.toLocaleString()}` : '—'} />
                   <Detail label="Agent Fee" value={s.agent_fee ? `£${s.agent_fee.toLocaleString()}` : '—'} />
-                  <Detail label="Featured" value={s.featured ? 'Yes' : 'No'} />
                   <Detail label="Created" value={new Date(s.created_at).toLocaleDateString()} />
                 </div>
 
@@ -147,6 +178,40 @@ export default function AdminSubmissions() {
                     <Detail label="Phone" value={s.contact_phone || '—'} />
                     <Detail label="WhatsApp" value={s.contact_whatsapp || s.landlord_whatsapp || '—'} />
                     <Detail label="Email" value={s.contact_email || '—'} />
+                  </div>
+                </div>
+
+                {/* Labels */}
+                <div>
+                  <h4 className="text-xs font-semibold text-foreground mb-2">Labels</h4>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const newVal = !s.featured;
+                        await supabase.from('properties').update({ featured: newVal }).eq('id', s.id);
+                        queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
+                        toast.success(newVal ? 'Marked as Featured' : 'Removed Featured');
+                        if (user) logAdminAction(user.id, { action: newVal ? 'add_featured' : 'remove_featured', target_table: 'properties', target_id: s.id, metadata: { name: s.name } });
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${s.featured ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-secondary text-muted-foreground border border-border hover:border-emerald-300'}`}
+                    >
+                      {s.featured ? '✓ Featured' : '+ Featured'}
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const newVal = !(s as Record<string, unknown>).prime;
+                        await supabase.from('properties').update({ prime: newVal } as any).eq('id', s.id);
+                        queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
+                        toast.success(newVal ? 'Marked as Joint Venture' : 'Removed Joint Venture');
+                        if (user) logAdminAction(user.id, { action: newVal ? 'add_prime' : 'remove_prime', target_table: 'properties', target_id: s.id, metadata: { name: s.name } });
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${(s as Record<string, unknown>).prime ? 'border border-[#C9A842]' : 'bg-secondary text-muted-foreground border border-border hover:border-[#C9A842]'}`}
+                      style={(s as Record<string, unknown>).prime ? { background: 'linear-gradient(135deg, #FDF5D6, #F5E6A3, #E8D478)', color: '#8B6914', borderColor: '#C9A842' } : undefined}
+                    >
+                      {(s as Record<string, unknown>).prime ? '💎 Joint Venture' : '+ Joint Venture'}
+                    </button>
                   </div>
                 </div>
 

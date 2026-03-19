@@ -14,7 +14,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import DealsPage from "./pages/DealsPage";
 import DealsPageV2 from "./pages/DealsPageV2";
 import InboxPage from "./pages/InboxPage";
-import FavouritesPage from "./pages/FavouritesPage";
+// FavouritesPage removed — replaced by FavouritesDropdown in top bar
 import DealDetail from "./pages/DealDetail";
 import CRMPage from "./pages/CRMPage";
 import UniversityPage from "./pages/UniversityPage";
@@ -37,6 +37,11 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminUniversity from "./pages/admin/AdminUniversity";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
+import TestingDesign from "./pages/TestingDesign";
+import InvestMarketplacePage from "./pages/invest/InvestMarketplacePage";
+import InvestPortfolioPage from "./pages/invest/InvestPortfolioPage";
+import InvestPayoutsPage from "./pages/invest/InvestPayoutsPage";
+import InvestProposalsPage from "./pages/invest/InvestProposalsPage";
 // NFStay — operator module (isolated, see docs/nfstay/BOUNDARIES.md)
 import NfsOperatorLayout from "./components/nfstay/NfsOperatorLayout";
 import NfsOperatorSignup from "./pages/nfstay/NfsOperatorSignup";
@@ -80,13 +85,16 @@ if (typeof window !== 'undefined') {
   }
 }
 
+import { FavouritesProvider } from '@/hooks/useFavourites';
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Sonner />
       <BrowserRouter>
-        <NfsWhiteLabelProvider>
-        <NfsWhiteLabelRouter>
+      <FavouritesProvider>
+      <NfsWhiteLabelProvider>
+      <NfsWhiteLabelRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
@@ -103,13 +111,17 @@ const App = () => (
             <Route path="deals" element={<DealsPageV2 />} />
             <Route path="deals-v2" element={<DealsPage />} />
             <Route path="inbox" element={<InboxPage />} />
-            <Route path="favourites" element={<FavouritesPage />} />
+            {/* Favourites page removed — now a dropdown in top bar */}
             <Route path="crm" element={<CRMPage />} />
             <Route path="university" element={<UniversityPage />} />
             <Route path="affiliates" element={<AffiliatesPage />} />
             <Route path="list-a-deal" element={<ListADealPage />} />
             <Route path="booking-site" element={<BookingSitePage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="invest/marketplace" element={<InvestMarketplacePage />} />
+            <Route path="invest/portfolio" element={<InvestPortfolioPage />} />
+            <Route path="invest/payouts" element={<InvestPayoutsPage />} />
+            <Route path="invest/proposals" element={<InvestProposalsPage />} />
           </Route>
           <Route path="/university/:moduleId" element={<DashboardLayout />}>
             <Route index element={<ModuleOverviewPage />} />
@@ -129,6 +141,7 @@ const App = () => (
             <Route path="settings" element={<AdminSettings />} />
             <Route path="notifications" element={<AdminNotifications />} />
           </Route>
+          <Route path="/testing/design" element={<TestingDesign />} />
           {/* NFStay operator routes — isolated module */}
           <Route path="/nfstay/signup" element={<NfsOperatorSignup />} />
           <Route path="/nfstay" element={<NfsOperatorLayout />}>
@@ -150,12 +163,12 @@ const App = () => (
           <Route path="/nfstay/payment/cancel" element={<NfsPaymentCancel />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-        </NfsWhiteLabelRouter>
-        </NfsWhiteLabelProvider>
+      </NfsWhiteLabelRouter>
+      </NfsWhiteLabelProvider>
+      </FavouritesProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
 
 export default App;
-

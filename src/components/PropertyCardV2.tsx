@@ -95,7 +95,8 @@ export default function PropertyCardV2({
 
   return (
     <div
-      className="bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 group"
+      className={`bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 group ${listing.prime ? 'border-[1.5px]' : ''}`}
+      style={listing.prime ? { borderColor: '#C9A842', boxShadow: '0 0 16px rgba(191,149,63,0.18), 0 2px 8px rgba(191,149,63,0.1)' } : undefined}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -122,6 +123,11 @@ export default function PropertyCardV2({
           {listing.featured && (
             <span className="bg-white/90 text-[10px] font-semibold px-2 py-0.5 rounded-full text-amber-700 shadow-sm">
               ⭐ Featured
+            </span>
+          )}
+          {listing.prime && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-md inline-flex items-center gap-0.5" style={{ background: 'linear-gradient(135deg, #FDF5D6, #F5E6A3, #E8D478)', color: '#8B6914', border: '1px solid #C9A842' }}>
+              💎 Joint Venture
             </span>
           )}
           {listing.landlordApproved && (

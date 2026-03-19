@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import PropertyCard from '@/components/PropertyCard';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { useFavourites } from '@/hooks/useFavourites';
@@ -32,6 +32,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     type: p.type,
     status: p.status as 'live' | 'on-offer' | 'inactive',
     featured: p.featured,
+    prime: (p as Record<string, unknown>).prime === true,
     daysAgo,
     image,
     landlordApproved: (p as Record<string, unknown>).sa_approved === 'yes',
@@ -73,6 +74,22 @@ export default function DealsPageV2() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const perPage = 12;
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Scroll to property when navigated from favourites dropdown
+  useEffect(() => {
+    if (location.hash) {
+      setTimeout(() => {
+        const el = document.getElementById(location.hash.slice(1));
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.style.transition = 'box-shadow 0.3s';
+          el.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.4)';
+          setTimeout(() => { el.style.boxShadow = ''; }, 2000);
+        }
+      }, 500);
+    }
+  }, [location.hash]);
 
   const handleInquire = useCallback(
     (listing: ListingShape) => {
@@ -98,14 +115,24 @@ export default function DealsPageV2() {
   }, [dbProperties]);
 
   const liveCount = listings.filter(l => l.status === 'live').length;
-  const featured = listings.filter(l => l.featured);
-  const featuredIds = new Set(featured.map(l => l.id));
+
+  // Top section: Prime first, then Featured, fill remaining slots with regular
+  const highlighted = useMemo(() => {
+    const prime = listings.filter(l => l.prime);
+    const featured = listings.filter(l => l.featured && !l.prime);
+    const topIds = new Set([...prime, ...featured].map(l => l.id));
+    // If we have fewer than 2 highlighted, fill with regular properties
+    const regular = listings.filter(l => !topIds.has(l.id));
+    const combined = [...prime, ...featured];
+    while (combined.length < 2 && regular.length > 0) {
+      combined.push(regular.shift()!);
+    }
+    return combined;
+  }, [listings]);
+  const highlightedIds = new Set(highlighted.map(l => l.id));
 
   const filtered = useMemo(() => {
-    let result =
-      featured.length > 0
-        ? listings.filter(l => !featuredIds.has(l.id))
-        : [...listings];
+    let result = listings.filter(l => !highlightedIds.has(l.id));
     if (activeTab !== 'All') {
       const statusMap: Record<string, string> = {
         Live: 'live',
@@ -120,7 +147,7 @@ export default function DealsPageV2() {
     else if (sort === 'rent') result.sort((a, b) => a.rent - b.rent);
     else result.sort((a, b) => a.daysAgo - b.daysAgo);
     return result;
-  }, [activeTab, city, type, sort, listings, featured.length]);
+  }, [activeTab, city, type, sort, listings, highlightedIds]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const pageListings = filtered.slice((page - 1) * perPage, page * perPage);
@@ -132,8 +159,8 @@ export default function DealsPageV2() {
   };
 
   const mapListings = useMemo(
-    () => [...featured, ...pageListings],
-    [featured, pageListings],
+    () => [...highlighted, ...pageListings],
+    [highlighted, pageListings],
   );
 
   return (
@@ -196,47 +223,21 @@ export default function DealsPageV2() {
                 <option value="rent">Lowest rent</option>
               </select>
               <span className="text-xs text-muted-foreground">
-                {filtered.length + featured.length} deals
+                {filtered.length + highlighted.length} deals
               </span>
             </div>
 
-            {/* Featured */}
-            {featured.length > 0 && (
-              <div className="mb-8">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Featured
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {featured.map(l => (
-                    <div
-                      key={l.id}
-                      onMouseEnter={() => setHoveredId(l.id)}
-                      onMouseLeave={() => setHoveredId(null)}
-                    >
-                      <PropertyCard
-                        listing={l}
-                        isFav={isFav(l.id)}
-                        onToggleFav={() => toggle(l.id)}
-                        onAddToCRM={handleAddToCRM}
-                        onInquire={handleInquire}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-8 border-t border-border" />
-              </div>
-            )}
-
-            {/* Card grid */}
+            {/* All cards in one continuous grid */}
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {[0, 1, 2, 3, 4, 5].map(i => <CardSkeleton key={i} />)}
               </div>
-            ) : pageListings.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {pageListings.map(l => (
+            ) : [...highlighted, ...pageListings].length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {[...highlighted, ...pageListings].map(l => (
                   <div
                     key={l.id}
+                    id={`property-${l.id}`}
                     onMouseEnter={() => setHoveredId(l.id)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
@@ -311,16 +312,18 @@ export default function DealsPageV2() {
         </div>
 
         {/* Right: map */}
-        <div className="hidden lg:block w-[45%] max-w-[700px] flex-shrink-0 border-l border-border/30">
-          <Suspense
-            fallback={
-              <div className="w-full h-full bg-muted/30 animate-pulse flex items-center justify-center">
-                <span className="text-sm text-muted-foreground">Loading map…</span>
-              </div>
-            }
-          >
-            <DealsMap listings={mapListings} hoveredId={hoveredId} />
-          </Suspense>
+        <div className="hidden lg:block w-[35%] max-w-[520px] flex-shrink-0 p-3">
+          <div className="w-full h-full rounded-2xl overflow-hidden border border-border/30 shadow-sm">
+            <Suspense
+              fallback={
+                <div className="w-full h-full bg-muted/30 animate-pulse flex items-center justify-center rounded-2xl">
+                  <span className="text-sm text-muted-foreground">Loading map…</span>
+                </div>
+              }
+            >
+              <DealsMap listings={mapListings} hoveredId={hoveredId} />
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>

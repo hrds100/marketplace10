@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
@@ -13,9 +13,27 @@ import { toast } from 'sonner';
 
 export default function SignUp() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Capture referral code from URL (?ref=CODE) and store in localStorage
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      localStorage.setItem('nfstay_ref', ref.toUpperCase());
+      // Track click via Edge Function (non-blocking)
+      supabase.functions.invoke('track-referral', {
+        body: null,
+        headers: {},
+      }).catch(() => {});
+      // Use query param approach instead
+      fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co'}/functions/v1/track-referral?code=${encodeURIComponent(ref)}`, {
+        method: 'POST',
+      }).catch(() => {});
+    }
+  }, [searchParams]);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const {
@@ -84,7 +102,40 @@ export default function SignUp() {
           .eq('id', userId);
       }
 
-      // 2. Send WhatsApp OTP via GHL
+      // 1d. Link referral if signup came from agent link
+      const refCode = localStorage.getItem('nfstay_ref');
+      if (refCode && userId) {
+        // Save referred_by to profile
+        (supabase.from('profiles') as any)
+          .update({ referred_by: refCode } as any)
+          .eq('id', userId)
+          .then(() => {})
+          .catch(() => {});
+
+        // Log signup event for the affiliate (via service role in Edge Function)
+        fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co'}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${userId}&userName=${encodeURIComponent(cleanName)}&userEmail=${encodeURIComponent(cleanEmail)}`, {
+          method: 'POST',
+        }).catch(() => {});
+
+        localStorage.removeItem('nfstay_ref');
+      }
+
+      // 2. Send welcome email + notify admin (non-blocking)
+      supabase.functions.invoke('send-email', {
+        body: { type: 'welcome-member', data: { email: cleanEmail, name: cleanName } },
+      }).catch(() => {});
+      supabase.functions.invoke('send-email', {
+        body: { type: 'new-signup-admin', data: { email: cleanEmail, name: cleanName, phone: fullPhone } },
+      }).catch(() => {});
+
+      // In-app notification for admin (non-blocking)
+      (supabase.from('notifications') as any).insert({
+        type: 'new_signup',
+        title: 'New user signed up',
+        body: `${cleanName} (${cleanEmail}) just created an account.`,
+      }).then(() => {}).catch(() => {});
+
+      // 3. Send WhatsApp OTP via GHL
       try {
         await sendOtp(fullPhone);
         toast.success('Account created! Check WhatsApp for your code.');
@@ -92,7 +143,7 @@ export default function SignUp() {
         toast.success('Account created! Sending verification code...');
       }
 
-      // 3. Redirect to OTP page
+      // 4. Redirect to OTP page
       navigate(`/verify-otp?phone=${encodeURIComponent(fullPhone)}&name=${encodeURIComponent(data.name)}&email=${encodeURIComponent(data.email)}`);
     } catch {
       toast.error('Something went wrong. Please try again.');
