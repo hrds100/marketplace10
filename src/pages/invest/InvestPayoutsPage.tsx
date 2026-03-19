@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { sendInvestNotification } from '@/lib/notifications';
-import { useMyPayouts, useMyBankAccount } from '@/hooks/useInvestData';
+import { useMyBankAccount } from '@/hooks/useInvestData';
+import { usePayoutsWithBlockchain } from '@/hooks/usePayoutsWithBlockchain';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -339,21 +340,22 @@ const payoutPropertyImages: Record<number, string> = {
 
 export default function InvestPayoutsPage() {
   const { user } = useAuth();
-  const { data: realPayouts = [] } = useMyPayouts();
+  const { payouts: mergedPayouts, blockchainLoading } = usePayoutsWithBlockchain();
   const { data: bankAccount } = useMyBankAccount();
   const { claimRent, loading: claimLoading } = useBlockchain();
 
-  // Map real payouts from Supabase
-  const payouts: PayoutItem[] = realPayouts.map((p: any) => ({
+  // Map merged payouts to PayoutItem[]
+  const payouts: PayoutItem[] = mergedPayouts.map((p) => ({
     id: p.id,
-    propertyTitle: p.inv_properties?.title || 'Property',
-    propertyId: p.property_id,
-    date: p.period_date,
-    sharesOwned: p.shares_owned || 0,
-    amount: Number(p.amount || 0),
-    currency: 'USDC',
-    status: p.status as 'claimable' | 'claimed' | 'paid',
-    method: p.claim_method,
+    propertyTitle: p.propertyTitle,
+    propertyId: p.propertyId,
+    date: p.date,
+    sharesOwned: p.sharesOwned,
+    amount: p.amount,
+    currency: p.currency,
+    status: p.status,
+    method: p.method,
+    txHash: p.txHash,
   }));
 
   const [claimModalOpen, setClaimModalOpen] = useState(false);
@@ -380,6 +382,12 @@ export default function InvestPayoutsPage() {
         <p className="text-sm text-muted-foreground mt-1">
           Claim your rental income and view payment history.
         </p>
+        {blockchainLoading && (
+          <div className="flex items-center gap-2 mt-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground">Loading on-chain rent data...</span>
+          </div>
+        )}
       </div>
 
       {payouts.length === 0 ? (

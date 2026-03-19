@@ -1,0 +1,181 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useWallet } from '@/hooks/useWallet';
+import { useBlockchain } from '@/hooks/useBlockchain';
+import { useMyHoldings, useInvestProperties } from '@/hooks/useInvestData';
+
+export interface PortfolioHolding {
+  propertyId: number;
+  propertyTitle: string;
+  location: string;
+  image: string;
+  sharesOwned: number;
+  sharePrice: number;
+  currentValue: number;
+  invested: number;
+  totalEarned: number;
+  monthlyYield: number;
+  annualYield: number;
+  lastPayout: string;
+  status: 'earning';
+  /** True when share count came from on-chain balanceOf */
+  fromBlockchain: boolean;
+}
+
+export interface PortfolioData {
+  totalContributed: number;
+  totalValue: number;
+  totalEarnings: number;
+  pendingPayouts: number;
+  holdings: PortfolioHolding[];
+}
+
+/**
+ * Merges Supabase holdings with on-chain share balances.
+ * Blockchain is the source of truth for share count — if a balance
+ * is found on-chain it overrides the Supabase `shares_owned` value.
+ * Properties that exist on-chain but not in Supabase are added too
+ * (legacy investors who purchased before the DB existed).
+ */
+export function usePortfolioWithBlockchain() {
+  const { address, connected } = useWallet();
+  const { getShareBalance } = useBlockchain();
+  const { data: supabaseHoldings = [], isLoading: holdingsLoading } = useMyHoldings();
+  const { data: allProperties = [], isLoading: propertiesLoading } = useInvestProperties();
+
+  const [blockchainBalances, setBlockchainBalances] = useState<Record<number, number>>({});
+  const [blockchainLoading, setBlockchainLoading] = useState(false);
+  const [blockchainError, setBlockchainError] = useState<string | null>(null);
+
+  // Fetch on-chain balances for every property that has a blockchain_property_id
+  const fetchBlockchainBalances = useCallback(async () => {
+    if (!connected || !address || allProperties.length === 0) return;
+
+    setBlockchainLoading(true);
+    setBlockchainError(null);
+
+    try {
+      const balances: Record<number, number> = {};
+
+      await Promise.all(
+        allProperties
+          .filter((p: any) => p.blockchain_property_id != null)
+          .map(async (p: any) => {
+            try {
+              const balance = await getShareBalance(p.blockchain_property_id);
+              if (balance > 0) {
+                balances[p.id] = balance;
+              }
+            } catch {
+              // Individual property failure — skip silently
+            }
+          }),
+      );
+
+      setBlockchainBalances(balances);
+    } catch (err) {
+      setBlockchainError(
+        err instanceof Error ? err.message : 'Failed to load blockchain balances',
+      );
+    } finally {
+      setBlockchainLoading(false);
+    }
+  }, [connected, address, allProperties, getShareBalance]);
+
+  useEffect(() => {
+    fetchBlockchainBalances();
+  }, [fetchBlockchainBalances]);
+
+  // Build merged portfolio
+  const portfolio: PortfolioData = (() => {
+    // Start with a map of property ID → holding
+    const holdingMap = new Map<number, PortfolioHolding>();
+
+    // 1. Seed from Supabase holdings
+    for (const h of supabaseHoldings as any[]) {
+      const prop = h.inv_properties;
+      const sharesOwned = h.shares_owned || 0;
+      const sharePrice = prop?.price_per_share || 100;
+
+      holdingMap.set(h.property_id, {
+        propertyId: h.property_id,
+        propertyTitle: prop?.title || 'Property',
+        location: prop?.location || '',
+        image: prop?.image || '',
+        sharesOwned,
+        sharePrice,
+        currentValue: Number(h.current_value || h.invested_amount || 0),
+        invested: Number(h.invested_amount || 0),
+        totalEarned: Number(h.total_earned || 0),
+        monthlyYield: prop
+          ? (Number(prop.monthly_rent || 0) / Number(prop.total_shares || 1)) * sharesOwned
+          : 0,
+        annualYield: Number(prop?.annual_yield || 0),
+        lastPayout: h.last_payout_date || '',
+        status: 'earning',
+        fromBlockchain: false,
+      });
+    }
+
+    // 2. Overlay / add blockchain balances
+    for (const [propertyId, onChainShares] of Object.entries(blockchainBalances)) {
+      const pid = Number(propertyId);
+      const existing = holdingMap.get(pid);
+
+      if (existing) {
+        // Blockchain overrides share count (source of truth)
+        const sharePrice = existing.sharePrice;
+        existing.sharesOwned = onChainShares;
+        existing.currentValue = onChainShares * sharePrice;
+        existing.fromBlockchain = true;
+
+        // Recalculate monthly yield with updated share count
+        const prop = (allProperties as any[]).find((p: any) => p.id === pid);
+        if (prop) {
+          existing.monthlyYield =
+            (Number(prop.monthly_rent || 0) / Number(prop.total_shares || 1)) * onChainShares;
+        }
+      } else {
+        // Property exists on-chain but not in Supabase — legacy investor
+        const prop = (allProperties as any[]).find((p: any) => p.id === pid);
+        if (prop) {
+          const sharePrice = Number(prop.price_per_share || 100);
+          holdingMap.set(pid, {
+            propertyId: pid,
+            propertyTitle: prop.title || 'Property',
+            location: prop.location || '',
+            image: prop.image || '',
+            sharesOwned: onChainShares,
+            sharePrice,
+            currentValue: onChainShares * sharePrice,
+            invested: onChainShares * sharePrice,
+            totalEarned: 0,
+            monthlyYield:
+              (Number(prop.monthly_rent || 0) / Number(prop.total_shares || 1)) * onChainShares,
+            annualYield: Number(prop.annual_yield || 0),
+            lastPayout: '',
+            status: 'earning',
+            fromBlockchain: true,
+          });
+        }
+      }
+    }
+
+    const holdings = Array.from(holdingMap.values());
+
+    return {
+      totalContributed: holdings.reduce((sum, h) => sum + h.invested, 0),
+      totalValue: holdings.reduce((sum, h) => sum + h.currentValue, 0),
+      totalEarnings: holdings.reduce((sum, h) => sum + h.totalEarned, 0),
+      pendingPayouts: 0,
+      holdings,
+    };
+  })();
+
+  return {
+    portfolio,
+    isLoading: holdingsLoading || propertiesLoading,
+    blockchainLoading,
+    blockchainError,
+    refetchBlockchain: fetchBlockchainBalances,
+  };
+}

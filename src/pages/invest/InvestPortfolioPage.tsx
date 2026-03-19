@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useMyHoldings, useInvestProperties } from '@/hooks/useInvestData';
+import { usePortfolioWithBlockchain } from '@/hooks/usePortfolioWithBlockchain';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,7 @@ import {
   Check,
   Rocket,
   FileText,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -111,32 +112,8 @@ const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
 // ---------------------------------------------------------------------------
 
 export default function InvestPortfolioPage() {
-  const { data: realHoldings = [] } = useMyHoldings();
-  const { data: realProperties = [] } = useInvestProperties();
+  const { portfolio, isLoading, blockchainLoading } = usePortfolioWithBlockchain();
   const { boostApr, claimBoostRewards, loading: boostLoading } = useBlockchain();
-
-  // Build portfolio from Supabase data
-  const portfolio = {
-    totalContributed: realHoldings.reduce((sum: number, h: any) => sum + Number(h.invested_amount || 0), 0),
-    totalValue: realHoldings.reduce((sum: number, h: any) => sum + Number(h.current_value || h.invested_amount || 0), 0),
-    totalEarnings: realHoldings.reduce((sum: number, h: any) => sum + Number(h.total_earned || 0), 0),
-    pendingPayouts: 0,
-    holdings: realHoldings.map((h: any) => ({
-      propertyId: h.property_id,
-      propertyTitle: h.inv_properties?.title || 'Property',
-      location: h.inv_properties?.location || '',
-      image: h.inv_properties?.image || '',
-      sharesOwned: h.shares_owned,
-      sharePrice: h.inv_properties?.price_per_share || 100,
-      currentValue: Number(h.current_value || h.invested_amount || 0),
-      invested: Number(h.invested_amount || 0),
-      totalEarned: Number(h.total_earned || 0),
-      monthlyYield: h.inv_properties ? (Number(h.inv_properties.monthly_rent || 0) / Number(h.inv_properties.total_shares || 1)) * h.shares_owned : 0,
-      annualYield: Number(h.inv_properties?.annual_yield || 0),
-      lastPayout: h.last_payout_date || '',
-      status: 'earning' as const,
-    })),
-  };
 
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
 
@@ -176,6 +153,17 @@ export default function InvestPortfolioPage() {
       return next;
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading portfolio...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
