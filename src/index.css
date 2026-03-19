@@ -232,6 +232,15 @@
   .animate-confetti-particle {
     animation: confetti-fall 2s ease-out forwards;
   }
+
+  /* Vote celebration confetti */
+  @keyframes confetti {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+  .animate-confetti {
+    animation: confetti 3s ease-out forwards;
+  }
 }
 
 /* Quick Replies modal open animation */

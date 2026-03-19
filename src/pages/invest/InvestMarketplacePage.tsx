@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { mockProperties } from '@/data/investMockData';
 import { useInvestProperty } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,21 +45,53 @@ import {
   Check,
   ArrowRight,
   CircleDot,
+  Loader2,
 } from 'lucide-react';
+import { SUBGRAPHS } from '@/lib/particle';
 
 // ---------------------------------------------------------------------------
 // Constants & Mock Data
 // ---------------------------------------------------------------------------
 
-const fallbackProperty = mockProperties[0];
+// Activity type for real data from The Graph
+interface Activity {
+  event: string;
+  price: string;
+  shares: string;
+  from: string;
+  to: string;
+  date: string;
+  txHash: string;
+}
 
-const mockActivity = [
-  { event: 'Purchase', price: '$500', from: 'Market', to: '0x8f3a...e2c1', date: 'Mar 15, 2026' },
-  { event: 'Purchase', price: '$1,200', from: 'Market', to: '0x2b7c...f9a3', date: 'Mar 14, 2026' },
-  { event: 'Purchase', price: '$300', from: 'Market', to: '0x9c2f...a1d7', date: 'Mar 12, 2026' },
-  { event: 'Purchase', price: '$800', from: 'Market', to: '0x1d4e...b8f2', date: 'Mar 10, 2026' },
-  { event: 'Purchase', price: '$2,000', from: 'Market', to: '0x4a6b...c3e9', date: 'Mar 8, 2026' },
-];
+async function fetchRecentPurchases(): Promise<Activity[]> {
+  const res = await fetch(SUBGRAPHS.MARKETPLACE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query: `{
+        primarySharesBoughts(first: 10, orderBy: blockTimestamp, orderDirection: desc) {
+          _buyer
+          _propertyId
+          _sharesBought
+          _amount
+          blockTimestamp
+          transactionHash
+        }
+      }`,
+    }),
+  });
+  const data = await res.json();
+  return (data.data?.primarySharesBoughts || []).map((p: any) => ({
+    event: 'Purchase',
+    price: `$${(parseInt(p._amount) / 1e18).toFixed(0)}`,
+    shares: p._sharesBought,
+    from: 'Market',
+    to: `${p._buyer.slice(0, 6)}...${p._buyer.slice(-4)}`,
+    date: new Date(parseInt(p.blockTimestamp) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    txHash: p.transactionHash,
+  }));
+}
 
 const jvSteps = [
   {
@@ -854,6 +885,16 @@ function ProfitCalculator({
 }
 
 function RecentActivityTable() {
+  const [activity, setActivity] = useState<Activity[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+
+  useEffect(() => {
+    fetchRecentPurchases()
+      .then(setActivity)
+      .catch(() => setActivity([]))
+      .finally(() => setActivityLoading(false));
+  }, []);
+
   return (
     <Card className="rounded-2xl">
       <CardHeader>
@@ -863,34 +904,43 @@ function RecentActivityTable() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="pb-2 pr-4 font-medium">Event</th>
-                <th className="pb-2 pr-4 font-medium">Price</th>
-                <th className="pb-2 pr-4 font-medium">From</th>
-                <th className="pb-2 pr-4 font-medium">To</th>
-                <th className="pb-2 font-medium">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockActivity.map((row, i) => (
-                <tr key={i} className="border-b border-border/50 last:border-0">
-                  <td className="py-2.5 pr-4">
-                    <Badge variant="secondary" className="text-xs">
-                      {row.event}
-                    </Badge>
-                  </td>
-                  <td className="py-2.5 pr-4 font-medium">{row.price}</td>
-                  <td className="py-2.5 pr-4 text-muted-foreground">{row.from}</td>
-                  <td className="py-2.5 pr-4 font-mono text-xs">{row.to}</td>
-                  <td className="py-2.5 text-muted-foreground">{row.date}</td>
+        {activityLoading ? (
+          <div className="flex items-center justify-center py-8 gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Loading activity...</span>
+          </div>
+        ) : activity.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">No recent activity found.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">Event</th>
+                  <th className="pb-2 pr-4 font-medium">Price</th>
+                  <th className="pb-2 pr-4 font-medium">From</th>
+                  <th className="pb-2 pr-4 font-medium">To</th>
+                  <th className="pb-2 font-medium">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {activity.map((row, i) => (
+                  <tr key={i} className="border-b border-border/50 last:border-0">
+                    <td className="py-2.5 pr-4">
+                      <Badge variant="secondary" className="text-xs">
+                        {row.event}
+                      </Badge>
+                    </td>
+                    <td className="py-2.5 pr-4 font-medium">{row.price}</td>
+                    <td className="py-2.5 pr-4 text-muted-foreground">{row.from}</td>
+                    <td className="py-2.5 pr-4 font-mono text-xs">{row.to}</td>
+                    <td className="py-2.5 text-muted-foreground">{row.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -1386,34 +1436,36 @@ function Version2({
 // ---------------------------------------------------------------------------
 
 export default function InvestMarketplacePage() {
-  const { data: dbProperty } = useInvestProperty(1);
+  const { data: dbProperty, isLoading } = useInvestProperty(1);
 
+  // Map Supabase property to the shape used by sub-components
   const property = dbProperty ? {
-    ...fallbackProperty,
-    title: dbProperty.title || fallbackProperty.title,
-    location: dbProperty.location || fallbackProperty.location,
-    pricePerShare: dbProperty.price_per_share || fallbackProperty.pricePerShare,
-    totalShares: dbProperty.total_shares || fallbackProperty.totalShares,
-    sharesSold: dbProperty.shares_sold || fallbackProperty.sharesSold,
-    annualYield: dbProperty.annual_yield || fallbackProperty.annualYield,
-    monthlyRent: dbProperty.monthly_rent || fallbackProperty.monthlyRent,
-    propertyValue: dbProperty.property_value || fallbackProperty.propertyValue,
-    status: dbProperty.status || fallbackProperty.status,
-    type: dbProperty.type || fallbackProperty.type,
-    bedrooms: dbProperty.bedrooms || fallbackProperty.bedrooms,
-    bathrooms: dbProperty.bathrooms || fallbackProperty.bathrooms,
-    area: dbProperty.area || fallbackProperty.area,
-    description: dbProperty.description || fallbackProperty.description,
-    highlights: dbProperty.highlights || fallbackProperty.highlights,
-    documents: dbProperty.documents || fallbackProperty.documents,
-    occupancyRate: dbProperty.occupancy_rate || fallbackProperty.occupancyRate,
-    yearBuilt: dbProperty.year_built || fallbackProperty.yearBuilt,
-    images: dbProperty.images?.length ? dbProperty.images : fallbackProperty.images,
-    image: dbProperty.image || fallbackProperty.image,
-  } : fallbackProperty;
+    id: dbProperty.id,
+    title: dbProperty.title || '',
+    location: dbProperty.location || '',
+    country: dbProperty.country || '',
+    image: dbProperty.image || '',
+    images: dbProperty.images?.length ? dbProperty.images : [dbProperty.image || ''],
+    pricePerShare: dbProperty.price_per_share || 0,
+    totalShares: dbProperty.total_shares || 1,
+    sharesSold: dbProperty.shares_sold || 0,
+    annualYield: dbProperty.annual_yield || 0,
+    monthlyRent: dbProperty.monthly_rent || 0,
+    propertyValue: dbProperty.property_value || 0,
+    status: dbProperty.status || 'open',
+    type: dbProperty.type || '',
+    bedrooms: dbProperty.bedrooms || 0,
+    bathrooms: dbProperty.bathrooms || 0,
+    area: dbProperty.area || 0,
+    description: dbProperty.description || '',
+    highlights: dbProperty.highlights || [],
+    documents: dbProperty.documents || [],
+    occupancyRate: dbProperty.occupancy_rate || 0,
+    yearBuilt: dbProperty.year_built || 0,
+  } : null;
 
-  const fundedPercent = Math.round((property.sharesSold / property.totalShares) * 100);
-  const sharesRemaining = property.totalShares - property.sharesSold;
+  const fundedPercent = property ? Math.round((property.sharesSold / property.totalShares) * 100) : 0;
+  const sharesRemaining = property ? property.totalShares - property.sharesSold : 0;
 
   const version = 1 as const;
   const [jvExpanded, setJvExpanded] = useState(false);
@@ -1426,17 +1478,41 @@ export default function InvestMarketplacePage() {
 
   // Auto-rotate carousel
   useEffect(() => {
+    if (!property) return;
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % property.images.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [property]);
 
   const handleInvest = () => {
+    if (!property) return;
     const shares = Math.floor(investAmount / property.pricePerShare);
     if (shares < 1) return;
     setInvestOpen(true);
   };
+
+  // Empty state when no property exists
+  if (!isLoading && !property) {
+    return (
+      <div className="min-h-screen bg-background font-sans text-foreground flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <Home className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+          <p className="text-lg text-muted-foreground">No properties available yet</p>
+          <p className="text-sm text-muted-foreground">Check back soon for new investment opportunities.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-background font-sans text-foreground flex items-center justify-center">
+        <p className="text-muted-foreground">Loading property...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">

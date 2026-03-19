@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useProposals } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,16 +28,43 @@ import {
   MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  mockProposals,
-  mockProperties,
-  type ActiveProposal,
-  type PastProposal,
-} from '@/data/investMockData';
+import { useInvestProperties } from '@/hooks/useInvestData';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type VoteChoice = 'yes' | 'no';
+
+interface ActiveProposal {
+  id: string;
+  propertyTitle: string;
+  propertyId: number;
+  title: string;
+  description: string;
+  type: string;
+  createdAt: string;
+  endsAt: string;
+  votesYes: number;
+  votesNo: number;
+  totalVotes: number;
+  quorum: number;
+  userVoted: 'yes' | 'no' | null;
+}
+
+interface PastProposal {
+  id: string;
+  propertyTitle: string;
+  propertyId: number;
+  title: string;
+  description: string;
+  type: string;
+  createdAt: string;
+  endsAt: string;
+  votesYes: number;
+  votesNo: number;
+  totalVotes: number;
+  quorum: number;
+  result: 'approved' | 'rejected';
+}
 
 interface VoteDialogState {
   open: boolean;
@@ -50,6 +77,32 @@ interface ActiveProposalWithVote extends Omit<ActiveProposal, 'userVoted'> {
   votesYes: number;
   votesNo: number;
   userVoted: VoteChoice | null;
+}
+
+// ─── Confetti Component ─────────────────────────────────────────────────────
+
+function Confetti() {
+  const colors = ['#00D084', '#FFD700', '#FF6B6B', '#4ECDC4', '#A855F7', '#3B82F6'];
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {Array.from({ length: 30 }).map((_, i) => (
+        <div
+          key={i}
+          className="absolute animate-confetti"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: '-10px',
+            width: `${6 + Math.random() * 8}px`,
+            height: `${6 + Math.random() * 8}px`,
+            backgroundColor: colors[i % colors.length],
+            animationDelay: `${Math.random() * 2}s`,
+            animationDuration: `${2 + Math.random() * 2}s`,
+            transform: `rotate(${Math.random() * 360}deg)`,
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -84,21 +137,40 @@ function typeBadgeColor(type: string): string {
 
 export default function InvestProposalsPage() {
   const { data: realProposals = [] } = useProposals();
+  const { data: realProperties = [] } = useInvestProperties();
   const { castVote: castBlockchainVote, loading: voteLoading } = useBlockchain();
 
-  // Use real proposals if available
-  const realActiveProposals = realProposals.filter((p: any) => !p.result && new Date(p.ends_at) > new Date());
-  const realPastProposals = realProposals.filter((p: any) => p.result);
+  // Map real proposals from Supabase
+  const mappedActive: ActiveProposalWithVote[] = realProposals
+    .filter((p: any) => !p.result && new Date(p.ends_at) > new Date())
+    .map((p: any) => ({
+      id: p.id,
+      propertyTitle: p.inv_properties?.title || 'Property',
+      propertyId: p.property_id,
+      title: p.title,
+      description: p.description || '',
+      type: p.type || 'General',
+      createdAt: p.created_at,
+      endsAt: p.ends_at,
+      votesYes: p.votes_yes || 0,
+      votesNo: p.votes_no || 0,
+      totalVotes: p.total_votes || 0,
+      quorum: p.quorum || 0,
+      userVoted: (p.user_voted as VoteChoice | null) ?? null,
+      blockchain_proposal_id: p.blockchain_proposal_id,
+    }));
 
-  // Local mutable state for active proposals (so votes update in place)
-  const activeSource = realActiveProposals.length > 0 ? realActiveProposals : mockProposals.active;
-  const [activeProposals, setActiveProposals] = useState<ActiveProposalWithVote[]>(
-    () =>
-      activeSource.map((p: any) => ({
-        ...p,
-        userVoted: p.userVoted as VoteChoice | null,
-      }))
-  );
+  const [activeProposals, setActiveProposals] = useState<ActiveProposalWithVote[]>([]);
+
+  // Sync active proposals when real data arrives
+  useEffect(() => {
+    if (mappedActive.length > 0) {
+      setActiveProposals(mappedActive);
+    }
+  }, [realProposals]);
+
+  // Vote success celebration state
+  const [showVoteSuccess, setShowVoteSuccess] = useState(false);
 
   // Dialog state
   const [voteDialog, setVoteDialog] = useState<VoteDialogState>({
@@ -108,7 +180,23 @@ export default function InvestProposalsPage() {
     choice: null,
   });
 
-  const pastProposals: PastProposal[] = realPastProposals.length > 0 ? realPastProposals as PastProposal[] : mockProposals.past;
+  const pastProposals: PastProposal[] = realProposals
+    .filter((p: any) => p.result)
+    .map((p: any) => ({
+      id: p.id,
+      propertyTitle: p.inv_properties?.title || 'Property',
+      propertyId: p.property_id,
+      title: p.title,
+      description: p.description || '',
+      type: p.type || 'General',
+      createdAt: p.created_at,
+      endsAt: p.ends_at,
+      votesYes: p.votes_yes || 0,
+      votesNo: p.votes_no || 0,
+      totalVotes: p.total_votes || 0,
+      quorum: p.quorum || 0,
+      result: p.result as 'approved' | 'rejected',
+    }));
 
   // Submit proposal state
   const [submitOpen, setSubmitOpen] = useState(false);
@@ -118,7 +206,7 @@ export default function InvestProposalsPage() {
   const [propertyDropdownOpen, setPropertyDropdownOpen] = useState(false);
   const proposalFee = 10; // ~10 USDC in STAY tokens
 
-  const selectedProperty = mockProperties.find((p) => p.id === submitPropertyId);
+  const selectedProperty = realProperties.find((p: any) => p.id === submitPropertyId);
 
   function openSubmitModal() {
     setSubmitStep('form');
@@ -189,6 +277,7 @@ export default function InvestProposalsPage() {
     }
 
     setVoteDialog({ open: false, proposalId: null, proposalTitle: '', choice: null });
+    setShowVoteSuccess(true);
   }
 
   function cancelVote() {
@@ -422,6 +511,14 @@ export default function InvestProposalsPage() {
 
         {/* Right main area — Timeline */}
         <div className="flex-1">
+          {timeline.length === 0 ? (
+            <Card>
+              <CardContent className="py-16 text-center">
+                <Gavel className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-muted-foreground">No proposals yet. Proposals will appear here when shareholders submit them.</p>
+              </CardContent>
+            </Card>
+          ) : (
           <div className="relative pl-8">
             {/* Timeline line */}
             <div className="absolute left-3 top-0 bottom-0 w-px bg-border" />
@@ -519,6 +616,7 @@ export default function InvestProposalsPage() {
               })}
             </div>
           </div>
+          )}
         </div>
       </div>
 
@@ -560,6 +658,27 @@ export default function InvestProposalsPage() {
               Confirm {voteDialog.choice === 'yes' ? 'Yes' : 'No'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Vote Success Celebration Modal */}
+      {showVoteSuccess && <Confetti />}
+      <Dialog open={showVoteSuccess} onOpenChange={(open) => !open && setShowVoteSuccess(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <div className="h-16 w-16 rounded-full bg-emerald-500/15 flex items-center justify-center">
+              <CheckCircle2 className="h-9 w-9 text-emerald-500" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Thank You</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Your vote has been casted! 🎉
+              </p>
+            </div>
+            <Button className="w-full mt-2" onClick={() => setShowVoteSuccess(false)}>
+              Okay
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -619,7 +738,7 @@ export default function InvestProposalsPage() {
 
                   {propertyDropdownOpen && (
                     <div className="absolute z-10 w-full mt-1 bg-card border rounded-lg shadow-lg overflow-hidden">
-                      {mockProperties.map((prop) => (
+                      {realProperties.map((prop: any) => (
                         <button
                           key={prop.id}
                           type="button"

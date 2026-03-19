@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFStay Architecture — 3 Apps</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; min-height: 100vh; }
+  h1 { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+  .subtitle { text-align: center; font-size: 14px; color: #888; margin-bottom: 48px; }
+
+  .apps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; max-width: 1100px; margin: 0 auto 48px; }
+
+  .app { border-radius: 16px; padding: 28px; position: relative; overflow: hidden; }
+  .app::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+
+  .app-marketplace { background: #111827; border: 1px solid #1e3a5f; }
+  .app-marketplace::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+
+  .app-invest { background: #1a1412; border: 1px solid #5c3a1e; }
+  .app-invest::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+
+  .app-booking { background: #0f1a14; border: 1px solid #1e5c3a; }
+  .app-booking::before { background: linear-gradient(90deg, #10b981, #34d399); }
+
+  .app-icon { font-size: 32px; margin-bottom: 12px; }
+  .app-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .app-domain { font-size: 12px; font-family: monospace; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 16px; }
+  .app-marketplace .app-domain { background: #1e3a5f; color: #60a5fa; }
+  .app-invest .app-domain { background: #5c3a1e; color: #fbbf24; }
+  .app-booking .app-domain { background: #1e5c3a; color: #34d399; }
+
+  .app-desc { font-size: 13px; color: #999; margin-bottom: 20px; line-height: 1.5; }
+
+  .app-section { margin-bottom: 14px; }
+  .app-section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #666; margin-bottom: 6px; font-weight: 600; }
+  .app-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: rgba(255,255,255,0.06); color: #bbb; }
+
+  .app-marketplace .tag-highlight { background: rgba(59,130,246,0.15); color: #93c5fd; }
+  .app-invest .tag-highlight { background: rgba(245,158,11,0.15); color: #fcd34d; }
+  .app-booking .tag-highlight { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; margin-top: 12px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .status-live .status-dot { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+  .status-live { color: #22c55e; }
+  .status-branch .status-dot { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+  .status-branch { color: #f59e0b; }
+
+  /* Connector section */
+  .connector-section { max-width: 1100px; margin: 0 auto; position: relative; }
+
+  .lines { display: flex; justify-content: center; margin-bottom: 0; height: 48px; position: relative; }
+  .lines svg { width: 100%; height: 48px; }
+
+  .shared { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; max-width: 520px; margin: 0 auto; }
+  .shared-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; text-align: center; }
+  .shared-subtitle { font-size: 11px; color: #666; text-align: center; margin-bottom: 20px; }
+
+  .shared-items { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .shared-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); }
+  .shared-item-icon { font-size: 20px; flex-shrink: 0; }
+  .shared-item-text { font-size: 12px; font-weight: 500; color: #ccc; }
+  .shared-item-sub { font-size: 10px; color: #666; }
+
+  .flow { max-width: 1100px; margin: 48px auto 0; text-align: center; }
+  .flow-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 16px; }
+  .flow-steps { display: flex; align-items: center; justify-content: center; gap: 0; }
+  .flow-step { padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; }
+  .flow-arrow { color: #444; font-size: 20px; padding: 0 8px; }
+  .flow-step-signup { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+  .flow-step-otp { background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+  .flow-step-wallet { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
+  .flow-step-choose { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+
+  .db-section { max-width: 1100px; margin: 48px auto 0; }
+  .db-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 16px; text-align: center; }
+  .db-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .db-group { border-radius: 12px; padding: 16px; }
+  .db-group-marketplace { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); }
+  .db-group-invest { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); }
+  .db-group-booking { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); }
+  .db-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .db-group-marketplace .db-group-title { color: #60a5fa; }
+  .db-group-invest .db-group-title { color: #fbbf24; }
+  .db-group-booking .db-group-title { color: #34d399; }
+  .db-table { font-size: 11px; font-family: monospace; color: #999; padding: 2px 0; }
+</style>
+</head>
+<body>
+
+<h1>NFStay Platform Architecture</h1>
+<p class="subtitle">One repo, one database, one signup — three products</p>
+
+<!-- Three Apps -->
+<div class="apps">
+
+  <!-- Marketplace -->
+  <div class="app app-marketplace">
+    <div class="app-icon">🏠</div>
+    <div class="app-title">Marketplace</div>
+    <div class="app-domain">hub.nfstay.com</div>
+    <div class="app-desc">UK rent-to-rent property marketplace. Landlords list deals, agents browse, CRM, inbox, university.</div>
+
+    <div class="app-section">
+      <div class="app-section-title">Key Features</div>
+      <div class="app-tags">
+        <span class="tag tag-highlight">Deal listings</span>
+        <span class="tag tag-highlight">CRM</span>
+        <span class="tag tag-highlight">Inbox / Chat</span>
+        <span class="tag tag-highlight">University</span>
+        <span class="tag">Admin panel</span>
+        <span class="tag">Affiliates</span>
+      </div>
+    </div>
+
+    <div class="app-section">
+      <div class="app-section-title">Integrations</div>
+      <div class="app-tags">
+        <span class="tag">GoHighLevel</span>
+        <span class="tag">Resend</span>
+        <span class="tag">WhatsApp</span>
+        <span class="tag">Google Maps</span>
+        <span class="tag">Pexels</span>
+      </div>
+    </div>
+
+    <div class="app-section">
+      <div class="app-section-title">Code</div>
+      <div class="app-tags">
+        <span class="tag">src/pages/</span>
+        <span class="tag">src/components/</span>
+        <span class="tag">src/hooks/</span>
+      </div>
+    </div>
+
+    <div class="status status-live"><span class="status-dot"></span> Live</div>
+  </div>
+
+  <!-- Invest -->
+  <div class="app app-invest">
+    <div class="app-icon">⛓️</div>
+    <div class="app-title">Invest</div>
+    <div class="app-domain">hub.nfstay.com/invest/*</div>
+    <div class="app-desc">Tokenized real estate. Buy fractional shares on BNB Chain, earn rent, vote on governance, boost APR.</div>
+
+    <div class="app-section">
+      <div class="app-section-title">Key Features</div>
+      <div class="app-tags">
+        <span class="tag tag-highlight">Buy shares</span>
+        <span class="tag tag-highlight">Claim rent</span>
+        <span class="tag tag-highlight">Vote</span>
+        <span class="tag tag-highlight">Boost APR</span>
+        <span class="tag">Portfolio</span>
+        <span class="tag">Payouts</span>
+      </div>
+    </div>
+
+    <div class="app-section">
+      <div class="app-section-title">Blockchain</div>
+      <div class="app-tags">
+        <span class="tag">BNB Chain</span>
+        <span class="tag">Particle Wallet</span>
+        <span class="tag">USDC</span>
+        <span class="tag">STAY Token</span>
+        <span class="tag">The Graph</span>
+        <span class="tag">Revolut</span>
+      </div>
+    </div>
+
+    <div class="app-section">
+      <div class="app-section-title">Smart Contracts</div>
+      <div class="app-tags">
+        <span class="tag">RWA Marketplace</span>
+        <span class="tag">RWA Token</span>
+        <span class="tag">Voting</span>
+        <span class="tag">Rent</span>
+        <span class="tag">Booster</span>
+      </div>
+    </div>
+
+    <div class="app-section">
+      <div class="app-section-title">Code</div>
+      <div class="app-tags">
+        <span class="tag">src/pages/invest/</span>
+        <span class="tag">useBlockchain.ts</span>
+        <span class="tag">useInvestData.ts</span>
+      </div>
+    </div>
+
+    <div class="status status-live"><span class="status-dot"></span> Live</div>
+  </div>
+
+  <!-- Booking -->
+  <div class="app app-booking">
+    <div class="app-icon">🏨</div>
+    <div class="app-title">Booking</div>
+    <div class="app-domain">nfstay.app</div>
+    <div class="app-desc">Short-term rental booking. Operators list properties, travelers search & book, Stripe payments, Airbnb sync.</div>
+
+    <div class="app-section">
+      <div class="app-section-title">Key Features</div>
+      <div class="app-tags">
+        <span class="tag tag-highlight">Operator dashboard</span>
+        <span class="tag tag-highlight">Traveler search</span>
+        <span class="tag tag-highlight">Reservations</span>
+        <span class="tag tag-highlight">White-label</span>
+        <span class="tag">Onboarding</span>
+        <span class="tag">Analytics</span>
+      </div>
+    </div>
+
+    <div class="app-section">
+      <div class="app-section-title">Integrations</div>
+      <div class="app-tags">
+        <span class="tag">Stripe</span>
+        <span class="tag">Hospitable</span>
+        <span class="tag">iCal</span>
+        <span class="tag">Google Maps</span>
+        <span class="tag">Cloudflare</span>
+        <span class="tag">Resend</span>
+      </div>
+    </div>
+
+    <div class="app-section">
+      <div class="app-section-title">Code</div>
+      <div class="app-tags">
+        <span class="tag">src/pages/nfstay/</span>
+        <span class="tag">src/components/nfstay/</span>
+        <span class="tag">src/hooks/nfstay/</span>
+      </div>
+    </div>
+
+    <div class="status status-branch"><span class="status-dot"></span> Built — not deployed</div>
+  </div>
+</div>
+
+<!-- Connector lines -->
+<div class="connector-section">
+  <svg width="100%" height="48" viewBox="0 0 1100 48" preserveAspectRatio="none">
+    <path d="M 183 0 L 183 24 L 550 24 L 550 48" stroke="#2a2a4a" stroke-width="2" fill="none"/>
+    <path d="M 550 0 L 550 48" stroke="#2a2a4a" stroke-width="2" fill="none"/>
+    <path d="M 917 0 L 917 24 L 550 24 L 550 48" stroke="#2a2a4a" stroke-width="2" fill="none"/>
+    <circle cx="550" cy="24" r="4" fill="#8b5cf6"/>
+  </svg>
+
+  <!-- Shared Layer -->
+  <div class="shared">
+    <div class="shared-title">Where They Meet</div>
+    <div class="shared-subtitle">Shared infrastructure — the building's foundation</div>
+    <div class="shared-items">
+      <div class="shared-item">
+        <div class="shared-item-icon">🔐</div>
+        <div>
+          <div class="shared-item-text">Supabase Auth</div>
+          <div class="shared-item-sub">One signup for all 3 apps</div>
+        </div>
+      </div>
+      <div class="shared-item">
+        <div class="shared-item-icon">👤</div>
+        <div>
+          <div class="shared-item-text">profiles table</div>
+          <div class="shared-item-sub">Shared identity</div>
+        </div>
+      </div>
+      <div class="shared-item">
+        <div class="shared-item-icon">🔀</div>
+        <div>
+          <div class="shared-item-text">middleware.ts</div>
+          <div class="shared-item-sub">Routes traffic by domain</div>
+        </div>
+      </div>
+      <div class="shared-item">
+        <div class="shared-item-icon">📱</div>
+        <div>
+          <div class="shared-item-text">App.tsx</div>
+          <div class="shared-item-sub">All routes registered here</div>
+        </div>
+      </div>
+      <div class="shared-item">
+        <div class="shared-item-icon">🎨</div>
+        <div>
+          <div class="shared-item-text">components/ui/</div>
+          <div class="shared-item-sub">Shared design system</div>
+        </div>
+      </div>
+      <div class="shared-item">
+        <div class="shared-item-icon">🔔</div>
+        <div>
+          <div class="shared-item-text">notifications table</div>
+          <div class="shared-item-sub">All apps insert here</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- User Flow -->
+<div class="flow">
+  <div class="flow-title">User Journey — One Signup, Three Products</div>
+  <div class="flow-steps">
+    <div class="flow-step flow-step-signup">Sign up</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step flow-step-otp">OTP verify</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step flow-step-wallet">Wallet created</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step flow-step-choose">Use any app</div>
+  </div>
+</div>
+
+<!-- Database Isolation -->
+<div class="db-section">
+  <div class="db-title">Database Isolation — Same Supabase, Separate Tables</div>
+  <div class="db-grid">
+    <div class="db-group db-group-marketplace">
+      <div class="db-group-title">Marketplace tables</div>
+      <div class="db-table">properties</div>
+      <div class="db-table">crm_deals</div>
+      <div class="db-table">chat_threads</div>
+      <div class="db-table">chat_messages</div>
+      <div class="db-table">modules / lessons</div>
+      <div class="db-table">inquiries</div>
+      <div class="db-table">landlord_invites</div>
+    </div>
+    <div class="db-group db-group-invest">
+      <div class="db-group-title">Invest tables (inv_*)</div>
+      <div class="db-table">inv_properties</div>
+      <div class="db-table">inv_orders</div>
+      <div class="db-table">inv_shareholdings</div>
+      <div class="db-table">inv_payouts</div>
+      <div class="db-table">inv_proposals</div>
+      <div class="db-table">aff_profiles</div>
+      <div class="db-table">aff_commissions</div>
+    </div>
+    <div class="db-group db-group-booking">
+      <div class="db-group-title">Booking tables (nfs_*)</div>
+      <div class="db-table">nfs_operators</div>
+      <div class="db-table">nfs_properties</div>
+      <div class="db-table">nfs_reservations</div>
+      <div class="db-table">nfs_stripe_accounts</div>
+      <div class="db-table">nfs_hospitable_connections</div>
+      <div class="db-table">nfs_promo_codes</div>
+      <div class="db-table">nfs_analytics</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

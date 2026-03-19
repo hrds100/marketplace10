@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useMyHoldings, useInvestProperties } from '@/hooks/useInvestData';
+import { usePortfolioWithBlockchain } from '@/hooks/usePortfolioWithBlockchain';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,9 +30,9 @@ import {
   Check,
   Rocket,
   FileText,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockPortfolio, mockProposals } from '@/data/investMockData';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -41,8 +41,8 @@ import { mockPortfolio, mockProposals } from '@/data/investMockData';
 const formatCurrency = (amount: number) =>
   `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const hasActiveProposal = (propertyId: number) =>
-  mockProposals.active.some((p) => p.propertyId === propertyId);
+// Active proposal check will use real data when inv_proposals is populated
+const hasActiveProposal = (_propertyId: number) => false;
 
 // ---------------------------------------------------------------------------
 // Rank System
@@ -101,20 +101,8 @@ const ACHIEVEMENTS = [
 // Monthly Earnings Data
 // ---------------------------------------------------------------------------
 
-const MONTHLY_EARNINGS = [
-  { month: 'Apr', amount: 0 },
-  { month: 'May', amount: 0 },
-  { month: 'Jun', amount: 0 },
-  { month: 'Jul', amount: 0 },
-  { month: 'Aug', amount: 0 },
-  { month: 'Sep', amount: 0 },
-  { month: 'Oct', amount: 0 },
-  { month: 'Nov', amount: 0 },
-  { month: 'Dec', amount: 0 },
-  { month: 'Jan', amount: 229.58 },
-  { month: 'Feb', amount: 229.58 },
-  { month: 'Mar', amount: 229.58 },
-];
+// Earnings chart data will be populated from real payout history
+const MONTHLY_EARNINGS: { month: string; amount: number }[] = [];
 
 const maxEarning = Math.max(...MONTHLY_EARNINGS.map((m) => m.amount), 1);
 const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
@@ -124,34 +112,8 @@ const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
 // ---------------------------------------------------------------------------
 
 export default function InvestPortfolioPage() {
-  const { data: realHoldings = [] } = useMyHoldings();
-  const { data: realProperties = [] } = useInvestProperties();
+  const { portfolio, isLoading, blockchainLoading } = usePortfolioWithBlockchain();
   const { boostApr, claimBoostRewards, loading: boostLoading } = useBlockchain();
-
-  // Build real portfolio from Supabase data
-  const realHoldingsData = realHoldings.length > 0 ? realHoldings : null;
-
-  const portfolio = realHoldingsData ? {
-    totalContributed: realHoldingsData.reduce((sum: number, h: any) => sum + Number(h.invested_amount || 0), 0),
-    totalValue: realHoldingsData.reduce((sum: number, h: any) => sum + Number(h.current_value || h.invested_amount || 0), 0),
-    totalEarnings: realHoldingsData.reduce((sum: number, h: any) => sum + Number(h.total_earned || 0), 0),
-    pendingPayouts: 0, // Will be populated when inv_payouts has data
-    holdings: realHoldingsData.map((h: any) => ({
-      propertyId: h.property_id,
-      propertyTitle: h.inv_properties?.title || 'Property',
-      location: h.inv_properties?.location || '',
-      image: h.inv_properties?.image || '',
-      sharesOwned: h.shares_owned,
-      sharePrice: h.inv_properties?.price_per_share || 100,
-      currentValue: Number(h.current_value || h.invested_amount || 0),
-      invested: Number(h.invested_amount || 0),
-      totalEarned: Number(h.total_earned || 0),
-      monthlyYield: h.inv_properties ? (Number(h.inv_properties.monthly_rent || 0) / Number(h.inv_properties.total_shares || 1)) * h.shares_owned : 0,
-      annualYield: Number(h.inv_properties?.annual_yield || 0),
-      lastPayout: h.last_payout_date || '2026-03-01',
-      status: 'earning' as const,
-    })),
-  } : { ...mockPortfolio, totalContributed: mockPortfolio.totalInvested };
 
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
 
@@ -191,6 +153,17 @@ export default function InvestPortfolioPage() {
       return next;
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading portfolio...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -287,29 +260,37 @@ export default function InvestPortfolioPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1.5">
-                {MONTHLY_EARNINGS.map((m) => (
-                  <div key={m.month} className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-7 text-right flex-shrink-0">{m.month}</span>
-                    <div className="flex-1 h-5 rounded bg-muted/30 overflow-hidden relative">
-                      {m.amount > 0 ? (
-                        <div
-                          className="h-full rounded bg-gradient-to-r from-primary to-primary/70 flex items-center justify-end pr-2 transition-all duration-500"
-                          style={{ width: `${Math.max((m.amount / maxEarning) * 100, 20)}%` }}
-                        >
-                          <span className="text-[10px] font-medium text-white">${m.amount.toFixed(0)}</span>
+                {MONTHLY_EARNINGS.length > 0 ? (
+                  <>
+                    {MONTHLY_EARNINGS.map((m) => (
+                      <div key={m.month} className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground w-7 text-right flex-shrink-0">{m.month}</span>
+                        <div className="flex-1 h-5 rounded bg-muted/30 overflow-hidden relative">
+                          {m.amount > 0 ? (
+                            <div
+                              className="h-full rounded bg-gradient-to-r from-primary to-primary/70 flex items-center justify-end pr-2 transition-all duration-500"
+                              style={{ width: `${Math.max((m.amount / maxEarning) * 100, 20)}%` }}
+                            >
+                              <span className="text-[10px] font-medium text-white">${m.amount.toFixed(0)}</span>
+                            </div>
+                          ) : (
+                            <div className="h-full w-full" />
+                          )}
                         </div>
-                      ) : (
-                        <div className="h-full w-full" />
-                      )}
+                      </div>
+                    ))}
+                    <div className="pt-3 border-t mt-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Net Profit</span>
+                        <span className="font-bold text-emerald-500">{formatCurrency(netProfit)}</span>
+                      </div>
                     </div>
+                  </>
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-sm text-muted-foreground">Earnings data will appear here after your first payout</p>
                   </div>
-                ))}
-                <div className="pt-3 border-t mt-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Net Profit</span>
-                    <span className="font-bold text-emerald-500">{formatCurrency(netProfit)}</span>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -397,6 +378,15 @@ export default function InvestPortfolioPage() {
               {holdingsCount} {holdingsCount === 1 ? 'property' : 'properties'}
             </Badge>
           </div>
+
+          {holdingsCount === 0 ? (
+            <Card className="rounded-2xl shadow-sm">
+              <CardContent className="py-12 text-center">
+                <Home className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-muted-foreground">You don't own any shares yet. Visit the Marketplace to start investing.</p>
+              </CardContent>
+            </Card>
+          ) : null}
 
           {portfolio.holdings.map((h, idx) => {
             const isCollapsed = collapsedIds.has(h.propertyId);

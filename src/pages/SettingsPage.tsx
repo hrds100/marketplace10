@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { User, Shield, CreditCard, Bell, LogOut, Wallet, Copy, Check } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { User, Shield, CreditCard, Bell, LogOut, Wallet, Copy, Check, Upload, Camera, Loader2 } from 'lucide-react';
 import { useWallet } from '@/hooks/useWallet';
 import BankDetailsForm from '@/components/BankDetailsForm';
 import { useNavigate } from 'react-router-dom';
@@ -43,26 +43,35 @@ export default function SettingsPage() {
   const { address: walletAddress, connected: walletConnected, connect: connectWallet, connecting } = useWallet();
   const [copied, setCopied] = useState(false);
   const [notifs, setNotifs] = useState<NotifPrefs>(defaultNotifs);
+  // Wallet change permission
+  const [walletChangeUntil, setWalletChangeUntil] = useState<string | null>(null);
+  const [showWalletReplace, setShowWalletReplace] = useState(false);
+  const [newWalletAddress, setNewWalletAddress] = useState('');
+  const [savingWallet, setSavingWallet] = useState(false);
+  // Avatar upload
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  // Load profile + notification prefs
+  // Load profile + notification prefs + wallet permission + avatar
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from('profiles')
-      .select('name, whatsapp, notif_whatsapp_new_deals, notif_whatsapp_daily, notif_email_daily, notif_whatsapp_status')
+    (supabase.from('profiles') as any)
+      .select('name, whatsapp, notif_whatsapp_new_deals, notif_whatsapp_daily, notif_email_daily, notif_whatsapp_status, wallet_change_allowed_until, avatar_url')
       .eq('id', user.id)
       .single()
-      .then(({ data }) => {
+      .then(({ data }: { data: Record<string, unknown> | null }) => {
         if (data) {
-          setProfile({ name: data.name || '', email: user.email || '', whatsapp: data.whatsapp || '' });
+          setProfile({ name: (data.name as string) || '', email: user.email || '', whatsapp: (data.whatsapp as string) || '' });
           setNotifs({
-            notif_whatsapp_new_deals: data.notif_whatsapp_new_deals ?? true,
-            notif_whatsapp_daily: data.notif_whatsapp_daily ?? true,
-            notif_email_daily: data.notif_email_daily ?? true,
-            notif_whatsapp_status: data.notif_whatsapp_status ?? true,
+            notif_whatsapp_new_deals: (data.notif_whatsapp_new_deals as boolean) ?? true,
+            notif_whatsapp_daily: (data.notif_whatsapp_daily as boolean) ?? true,
+            notif_email_daily: (data.notif_email_daily as boolean) ?? true,
+            notif_whatsapp_status: (data.notif_whatsapp_status as boolean) ?? true,
           });
+          setWalletChangeUntil((data.wallet_change_allowed_until as string) || null);
+          setAvatarUrl((data.avatar_url as string) || null);
         } else {
-          // Fallback: read email from auth
           setProfile(p => ({ ...p, email: user.email || '' }));
         }
       });
@@ -112,6 +121,71 @@ export default function SettingsPage() {
     }
   };
 
+  // Wallet replacement
+  const isWalletChangeAllowed = walletChangeUntil ? new Date(walletChangeUntil) > new Date() : false;
+  const walletChangeRemaining = walletChangeUntil
+    ? (() => {
+        const diff = new Date(walletChangeUntil).getTime() - Date.now();
+        if (diff <= 0) return '';
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        return hours > 0 ? `${hours}h ${minutes}m remaining` : `${minutes}m remaining`;
+      })()
+    : '';
+
+  const handleReplaceWallet = async () => {
+    if (!user) return;
+    const addr = newWalletAddress.trim();
+    if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) {
+      toast.error('Invalid Ethereum address. Must start with 0x and be 42 characters (hex only).');
+      return;
+    }
+    setSavingWallet(true);
+    try {
+      const { error } = await (supabase.from('profiles') as any)
+        .update({ wallet_address: addr })
+        .eq('id', user.id);
+      if (error) throw error;
+      toast.success('Wallet address updated successfully');
+      setShowWalletReplace(false);
+      setNewWalletAddress('');
+    } catch (err) {
+      toast.error('Failed to update wallet address');
+    }
+    setSavingWallet(false);
+  };
+
+  // Avatar upload
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be under 5MB');
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const fileName = `${user.id}/${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(data.path);
+      // Save to profiles
+      const { error: updateError } = await (supabase.from('profiles') as any)
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+      if (updateError) throw updateError;
+      setAvatarUrl(publicUrl);
+      toast.success('Profile photo updated');
+    } catch (err) {
+      toast.error('Failed to upload photo');
+    }
+    setUploadingAvatar(false);
+  };
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
@@ -153,7 +227,37 @@ export default function SettingsPage() {
             <div>
               <h2 className="text-[22px] font-bold text-foreground mb-6">Profile</h2>
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">{initials}</div>
+                <div className="relative group">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover border-2 border-border" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">{initials}</div>
+                  )}
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute inset-0 w-16 h-16 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  >
+                    {uploadingAvatar ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                </div>
+                <div>
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                  >
+                    {uploadingAvatar ? 'Uploading...' : 'Upload Photo'}
+                  </button>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Max 5MB, image files only</p>
+                </div>
               </div>
               <div className="space-y-4 max-w-[400px]">
                 <div>
@@ -411,6 +515,49 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Wallet Replace Section */}
+                {isWalletChangeAllowed && (
+                  <div className="mt-3 p-3 rounded-lg border border-blue-200 bg-blue-50/50">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-semibold text-blue-700">Wallet change permitted</span>
+                      <span className="text-[11px] text-blue-500">{walletChangeRemaining}</span>
+                    </div>
+                    {!showWalletReplace ? (
+                      <button
+                        onClick={() => setShowWalletReplace(true)}
+                        className="text-xs font-medium text-blue-700 hover:underline"
+                      >
+                        Replace wallet address
+                      </button>
+                    ) : (
+                      <div className="space-y-2 mt-2">
+                        <input
+                          type="text"
+                          placeholder="0x..."
+                          value={newWalletAddress}
+                          onChange={e => setNewWalletAddress(e.target.value)}
+                          className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => { setShowWalletReplace(false); setNewWalletAddress(''); }}
+                            className="flex-1 h-9 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleReplaceWallet}
+                            disabled={savingWallet || !newWalletAddress}
+                            className="flex-1 h-9 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                          >
+                            {savingWallet ? 'Saving...' : 'Update Wallet'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Bank Details */}

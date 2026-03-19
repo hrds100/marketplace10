@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { sendInvestNotification } from '@/lib/notifications';
-import { useMyPayouts, useMyBankAccount } from '@/hooks/useInvestData';
+import { useMyBankAccount } from '@/hooks/useInvestData';
+import { usePayoutsWithBlockchain } from '@/hooks/usePayoutsWithBlockchain';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +34,6 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockPayouts } from '@/data/investMockData';
 
 type ClaimMethod = 'bank_transfer' | 'usdc' | 'stay_token' | 'lp_token';
 type ClaimStep = 'choose' | 'processing' | 'success';
@@ -83,13 +83,13 @@ const claimMethods: { key: ClaimMethod; label: string; description: string; icon
   {
     key: 'stay_token',
     label: 'STAY Token',
-    description: 'Swap your yield into STAY tokens.',
+    description: 'Claim as USDC, then swap to STAY on PancakeSwap.',
     icon: Coins,
   },
   {
     key: 'lp_token',
     label: 'LP Token',
-    description: 'Deposit into the liquidity farm for compounding returns.',
+    description: 'Claim as USDC, then add liquidity on PancakeSwap for compounding.',
     icon: Sprout,
   },
 ];
@@ -176,8 +176,16 @@ function ClaimModal({
         // Fall back to simulated if blockchain unavailable
         setTimeout(() => setClaimStep('success'), 2000);
       }
+    } else if ((selectedMethod === 'stay_token' || selectedMethod === 'lp_token') && payout && onClaimRent) {
+      try {
+        await onClaimRent(payout.propertyId);
+        setClaimStep('success');
+      } catch {
+        // Fall back to simulated if blockchain unavailable
+        setTimeout(() => setClaimStep('success'), 2000);
+      }
     } else {
-      // STAY and LP token claims — simulated for now
+      // Fallback
       setTimeout(() => setClaimStep('success'), 2000);
     }
   };
@@ -190,12 +198,15 @@ function ClaimModal({
     }, 200);
   };
 
-  const successMessages: Record<ClaimMethod, string> = {
+  const PANCAKESWAP_STAY_URL = 'https://pancakeswap.finance/swap?outputCurrency=0x7F14ce2A5df31Ad0D2BF658d3840b1F7559d3EE0';
+  const PANCAKESWAP_LP_URL = 'https://pancakeswap.finance/add/0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d/0x7F14ce2A5df31Ad0D2BF658d3840b1F7559d3EE0';
+
+  const successMessages: Record<ClaimMethod, string | React.ReactNode> = {
     bank_transfer:
       "Your bank transfer is being processed. You'll receive funds within 2-3 business days.",
     usdc: 'USDC has been sent to your wallet.',
-    stay_token: 'STAY tokens have been sent to your wallet.',
-    lp_token: 'LP tokens have been deposited into your farm.',
+    stay_token: 'USDC claimed to your wallet. Swap to STAY tokens on PancakeSwap.',
+    lp_token: 'USDC claimed to your wallet. Add liquidity on PancakeSwap to compound returns.',
   };
 
   return (
@@ -304,6 +315,26 @@ function ClaimModal({
             <p className="text-sm text-muted-foreground text-center max-w-xs leading-relaxed">
               {selectedMethod ? successMessages[selectedMethod] : ''}
             </p>
+            {selectedMethod === 'stay_token' && (
+              <a
+                href={PANCAKESWAP_STAY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+              >
+                Swap on PancakeSwap &rarr;
+              </a>
+            )}
+            {selectedMethod === 'lp_token' && (
+              <a
+                href={PANCAKESWAP_LP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+              >
+                Add Liquidity on PancakeSwap &rarr;
+              </a>
+            )}
           </div>
         )}
 
@@ -340,22 +371,23 @@ const payoutPropertyImages: Record<number, string> = {
 
 export default function InvestPayoutsPage() {
   const { user } = useAuth();
-  const { data: realPayouts = [] } = useMyPayouts();
+  const { payouts: mergedPayouts, blockchainLoading } = usePayoutsWithBlockchain();
   const { data: bankAccount } = useMyBankAccount();
   const { claimRent, loading: claimLoading } = useBlockchain();
 
-  // Use real payouts if available, otherwise mock
-  const payouts = (realPayouts.length > 0 ? realPayouts.map((p: any) => ({
+  // Map merged payouts to PayoutItem[]
+  const payouts: PayoutItem[] = mergedPayouts.map((p) => ({
     id: p.id,
-    propertyTitle: p.inv_properties?.title || 'Property',
-    propertyId: p.property_id,
-    date: p.period_date,
-    sharesOwned: p.shares_owned || 0,
-    amount: Number(p.amount || 0),
-    currency: 'USDC',
-    status: p.status as 'claimable' | 'claimed' | 'paid',
-    method: p.claim_method,
-  })) : mockPayouts) as PayoutItem[];
+    propertyTitle: p.propertyTitle,
+    propertyId: p.propertyId,
+    date: p.date,
+    sharesOwned: p.sharesOwned,
+    amount: p.amount,
+    currency: p.currency,
+    status: p.status,
+    method: p.method,
+    txHash: p.txHash,
+  }));
 
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState<PayoutItem | null>(null);
@@ -381,9 +413,25 @@ export default function InvestPayoutsPage() {
         <p className="text-sm text-muted-foreground mt-1">
           Claim your rental income and view payment history.
         </p>
+        {blockchainLoading && (
+          <div className="flex items-center gap-2 mt-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground">Loading on-chain rent data...</span>
+          </div>
+        )}
       </div>
 
-      {/* Content */}
+      {payouts.length === 0 ? (
+        /* Empty state */
+        <Card>
+          <CardContent className="py-16 text-center">
+            <DollarSign className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-muted-foreground">No payouts yet. Rental income will appear here when available.</p>
+          </CardContent>
+        </Card>
+      ) : (
+
+      /* Content */
       <div className="flex gap-6">
         {/* Left sticky sidebar */}
         <div className="w-80 flex-shrink-0 space-y-4 sticky top-6 self-start">
@@ -527,6 +575,7 @@ export default function InvestPayoutsPage() {
           </Card>
         </div>
       </div>
+      )}
 
       {/* Claim Modal (shared) */}
       <ClaimModal

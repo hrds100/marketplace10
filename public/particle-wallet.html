@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NFsTay Wallet Bridge</title>
+  <style>body { margin: 0; overflow: hidden; }</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!--
+    Particle Wallet Bridge — loaded in a hidden iframe by the main app.
+    Uses esm.sh CDN to load Particle SDK outside of Vite's bundler,
+    avoiding WASM/thresh-sig build issues entirely.
+
+    Communication: parent ↔ iframe via postMessage.
+    Parent sends:  { type: 'CREATE_WALLET', jwt: '...' }
+    Iframe replies: { type: 'WALLET_CREATED', address: '0x...' }
+                 or { type: 'WALLET_ERROR', error: '...' }
+  -->
+
+  <script type="module">
+    // ── Particle config (same as src/lib/particle.ts) ──
+    const PARTICLE_PROJECT_ID = '470629ca-91af-45fa-a52b-62ed2adf9ef0';
+    const PARTICLE_CLIENT_KEY = 'cTHFOA18eAs4iRrkgn8lG1QARC8HFkkv5jeYQPc1';
+    const PARTICLE_APP_ID = 'a82d525c-85da-4786-a0ed-e4cf110c8377';
+    const CHAIN_ID = 56; // BNB Chain mainnet
+
+    // ── State ──
+    let particleInstance = null;
+    let isInitialized = false;
+    let isCreating = false;
+
+    // ── Load Particle SDK dynamically ──
+    async function loadParticleSDK() {
+      try {
+        // Try loading @particle-network/auth-core directly from esm.sh
+        // This is the non-React core that handles JWT auth and wallet creation
+        const module = await import('https://esm.sh/@particle-network/auth-core@2.0.6?bundle');
+        return module;
+      } catch (err) {
+        console.error('[particle-iframe] Failed to load SDK from esm.sh:', err);
+        throw new Error('Failed to load Particle SDK: ' + err.message);
+      }
+    }
+
+    // ── Initialize Particle ──
+    async function initParticle() {
+      if (isInitialized && particleInstance) return particleInstance;
+
+      try {
+        const sdk = await loadParticleSDK();
+
+        // auth-core exports AuthCoreEvent, etc. — find the right constructor
+        // The ParticleAuthModule or similar class handles JWT login
+        if (sdk.ParticleNetwork) {
+          particleInstance = new sdk.ParticleNetwork({
+            projectId: PARTICLE_PROJECT_ID,
+            clientKey: PARTICLE_CLIENT_KEY,
+            appId: PARTICLE_APP_ID,
+            chainName: 'bsc',
+            chainId: CHAIN_ID,
+          });
+          isInitialized = true;
+          return particleInstance;
+        }
+
+        // If auth-core doesn't have ParticleNetwork, try the connect method directly
+        if (sdk.connect || sdk.auth) {
+          particleInstance = sdk;
+          isInitialized = true;
+          return particleInstance;
+        }
+
+        throw new Error('Particle SDK loaded but no usable exports found');
+      } catch (err) {
+        console.error('[particle-iframe] Init failed:', err);
+        throw err;
+      }
+    }
+
+    // ── Create wallet with JWT ──
+    async function createWallet(jwt) {
+      if (isCreating) return;
+      isCreating = true;
+
+      try {
+        const particle = await initParticle();
+
+        let address = null;
+
+        // Method 1: ParticleNetwork instance with auth.login
+        if (particle.auth && typeof particle.auth.login === 'function') {
+          const userInfo = await particle.auth.login({
+            preferredAuthType: 'jwt',
+            account: jwt,
+          });
+          address = particle.evm?.getAddress?.() || userInfo?.wallets?.[0]?.public_address || null;
+        }
+        // Method 2: Direct connect function (auth-core style)
+        else if (typeof particle.connect === 'function') {
+          const userInfo = await particle.connect({
+            provider: 'jwt',
+            thirdpartyCode: jwt,
+          });
+          address = userInfo?.wallets?.[0]?.public_address || null;
+        }
+        // Method 3: AuthCoreContextProvider-style (if exports differ)
+        else if (particle.default && typeof particle.default === 'function') {
+          const instance = particle.default({
+            projectId: PARTICLE_PROJECT_ID,
+            clientKey: PARTICLE_CLIENT_KEY,
+            appId: PARTICLE_APP_ID,
+          });
+          const userInfo = await instance.connect({ provider: 'jwt', thirdpartyCode: jwt });
+          address = userInfo?.wallets?.[0]?.public_address || null;
+        }
+
+        if (!address) {
+          throw new Error('Wallet created but no address returned');
+        }
+
+        isCreating = false;
+        return address;
+      } catch (err) {
+        isCreating = false;
+        throw err;
+      }
+    }
+
+    // ── PostMessage listener ──
+    window.addEventListener('message', async (event) => {
+      // Only accept messages from our own origin
+      if (event.origin !== window.location.origin) return;
+
+      const { type, jwt } = event.data || {};
+
+      if (type === 'CREATE_WALLET' && jwt) {
+        try {
+          const address = await createWallet(jwt);
+          window.parent.postMessage({
+            type: 'WALLET_CREATED',
+            address: address,
+          }, event.origin);
+        } catch (err) {
+          console.error('[particle-iframe] Wallet creation failed:', err);
+          window.parent.postMessage({
+            type: 'WALLET_ERROR',
+            error: err.message || 'Unknown error',
+          }, event.origin);
+        }
+      }
+
+      if (type === 'PING') {
+        window.parent.postMessage({ type: 'PONG' }, event.origin);
+      }
+    });
+
+    // ── Tell parent we're ready ──
+    window.parent.postMessage({ type: 'PARTICLE_READY' }, '*');
+    console.log('[particle-iframe] Bridge loaded and ready');
+  </script>
+</body>
+</html>
