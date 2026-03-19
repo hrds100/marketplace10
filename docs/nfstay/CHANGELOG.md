@@ -4,6 +4,27 @@
 
 ---
 
+## 2026-03-19
+
+### nfstay.app Main Site VPS Parity
+
+- **nfstay.app now uses the enhanced white-label UI** instead of basic traveler pages
+- Added `NFS_PLATFORM_DEFAULTS` in `constants.ts` — virtual operator with NFStay platform branding
+- Added `isPlatform` flag to `WhiteLabelContext` — pages detect platform vs operator mode
+- `NfsWhiteLabelRouter`: main site now routes through white-label layout (removed separate basic branch)
+- `NfsWlNavbar`: platform mode shows NFStay logo + "List Your Property" CTA (no Contact button)
+- `NfsWlFooter`: platform mode shows NFStay branding + "For Property Managers" links
+- `NfsWlSearch`: platform mode shows ALL listed properties (no operator_id filter)
+- `NfsWlFeaturedProperties`: platform mode fetches all listed properties
+- `NfsWlProperty`: platform mode skips operator boundary check, tracks `main_platform` booking source
+- `NfsWlBooking` / `NfsWlPayment`: platform mode skips operator boundary check
+- White-label subdomains (`brand.nfstay.app`) completely unaffected — still operator-scoped
+- `hub.nfstay.com`: UNCHANGED
+- TypeScript: zero errors
+- Boundary check: clean — no marketplace10 files modified
+
+---
+
 ## 2026-03-18
 
 ### nfstay.app Traveler Routing

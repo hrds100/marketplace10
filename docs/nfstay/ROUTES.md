@@ -19,15 +19,18 @@
 | `/nfstay/settings` | Settings (tabs: profile, stripe, hospitable, branding, promo, analytics) | Yes |
 | `/nfstay/oauth-callback` | Stripe Connect OAuth return | Yes |
 
-## 2. TRAVELER ROUTES (nfstay.app/*)
+## 2. TRAVELER ROUTES (nfstay.app/* — platform mode)
+
+> nfstay.app now uses the same enhanced white-label UI as operator subdomains,
+> but with NFStay platform branding and all-operator property listings.
 
 | Route | Page | Auth Required |
 |-------|------|--------------|
-| `/` | Traveler landing / search | No |
-| `/search` | Search with map + filters | No |
-| `/property/[id]` | Property detail + booking widget | No |
-| `/reservations` | My reservations | Yes |
-| `/login` | Traveler login | No |
+| `/` | Landing page (hero, featured properties, about, FAQ, CTA) | No |
+| `/search` | Search with map + filters (all operators' properties) | No |
+| `/property/[id]` | Property detail with gallery + sections + booking widget | No |
+| `/booking/[id]` | Booking lookup by reservation ID | No |
+| `/payment` | Pre-checkout summary | No |
 | `/payment/success` | Post-payment confirmation | No |
 | `/payment/cancel` | Payment cancelled | No |
 

@@ -12,7 +12,7 @@ export default function NfsWlPayment() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const reservationId = searchParams.get('reservation_id');
-  const { operator } = useNfsWhiteLabel();
+  const { operator, isPlatform } = useNfsWhiteLabel();
   const { reservation, loading, error } = useNfsReservation(reservationId || '');
   const { creating, error: checkoutError, createCheckoutSession } = useNfsStripeCheckout();
 
@@ -55,8 +55,8 @@ export default function NfsWlPayment() {
     );
   }
 
-  // Verify reservation belongs to this operator
-  if (operator && reservation.operator_id !== operator.id) {
+  // Verify reservation belongs to this operator — skip in platform mode
+  if (!isPlatform && operator && reservation.operator_id !== operator.id) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4 text-center">
         <AlertCircle className="w-12 h-12 text-muted-foreground" />

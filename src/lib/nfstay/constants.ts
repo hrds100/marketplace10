@@ -126,3 +126,47 @@ export const NFS_PAYMENT_STATUS_LABELS: Record<(typeof NFS_PAYMENT_STATUSES)[num
 export const NFS_PROMO_CODE_STATUSES = [
   'active', 'expired', 'inactive', 'draft',
 ] as const;
+
+// ============================================================================
+// Platform defaults — virtual operator for nfstay.app main site
+// ============================================================================
+
+/** Platform-level defaults used when nfstay.app renders the main site.
+ *  Acts as a "virtual operator" so NfsWl* pages work without a real operator row. */
+export const NFS_PLATFORM_DEFAULTS = {
+  id: '__nfstay_platform__',
+  profile_id: '__nfstay_platform__',
+  brand_name: 'NFStay',
+  accent_color: '#2563eb',
+  logo_url: null,
+  logo_alt: 'NFStay',
+  favicon_url: null,
+  hero_headline: 'Find Your Perfect Vacation Rental',
+  hero_subheadline: 'Book directly from property managers. No middlemen, no hidden fees.',
+  hero_photo: null,
+  about_bio: 'NFStay connects travelers directly with property managers for vacation rentals. Browse properties, book securely, and enjoy your stay — all without middlemen.',
+  about_photo: null,
+  faqs: [
+    { question: 'How does NFStay work?', answer: 'NFStay lets property managers list their vacation rentals and accept direct bookings. As a traveler, you can search properties, check availability, and book securely with Stripe.' },
+    { question: 'Is it free to browse?', answer: 'Yes — browsing properties, checking availability, and viewing details is completely free. You only pay when you make a booking.' },
+    { question: 'How do payments work?', answer: 'Payments are processed securely through Stripe. Your payment goes directly to the property manager with a small platform fee.' },
+    { question: 'Can I contact the property manager?', answer: 'Yes — each property listing includes the manager\'s contact details. You can reach out before or after booking.' },
+  ],
+  contact_email: 'support@nfstay.app',
+  contact_phone: null,
+  contact_whatsapp: null,
+  contact_telegram: null,
+  social_instagram: null,
+  social_facebook: null,
+  social_x: null,
+  social_tiktok: null,
+  social_youtube: null,
+  social_google_business: null,
+  airbnb_url: null,
+  landing_page_enabled: true,
+  subdomain: null,
+  custom_domain: null,
+  custom_domain_verified: false,
+  onboarding_step: 'completed',
+  is_platform: true,
+} as const;

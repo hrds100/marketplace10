@@ -11,7 +11,7 @@ export default function NfsWlLanding() {
   const { operator } = useNfsWhiteLabel();
   const [searchQuery, setSearchQuery] = useState('');
 
-  if (!operator) return null;
+  if (!operator) return null; // Layout handles loading/error — this is a safety guard
 
   const faqs = Array.isArray(operator.faqs)
     ? (operator.faqs as { question: string; answer: string }[])

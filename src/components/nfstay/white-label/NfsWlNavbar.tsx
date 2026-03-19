@@ -1,13 +1,14 @@
 // White-label navbar — matches VPS WhiteLabelNavbar
 // Sticky top, logo + search bar + contact + Book Now + mobile hamburger
+// Platform mode: NFStay branding, "List Your Property" CTA, no contact button
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useNfsWhiteLabel } from '@/hooks/nfstay/use-nfs-white-label';
 import NfsWlContactModal from './NfsWlContactModal';
-import { Phone, Menu, X, Search, House } from 'lucide-react';
+import { Phone, Menu, X, Search, House, Home } from 'lucide-react';
 
 export default function NfsWlNavbar() {
-  const { operator } = useNfsWhiteLabel();
+  const { operator, isPlatform } = useNfsWhiteLabel();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -30,12 +31,19 @@ export default function NfsWlNavbar() {
   };
 
   const LogoFallback = () => (
-    <div
-      className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-lg"
-      style={{ backgroundColor: accentColor }}
-    >
-      {firstChar}
-    </div>
+    isPlatform ? (
+      <div className="flex items-center gap-2">
+        <Home className="w-5 h-5 text-[#2563eb]" />
+        <span className="text-lg font-bold text-[#2563eb]">NFStay</span>
+      </div>
+    ) : (
+      <div
+        className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-lg"
+        style={{ backgroundColor: accentColor }}
+      >
+        {firstChar}
+      </div>
+    )
   );
 
   return (
@@ -45,7 +53,7 @@ export default function NfsWlNavbar() {
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link to="/" className="flex-shrink-0">
-              {operator.logo_url && !logoError ? (
+              {!isPlatform && operator.logo_url && !logoError ? (
                 <>
                   {logoLoading && (
                     <div className="h-10 w-10 rounded-lg animate-pulse bg-gray-200" />
@@ -89,30 +97,42 @@ export default function NfsWlNavbar() {
 
             {/* Right side — desktop */}
             <div className="hidden md:flex items-center gap-3">
-              {/* Contact button */}
-              <button
-                onClick={() => setContactOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                <Phone className="w-4 h-4" />
-                <span>Contact</span>
-              </button>
-
-              {/* Book Now — hidden on property page */}
-              {!isPropertyPage && (
-                <Link
-                  to="/search"
-                  className="px-5 py-2 rounded-full text-sm font-medium text-white transition-colors"
-                  style={{ backgroundColor: accentColor }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = '0.9';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = '1';
-                  }}
+              {/* Contact button — only for real operators */}
+              {!isPlatform && (
+                <button
+                  onClick={() => setContactOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  Book Now
-                </Link>
+                  <Phone className="w-4 h-4" />
+                  <span>Contact</span>
+                </button>
+              )}
+
+              {/* CTA button */}
+              {!isPropertyPage && (
+                isPlatform ? (
+                  <a
+                    href="https://hub.nfstay.com/nfstay"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-5 py-2 rounded-full text-sm font-medium text-white transition-colors"
+                    style={{ backgroundColor: accentColor }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                  >
+                    List Your Property
+                  </a>
+                ) : (
+                  <Link
+                    to="/search"
+                    className="px-5 py-2 rounded-full text-sm font-medium text-white transition-colors"
+                    style={{ backgroundColor: accentColor }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                  >
+                    Book Now
+                  </Link>
+                )
               )}
             </div>
 
@@ -140,7 +160,16 @@ export default function NfsWlNavbar() {
                 Home
               </Link>
 
-              {operator.about_bio && (
+              <Link
+                to="/search"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                <Search className="w-4 h-4" />
+                Properties
+              </Link>
+
+              {!isPlatform && operator.about_bio && (
                 <Link
                   to="/#about"
                   onClick={() => setMobileOpen(false)}
@@ -152,7 +181,7 @@ export default function NfsWlNavbar() {
 
               <div className="border-t border-gray-100 my-2" />
 
-              {operator.contact_phone && (
+              {!isPlatform && operator.contact_phone && (
                 <a
                   href={`tel:${operator.contact_phone}`}
                   className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
@@ -162,7 +191,7 @@ export default function NfsWlNavbar() {
                 </a>
               )}
 
-              {operator.contact_email && (
+              {!isPlatform && operator.contact_email && (
                 <a
                   href={`mailto:${operator.contact_email}`}
                   className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
@@ -171,21 +200,36 @@ export default function NfsWlNavbar() {
                 </a>
               )}
 
-              {/* Book Now CTA */}
-              <Link
-                to="/search"
-                onClick={() => setMobileOpen(false)}
-                className="block w-full text-center px-4 py-2.5 rounded-full text-sm font-medium text-white mt-2"
-                style={{ backgroundColor: accentColor }}
-              >
-                Book Now
-              </Link>
+              {/* Mobile CTA */}
+              {isPlatform ? (
+                <a
+                  href="https://hub.nfstay.com/nfstay"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMobileOpen(false)}
+                  className="block w-full text-center px-4 py-2.5 rounded-full text-sm font-medium text-white mt-2"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  List Your Property
+                </a>
+              ) : (
+                <Link
+                  to="/search"
+                  onClick={() => setMobileOpen(false)}
+                  className="block w-full text-center px-4 py-2.5 rounded-full text-sm font-medium text-white mt-2"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  Book Now
+                </Link>
+              )}
             </div>
           </div>
         )}
       </nav>
 
-      <NfsWlContactModal open={contactOpen} onOpenChange={setContactOpen} />
+      {!isPlatform && (
+        <NfsWlContactModal open={contactOpen} onOpenChange={setContactOpen} />
+      )}
     </>
   );
 }

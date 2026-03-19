@@ -1,12 +1,86 @@
 // White-label footer — matches VPS WhiteLabelFooter
+// Platform mode: NFStay branding with platform links
+import { Link } from 'react-router-dom';
 import { Mail, Phone, MessageCircle } from 'lucide-react';
 import { useNfsWhiteLabel } from '@/hooks/nfstay/use-nfs-white-label';
 
 export default function NfsWlFooter() {
-  const { operator } = useNfsWhiteLabel();
+  const { operator, isPlatform } = useNfsWhiteLabel();
 
   if (!operator) return null;
 
+  // Platform mode — NFStay branded footer
+  if (isPlatform) {
+    return (
+      <footer className="bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Brand */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">NFStay</h3>
+              <p className="text-sm text-gray-400">
+                Find and book vacation rentals directly from property managers. No middlemen, no hidden fees.
+              </p>
+            </div>
+
+            {/* Explore */}
+            <div>
+              <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-3">
+                Explore
+              </h4>
+              <div className="space-y-2.5">
+                <Link
+                  to="/search"
+                  className="block text-sm text-gray-300 hover:text-white transition-colors"
+                >
+                  Browse Properties
+                </Link>
+                <Link
+                  to="/search"
+                  className="block text-sm text-gray-300 hover:text-white transition-colors"
+                >
+                  Search by Location
+                </Link>
+              </div>
+            </div>
+
+            {/* For Property Managers */}
+            <div>
+              <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-3">
+                For Property Managers
+              </h4>
+              <div className="space-y-2.5">
+                <a
+                  href="https://hub.nfstay.com/nfstay"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm text-gray-300 hover:text-white transition-colors"
+                >
+                  Operator Dashboard
+                </a>
+                <a
+                  href="https://hub.nfstay.com/signup"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm text-gray-300 hover:text-white transition-colors"
+                >
+                  List Your Property
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 pt-6 border-t border-gray-800 text-center">
+            <p className="text-xs text-gray-500">
+              &copy; {new Date().getFullYear()} NFStay. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
+  // Operator white-label footer
   const brandName = operator.brand_name || 'Vacation Rentals';
   const hasContact =
     operator.contact_email || operator.contact_phone || operator.contact_whatsapp;

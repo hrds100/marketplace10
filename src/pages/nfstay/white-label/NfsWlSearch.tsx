@@ -22,7 +22,7 @@ const INITIAL_FILTERS: NfsWlSearchFilters = {
 
 export default function NfsWlSearch() {
   const navigate = useNavigate();
-  const { operator } = useNfsWhiteLabel();
+  const { operator, isPlatform } = useNfsWhiteLabel();
   const [results, setResults] = useState<NfsProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +39,13 @@ export default function NfsWlSearch() {
     try {
       let q = (supabase.from('nfs_properties') as any)
         .select('*')
-        .eq('operator_id', operator.id)
         .eq('listing_status', 'listed');
+
+      // Platform mode: show all listed properties from all operators
+      // Operator mode: filter to this operator only
+      if (!isPlatform) {
+        q = q.eq('operator_id', operator.id);
+      }
 
       if (filters.query) {
         q = q.or(
@@ -80,7 +85,7 @@ export default function NfsWlSearch() {
     } finally {
       setLoading(false);
     }
-  }, [operator?.id, filters]);
+  }, [operator?.id, isPlatform, filters]);
 
   // Load on mount
   useEffect(() => {

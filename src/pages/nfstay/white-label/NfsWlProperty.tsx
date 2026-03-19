@@ -80,7 +80,7 @@ function Section({
 export default function NfsWlProperty() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { operator } = useNfsWhiteLabel();
+  const { operator, isPlatform } = useNfsWhiteLabel();
   const { property, loading, error } = useNfsProperty(id || '');
   const [relatedProperties, setRelatedProperties] = useState<NfsProperty[]>([]);
 
@@ -130,8 +130,8 @@ export default function NfsWlProperty() {
     );
   }
 
-  // Operator boundary check
-  if (operator && property.operator_id !== operator.id) {
+  // Operator boundary check — skip in platform mode (all properties are viewable)
+  if (!isPlatform && operator && property.operator_id !== operator.id) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4">
         <h1 className="text-xl font-bold">Property not found</h1>
@@ -438,7 +438,7 @@ export default function NfsWlProperty() {
           <div className="lg:sticky lg:top-[140px] self-start">
             <NfsBookingWidget
               property={property}
-              bookingSource="white_label"
+              bookingSource={isPlatform ? 'main_platform' : 'white_label'}
               operatorDomain={operatorDomain}
             />
           </div>

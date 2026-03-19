@@ -1,4 +1,5 @@
-// Featured properties grid — fetches 6 most recent listed properties for operator
+// Featured properties grid — fetches 6 most recent listed properties
+// Platform mode: all operators. Operator mode: scoped to operator.
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNfsWhiteLabel } from '@/hooks/nfstay/use-nfs-white-label';
@@ -8,7 +9,7 @@ import type { NfsProperty } from '@/lib/nfstay/types';
 
 export default function NfsWlFeaturedProperties() {
   const navigate = useNavigate();
-  const { operator } = useNfsWhiteLabel();
+  const { operator, isPlatform } = useNfsWhiteLabel();
   const [properties, setProperties] = useState<NfsProperty[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,13 +18,18 @@ export default function NfsWlFeaturedProperties() {
 
     const fetchFeatured = async () => {
       try {
-        const { data } = await (supabase.from('nfs_properties') as any)
+        let q = (supabase.from('nfs_properties') as any)
           .select('*')
-          .eq('operator_id', operator.id)
           .eq('listing_status', 'listed')
           .order('updated_at', { ascending: false })
           .limit(6);
 
+        // Only filter by operator if not platform mode
+        if (!isPlatform) {
+          q = q.eq('operator_id', operator.id);
+        }
+
+        const { data } = await q;
         setProperties((data as NfsProperty[]) ?? []);
       } catch {
         // Silently fail — featured section is non-critical
@@ -33,7 +39,7 @@ export default function NfsWlFeaturedProperties() {
     };
 
     fetchFeatured();
-  }, [operator?.id]);
+  }, [operator?.id, isPlatform]);
 
   if (!loading && properties.length === 0) return null;
 
