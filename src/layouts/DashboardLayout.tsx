@@ -7,7 +7,6 @@ import BurgerMenu from '@/components/BurgerMenu';
 import FavouritesDropdown from '@/components/FavouritesDropdown';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PaymentSuccessRefresher from '@/components/PaymentSuccessRefresher';
-import WalletProvisioner from '@/components/WalletProvisioner';
 import ClaimAccountBanner from '@/components/ClaimAccountBanner';
 import InvestSubNav from '@/components/InvestSubNav';
 import { useAuth } from '@/hooks/useAuth';
@@ -49,7 +48,7 @@ function TopBar() {
           className="hidden md:flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-secondary"
         >
           <Gem className="w-[13px] h-[13px] text-blue-400" strokeWidth={2} />
-          Partner on Airbnbs from £500
+          Invest in Airbnbs from £500
         </Link>
         <button
           onClick={() => navigate('/dashboard/list-a-deal')}
@@ -99,7 +98,6 @@ export default function DashboardLayout() {
     <ProtectedRoute>
       <div className="h-screen flex flex-col animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
         <PaymentSuccessRefresher />
-        <WalletProvisioner />
 
         {/* ── Top bar — always present ──────────────────────── */}
         <TopBar />
@@ -114,7 +112,7 @@ export default function DashboardLayout() {
           {/* ── Main content ────────────────────────────────── */}
           <div className={`${marginClass} flex-1 flex flex-col transition-all duration-300 ease-out overflow-hidden`}>
 
-            {/* JV Partners sub-nav */}
+            {/* Invest sub-nav (only on invest pages) */}
             {isInvest && <InvestSubNav />}
 
             {isFullBleed ? (

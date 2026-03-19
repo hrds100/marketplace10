@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
-import { useMyHoldings, useInvestProperties } from '@/hooks/useInvestData';
-import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -87,11 +84,11 @@ function getReachedMilestones(count: number) {
 // ---------------------------------------------------------------------------
 
 const ACHIEVEMENTS = [
-  { id: 'first-property', name: 'First Property', description: 'Contributed in your first property', icon: Home, unlocked: true },
+  { id: 'first-property', name: 'First Property', description: 'Invested in your first property', icon: Home, unlocked: true },
   { id: 'active-partner', name: 'Active Partner', description: 'Participated in the NFStay JV program', icon: Users, unlocked: true },
-  { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Contributed in 3+ properties', icon: Building2, unlocked: false },
-  { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Contributed in 5+ properties', icon: Award, unlocked: false },
-  { id: 'property-titan', name: 'Property Titan', description: 'Contributed in 10+ properties', icon: Crown, unlocked: false },
+  { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Invested in 3+ properties', icon: Building2, unlocked: false },
+  { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Invested in 5+ properties', icon: Award, unlocked: false },
+  { id: 'property-titan', name: 'Property Titan', description: 'Invested in 10+ properties', icon: Crown, unlocked: false },
   { id: 'first-payout', name: 'First Payout', description: 'Received your first rental income', icon: Banknote, unlocked: false },
   { id: 'proposal-voter', name: 'Proposal Voter', description: 'Voted on a governance proposal', icon: Vote, unlocked: false },
   { id: 'early-investor', name: 'Early Investor', description: 'Among the first 100 investors', icon: Sparkles, unlocked: false },
@@ -124,38 +121,9 @@ const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
 // ---------------------------------------------------------------------------
 
 export default function InvestPortfolioPage() {
-  const { data: realHoldings = [] } = useMyHoldings();
-  const { data: realProperties = [] } = useInvestProperties();
-  const { boostApr, claimBoostRewards, loading: boostLoading } = useBlockchain();
-
-  // Build real portfolio from Supabase data
-  const realHoldingsData = realHoldings.length > 0 ? realHoldings : null;
-
-  const portfolio = realHoldingsData ? {
-    totalContributed: realHoldingsData.reduce((sum: number, h: any) => sum + Number(h.invested_amount || 0), 0),
-    totalValue: realHoldingsData.reduce((sum: number, h: any) => sum + Number(h.current_value || h.invested_amount || 0), 0),
-    totalEarnings: realHoldingsData.reduce((sum: number, h: any) => sum + Number(h.total_earned || 0), 0),
-    pendingPayouts: 0, // Will be populated when inv_payouts has data
-    holdings: realHoldingsData.map((h: any) => ({
-      propertyId: h.property_id,
-      propertyTitle: h.inv_properties?.title || 'Property',
-      location: h.inv_properties?.location || '',
-      image: h.inv_properties?.image || '',
-      sharesOwned: h.shares_owned,
-      sharePrice: h.inv_properties?.price_per_share || 100,
-      currentValue: Number(h.current_value || h.invested_amount || 0),
-      invested: Number(h.invested_amount || 0),
-      totalEarned: Number(h.total_earned || 0),
-      monthlyYield: h.inv_properties ? (Number(h.inv_properties.monthly_rent || 0) / Number(h.inv_properties.total_shares || 1)) * h.shares_owned : 0,
-      annualYield: Number(h.inv_properties?.annual_yield || 0),
-      lastPayout: h.last_payout_date || '2026-03-01',
-      status: 'earning' as const,
-    })),
-  } : { ...mockPortfolio, totalContributed: mockPortfolio.totalInvested };
-
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
 
-  const holdingsCount = portfolio.holdings.length;
+  const holdingsCount = mockPortfolio.holdings.length;
   const currentRank = getCurrentRank(holdingsCount);
   const nextMilestone = getNextMilestone(holdingsCount);
   const reachedMilestones = getReachedMilestones(holdingsCount);
@@ -169,15 +137,15 @@ export default function InvestPortfolioPage() {
     : 0;
 
   // ROI progress
-  const roiTarget = portfolio.totalContributed;
+  const roiTarget = mockPortfolio.totalInvested;
   const profitTarget = roiTarget * 1.5;
-  const roiProgress = Math.min((portfolio.totalEarnings / profitTarget) * 100, 100);
+  const roiProgress = Math.min((mockPortfolio.totalEarnings / profitTarget) * 100, 100);
   const roiMarkerPct = (roiTarget / profitTarget) * 100;
 
   const summaryItems = [
-    { label: 'Total Contributed', value: portfolio.totalContributed, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'Total Earnings', value: portfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-    { label: 'Pending Payouts', value: portfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { label: 'Total Invested', value: mockPortfolio.totalInvested, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Total Earnings', value: mockPortfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { label: 'Pending Payouts', value: mockPortfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10' },
   ];
 
   const toggleCollapse = (propertyId: number) => {
@@ -244,7 +212,7 @@ export default function InvestPortfolioPage() {
 
                 {/* ROI Progress */}
                 <div className="pt-3 border-t space-y-2">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Returns Progress</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">ROI Progress</p>
                   <div className="relative">
                     <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                       <div
@@ -258,7 +226,7 @@ export default function InvestPortfolioPage() {
                       style={{ left: `${roiMarkerPct}%`, transform: 'translateX(-50%)' }}
                     >
                       <div className="w-px h-2 bg-muted-foreground/40" />
-                      <span className="text-[9px] text-muted-foreground mt-0.5">Returns</span>
+                      <span className="text-[9px] text-muted-foreground mt-0.5">ROI</span>
                     </div>
                     {/* Profit marker */}
                     <div
@@ -270,7 +238,7 @@ export default function InvestPortfolioPage() {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    {formatCurrency(portfolio.totalEarnings)} earned of {formatCurrency(roiTarget)} target returns
+                    {formatCurrency(mockPortfolio.totalEarnings)} earned of {formatCurrency(roiTarget)} to reach ROI
                   </p>
                 </div>
               </CardContent>
@@ -398,7 +366,7 @@ export default function InvestPortfolioPage() {
             </Badge>
           </div>
 
-          {portfolio.holdings.map((h, idx) => {
+          {mockPortfolio.holdings.map((h, idx) => {
             const isCollapsed = collapsedIds.has(h.propertyId);
             const gain = ((h.currentValue - h.invested) / h.invested) * 100;
             const activeProposal = hasActiveProposal(h.propertyId);
@@ -484,7 +452,7 @@ export default function InvestPortfolioPage() {
                               </p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Contributed</p>
+                              <p className="text-muted-foreground">Invested</p>
                               <p className="font-semibold">{formatCurrency(h.invested)}</p>
                             </div>
                             <div>
@@ -535,7 +503,7 @@ export default function InvestPortfolioPage() {
                           </div>
                           <div>
                             <p className="text-base font-bold">{(h.annualYield * 6 + 30).toFixed(0)}%</p>
-                            <p className="text-[10px] text-muted-foreground">6YR Est. Returns</p>
+                            <p className="text-[10px] text-muted-foreground">6YR Expected ROI</p>
                           </div>
                           <div>
                             <p className="text-base font-bold">Monthly</p>
@@ -553,35 +521,10 @@ export default function InvestPortfolioPage() {
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 pt-1">
-                          <Button
-                            size="sm"
-                            className="w-full bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white text-xs rounded-full"
-                            disabled={boostLoading}
-                            onClick={async () => {
-                              try {
-                                await boostApr(h.propertyId);
-                                toast.success('APR boosted successfully!');
-                              } catch (err) {
-                                toast.error('Boost failed — wallet may not be connected');
-                              }
-                            }}
-                          >
+                          <Button size="sm" className="w-full bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white text-xs rounded-full">
                             Boost APR {'\uD83D\uDE80'}
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full text-xs rounded-full border-primary/30 text-primary hover:bg-primary/10"
-                            disabled={boostLoading}
-                            onClick={async () => {
-                              try {
-                                await claimBoostRewards(h.propertyId);
-                                toast.success('STAY rewards claimed!');
-                              } catch (err) {
-                                toast.error('Claim failed — no rewards available');
-                              }
-                            }}
-                          >
+                          <Button size="sm" variant="outline" className="w-full text-xs rounded-full border-primary/30 text-primary hover:bg-primary/10">
                             Claim
                           </Button>
                         </div>

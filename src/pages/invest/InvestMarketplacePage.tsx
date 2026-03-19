@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { mockProperties } from '@/data/investMockData';
-import { useInvestProperty } from '@/hooks/useInvestData';
-import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,7 +50,9 @@ import {
 // Constants & Mock Data
 // ---------------------------------------------------------------------------
 
-const fallbackProperty = mockProperties[0];
+const property = mockProperties[0];
+const fundedPercent = Math.round((property.sharesSold / property.totalShares) * 100);
+const sharesRemaining = property.totalShares - property.sharesSold;
 
 const mockActivity = [
   { event: 'Purchase', price: '$500', from: 'Market', to: '0x8f3a...e2c1', date: 'Mar 15, 2026' },
@@ -104,7 +104,6 @@ function InvestModal({
 }) {
   const [shares, setShares] = useState(1);
   const [confirmed, setConfirmed] = useState(false);
-  const { buyShares, loading: blockchainLoading } = useBlockchain();
 
   const total = shares * property.pricePerShare;
   const monthlyIncome = ((property.monthlyRent / property.totalShares) * shares).toFixed(2);
@@ -208,23 +207,9 @@ function InvestModal({
               <Button variant="outline" onClick={() => handleClose(false)}>
                 Cancel
               </Button>
-              <Button
-                className="gap-2"
-                disabled={blockchainLoading}
-                onClick={async () => {
-                  try {
-                    const ethers = await import('ethers').catch(() => null);
-                    if (ethers && (window as any).ethereum) {
-                      await buyShares(1, shares, total);
-                    }
-                  } catch (err) {
-                    console.log('On-chain purchase skipped:', err);
-                  }
-                  setConfirmed(true);
-                }}
-              >
+              <Button className="gap-2" onClick={() => setConfirmed(true)}>
                 <Shield className="h-4 w-4" />
-                {blockchainLoading ? 'Processing on-chain...' : 'Confirm Investment'}
+                Confirm Investment
               </Button>
             </DialogFooter>
           </>
@@ -417,7 +402,7 @@ function InvestCardContent({
 
       {/* Dollar input */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium">Contribution amount</label>
+        <label className="mb-1.5 block text-sm font-medium">Investment amount</label>
         <div className="flex items-center gap-2 rounded-lg border px-3 py-2 focus-within:ring-2 focus-within:ring-primary">
           <span className="text-sm font-semibold text-muted-foreground">$</span>
           <input
@@ -511,7 +496,7 @@ function InvestCardContent({
           <a href="#" className="text-primary font-medium underline decoration-primary/30 hover:decoration-primary transition-colors">
             Token Sale Agreement
           </a>{' '}
-          and terms of partnership.
+          and terms of investment.
         </span>
       </label>
 
@@ -953,7 +938,7 @@ function AgentReferralLink() {
             </div>
             <h3 className="text-lg font-bold mb-1">Work with us</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Share your personal link with friends and earn instant commission on every partnership they join.
+              Share your personal link with friends and earn instant commission on every investment they make.
             </p>
           </div>
 
@@ -1386,35 +1371,6 @@ function Version2({
 // ---------------------------------------------------------------------------
 
 export default function InvestMarketplacePage() {
-  const { data: dbProperty } = useInvestProperty(1);
-
-  const property = dbProperty ? {
-    ...fallbackProperty,
-    title: dbProperty.title || fallbackProperty.title,
-    location: dbProperty.location || fallbackProperty.location,
-    pricePerShare: dbProperty.price_per_share || fallbackProperty.pricePerShare,
-    totalShares: dbProperty.total_shares || fallbackProperty.totalShares,
-    sharesSold: dbProperty.shares_sold || fallbackProperty.sharesSold,
-    annualYield: dbProperty.annual_yield || fallbackProperty.annualYield,
-    monthlyRent: dbProperty.monthly_rent || fallbackProperty.monthlyRent,
-    propertyValue: dbProperty.property_value || fallbackProperty.propertyValue,
-    status: dbProperty.status || fallbackProperty.status,
-    type: dbProperty.type || fallbackProperty.type,
-    bedrooms: dbProperty.bedrooms || fallbackProperty.bedrooms,
-    bathrooms: dbProperty.bathrooms || fallbackProperty.bathrooms,
-    area: dbProperty.area || fallbackProperty.area,
-    description: dbProperty.description || fallbackProperty.description,
-    highlights: dbProperty.highlights || fallbackProperty.highlights,
-    documents: dbProperty.documents || fallbackProperty.documents,
-    occupancyRate: dbProperty.occupancy_rate || fallbackProperty.occupancyRate,
-    yearBuilt: dbProperty.year_built || fallbackProperty.yearBuilt,
-    images: dbProperty.images?.length ? dbProperty.images : fallbackProperty.images,
-    image: dbProperty.image || fallbackProperty.image,
-  } : fallbackProperty;
-
-  const fundedPercent = Math.round((property.sharesSold / property.totalShares) * 100);
-  const sharesRemaining = property.totalShares - property.sharesSold;
-
   const version = 1 as const;
   const [jvExpanded, setJvExpanded] = useState(false);
   const [currentImage, setCurrentImage] = useState(0);

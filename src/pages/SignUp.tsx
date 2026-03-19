@@ -120,25 +120,6 @@ export default function SignUp() {
         localStorage.removeItem('nfstay_ref');
       }
 
-      // 1e. Auto-create wallet via Particle (non-blocking)
-      if (userId) {
-        try {
-          // Check if Particle is available and auto-connect
-          if (typeof window !== 'undefined' && (window as any).particle?.ethereum) {
-            const provider = (window as any).particle.ethereum;
-            const accounts = await provider.request({ method: 'eth_requestAccounts' }).catch(() => []);
-            if (accounts?.[0]) {
-              await (supabase.from('profiles') as any)
-                .update({ wallet_address: accounts[0] } as any)
-                .eq('id', userId);
-            }
-          }
-        } catch (walletErr) {
-          // Don't block signup if wallet creation fails
-          console.log('Auto wallet creation skipped:', walletErr);
-        }
-      }
-
       // 2. Send welcome email + notify admin (non-blocking)
       supabase.functions.invoke('send-email', {
         body: { type: 'welcome-member', data: { email: cleanEmail, name: cleanName } },
@@ -398,17 +379,11 @@ export default function SignUp() {
             {/* Avatars + trust group */}
             <div className="flex flex-col items-center mb-6 lg:mb-8">
               <div className="flex -space-x-3 mb-2">
-                {[
-                  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=face',
-                  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=96&h=96&fit=crop&crop=face',
-                  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&crop=face',
-                  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=face',
-                  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=face',
-                ].map((src, i) => (
+                {[1, 2, 3, 4, 5].map((i) => (
                   <img
                     key={i}
-                    src={src}
-                    className="w-12 h-12 lg:w-14 lg:h-14 rounded-full border-2 border-white/20 object-cover"
+                    src={`https://picsum.photos/seed/auth-av${i}/48/48`}
+                    className="w-12 h-12 lg:w-14 lg:h-14 rounded-full border-2 border-white/20"
                     alt=""
                   />
                 ))}

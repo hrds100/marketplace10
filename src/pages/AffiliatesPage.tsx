@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe } from 'lucide-react';
-import { useMyAffiliateProfile } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,8 +42,6 @@ function getNextTuesday() {
 export default function AffiliatesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data: realAffProfile } = useMyAffiliateProfile();
-  // TODO: Wire realAffProfile to replace mock affiliate data when available
   const [copied, setCopied] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
   const [calcMode, setCalcMode] = useState<'subscriptions' | 'jv'>('subscriptions');
@@ -506,15 +503,84 @@ export default function AffiliatesPage() {
             {/* ─── RIGHT COLUMN ───────────────────────────── */}
             <div className="space-y-6">
 
-              {/* Payouts — redirects to centralized Payout Settings */}
-              <div className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="text-sm font-semibold text-foreground mb-2">Payouts</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Manage your bank details and claim commissions from the Payout Settings page.
-                </p>
-                <a href="/dashboard/settings" className="inline-flex items-center gap-2 px-4 py-2.5 bg-nfstay-black text-nfstay-black-foreground text-[13px] font-semibold rounded-lg hover:opacity-90 transition-opacity">
-                  Go to Payout Settings
-                </a>
+              {/* Payouts */}
+              <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                <div className="p-5 pb-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-1">Payouts</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold text-foreground">£{Number(profile.pending_balance || 0).toFixed(2)}</span>
+                    <span className="text-xs text-muted-foreground">pending</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Total earned: £{Number(profile.total_earned || 0).toFixed(2)} · Paid out: £{Number(profile.total_paid_out || 0).toFixed(2)}
+                  </p>
+                </div>
+
+                {/* Payout method tabs */}
+                <div className="border-t border-border">
+                  <div className="flex">
+                    {([
+                      { key: 'bank' as const, label: 'UK Bank', icon: Building2 },
+                      { key: 'paypal' as const, label: 'PayPal', icon: CreditCard },
+                      { key: 'other' as const, label: 'Other', icon: Globe },
+                    ]).map(t => (
+                      <button key={t.key} onClick={() => setPayoutTab(t.key)}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] font-medium border-b-2 transition-colors ${
+                          payoutTab === t.key
+                            ? 'border-emerald-500 text-emerald-600 bg-emerald-50/50'
+                            : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}>
+                        <t.icon className="w-3.5 h-3.5" /> {t.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="p-4 space-y-3">
+                    {payoutTab === 'bank' && (
+                      <>
+                        <PayoutField label="Account holder name" field="bank_holder_name" profileId={profile.id} currentValue={profile.bank_holder_name} />
+                        <PayoutField label="Sort code" field="bank_sort_code" profileId={profile.id} currentValue={profile.bank_sort_code} placeholder="12-34-56" />
+                        <PayoutField label="Account number" field="bank_account_number" profileId={profile.id} currentValue={profile.bank_account_number} placeholder="12345678" />
+                      </>
+                    )}
+                    {payoutTab === 'paypal' && (
+                      <PayoutField label="PayPal email" field="paypal_email" profileId={profile.id} currentValue={profile.paypal_email} placeholder="your@paypal.com" />
+                    )}
+                    {payoutTab === 'other' && (
+                      <PayoutField label="Payment details" field="other_payout_details" profileId={profile.id} currentValue={profile.other_payout_details} placeholder="Enter your preferred payment method and details..." multiline />
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-4 pt-0">
+                  <button onClick={() => payoutMutation.mutate()}
+                    disabled={payoutMutation.isPending || !profile.pending_balance || profile.pending_balance <= 0}
+                    className="w-full py-2.5 bg-nfstay-black text-nfstay-black-foreground text-[13px] font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40">
+                    {payoutMutation.isPending ? 'Requesting...' : 'Request Payout'}
+                  </button>
+                  <p className="text-[10px] text-muted-foreground text-center mt-2">
+                    Payouts processed every Tuesday · Next: {getNextTuesday()}
+                  </p>
+                </div>
+
+                {/* Payout history */}
+                {events.filter((e: { event_type: string }) => e.event_type === 'payout_requested' || e.event_type === 'payout_paid').length > 0 && (
+                  <div className="border-t border-border p-4">
+                    <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">History</span>
+                    {events
+                      .filter((e: { event_type: string }) => e.event_type === 'payout_requested' || e.event_type === 'payout_paid')
+                      .slice(0, 5)
+                      .map((e: { id: string; event_type: string; amount: number; created_at: string }) => (
+                        <div key={e.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                          <span className="text-[13px] text-foreground">£{Number(e.amount).toFixed(2)}</span>
+                          <span className={`text-[11px] font-medium ${e.event_type === 'payout_paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {e.event_type === 'payout_paid' ? 'Paid' : 'Requested'}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">{new Date(e.created_at).toLocaleDateString('en-GB')}</span>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
 
               {/* Commission breakdown */}

@@ -52,6 +52,25 @@ import InvestMarketplacePage from "./pages/invest/InvestMarketplacePage";
 import InvestPortfolioPage from "./pages/invest/InvestPortfolioPage";
 import InvestPayoutsPage from "./pages/invest/InvestPayoutsPage";
 import InvestProposalsPage from "./pages/invest/InvestProposalsPage";
+// NFStay — operator module (isolated, see docs/nfstay/BOUNDARIES.md)
+import NfsOperatorLayout from "./components/nfstay/NfsOperatorLayout";
+import NfsOperatorSignup from "./pages/nfstay/NfsOperatorSignup";
+import NfsOperatorDashboard from "./pages/nfstay/NfsOperatorDashboard";
+import NfsOnboarding from "./pages/nfstay/NfsOnboarding";
+import NfsOperatorSettings from "./pages/nfstay/NfsOperatorSettings";
+import NfsProperties from "./pages/nfstay/NfsProperties";
+import NfsPropertyNew from "./pages/nfstay/NfsPropertyNew";
+import NfsPropertyDetail from "./pages/nfstay/NfsPropertyDetail";
+import NfsReservations from "./pages/nfstay/NfsReservations";
+import NfsReservationDetail from "./pages/nfstay/NfsReservationDetail";
+import NfsCreateReservation from "./pages/nfstay/NfsCreateReservation";
+import NfsSearch from "./pages/nfstay/NfsSearch";
+import NfsPropertyView from "./pages/nfstay/NfsPropertyView";
+import NfsPaymentSuccess from "./pages/nfstay/NfsPaymentSuccess";
+import NfsPaymentCancel from "./pages/nfstay/NfsPaymentCancel";
+import NfsAnalytics from "./pages/nfstay/NfsAnalytics";
+import NfsWhiteLabelProvider from "./components/nfstay/white-label/NfsWhiteLabelProvider";
+import NfsWhiteLabelRouter from "./components/nfstay/white-label/NfsWhiteLabelRouter";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -86,6 +105,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
       <FavouritesProvider>
+      <NfsWhiteLabelProvider>
+      <NfsWhiteLabelRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
@@ -163,8 +184,29 @@ const App = () => (
             <Route path="booking" element={<div className="text-center py-20"><h2 className="text-2xl font-bold mb-2">Booking Site Admin</h2><p className="text-muted-foreground">Coming Soon — Tajul is building this</p></div>} />
           </Route>
           <Route path="/testing/design" element={<TestingDesign />} />
+          {/* NFStay operator routes — isolated module */}
+          <Route path="/nfstay/signup" element={<NfsOperatorSignup />} />
+          <Route path="/nfstay" element={<NfsOperatorLayout />}>
+            <Route index element={<NfsOperatorDashboard />} />
+            <Route path="onboarding" element={<NfsOnboarding />} />
+            <Route path="properties" element={<NfsProperties />} />
+            <Route path="properties/new" element={<NfsPropertyNew />} />
+            <Route path="properties/:id" element={<NfsPropertyDetail />} />
+            <Route path="reservations" element={<NfsReservations />} />
+            <Route path="reservations/:id" element={<NfsReservationDetail />} />
+            <Route path="create-reservation" element={<NfsCreateReservation />} />
+            <Route path="settings" element={<NfsOperatorSettings />} />
+            <Route path="analytics" element={<NfsAnalytics />} />
+          </Route>
+          {/* NFStay traveler-facing routes — standalone (no operator layout) */}
+          <Route path="/nfstay/search" element={<NfsSearch />} />
+          <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
+          <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />
+          <Route path="/nfstay/payment/cancel" element={<NfsPaymentCancel />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+      </NfsWhiteLabelRouter>
+      </NfsWhiteLabelProvider>
       </FavouritesProvider>
       </BrowserRouter>
     </TooltipProvider>
@@ -173,4 +215,3 @@ const App = () => (
 );
 
 export default App;
-

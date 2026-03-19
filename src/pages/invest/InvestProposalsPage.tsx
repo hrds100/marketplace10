@@ -1,6 +1,4 @@
 import { useState, useMemo } from 'react';
-import { useProposals } from '@/hooks/useInvestData';
-import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -83,18 +81,10 @@ function typeBadgeColor(type: string): string {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function InvestProposalsPage() {
-  const { data: realProposals = [] } = useProposals();
-  const { castVote: castBlockchainVote, loading: voteLoading } = useBlockchain();
-
-  // Use real proposals if available
-  const realActiveProposals = realProposals.filter((p: any) => !p.result && new Date(p.ends_at) > new Date());
-  const realPastProposals = realProposals.filter((p: any) => p.result);
-
   // Local mutable state for active proposals (so votes update in place)
-  const activeSource = realActiveProposals.length > 0 ? realActiveProposals : mockProposals.active;
   const [activeProposals, setActiveProposals] = useState<ActiveProposalWithVote[]>(
     () =>
-      activeSource.map((p: any) => ({
+      mockProposals.active.map((p) => ({
         ...p,
         userVoted: p.userVoted as VoteChoice | null,
       }))
@@ -108,7 +98,7 @@ export default function InvestProposalsPage() {
     choice: null,
   });
 
-  const pastProposals: PastProposal[] = realPastProposals.length > 0 ? realPastProposals as PastProposal[] : mockProposals.past;
+  const pastProposals: PastProposal[] = mockProposals.past;
 
   // Submit proposal state
   const [submitOpen, setSubmitOpen] = useState(false);
@@ -166,8 +156,6 @@ export default function InvestProposalsPage() {
 
   function confirmVote() {
     if (!voteDialog.proposalId || !voteDialog.choice) return;
-
-    // Update local state immediately (optimistic)
     setActiveProposals((prev) =>
       prev.map((p) => {
         if (p.id !== voteDialog.proposalId) return p;
@@ -179,15 +167,6 @@ export default function InvestProposalsPage() {
         };
       })
     );
-
-    // Try blockchain vote (non-blocking)
-    const proposal = activeProposals.find((p) => p.id === voteDialog.proposalId) as any;
-    if (proposal?.blockchain_proposal_id) {
-      castBlockchainVote(proposal.blockchain_proposal_id, voteDialog.choice === 'yes').catch(
-        () => console.log('On-chain vote skipped'),
-      );
-    }
-
     setVoteDialog({ open: false, proposalId: null, proposalTitle: '', choice: null });
   }
 
@@ -344,7 +323,7 @@ export default function InvestProposalsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Governance Proposals</h1>
         <p className="text-sm text-muted-foreground">
-          Vote on property decisions and shape your partnership outcomes.
+          Vote on property decisions and shape your investment outcomes.
         </p>
       </div>
 

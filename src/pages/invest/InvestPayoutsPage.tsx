@@ -1,9 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { sendInvestNotification } from '@/lib/notifications';
-import { useMyPayouts, useMyBankAccount } from '@/hooks/useInvestData';
-import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,7 +28,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockPayouts } from '@/data/investMockData';
+import { mockPayouts, mockPortfolio } from '@/data/investMockData';
 
 type ClaimMethod = 'bank_transfer' | 'usdc' | 'stay_token' | 'lp_token';
 type ClaimStep = 'choose' | 'processing' | 'success';
@@ -125,8 +120,6 @@ function ClaimModal({
   setClaimStep,
   selectedMethod,
   setSelectedMethod,
-  user,
-  onClaimRent,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -135,51 +128,15 @@ function ClaimModal({
   setClaimStep: (step: ClaimStep) => void;
   selectedMethod: ClaimMethod | null;
   setSelectedMethod: (method: ClaimMethod | null) => void;
-  user: { id: string; email?: string } | null;
-  onClaimRent?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
 }) {
   if (!payout) return null;
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (!selectedMethod) return;
     setClaimStep('processing');
-
-    if (selectedMethod === 'bank_transfer') {
-      try {
-        const { data, error } = await supabase.functions.invoke('submit-payout-claim', {
-          body: {
-            user_id: user?.id,
-            user_type: 'investor',
-            currency: 'GBP',
-          },
-        });
-        if (error) throw new Error(error.message);
-        if (data?.error) throw new Error(data.error);
-        setClaimStep('success');
-        sendInvestNotification({
-          type: 'rent_claimed',
-          user_id: user?.id,
-          user_name: user?.email?.split('@')[0] || 'Investor',
-          amount: payout.amount || 0,
-          property: payout.propertyTitle || '',
-        });
-      } catch (err) {
-        console.error('Claim failed:', err);
-        // Fall back to simulated success for demo
-        setClaimStep('success');
-      }
-    } else if (selectedMethod === 'usdc' && payout && onClaimRent) {
-      try {
-        await onClaimRent(payout.propertyId);
-        setClaimStep('success');
-      } catch {
-        // Fall back to simulated if blockchain unavailable
-        setTimeout(() => setClaimStep('success'), 2000);
-      }
-    } else {
-      // STAY and LP token claims — simulated for now
-      setTimeout(() => setClaimStep('success'), 2000);
-    }
+    setTimeout(() => {
+      setClaimStep('success');
+    }, 2000);
   };
 
   const handleClose = () => {
@@ -339,28 +296,12 @@ const payoutPropertyImages: Record<number, string> = {
 // ─── Main Page Component ─────────────────────────────────────────────────────────
 
 export default function InvestPayoutsPage() {
-  const { user } = useAuth();
-  const { data: realPayouts = [] } = useMyPayouts();
-  const { data: bankAccount } = useMyBankAccount();
-  const { claimRent, loading: claimLoading } = useBlockchain();
-
-  // Use real payouts if available, otherwise mock
-  const payouts = (realPayouts.length > 0 ? realPayouts.map((p: any) => ({
-    id: p.id,
-    propertyTitle: p.inv_properties?.title || 'Property',
-    propertyId: p.property_id,
-    date: p.period_date,
-    sharesOwned: p.shares_owned || 0,
-    amount: Number(p.amount || 0),
-    currency: 'USDC',
-    status: p.status as 'claimable' | 'claimed' | 'paid',
-    method: p.claim_method,
-  })) : mockPayouts) as PayoutItem[];
-
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState<PayoutItem | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<ClaimMethod | null>(null);
   const [claimStep, setClaimStep] = useState<ClaimStep>('choose');
+
+  const payouts = mockPayouts as PayoutItem[];
 
   const handleClaim = (payout: PayoutItem) => {
     setSelectedPayout(payout);
@@ -404,7 +345,7 @@ export default function InvestPayoutsPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Total Earned</span>
-                <span className="font-bold">{formatCurrency(payouts.reduce((sum, p) => sum + p.amount, 0))}</span>
+                <span className="font-bold">{formatCurrency(mockPortfolio.totalEarnings)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Pending Items</span>
@@ -537,8 +478,6 @@ export default function InvestPayoutsPage() {
         setClaimStep={setClaimStep}
         selectedMethod={selectedMethod}
         setSelectedMethod={setSelectedMethod}
-        user={user}
-        onClaimRent={claimRent}
       />
     </div>
   );
