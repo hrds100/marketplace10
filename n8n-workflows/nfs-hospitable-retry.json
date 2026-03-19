@@ -1,0 +1,62 @@
+{
+  "name": "nfs-hospitable-retry",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 30 }]
+        }
+      },
+      "id": "nfs-retry-cron",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find connections with failed sync status\nconst supabaseUrl = $env.SUPABASE_URL;\nconst serviceKey = $env.SUPABASE_SERVICE_ROLE_KEY;\n\nconst response = await fetch(\n  `${supabaseUrl}/rest/v1/nfs_hospitable_connections?sync_status=eq.failed&status=eq.connected&is_active=eq.true&select=id,operator_id,hospitable_customer_id,hospitable_connection_id,last_sync_error`,\n  {\n    headers: {\n      'apikey': serviceKey,\n      'Authorization': `Bearer ${serviceKey}`,\n      'Accept': 'application/json'\n    }\n  }\n);\n\nconst failedConnections = await response.json();\n\nif (!failedConnections || failedConnections.length === 0) {\n  return [{ json: { message: 'No failed connections to retry', count: 0 } }];\n}\n\nreturn [{ json: { connections: failedConnections, count: failedConnections.length } }];"
+      },
+      "id": "nfs-find-failed",
+      "name": "Find Failed Connections",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [{ "value1": "={{ $json.count }}", "operation": "larger", "value2": 0 }]
+        }
+      },
+      "id": "nfs-retry-has-failed",
+      "name": "Any Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Trigger manual sync for each failed connection\nconst connections = $input.first().json.connections;\nconst n8nBaseUrl = $env.N8N_BASE_URL || 'https://n8n.srv886554.hstgr.cloud';\nconst results = [];\n\nfor (const conn of connections) {\n  try {\n    const response = await fetch(\n      `${n8nBaseUrl}/webhook/nfs-hospitable-manual-sync`,\n      {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({\n          operator_id: conn.operator_id,\n          connection_id: conn.id,\n          hospitable_customer_id: conn.hospitable_customer_id,\n          hospitable_connection_id: conn.hospitable_connection_id\n        })\n      }\n    );\n\n    const result = await response.json();\n    results.push({\n      connection_id: conn.id,\n      status: response.ok ? 'retry_triggered' : 'retry_failed',\n      result\n    });\n  } catch (err) {\n    results.push({\n      connection_id: conn.id,\n      status: 'retry_error',\n      error: err.message\n    });\n  }\n}\n\nreturn [{ json: { results, retriedCount: results.length } }];"
+      },
+      "id": "nfs-trigger-retries",
+      "name": "Trigger Retries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [910, 300]
+    }
+  ],
+  "connections": {
+    "Every 30 Minutes": { "main": [[{ "node": "Find Failed Connections", "type": "main", "index": 0 }]] },
+    "Find Failed Connections": { "main": [[{ "node": "Any Failed?", "type": "main", "index": 0 }]] },
+    "Any Failed?": {
+      "main": [
+        [],
+        [{ "node": "Trigger Retries", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "nfstay" }],
+  "active": false
+}
