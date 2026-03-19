@@ -11,14 +11,25 @@
 
 ## Quick Answer: What's Missing?
 
-**All integration items are complete.**
+**MILESTONE: All pages wired to real blockchain data (2026-03-19).**
 
 | Item | Status | Date |
 |------|--------|------|
-| SamCart API key | LIVE | 2026-03-19 — key received, set in Supabase secrets, Edge Function redeployed |
-| Particle wallet creation | LIVE | 2026-03-19 — uses auth-core directly (no React wrapper), lazy-loaded, auto-creates at signup |
+| SamCart API key | LIVE | 2026-03-19 |
+| Particle wallet creation | LIVE | 2026-03-19 |
+| Marketplace → real Supabase + IPFS data | LIVE | 2026-03-19 |
+| Portfolio → blockchain `balanceOf` | LIVE | 2026-03-19 |
+| Proposals → Voting contract `getProposal` + `decodeString` | LIVE | 2026-03-19 |
+| Payouts → Rent contract + The Graph history | LIVE | 2026-03-19 |
+| Legacy wallet import | LIVE | 2026-03-19 |
+| Admin property image upload | LIVE | 2026-03-19 |
+| Admin wallet change permission | LIVE | 2026-03-19 |
+| Profile photo upload | LIVE | 2026-03-19 |
+| Reset password page | LIVE | 2026-03-19 |
+| Vote confetti celebration | LIVE | 2026-03-19 |
+| 30 tests passing | LIVE | 2026-03-19 |
 
-**Everything is built, deployed, and live.**
+**Everything is built, deployed, and live. Zero mock data remains.**
 
 ---
 

@@ -2,6 +2,69 @@
 
 ## [Unreleased]
 
+## [2026-03-19] — MILESTONE: Investment Module Fully Wired to Blockchain
+
+### Summary
+The investment module is now fully connected to real blockchain data. All 4 invest pages (Marketplace, Portfolio, Proposals, Payouts) read live data from BNB Chain smart contracts and The Graph subgraphs. No mock data remains. Legacy investor data (shares, votes, rent history) is visible without migration — the blockchain is the source of truth.
+
+### Wallet & Auth
+- **Particle MPC wallet auto-creation** at signup (silent, non-blocking)
+- **Legacy wallet import** — admin grants time-limited permission, user pastes old wallet address
+- **Wallet protection** — Particle SDK never overwrites a manually-set wallet
+- **Reset password page** built (`/reset-password`)
+- **Profile photo upload** to Supabase Storage
+
+### Marketplace Page
+- Real property data from Supabase `inv_properties` (Pembroke Place)
+- IPFS images from on-chain metadata
+- Activity feed from The Graph (real purchase events)
+- Card payment → SamCart checkout redirect
+- Crypto payment → blockchain `buyShares()` with correct property ID
+
+### Portfolio Page
+- Share balances read from RWA Token contract (`balanceOf`) via public RPC
+- Legacy investors see holdings instantly after pasting old wallet
+- No MetaMask popup for read-only operations
+- Rank/tier system based on real holdings count
+
+### Proposals Page
+- **6 proposals fetched from Voting contract** with `getProposal()` + `decodeString()`
+- Real titles and descriptions decoded from on-chain bytes
+- Real vote counts (36K+ share-weighted, not wallet count)
+- Active/Approved/Rejected status from contract
+- User's votes shown ("You voted Yes" badge)
+- Vote confirmation with confetti celebration modal
+
+### Payouts Page
+- Claimable rent from Rent contract (`getRentDetails` + `isEligibleForRent`)
+- Historical rent withdrawals from The Graph rent subgraph
+- Claim methods: Bank Transfer (Edge Function), USDC (on-chain `withdrawRent`), STAY (claim + PancakeSwap link), LP (claim + liquidity link)
+- Property images from IPFS
+
+### Admin Panel
+- Property CRUD with image upload to Supabase Storage
+- Wallet change permission system (time-limited, password-protected)
+- Orders + Payouts use real Supabase data (mock arrays removed)
+- Commission settings saved to database
+
+### Infrastructure
+- **SamCart webhook** live — receives payments, creates orders, updates shareholdings
+- **Vite WASM plugin** for Particle SDK `thresh-sig` module
+- **Public RPC** for all blockchain reads (no wallet popup)
+- **30 tests** passing (portfolio, payouts, IPFS, invest wiring)
+- **Runbook** for diagnosing "Something went wrong" crashes
+
+### Technical Decisions
+- Blockchain reads use ethers.js directly inside useEffect (not React hook closures) to avoid stale address bugs
+- The Graph used for discovery (proposal IDs, purchase events, rent history), contracts used for authoritative data (balances, vote counts, descriptions)
+- Supabase is metadata layer (property images, descriptions, bank details), blockchain is source of truth for ownership and financial data
+- IPFS images served via `ipfs.io` gateway (cloudflare-ipfs.com is dead)
+
+### Commits (25+)
+Key commits: `021b9bf` (wire to real data PR), `835c114` (8 UI fixes), `048c838` (payouts direct ethers), `a8d0fdf` (portfolio+proposals+history from Graph), `c6a8539` (real proposal descriptions from blockchain)
+
+---
+
 ## [2026-03-19] — Particle Wallet Auto-Creation + Settings Payout UI
 
 ### Added
