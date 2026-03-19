@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useInvestProperty } from '@/hooks/useInvestData';
+import { useInvestProperties } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -1436,7 +1436,8 @@ function Version2({
 // ---------------------------------------------------------------------------
 
 export default function InvestMarketplacePage() {
-  const { data: dbProperty, isLoading } = useInvestProperty(1);
+  const { data: allProperties, isLoading } = useInvestProperties();
+  const dbProperty = allProperties?.[0] || null;
 
   // Map Supabase property to the shape used by sub-components
   const property = dbProperty ? {
