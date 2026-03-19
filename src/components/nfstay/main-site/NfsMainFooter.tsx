@@ -22,9 +22,7 @@ export default function NfsMainFooter() {
               About
             </a>
             <a
-              href="https://hub.nfstay.com/nfstay"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/nfstay"
               className="hover:text-purple-600 transition-colors"
             >
               List Your Property
