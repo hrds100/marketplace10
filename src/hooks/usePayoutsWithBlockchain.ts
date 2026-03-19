@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { useMyPayouts, useInvestProperties } from '@/hooks/useInvestData';
-import { usePortfolioWithBlockchain } from '@/hooks/usePortfolioWithBlockchain';
+// Portfolio dependency removed — payouts now queries blockchain directly
 
 export interface BlockchainPayout {
   propertyId: number;
@@ -42,10 +42,10 @@ export interface MergedPayoutItem {
  */
 export function usePayoutsWithBlockchain() {
   const { address, connected } = useWallet();
-  const { getRentDetails, isEligibleForRent } = useBlockchain();
+  const { getRentDetails, isEligibleForRent, getShareBalance } = useBlockchain();
   const { data: supabasePayouts = [], isLoading: payoutsLoading } = useMyPayouts();
   const { data: allProperties = [] } = useInvestProperties();
-  const { portfolio } = usePortfolioWithBlockchain();
+  // Queries blockchain directly — no dependency on portfolio hook
 
   const [blockchainPayouts, setBlockchainPayouts] = useState<BlockchainPayout[]>([]);
   const [blockchainLoading, setBlockchainLoading] = useState(false);
@@ -55,7 +55,9 @@ export function usePayoutsWithBlockchain() {
   const fetchedRef = useRef(false);
 
   useEffect(() => {
-    if (!connected || !address || portfolio.holdings.length === 0) return;
+    if (!connected || !address) return;
+    // Wait for properties to load from Supabase
+    if (allProperties.length === 0) return;
     if (fetchedRef.current) return;
 
     let cancelled = false;
@@ -67,33 +69,34 @@ export function usePayoutsWithBlockchain() {
         const payouts: BlockchainPayout[] = [];
 
         await Promise.all(
-          portfolio.holdings.map(async (holding) => {
-            const prop = (allProperties as any[]).find((p: any) => p.id === holding.propertyId);
-            const blockchainPropertyId = prop?.blockchain_property_id;
-            if (blockchainPropertyId == null) return;
+          (allProperties as any[])
+            .filter((p: any) => p.blockchain_property_id != null)
+            .map(async (prop: any) => {
+            const blockchainPropertyId = prop.blockchain_property_id;
 
             try {
-              const [rentDetails, eligible] = await Promise.all([
+              const [rentDetails, eligible, sharesOwned] = await Promise.all([
                 getRentDetails(blockchainPropertyId),
                 isEligibleForRent(blockchainPropertyId),
+                getShareBalance(blockchainPropertyId),
               ]);
 
-              if (!rentDetails) return;
+              if (!rentDetails || sharesOwned === 0) return;
 
               let claimableAmount = 0;
               try {
                 const rentPerShareNum = Number(rentDetails.rentPerShare) / 1e18;
-                claimableAmount = rentPerShareNum * holding.sharesOwned;
+                claimableAmount = rentPerShareNum * sharesOwned;
               } catch {
                 claimableAmount = 0;
               }
 
               if (claimableAmount > 0 || eligible) {
                 payouts.push({
-                  propertyId: holding.propertyId,
-                  propertyTitle: holding.propertyTitle,
-                  propertyImage: holding.image,
-                  sharesOwned: holding.sharesOwned,
+                  propertyId: prop.id,
+                  propertyTitle: prop.title || 'Property',
+                  propertyImage: prop.image || '',
+                  sharesOwned,
                   rentPerShare: rentDetails.rentPerShare,
                   totalRent: rentDetails.totalRent,
                   rentRemaining: rentDetails.rentRemaining,
@@ -126,7 +129,7 @@ export function usePayoutsWithBlockchain() {
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, address, portfolio.holdings.length]);
+  }, [connected, address, allProperties.length]);
 
   // Merge: Supabase history + blockchain claimable
   const mergedPayouts: MergedPayoutItem[] = (() => {
