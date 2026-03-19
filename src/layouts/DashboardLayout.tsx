@@ -7,6 +7,7 @@ import BurgerMenu from '@/components/BurgerMenu';
 import FavouritesDropdown from '@/components/FavouritesDropdown';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PaymentSuccessRefresher from '@/components/PaymentSuccessRefresher';
+import WalletProvisioner from '@/components/WalletProvisioner';
 import ClaimAccountBanner from '@/components/ClaimAccountBanner';
 import InvestSubNav from '@/components/InvestSubNav';
 import { useAuth } from '@/hooks/useAuth';
@@ -98,6 +99,7 @@ export default function DashboardLayout() {
     <ProtectedRoute>
       <div className="h-screen flex flex-col animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
         <PaymentSuccessRefresher />
+        <WalletProvisioner />
 
         {/* ── Top bar — always present ──────────────────────── */}
         <TopBar />
