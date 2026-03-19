@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAllShareholders } from '@/hooks/useInvestData';
 import { Search, ChevronDown, ChevronRight, Download } from 'lucide-react';
 import { exportToCSV } from '@/lib/csvExport';
@@ -40,63 +40,14 @@ const rankColors: Record<string, string> = {
   'Property Titan': 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20',
 };
 
-const mockShareholders: Shareholder[] = [
-  {
-    id: 'u1', name: 'Hugo Souza', email: 'hugo@nfstay.com', wallet: '0x6eb0...1436',
-    properties: ['Seseh Beachfront Villa', 'KAEC Waterfront Residence'],
-    totalShares: 85, totalInvested: 13000, totalEarned: 2340, monthlyYield: 195, rank: 'Portfolio Boss',
-    holdings: [
-      { property: 'Seseh Beachfront Villa', shares: 50, invested: 5000, earned: 1560, lastPayout: '2026-03-15', apy: 12.4 },
-      { property: 'KAEC Waterfront Residence', shares: 35, invested: 5250, earned: 780, lastPayout: '2026-03-15', apy: 14.2 },
-    ],
-  },
-  {
-    id: 'u2', name: 'John Smith', email: 'john@gmail.com', wallet: '0x8f3a...e2c1',
-    properties: ['Marina Gate Apartment', 'Seseh Beachfront Villa'],
-    totalShares: 120, totalInvested: 32000, totalEarned: 5120, monthlyYield: 427, rank: 'Empire Builder',
-    holdings: [
-      { property: 'Marina Gate Apartment', shares: 100, invested: 25000, earned: 4080, lastPayout: '2026-03-15', apy: 9.8 },
-      { property: 'Seseh Beachfront Villa', shares: 20, invested: 2000, earned: 496, lastPayout: '2026-03-15', apy: 12.4 },
-    ],
-  },
-  {
-    id: 'u3', name: 'Sarah Chen', email: 'sarah@outlook.com', wallet: '0x2b7c...f9a3',
-    properties: ['Seseh Beachfront Villa'],
-    totalShares: 20, totalInvested: 2000, totalEarned: 248, monthlyYield: 21, rank: 'Deal Rookie',
-    holdings: [
-      { property: 'Seseh Beachfront Villa', shares: 20, invested: 2000, earned: 248, lastPayout: '2026-03-15', apy: 12.4 },
-    ],
-  },
-  {
-    id: 'u4', name: 'Ahmed Ali', email: 'ahmed@yahoo.com', wallet: '0x9c2f...a1d7',
-    properties: ['KAEC Waterfront Residence', 'Seseh Beachfront Villa'],
-    totalShares: 47, totalInvested: 5850, totalEarned: 890, monthlyYield: 74, rank: 'Cashflow Builder',
-    holdings: [
-      { property: 'KAEC Waterfront Residence', shares: 15, invested: 2250, earned: 534, lastPayout: '2026-03-15', apy: 14.2 },
-      { property: 'Seseh Beachfront Villa', shares: 32, invested: 3200, earned: 396, lastPayout: '2026-03-15', apy: 12.4 },
-    ],
-  },
-  {
-    id: 'u5', name: 'Maria Garcia', email: 'maria@gmail.com', wallet: '0x1d4e...b8f2',
-    properties: ['Marina Gate Apartment'],
-    totalShares: 8, totalInvested: 2000, totalEarned: 163, monthlyYield: 16, rank: 'Noobie',
-    holdings: [
-      { property: 'Marina Gate Apartment', shares: 8, invested: 2000, earned: 163, lastPayout: '2026-03-15', apy: 9.8 },
-    ],
-  },
-  {
-    id: 'u6', name: 'David Park', email: 'david@proton.me', wallet: '0x5a3b...c7d8',
-    properties: ['Seseh Beachfront Villa', 'Marina Gate Apartment', 'KAEC Waterfront Residence'],
-    totalShares: 210, totalInvested: 48500, totalEarned: 9240, monthlyYield: 770, rank: 'Property Titan',
-    holdings: [
-      { property: 'Seseh Beachfront Villa', shares: 80, invested: 8000, earned: 3720, lastPayout: '2026-03-15', apy: 12.4 },
-      { property: 'Marina Gate Apartment', shares: 60, invested: 15000, earned: 3060, lastPayout: '2026-03-15', apy: 9.8 },
-      { property: 'KAEC Waterfront Residence', shares: 70, invested: 10500, earned: 2460, lastPayout: '2026-03-15', apy: 14.2 },
-    ],
-  },
-];
-
-const propertyOptions = ['All', 'Seseh Beachfront Villa', 'Marina Gate Apartment', 'KAEC Waterfront Residence'];
+function getRank(propertyCount: number): string {
+  if (propertyCount >= 15) return 'Property Titan';
+  if (propertyCount >= 10) return 'Empire Builder';
+  if (propertyCount >= 5) return 'Portfolio Boss';
+  if (propertyCount >= 3) return 'Cashflow Builder';
+  if (propertyCount >= 1) return 'Deal Rookie';
+  return 'Noobie';
+}
 
 export default function AdminInvestShareholders() {
   const { data: realShareholders = [] } = useAllShareholders();
@@ -105,7 +56,53 @@ export default function AdminInvestShareholders() {
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filtered = mockShareholders.filter((s) => {
+  // Group inv_shareholdings rows by user_id → Shareholder[]
+  const shareholders: Shareholder[] = useMemo(() => {
+    const grouped: Record<string, Shareholder> = {};
+    for (const row of realShareholders as any[]) {
+      const uid = row.user_id || 'unknown';
+      const propTitle = row.inv_properties?.title || `Property #${row.property_id}`;
+      const shares = Number(row.shares_owned || 0);
+      const invested = Number(row.invested_amount || 0);
+      if (!grouped[uid]) {
+        grouped[uid] = {
+          id: uid,
+          name: uid.slice(0, 8),
+          email: '—',
+          wallet: '—',
+          properties: [],
+          totalShares: 0,
+          totalInvested: 0,
+          totalEarned: 0,
+          monthlyYield: 0,
+          rank: 'Noobie',
+          holdings: [],
+        };
+      }
+      grouped[uid].properties.push(propTitle);
+      grouped[uid].totalShares += shares;
+      grouped[uid].totalInvested += invested;
+      grouped[uid].holdings.push({
+        property: propTitle,
+        shares,
+        invested,
+        earned: 0,
+        lastPayout: '—',
+        apy: 0,
+      });
+    }
+    return Object.values(grouped).map((s) => ({
+      ...s,
+      rank: getRank(s.holdings.length),
+    }));
+  }, [realShareholders]);
+
+  const propertyOptions = useMemo(() => {
+    const titles = Array.from(new Set((realShareholders as any[]).map((r: any) => r.inv_properties?.title).filter(Boolean)));
+    return ['All', ...titles];
+  }, [realShareholders]);
+
+  const filtered = shareholders.filter((s) => {
     if (propertyFilter !== 'All' && !s.properties.includes(propertyFilter)) return false;
     if (search && !s.name.toLowerCase().includes(search.toLowerCase()) && !s.email.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
