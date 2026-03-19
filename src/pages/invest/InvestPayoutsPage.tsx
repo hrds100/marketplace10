@@ -42,6 +42,7 @@ type PayoutStatus = 'claimable' | 'claimed' | 'paid' | 'processing';
 interface PayoutItem {
   id: string;
   propertyTitle: string;
+  propertyImage: string;
   propertyId: number;
   date: string;
   sharesOwned: number;
@@ -360,9 +361,48 @@ function ClaimModal({
   );
 }
 
-// ─── Property Image placeholder ─────────────────────────────────────────────────
+// ─── Property Image helpers ─────────────────────────────────────────────────
 
 const PROPERTY_PLACEHOLDER_IMAGE = '/placeholder.svg';
+
+/** Swap slow IPFS gateway for a faster one */
+function resolveImageUrl(url: string): string {
+  if (!url) return PROPERTY_PLACEHOLDER_IMAGE;
+  if (url.startsWith('https://ipfs.io/ipfs/')) {
+    return url.replace('https://ipfs.io/ipfs/', 'https://cloudflare-ipfs.com/ipfs/');
+  }
+  return url;
+}
+
+/** Fallback component: shows property initials on image error */
+function PropertyImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [errored, setErrored] = useState(false);
+  const resolved = resolveImageUrl(src);
+  const initials = alt
+    .split(' ')
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  if (errored || !resolved || resolved === PROPERTY_PLACEHOLDER_IMAGE) {
+    return (
+      <div className={cn('flex items-center justify-center bg-muted text-muted-foreground font-bold text-sm rounded-lg', className)}>
+        {initials || '?'}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={resolved}
+      alt={alt}
+      className={className}
+      onError={() => setErrored(true)}
+    />
+  );
+}
 
 // ─── Main Page Component ─────────────────────────────────────────────────────────
 
@@ -376,6 +416,7 @@ export default function InvestPayoutsPage() {
   const payouts: PayoutItem[] = mergedPayouts.map((p) => ({
     id: p.id,
     propertyTitle: p.propertyTitle,
+    propertyImage: p.propertyImage,
     propertyId: p.propertyId,
     date: p.date,
     sharesOwned: p.sharesOwned,
@@ -497,8 +538,8 @@ export default function InvestPayoutsPage() {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={PROPERTY_PLACEHOLDER_IMAGE}
+                        <PropertyImage
+                          src={payout.propertyImage}
                           alt={payout.propertyTitle}
                           className="h-12 w-12 rounded-lg object-cover flex-shrink-0"
                         />
@@ -547,8 +588,8 @@ export default function InvestPayoutsPage() {
                       <TableCell className="text-sm">{formatDate(payout.date)}</TableCell>
                       <TableCell className="text-sm">
                         <div className="flex items-center gap-2">
-                          <img
-                            src={PROPERTY_PLACEHOLDER_IMAGE}
+                          <PropertyImage
+                            src={payout.propertyImage}
                             alt={payout.propertyTitle}
                             className="h-8 w-8 rounded object-cover flex-shrink-0"
                           />

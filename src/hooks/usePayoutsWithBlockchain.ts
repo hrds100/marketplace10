@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { useMyPayouts, useInvestProperties } from '@/hooks/useInvestData';
-import { CONTRACTS } from '@/lib/particle';
+import { CONTRACTS, SUBGRAPHS } from '@/lib/particle';
 import { RWA_TOKEN_ABI, RENT_ABI } from '@/lib/contractAbis';
 
 export interface BlockchainPayout {
@@ -21,6 +21,7 @@ export interface BlockchainPayout {
 export interface MergedPayoutItem {
   id: string;
   propertyTitle: string;
+  propertyImage: string;
   propertyId: number;
   date: string;
   sharesOwned: number;
@@ -48,6 +49,10 @@ export function usePayoutsWithBlockchain() {
   const [blockchainPayouts, setBlockchainPayouts] = useState<BlockchainPayout[]>([]);
   const [blockchainLoading, setBlockchainLoading] = useState(false);
   const [blockchainError, setBlockchainError] = useState<string | null>(null);
+
+  // Graph rent withdrawal history
+  const [graphHistory, setGraphHistory] = useState<MergedPayoutItem[]>([]);
+  const graphFetchedRef = useRef(false);
 
   // Fetch rent details — only re-fetch when address or holdings actually change
   const fetchedRef = useRef(false);
@@ -146,7 +151,96 @@ export function usePayoutsWithBlockchain() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, address, allProperties.length]);
 
-  // Merge: Supabase history + blockchain claimable
+  // Fetch historical rent withdrawals from The Graph
+  useEffect(() => {
+    if (!connected || !address) return;
+    if (allProperties.length === 0) return;
+    if (graphFetchedRef.current) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const query = `{
+          rentWithdrawns(first: 100, orderBy: blockTimestamp, orderDirection: desc) {
+            id
+            _by
+            _propertyId
+            blockTimestamp
+            transactionHash
+          }
+          rentStatuses(first: 50, orderBy: blockTimestamp, orderDirection: desc) {
+            _propertyId
+            _monthRent
+            _status
+            blockTimestamp
+          }
+        }`;
+
+        const res = await fetch(SUBGRAPHS.RENT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+        });
+
+        if (!res.ok) return;
+        const json = await res.json();
+
+        const withdrawals: Array<{
+          id: string;
+          _by: string;
+          _propertyId: string;
+          blockTimestamp: string;
+          transactionHash: string;
+        }> = json.data?.rentWithdrawns || [];
+
+        // Filter by the current user's wallet
+        const walletLower = address.toLowerCase();
+        const userWithdrawals = withdrawals.filter(
+          (w) => w._by.toLowerCase() === walletLower,
+        );
+
+        // Build a map of blockchain property ID → Supabase property for title/image lookup
+        const propMap = new Map<number, { id: number; title: string; image: string }>();
+        for (const p of allProperties as any[]) {
+          if (p.blockchain_property_id != null) {
+            propMap.set(Number(p.blockchain_property_id), { id: p.id, title: p.title || 'Property', image: p.image || '' });
+          }
+        }
+
+        const historyItems: MergedPayoutItem[] = userWithdrawals.map((w) => {
+          const blockchainPropId = Number(w._propertyId);
+          const prop = propMap.get(blockchainPropId);
+          return {
+            id: `graph-rent-${w.id}`,
+            propertyTitle: prop?.title || `Property #${blockchainPropId}`,
+            propertyImage: prop?.image || '',
+            propertyId: prop?.id || blockchainPropId,
+            date: new Date(Number(w.blockTimestamp) * 1000).toISOString(),
+            sharesOwned: 0,
+            amount: 0, // Amount not available in subgraph entity
+            currency: 'USDC',
+            status: 'paid' as const,
+            method: 'usdc',
+            txHash: w.transactionHash,
+            fromBlockchain: true,
+          };
+        });
+
+        if (!cancelled) {
+          setGraphHistory(historyItems);
+          graphFetchedRef.current = true;
+        }
+      } catch {
+        // Non-critical — graph history is supplementary
+      }
+    })();
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, address, allProperties.length]);
+
+  // Merge: Supabase history + blockchain claimable + Graph history
   const mergedPayouts: MergedPayoutItem[] = (() => {
     const items: MergedPayoutItem[] = [];
 
@@ -164,6 +258,7 @@ export function usePayoutsWithBlockchain() {
         items.push({
           id: `chain-${bp.propertyId}`,
           propertyTitle: bp.propertyTitle,
+          propertyImage: bp.propertyImage,
           propertyId: bp.propertyId,
           date: new Date().toISOString(),
           sharesOwned: bp.sharesOwned,
@@ -181,6 +276,7 @@ export function usePayoutsWithBlockchain() {
       items.push({
         id: p.id,
         propertyTitle: p.inv_properties?.title || 'Property',
+        propertyImage: p.inv_properties?.image || '',
         propertyId: p.property_id,
         date: p.period_date,
         sharesOwned: p.shares_owned || 0,
@@ -190,6 +286,11 @@ export function usePayoutsWithBlockchain() {
         method: p.claim_method,
         fromBlockchain: false,
       });
+    }
+
+    // 3. Add Graph rent withdrawal history
+    for (const gh of graphHistory) {
+      items.push(gh);
     }
 
     return items;

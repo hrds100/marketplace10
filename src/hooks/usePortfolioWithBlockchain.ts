@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/hooks/useWallet';
-import { useBlockchain } from '@/hooks/useBlockchain';
 import { useMyHoldings, useInvestProperties } from '@/hooks/useInvestData';
+import { CONTRACTS } from '@/lib/particle';
+import { RWA_TOKEN_ABI } from '@/lib/contractAbis';
 
 export interface PortfolioHolding {
   propertyId: number;
@@ -38,7 +39,6 @@ export interface PortfolioData {
  */
 export function usePortfolioWithBlockchain() {
   const { address, connected } = useWallet();
-  const { getShareBalance } = useBlockchain();
   const { data: supabaseHoldings = [], isLoading: holdingsLoading } = useMyHoldings();
   const { data: allProperties = [], isLoading: propertiesLoading } = useInvestProperties();
 
@@ -63,6 +63,16 @@ export function usePortfolioWithBlockchain() {
 
     (async () => {
       try {
+        // Use ethers directly — avoids stale React closure on address
+        const ethers = await import('ethers').catch(() => null);
+        if (!ethers) { setBlockchainLoading(false); return; }
+
+        const provider = new ethers.providers.JsonRpcProvider(
+          'https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T'
+        );
+        const rwaContract = new ethers.Contract(CONTRACTS.RWA_TOKEN, RWA_TOKEN_ABI, provider);
+        const walletAddr = address!; // Guaranteed non-null by guard above
+
         const balances: Record<number, number> = {};
 
         await Promise.all(
@@ -70,7 +80,8 @@ export function usePortfolioWithBlockchain() {
             .filter((p: any) => p.blockchain_property_id != null)
             .map(async (p: any) => {
               try {
-                const balance = await getShareBalance(p.blockchain_property_id);
+                const balanceBN = await rwaContract.balanceOf(walletAddr, p.blockchain_property_id);
+                const balance = balanceBN.toNumber();
                 if (balance > 0) {
                   balances[p.id] = balance;
                 }

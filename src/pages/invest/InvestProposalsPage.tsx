@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useProposals, useCreateProposal, useCastVote } from '@/hooks/useInvestData';
+import { useProposalsFromGraph } from '@/hooks/useProposalsFromGraph';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -143,6 +144,7 @@ function typeBadgeColor(type: string): string {
 export default function InvestProposalsPage() {
   const { user } = useAuth();
   const { data: realProposals = [] } = useProposals();
+  const { proposals: graphProposals } = useProposalsFromGraph();
   const { data: realProperties = [] } = useInvestProperties();
   const { castVote: castBlockchainVote, loading: voteLoading } = useBlockchain();
   const createProposal = useCreateProposal();
@@ -169,14 +171,35 @@ export default function InvestProposalsPage() {
       blockchain_proposal_id: p.blockchain_proposal_id,
     }));
 
+  // Merge Graph active proposals
+  const graphActive: ActiveProposalWithVote[] = graphProposals
+    .filter((g) => g.result === null)
+    .map((g) => ({
+      id: g.id,
+      propertyTitle: g.propertyTitle,
+      propertyImage: g.propertyImage,
+      propertyId: g.propertyId,
+      title: g.title,
+      description: g.description,
+      type: g.type,
+      createdAt: g.createdAt,
+      endsAt: g.endsAt,
+      votesYes: g.votesYes,
+      votesNo: g.votesNo,
+      totalVotes: g.totalVotes,
+      quorum: g.quorum,
+      userVoted: g.userVoted,
+    }));
+
   const [activeProposals, setActiveProposals] = useState<ActiveProposalWithVote[]>([]);
 
-  // Sync active proposals when real data arrives
+  // Sync active proposals when real data or graph data arrives
   useEffect(() => {
-    if (mappedActive.length > 0) {
-      setActiveProposals(mappedActive);
+    const merged = [...mappedActive, ...graphActive];
+    if (merged.length > 0) {
+      setActiveProposals(merged);
     }
-  }, [realProposals]);
+  }, [realProposals, graphProposals]);
 
   // Vote success celebration state
   const [showVoteSuccess, setShowVoteSuccess] = useState(false);
@@ -189,7 +212,7 @@ export default function InvestProposalsPage() {
     choice: null,
   });
 
-  const pastProposals: PastProposal[] = realProposals
+  const supabasePast: PastProposal[] = realProposals
     .filter((p: any) => p.result)
     .map((p: any) => ({
       id: p.id,
@@ -207,6 +230,27 @@ export default function InvestProposalsPage() {
       quorum: p.quorum || 0,
       result: p.result as 'approved' | 'rejected',
     }));
+
+  const graphPast: PastProposal[] = graphProposals
+    .filter((g) => g.result !== null)
+    .map((g) => ({
+      id: g.id,
+      propertyTitle: g.propertyTitle,
+      propertyImage: g.propertyImage,
+      propertyId: g.propertyId,
+      title: g.title,
+      description: g.description,
+      type: g.type,
+      createdAt: g.createdAt,
+      endsAt: g.endsAt,
+      votesYes: g.votesYes,
+      votesNo: g.votesNo,
+      totalVotes: g.totalVotes,
+      quorum: g.quorum,
+      result: g.result as 'approved' | 'rejected',
+    }));
+
+  const pastProposals: PastProposal[] = [...supabasePast, ...graphPast];
 
   // Submit proposal state
   const [submitOpen, setSubmitOpen] = useState(false);
