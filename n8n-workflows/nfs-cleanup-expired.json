@@ -1,0 +1,85 @@
+{
+  "name": "nfs-cleanup-expired",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 24 }]
+        }
+      },
+      "name": "Daily Cleanup Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [200, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/nfs_auth_tokens?expires_at=lt.{{ new Date().toISOString() }}",
+        "options": {},
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        }
+      },
+      "name": "Delete Expired Auth Tokens",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [420, 200],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/nfs_guest_sessions?expires_at=lt.{{ new Date().toISOString() }}",
+        "options": {},
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        }
+      },
+      "name": "Delete Expired Guest Sessions",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [420, 400],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/nfs_reservations?status=eq.pending&created_at=lt.{{ new Date(Date.now() - 24*60*60*1000).toISOString() }}",
+        "options": {},
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "body": "{ \"status\": \"expired\" }"
+      },
+      "name": "Expire Stale Pending Reservations",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [420, 600],
+      "typeVersion": 3
+    }
+  ],
+  "connections": {
+    "Daily Cleanup Trigger": {
+      "main": [
+        [
+          { "node": "Delete Expired Auth Tokens", "type": "main", "index": 0 },
+          { "node": "Delete Expired Guest Sessions", "type": "main", "index": 0 },
+          { "node": "Expire Stale Pending Reservations", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}
