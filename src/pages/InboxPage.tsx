@@ -94,12 +94,11 @@ export default function InboxPage() {
       const { data } = await (supabase.from('landlord_invites') as any)
         .select('thread_id')
         .eq('magic_token', tokenParam)
-        .eq('used', false)
         .maybeSingle();
       if (data?.thread_id) {
         setSelectedId(data.thread_id);
         setShowDetails(true);
-        // Mark invite as used — fire-and-forget
+        // Mark invite as used (idempotent — safe on repeat clicks)
         (supabase.from('landlord_invites') as any)
           .update({ used: true })
           .eq('magic_token', tokenParam)

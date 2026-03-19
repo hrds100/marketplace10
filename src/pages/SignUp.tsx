@@ -120,6 +120,25 @@ export default function SignUp() {
         localStorage.removeItem('nfstay_ref');
       }
 
+      // 1e. Auto-create wallet via Particle (non-blocking)
+      if (userId) {
+        try {
+          // Check if Particle is available and auto-connect
+          if (typeof window !== 'undefined' && (window as any).particle?.ethereum) {
+            const provider = (window as any).particle.ethereum;
+            const accounts = await provider.request({ method: 'eth_requestAccounts' }).catch(() => []);
+            if (accounts?.[0]) {
+              await (supabase.from('profiles') as any)
+                .update({ wallet_address: accounts[0] } as any)
+                .eq('id', userId);
+            }
+          }
+        } catch (walletErr) {
+          // Don't block signup if wallet creation fails
+          console.log('Auto wallet creation skipped:', walletErr);
+        }
+      }
+
       // 2. Send welcome email + notify admin (non-blocking)
       supabase.functions.invoke('send-email', {
         body: { type: 'welcome-member', data: { email: cleanEmail, name: cleanName } },
