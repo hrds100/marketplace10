@@ -45,20 +45,53 @@ import {
   Check,
   ArrowRight,
   CircleDot,
+  Loader2,
 } from 'lucide-react';
+import { SUBGRAPHS } from '@/lib/particle';
 
 // ---------------------------------------------------------------------------
 // Constants & Mock Data
 // ---------------------------------------------------------------------------
 
-// Placeholder activity data — will be replaced with real transaction history
-const mockActivity = [
-  { event: 'Purchase', price: '$500', from: 'Market', to: '0x8f3a...e2c1', date: 'Mar 15, 2026' },
-  { event: 'Purchase', price: '$1,200', from: 'Market', to: '0x2b7c...f9a3', date: 'Mar 14, 2026' },
-  { event: 'Purchase', price: '$300', from: 'Market', to: '0x9c2f...a1d7', date: 'Mar 12, 2026' },
-  { event: 'Purchase', price: '$800', from: 'Market', to: '0x1d4e...b8f2', date: 'Mar 10, 2026' },
-  { event: 'Purchase', price: '$2,000', from: 'Market', to: '0x4a6b...c3e9', date: 'Mar 8, 2026' },
-];
+// Activity type for real data from The Graph
+interface Activity {
+  event: string;
+  price: string;
+  shares: string;
+  from: string;
+  to: string;
+  date: string;
+  txHash: string;
+}
+
+async function fetchRecentPurchases(): Promise<Activity[]> {
+  const res = await fetch(SUBGRAPHS.MARKETPLACE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query: `{
+        primarySharesBoughts(first: 10, orderBy: blockTimestamp, orderDirection: desc) {
+          _buyer
+          _propertyId
+          _sharesBought
+          _amount
+          blockTimestamp
+          transactionHash
+        }
+      }`,
+    }),
+  });
+  const data = await res.json();
+  return (data.data?.primarySharesBoughts || []).map((p: any) => ({
+    event: 'Purchase',
+    price: `$${(parseInt(p._amount) / 1e18).toFixed(0)}`,
+    shares: p._sharesBought,
+    from: 'Market',
+    to: `${p._buyer.slice(0, 6)}...${p._buyer.slice(-4)}`,
+    date: new Date(parseInt(p.blockTimestamp) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    txHash: p.transactionHash,
+  }));
+}
 
 const jvSteps = [
   {
@@ -852,6 +885,16 @@ function ProfitCalculator({
 }
 
 function RecentActivityTable() {
+  const [activity, setActivity] = useState<Activity[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+
+  useEffect(() => {
+    fetchRecentPurchases()
+      .then(setActivity)
+      .catch(() => setActivity([]))
+      .finally(() => setActivityLoading(false));
+  }, []);
+
   return (
     <Card className="rounded-2xl">
       <CardHeader>
@@ -861,34 +904,43 @@ function RecentActivityTable() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="pb-2 pr-4 font-medium">Event</th>
-                <th className="pb-2 pr-4 font-medium">Price</th>
-                <th className="pb-2 pr-4 font-medium">From</th>
-                <th className="pb-2 pr-4 font-medium">To</th>
-                <th className="pb-2 font-medium">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockActivity.map((row, i) => (
-                <tr key={i} className="border-b border-border/50 last:border-0">
-                  <td className="py-2.5 pr-4">
-                    <Badge variant="secondary" className="text-xs">
-                      {row.event}
-                    </Badge>
-                  </td>
-                  <td className="py-2.5 pr-4 font-medium">{row.price}</td>
-                  <td className="py-2.5 pr-4 text-muted-foreground">{row.from}</td>
-                  <td className="py-2.5 pr-4 font-mono text-xs">{row.to}</td>
-                  <td className="py-2.5 text-muted-foreground">{row.date}</td>
+        {activityLoading ? (
+          <div className="flex items-center justify-center py-8 gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Loading activity...</span>
+          </div>
+        ) : activity.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">No recent activity found.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">Event</th>
+                  <th className="pb-2 pr-4 font-medium">Price</th>
+                  <th className="pb-2 pr-4 font-medium">From</th>
+                  <th className="pb-2 pr-4 font-medium">To</th>
+                  <th className="pb-2 font-medium">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {activity.map((row, i) => (
+                  <tr key={i} className="border-b border-border/50 last:border-0">
+                    <td className="py-2.5 pr-4">
+                      <Badge variant="secondary" className="text-xs">
+                        {row.event}
+                      </Badge>
+                    </td>
+                    <td className="py-2.5 pr-4 font-medium">{row.price}</td>
+                    <td className="py-2.5 pr-4 text-muted-foreground">{row.from}</td>
+                    <td className="py-2.5 pr-4 font-mono text-xs">{row.to}</td>
+                    <td className="py-2.5 text-muted-foreground">{row.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

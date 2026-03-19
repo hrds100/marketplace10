@@ -79,6 +79,32 @@ interface ActiveProposalWithVote extends Omit<ActiveProposal, 'userVoted'> {
   userVoted: VoteChoice | null;
 }
 
+// ─── Confetti Component ─────────────────────────────────────────────────────
+
+function Confetti() {
+  const colors = ['#00D084', '#FFD700', '#FF6B6B', '#4ECDC4', '#A855F7', '#3B82F6'];
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {Array.from({ length: 30 }).map((_, i) => (
+        <div
+          key={i}
+          className="absolute animate-confetti"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: '-10px',
+            width: `${6 + Math.random() * 8}px`,
+            height: `${6 + Math.random() * 8}px`,
+            backgroundColor: colors[i % colors.length],
+            animationDelay: `${Math.random() * 2}s`,
+            animationDuration: `${2 + Math.random() * 2}s`,
+            transform: `rotate(${Math.random() * 360}deg)`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function daysUntil(dateStr: string): number {
@@ -142,6 +168,9 @@ export default function InvestProposalsPage() {
       setActiveProposals(mappedActive);
     }
   }, [realProposals]);
+
+  // Vote success celebration state
+  const [showVoteSuccess, setShowVoteSuccess] = useState(false);
 
   // Dialog state
   const [voteDialog, setVoteDialog] = useState<VoteDialogState>({
@@ -248,6 +277,7 @@ export default function InvestProposalsPage() {
     }
 
     setVoteDialog({ open: false, proposalId: null, proposalTitle: '', choice: null });
+    setShowVoteSuccess(true);
   }
 
   function cancelVote() {
@@ -628,6 +658,27 @@ export default function InvestProposalsPage() {
               Confirm {voteDialog.choice === 'yes' ? 'Yes' : 'No'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Vote Success Celebration Modal */}
+      {showVoteSuccess && <Confetti />}
+      <Dialog open={showVoteSuccess} onOpenChange={(open) => !open && setShowVoteSuccess(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <div className="h-16 w-16 rounded-full bg-emerald-500/15 flex items-center justify-center">
+              <CheckCircle2 className="h-9 w-9 text-emerald-500" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Thank You</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Your vote has been casted! 🎉
+              </p>
+            </div>
+            <Button className="w-full mt-2" onClick={() => setShowVoteSuccess(false)}>
+              Okay
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
