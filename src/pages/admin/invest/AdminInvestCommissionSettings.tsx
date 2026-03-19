@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Save, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { useCommissionSettings, useUpdateCommissionRate } from '@/hooks/useInvestData';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -129,7 +131,29 @@ export default function AdminInvestCommissionSettings() {
     setModalOpen(true);
   };
 
-  const saveOverride = () => {
+  const saveOverride = async () => {
+    const targetUserId = editAgent ? editAgent.id : overrideForm.userId;
+    if (!targetUserId) return;
+
+    // Upsert 3 rows to aff_commission_settings (one per commission type)
+    const rows = [
+      { user_id: targetUserId, commission_type: 'subscription', rate: overrideForm.subscriptionRate / 100 },
+      { user_id: targetUserId, commission_type: 'investment_first', rate: overrideForm.firstPurchaseRate / 100 },
+      { user_id: targetUserId, commission_type: 'investment_recurring', rate: overrideForm.recurringRate / 100 },
+    ];
+    try {
+      for (const row of rows) {
+        const { error } = await (supabase.from('aff_commission_settings') as any)
+          .upsert({ ...row, updated_at: new Date().toISOString() }, { onConflict: 'user_id,commission_type' });
+        if (error) throw error;
+      }
+      toast.success('Override saved to database');
+    } catch (err) {
+      toast.error('Failed to save override');
+      return;
+    }
+
+    // Update local state
     if (editAgent) {
       setAgents((prev) =>
         prev.map((a) =>
@@ -158,15 +182,25 @@ export default function AdminInvestCommissionSettings() {
     setModalOpen(false);
   };
 
-  const removeOverride = (id: string) => {
+  const removeOverride = async (id: string) => {
+    try {
+      const { error } = await (supabase.from('aff_commission_settings') as any)
+        .delete()
+        .eq('user_id', id)
+        .not('user_id', 'is', null);
+      if (error) throw error;
+      toast.success('Override removed — agent reverts to global rates');
+    } catch {
+      toast.error('Failed to remove override');
+    }
     setAgents((prev) =>
       prev.map((a) =>
         a.id === id
           ? {
               ...a,
-              subscriptionRate: globalRates.find((r) => r.key === 'subscription')!.rate,
-              firstPurchaseRate: globalRates.find((r) => r.key === 'investment_first')!.rate,
-              recurringRate: globalRates.find((r) => r.key === 'investment_recurring')!.rate,
+              subscriptionRate: globalRates.find((r) => r.key === 'subscription')?.rate ?? 40,
+              firstPurchaseRate: globalRates.find((r) => r.key === 'investment_first')?.rate ?? 5,
+              recurringRate: globalRates.find((r) => r.key === 'investment_recurring')?.rate ?? 2,
               isCustom: false,
             }
           : a

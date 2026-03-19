@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { useInvestProperties } from '@/hooks/useInvestData';
+import { useInvestProperties, useMyAffiliateProfile } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -77,6 +77,8 @@ interface PropertyData {
   description: string;
   highlights: string[];
   documents: string[];
+  propertyDocs: { name: string; url: string; path?: string }[];
+  appreciationRate: number;
   blockchain_property_id?: number;
   rentCost?: number;
 }
@@ -680,7 +682,7 @@ function ProfitCalculator({
   setInitialCalcAmount: (v: number) => void;
 }) {
   const [chartVersion, setChartVersion] = useState(1);
-  const appreciationRate = 5.2;
+  const appreciationRate = property.appreciationRate || 5.2;
   const dividendYield = property.annualYield;
   const holdingYears = 5;
   const totalAnnualRate = appreciationRate + dividendYield;
@@ -983,6 +985,7 @@ function RecentActivityTable() {
         <CardTitle className="flex items-center gap-2">
           <CircleDot className="h-5 w-5 text-primary" />
           Recent Activity
+          <BlockchainDot tooltip="Live on-chain data" />
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -1029,6 +1032,10 @@ function RecentActivityTable() {
 }
 
 function DocumentsSection({ property }: { property: PropertyData }) {
+  // Prefer new property_docs (has URLs); fall back to legacy documents[] (names only)
+  const hasDocs = property.propertyDocs && property.propertyDocs.length > 0;
+  const legacyDocs = property.documents || [];
+
   return (
     <Card className="rounded-2xl">
       <CardHeader>
@@ -1039,17 +1046,33 @@ function DocumentsSection({ property }: { property: PropertyData }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {property.documents.map((doc) => (
-            <div
-              key={doc}
-              className="flex items-center rounded-lg border px-4 py-3"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm font-medium truncate">{doc}</span>
-              </div>
-            </div>
-          ))}
+          {hasDocs
+            ? property.propertyDocs.map((doc) => (
+                <a
+                  key={doc.path || doc.url}
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center rounded-lg border px-4 py-3 hover:bg-muted/40 transition-colors group"
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm font-medium truncate">{doc.name}</span>
+                  </div>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                </a>
+              ))
+            : legacyDocs.map((doc) => (
+                <div
+                  key={doc}
+                  className="flex items-center rounded-lg border px-4 py-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm font-medium truncate">{doc}</span>
+                  </div>
+                </div>
+              ))}
         </div>
         <p className="text-xs text-muted-foreground italic">
           Full documents available to partners only.
@@ -1061,10 +1084,9 @@ function DocumentsSection({ property }: { property: PropertyData }) {
 
 function AgentReferralLink({ property }: { property: PropertyData }) {
   const [copied, setCopied] = useState(false);
-  // F7: Use actual wallet address instead of placeholder
-  const { walletAddress, walletConnected } = useBlockchain();
-  const referralUrl = walletAddress
-    ? `https://hub.nfstay.com/invest?ref=${walletAddress}&property=${property.id}`
+  const { data: affProfile, isLoading: affLoading } = useMyAffiliateProfile();
+  const referralUrl = affProfile?.referral_code
+    ? `https://hub.nfstay.com/invest?ref=${affProfile.referral_code}&property=${property.id}`
     : null;
 
   const handleCopy = useCallback(() => {
@@ -1093,7 +1115,12 @@ function AgentReferralLink({ property }: { property: PropertyData }) {
           {/* Right — Link + copy */}
           <div className="p-6 bg-muted/30 dark:bg-muted/15 border-t lg:border-t-0 lg:border-l border-border/50 flex flex-col justify-center gap-3">
             <p className="text-xs font-medium text-muted-foreground">Your referral link</p>
-            {referralUrl ? (
+            {affLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading…
+              </div>
+            ) : referralUrl ? (
               <>
                 <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5">
                   <p className="truncate text-xs text-muted-foreground flex-1 font-mono">{referralUrl}</p>
@@ -1121,12 +1148,16 @@ function AgentReferralLink({ property }: { property: PropertyData }) {
                   </Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Commission is tracked automatically via your wallet address.
+                  Commission is tracked automatically via your referral code.
                 </p>
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Connect your wallet to get your referral link
+                Set up your{' '}
+                <a href="/affiliates" className="underline text-primary hover:text-primary/80">
+                  affiliate profile
+                </a>{' '}
+                to get your referral link.
               </p>
             )}
           </div>
@@ -1581,6 +1612,8 @@ export default function InvestMarketplacePage() {
     description: dbProperty.description || '',
     highlights: dbProperty.highlights || [],
     documents: dbProperty.documents || [],
+    propertyDocs: (dbProperty as any).property_docs || [],
+    appreciationRate: (dbProperty as any).appreciation_rate ?? 5.2,
     occupancyRate: dbProperty.occupancy_rate || 0,
     yearBuilt: dbProperty.year_built || 0,
     rentCost: (dbProperty as any).rent_cost || 0,

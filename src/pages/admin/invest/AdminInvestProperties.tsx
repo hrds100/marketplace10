@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, Pencil, Loader2, Upload, X, ImageIcon, Link2 } from 'lucide-react';
+import { Plus, Pencil, Loader2, Upload, X, ImageIcon, Link2, Trash2, Download, FileText } from 'lucide-react';
 import { useInvestProperties, useCreateProperty, useUpdateProperty } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface DocEntry {
+  name: string;
+  url: string;
+  path: string;
+}
 
 interface Property {
   id: number;
@@ -34,6 +40,10 @@ interface Property {
   rent_cost: number;
   image?: string;
   images?: string[];
+  highlights?: string[];
+  documents?: string[];
+  appreciation_rate?: number;
+  property_docs?: DocEntry[];
 }
 
 async function uploadImage(file: File, propertyId: number): Promise<string> {
@@ -48,11 +58,24 @@ async function uploadImage(file: File, propertyId: number): Promise<string> {
   return publicUrl;
 }
 
+async function uploadDoc(file: File, propertyId: number): Promise<DocEntry> {
+  const path = `${propertyId}/${Date.now()}-${file.name}`;
+  const { data, error } = await supabase.storage
+    .from('inv-property-docs')
+    .upload(path, file, { cacheControl: '3600', upsert: true });
+  if (error) throw error;
+  const { data: { publicUrl } } = supabase.storage
+    .from('inv-property-docs')
+    .getPublicUrl(data.path);
+  return { name: file.name, url: publicUrl, path: data.path };
+}
+
 const emptyProperty: Omit<Property, 'id'> & { id?: number } = {
   title: '', location: '', country: '', price_per_share: 0, total_shares: 0,
   shares_sold: 0, annual_yield: 0, monthly_rent: 0, property_value: 0, type: 'Villa',
   bedrooms: 0, bathrooms: 0, area: 0, year_built: 2025, description: '',
-  occupancy_rate: 0, status: 'open', blockchain_property_id: 0, rent_cost: 0, image: '', images: [],
+  occupancy_rate: 0, status: 'open', blockchain_property_id: 0, rent_cost: 0,
+  image: '', images: [], highlights: [], documents: [], appreciation_rate: 5.2, property_docs: [],
 };
 
 const statusColors: Record<string, string> = {
@@ -72,9 +95,12 @@ export default function AdminInvestProperties() {
   const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [docFiles, setDocFiles] = useState<File[]>([]);
+  const [highlightInput, setHighlightInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const mainImageRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
+  const docRef = useRef<HTMLInputElement>(null);
 
   const openCreate = () => {
     setEditing(null);
@@ -83,6 +109,8 @@ export default function AdminInvestProperties() {
     setMainImagePreview(null);
     setGalleryFiles([]);
     setGalleryPreviews([]);
+    setDocFiles([]);
+    setHighlightInput('');
     setModalOpen(true);
   };
 
@@ -93,6 +121,8 @@ export default function AdminInvestProperties() {
     setMainImagePreview(p.image || null);
     setGalleryFiles([]);
     setGalleryPreviews(p.images || []);
+    setDocFiles([]);
+    setHighlightInput('');
     setModalOpen(true);
   };
 
@@ -113,16 +143,47 @@ export default function AdminInvestProperties() {
   const removeGalleryImage = (index: number) => {
     const existingCount = (editing?.images || []).length;
     if (index < existingCount) {
-      // Remove from existing images array in form
       const currentImages = (form.images as string[]) || [];
       const updated = currentImages.filter((_, i) => i !== index);
       setForm(prev => ({ ...prev, images: updated }));
     } else {
-      // Remove from newly added files
       const fileIndex = index - existingCount;
       setGalleryFiles(prev => prev.filter((_, i) => i !== fileIndex));
     }
     setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addHighlight = () => {
+    const text = highlightInput.trim();
+    if (!text) return;
+    const current = (form.highlights as string[]) || [];
+    setForm(prev => ({ ...prev, highlights: [...current, text] }));
+    setHighlightInput('');
+  };
+
+  const removeHighlight = (index: number) => {
+    const current = (form.highlights as string[]) || [];
+    setForm(prev => ({ ...prev, highlights: current.filter((_, i) => i !== index) }));
+  };
+
+  const removeDoc = async (index: number) => {
+    const docs = (form.property_docs as DocEntry[]) || [];
+    const doc = docs[index];
+    try {
+      if (doc.path) {
+        await supabase.storage.from('inv-property-docs').remove([doc.path]);
+      }
+    } catch {
+      // non-fatal — still remove from form
+    }
+    setForm(prev => ({
+      ...prev,
+      property_docs: docs.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateField = (field: string, value: string | number) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
@@ -157,12 +218,38 @@ export default function AdminInvestProperties() {
       }
       const allImages = [...existingImages, ...newGalleryUrls];
 
+      // Upload new document files
+      const existingDocs = (form.property_docs as DocEntry[]) || [];
+      const newDocEntries: DocEntry[] = [];
+      for (const file of docFiles) {
+        try {
+          const entry = await uploadDoc(file, propertyId);
+          newDocEntries.push(entry);
+        } catch {
+          toast.error(`Failed to upload ${file.name}`);
+          setUploading(false);
+          return;
+        }
+      }
+      const allDocs = [...existingDocs, ...newDocEntries];
+
       if (editing) {
         const { id, ...updates } = form;
-        await updateProperty.mutateAsync({ id: editing.id, ...updates, image: mainImageUrl, images: allImages });
+        await updateProperty.mutateAsync({
+          id: editing.id,
+          ...updates,
+          image: mainImageUrl,
+          images: allImages,
+          property_docs: allDocs,
+        });
       } else {
         const { id, ...newProp } = form;
-        await createProperty.mutateAsync({ ...newProp, image: mainImageUrl, images: allImages });
+        await createProperty.mutateAsync({
+          ...newProp,
+          image: mainImageUrl,
+          images: allImages,
+          property_docs: allDocs,
+        });
       }
       setUploading(false);
       setModalOpen(false);
@@ -172,10 +259,6 @@ export default function AdminInvestProperties() {
       console.error('Failed to save property:', err);
       toast.error('Failed to save property');
     }
-  };
-
-  const updateField = (field: string, value: string | number) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -308,6 +391,11 @@ export default function AdminInvestProperties() {
               <input type="number" step="0.1" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.annual_yield as number} onChange={(e) => updateField('annual_yield', Number(e.target.value))} />
             </div>
             <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Appreciation Rate (%)</label>
+              <input type="number" step="0.1" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={(form.appreciation_rate as number) ?? 5.2} onChange={(e) => updateField('appreciation_rate', Number(e.target.value))} />
+              <p className="text-[11px] text-muted-foreground mt-1">Used in the 5-year projection calculator</p>
+            </div>
+            <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Monthly Rent ($)</label>
               <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.monthly_rent as number} onChange={(e) => updateField('monthly_rent', Number(e.target.value))} />
             </div>
@@ -362,6 +450,76 @@ export default function AdminInvestProperties() {
             <div className="col-span-2">
               <label className="text-sm font-medium text-foreground mb-1.5 block">Description</label>
               <textarea className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm resize-none" value={form.description as string} onChange={(e) => updateField('description', e.target.value)} />
+            </div>
+
+            {/* ── Highlights ──────────────────────────────────────── */}
+            <div className="col-span-2">
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Highlights</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {((form.highlights as string[]) || []).map((h, i) => (
+                  <div key={i} className="flex items-center gap-1 rounded-full border bg-muted/50 px-3 py-1 text-sm">
+                    <span>{h}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeHighlight(i)}
+                      className="text-muted-foreground hover:text-foreground ml-1"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  placeholder="e.g. HMO license"
+                  value={highlightInput}
+                  onChange={(e) => setHighlightInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addHighlight(); } }}
+                />
+                <Button type="button" variant="outline" size="sm" onClick={addHighlight} className="gap-1.5">
+                  <Plus className="w-3.5 h-3.5" /> Add
+                </Button>
+              </div>
+            </div>
+
+            {/* ── Documents ───────────────────────────────────────── */}
+            <div className="col-span-2">
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Documents</label>
+              <div className="space-y-2 mb-3">
+                {((form.property_docs as DocEntry[]) || []).map((doc, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm truncate">{doc.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                        <Button type="button" variant="ghost" size="sm">
+                          <Download className="w-3.5 h-3.5" />
+                        </Button>
+                      </a>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeDoc(i)}>
+                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <input
+                ref={docRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx"
+                multiple
+                className="hidden"
+                onChange={(e) => setDocFiles(prev => [...prev, ...Array.from(e.target.files || [])])}
+              />
+              <Button type="button" variant="outline" size="sm" onClick={() => docRef.current?.click()} className="gap-1.5">
+                <Upload className="w-3.5 h-3.5" /> Upload Documents
+              </Button>
+              {docFiles.length > 0 && (
+                <p className="text-[11px] text-muted-foreground mt-1">{docFiles.length} file(s) staged for upload</p>
+              )}
             </div>
 
             {/* Main Image Upload */}

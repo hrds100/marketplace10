@@ -41,27 +41,6 @@ const statusColors: Record<string, string> = {
   paid: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
 };
 
-const mockCommissions: Commission[] = [
-  { id: 'c1', agent: 'Hugo Souza', agentEmail: 'hugo@nfstay.com', referredUser: 'John Smith', source: 'investment_first', property: 'Marina Gate Apartment', grossAmount: 2500, rate: 5, commission: 125, status: 'paid', claimableDate: '2026-03-10' },
-  { id: 'c2', agent: 'Hugo Souza', agentEmail: 'hugo@nfstay.com', referredUser: 'Sarah Chen', source: 'subscription', property: '', grossAmount: 97, rate: 40, commission: 38.80, status: 'paid', claimableDate: '2026-03-08' },
-  { id: 'c3', agent: 'John Smith', agentEmail: 'john@gmail.com', referredUser: 'Hugo Souza', source: 'investment_first', property: 'Seseh Beachfront Villa', grossAmount: 500, rate: 5, commission: 25, status: 'claimable', claimableDate: '2026-03-18' },
-  { id: 'c4', agent: 'Maria Garcia', agentEmail: 'maria@gmail.com', referredUser: 'Ahmed Ali', source: 'investment_first', property: 'KAEC Waterfront Residence', grossAmount: 2250, rate: 5, commission: 112.50, status: 'paid', claimableDate: '2026-03-12' },
-  { id: 'c5', agent: 'Hugo Souza', agentEmail: 'hugo@nfstay.com', referredUser: 'Ahmed Ali', source: 'investment_recurring', property: 'Seseh Beachfront Villa', grossAmount: 1200, rate: 2, commission: 24, status: 'pending', claimableDate: '2026-03-25' },
-  { id: 'c6', agent: 'John Smith', agentEmail: 'john@gmail.com', referredUser: 'Maria Garcia', source: 'subscription', property: '', grossAmount: 97, rate: 40, commission: 38.80, status: 'paid', claimableDate: '2026-03-05' },
-  { id: 'c7', agent: 'Ahmed Ali', agentEmail: 'ahmed@yahoo.com', referredUser: 'David Park', source: 'investment_first', property: 'Seseh Beachfront Villa', grossAmount: 8000, rate: 5, commission: 400, status: 'paid', claimableDate: '2026-02-28' },
-  { id: 'c8', agent: 'Ahmed Ali', agentEmail: 'ahmed@yahoo.com', referredUser: 'David Park', source: 'investment_recurring', property: 'Marina Gate Apartment', grossAmount: 15000, rate: 2, commission: 300, status: 'claimed', claimableDate: '2026-03-14' },
-  { id: 'c9', agent: 'Hugo Souza', agentEmail: 'hugo@nfstay.com', referredUser: 'David Park', source: 'subscription', property: '', grossAmount: 297, rate: 40, commission: 118.80, status: 'paid', claimableDate: '2026-02-20' },
-  { id: 'c10', agent: 'Maria Garcia', agentEmail: 'maria@gmail.com', referredUser: 'Sarah Chen', source: 'investment_first', property: 'Seseh Beachfront Villa', grossAmount: 2000, rate: 5, commission: 100, status: 'paid', claimableDate: '2026-03-01' },
-  { id: 'c11', agent: 'John Smith', agentEmail: 'john@gmail.com', referredUser: 'Ahmed Ali', source: 'investment_recurring', property: 'KAEC Waterfront Residence', grossAmount: 2250, rate: 2, commission: 45, status: 'pending', claimableDate: '2026-03-28' },
-  { id: 'c12', agent: 'Hugo Souza', agentEmail: 'hugo@nfstay.com', referredUser: 'Maria Garcia', source: 'investment_first', property: 'Marina Gate Apartment', grossAmount: 2000, rate: 5, commission: 100, status: 'paid', claimableDate: '2026-02-15' },
-];
-
-const stats = [
-  { label: 'Total Commissions', value: '$12,450', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  { label: 'Pending', value: '$1,230', icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-  { label: 'Claimable', value: '$890', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  { label: 'Paid', value: '$10,330', icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-];
 
 export default function AdminInvestCommissions() {
   const { data: realCommissions = [] } = useAllCommissions();
@@ -72,7 +51,38 @@ export default function AdminInvestCommissions() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const filtered = mockCommissions.filter((c) => {
+  // Map DB rows to Commission display shape
+  const commissions: Commission[] = useMemo(() => {
+    return (realCommissions as any[]).map((r) => ({
+      id: r.id || '',
+      agent: r.aff_profiles?.full_name || r.affiliate_user_id?.slice(0, 8) || '—',
+      agentEmail: r.aff_profiles?.referral_code ? `code: ${r.aff_profiles.referral_code}` : '—',
+      referredUser: r.referred_user_id?.slice(0, 8) || '—',
+      source: (r.source || r.commission_type || 'investment_first') as Commission['source'],
+      property: r.property_title || r.property_id ? `#${r.property_id}` : '',
+      grossAmount: Number(r.gross_amount || r.amount || 0),
+      rate: Number(r.rate || 0) * 100,
+      commission: Number(r.commission_amount || r.amount || 0),
+      status: (r.status || 'pending') as Commission['status'],
+      claimableDate: r.claimable_at ? r.claimable_at.slice(0, 10) : r.created_at?.slice(0, 10) || '',
+    }));
+  }, [realCommissions]);
+
+  // Compute stats from real data
+  const stats = useMemo(() => {
+    const total = commissions.reduce((s, c) => s + c.commission, 0);
+    const pending = commissions.filter((c) => c.status === 'pending').reduce((s, c) => s + c.commission, 0);
+    const claimable = commissions.filter((c) => c.status === 'claimable').reduce((s, c) => s + c.commission, 0);
+    const paid = commissions.filter((c) => c.status === 'paid').reduce((s, c) => s + c.commission, 0);
+    return [
+      { label: 'Total Commissions', value: `$${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+      { label: 'Pending', value: `$${pending.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
+      { label: 'Claimable', value: `$${claimable.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+      { label: 'Paid', value: `$${paid.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    ];
+  }, [commissions]);
+
+  const filtered = commissions.filter((c) => {
     if (sourceFilter !== 'All' && c.source !== sourceFilter) return false;
     if (statusFilter !== 'All' && c.status !== statusFilter.toLowerCase()) return false;
     if (agentSearch && !c.agent.toLowerCase().includes(agentSearch.toLowerCase())) return false;
