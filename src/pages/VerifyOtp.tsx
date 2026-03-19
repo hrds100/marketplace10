@@ -6,8 +6,9 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { sendOtp } from '@/lib/n8n';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useConnect } from '@particle-network/authkit';
-import { AuthType } from '@particle-network/auth-core';
+// Particle imports — used for wallet creation after OTP
+// These are lazy-loaded to prevent crashes if Particle isn't ready
+
 
 export default function VerifyOtp() {
   const navigate = useNavigate();
@@ -25,13 +26,7 @@ export default function VerifyOtp() {
   const verifyingRef = useRef(false);
   const toastFiredRef = useRef(false);
 
-  let particleConnect: ((params: any) => Promise<any>) | null = null;
-  try {
-    const connectHook = useConnect();
-    particleConnect = connectHook.connect;
-  } catch {
-    // Particle not initialized — skip
-  }
+  // Particle wallet creation handled in handleVerify via dynamic import
 
   // Countdown timer
   useEffect(() => {
@@ -106,43 +101,41 @@ export default function VerifyOtp() {
         });
         const jwtData = await jwtRes.json();
 
-        if (jwtData.jwt && particleConnect) {
+        if (jwtData.jwt) {
           // 2. Connect to Particle with JWT — creates embedded wallet silently
           try {
-            const userInfo = await particleConnect({
-              provider: AuthType.jwt,
-              thirdpartyCode: jwtData.jwt,
-            });
-            // 3. Save wallet address to profile
-            // userInfo may contain address or we need to get it from Particle's ethereum provider
-            let walletAddr: string | null = null;
-            if (userInfo?.evm_wallet_address) {
-              walletAddr = userInfo.evm_wallet_address;
-            } else if (userInfo?.wallets) {
-              const evmWallet = userInfo.wallets.find((w: any) => w.chain === 'evm' || w.chain_name === 'evm');
-              walletAddr = evmWallet?.public_address || null;
-            } else if (typeof window !== 'undefined' && (window as any).particle?.ethereum) {
-              try {
-                const accounts = await (window as any).particle.ethereum.request({ method: 'eth_accounts' });
-                walletAddr = accounts?.[0] || null;
-              } catch { /* skip */ }
-            }
-
-            if (walletAddr) {
-              await (supabase.from('profiles') as any)
-                .update({ wallet_address: walletAddr })
-                .eq('id', userId);
-              console.log('Particle wallet created:', walletAddr);
-            } else {
-              console.log('Particle connected but no wallet address returned:', userInfo);
+            const { useConnect } = await import('@particle-network/authkit');
+            // Note: useConnect is a hook and can't be called here directly.
+            // Instead, use the Particle auth-core API directly
+            const authCore = await import('@particle-network/auth-core').catch(() => null);
+            if (authCore) {
+              // Try connecting via auth-core direct API
+              const connectFn = (window as any).__PARTICLE_CONNECT_FN__;
+              if (connectFn) {
+                const userInfo = await connectFn({
+                  provider: 'jwt',
+                  thirdpartyCode: jwtData.jwt,
+                });
+                let walletAddr: string | null = null;
+                if (userInfo?.evm_wallet_address) {
+                  walletAddr = userInfo.evm_wallet_address;
+                } else if (userInfo?.wallets) {
+                  const evmWallet = (userInfo.wallets as any[]).find((w) => w.chain === 'evm' || w.chain_name === 'evm');
+                  walletAddr = evmWallet?.public_address || null;
+                }
+                if (walletAddr) {
+                  await (supabase.from('profiles') as any)
+                    .update({ wallet_address: walletAddr })
+                    .eq('id', userId);
+                  console.log('Particle wallet created:', walletAddr);
+                }
+              }
             }
           } catch (particleErr) {
             console.log('Particle wallet creation deferred:', particleErr);
           }
-        } else if (jwtData.jwt) {
-          // Particle not available — store JWT for later
+          // Always store JWT as fallback
           try { sessionStorage.setItem('particle_jwt', jwtData.jwt); } catch { /* skip */ }
-          console.log('Particle JWT stored for later wallet creation');
         }
       }
     } catch (walletErr) {

@@ -131,8 +131,8 @@ serve(async (req) => {
       let propertyId: number | null = null
       let agentWallet: string | null = null
       let recipientWallet: string | null = null
-      let customerEmail: string | null = customerData?.email || null
-      let customerFirstName: string | null = customerData?.first_name || null
+      const customerEmail: string | null = customerData?.email || null
+      const customerFirstName: string | null = customerData?.first_name || null
 
       if (customerData?.phone) {
         try {
