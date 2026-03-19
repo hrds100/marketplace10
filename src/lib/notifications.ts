@@ -15,12 +15,25 @@ export async function sendInvestNotification(event: {
   const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud/webhook';
 
   try {
-    // Fire n8n webhook (non-blocking)
+    // Try n8n webhook first, fallback to direct GHL trigger
     fetch(`${webhookUrl}/inv-notify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(event),
-    }).catch(() => {}); // Don't fail if notification fails
+    }).catch(() => {
+      // n8n webhook failed — trigger GHL workflow directly as fallback
+      if (event.ghl_contact_id) {
+        fetch(`https://services.leadconnectorhq.com/contacts/${event.ghl_contact_id}/workflow/75b14201-f492-44e9-a6e8-4423842fa07e`, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer pit-28d63a20-4d9f-46bc-aaa3-26556d8b518f',
+            'Version': '2021-07-28',
+            'Content-Type': 'application/json',
+          },
+          body: '{}',
+        }).catch(() => {});
+      }
+    });
 
     // Also create in-app notification if user_id provided
     if (event.user_id) {
