@@ -67,6 +67,33 @@ async function provisionWallet(userId: string) {
         .eq('id', userId);
       console.log('[WalletProvisioner] Wallet created:', address);
       try { sessionStorage.removeItem('particle_jwt'); } catch { /* skip */ }
+
+      // 5. Notify user via WhatsApp + email (fire-and-forget)
+      try {
+        const { data: profile } = await (supabase.from('profiles') as any)
+          .select('name, whatsapp, email:id')
+          .eq('id', userId)
+          .single();
+        const { data: authData } = await supabase.auth.getUser();
+        const email = authData?.user?.email || '';
+        const phone = profile?.whatsapp || '';
+        const name = profile?.name || '';
+
+        const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
+        fetch(`${N8N_BASE}/webhook/wallet-created`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            wallet_address: address,
+            email,
+            phone,
+            name,
+          }),
+        }).catch(() => {}); // Silent — never block on notification failure
+      } catch {
+        // Notification failed — wallet is still created, non-critical
+      }
     }
 
     destroyIframe();
