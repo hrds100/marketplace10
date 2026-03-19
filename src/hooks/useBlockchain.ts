@@ -8,6 +8,8 @@ import {
   VOTING_ABI,
   BOOSTER_ABI,
   ERC20_ABI,
+  BUY_LP_ABI,
+  FARM_ABI,
 } from '@/lib/contractAbis';
 
 // Helper to get ethers — lazy loaded
@@ -114,6 +116,61 @@ export function useBlockchain() {
     },
     [address],
   );
+
+  const getRentHistory = useCallback(
+    async (propertyId: number): Promise<string> => {
+      try {
+        const contract = await getContract(CONTRACTS.RENT, RENT_ABI);
+        if (!contract || !address) return '0';
+        const ethers = await getEthers();
+        if (!ethers) return '0';
+        const total = await contract.getRentHistory(address, propertyId);
+        return ethers.utils.formatUnits(total, 18);
+      } catch {
+        return '0';
+      }
+    },
+    [address],
+  );
+
+  const getProposalDetails = useCallback(async (proposalId: number) => {
+    try {
+      const contract = await getContract(CONTRACTS.VOTING, VOTING_ABI);
+      if (!contract) return null;
+      const p = await contract.getProposal(proposalId);
+      let description = '';
+      try {
+        description = await contract.decodeString(p._description);
+      } catch {
+        description = '';
+      }
+      return {
+        propertyId: p._propertyId.toNumber(),
+        proposer: p._proposer,
+        endTime: p._endTime.toNumber(),
+        votesYes: p._votesInFavour.toNumber(),
+        votesNo: p._votesInAgainst.toNumber(),
+        description,
+        status: p._status,
+      };
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const getLpQuote = useCallback(async (amountUsdc: number): Promise<string> => {
+    try {
+      const contract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI);
+      if (!contract) return '0';
+      const ethers = await getEthers();
+      if (!ethers) return '0';
+      const amount = ethers.utils.parseUnits(amountUsdc.toString(), 18);
+      const lpAmount = await contract.getLpEstimation(amount);
+      return ethers.utils.formatUnits(lpAmount, 18);
+    } catch {
+      return '0';
+    }
+  }, []);
 
   const getBoostDetails = useCallback(
     async (propertyId: number) => {
@@ -287,6 +344,88 @@ export function useBlockchain() {
     [ensureConnected],
   );
 
+  const buyStayTokens = useCallback(
+    async (propertyId: number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await ensureConnected();
+        const ethers = await getEthers();
+        if (!ethers) throw new Error('Blockchain not available');
+
+        // 1. Withdraw rent first
+        const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
+        if (!rentContract) throw new Error('Could not connect to rent contract');
+        const withdrawTx = await rentContract.withdrawRent(propertyId);
+        await withdrawTx.wait();
+
+        // 2. Check USDC balance and approve for BUY_LP
+        const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
+        if (!usdc) throw new Error('Could not connect to USDC contract');
+        const balance = await usdc.balanceOf(address);
+        if (balance.isZero()) throw new Error('No USDC balance after rent withdrawal');
+        const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
+        await approveTx.wait();
+
+        // 3. Buy STAY tokens
+        const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
+        if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
+        const tx = await buyLpContract.buyStay(address, CONTRACTS.USDC, balance);
+        const receipt = await tx.wait();
+
+        setLoading(false);
+        return { txHash: receipt.transactionHash, success: true };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Buy STAY failed';
+        setError(msg);
+        setLoading(false);
+        throw err;
+      }
+    },
+    [address, ensureConnected],
+  );
+
+  const buyLpTokens = useCallback(
+    async (propertyId: number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await ensureConnected();
+        const ethers = await getEthers();
+        if (!ethers) throw new Error('Blockchain not available');
+
+        // 1. Withdraw rent first
+        const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
+        if (!rentContract) throw new Error('Could not connect to rent contract');
+        const withdrawTx = await rentContract.withdrawRent(propertyId);
+        await withdrawTx.wait();
+
+        // 2. Check USDC balance and approve for BUY_LP
+        const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
+        if (!usdc) throw new Error('Could not connect to USDC contract');
+        const balance = await usdc.balanceOf(address);
+        if (balance.isZero()) throw new Error('No USDC balance after rent withdrawal');
+        const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
+        await approveTx.wait();
+
+        // 3. Buy LP tokens
+        const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
+        if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
+        const tx = await buyLpContract.buyLPToken(address, CONTRACTS.USDC, balance);
+        const receipt = await tx.wait();
+
+        setLoading(false);
+        return { txHash: receipt.transactionHash, success: true };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Buy LP failed';
+        setError(msg);
+        setLoading(false);
+        throw err;
+      }
+    },
+    [address, ensureConnected],
+  );
+
   return {
     // State
     loading,
@@ -299,6 +438,9 @@ export function useBlockchain() {
     getRentDetails,
     isEligibleForRent,
     getBoostDetails,
+    getRentHistory,
+    getProposalDetails,
+    getLpQuote,
 
     // Write
     buyShares,
@@ -306,6 +448,8 @@ export function useBlockchain() {
     castVote,
     boostApr,
     claimBoostRewards,
+    buyStayTokens,
+    buyLpTokens,
 
     // Wallet
     connectWallet: connect,

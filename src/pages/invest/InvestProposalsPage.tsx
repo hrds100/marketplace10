@@ -31,6 +31,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fixIpfsUrl } from '@/lib/ipfs';
 import { useInvestProperties } from '@/hooks/useInvestData';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -635,7 +636,7 @@ export default function InvestProposalsPage() {
                               {/* Property image thumbnail */}
                               {p.propertyImage && p.propertyImage !== '/placeholder.svg' ? (
                                 <img
-                                  src={p.propertyImage}
+                                  src={fixIpfsUrl(p.propertyImage)}
                                   alt={p.propertyTitle}
                                   className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
                                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

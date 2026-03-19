@@ -4,7 +4,7 @@ import {
   ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap,
   CreditCard, HelpCircle, UserCheck, Settings, Bell, TrendingUp,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
-  LayoutGrid, ArrowLeftRight,
+  LayoutGrid, ArrowLeftRight, Plug,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,6 +32,7 @@ const investLinks = [
   { to: '/admin/invest/payouts', label: 'Payouts', icon: Banknote },
   { to: '/admin/invest/proposals', label: 'Proposals', icon: Vote },
   { to: '/admin/invest/boost', label: 'Boost', icon: Rocket },
+  { to: '/admin/invest/endpoints', label: 'Endpoints', icon: Plug },
 ];
 
 function getWorkspace(pathname: string): 'selector' | 'marketplace' | 'invest' | 'booking' {

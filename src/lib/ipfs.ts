@@ -1,3 +1,20 @@
+/**
+ * Fix broken IPFS gateway URLs.
+ * Replaces `cloudflare-ipfs.com` with `ipfs.io`, with `gateway.pinata.cloud` as fallback pattern.
+ */
+export function fixIpfsUrl(url: string): string {
+  if (!url) return url;
+  // Replace cloudflare gateway with ipfs.io
+  let fixed = url.replace('cloudflare-ipfs.com', 'ipfs.io');
+  // Also handle gateway.pinata.cloud (replace with ipfs.io for consistency)
+  fixed = fixed.replace('gateway.pinata.cloud', 'ipfs.io');
+  // Handle raw ipfs:// protocol URIs
+  if (fixed.startsWith('ipfs://')) {
+    fixed = `https://ipfs.io/ipfs/${fixed.replace('ipfs://', '')}`;
+  }
+  return fixed;
+}
+
 export interface IPFSPropertyMetadata {
   name: string;
   description: string;

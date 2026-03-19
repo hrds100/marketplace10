@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { usePortfolioWithBlockchain } from '@/hooks/usePortfolioWithBlockchain';
 import { useBlockchain } from '@/hooks/useBlockchain';
-import { useProposals } from '@/hooks/useInvestData';
+import { useProposals, useInvestProperties } from '@/hooks/useInvestData';
+import { useWallet } from '@/hooks/useWallet';
+import { SUBGRAPHS } from '@/lib/particle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -87,16 +89,18 @@ function getReachedMilestones(count: number) {
 // Achievements
 // ---------------------------------------------------------------------------
 
-const ACHIEVEMENTS = [
-  { id: 'first-property', name: 'First Property', description: 'Contributed in your first property', icon: Home, unlocked: true },
-  { id: 'active-partner', name: 'Active Partner', description: 'Participated in the NFStay JV program', icon: Users, unlocked: true },
-  { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Contributed in 3+ properties', icon: Building2, unlocked: false },
-  { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Contributed in 5+ properties', icon: Award, unlocked: false },
-  { id: 'property-titan', name: 'Property Titan', description: 'Contributed in 10+ properties', icon: Crown, unlocked: false },
-  { id: 'first-payout', name: 'First Payout', description: 'Received your first rental income', icon: Banknote, unlocked: false },
-  { id: 'proposal-voter', name: 'Proposal Voter', description: 'Voted on a governance proposal', icon: Vote, unlocked: false },
-  { id: 'early-investor', name: 'Early Investor', description: 'Among the first 100 investors', icon: Sparkles, unlocked: false },
-];
+function getAchievements(holdingsCount: number, totalClaimed: number, hasVoted: boolean) {
+  return [
+    { id: 'first-property', name: 'First Property', description: 'Contributed in your first property', icon: Home, unlocked: holdingsCount >= 1 },
+    { id: 'active-partner', name: 'Active Partner', description: 'Participated in the NFStay JV program', icon: Users, unlocked: holdingsCount > 0 },
+    { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Contributed in 3+ properties', icon: Building2, unlocked: holdingsCount >= 3 },
+    { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Contributed in 5+ properties', icon: Award, unlocked: holdingsCount >= 5 },
+    { id: 'property-titan', name: 'Property Titan', description: 'Contributed in 10+ properties', icon: Crown, unlocked: holdingsCount >= 10 },
+    { id: 'first-payout', name: 'First Payout', description: 'Received your first rental income', icon: Banknote, unlocked: totalClaimed > 0 },
+    { id: 'proposal-voter', name: 'Proposal Voter', description: 'Voted on a governance proposal', icon: Vote, unlocked: hasVoted },
+    { id: 'early-investor', name: 'Early Investor', description: 'Among the first 100 investors', icon: Sparkles, unlocked: false },
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // Monthly Earnings Data
@@ -115,8 +119,10 @@ const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
 export default function InvestPortfolioPage() {
   const navigate = useNavigate();
   const { portfolio, isLoading, blockchainLoading } = usePortfolioWithBlockchain();
-  const { boostApr, claimBoostRewards, loading: boostLoading } = useBlockchain();
+  const { boostApr, claimBoostRewards, getRentHistory, getBoostDetails, loading: boostLoading } = useBlockchain();
   const { data: proposals = [] } = useProposals();
+  const { data: allProperties = [] } = useInvestProperties();
+  const { address } = useWallet();
 
   const hasActiveProposal = (propertyId: number) =>
     proposals.some(
@@ -125,10 +131,124 @@ export default function InvestPortfolioPage() {
 
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
 
+  // Fetch total claimed from blockchain (Total Earnings)
+  const [totalClaimed, setTotalClaimed] = useState(0);
+  const [pendingPayoutsTotal, setPendingPayoutsTotal] = useState(0);
+  const [hasVoted, setHasVoted] = useState(false);
+  const [boostDetailsMap, setBoostDetailsMap] = useState<Record<number, { isBoosted: boolean; estimatedRewards: string }>>({});
+
+  useEffect(() => {
+    if (!address || portfolio.holdings.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let claimed = 0;
+        for (const h of portfolio.holdings) {
+          try {
+            const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
+            const blockchainPropertyId = prop?.blockchain_property_id;
+            if (blockchainPropertyId == null) continue;
+            const historyStr = await getRentHistory(blockchainPropertyId);
+            claimed += parseFloat(historyStr) || 0;
+          } catch {
+            // skip
+          }
+        }
+        if (!cancelled) setTotalClaimed(claimed);
+      } catch {
+        // non-critical
+      }
+    })();
+
+    // Fetch pending payouts from rent details
+    (async () => {
+      try {
+        const ethers = await import('ethers').catch(() => null);
+        if (!ethers) return;
+        const { RENT_ABI } = await import('@/lib/contractAbis');
+        const { CONTRACTS } = await import('@/lib/particle');
+        const provider = new ethers.providers.JsonRpcProvider(
+          'https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T'
+        );
+        const { RWA_TOKEN_ABI } = await import('@/lib/contractAbis');
+        const rentContract = new ethers.Contract(CONTRACTS.RENT, RENT_ABI, provider);
+        const rwaContract = new ethers.Contract(CONTRACTS.RWA_TOKEN, RWA_TOKEN_ABI, provider);
+
+        let pending = 0;
+        for (const h of portfolio.holdings) {
+          try {
+            const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
+            const blockchainPropertyId = prop?.blockchain_property_id;
+            if (blockchainPropertyId == null) continue;
+            const [details, balance] = await Promise.all([
+              rentContract.getRentDetails(blockchainPropertyId),
+              rwaContract.balanceOf(address, blockchainPropertyId),
+            ]);
+            const rentPerShare = Number(details[4].toString()) / 1e18;
+            const shares = balance.toNumber();
+            pending += rentPerShare * shares;
+          } catch {
+            // skip
+          }
+        }
+        if (!cancelled) setPendingPayoutsTotal(pending);
+      } catch {
+        // non-critical
+      }
+    })();
+
+    // Check if user has voted via The Graph
+    (async () => {
+      try {
+        const res = await fetch(SUBGRAPHS.VOTING, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `{ voteds(first: 1, where: { _by: "${address.toLowerCase()}" }) { id } }`,
+          }),
+        });
+        const data = await res.json();
+        if (!cancelled && data.data?.voteds?.length > 0) {
+          setHasVoted(true);
+        }
+      } catch {
+        // non-critical
+      }
+    })();
+
+    // Fetch boost details for each holding
+    (async () => {
+      try {
+        const details: Record<number, { isBoosted: boolean; estimatedRewards: string }> = {};
+        for (const h of portfolio.holdings) {
+          try {
+            const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
+            const blockchainPropertyId = prop?.blockchain_property_id;
+            if (blockchainPropertyId == null) continue;
+            const bd = await getBoostDetails(blockchainPropertyId);
+            if (bd) {
+              details[h.propertyId] = { isBoosted: bd.isBoosted, estimatedRewards: bd.estimatedRewards };
+            }
+          } catch {
+            // skip
+          }
+        }
+        if (!cancelled) setBoostDetailsMap(details);
+      } catch {
+        // non-critical
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, portfolio.holdings.length, allProperties.length]);
+
   const holdingsCount = portfolio.holdings.length;
   const currentRank = getCurrentRank(holdingsCount);
   const nextMilestone = getNextMilestone(holdingsCount);
   const reachedMilestones = getReachedMilestones(holdingsCount);
+
+  const ACHIEVEMENTS = getAchievements(holdingsCount, totalClaimed, hasVoted);
   const unlockedCount = ACHIEVEMENTS.filter((a) => a.unlocked).length;
 
   const milestoneProgress = nextMilestone
@@ -146,8 +266,8 @@ export default function InvestPortfolioPage() {
 
   const summaryItems = [
     { label: 'Total Contributed', value: portfolio.totalContributed, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'Total Earnings', value: portfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-    { label: 'Pending Payouts', value: portfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { label: 'Total Earnings', value: totalClaimed > 0 ? totalClaimed : portfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { label: 'Pending Payouts', value: pendingPayoutsTotal > 0 ? pendingPayoutsTotal : portfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10' },
   ];
 
   const toggleCollapse = (propertyId: number) => {
@@ -521,8 +641,8 @@ export default function InvestPortfolioPage() {
                       <div className="rounded-xl border border-primary/30 bg-background p-4 space-y-3 shadow-sm">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-base font-bold">Boosted APR: {(h.annualYield * 1.5).toFixed(1)}%</p>
-                            <p className="text-xs text-muted-foreground">Not Boosted</p>
+                            <p className="text-base font-bold">Boosted APR: {boostDetailsMap[h.propertyId]?.isBoosted ? (h.annualYield * 1.5).toFixed(1) : '0'}%</p>
+                            <p className="text-xs text-muted-foreground">{boostDetailsMap[h.propertyId]?.isBoosted ? 'Boosted' : 'Not Boosted'}</p>
                           </div>
                           <span className="text-xl">{'\uD83D\uDE80'}</span>
                         </div>
@@ -532,7 +652,7 @@ export default function InvestPortfolioPage() {
                             <p className="text-[10px] text-muted-foreground">Your Shares</p>
                           </div>
                           <div>
-                            <p className="text-base font-bold">{(h.annualYield * 6 + 30).toFixed(0)}%</p>
+                            <p className="text-base font-bold">{(h.annualYield * 6).toFixed(0)}%</p>
                             <p className="text-[10px] text-muted-foreground">6YR Est. Returns</p>
                           </div>
                           <div>
@@ -547,7 +667,7 @@ export default function InvestPortfolioPage() {
                           </div>
                           <div>
                             <p className="text-[10px] text-muted-foreground">Stay Earned</p>
-                            <p className="text-sm font-bold">0 STAY</p>
+                            <p className="text-sm font-bold">{boostDetailsMap[h.propertyId]?.estimatedRewards ? `${(Number(boostDetailsMap[h.propertyId].estimatedRewards) / 1e18).toFixed(2)} STAY` : '0 STAY'}</p>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 pt-1">
