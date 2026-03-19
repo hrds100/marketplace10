@@ -45,6 +45,7 @@ import AdminInvestPayouts from "./pages/admin/invest/AdminInvestPayouts";
 import AdminInvestProposals from "./pages/admin/invest/AdminInvestProposals";
 import AdminInvestBoost from "./pages/admin/invest/AdminInvestBoost";
 import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
+import AdminArchitecture from "./pages/admin/AdminArchitecture";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 import TestingDesign from "./pages/TestingDesign";
@@ -161,6 +162,9 @@ const App = () => (
 
             {/* Booking workspace (placeholder) */}
             <Route path="booking" element={<div className="text-center py-20"><h2 className="text-2xl font-bold mb-2">Booking Site Admin</h2><p className="text-muted-foreground">Coming Soon — Tajul is building this</p></div>} />
+
+            {/* Architecture overview */}
+            <Route path="architecture" element={<AdminArchitecture />} />
           </Route>
           <Route path="/testing/design" element={<TestingDesign />} />
           <Route path="*" element={<NotFound />} />

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { LayoutGrid, TrendingUp, Globe, ArrowRight, Lock } from 'lucide-react';
+import { LayoutGrid, TrendingUp, Globe, ArrowRight, Lock, Network } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const workspaces = [
@@ -36,6 +36,17 @@ const workspaces = [
     border: 'border-blue-500/20',
     active: false,
   },
+  {
+    id: 'architecture',
+    title: 'Architecture',
+    description: 'Platform overview — 3 apps, shared infra, database isolation',
+    icon: Network,
+    to: '/admin/architecture',
+    color: 'text-violet-500',
+    bg: 'bg-violet-500/10',
+    border: 'border-violet-500/20 hover:border-violet-500/40',
+    active: true,
+  },
 ];
 
 export default function AdminWorkspaceSelector() {
@@ -46,7 +57,7 @@ export default function AdminWorkspaceSelector() {
         <p className="text-sm text-muted-foreground mt-2">Choose a workspace to manage</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-4xl w-full">
         {workspaces.map((ws) => {
           const Icon = ws.icon;
           if (!ws.active) {
