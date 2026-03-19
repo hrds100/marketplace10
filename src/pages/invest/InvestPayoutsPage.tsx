@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { sendInvestNotification } from '@/lib/notifications';
@@ -72,7 +72,7 @@ const claimMethods: { key: ClaimMethod; label: string; description: string; icon
   {
     key: 'bank_transfer',
     label: 'Bank Transfer',
-    description: 'Withdraw directly to your bank account. Funds arrive in 2-3 business days.',
+    description: 'Withdraw directly to your bank account. Funds arrive next Tuesday morning (weekly Revolut batch).',
     icon: Landmark,
     recommended: true,
   },
@@ -136,8 +136,12 @@ function ClaimModal({
   setClaimStep,
   selectedMethod,
   setSelectedMethod,
+  claimTxHash,
+  setClaimTxHash,
   user,
   onClaimRent,
+  onBuyStayTokens,
+  onBuyLpTokens,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -146,6 +150,8 @@ function ClaimModal({
   setClaimStep: (step: ClaimStep) => void;
   selectedMethod: ClaimMethod | null;
   setSelectedMethod: (method: ClaimMethod | null) => void;
+  claimTxHash: string | null;
+  setClaimTxHash: (hash: string | null) => void;
   user: { id: string; email?: string } | null;
   onClaimRent?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
   onBuyStayTokens?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
@@ -183,31 +189,46 @@ function ClaimModal({
       }
     } else if (selectedMethod === 'usdc' && payout && onClaimRent) {
       try {
-        await onClaimRent(payout.propertyId);
+        const result = await onClaimRent(payout.propertyId);
+        setClaimTxHash(result.txHash || null);
         setClaimStep('success');
       } catch {
-        // Fall back to simulated if blockchain unavailable
-        setTimeout(() => setClaimStep('success'), 2000);
+        // If blockchain unavailable, show error state — do not fake success
+        setClaimStep('choose');
       }
-    } else if (selectedMethod === 'stay_token' && payout && onBuyStayTokens) {
+    } else if (selectedMethod === 'stay_token' && payout) {
+      // F1: STAY path — claimRent first, then buyStayTokens
       try {
-        await onBuyStayTokens(payout.propertyId);
+        if (onClaimRent) {
+          await onClaimRent(payout.propertyId);
+        }
+        if (onBuyStayTokens) {
+          const result = await onBuyStayTokens(payout.propertyId);
+          setClaimTxHash(result.txHash || null);
+        }
         setClaimStep('success');
       } catch {
-        // Fall back to simulated if blockchain unavailable
-        setTimeout(() => setClaimStep('success'), 2000);
+        // If blockchain unavailable, revert to choose — do not fake success
+        setClaimStep('choose');
       }
-    } else if (selectedMethod === 'lp_token' && payout && onBuyLpTokens) {
+    } else if (selectedMethod === 'lp_token' && payout) {
+      // F2: LP path — claimRent first, then buyLpTokens
       try {
-        await onBuyLpTokens(payout.propertyId);
+        if (onClaimRent) {
+          await onClaimRent(payout.propertyId);
+        }
+        if (onBuyLpTokens) {
+          const result = await onBuyLpTokens(payout.propertyId);
+          setClaimTxHash(result.txHash || null);
+        }
         setClaimStep('success');
       } catch {
-        // Fall back to simulated if blockchain unavailable
-        setTimeout(() => setClaimStep('success'), 2000);
+        // If blockchain unavailable, revert to choose — do not fake success
+        setClaimStep('choose');
       }
     } else {
-      // Fallback
-      setTimeout(() => setClaimStep('success'), 2000);
+      // Fallback for unhandled methods
+      setClaimStep('choose');
     }
   };
 
@@ -216,6 +237,7 @@ function ClaimModal({
     setTimeout(() => {
       setClaimStep('choose');
       setSelectedMethod(null);
+      setClaimTxHash(null);
     }, 200);
   };
 
@@ -224,7 +246,7 @@ function ClaimModal({
 
   const successMessages: Record<ClaimMethod, string | React.ReactNode> = {
     bank_transfer:
-      "Your bank transfer is being processed. You'll receive funds within 2-3 business days.",
+      "Your bank transfer is being processed. You'll receive funds next Tuesday morning (weekly Revolut batch).",
     usdc: 'USDC has been sent to your wallet.',
     stay_token: 'USDC claimed to your wallet. Swap to STAY tokens on PancakeSwap.',
     lp_token: 'USDC claimed to your wallet. Add liquidity on PancakeSwap to compound returns.',
@@ -336,6 +358,11 @@ function ClaimModal({
             <p className="text-sm text-muted-foreground text-center max-w-xs leading-relaxed">
               {selectedMethod ? successMessages[selectedMethod] : ''}
             </p>
+            {claimTxHash && (
+              <p className="text-xs text-muted-foreground font-mono break-all text-center max-w-xs">
+                Tx: {claimTxHash}
+              </p>
+            )}
             {selectedMethod === 'stay_token' && (
               <a
                 href={PANCAKESWAP_STAY_URL}
@@ -429,30 +456,59 @@ export default function InvestPayoutsPage() {
   const { data: bankAccount } = useMyBankAccount();
   const { claimRent, buyStayTokens, buyLpTokens, loading: claimLoading } = useBlockchain();
 
+  // F4: Fetch payout_claims from Supabase for history amount fallback
+  const [dbPayoutClaims, setDbPayoutClaims] = useState<any[]>([]);
+  useEffect(() => {
+    if (!user?.id) return;
+    (supabase.from('payout_claims') as any)
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }: { data: any[] | null }) => {
+        if (data) setDbPayoutClaims(data);
+      });
+  }, [user?.id]);
+
   // Map merged payouts to PayoutItem[]
-  const payouts: PayoutItem[] = mergedPayouts.map((p) => ({
-    id: p.id,
-    propertyTitle: p.propertyTitle,
-    propertyImage: p.propertyImage,
-    propertyId: p.propertyId,
-    date: p.date,
-    sharesOwned: p.sharesOwned,
-    amount: p.amount,
-    currency: p.currency,
-    status: p.status,
-    method: p.method,
-    txHash: p.txHash,
-  }));
+  // F4: For history rows where blockchain amount is 0, try to find a matching payout_claims row
+  const payouts: PayoutItem[] = mergedPayouts.map((p) => {
+    let amount = p.amount;
+    if (amount === 0 && p.status !== 'claimable') {
+      // Try to match by same-day date in payout_claims
+      const pDate = p.date ? p.date.slice(0, 10) : null;
+      const match = pDate
+        ? dbPayoutClaims.find((c) => c.created_at && c.created_at.slice(0, 10) === pDate)
+        : undefined;
+      if (match) {
+        amount = Number(match.amount_entitled || 0);
+      }
+    }
+    return {
+      id: p.id,
+      propertyTitle: p.propertyTitle,
+      propertyImage: p.propertyImage,
+      propertyId: p.propertyId,
+      date: p.date,
+      sharesOwned: p.sharesOwned,
+      amount,
+      currency: p.currency,
+      status: p.status,
+      method: p.method,
+      txHash: p.txHash,
+    };
+  });
 
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState<PayoutItem | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<ClaimMethod | null>(null);
   const [claimStep, setClaimStep] = useState<ClaimStep>('choose');
+  const [claimTxHash, setClaimTxHash] = useState<string | null>(null);
 
   const handleClaim = (payout: PayoutItem) => {
     setSelectedPayout(payout);
     setSelectedMethod(null);
     setClaimStep('choose');
+    setClaimTxHash(null);
     setClaimModalOpen(true);
   };
 
@@ -614,7 +670,7 @@ export default function InvestPayoutsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-right font-mono">
-                        {formatCurrency(payout.amount)}
+                        {payout.amount > 0 ? formatCurrency(payout.amount) : '\u2014'}
                       </TableCell>
                       <TableCell className="text-sm">
                         {payout.method ? methodLabels[payout.method] || payout.method : '\u2014'}
@@ -641,6 +697,8 @@ export default function InvestPayoutsPage() {
         setClaimStep={setClaimStep}
         selectedMethod={selectedMethod}
         setSelectedMethod={setSelectedMethod}
+        claimTxHash={claimTxHash}
+        setClaimTxHash={setClaimTxHash}
         user={user}
         onClaimRent={claimRent}
         onBuyStayTokens={buyStayTokens}

@@ -6,25 +6,21 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useInvestProperties, useInvestOrders, useAllShareholders, useAllPayoutClaims } from '@/hooks/useInvestData';
 
-const activities = [
-  'Hugo Souza purchased 5 shares of Seseh Beachfront Villa · 2 min ago',
-  'Commission earned: $25 → John Smith · 8 min ago',
-  'Rent deposited: $8,500 for Seseh Beachfront Villa · 22 min ago',
-  'Payout claimed: $127.50 by Sarah Chen · 1 hr ago',
-  'Ahmed Ali purchased 10 shares of KAEC Waterfront Residence · 2 hrs ago',
-  'New property listed: Marina Gate Apartment · 3 hrs ago',
-  'Commission earned: $50 → Maria Garcia · 4 hrs ago',
-  'Payout processed: $340 to Hugo Souza via USDC · 6 hrs ago',
-  'Property fully funded: Marina Gate Apartment · 8 hrs ago',
-  'John Smith purchased 20 shares of Seseh Beachfront Villa · 12 hrs ago',
-];
-
 const quickActions = [
   { icon: Plus, label: 'Add Property', variant: 'default' as const },
   { icon: Eye, label: 'View Orders', variant: 'outline' as const },
   { icon: CreditCard, label: 'Process Payouts', variant: 'outline' as const },
   { icon: Settings, label: 'Commission Settings', variant: 'outline' as const },
 ];
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs > 1 ? 's' : ''} ago`;
+  return `${Math.floor(hrs / 24)} day${Math.floor(hrs / 24) > 1 ? 's' : ''} ago`;
+}
 
 export default function AdminInvestDashboard() {
   const [clickedAction, setClickedAction] = useState<string | null>(null);
@@ -43,14 +39,32 @@ export default function AdminInvestDashboard() {
       .filter((c: any) => c.status === 'pending')
       .reduce((sum: number, c: any) => sum + Number(c.amount_entitled || 0), 0);
 
+    // Monthly Revenue: sum of paid claims in the current calendar month
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const monthlyRevenue = claims
+      .filter((c: any) => c.status === 'paid' && c.created_at >= monthStart)
+      .reduce((sum: number, c: any) => sum + Number(c.amount_entitled || 0), 0);
+
     return [
       { icon: DollarSign, label: 'Total Invested', value: `$${totalInvested.toLocaleString()}`, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
       { icon: Users, label: 'Total Shareholders', value: String(uniqueShareholders), color: 'text-blue-500', bg: 'bg-blue-500/10' },
       { icon: Building2, label: 'Active Properties', value: String(properties.length), color: 'text-amber-500', bg: 'bg-amber-500/10' },
-      { icon: TrendingUp, label: 'Monthly Revenue', value: '$8,500', color: 'text-purple-500', bg: 'bg-purple-500/10' },
+      { icon: TrendingUp, label: 'Monthly Revenue', value: `$${monthlyRevenue.toLocaleString()}`, color: 'text-purple-500', bg: 'bg-purple-500/10' },
       { icon: Clock, label: 'Pending Payouts', value: `$${pendingPayouts.toLocaleString()}`, color: 'text-rose-500', bg: 'bg-rose-500/10' },
     ];
   }, [orders, shareholders, properties, claims]);
+
+  // Real activity feed: last 10 completed orders
+  const activities = useMemo(() => {
+    return (orders as any[])
+      .filter((o: any) => o.status === 'completed')
+      .slice(0, 10)
+      .map((o: any) => ({
+        text: `${o.user_id?.slice(0, 8) || 'Investor'} purchased ${o.shares_count || '?'} share${Number(o.shares_count) !== 1 ? 's' : ''} of ${o.inv_properties?.title || 'a property'}`,
+        time: o.created_at ? timeAgo(o.created_at) : '',
+      }));
+  }, [orders]);
 
   return (
     <div>
@@ -80,20 +94,17 @@ export default function AdminInvestDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
-              {activities.map((a, i) => {
-                const parts = a.split(' · ');
-                const text = parts[0];
-                const time = parts[1];
-                return (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between py-2.5 border-b border-border last:border-0"
-                  >
-                    <span className="text-sm text-foreground">{text}</span>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">{time}</span>
-                  </div>
-                );
-              })}
+              {activities.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No completed orders yet.</p>
+              ) : activities.map((a, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between py-2.5 border-b border-border last:border-0"
+                >
+                  <span className="text-sm text-foreground">{a.text}</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">{a.time}</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -126,23 +137,26 @@ export default function AdminInvestDashboard() {
               ))}
             </div>
 
-            <div className="mt-6 p-4 rounded-lg bg-muted/50">
-              <p className="text-xs text-muted-foreground mb-2 font-medium">Investment Summary</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Properties</span>
-                  <span className="font-medium text-foreground">3 active</span>
+            {(() => {
+              const totalSharesSold = (orders as any[])
+                .filter((o: any) => o.status === 'completed')
+                .reduce((sum: number, o: any) => sum + Number(o.shares_count || 0), 0);
+              return (
+                <div className="mt-6 p-4 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium">Investment Summary</p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Properties</span>
+                      <span className="font-medium text-foreground">{properties.length} active</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Shares Sold</span>
+                      <span className="font-medium text-foreground">{totalSharesSold.toLocaleString()}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Avg. Yield</span>
-                  <span className="font-medium text-emerald-600">12.1%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Shares Sold</span>
-                  <span className="font-medium text-foreground">1,860</span>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
           </CardContent>
         </Card>
       </div>

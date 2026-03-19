@@ -145,9 +145,24 @@ export default function AdminInvestPayouts() {
     }
   };
 
-  const handleBatch = () => {
+  const handleBatch = async () => {
     setBatchTriggered(true);
-    setTimeout(() => setBatchTriggered(false), 2000);
+    try {
+      const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_INVEST_BATCH as string | undefined;
+      if (!webhookUrl) throw new Error('N8N webhook URL not configured (VITE_N8N_WEBHOOK_INVEST_BATCH)');
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trigger: 'manual_admin', triggered_at: new Date().toISOString() }),
+      });
+      if (!res.ok) throw new Error(`Webhook returned ${res.status}`);
+      toast.success('Tuesday batch triggered — Revolut will process pending bank claims');
+      qc.invalidateQueries({ queryKey: ['payout_claims'] });
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to trigger batch');
+    } finally {
+      setBatchTriggered(false);
+    }
   };
 
   if (isLoading) {

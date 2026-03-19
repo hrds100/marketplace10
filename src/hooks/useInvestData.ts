@@ -186,10 +186,15 @@ export function useCastVote() {
         .select()
         .single();
       if (error) throw error;
-      // Update vote counts on proposal
-      const field = vote.choice === 'yes' ? 'votes_yes' : 'votes_no';
+      // F10: Update vote count using select-then-update to avoid undefined
+      const voteField = vote.choice === 'yes' ? 'votes_yes' : 'votes_no';
+      const { data: currentProposal } = await (supabase.from('inv_proposals') as any)
+        .select(voteField)
+        .eq('id', vote.proposal_id)
+        .single();
+      const currentCount = currentProposal ? Number(currentProposal[voteField] ?? 0) : 0;
       await (supabase.from('inv_proposals') as any)
-        .update({ [field]: (supabase as any).rpc ? undefined : 0 }) // Will use RPC in production
+        .update({ [voteField]: currentCount + 1 })
         .eq('id', vote.proposal_id);
       return data;
     },

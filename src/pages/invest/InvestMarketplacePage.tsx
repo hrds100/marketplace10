@@ -1061,9 +1061,14 @@ function DocumentsSection({ property }: { property: PropertyData }) {
 
 function AgentReferralLink({ property }: { property: PropertyData }) {
   const [copied, setCopied] = useState(false);
-  const referralUrl = `https://hub.nfstay.com/invest?ref=YOUR_WALLET&property=${property.id}`;
+  // F7: Use actual wallet address instead of placeholder
+  const { walletAddress, walletConnected } = useBlockchain();
+  const referralUrl = walletAddress
+    ? `https://hub.nfstay.com/invest?ref=${walletAddress}&property=${property.id}`
+    : null;
 
   const handleCopy = useCallback(() => {
+    if (!referralUrl) return;
     navigator.clipboard.writeText(referralUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -1088,34 +1093,42 @@ function AgentReferralLink({ property }: { property: PropertyData }) {
           {/* Right — Link + copy */}
           <div className="p-6 bg-muted/30 dark:bg-muted/15 border-t lg:border-t-0 lg:border-l border-border/50 flex flex-col justify-center gap-3">
             <p className="text-xs font-medium text-muted-foreground">Your referral link</p>
-            <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5">
-              <p className="truncate text-xs text-muted-foreground flex-1 font-mono">{referralUrl}</p>
-              <Button
-                size="sm"
-                className={cn(
-                  "gap-1.5 text-xs transition-all flex-shrink-0",
-                  copied
-                    ? "bg-primary text-white"
-                    : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
-                )}
-                onClick={handleCopy}
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3.5 w-3.5" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5" />
-                    Copy Link
-                  </>
-                )}
-              </Button>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Commission is tracked automatically via your wallet address.
-            </p>
+            {referralUrl ? (
+              <>
+                <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5">
+                  <p className="truncate text-xs text-muted-foreground flex-1 font-mono">{referralUrl}</p>
+                  <Button
+                    size="sm"
+                    className={cn(
+                      "gap-1.5 text-xs transition-all flex-shrink-0",
+                      copied
+                        ? "bg-primary text-white"
+                        : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
+                    )}
+                    onClick={handleCopy}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        Copy Link
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Commission is tracked automatically via your wallet address.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Connect your wallet to get your referral link
+              </p>
+            )}
           </div>
         </div>
       </CardContent>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAllCommissions } from '@/hooks/useInvestData';
 import { DollarSign, Clock, CheckCircle2, Wallet, Search, Download } from 'lucide-react';
 import { exportToCSV } from '@/lib/csvExport';
