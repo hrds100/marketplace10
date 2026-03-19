@@ -388,37 +388,99 @@ export default function AdminInvestProperties() {
             </div>
           </div>
 
-          {/* Marketplace Preview */}
+          {/* Marketplace Preview — matches frontend layout */}
           <div className="mt-6 pt-4 border-t">
             <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Marketplace Preview</h4>
-            <div className="rounded-xl border bg-card p-4 space-y-3 max-w-sm">
-              {(form.image as string) && (
-                <img src={mainImagePreview || (form.image as string)} alt="Preview" className="w-full h-32 object-cover rounded-lg" />
+            <div className="rounded-2xl border bg-card overflow-hidden">
+              {/* Hero image with overlay */}
+              {(mainImagePreview || (form.image as string)) ? (
+                <div className="relative aspect-[16/9] w-full">
+                  <img
+                    src={mainImagePreview || (form.image as string)}
+                    alt="Preview"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-12">
+                    <h3 className="text-lg font-bold text-white">{(form.title as string) || 'Property Name'}</h3>
+                    <p className="text-xs text-white/80 flex items-center gap-1 mt-0.5">
+                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      {(form.location as string) || 'Location'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="aspect-[16/9] w-full bg-muted flex items-center justify-center">
+                  <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
+                </div>
               )}
-              <div>
-                <p className="font-bold">{(form.title as string) || 'Property Name'}</p>
-                <p className="text-xs text-muted-foreground">{(form.location as string) || 'Location'}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-muted/50 rounded p-2">
-                  <p className="text-muted-foreground">Yield</p>
-                  <p className="font-bold">{(form.annual_yield as number) || 0}%</p>
+
+              <div className="p-4 space-y-3">
+                {/* Property badges */}
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge variant="secondary" className="text-[10px] gap-0.5">{(form.type as string) || 'Type'}</Badge>
+                  <Badge variant="secondary" className="text-[10px]">{(form.bedrooms as number) || 0} Bed</Badge>
+                  <Badge variant="secondary" className="text-[10px]">{(form.bathrooms as number) || 0} Bath</Badge>
+                  <Badge variant="secondary" className="text-[10px]">{(form.area as number) || 0} m&sup2;</Badge>
+                  <Badge variant="secondary" className="text-[10px]">Built {(form.year_built as number) || '-'}</Badge>
+                  <Badge className={cn('text-[10px]', (form.status as string) === 'open' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>
+                    {(form.status as string) === 'open' ? 'Open for Investment' : 'Funded'}
+                  </Badge>
                 </div>
-                <div className="bg-muted/50 rounded p-2">
-                  <p className="text-muted-foreground">Monthly Rent</p>
-                  <p className="font-bold">${(form.monthly_rent as number)?.toLocaleString() || 0}</p>
+
+                {/* Metric pills — 4 columns */}
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: 'Yield', value: `${(form.annual_yield as number) || 0}%` },
+                    { label: 'Occupancy', value: `${(form.occupancy_rate as number) || 0}%` },
+                    { label: 'Rent Cost', value: `£${((form.rent_cost as number) || 0).toLocaleString()}` },
+                    { label: 'Value', value: `$${(((form.property_value as number) || 0) / 1000).toFixed(0)}k` },
+                  ].map((m) => (
+                    <div key={m.label} className="rounded-lg bg-muted/50 p-2 text-center">
+                      <p className="text-[9px] text-muted-foreground">{m.label}</p>
+                      <p className="text-xs font-bold">{m.value}</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="bg-muted/50 rounded p-2">
-                  <p className="text-muted-foreground">Rent Cost</p>
-                  <p className="font-bold">&pound;{(form.rent_cost as number)?.toLocaleString() || 0}</p>
+
+                {/* Stats row — Owners / Total Shares / Remaining */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-lg bg-muted/50 p-2">
+                    <p className="text-[9px] text-muted-foreground">Owners</p>
+                    <p className="text-xs font-bold">-</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 p-2">
+                    <p className="text-[9px] text-muted-foreground">Total Shares</p>
+                    <p className="text-xs font-bold">{((form.total_shares as number) || 0).toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 p-2">
+                    <p className="text-[9px] text-muted-foreground">Remaining</p>
+                    <p className="text-xs font-bold">{(((form.total_shares as number) || 0) - ((form.shares_sold as number) || 0)).toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="bg-muted/50 rounded p-2">
-                  <p className="text-muted-foreground">Property Value</p>
-                  <p className="font-bold">${(form.property_value as number)?.toLocaleString() || 0}</p>
+
+                {/* Funding progress */}
+                <div className="space-y-1">
+                  <Progress value={(() => { const t = (form.total_shares as number) || 1; const s = (form.shares_sold as number) || 0; return Math.round((s / t) * 100); })()} className="h-2" />
+                  <p className="text-[10px] text-muted-foreground">
+                    {((form.shares_sold as number) || 0).toLocaleString()} shares sold &middot; {(((form.total_shares as number) || 0) - ((form.shares_sold as number) || 0)).toLocaleString()} remaining
+                  </p>
                 </div>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {(form.bedrooms as number) || 0} beds &middot; {(form.bathrooms as number) || 0} baths &middot; {(form.area as number) || 0}m&sup2; &middot; {(form.type as string) || 'Type'}
+
+                {/* Share price + invest preview */}
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Share price</p>
+                    <p className="text-lg font-bold">${(form.price_per_share as number) || 0}</p>
+                  </div>
+                  <Button size="sm" className="text-xs" disabled>
+                    Secure Your Shares
+                  </Button>
+                </div>
+
+                {/* Description preview */}
+                {(form.description as string) && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">{form.description as string}</p>
+                )}
               </div>
             </div>
           </div>
