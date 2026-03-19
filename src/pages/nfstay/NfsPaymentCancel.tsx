@@ -1,9 +1,11 @@
 import { useSearchParams, Link } from 'react-router-dom';
+import { useNfsTravelerPath } from '@/lib/nfstay/routes';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function NfsPaymentCancel() {
   const [searchParams] = useSearchParams();
+  const paths = useNfsTravelerPath();
   const reservationId = searchParams.get('reservation_id');
 
   return (
@@ -23,7 +25,7 @@ export default function NfsPaymentCancel() {
         )}
         <div className="flex gap-3 justify-center pt-2">
           <Button asChild variant="outline">
-            <Link to="/nfstay/search">Back to Search</Link>
+            <Link to={paths.search}>Back to Search</Link>
           </Button>
         </div>
       </div>

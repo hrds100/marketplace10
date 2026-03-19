@@ -13,10 +13,12 @@ import NfsWlProperty from '@/pages/nfstay/white-label/NfsWlProperty';
 import NfsWlPaymentSuccess from '@/pages/nfstay/white-label/NfsWlPaymentSuccess';
 import NfsWlPaymentCancel from '@/pages/nfstay/white-label/NfsWlPaymentCancel';
 // Traveler pages — reused for nfstay.app main site
+import NfsMainSiteLayout from '@/components/nfstay/NfsMainSiteLayout';
 import NfsSearch from '@/pages/nfstay/NfsSearch';
 import NfsPropertyView from '@/pages/nfstay/NfsPropertyView';
 import NfsPaymentSuccess from '@/pages/nfstay/NfsPaymentSuccess';
 import NfsPaymentCancel from '@/pages/nfstay/NfsPaymentCancel';
+import NfsTravelerReservations from '@/pages/nfstay/NfsTravelerReservations';
 
 interface Props {
   /** Normal app routes (marketplace10 + NFStay operator) */
@@ -35,16 +37,19 @@ export default function NfsWhiteLabelRouter({ children }: Props) {
     );
   }
 
-  // nfstay.app → render traveler-facing routes
+  // nfstay.app → render traveler-facing routes wrapped in main site layout
   if (isMainSite) {
     return (
       <Routes>
-        <Route index element={<NfsSearch />} />
-        <Route path="/search" element={<NfsSearch />} />
-        <Route path="/property/:id" element={<NfsPropertyView />} />
-        <Route path="/payment/success" element={<NfsPaymentSuccess />} />
-        <Route path="/payment/cancel" element={<NfsPaymentCancel />} />
-        <Route path="*" element={<NfsSearch />} />
+        <Route element={<NfsMainSiteLayout />}>
+          <Route index element={<NfsSearch />} />
+          <Route path="/search" element={<NfsSearch />} />
+          <Route path="/property/:id" element={<NfsPropertyView />} />
+          <Route path="/reservations" element={<NfsTravelerReservations />} />
+          <Route path="/payment/success" element={<NfsPaymentSuccess />} />
+          <Route path="/payment/cancel" element={<NfsPaymentCancel />} />
+          <Route path="*" element={<NfsSearch />} />
+        </Route>
       </Routes>
     );
   }

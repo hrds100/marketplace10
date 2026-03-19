@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNfsProperty } from '@/hooks/nfstay/use-nfs-property';
+import { useNfsTravelerPath } from '@/lib/nfstay/routes';
 import NfsPhotoGallery from '@/components/nfstay/properties/NfsPhotoGallery';
 import NfsPropertyMap from '@/components/nfstay/maps/NfsPropertyMap';
 import NfsBookingWidget from '@/components/nfstay/reservations/NfsBookingWidget';
@@ -9,6 +10,7 @@ import { ChevronLeft, Users, BedDouble, Bath, Maximize, MapPin } from 'lucide-re
 export default function NfsPropertyView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const paths = useNfsTravelerPath();
   const { property, loading, error } = useNfsProperty(id || '');
 
   if (loading) {
@@ -24,7 +26,7 @@ export default function NfsPropertyView() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
         <h1 className="text-xl font-bold">Property not found</h1>
         <p className="text-sm text-muted-foreground">This property may have been removed or is no longer available.</p>
-        <Button variant="outline" onClick={() => navigate('/nfstay/search')}>
+        <Button variant="outline" onClick={() => navigate(paths.search)}>
           <ChevronLeft className="w-4 h-4 mr-1" /> Back to search
         </Button>
       </div>
@@ -42,7 +44,7 @@ export default function NfsPropertyView() {
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
         {/* Back nav */}
-        <Button variant="ghost" size="sm" onClick={() => navigate('/nfstay/search')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(paths.search)}>
           <ChevronLeft className="w-4 h-4 mr-1" /> Back to search
         </Button>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNfsPropertySearch } from '@/hooks/nfstay/use-nfs-property-search';
+import { useNfsTravelerPath } from '@/lib/nfstay/routes';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import NfsPropertyCard from '@/components/nfstay/properties/NfsPropertyCard';
@@ -9,6 +10,7 @@ import { Search, Map, LayoutGrid } from 'lucide-react';
 
 export default function NfsSearch() {
   const navigate = useNavigate();
+  const paths = useNfsTravelerPath();
   const { results, loading, error, search } = useNfsPropertySearch();
   const [query, setQuery] = useState('');
   const [minGuests, setMinGuests] = useState('');
@@ -27,13 +29,9 @@ export default function NfsSearch() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <div className="border-b border-border/40 bg-white dark:bg-card">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3 mb-4">
-            <h1 className="text-xl font-bold tracking-tight">NFStay</h1>
-            <span className="text-sm text-muted-foreground">Find your next stay</span>
-          </div>
           <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[200px] relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -115,7 +113,7 @@ export default function NfsSearch() {
           <div className="h-[600px] rounded-xl overflow-hidden border border-border/40">
             <NfsSearchMap
               properties={results}
-              onPropertyClick={(id) => navigate(`/nfstay/property/${id}`)}
+              onPropertyClick={(id) => navigate(paths.property(id))}
             />
           </div>
         ) : results.length === 0 ? (
@@ -129,7 +127,7 @@ export default function NfsSearch() {
               <NfsPropertyCard
                 key={p.id}
                 property={p}
-                onClick={() => navigate(`/nfstay/property/${p.id}`)}
+                onClick={() => navigate(paths.property(p.id))}
               />
             ))}
           </div>
