@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/hooks/useWallet';
-import { useBlockchain } from '@/hooks/useBlockchain';
 import { useMyPayouts, useInvestProperties } from '@/hooks/useInvestData';
-// Portfolio dependency removed — payouts now queries blockchain directly
+import { CONTRACTS } from '@/lib/particle';
+import { RWA_TOKEN_ABI, RENT_ABI } from '@/lib/contractAbis';
 
 export interface BlockchainPayout {
   propertyId: number;
@@ -42,10 +42,8 @@ export interface MergedPayoutItem {
  */
 export function usePayoutsWithBlockchain() {
   const { address, connected } = useWallet();
-  const { getRentDetails, isEligibleForRent, getShareBalance } = useBlockchain();
   const { data: supabasePayouts = [], isLoading: payoutsLoading } = useMyPayouts();
   const { data: allProperties = [] } = useInvestProperties();
-  // Queries blockchain directly — no dependency on portfolio hook
 
   const [blockchainPayouts, setBlockchainPayouts] = useState<BlockchainPayout[]>([]);
   const [blockchainLoading, setBlockchainLoading] = useState(false);
@@ -66,6 +64,17 @@ export function usePayoutsWithBlockchain() {
 
     (async () => {
       try {
+        // Use ethers directly — avoids stale React closure on address
+        const ethers = await import('ethers').catch(() => null);
+        if (!ethers) { setBlockchainLoading(false); return; }
+
+        const provider = new ethers.providers.JsonRpcProvider(
+          'https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T'
+        );
+        const rwaContract = new ethers.Contract(CONTRACTS.RWA_TOKEN, RWA_TOKEN_ABI, provider);
+        const rentContract = new ethers.Contract(CONTRACTS.RENT, RENT_ABI, provider);
+        const walletAddr = address!; // Guaranteed non-null by guard above
+
         const payouts: BlockchainPayout[] = [];
 
         await Promise.all(
@@ -75,18 +84,24 @@ export function usePayoutsWithBlockchain() {
             const blockchainPropertyId = prop.blockchain_property_id;
 
             try {
-              const [rentDetails, eligible, sharesOwned] = await Promise.all([
-                getRentDetails(blockchainPropertyId),
-                isEligibleForRent(blockchainPropertyId),
-                getShareBalance(blockchainPropertyId),
+              const [balanceBN, rentDetailsTuple, eligible] = await Promise.all([
+                rwaContract.balanceOf(walletAddr, blockchainPropertyId),
+                rentContract.getRentDetails(blockchainPropertyId),
+                rentContract.isEligibleForRent(blockchainPropertyId, walletAddr).catch(() => false),
               ]);
 
-              if (!rentDetails || sharesOwned === 0) return;
+              const sharesOwned = balanceBN.toNumber();
+              if (sharesOwned === 0) return;
+
+              const rentPerShare = rentDetailsTuple[4].toString();
+              const totalRent = rentDetailsTuple[2].toString();
+              const rentRemaining = rentDetailsTuple[3].toString();
+              const startTime = rentDetailsTuple[0].toNumber();
+              const endTime = rentDetailsTuple[1].toNumber();
 
               let claimableAmount = 0;
               try {
-                const rentPerShareNum = Number(rentDetails.rentPerShare) / 1e18;
-                claimableAmount = rentPerShareNum * sharesOwned;
+                claimableAmount = (Number(rentPerShare) / 1e18) * sharesOwned;
               } catch {
                 claimableAmount = 0;
               }
@@ -97,11 +112,11 @@ export function usePayoutsWithBlockchain() {
                   propertyTitle: prop.title || 'Property',
                   propertyImage: prop.image || '',
                   sharesOwned,
-                  rentPerShare: rentDetails.rentPerShare,
-                  totalRent: rentDetails.totalRent,
-                  rentRemaining: rentDetails.rentRemaining,
-                  startTime: rentDetails.startTime,
-                  endTime: rentDetails.endTime,
+                  rentPerShare,
+                  totalRent,
+                  rentRemaining,
+                  startTime,
+                  endTime,
                   eligible,
                   claimableAmount,
                 });
