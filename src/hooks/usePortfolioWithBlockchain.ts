@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { useMyHoldings, useInvestProperties } from '@/hooks/useInvestData';
@@ -46,44 +46,59 @@ export function usePortfolioWithBlockchain() {
   const [blockchainLoading, setBlockchainLoading] = useState(false);
   const [blockchainError, setBlockchainError] = useState<string | null>(null);
 
-  // Fetch on-chain balances for every property that has a blockchain_property_id
-  const fetchBlockchainBalances = useCallback(async () => {
-    if (!connected || !address || allProperties.length === 0) return;
+  // Fetch on-chain balances — only re-fetch when address or properties actually change
+  // (not when callback references change)
+  const addressRef = useRef(address);
+  const fetchedRef = useRef(false);
+  addressRef.current = address;
 
+  useEffect(() => {
+    if (!connected || !address || allProperties.length === 0) return;
+    // Skip if already fetched for this address
+    if (fetchedRef.current && addressRef.current === address) return;
+
+    let cancelled = false;
     setBlockchainLoading(true);
     setBlockchainError(null);
 
-    try {
-      const balances: Record<number, number> = {};
+    (async () => {
+      try {
+        const balances: Record<number, number> = {};
 
-      await Promise.all(
-        allProperties
-          .filter((p: any) => p.blockchain_property_id != null)
-          .map(async (p: any) => {
-            try {
-              const balance = await getShareBalance(p.blockchain_property_id);
-              if (balance > 0) {
-                balances[p.id] = balance;
+        await Promise.all(
+          allProperties
+            .filter((p: any) => p.blockchain_property_id != null)
+            .map(async (p: any) => {
+              try {
+                const balance = await getShareBalance(p.blockchain_property_id);
+                if (balance > 0) {
+                  balances[p.id] = balance;
+                }
+              } catch {
+                // Individual property failure — skip silently
               }
-            } catch {
-              // Individual property failure — skip silently
-            }
-          }),
-      );
+            }),
+        );
 
-      setBlockchainBalances(balances);
-    } catch (err) {
-      setBlockchainError(
-        err instanceof Error ? err.message : 'Failed to load blockchain balances',
-      );
-    } finally {
-      setBlockchainLoading(false);
-    }
-  }, [connected, address, allProperties, getShareBalance]);
+        if (!cancelled) {
+          setBlockchainBalances(balances);
+          fetchedRef.current = true;
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setBlockchainError(
+            err instanceof Error ? err.message : 'Failed to load blockchain balances',
+          );
+        }
+      } finally {
+        if (!cancelled) setBlockchainLoading(false);
+      }
+    })();
 
-  useEffect(() => {
-    fetchBlockchainBalances();
-  }, [fetchBlockchainBalances]);
+    return () => { cancelled = true; };
+  // Only re-fetch when address or property list actually changes (by value, not reference)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, address, allProperties.length]);
 
   // Build merged portfolio
   const portfolio: PortfolioData = (() => {
