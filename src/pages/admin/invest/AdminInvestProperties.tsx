@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, Pencil, ChevronDown, Loader2, Upload, X, ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Loader2, Upload, X, ImageIcon, Link2 } from 'lucide-react';
 import { useInvestProperties, useCreateProperty, useUpdateProperty } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -251,6 +251,41 @@ export default function AdminInvestProperties() {
             <DialogTitle>{editing ? 'Edit Property' : 'Add Property'}</DialogTitle>
           </DialogHeader>
 
+          {/* ── Blockchain Data (read-only) ─────────────────────── */}
+          {editing && (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 mb-2">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
+                  From Blockchain — read only
+                </span>
+                <Link2 className="w-3 h-3 text-emerald-500 ml-auto" />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Total Shares', value: (form.total_shares as number)?.toLocaleString() ?? '—' },
+                  { label: 'Shares Sold', value: (form.shares_sold as number)?.toLocaleString() ?? '—' },
+                  {
+                    label: 'Remaining',
+                    value: ((form.total_shares as number) - (form.shares_sold as number))?.toLocaleString() ?? '—',
+                  },
+                ].map(({ label, value }) => (
+                  <div key={label} className="rounded-lg bg-background/60 border border-emerald-500/20 px-3 py-2">
+                    <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                      {label}
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">{value}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                These values are sourced directly from the smart contract and cannot be edited here.
+              </p>
+            </div>
+          )}
+
+          {/* ── Editable Details ────────────────────────────────── */}
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="text-sm font-medium text-foreground mb-1.5 block">Title</label>
@@ -269,10 +304,6 @@ export default function AdminInvestProperties() {
               <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.price_per_share as number} onChange={(e) => updateField('price_per_share', Number(e.target.value))} />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Total Shares</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.total_shares as number} onChange={(e) => updateField('total_shares', Number(e.target.value))} />
-            </div>
-            <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Annual Yield (%)</label>
               <input type="number" step="0.1" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.annual_yield as number} onChange={(e) => updateField('annual_yield', Number(e.target.value))} />
             </div>
@@ -281,8 +312,16 @@ export default function AdminInvestProperties() {
               <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.monthly_rent as number} onChange={(e) => updateField('monthly_rent', Number(e.target.value))} />
             </div>
             <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Rent Cost (GBP)</label>
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.rent_cost as number} onChange={(e) => updateField('rent_cost', Number(e.target.value))} />
+            </div>
+            <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Property Value ($)</label>
               <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.property_value as number} onChange={(e) => updateField('property_value', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Occupancy Rate (%)</label>
+              <input type="number" step="0.1" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.occupancy_rate as number} onChange={(e) => updateField('occupancy_rate', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Type</label>
@@ -309,10 +348,6 @@ export default function AdminInvestProperties() {
               <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.year_built as number} onChange={(e) => updateField('year_built', Number(e.target.value))} />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Occupancy Rate (%)</label>
-              <input type="number" step="0.1" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.occupancy_rate as number} onChange={(e) => updateField('occupancy_rate', Number(e.target.value))} />
-            </div>
-            <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Status</label>
               <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.status as string} onChange={(e) => updateField('status', e.target.value)}>
                 <option value="open">Open</option>
@@ -323,10 +358,6 @@ export default function AdminInvestProperties() {
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Blockchain Property ID</label>
               <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.blockchain_property_id as number} onChange={(e) => updateField('blockchain_property_id', Number(e.target.value))} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Rent Cost (GBP)</label>
-              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.rent_cost as number} onChange={(e) => updateField('rent_cost', Number(e.target.value))} />
             </div>
             <div className="col-span-2">
               <label className="text-sm font-medium text-foreground mb-1.5 block">Description</label>
