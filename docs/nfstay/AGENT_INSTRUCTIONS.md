@@ -47,11 +47,13 @@ If any rule here conflicts with the repo-level instructions, the repo-level inst
 2. **Never modify existing marketplace10 tables.** If NFStay needs data from a shared table, read it — never write to it or add columns. (Full protected tables list is in `BOUNDARIES.md` §3.)
 3. **Exception:** `notifications` table — NFStay may INSERT rows only. Never ALTER the table.
 4. **NFStay frontend code lives in isolated directories:**
-   - Routes: `app/(nfstay)/`
-   - Components: `components/nfstay/`
-   - Hooks: `hooks/nfstay/`
-   - Services/lib: `lib/nfstay/`
+   - Pages: `src/pages/nfstay/`
+   - Components: `src/components/nfstay/`
+   - Hooks: `src/hooks/nfstay/`
+   - Services/lib: `src/lib/nfstay/`
+   - Routes registered in `src/App.tsx` under `/nfstay/*` (React Router, NOT Next.js)
 5. **Never import NFStay code from marketplace10 code** and vice versa. Shared utilities (UI components, auth hooks) live in shared directories and are imported by both.
+5a. **Never modify invest module code** (`src/pages/invest/*`, `src/hooks/useBlockchain.ts`, `src/hooks/useInvestData.ts`, `src/lib/contractAbis.ts`, `src/components/WalletProvisioner.tsx`). The invest module is a separate product with live blockchain features.
 6. **NFStay Edge Functions are prefixed `nfs-`.** Example: `nfs-stripe-webhook`.
 7. **NFStay n8n workflows are prefixed `nfs-`.** Example: `nfs-hospitable-init-sync`.
 8. **Never modify shared UI components** (`components/ui/*`). Create wrappers in `components/nfstay/` instead.
@@ -66,6 +68,8 @@ If any rule here conflicts with the repo-level instructions, the repo-level inst
 5. **n8n instance is shared.** NFStay workflows coexist with marketplace10 workflows. `nfs-` prefix prevents collision.
 6. **Google Maps API key is shared.** Same key for both modules.
 7. **`middleware.ts` is shared.** One file routes traffic for both modules. **Modifying it requires Hugo's approval** — a mistake breaks hub.nfstay.com.
+8. **`src/App.tsx` is shared.** NFStay may ADD imports and routes but must NEVER remove existing imports, routes, or providers (FavouritesProvider, WalletProvisioner, invest routes, etc.).
+9. **Signup is shared.** NFStay does NOT have its own signup page. Users sign up once via the shared `/signup` flow (which provisions their crypto wallet and runs OTP). NFStay activation happens via the onboarding wizard at `/nfstay/onboarding` when a logged-in user navigates to `/nfstay`.
 
 ### 3.3 Documentation update rules
 

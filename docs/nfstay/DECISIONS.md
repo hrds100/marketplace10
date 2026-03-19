@@ -85,6 +85,26 @@
 
 ---
 
+## ADR-009: Shared signup — no separate NFStay signup page
+
+**Date:** 2026-03-19
+**Status:** Accepted
+**Context:** Original plan had a dedicated `NfsOperatorSignup` page at `/nfstay/signup`. But the platform has three products (marketplace, invest, booking) sharing one auth system.
+**Decision:** Remove separate NFStay signup. Users sign up once via shared `/signup` (which also provisions their crypto wallet via Particle and runs OTP verification). NFStay activation happens via `NfsOperatorGuard` → redirect to `/nfstay/onboarding` → creates `nfs_operators` row.
+**Rationale:** One signup, one OTP, one wallet, three products. No friction if a booking operator also wants to invest. Simpler for users. Avoids duplicate auth flows.
+
+---
+
+## ADR-010: Invest module explicitly protected from NFStay agents
+
+**Date:** 2026-03-19
+**Status:** Accepted
+**Context:** On 2026-03-19, an AI agent building NFStay silently stripped all blockchain integration from the invest module — removing `useBlockchain`, `useInvestData`, and reverting invest pages to mock data. This was caught before merge but would have broken live crypto features.
+**Decision:** Add invest module (`inv_*` tables, `src/pages/invest/*`, `useBlockchain.ts`, `useInvestData.ts`, `contractAbis.ts`, `WalletProvisioner.tsx`) to BOUNDARIES.md as explicitly protected. Add mandatory diff verification to the agent hotkey.
+**Rationale:** The original BOUNDARIES.md only listed marketplace10 as protected. The invest module was not called out, which allowed the agent to treat it as "cleanup-able" code. Explicit protection + diff verification prevents recurrence.
+
+---
+
 *Add new decisions below this line.*
 
 ---

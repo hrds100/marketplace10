@@ -82,74 +82,69 @@
 
 ## 3. FRONTEND STRUCTURE
 
+> **Note:** This project uses Vite + React Router (NOT Next.js). All routes are registered in `src/App.tsx`.
+
 ```
-app/
-├── (hub)/                         # existing marketplace10 routes
-│   ├── dashboard/
-│   ├── admin/
-│   ├── inbox/
-│   └── university/
+src/
+├── pages/
+│   ├── DealsPageV2.tsx            # marketplace10 pages
+│   ├── SignUp.tsx                 # SHARED signup (marketplace + invest + NFStay)
+│   ├── admin/                     # marketplace10 admin
+│   ├── invest/                    # INVEST MODULE — NEVER TOUCH
+│   │   ├── InvestMarketplacePage.tsx
+│   │   ├── InvestPortfolioPage.tsx
+│   │   ├── InvestPayoutsPage.tsx
+│   │   └── InvestProposalsPage.tsx
+│   │
+│   └── nfstay/                    # NFStay module (isolated)
+│       ├── NfsOperatorDashboard.tsx
+│       ├── NfsOnboarding.tsx
+│       ├── NfsOperatorSettings.tsx
+│       ├── NfsProperties.tsx
+│       ├── NfsPropertyNew.tsx
+│       ├── NfsPropertyDetail.tsx
+│       ├── NfsReservations.tsx
+│       ├── NfsReservationDetail.tsx
+│       ├── NfsCreateReservation.tsx
+│       ├── NfsSearch.tsx
+│       ├── NfsPropertyView.tsx
+│       ├── NfsPaymentSuccess.tsx
+│       ├── NfsPaymentCancel.tsx
+│       ├── NfsAnalytics.tsx
+│       └── white-label/
+│           ├── NfsWlLanding.tsx
+│           ├── NfsWlSearch.tsx
+│           ├── NfsWlProperty.tsx
+│           ├── NfsWlPaymentSuccess.tsx
+│           └── NfsWlPaymentCancel.tsx
 │
-├── (nfstay)/                      # NFStay module (isolated)
-│   ├── layout.tsx                 # NFStay shared layout
-│   ├── nfstay/                    # operator dashboard (hub.nfstay.com/nfstay/*)
-│   │   ├── page.tsx               # dashboard home
-│   │   ├── properties/
-│   │   │   ├── page.tsx           # property list
-│   │   │   ├── new/page.tsx       # create property wizard
-│   │   │   └── [id]/page.tsx      # property detail/edit
-│   │   ├── reservations/
-│   │   │   ├── page.tsx           # reservation list + calendar
-│   │   │   └── [id]/page.tsx      # reservation detail
-│   │   ├── create-reservation/
-│   │   │   └── page.tsx
-│   │   ├── settings/
-│   │   │   └── page.tsx           # tabs: profile, stripe, hospitable, branding, promo, analytics
+├── components/
+│   ├── nfstay/                    # NFStay components (isolated)
+│   │   ├── NfsOperatorLayout.tsx
+│   │   ├── NfsOperatorSidebar.tsx
+│   │   ├── NfsOperatorGuard.tsx
+│   │   ├── maps/
 │   │   ├── onboarding/
-│   │   │   └── page.tsx           # 8-step wizard
-│   │   └── layout.tsx             # operator sidebar + nav
-│   │
-│   ├── traveler/                  # traveler-facing pages
-│   │   ├── page.tsx               # landing / search
-│   │   ├── search/page.tsx        # search with map
-│   │   ├── property/[id]/page.tsx # property detail
-│   │   ├── reservations/page.tsx  # my reservations
-│   │   ├── login/page.tsx
-│   │   └── layout.tsx
-│   │
-│   └── white-label/               # white-label storefront
-│       ├── page.tsx               # operator landing page
-│       ├── search/page.tsx
-│       ├── property/[id]/page.tsx
-│       ├── booking/[id]/page.tsx
-│       ├── payment/
-│       │   ├── page.tsx           # Stripe checkout
-│       │   └── success/page.tsx
-│       └── layout.tsx
-
-components/
-├── nfstay/                        # NFStay components (isolated)
-│   ├── operator/
-│   ├── traveler/
-│   ├── white-label/
-│   └── shared/
-├── ui/                            # shared UI (existing — Button, Modal, etc.)
-└── ...                            # existing marketplace10 components
-
-hooks/
-├── nfstay/                        # NFStay hooks (isolated)
-│   ├── use-nfs-auth.ts
-│   ├── use-nfs-properties.ts
-│   ├── use-nfs-reservations.ts
-│   └── ...
-└── ...                            # existing marketplace10 hooks
-
-lib/
-├── nfstay/                        # NFStay services/utils (isolated)
-│   ├── api/
-│   ├── types/
-│   └── utils/
-└── ...                            # existing marketplace10 lib
+│   │   ├── properties/
+│   │   ├── reservations/
+│   │   └── white-label/
+│   ├── ui/                        # shared UI (Button, Modal, etc.)
+│   ├── WalletProvisioner.tsx      # INVEST — NEVER TOUCH
+│   └── ...                        # marketplace10 components
+│
+├── hooks/
+│   ├── nfstay/                    # NFStay hooks (isolated)
+│   ├── useBlockchain.ts           # INVEST — NEVER TOUCH
+│   ├── useInvestData.ts           # INVEST — NEVER TOUCH
+│   └── ...                        # marketplace10 hooks
+│
+├── lib/
+│   ├── nfstay/                    # NFStay services/utils (isolated)
+│   ├── contractAbis.ts            # INVEST — NEVER TOUCH
+│   └── ...                        # marketplace10 lib
+│
+└── App.tsx                        # SHARED — all routes registered here
+                                   # NFStay may ADD routes, NEVER remove existing ones
 ```
 
 ---

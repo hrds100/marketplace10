@@ -70,15 +70,18 @@ Check `docs/nfstay/CHANGELOG.md` for recent changes.
 | Thing | Location |
 |-------|----------|
 | NFStay docs | `docs/nfstay/` |
-| NFStay routes | `app/(nfstay)/` |
-| NFStay components | `components/nfstay/` |
-| NFStay hooks | `hooks/nfstay/` |
-| NFStay services | `lib/nfstay/` |
-| NFStay types | `lib/nfstay/types/` |
+| NFStay pages | `src/pages/nfstay/` |
+| NFStay components | `src/components/nfstay/` |
+| NFStay hooks | `src/hooks/nfstay/` |
+| NFStay services | `src/lib/nfstay/` |
+| NFStay types | `src/lib/nfstay/types/` |
+| NFStay route registration | `src/App.tsx` (routes under `/nfstay/*`) |
 | NFStay migrations | `supabase/migrations/*nfs*` |
 | NFStay Edge Functions | `supabase/functions/nfs-*` |
-| Shared UI | `components/ui/` |
-| Shared auth | `hooks/use-auth.ts` (or similar) |
+| NFStay n8n workflows | `n8n-workflows/nfs-*` |
+| Shared UI | `src/components/ui/` |
+| Shared auth | `src/hooks/useAuth.ts` |
+| Invest module (NEVER TOUCH) | `src/pages/invest/`, `src/hooks/useBlockchain.ts` |
 | Repo-level docs | `docs/` |
 
 ---

@@ -52,17 +52,45 @@ NFStay is a **separate apartment in the same building.**
 | `inquiries` | **None.** |
 | `notifications` | **INSERT only.** NFStay may add notification rows. Never ALTER the table schema. |
 
+### Protected invest module tables — NEVER touch
+
+| Table | NFStay access |
+|-------|--------------|
+| `inv_properties` | **None.** Investment property listings. |
+| `inv_orders` | **None.** Share purchase records. |
+| `inv_shareholdings` | **None.** Who owns what shares. |
+| `inv_payouts` | **None.** Rent distribution records. |
+| `inv_proposals` | **None.** Governance proposals. |
+| `aff_profiles` | **None.** Affiliate profiles. |
+| `aff_commissions` | **None.** Commission ledger. |
+| `aff_commission_settings` | **None.** Commission rate config. |
+| `user_bank_accounts` | **None.** Bank details for payouts. |
+| `payout_claims` | **None.** Payout requests. |
+| `payout_audit_log` | **None.** Payout event log. |
+
 ### Protected code — marketplace10 owns these
 
 | Layer | marketplace10 owns |
 |-------|-------------------|
-| **Frontend (legacy)** | Everything in `src/` |
-| **Frontend routes** | `app/(hub)/*`, `/dashboard/*`, `/admin/*`, `/inbox/*`, `/university/*` |
-| **Components** | `components/` (except `components/nfstay/` and `components/ui/`) |
-| **Hooks** | `hooks/` (except `hooks/nfstay/`) |
-| **Services/lib** | `lib/` (except `lib/nfstay/`) |
+| **Marketplace pages** | `src/pages/` (except `src/pages/nfstay/`) |
+| **Marketplace components** | `src/components/` (except `src/components/nfstay/` and `src/components/ui/`) |
+| **Marketplace hooks** | `src/hooks/` (except `src/hooks/nfstay/`) |
+| **Marketplace lib** | `src/lib/` (except `src/lib/nfstay/`) |
 | **Documentation** | `docs/` (except `docs/nfstay/`) |
 | **Domains** | `hub.nfstay.com` |
+
+### Protected invest module code — NEVER touch
+
+| Layer | Invest module owns |
+|-------|-------------------|
+| **Pages** | `src/pages/invest/*` |
+| **Blockchain hooks** | `src/hooks/useBlockchain.ts`, `src/hooks/useInvestData.ts` |
+| **Contract ABIs** | `src/lib/contractAbis.ts` |
+| **Wallet provisioner** | `src/components/WalletProvisioner.tsx` |
+| **Invest mock data** | `src/data/investMockData.ts` |
+| **Invest documentation** | `docs/invest/*` |
+
+**Why invest is called out separately:** On 2026-03-19, an AI agent building NFStay silently stripped all blockchain integration from the invest module — removing `useBlockchain`, `useInvestData`, and reverting invest pages to mock data. This was caught before merge but would have broken the live crypto features. See `docs/incidents/2026-03-19-nfstay-branch-marketplace10-overwrites.md`.
 
 ### Protected systems — never modify these
 
@@ -122,11 +150,11 @@ Everything prefixed with `nfs_` or in an `nfstay/` directory:
 | Layer | NFStay owns |
 |-------|------------|
 | **Database** | All `nfs_*` tables (11 tables) |
-| **Frontend routes** | `app/(nfstay)/*` |
-| **Components** | `components/nfstay/*` |
-| **Hooks** | `hooks/nfstay/*` |
-| **Services/lib** | `lib/nfstay/*` |
-| **Edge Functions** | All `nfs-*` functions |
+| **Pages** | `src/pages/nfstay/*` |
+| **Components** | `src/components/nfstay/*` |
+| **Hooks** | `src/hooks/nfstay/*` |
+| **Services/lib** | `src/lib/nfstay/*` |
+| **Edge Functions** | All `nfs-*` functions in `supabase/functions/` |
 | **n8n workflows** | All `nfs-*` workflows |
 | **Storage buckets** | `nfs-images`, `nfs-branding` |
 | **Documentation** | `docs/nfstay/*` |
@@ -202,13 +230,14 @@ The agent may freely create, modify, and delete files in these locations:
 
 | Location | What lives there |
 |----------|-----------------|
-| `app/(nfstay)/` | NFStay routes and pages |
-| `components/nfstay/` | NFStay components |
-| `hooks/nfstay/` | NFStay hooks |
-| `lib/nfstay/` | NFStay services, utils, types |
+| `src/pages/nfstay/` | NFStay pages (React Router) |
+| `src/components/nfstay/` | NFStay components |
+| `src/hooks/nfstay/` | NFStay hooks |
+| `src/lib/nfstay/` | NFStay services, utils, types |
 | `docs/nfstay/` | NFStay documentation |
 | `supabase/functions/nfs-*/` | NFStay Edge Functions |
 | `supabase/migrations/*nfs*` | NFStay database migrations |
+| `n8n-workflows/nfs-*` | NFStay n8n workflow JSON exports |
 | All `nfs_*` database tables | NFStay schema |
 | `nfs-*` n8n workflows | NFStay automation |
 | `nfs-images`, `nfs-branding` buckets | NFStay storage |

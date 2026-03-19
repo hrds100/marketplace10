@@ -36,12 +36,15 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 1 — Foundation | NOT STARTED | |
-| Phase 2 — Properties + Maps | NOT STARTED | |
-| Phase 3 — Reservations + Pricing | NOT STARTED | |
-| Phase 4 — Payments (Stripe) | NOT STARTED | Tajul provides Stripe keys |
-| Phase 5 — Integrations (Hospitable + iCal) | NOT STARTED | Tajul provides Hospitable credentials |
-| Phase 6 — White-Label + Analytics | NOT STARTED | Tajul handles DNS + domains |
+| Phase 1 — Foundation | CODE BUILT (not deployed) | Code on branch `claude/design-agent-prompts-0Fd0G`, needs clean extraction |
+| Phase 2 — Properties + Maps | CODE BUILT (not deployed) | Same branch |
+| Phase 3 — Reservations + Pricing | CODE BUILT (not deployed) | Same branch |
+| Phase 4 — Payments (Stripe) | CODE BUILT (not deployed) | Stripe keys still needed from Hugo |
+| Phase 5 — Integrations (Hospitable + iCal) | CODE BUILT (not deployed) | Hospitable credentials captured, may need refresh |
+| Phase 6 — White-Label + Analytics | CODE BUILT (not deployed) | DNS + domain config still needed |
+
+> **WARNING:** The branch `claude/design-agent-prompts-0Fd0G` contains invest module modifications that must NOT be merged. A clean extraction branch (`claude/nfs-booking-clean-2026-03-19`) must be created. See `docs/incidents/2026-03-19-nfstay-branch-marketplace10-overwrites.md`.
+> **Decision (2026-03-19):** NFStay uses shared signup — no separate NfsOperatorSignup page. Activation via onboarding wizard.
 
 ---
 
@@ -69,31 +72,31 @@
 ### Step 1.2 — NFStay route group and layout
 
 **What the agent does:**
-1. Create `app/(nfstay)/layout.tsx` — shared NFStay layout
-2. Create `app/(nfstay)/nfstay/layout.tsx` — operator sidebar + nav
-3. Create `app/(nfstay)/nfstay/page.tsx` — dashboard home (placeholder)
-4. Verify marketplace10 routes still work (no interference)
+1. Create `src/components/nfstay/NfsOperatorLayout.tsx` — operator sidebar + nav
+2. Create `src/pages/nfstay/NfsOperatorDashboard.tsx` — dashboard home
+3. Add NFStay routes to `src/App.tsx` (ADD only — never remove existing routes)
+4. Verify marketplace10 and invest routes still work (no interference)
 5. Push to `feat/nfs-phase1-foundation` branch
 6. Open PR, share preview URL
 
-**What Tajul does:** Open the preview. Check that `/nfstay` shows the NFStay layout. Check that `/dashboard` (marketplace10) still works normally.
+**What Tajul does:** Open the preview. Check that `/nfstay` shows the NFStay layout. Check that `/dashboard` (marketplace10) and `/dashboard/invest/*` (invest) still work normally.
 
-**Done when:** `/nfstay` renders. `/dashboard` is unaffected.
+**Done when:** `/nfstay` renders. `/dashboard` and `/dashboard/invest/*` are unaffected.
 
 ---
 
 ### Step 1.3 — Operator signup and login
 
 **What the agent does:**
-1. Create `hooks/nfstay/use-nfs-auth.ts` — NFStay auth hook
-2. On Supabase Auth signup, INSERT into `nfs_operators` with `profile_id = auth.uid()`
-3. Create `app/(nfstay)/nfstay/login/page.tsx` — operator login page
-4. Auth guard: redirect unauthenticated users to login
+1. Create `src/hooks/nfstay/use-nfs-auth.ts` — NFStay auth hook
+2. Create `src/components/nfstay/NfsOperatorGuard.tsx` — checks for `nfs_operators` row, redirects to onboarding if none
+3. No separate signup — users sign up via shared `/signup` (which provisions wallet + OTP)
+4. When user navigates to `/nfstay`, guard creates `nfs_operators` row and redirects to onboarding
 5. Push and share preview
 
-**What Tajul does:** Test signup with a test email. Test login. Verify `nfs_operators` row was created in Supabase.
+**What Tajul does:** Sign up via normal `/signup`. Navigate to `/nfstay`. Verify redirected to onboarding. Verify `nfs_operators` row created in Supabase.
 
-**Done when:** New user can sign up and log in. `nfs_operators` row exists.
+**Done when:** Shared signup works. Navigating to `/nfstay` triggers operator activation. Wallet and OTP from shared flow still work.
 
 ---
 

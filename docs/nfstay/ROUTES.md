@@ -1,6 +1,7 @@
 # NFStay — Routes
 
 > Every frontend route in the NFStay module.
+> **Framework:** Vite + React Router. All routes registered in `src/App.tsx`.
 
 ---
 
