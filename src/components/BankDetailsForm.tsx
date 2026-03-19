@@ -72,7 +72,7 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
           )}
         >
           <p className="font-semibold">GBP — UK Bank</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Faster Payments (same day)</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Payout every Tuesday, same-day clearing</p>
         </button>
         <button
           onClick={() => setCurrency('EUR')}
@@ -82,7 +82,7 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
           )}
         >
           <p className="font-semibold">EUR — International</p>
-          <p className="text-xs text-muted-foreground mt-0.5">SEPA (next business day)</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Payout every Tuesday, cleared within 10 working days</p>
         </button>
       </div>
 

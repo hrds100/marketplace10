@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Shield, CreditCard, Bell, LogOut, Wallet } from 'lucide-react';
+import { User, Shield, CreditCard, Bell, LogOut, Wallet, Copy, Check } from 'lucide-react';
 import { useWallet } from '@/hooks/useWallet';
 import BankDetailsForm from '@/components/BankDetailsForm';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +41,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', new_pw: '', confirm: '' });
   const { address: walletAddress, connected: walletConnected, connect: connectWallet, connecting } = useWallet();
+  const [copied, setCopied] = useState(false);
   const [notifs, setNotifs] = useState<NotifPrefs>(defaultNotifs);
 
   // Load profile + notification prefs
@@ -374,9 +375,9 @@ export default function SettingsPage() {
             <div>
               <h2 className="text-[22px] font-bold text-foreground mb-6">Payout Settings</h2>
 
-              {/* Wallet Address */}
+              {/* Payout Address */}
               <div className="max-w-[480px] mb-8">
-                <h3 className="text-sm font-bold text-foreground mb-3">Wallet Address</h3>
+                <h3 className="text-sm font-bold text-foreground mb-3">Payout Address</h3>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <input
@@ -387,22 +388,28 @@ export default function SettingsPage() {
                       className="flex-1 h-11 rounded-[10px] border border-border bg-muted/50 px-3.5 text-sm font-mono text-muted-foreground"
                     />
                     {walletAddress ? (
-                      <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded flex-shrink-0">Active</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(walletAddress);
+                          setCopied(true);
+                          toast.success('Copied to clipboard');
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                        className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors flex-shrink-0"
+                      >
+                        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copied ? 'Copied' : 'Copy'}
+                      </button>
                     ) : (
                       <button
                         onClick={() => connectWallet().catch(() => toast.error('Wallet connection failed. Please try again.'))}
                         disabled={connecting}
                         className="text-xs font-medium text-primary hover:underline flex-shrink-0 disabled:opacity-50"
                       >
-                        {connecting ? 'Setting up wallet...' : 'Connect wallet'}
+                        {connecting ? 'Setting up...' : 'Connect wallet'}
                       </button>
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {walletAddress
-                      ? 'Your wallet is active for crypto payouts (USDC, STAY tokens)'
-                      : 'Your wallet will be created automatically. If you have an existing wallet, connect it here.'}
-                  </p>
                 </div>
               </div>
 
@@ -410,19 +417,6 @@ export default function SettingsPage() {
               <div className="max-w-[480px] mb-8">
                 <h3 className="text-sm font-bold text-foreground mb-3">Bank Details</h3>
                 <BankDetailsForm />
-              </div>
-
-              {/* Preferred Claim Method */}
-              <div className="max-w-[480px]">
-                <h3 className="text-sm font-bold text-foreground mb-3">Preferred Claim Method</h3>
-                <div className="space-y-2">
-                  {(['Bank Transfer', 'USDC', 'STAY Token'] as const).map((method) => (
-                    <label key={method} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors cursor-pointer">
-                      <input type="radio" name="claimMethod" value={method} defaultChecked={method === 'Bank Transfer'} className="accent-primary" />
-                      <span className="text-sm font-medium text-foreground">{method}</span>
-                    </label>
-                  ))}
-                </div>
               </div>
             </div>
           )}
