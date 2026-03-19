@@ -141,6 +141,7 @@ function ClaimModal({
   setClaimTxHash,
   claimError,
   setClaimError,
+  bankAccount,
   user,
   onClaimRent,
   onBuyStayTokens,
