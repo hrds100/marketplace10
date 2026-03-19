@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { useMyPayouts, useInvestProperties } from '@/hooks/useInvestData';
@@ -51,75 +51,82 @@ export function usePayoutsWithBlockchain() {
   const [blockchainLoading, setBlockchainLoading] = useState(false);
   const [blockchainError, setBlockchainError] = useState<string | null>(null);
 
-  // Fetch rent details for every property the user owns shares in
-  const fetchRentData = useCallback(async () => {
-    if (!connected || !address || portfolio.holdings.length === 0) return;
+  // Fetch rent details — only re-fetch when address or holdings actually change
+  const fetchedRef = useRef(false);
 
+  useEffect(() => {
+    if (!connected || !address || portfolio.holdings.length === 0) return;
+    if (fetchedRef.current) return;
+
+    let cancelled = false;
     setBlockchainLoading(true);
     setBlockchainError(null);
 
-    try {
-      const payouts: BlockchainPayout[] = [];
+    (async () => {
+      try {
+        const payouts: BlockchainPayout[] = [];
 
-      await Promise.all(
-        portfolio.holdings.map(async (holding) => {
-          // Find the property record to get blockchain_property_id
-          const prop = (allProperties as any[]).find((p: any) => p.id === holding.propertyId);
-          const blockchainPropertyId = prop?.blockchain_property_id;
-          if (blockchainPropertyId == null) return;
+        await Promise.all(
+          portfolio.holdings.map(async (holding) => {
+            const prop = (allProperties as any[]).find((p: any) => p.id === holding.propertyId);
+            const blockchainPropertyId = prop?.blockchain_property_id;
+            if (blockchainPropertyId == null) return;
 
-          try {
-            const [rentDetails, eligible] = await Promise.all([
-              getRentDetails(blockchainPropertyId),
-              isEligibleForRent(blockchainPropertyId),
-            ]);
-
-            if (!rentDetails) return;
-
-            // Calculate claimable amount: rentPerShare * sharesOwned
-            // Values are in wei (18 decimals for USDC on BNB Chain)
-            let claimableAmount = 0;
             try {
-              const rentPerShareNum = Number(rentDetails.rentPerShare) / 1e18;
-              claimableAmount = rentPerShareNum * holding.sharesOwned;
+              const [rentDetails, eligible] = await Promise.all([
+                getRentDetails(blockchainPropertyId),
+                isEligibleForRent(blockchainPropertyId),
+              ]);
+
+              if (!rentDetails) return;
+
+              let claimableAmount = 0;
+              try {
+                const rentPerShareNum = Number(rentDetails.rentPerShare) / 1e18;
+                claimableAmount = rentPerShareNum * holding.sharesOwned;
+              } catch {
+                claimableAmount = 0;
+              }
+
+              if (claimableAmount > 0 || eligible) {
+                payouts.push({
+                  propertyId: holding.propertyId,
+                  propertyTitle: holding.propertyTitle,
+                  propertyImage: holding.image,
+                  sharesOwned: holding.sharesOwned,
+                  rentPerShare: rentDetails.rentPerShare,
+                  totalRent: rentDetails.totalRent,
+                  rentRemaining: rentDetails.rentRemaining,
+                  startTime: rentDetails.startTime,
+                  endTime: rentDetails.endTime,
+                  eligible,
+                  claimableAmount,
+                });
+              }
             } catch {
-              claimableAmount = 0;
+              // Individual property failure — skip silently
             }
+          }),
+        );
 
-            if (claimableAmount > 0 || eligible) {
-              payouts.push({
-                propertyId: holding.propertyId,
-                propertyTitle: holding.propertyTitle,
-                propertyImage: holding.image,
-                sharesOwned: holding.sharesOwned,
-                rentPerShare: rentDetails.rentPerShare,
-                totalRent: rentDetails.totalRent,
-                rentRemaining: rentDetails.rentRemaining,
-                startTime: rentDetails.startTime,
-                endTime: rentDetails.endTime,
-                eligible,
-                claimableAmount,
-              });
-            }
-          } catch {
-            // Individual property failure — skip silently
-          }
-        }),
-      );
+        if (!cancelled) {
+          setBlockchainPayouts(payouts);
+          fetchedRef.current = true;
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setBlockchainError(
+            err instanceof Error ? err.message : 'Failed to load blockchain rent data',
+          );
+        }
+      } finally {
+        if (!cancelled) setBlockchainLoading(false);
+      }
+    })();
 
-      setBlockchainPayouts(payouts);
-    } catch (err) {
-      setBlockchainError(
-        err instanceof Error ? err.message : 'Failed to load blockchain rent data',
-      );
-    } finally {
-      setBlockchainLoading(false);
-    }
-  }, [connected, address, portfolio.holdings, allProperties, getRentDetails, isEligibleForRent]);
-
-  useEffect(() => {
-    fetchRentData();
-  }, [fetchRentData]);
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, address, portfolio.holdings.length]);
 
   // Merge: Supabase history + blockchain claimable
   const mergedPayouts: MergedPayoutItem[] = (() => {

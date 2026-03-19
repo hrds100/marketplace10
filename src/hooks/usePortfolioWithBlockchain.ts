@@ -191,6 +191,6 @@ export function usePortfolioWithBlockchain() {
     isLoading: holdingsLoading || propertiesLoading,
     blockchainLoading,
     blockchainError,
-    refetchBlockchain: fetchBlockchainBalances,
+    refetchBlockchain: () => { fetchedRef.current = false; },
   };
 }
