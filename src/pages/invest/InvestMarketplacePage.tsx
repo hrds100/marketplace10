@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useInvestProperties } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,7 +25,6 @@ import {
   DollarSign,
   BarChart3,
   FileText,
-  Download,
   CheckCircle2,
   Shield,
   Star,
@@ -127,11 +128,13 @@ const jvExamples = [
 // ---------------------------------------------------------------------------
 
 interface InvestModalProperty {
+  id: number;
   title: string;
   pricePerShare: number;
   totalShares: number;
   monthlyRent: number;
   annualYield: number;
+  blockchain_property_id?: number;
 }
 
 function InvestModal({
@@ -254,14 +257,11 @@ function InvestModal({
                 disabled={blockchainLoading}
                 onClick={async () => {
                   try {
-                    const ethers = await import('ethers').catch(() => null);
-                    if (ethers && (window as any).ethereum) {
-                      await buyShares(1, shares, total);
-                    }
+                    await buyShares(property.id, shares, total);
+                    setConfirmed(true);
                   } catch (err) {
-                    console.log('On-chain purchase skipped:', err);
+                    toast.error('Transaction failed. Please try again.');
                   }
-                  setConfirmed(true);
                 }}
               >
                 <Shield className="h-4 w-4" />
@@ -970,16 +970,12 @@ function DocumentsSection() {
           {property.documents.map((doc) => (
             <div
               key={doc}
-              className="group flex items-center justify-between rounded-lg border px-4 py-3 transition-all duration-200 hover:bg-primary hover:border-primary cursor-pointer"
+              className="flex items-center rounded-lg border px-4 py-3"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <FileText className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors flex-shrink-0" />
-                <span className="text-sm font-medium group-hover:text-white transition-colors truncate">{doc}</span>
+                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm font-medium truncate">{doc}</span>
               </div>
-              <Button size="sm" variant="ghost" className="gap-1 text-xs group-hover:text-white group-hover:hover:bg-white/20 transition-colors flex-shrink-0 ml-2">
-                <Download className="h-3.5 w-3.5" />
-                PDF
-              </Button>
             </div>
           ))}
         </div>
@@ -1446,6 +1442,7 @@ function Version2({
 // ---------------------------------------------------------------------------
 
 export default function InvestMarketplacePage() {
+  const { user } = useAuth();
   const { data: allProperties, isLoading } = useInvestProperties();
   const dbProperty = allProperties?.[0] || null;
 
@@ -1500,6 +1497,21 @@ export default function InvestMarketplacePage() {
     if (!property) return;
     const shares = Math.floor(investAmount / property.pricePerShare);
     if (shares < 1) return;
+
+    if (paymentMethod === 'card') {
+      // Open SamCart checkout in new tab
+      const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || '';
+      const userEmail = user?.email || '';
+      const phonePayload = encodeURIComponent(JSON.stringify({
+        propertyId: property.id,
+        agentWallet: '0x0000000000000000000000000000000000000000',
+        recipient: '',
+      }));
+      const url = `https://stay.samcart.com/products/hub-com-investment/?first_name=${userName}&email=${userEmail}&phone_number=${phonePayload}`;
+      window.open(url, '_blank');
+      return;
+    }
+
     setInvestOpen(true);
   };
 
