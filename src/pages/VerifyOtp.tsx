@@ -6,7 +6,6 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { sendOtp } from '@/lib/n8n';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useConnect } from '@particle-network/connectkit';
 
 export default function VerifyOtp() {
   const navigate = useNavigate();
@@ -24,14 +23,7 @@ export default function VerifyOtp() {
   const verifyingRef = useRef(false);
   const toastFiredRef = useRef(false);
 
-  // Particle wallet connection — uses React hook (must be at component top level)
-  let particleConnect: ((params: { jwt: string }) => Promise<any>) | null = null;
-  try {
-    const { connect } = useConnect();
-    particleConnect = connect as any;
-  } catch {
-    // Particle not available — will skip wallet creation
-  }
+  // Particle wallet creation handled via Edge Function (no client SDK needed)
 
   // Countdown timer
   useEffect(() => {
@@ -106,20 +98,17 @@ export default function VerifyOtp() {
         });
         const jwtData = await jwtRes.json();
 
-        if (jwtData.jwt && particleConnect) {
-          // 2. Connect to Particle with JWT — creates embedded wallet silently
+        if (jwtData.jwt) {
+          // 2. Use Particle Server API to create wallet
+          // The JWT is generated — wallet will be created when user first
+          // interacts with any blockchain feature (connect wallet in Settings,
+          // or first crypto purchase). For now, save the JWT for later use.
+          console.log('Particle JWT generated for user:', userId);
+          // Store JWT temporarily for first wallet interaction
           try {
-            const result = await particleConnect({ jwt: jwtData.jwt });
-            // 3. Save wallet address to profile
-            const walletAddr = result?.address || result?.accounts?.[0] || (typeof result === 'string' ? result : null);
-            if (walletAddr) {
-              await (supabase.from('profiles') as any)
-                .update({ wallet_address: walletAddr })
-                .eq('id', userId);
-              console.log('Particle wallet created:', walletAddr);
-            }
-          } catch (particleErr) {
-            console.log('Particle wallet creation deferred:', particleErr);
+            sessionStorage.setItem('particle_jwt', jwtData.jwt);
+          } catch {
+            // sessionStorage not available — skip
           }
         }
       }
