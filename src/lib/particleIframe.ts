@@ -18,9 +18,26 @@ export async function createParticleWallet(jwt: string): Promise<string> {
   return createWalletWithJWT(jwt);
 }
 
-/** No-op for backward compatibility */
+/** Clean up any DOM elements injected by Particle SDK */
 export function destroyIframe(): void {
-  // Nothing to clean up — no iframe or React components
+  try {
+    // Particle SDK injects modals, iframes, and overlays into the DOM.
+    // Remove them all after wallet creation to prevent click-blocking.
+    const selectors = [
+      '[id*="particle"]',
+      '[class*="particle-"]',
+      '[class*="pn-modal"]',
+      '[class*="pn-auth"]',
+      '.particle-auth-core-modal',
+      'div[data-particle]',
+      'iframe[src*="particle"]',
+    ];
+    selectors.forEach((sel) => {
+      document.querySelectorAll(sel).forEach((el) => el.remove());
+    });
+  } catch {
+    // Cleanup errors are non-critical
+  }
 }
 
 /** No-op for backward compatibility */
