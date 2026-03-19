@@ -1,12 +1,13 @@
 // NFStay main site landing page — nfstay.app/
-// Sections: Hero (search) → Featured Properties → About → List Your Property → Services → FAQs
+// Sections: Hero → Popular Destinations → Featured Properties → Reviews → About → List CTA → Services → FAQs
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, CircleCheck, ChevronDown, ChevronUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { MapPin, CircleCheck, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNfsPropertySearch } from '@/hooks/nfstay/use-nfs-property-search';
 import NfsPropertyCard from '@/components/nfstay/properties/NfsPropertyCard';
+import NfsHeroSearch from '@/components/nfstay/main-site/NfsHeroSearch';
+import NfsPopularDestinations from '@/components/nfstay/main-site/NfsPopularDestinations';
+import NfsReviewScroller from '@/components/nfstay/main-site/NfsReviewScroller';
 
 // ─────────────────────────────────────────────
 // Static content (ported from VPS TravalerData/Data + traveler/page.tsx)
@@ -67,64 +68,19 @@ const FAQS = [
 export default function NfsMainLanding() {
   const navigate = useNavigate();
   const { results, loading, search } = useNfsPropertySearch();
-  const [query, setQuery] = useState('');
 
   // Load all listed properties on mount for featured section
   useEffect(() => {
     search({});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleHeroSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (query.trim()) params.set('query', query.trim());
-    navigate(`/search${params.toString() ? `?${params.toString()}` : ''}`);
-  };
-
   return (
-    <div>
+    <div className="pb-16 lg:pb-0">
       {/* ── Hero ─────────────────────────────────── */}
-      <section className="border-b border-gray-200 pb-8 md:pb-14">
-        <div className="flex items-center justify-center px-2">
-          <div className="w-full max-w-[500px] md:max-w-[900px] mt-6 md:mt-16">
-            <div className="text-center px-4 py-2 mb-6">
-              <h1 className="text-3xl md:text-5xl font-semibold">
-                Host, Find Stays,
-              </h1>
-              <h1 className="text-3xl md:text-5xl font-semibold mt-2">
-                Book Direct and Save
-              </h1>
-              <p className="text-gray-400 mt-4 md:mt-6 text-sm md:text-base">
-                The comfort of your own home in the heart of the city.
-              </p>
-            </div>
+      <NfsHeroSearch />
 
-            {/* Search bar */}
-            <form
-              onSubmit={handleHeroSearch}
-              className="w-auto border border-[#e6e6eb] lg:rounded-full rounded-3xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between lg:p-2 md:p-6 p-4 mx-auto shadow-sm hover:shadow-md bg-white transition-shadow"
-            >
-              <div className="flex items-center flex-1 p-2 gap-2">
-                <MapPin className="w-5 h-5 text-gray-500 flex-shrink-0" />
-                <Input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Find Location"
-                  className="border-0 shadow-none focus-visible:ring-0 placeholder:text-gray-500 text-sm flex-1"
-                />
-              </div>
-              <Button
-                type="submit"
-                className="mt-3 lg:mt-0 lg:w-[160px] h-[50px] rounded-full bg-gradient-to-r from-purple-600 to-teal-500 hover:opacity-90 text-white font-semibold text-sm flex items-center justify-center gap-2 border-0"
-              >
-                <Search className="w-4 h-4" />
-                Explore Properties
-              </Button>
-            </form>
-          </div>
-        </div>
-      </section>
+      {/* ── Popular Destinations ─────────────────── */}
+      <NfsPopularDestinations />
 
       {/* ── Featured Properties ───────────────────── */}
       <section id="Featured" className="py-16 bg-white">
@@ -176,6 +132,9 @@ export default function NfsMainLanding() {
           )}
         </div>
       </section>
+
+      {/* ── Reviews ───────────────────────────────── */}
+      <NfsReviewScroller />
 
       {/* ── About ─────────────────────────────────── */}
       <section id="About" className="container mx-auto px-4 pt-12 md:pt-16 lg:pt-20 mt-10">
