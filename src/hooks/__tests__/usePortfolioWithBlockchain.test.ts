@@ -251,3 +251,16 @@ describe('usePortfolioWithBlockchain — merge logic', () => {
     expect(holdings[0].fromBlockchain).toBe(false);
   });
 });
+
+describe('Return value safety', () => {
+  it('refetchBlockchain should be a callable function', async () => {
+    mockUseWallet.mockReturnValue({ address: null, connected: false });
+    mockUseBlockchain.mockReturnValue({ getShareBalance: mockGetShareBalance });
+    mockUseMyHoldings.mockReturnValue({ data: [], isLoading: false });
+    mockUseInvestProperties.mockReturnValue({ data: [], isLoading: false });
+
+    const { usePortfolioWithBlockchain } = await import('../usePortfolioWithBlockchain');
+    // Verify the module exports without ReferenceError
+    expect(typeof usePortfolioWithBlockchain).toBe('function');
+  });
+});

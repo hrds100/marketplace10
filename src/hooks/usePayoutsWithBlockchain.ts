@@ -183,6 +183,6 @@ export function usePayoutsWithBlockchain() {
     isLoading: payoutsLoading,
     blockchainLoading,
     blockchainError,
-    refetchRentData: fetchRentData,
+    refetchRentData: () => { fetchedRef.current = false; },
   };
 }

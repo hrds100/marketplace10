@@ -223,3 +223,11 @@ describe('usePayoutsWithBlockchain — merge logic', () => {
     expect(claimable[0].id).toBe('payout-db-claimable');
   });
 });
+
+describe('Return value safety', () => {
+  it('usePayoutsWithBlockchain should be a valid function export', async () => {
+    // Verify the module exports without ReferenceError at import time
+    const mod = await import('../usePayoutsWithBlockchain');
+    expect(typeof mod.usePayoutsWithBlockchain).toBe('function');
+  });
+});
