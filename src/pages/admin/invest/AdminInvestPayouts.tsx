@@ -1,25 +1,28 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useAllPayoutClaims } from '@/hooks/useInvestData';
-import { DollarSign, Clock, CheckCircle2, AlertTriangle, Search, Zap, Download } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { DollarSign, Clock, CheckCircle2, AlertTriangle, Zap, Download, Loader2 } from 'lucide-react';
 import { exportToCSV } from '@/lib/csvExport';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 
-interface Payout {
+interface PayoutClaim {
   id: string;
-  user: string;
-  email: string;
-  type: 'investor' | 'affiliate' | 'subscriber';
+  user_id: string;
+  user_email: string;
+  type: string;
   amount: number;
   currency: string;
-  method: 'bank_transfer' | 'usdc' | 'stay_token' | 'lp_token';
-  status: 'pending' | 'processing' | 'paid' | 'failed' | 'cancelled';
-  weekRef: string;
-  claimed: string;
-  paid: string;
+  method: string;
+  status: string;
+  week_ref: string;
+  created_at: string;
+  paid_at: string;
 }
 
 const typeColors: Record<string, string> = {
@@ -50,62 +53,110 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
 };
 
-const stats = [
-  { label: 'This Week', value: '\u00a34,230', sub: '8 claims', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  { label: 'Pending Approval', value: '15', sub: 'claims', icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-  { label: 'Paid This Month', value: '\u00a312,890', sub: '', icon: CheckCircle2, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  { label: 'Failed', value: '0', sub: '', icon: AlertTriangle, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-];
-
-const mockPayouts: Payout[] = [
-  { id: 'p1', user: 'Hugo Souza', email: 'hugo@nfstay.com', type: 'investor', amount: 780, currency: 'GBP', method: 'bank_transfer', status: 'pending', weekRef: 'W12-2026', claimed: '2026-03-18', paid: '' },
-  { id: 'p2', user: 'John Smith', email: 'john@gmail.com', type: 'affiliate', amount: 125, currency: 'USDC', method: 'usdc', status: 'paid', weekRef: 'W11-2026', claimed: '2026-03-11', paid: '2026-03-12' },
-  { id: 'p3', user: 'Sarah Chen', email: 'sarah@outlook.com', type: 'investor', amount: 248, currency: 'GBP', method: 'bank_transfer', status: 'processing', weekRef: 'W12-2026', claimed: '2026-03-17', paid: '' },
-  { id: 'p4', user: 'Ahmed Ali', email: 'ahmed@yahoo.com', type: 'investor', amount: 534, currency: 'USDC', method: 'usdc', status: 'paid', weekRef: 'W11-2026', claimed: '2026-03-10', paid: '2026-03-11' },
-  { id: 'p5', user: 'Maria Garcia', email: 'maria@gmail.com', type: 'subscriber', amount: 97, currency: 'GBP', method: 'bank_transfer', status: 'pending', weekRef: 'W12-2026', claimed: '2026-03-18', paid: '' },
-  { id: 'p6', user: 'David Park', email: 'david@proton.me', type: 'investor', amount: 1540, currency: 'STAY', method: 'stay_token', status: 'paid', weekRef: 'W11-2026', claimed: '2026-03-09', paid: '2026-03-10' },
-  { id: 'p7', user: 'Hugo Souza', email: 'hugo@nfstay.com', type: 'affiliate', amount: 340, currency: 'USDC', method: 'usdc', status: 'pending', weekRef: 'W12-2026', claimed: '2026-03-17', paid: '' },
-  { id: 'p8', user: 'John Smith', email: 'john@gmail.com', type: 'investor', amount: 427, currency: 'LP', method: 'lp_token', status: 'processing', weekRef: 'W12-2026', claimed: '2026-03-16', paid: '' },
-  { id: 'p9', user: 'Ahmed Ali', email: 'ahmed@yahoo.com', type: 'affiliate', amount: 112, currency: 'GBP', method: 'bank_transfer', status: 'paid', weekRef: 'W10-2026', claimed: '2026-03-04', paid: '2026-03-05' },
-  { id: 'p10', user: 'Sarah Chen', email: 'sarah@outlook.com', type: 'subscriber', amount: 97, currency: 'GBP', method: 'bank_transfer', status: 'pending', weekRef: 'W12-2026', claimed: '2026-03-18', paid: '' },
-];
-
-const weekOptions = ['All', 'W12-2026', 'W11-2026', 'W10-2026'];
-
 export default function AdminInvestPayouts() {
-  const { data: realClaims = [] } = useAllPayoutClaims();
+  const qc = useQueryClient();
+  const { data: realClaims = [], isLoading } = useAllPayoutClaims();
 
-  const [payouts, setPayouts] = useState<Payout[]>(mockPayouts);
   const [statusFilter, setStatusFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
   const [weekFilter, setWeekFilter] = useState('All');
   const [batchTriggered, setBatchTriggered] = useState(false);
 
+  // Map real data
+  const payouts: PayoutClaim[] = realClaims.map((c: any) => ({
+    id: c.id?.toString() || '',
+    user_id: c.user_id || '',
+    user_email: c.user_email || c.email || '',
+    type: c.type || 'investor',
+    amount: c.amount || 0,
+    currency: c.currency || 'GBP',
+    method: c.method || 'bank_transfer',
+    status: c.status || 'pending',
+    week_ref: c.week_ref || '',
+    created_at: c.created_at ? new Date(c.created_at).toLocaleDateString('en-CA') : '',
+    paid_at: c.paid_at ? new Date(c.paid_at).toLocaleDateString('en-CA') : '',
+  }));
+
+  // Derive stats from real data
+  const stats = useMemo(() => {
+    const pendingCount = payouts.filter((p) => p.status === 'pending').length;
+    const paidThisMonth = payouts
+      .filter((p) => p.status === 'paid')
+      .reduce((sum, p) => sum + p.amount, 0);
+    const failedCount = payouts.filter((p) => p.status === 'failed').length;
+    const thisWeekTotal = payouts
+      .filter((p) => p.status === 'pending' || p.status === 'processing')
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    return [
+      { label: 'Pending Total', value: `$${thisWeekTotal.toLocaleString()}`, sub: `${pendingCount + payouts.filter((p) => p.status === 'processing').length} claims`, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+      { label: 'Pending Approval', value: String(pendingCount), sub: 'claims', icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
+      { label: 'Paid', value: `$${paidThisMonth.toLocaleString()}`, sub: '', icon: CheckCircle2, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+      { label: 'Failed', value: String(failedCount), sub: '', icon: AlertTriangle, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+    ];
+  }, [payouts]);
+
+  // Get unique week refs for filter
+  const weekOptions = ['All', ...Array.from(new Set(payouts.map((p) => p.week_ref).filter(Boolean)))];
+
   const filtered = payouts.filter((p) => {
     if (statusFilter !== 'All' && p.status !== statusFilter.toLowerCase()) return false;
     if (typeFilter !== 'All' && p.type !== typeFilter.toLowerCase()) return false;
-    if (weekFilter !== 'All' && p.weekRef !== weekFilter) return false;
+    if (weekFilter !== 'All' && p.week_ref !== weekFilter) return false;
     return true;
   });
 
-  const handleApprove = (id: string) => {
-    setPayouts((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'processing' as const } : p)));
+  const handleApprove = async (id: string) => {
+    try {
+      const { error } = await (supabase.from('payout_claims') as any)
+        .update({ status: 'processing', updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['payout_claims'] });
+      toast.success('Claim approved');
+    } catch {
+      toast.error('Failed to approve claim');
+    }
   };
 
-  const handleMarkPaid = (id: string) => {
-    setPayouts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'paid' as const, paid: '2026-03-18' } : p))
-    );
+  const handleMarkPaid = async (id: string) => {
+    try {
+      const { error } = await (supabase.from('payout_claims') as any)
+        .update({ status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['payout_claims'] });
+      toast.success('Claim marked as paid');
+    } catch {
+      toast.error('Failed to update claim');
+    }
   };
 
-  const handleReject = (id: string) => {
-    setPayouts((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'cancelled' as const } : p)));
+  const handleReject = async (id: string) => {
+    try {
+      const { error } = await (supabase.from('payout_claims') as any)
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['payout_claims'] });
+      toast.success('Claim rejected');
+    } catch {
+      toast.error('Failed to reject claim');
+    }
   };
 
   const handleBatch = () => {
     setBatchTriggered(true);
     setTimeout(() => setBatchTriggered(false), 2000);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -202,29 +253,28 @@ export default function AdminInvestPayouts() {
               {filtered.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
-                    <div className="font-medium text-sm">{p.user}</div>
-                    <div className="text-xs text-muted-foreground">{p.email}</div>
+                    <div className="text-xs text-muted-foreground">{p.user_email || p.user_id?.slice(0, 8)}</div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn('text-xs capitalize', typeColors[p.type])}>
+                    <Badge variant="outline" className={cn('text-xs capitalize', typeColors[p.type] || '')}>
                       {p.type}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">{p.amount.toLocaleString()}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{p.currency}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn('text-xs', methodColors[p.method])}>
-                      {methodLabels[p.method]}
+                    <Badge variant="outline" className={cn('text-xs', methodColors[p.method] || '')}>
+                      {methodLabels[p.method] || p.method || 'N/A'}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn('text-xs capitalize', statusColors[p.status])}>
+                    <Badge variant="outline" className={cn('text-xs capitalize', statusColors[p.status] || '')}>
                       {p.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{p.weekRef}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{p.claimed}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{p.paid || '\u2014'}</TableCell>
+                  <TableCell className="font-mono text-xs">{p.week_ref || '\u2014'}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{p.created_at}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{p.paid_at || '\u2014'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {p.status === 'pending' && (

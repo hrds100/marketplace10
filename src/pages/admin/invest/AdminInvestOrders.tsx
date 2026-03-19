@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useInvestOrders } from '@/hooks/useInvestData';
-import { Check, Pencil, X, Link2, Search, Download } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Check, Pencil, X, Link2, Search, Download, Loader2 } from 'lucide-react';
 import { exportToCSV } from '@/lib/csvExport';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,34 +10,23 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Order {
   id: string;
-  user: string;
-  email: string;
-  property: string;
-  propertyId: number;
+  user_id: string;
+  user_email: string;
+  property_id: number;
+  property_title: string;
   shares: number;
   amount: number;
-  paymentMethod: 'card' | 'crypto_usdc' | 'crypto_bnb';
-  agent: string;
-  status: 'pending' | 'completed' | 'refunded';
-  txHash: string;
-  walletAddress: string;
-  agentAddress: string;
-  date: string;
+  payment_method: string;
+  agent_wallet: string;
+  status: string;
+  tx_hash: string;
+  wallet_address: string;
+  created_at: string;
 }
-
-const mockOrders: Order[] = [
-  { id: 'ORD-001', user: 'Hugo Souza', email: 'hugo@nfstay.com', property: 'Seseh Beachfront Villa', propertyId: 1, shares: 5, amount: 500, paymentMethod: 'crypto_usdc', agent: 'John Smith', status: 'completed', txHash: '0x8f3a...e2c1a9b7', walletAddress: '0x6eb0...1436', agentAddress: '0x8f3a...e2c1', date: '2026-03-18' },
-  { id: 'ORD-002', user: 'John Smith', email: 'john@gmail.com', property: 'Marina Gate Apartment', propertyId: 2, shares: 10, amount: 2500, paymentMethod: 'card', agent: 'Hugo Souza', status: 'completed', txHash: '0x2b7c...f9a3d4e8', walletAddress: '0x8f3a...e2c1', agentAddress: '0x6eb0...1436', date: '2026-03-17' },
-  { id: 'ORD-003', user: 'Sarah Chen', email: 'sarah@outlook.com', property: 'Seseh Beachfront Villa', propertyId: 1, shares: 20, amount: 2000, paymentMethod: 'crypto_bnb', agent: 'Hugo Souza', status: 'pending', txHash: '0x9c2f...a1d7b3f5', walletAddress: '0x2b7c...f9a3', agentAddress: '0x6eb0...1436', date: '2026-03-17' },
-  { id: 'ORD-004', user: 'Ahmed Ali', email: 'ahmed@yahoo.com', property: 'KAEC Waterfront Residence', propertyId: 3, shares: 15, amount: 2250, paymentMethod: 'card', agent: 'Maria Garcia', status: 'completed', txHash: '0x1d4e...b8f2c6a9', walletAddress: '0x9c2f...a1d7', agentAddress: '0x1d4e...b8f2', date: '2026-03-16' },
-  { id: 'ORD-005', user: 'Maria Garcia', email: 'maria@gmail.com', property: 'Seseh Beachfront Villa', propertyId: 1, shares: 8, amount: 800, paymentMethod: 'crypto_usdc', agent: 'John Smith', status: 'refunded', txHash: '0x4e7b...d2a8f1c3', walletAddress: '0x1d4e...b8f2', agentAddress: '0x8f3a...e2c1', date: '2026-03-15' },
-  { id: 'ORD-006', user: 'Hugo Souza', email: 'hugo@nfstay.com', property: 'KAEC Waterfront Residence', propertyId: 3, shares: 30, amount: 4500, paymentMethod: 'crypto_bnb', agent: '', status: 'pending', txHash: '0x6c9d...e3b5a7f2', walletAddress: '0x6eb0...1436', agentAddress: '', date: '2026-03-15' },
-  { id: 'ORD-007', user: 'Sarah Chen', email: 'sarah@outlook.com', property: 'Marina Gate Apartment', propertyId: 2, shares: 4, amount: 1000, paymentMethod: 'card', agent: 'Ahmed Ali', status: 'completed', txHash: '0x3a8f...c1d9e5b7', walletAddress: '0x2b7c...f9a3', agentAddress: '0x9c2f...a1d7', date: '2026-03-14' },
-  { id: 'ORD-008', user: 'Ahmed Ali', email: 'ahmed@yahoo.com', property: 'Seseh Beachfront Villa', propertyId: 1, shares: 12, amount: 1200, paymentMethod: 'crypto_usdc', agent: 'Hugo Souza', status: 'pending', txHash: '0x7b2e...f4a6c8d1', walletAddress: '0x9c2f...a1d7', agentAddress: '0x6eb0...1436', date: '2026-03-13' },
-];
 
 const paymentColors: Record<string, string> = {
   card: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
@@ -55,50 +46,101 @@ const paymentLabels: Record<string, string> = {
   crypto_bnb: 'BNB',
 };
 
-const propertyOptions = ['All', 'Seseh Beachfront Villa', 'Marina Gate Apartment', 'KAEC Waterfront Residence'];
-
 export default function AdminInvestOrders() {
-  // Real data available via realOrders — currently showing mock for UI demo
+  const qc = useQueryClient();
   const { data: realOrders = [], isLoading: ordersLoading } = useInvestOrders();
 
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [statusFilter, setStatusFilter] = useState('All');
   const [propertyFilter, setPropertyFilter] = useState('All');
   const [search, setSearch] = useState('');
-  const [editModal, setEditModal] = useState<Order | null>(null);
-  const [editForm, setEditForm] = useState({ propertyId: 0, walletAddress: '', agentAddress: '' });
+  const [editModal, setEditModal] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ property_id: 0, wallet_address: '', agent_wallet: '' });
+
+  // Map real data to display format
+  const orders: Order[] = realOrders.map((o: any) => ({
+    id: o.id?.toString() || '',
+    user_id: o.user_id || '',
+    user_email: o.user_email || o.email || '',
+    property_id: o.property_id || 0,
+    property_title: o.inv_properties?.title || `Property #${o.property_id}`,
+    shares: o.shares || 0,
+    amount: o.amount || 0,
+    payment_method: o.payment_method || 'card',
+    agent_wallet: o.agent_wallet || '',
+    status: o.status || 'pending',
+    tx_hash: o.tx_hash || '',
+    wallet_address: o.wallet_address || '',
+    created_at: o.created_at ? new Date(o.created_at).toLocaleDateString('en-CA') : '',
+  }));
+
+  // Get unique property names for filter
+  const propertyOptions = ['All', ...Array.from(new Set(orders.map((o) => o.property_title)))];
 
   const filtered = orders.filter((o) => {
     if (statusFilter !== 'All' && o.status !== statusFilter.toLowerCase()) return false;
-    if (propertyFilter !== 'All' && o.property !== propertyFilter) return false;
-    if (search && !o.user.toLowerCase().includes(search.toLowerCase()) && !o.id.toLowerCase().includes(search.toLowerCase())) return false;
+    if (propertyFilter !== 'All' && o.property_title !== propertyFilter) return false;
+    if (search && !o.user_email.toLowerCase().includes(search.toLowerCase()) && !o.id.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
-  const handleComplete = (id: string) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'completed' as const } : o)));
+  const handleComplete = async (id: string) => {
+    try {
+      const { error } = await (supabase.from('inv_orders') as any)
+        .update({ status: 'completed', updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['inv_orders'] });
+      toast.success('Order marked as completed');
+    } catch {
+      toast.error('Failed to update order');
+    }
   };
 
-  const handleRefund = (id: string) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'refunded' as const } : o)));
+  const handleRefund = async (id: string) => {
+    try {
+      const { error } = await (supabase.from('inv_orders') as any)
+        .update({ status: 'refunded', updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['inv_orders'] });
+      toast.success('Order marked as refunded');
+    } catch {
+      toast.error('Failed to update order');
+    }
   };
 
   const openEdit = (order: Order) => {
-    setEditForm({ propertyId: order.propertyId, walletAddress: order.walletAddress, agentAddress: order.agentAddress });
+    setEditForm({ property_id: order.property_id, wallet_address: order.wallet_address, agent_wallet: order.agent_wallet });
     setEditModal(order);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editModal) return;
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === editModal.id
-          ? { ...o, propertyId: editForm.propertyId, walletAddress: editForm.walletAddress, agentAddress: editForm.agentAddress }
-          : o
-      )
-    );
+    try {
+      const { error } = await (supabase.from('inv_orders') as any)
+        .update({
+          property_id: editForm.property_id,
+          wallet_address: editForm.wallet_address,
+          agent_wallet: editForm.agent_wallet,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editModal.id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['inv_orders'] });
+      toast.success('Order updated');
+    } catch {
+      toast.error('Failed to save changes');
+    }
     setEditModal(null);
   };
+
+  if (ordersLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -134,7 +176,7 @@ export default function AdminInvestOrders() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             className="h-10 pl-9 pr-3 rounded-md border border-input bg-background text-sm w-64"
-            placeholder="Search by user or order ID..."
+            placeholder="Search by email or order ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -152,7 +194,6 @@ export default function AdminInvestOrders() {
                 <TableHead className="text-right">Shares</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Payment</TableHead>
-                <TableHead>Agent</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Tx Hash</TableHead>
                 <TableHead>Date</TableHead>
@@ -162,32 +203,34 @@ export default function AdminInvestOrders() {
             <TableBody>
               {filtered.map((o) => (
                 <TableRow key={o.id}>
-                  <TableCell className="font-mono text-xs">{o.id}</TableCell>
+                  <TableCell className="font-mono text-xs">{o.id.slice(0, 8)}</TableCell>
                   <TableCell>
-                    <div className="font-medium text-sm">{o.user}</div>
-                    <div className="text-xs text-muted-foreground">{o.email}</div>
+                    <div className="text-xs text-muted-foreground">{o.user_email || o.user_id?.slice(0, 8)}</div>
                   </TableCell>
-                  <TableCell className="text-sm">{o.property}</TableCell>
+                  <TableCell className="text-sm">{o.property_title}</TableCell>
                   <TableCell className="text-right">{o.shares}</TableCell>
                   <TableCell className="text-right font-medium">${o.amount.toLocaleString()}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn('text-xs', paymentColors[o.paymentMethod])}>
-                      {paymentLabels[o.paymentMethod]}
+                    <Badge variant="outline" className={cn('text-xs', paymentColors[o.payment_method] || '')}>
+                      {paymentLabels[o.payment_method] || o.payment_method || 'N/A'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{o.agent || '\u2014'}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn('text-xs capitalize', statusColors[o.status])}>
+                    <Badge variant="outline" className={cn('text-xs capitalize', statusColors[o.status] || '')}>
                       {o.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <span className="font-mono text-xs text-muted-foreground flex items-center gap-1">
-                      {o.txHash.slice(0, 8)}...
-                      <Link2 className="w-3 h-3" />
-                    </span>
+                    {o.tx_hash ? (
+                      <span className="font-mono text-xs text-muted-foreground flex items-center gap-1">
+                        {o.tx_hash.slice(0, 8)}...
+                        <Link2 className="w-3 h-3" />
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{'\u2014'}</span>
+                    )}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{o.date}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{o.created_at}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {o.status === 'pending' && (
@@ -209,8 +252,8 @@ export default function AdminInvestOrders() {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
-                    No orders found
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                    No orders yet
                   </TableCell>
                 </TableRow>
               )}
@@ -223,7 +266,7 @@ export default function AdminInvestOrders() {
       <Dialog open={!!editModal} onOpenChange={() => setEditModal(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Order {editModal?.id}</DialogTitle>
+            <DialogTitle>Edit Order {editModal?.id?.slice(0, 8)}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -231,24 +274,24 @@ export default function AdminInvestOrders() {
               <input
                 type="number"
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                value={editForm.propertyId}
-                onChange={(e) => setEditForm((f) => ({ ...f, propertyId: Number(e.target.value) }))}
+                value={editForm.property_id}
+                onChange={(e) => setEditForm((f) => ({ ...f, property_id: Number(e.target.value) }))}
               />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Wallet Address</label>
               <input
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono"
-                value={editForm.walletAddress}
-                onChange={(e) => setEditForm((f) => ({ ...f, walletAddress: e.target.value }))}
+                value={editForm.wallet_address}
+                onChange={(e) => setEditForm((f) => ({ ...f, wallet_address: e.target.value }))}
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Agent Address</label>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Agent Wallet</label>
               <input
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono"
-                value={editForm.agentAddress}
-                onChange={(e) => setEditForm((f) => ({ ...f, agentAddress: e.target.value }))}
+                value={editForm.agent_wallet}
+                onChange={(e) => setEditForm((f) => ({ ...f, agent_wallet: e.target.value }))}
               />
             </div>
           </div>

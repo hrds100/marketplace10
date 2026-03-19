@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { usePortfolioWithBlockchain } from '@/hooks/usePortfolioWithBlockchain';
 import { useBlockchain } from '@/hooks/useBlockchain';
+import { useProposals } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,8 +43,7 @@ import { cn } from '@/lib/utils';
 const formatCurrency = (amount: number) =>
   `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-// Active proposal check will use real data when inv_proposals is populated
-const hasActiveProposal = (_propertyId: number) => false;
+// Active proposal check — defined as a module-level factory, actual data injected in component
 
 // ---------------------------------------------------------------------------
 // Rank System
@@ -112,8 +113,15 @@ const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
 // ---------------------------------------------------------------------------
 
 export default function InvestPortfolioPage() {
+  const navigate = useNavigate();
   const { portfolio, isLoading, blockchainLoading } = usePortfolioWithBlockchain();
   const { boostApr, claimBoostRewards, loading: boostLoading } = useBlockchain();
+  const { data: proposals = [] } = useProposals();
+
+  const hasActiveProposal = (propertyId: number) =>
+    proposals.some(
+      (p: any) => p.property_id === propertyId && !p.result && new Date(p.ends_at) > new Date()
+    );
 
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
 
@@ -485,20 +493,20 @@ export default function InvestPortfolioPage() {
 
                           {/* Action buttons */}
                           <div className="flex gap-2 flex-wrap items-center">
-                            <Button variant="outline" size="sm" className="gap-1.5">
+                            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/invest/marketplace')}>
                               <Eye className="h-3.5 w-3.5" />
                               View Property
                             </Button>
-                            <Button variant="outline" size="sm" className="gap-1.5">
+                            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/invest/marketplace')}>
                               <ArrowUpRight className="h-3.5 w-3.5" />
                               Buy More Shares
                             </Button>
-                            <Button variant="outline" size="sm" className="gap-1.5">
+                            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/invest/proposals')}>
                               <FileText className="h-3.5 w-3.5" />
                               Submit Proposal
                             </Button>
                             {activeProposal && (
-                              <Button variant="outline" size="sm" className="gap-1.5">
+                              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/invest/proposals')}>
                                 <Vote className="h-3.5 w-3.5" />
                                 Cast Vote
                               </Button>
@@ -647,7 +655,7 @@ export default function InvestPortfolioPage() {
               </span>{' '}
               to unlock <span className="font-semibold">{nextMilestone.label}</span> status
             </p>
-            <Button size="sm" variant="default">
+            <Button size="sm" variant="default" onClick={() => navigate('/dashboard/invest/marketplace')}>
               Browse Properties
             </Button>
           </div>

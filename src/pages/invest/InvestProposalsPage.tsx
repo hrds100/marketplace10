@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useProposals } from '@/hooks/useInvestData';
+import { toast } from 'sonner';
+import { useProposals, useCreateProposal, useCastVote } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -139,9 +141,12 @@ function typeBadgeColor(type: string): string {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function InvestProposalsPage() {
+  const { user } = useAuth();
   const { data: realProposals = [] } = useProposals();
   const { data: realProperties = [] } = useInvestProperties();
   const { castVote: castBlockchainVote, loading: voteLoading } = useBlockchain();
+  const createProposal = useCreateProposal();
+  const castVoteMutation = useCastVote();
 
   // Map real proposals from Supabase
   const mappedActive: ActiveProposalWithVote[] = realProposals
@@ -220,17 +225,23 @@ export default function InvestProposalsPage() {
     setSubmitOpen(true);
   }
 
-  function handleSubmitProposal() {
+  async function handleSubmitProposal() {
     if (!submitPropertyId || !submitDescription.trim()) return;
     setSubmitStep('approving');
-    // Simulate approve step (1.5s)
-    setTimeout(() => {
-      setSubmitStep('submitting');
-      // Simulate on-chain submission (2s)
-      setTimeout(() => {
-        setSubmitStep('success');
-      }, 2000);
-    }, 1500);
+    try {
+      await createProposal.mutateAsync({
+        property_id: submitPropertyId,
+        title: submitDescription.trim().slice(0, 80),
+        description: submitDescription.trim(),
+        type: 'General',
+        ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        created_by: user?.id || null,
+      });
+      setSubmitStep('success');
+    } catch (err) {
+      toast.error('Failed to submit proposal. Please try again.');
+      setSubmitStep('form');
+    }
   }
 
   function closeSubmitModal() {
@@ -257,32 +268,52 @@ export default function InvestProposalsPage() {
     setVoteDialog({ open: true, proposalId, proposalTitle: title, choice });
   }
 
-  function confirmVote() {
+  async function confirmVote() {
     if (!voteDialog.proposalId || !voteDialog.choice) return;
+
+    const savedProposalId = voteDialog.proposalId;
+    const savedChoice = voteDialog.choice;
+
+    // Snapshot for rollback
+    const snapshot = activeProposals.map((p) => ({ ...p }));
 
     // Update local state immediately (optimistic)
     setActiveProposals((prev) =>
       prev.map((p) => {
-        if (p.id !== voteDialog.proposalId) return p;
+        if (p.id !== savedProposalId) return p;
         return {
           ...p,
-          votesYes: voteDialog.choice === 'yes' ? p.votesYes + 1 : p.votesYes,
-          votesNo: voteDialog.choice === 'no' ? p.votesNo + 1 : p.votesNo,
-          userVoted: voteDialog.choice,
+          votesYes: savedChoice === 'yes' ? p.votesYes + 1 : p.votesYes,
+          votesNo: savedChoice === 'no' ? p.votesNo + 1 : p.votesNo,
+          userVoted: savedChoice,
         };
       })
     );
 
-    // Try blockchain vote (non-blocking)
-    const proposal = activeProposals.find((p) => p.id === voteDialog.proposalId) as any;
+    setVoteDialog({ open: false, proposalId: null, proposalTitle: '', choice: null });
+
+    // Persist to Supabase
+    try {
+      await castVoteMutation.mutateAsync({
+        proposal_id: savedProposalId,
+        user_id: user?.id || '',
+        choice: savedChoice,
+      });
+      setShowVoteSuccess(true);
+    } catch {
+      // Revert optimistic update
+      setActiveProposals(snapshot);
+      toast.error('Failed to save vote. Please try again.');
+      return;
+    }
+
+    // Try blockchain vote (non-blocking, fire-and-forget)
+    const proposal = activeProposals.find((p) => p.id === savedProposalId) as any;
     if (proposal?.blockchain_proposal_id) {
-      castBlockchainVote(proposal.blockchain_proposal_id, voteDialog.choice === 'yes').catch(
+      castBlockchainVote(proposal.blockchain_proposal_id, savedChoice === 'yes').catch(
         () => console.log('On-chain vote skipped'),
       );
     }
-
-    setVoteDialog({ open: false, proposalId: null, proposalTitle: '', choice: null });
-    setShowVoteSuccess(true);
   }
 
   function cancelVote() {
