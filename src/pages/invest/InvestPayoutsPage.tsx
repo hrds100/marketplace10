@@ -34,6 +34,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fixIpfsUrl } from '@/lib/ipfs';
 
 type ClaimMethod = 'bank_transfer' | 'usdc' | 'stay_token' | 'lp_token';
 type ClaimStep = 'choose' | 'processing' | 'success';
@@ -138,6 +139,8 @@ function ClaimModal({
   setSelectedMethod: (method: ClaimMethod | null) => void;
   user: { id: string; email?: string } | null;
   onClaimRent?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
+  onBuyStayTokens?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
+  onBuyLpTokens?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
 }) {
   if (!payout) return null;
 
@@ -177,9 +180,17 @@ function ClaimModal({
         // Fall back to simulated if blockchain unavailable
         setTimeout(() => setClaimStep('success'), 2000);
       }
-    } else if ((selectedMethod === 'stay_token' || selectedMethod === 'lp_token') && payout && onClaimRent) {
+    } else if (selectedMethod === 'stay_token' && payout && onBuyStayTokens) {
       try {
-        await onClaimRent(payout.propertyId);
+        await onBuyStayTokens(payout.propertyId);
+        setClaimStep('success');
+      } catch {
+        // Fall back to simulated if blockchain unavailable
+        setTimeout(() => setClaimStep('success'), 2000);
+      }
+    } else if (selectedMethod === 'lp_token' && payout && onBuyLpTokens) {
+      try {
+        await onBuyLpTokens(payout.propertyId);
         setClaimStep('success');
       } catch {
         // Fall back to simulated if blockchain unavailable
@@ -365,10 +376,10 @@ function ClaimModal({
 
 const PROPERTY_PLACEHOLDER_IMAGE = '/placeholder.svg';
 
-/** Return the image URL as-is (ipfs.io works fine) */
+/** Fix IPFS gateway URLs before returning */
 function resolveImageUrl(url: string): string {
   if (!url) return PROPERTY_PLACEHOLDER_IMAGE;
-  return url;
+  return fixIpfsUrl(url);
 }
 
 /** Fallback component: shows property initials on image error */
@@ -407,7 +418,7 @@ export default function InvestPayoutsPage() {
   const { user } = useAuth();
   const { payouts: mergedPayouts, blockchainLoading } = usePayoutsWithBlockchain();
   const { data: bankAccount } = useMyBankAccount();
-  const { claimRent, loading: claimLoading } = useBlockchain();
+  const { claimRent, buyStayTokens, buyLpTokens, loading: claimLoading } = useBlockchain();
 
   // Map merged payouts to PayoutItem[]
   const payouts: PayoutItem[] = mergedPayouts.map((p) => ({
@@ -623,6 +634,8 @@ export default function InvestPayoutsPage() {
         setSelectedMethod={setSelectedMethod}
         user={user}
         onClaimRent={claimRent}
+        onBuyStayTokens={buyStayTokens}
+        onBuyLpTokens={buyLpTokens}
       />
     </div>
   );

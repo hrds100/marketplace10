@@ -45,6 +45,7 @@ import AdminInvestCommissionSettings from "./pages/admin/invest/AdminInvestCommi
 import AdminInvestPayouts from "./pages/admin/invest/AdminInvestPayouts";
 import AdminInvestProposals from "./pages/admin/invest/AdminInvestProposals";
 import AdminInvestBoost from "./pages/admin/invest/AdminInvestBoost";
+import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
 import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
 import AdminArchitecture from "./pages/admin/AdminArchitecture";
 import AdminGuard from "./components/AdminGuard";
@@ -181,6 +182,7 @@ const App = () => (
             <Route path="invest/payouts" element={<AdminInvestPayouts />} />
             <Route path="invest/proposals" element={<AdminInvestProposals />} />
             <Route path="invest/boost" element={<AdminInvestBoost />} />
+            <Route path="invest/endpoints" element={<AdminEndpoints />} />
 
             {/* Booking workspace (placeholder) */}
             <Route path="booking" element={<div className="text-center py-20"><h2 className="text-2xl font-bold mb-2">Booking Site Admin</h2><p className="text-muted-foreground">Coming Soon — Tajul is building this</p></div>} />

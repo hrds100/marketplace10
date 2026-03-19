@@ -28,6 +28,7 @@ interface Property {
   area: number;
   year_built: number;
   description: string;
+  occupancy_rate: number;
   status: 'open' | 'funded' | 'closed';
   blockchain_property_id: number;
   image?: string;
@@ -50,7 +51,7 @@ const emptyProperty: Omit<Property, 'id'> & { id?: number } = {
   title: '', location: '', country: '', price_per_share: 0, total_shares: 0,
   shares_sold: 0, annual_yield: 0, monthly_rent: 0, property_value: 0, type: 'Villa',
   bedrooms: 0, bathrooms: 0, area: 0, year_built: 2025, description: '',
-  status: 'open', blockchain_property_id: 0, image: '', images: [],
+  occupancy_rate: 0, status: 'open', blockchain_property_id: 0, image: '', images: [],
 };
 
 const statusColors: Record<string, string> = {
@@ -305,6 +306,10 @@ export default function AdminInvestProperties() {
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Year Built</label>
               <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.year_built as number} onChange={(e) => updateField('year_built', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Occupancy Rate (%)</label>
+              <input type="number" step="0.1" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.occupancy_rate as number} onChange={(e) => updateField('occupancy_rate', Number(e.target.value))} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Status</label>

@@ -38,6 +38,20 @@ export const BOOSTER_ABI = [
   'function getEstimatedRewards(address user, uint256 propertyId) external view returns (uint256)',
 ];
 
+export const BUY_LP_ABI = [
+  'function buyLPToken(address _recipient, address _currency, uint256 _amountInUSDC) external payable',
+  'function buyStay(address _recipient, address _currency, uint256 _usdcAmount) external payable',
+  'function getLpEstimation(uint256 _amountInUSDC) external view returns (uint256 _lpAmount)',
+];
+
+export const FARM_ABI = [
+  'function pendingReward(address _user) external view returns (uint256)',
+  'function userInfo(address _user) external view returns (uint256 amount, uint256 rewardDebt)',
+  'function deposit(uint256 _amount) external',
+  'function withdraw(uint256 _amount) external',
+  'function claimReward() external',
+];
+
 export const ERC20_ABI = [
   'function approve(address spender, uint256 amount) external returns (bool)',
   'function allowance(address owner, address spender) external view returns (uint256)',
