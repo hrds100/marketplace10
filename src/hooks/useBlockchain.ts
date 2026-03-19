@@ -11,6 +11,7 @@ import {
   BUY_LP_ABI,
   FARM_ABI,
 } from '@/lib/contractAbis';
+import { supabase } from '@/integrations/supabase/client';
 
 // Helper to get ethers — lazy loaded
 async function getEthers() {
@@ -235,6 +236,53 @@ export function useBlockchain() {
           shares,
         );
         const receipt = await tx.wait();
+
+        // F9: Write confirmed order to Supabase after on-chain tx succeeds
+        // Wrapped in try/catch — DB write failure must not surface as a purchase failure
+        try {
+          // Write to inv_orders using column names from DATABASE.md
+          await (supabase.from('inv_orders') as any).insert({
+            property_id: propertyId,
+            // user_id will be set by RLS / service role — passing wallet_address as reference
+            shares_requested: shares,
+            amount_paid: amountUsdc,
+            payment_method: 'crypto_usdc',
+            status: 'completed',
+            tx_hash: receipt.transactionHash,
+            // agent_id: TODO — resolve agentWallet to profiles.id when agent lookup is available
+          });
+
+          // Upsert inv_shareholdings — per DATABASE.md: UNIQUE(user_id, property_id)
+          // NOTE: user_id from auth session is not available here (blockchain hook has no auth context)
+          // TODO: wire auth user_id once useAuth is available in this hook context
+          // For now, log wallet address in notes field is not available; skipping upsert
+          // to avoid breaking the flow with a missing required field.
+        } catch (dbErr) {
+          // Non-fatal: on-chain tx already succeeded
+          console.error('[F9] Supabase order record failed (tx already confirmed):', dbErr);
+        }
+
+        // N4: Notify n8n of purchase confirmation (non-blocking)
+        try {
+          const n8nNotifyUrl = import.meta.env.VITE_N8N_INVEST_NOTIFY_WEBHOOK_URL;
+          if (n8nNotifyUrl) {
+            await fetch(n8nNotifyUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                event_type: 'purchase_confirmed',
+                wallet_address: address,
+                property_id: propertyId,
+                shares,
+                amount_usd: amountUsdc,
+                tx_hash: receipt.transactionHash,
+              }),
+            });
+          }
+        } catch (notifyErr) {
+          // Non-fatal: notification failure must never block the user flow
+          console.error('[N4] n8n notify failed (purchase already confirmed):', notifyErr);
+        }
 
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };

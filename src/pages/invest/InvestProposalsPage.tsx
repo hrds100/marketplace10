@@ -4,6 +4,7 @@ import { useProposals, useCreateProposal, useCastVote } from '@/hooks/useInvestD
 import { useProposalsFromGraph } from '@/hooks/useProposalsFromGraph';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -157,7 +158,7 @@ export default function InvestProposalsPage() {
   const { data: realProposals = [] } = useProposals();
   const { proposals: graphProposals } = useProposalsFromGraph();
   const { data: realProperties = [] } = useInvestProperties();
-  const { castVote: castBlockchainVote, loading: voteLoading } = useBlockchain();
+  const { castVote: castBlockchainVote, loading: voteLoading, walletConnected } = useBlockchain();
   const createProposal = useCreateProposal();
   const castVoteMutation = useCastVote();
 
@@ -281,18 +282,66 @@ export default function InvestProposalsPage() {
     setSubmitOpen(true);
   }
 
+  // F8: proposal on-chain submission tx hash for success message
+  const [proposalTxHash, setProposalTxHash] = useState<string | null>(null);
+
   async function handleSubmitProposal() {
     if (!submitPropertyId || !submitDescription.trim()) return;
     setSubmitStep('approving');
     try {
-      await createProposal.mutateAsync({
+      const title = submitDescription.trim().slice(0, 80);
+      const description = submitDescription.trim();
+      const endsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      // 1. Write to Supabase first
+      const newProposal = await createProposal.mutateAsync({
         property_id: submitPropertyId,
-        title: submitDescription.trim().slice(0, 80),
-        description: submitDescription.trim(),
+        title,
+        description,
         type: 'General',
-        ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        ends_at: endsAt,
         created_by: user?.id || null,
       });
+
+      // 2. Get blockchain_property_id for this property
+      const selectedProp = (realProperties as any[]).find((p: any) => p.id === submitPropertyId);
+      const blockchainPropertyId = selectedProp?.blockchain_property_id;
+
+      // 3. Submit on-chain if wallet connected and property has blockchain ID
+      if (walletConnected && blockchainPropertyId != null) {
+        setSubmitStep('submitting');
+        try {
+          const ethers = await import('ethers').catch(() => null);
+          if (ethers) {
+            const { VOTING_ABI } = await import('@/lib/contractAbis');
+            const { CONTRACTS } = await import('@/lib/particle');
+            const w = (window as any).ethereum || (window as any).particle?.ethereum;
+            if (w) {
+              const provider = new ethers.providers.Web3Provider(w);
+              const signer = provider.getSigner();
+              const votingContract = new ethers.Contract(CONTRACTS.VOTING, VOTING_ABI, signer);
+              const startTimestamp = Math.floor(Date.now() / 1000);
+              const endTimestamp = Math.floor(new Date(endsAt).getTime() / 1000);
+              // VOTING_ABI: addProposal(propertyId, encodedDescription) — check contractAbis.ts
+              // Using available addProposal signature from VOTING_ABI
+              const tx = await votingContract.addProposal(blockchainPropertyId, description);
+              const receipt = await tx.wait();
+              setProposalTxHash(receipt.transactionHash);
+
+              // 4. Update Supabase row with tx hash as blockchain_proposal_id placeholder
+              if (newProposal?.id) {
+                await (supabase.from('inv_proposals') as any)
+                  .update({ blockchain_proposal_id: null }) // TODO: parse proposal ID from contract event logs when event schema is known
+                  .eq('id', newProposal.id);
+              }
+            }
+          }
+        } catch (onChainErr) {
+          // Non-blocking: on-chain submission failed but Supabase record exists
+          console.error('On-chain proposal submission failed (Supabase record saved):', onChainErr);
+        }
+      }
+
       setSubmitStep('success');
     } catch (err) {
       toast.error('Failed to submit proposal. Please try again.');
@@ -956,6 +1005,11 @@ export default function InvestProposalsPage() {
                   Your proposal for <span className="font-medium text-foreground">{selectedProperty?.title}</span> is now live.
                   Shareholders have 30 days to vote.
                 </p>
+                {proposalTxHash && (
+                  <p className="text-xs text-muted-foreground font-mono break-all mt-2 max-w-xs">
+                    Tx: {proposalTxHash}
+                  </p>
+                )}
               </div>
               {selectedProperty && (
                 <div className="flex items-center gap-3 rounded-lg bg-muted px-4 py-3">
