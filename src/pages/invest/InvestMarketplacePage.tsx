@@ -51,6 +51,36 @@ import {
 import { SUBGRAPHS } from '@/lib/particle';
 
 // ---------------------------------------------------------------------------
+// Shared property interface used by all sub-components
+// ---------------------------------------------------------------------------
+
+interface PropertyData {
+  id: number;
+  title: string;
+  location: string;
+  country: string;
+  image: string;
+  images: string[];
+  pricePerShare: number;
+  totalShares: number;
+  sharesSold: number;
+  monthlyRent: number;
+  annualYield: number;
+  occupancyRate: number;
+  propertyValue: number;
+  type: string;
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  yearBuilt: number;
+  status: string;
+  description: string;
+  highlights: string[];
+  documents: string[];
+  blockchain_property_id?: number;
+}
+
+// ---------------------------------------------------------------------------
 // Constants & Mock Data
 // ---------------------------------------------------------------------------
 
@@ -307,11 +337,13 @@ function VersionSwitcher({
 }
 
 function ImageCarousel({
+  property,
   currentImage,
   setCurrentImage,
   aspectClass = 'aspect-[3/2]',
   overlay = false,
 }: {
+  property: PropertyData;
   currentImage: number;
   setCurrentImage: (i: number) => void;
   aspectClass?: string;
@@ -354,7 +386,7 @@ function ImageCarousel({
   );
 }
 
-function PropertyBadges({ property }: { property: { type: string; bedrooms: number; bathrooms: number; area: number; yearBuilt: number; status: string } }) {
+function PropertyBadges({ property }: { property: PropertyData }) {
   return (
     <div className="flex flex-wrap gap-2">
       <Badge variant="secondary" className="gap-1">
@@ -391,7 +423,7 @@ function PropertyBadges({ property }: { property: { type: string; bedrooms: numb
   );
 }
 
-function MetricPills({ property }: { property: { annualYield: number; occupancyRate: number; monthlyRent: number; propertyValue: number } }) {
+function MetricPills({ property }: { property: PropertyData }) {
   const metrics = [
     { icon: TrendingUp, label: 'Yield', value: `${property.annualYield}%` },
     { icon: BarChart3, label: 'Occupancy', value: `${property.occupancyRate}%` },
@@ -418,6 +450,9 @@ function MetricPills({ property }: { property: { annualYield: number; occupancyR
 }
 
 function InvestCardContent({
+  property,
+  fundedPercent,
+  sharesRemaining,
   investAmount,
   setInvestAmount,
   paymentMethod,
@@ -427,6 +462,9 @@ function InvestCardContent({
   onInvest,
   compact = false,
 }: {
+  property: PropertyData;
+  fundedPercent: number;
+  sharesRemaining: number;
   investAmount: number;
   setInvestAmount: (v: number) => void;
   paymentMethod: 'card' | 'crypto';
@@ -576,7 +614,7 @@ function InvestCardContent({
   );
 }
 
-function DescriptionHighlights({ property }: { property: { description: string; highlights: string[] } }) {
+function DescriptionHighlights({ property }: { property: PropertyData }) {
   return (
     <Card className="rounded-2xl">
       <CardHeader>
@@ -601,9 +639,11 @@ function DescriptionHighlights({ property }: { property: { description: string; 
 }
 
 function ProfitCalculator({
+  property,
   initialCalcAmount,
   setInitialCalcAmount,
 }: {
+  property: PropertyData;
   initialCalcAmount: number;
   setInitialCalcAmount: (v: number) => void;
 }) {
@@ -956,7 +996,7 @@ function RecentActivityTable() {
   );
 }
 
-function DocumentsSection({ property }: { property: { documents: string[] } }) {
+function DocumentsSection({ property }: { property: PropertyData }) {
   return (
     <Card className="rounded-2xl">
       <CardHeader>
@@ -987,7 +1027,7 @@ function DocumentsSection({ property }: { property: { documents: string[] } }) {
   );
 }
 
-function AgentReferralLink({ property }: { property: { id: number } }) {
+function AgentReferralLink({ property }: { property: PropertyData }) {
   const [copied, setCopied] = useState(false);
   const referralUrl = `https://hub.nfstay.com/invest?ref=YOUR_WALLET&property=${property.id}`;
 
@@ -1056,6 +1096,9 @@ function AgentReferralLink({ property }: { property: { id: number } }) {
 // ---------------------------------------------------------------------------
 
 function Version1({
+  property,
+  fundedPercent,
+  sharesRemaining,
   jvExpanded,
   setJvExpanded,
   currentImage,
@@ -1070,6 +1113,9 @@ function Version1({
   initialCalcAmount,
   setInitialCalcAmount,
 }: {
+  property: PropertyData;
+  fundedPercent: number;
+  sharesRemaining: number;
   jvExpanded: boolean;
   setJvExpanded: (v: boolean) => void;
   currentImage: number;
@@ -1242,6 +1288,7 @@ function Version1({
         {/* LEFT */}
         <div className="space-y-5 lg:col-span-7">
           <ImageCarousel
+            property={property}
             currentImage={currentImage}
             setCurrentImage={setCurrentImage}
             aspectClass="aspect-[3/2]"
@@ -1265,6 +1312,9 @@ function Version1({
             <Card className="rounded-2xl shadow-lg">
               <CardContent className="pt-5">
                 <InvestCardContent
+                  property={property}
+                  fundedPercent={fundedPercent}
+                  sharesRemaining={sharesRemaining}
                   investAmount={investAmount}
                   setInvestAmount={setInvestAmount}
                   paymentMethod={paymentMethod}
@@ -1284,6 +1334,7 @@ function Version1({
       <div className="mt-8 space-y-6">
         <DescriptionHighlights property={property} />
         <ProfitCalculator
+          property={property}
           initialCalcAmount={initialCalcAmount}
           setInitialCalcAmount={setInitialCalcAmount}
         />
@@ -1300,6 +1351,9 @@ function Version1({
 // ---------------------------------------------------------------------------
 
 function Version2({
+  property,
+  fundedPercent,
+  sharesRemaining,
   currentImage,
   setCurrentImage,
   investAmount,
@@ -1312,6 +1366,9 @@ function Version2({
   initialCalcAmount,
   setInitialCalcAmount,
 }: {
+  property: PropertyData;
+  fundedPercent: number;
+  sharesRemaining: number;
   currentImage: number;
   setCurrentImage: (i: number) => void;
   investAmount: number;
@@ -1396,6 +1453,7 @@ function Version2({
       {/* SECTION 2: Property Showcase */}
       <div className="mb-10 space-y-4">
         <ImageCarousel
+          property={property}
           currentImage={currentImage}
           setCurrentImage={setCurrentImage}
           aspectClass="aspect-[16/9]"
@@ -1410,6 +1468,9 @@ function Version2({
         <Card className="rounded-2xl shadow-lg">
           <CardContent className="pt-5">
             <InvestCardContent
+              property={property}
+              fundedPercent={fundedPercent}
+              sharesRemaining={sharesRemaining}
               investAmount={investAmount}
               setInvestAmount={setInvestAmount}
               paymentMethod={paymentMethod}
@@ -1426,6 +1487,7 @@ function Version2({
       <div className="space-y-6">
         <DescriptionHighlights property={property} />
         <ProfitCalculator
+          property={property}
           initialCalcAmount={initialCalcAmount}
           setInitialCalcAmount={setInitialCalcAmount}
         />
@@ -1540,6 +1602,9 @@ export default function InvestMarketplacePage() {
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
       <Version1
+        property={property}
+        fundedPercent={fundedPercent}
+        sharesRemaining={sharesRemaining}
         jvExpanded={jvExpanded}
         setJvExpanded={setJvExpanded}
         currentImage={currentImage}
