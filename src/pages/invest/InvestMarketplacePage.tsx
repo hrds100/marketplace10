@@ -354,7 +354,7 @@ function ImageCarousel({
   );
 }
 
-function PropertyBadges() {
+function PropertyBadges({ property }: { property: { type: string; bedrooms: number; bathrooms: number; area: number; yearBuilt: number; status: string } }) {
   return (
     <div className="flex flex-wrap gap-2">
       <Badge variant="secondary" className="gap-1">
@@ -391,7 +391,7 @@ function PropertyBadges() {
   );
 }
 
-function MetricPills() {
+function MetricPills({ property }: { property: { annualYield: number; occupancyRate: number; monthlyRent: number; propertyValue: number } }) {
   const metrics = [
     { icon: TrendingUp, label: 'Yield', value: `${property.annualYield}%` },
     { icon: BarChart3, label: 'Occupancy', value: `${property.occupancyRate}%` },
@@ -576,7 +576,7 @@ function InvestCardContent({
   );
 }
 
-function DescriptionHighlights() {
+function DescriptionHighlights({ property }: { property: { description: string; highlights: string[] } }) {
   return (
     <Card className="rounded-2xl">
       <CardHeader>
@@ -956,7 +956,7 @@ function RecentActivityTable() {
   );
 }
 
-function DocumentsSection() {
+function DocumentsSection({ property }: { property: { documents: string[] } }) {
   return (
     <Card className="rounded-2xl">
       <CardHeader>
@@ -987,7 +987,7 @@ function DocumentsSection() {
   );
 }
 
-function AgentReferralLink() {
+function AgentReferralLink({ property }: { property: { id: number } }) {
   const [copied, setCopied] = useState(false);
   const referralUrl = `https://hub.nfstay.com/invest?ref=YOUR_WALLET&property=${property.id}`;
 
@@ -1255,8 +1255,8 @@ function Version1({
             </div>
           </div>
 
-          <PropertyBadges />
-          <MetricPills />
+          <PropertyBadges property={property} />
+          <MetricPills property={property} />
         </div>
 
         {/* RIGHT — Sticky Invest Card */}
@@ -1282,14 +1282,14 @@ function Version1({
 
       {/* Full-width sections below */}
       <div className="mt-8 space-y-6">
-        <DescriptionHighlights />
+        <DescriptionHighlights property={property} />
         <ProfitCalculator
           initialCalcAmount={initialCalcAmount}
           setInitialCalcAmount={setInitialCalcAmount}
         />
         <RecentActivityTable />
-        <DocumentsSection />
-        <AgentReferralLink />
+        <DocumentsSection property={property} />
+        <AgentReferralLink property={property} />
       </div>
     </div>
   );
@@ -1401,8 +1401,8 @@ function Version2({
           aspectClass="aspect-[16/9]"
           overlay
         />
-        <PropertyBadges />
-        <MetricPills />
+        <PropertyBadges property={property} />
+        <MetricPills property={property} />
       </div>
 
       {/* SECTION 3: Invest Card — centered, not sticky */}
@@ -1424,14 +1424,14 @@ function Version2({
 
       {/* SECTION 4-8 */}
       <div className="space-y-6">
-        <DescriptionHighlights />
+        <DescriptionHighlights property={property} />
         <ProfitCalculator
           initialCalcAmount={initialCalcAmount}
           setInitialCalcAmount={setInitialCalcAmount}
         />
         <RecentActivityTable />
-        <DocumentsSection />
-        <AgentReferralLink />
+        <DocumentsSection property={property} />
+        <AgentReferralLink property={property} />
       </div>
     </div>
   );
