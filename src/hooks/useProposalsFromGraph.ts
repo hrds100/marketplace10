@@ -1,23 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/hooks/useWallet';
-import { SUBGRAPHS } from '@/lib/particle';
-
-interface GraphProposalStatus {
-  _proposalId: string;
-  _by: string;
-  _endTime: string;
-  blockTimestamp: string;
-}
-
-interface GraphVote {
-  _proposalId: string;
-  _by: string;
-  _inFavor: boolean;
-  blockTimestamp: string;
-}
+import { useInvestProperties } from '@/hooks/useInvestData';
+import { CONTRACTS, SUBGRAPHS, PARTICLE_CONFIG } from '@/lib/particle';
+import { VOTING_ABI } from '@/lib/contractAbis';
 
 export interface GraphProposal {
   id: string;
+  blockchainProposalId: number;
   propertyTitle: string;
   propertyImage: string;
   propertyId: number;
@@ -35,29 +24,17 @@ export interface GraphProposal {
   fromGraph: boolean;
 }
 
-const QUERY = `{
-  proposalStatuses(first: 100, orderBy: blockTimestamp, orderDirection: desc) {
-    _proposalId
-    _by
-    _endTime
-    blockTimestamp
-  }
-  voteds(first: 500, orderBy: blockTimestamp, orderDirection: desc) {
-    _proposalId
-    _by
-    _inFavor
-    blockTimestamp
-  }
-}`;
+const RPC_URL = PARTICLE_CONFIG.rpcUrl;
 
 /**
- * Fetches governance proposals and votes from The Graph voting subgraph.
- * All 6 on-chain proposals are for blockchain property ID 1 (Pembroke Place, Supabase ID 2).
+ * Fetches governance proposals from the Voting contract on-chain,
+ * using The Graph only to discover proposal IDs and check user votes.
  */
 export function useProposalsFromGraph() {
   const { address } = useWallet();
+  const { data: allProperties = [] } = useInvestProperties();
   const [proposals, setProposals] = useState<GraphProposal[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const fetchedRef = useRef(false);
 
@@ -70,76 +47,133 @@ export function useProposalsFromGraph() {
 
     (async () => {
       try {
-        const res = await fetch(SUBGRAPHS.VOTING, {
+        const ethers = await import('ethers').catch(() => null);
+        if (!ethers) {
+          setLoading(false);
+          return;
+        }
+
+        const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+        const votingContract = new ethers.Contract(CONTRACTS.VOTING, VOTING_ABI, provider);
+
+        // 1. Get proposal IDs and vote events from The Graph
+        const graphRes = await fetch(SUBGRAPHS.VOTING, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: QUERY }),
+          body: JSON.stringify({
+            query: `{
+              proposalStatuses(first: 100, orderBy: _proposalId, orderDirection: asc) { _proposalId }
+              voteds(first: 500) { _proposalId _by _inFavor blockTimestamp }
+            }`,
+          }),
         });
 
-        if (!res.ok) throw new Error(`Graph query failed: ${res.status}`);
+        if (!graphRes.ok) throw new Error(`Graph query failed: ${graphRes.status}`);
 
-        const json = await res.json();
-        const statuses: GraphProposalStatus[] = json.data?.proposalStatuses || [];
-        const votes: GraphVote[] = json.data?.voteds || [];
+        const graphData = await graphRes.json();
+        const statusEntries: { _proposalId: string }[] = graphData.data?.proposalStatuses || [];
+        const voteEntries: { _proposalId: string; _by: string; _inFavor: boolean; blockTimestamp: string }[] =
+          graphData.data?.voteds || [];
 
-        const nowSeconds = Math.floor(Date.now() / 1000);
-        const walletLower = address?.toLowerCase() || '';
+        // Get unique proposal IDs
+        const proposalIds = [...new Set(statusEntries.map((p) => Number(p._proposalId)))];
 
-        const mapped: GraphProposal[] = statuses.map((s) => {
-          const proposalVotes = votes.filter((v) => v._proposalId === s._proposalId);
-          const yesVotes = proposalVotes.filter((v) => v._inFavor).length;
-          const noVotes = proposalVotes.filter((v) => !v._inFavor).length;
-
-          const userVote = walletLower
-            ? proposalVotes.find((v) => v._by.toLowerCase() === walletLower)
-            : null;
-
-          const endTime = Number(s._endTime);
-          const isActive = endTime > nowSeconds;
-          const createdDate = new Date(Number(s.blockTimestamp) * 1000);
-          const endDate = new Date(endTime * 1000);
-
-          // Determine result for past proposals
-          let result: 'approved' | 'rejected' | null = null;
-          if (!isActive) {
-            result = yesVotes > noVotes ? 'approved' : 'rejected';
+        if (proposalIds.length === 0) {
+          if (!cancelled) {
+            setProposals([]);
+            fetchedRef.current = true;
+            setLoading(false);
           }
+          return;
+        }
 
-          return {
-            id: `graph-proposal-${s._proposalId}`,
-            propertyTitle: 'Pembroke Place',
-            propertyImage: '/placeholder.svg',
-            propertyId: 2, // Supabase ID for Pembroke Place (blockchain ID 1)
-            title: `Proposal #${s._proposalId} — Pembroke Place`,
-            description: `On-chain governance proposal created on ${createdDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
-            type: 'General',
-            createdAt: createdDate.toISOString(),
-            endsAt: endDate.toISOString(),
-            votesYes: yesVotes,
-            votesNo: noVotes,
-            totalVotes: yesVotes + noVotes,
-            quorum: 10,
-            userVoted: userVote ? (userVote._inFavor ? 'yes' : 'no') : null,
-            result,
-            fromGraph: true,
-          };
-        });
+        const walletLower = address?.toLowerCase() || '';
+        const nowSeconds = Math.floor(Date.now() / 1000);
+
+        // 2. Fetch each proposal from the contract
+        const results = await Promise.all(
+          proposalIds.map(async (id) => {
+            try {
+              const p = await votingContract.getProposal(id);
+              const fullDesc: string = await votingContract.decodeString(p._description);
+
+              // Parse title from description: first line, strip emoji prefix
+              const lines = fullDesc.split('\n');
+              const titleLine = lines[0].replace(/^[^\w]*/, '').trim();
+              const bodyText = lines.slice(2).join('\n').trim(); // Skip blank line after title
+
+              // Map blockchain property ID to Supabase property
+              const blockchainPropId = p._propertyId.toNumber();
+              const prop = (allProperties as any[]).find(
+                (ap: any) => ap.blockchain_property_id === blockchainPropId
+              );
+
+              // Check if user voted via Graph data
+              const userVote = walletLower
+                ? voteEntries.find(
+                    (v) =>
+                      Number(v._proposalId) === id && v._by.toLowerCase() === walletLower
+                  )
+                : null;
+
+              const endTime = p._endTime.toNumber();
+              const isActive = endTime > nowSeconds;
+              const contractStatus = p._status; // 0=Active, 1=Approved, 2=Rejected
+
+              const votesYes = p._votesInFavour.toNumber();
+              const votesNo = p._votesInAgainst.toNumber();
+
+              let result: 'approved' | 'rejected' | null = null;
+              if (!isActive) {
+                result = contractStatus === 1 ? 'approved' : 'rejected';
+              }
+
+              return {
+                id: `graph-proposal-${id}`,
+                blockchainProposalId: id,
+                propertyTitle: prop?.title || 'Pembroke Place',
+                propertyImage: prop?.image || '',
+                propertyId: prop?.id || blockchainPropId,
+                title: titleLine,
+                description: bodyText,
+                type: 'General',
+                createdAt: new Date((endTime - 30 * 24 * 60 * 60) * 1000).toISOString(),
+                endsAt: new Date(endTime * 1000).toISOString(),
+                votesYes,
+                votesNo,
+                totalVotes: votesYes + votesNo,
+                quorum: 10,
+                userVoted: userVote ? (userVote._inFavor ? 'yes' : 'no') : null,
+                result,
+                fromGraph: true,
+              } as GraphProposal;
+            } catch (err) {
+              console.error(`[ProposalsFromGraph] Failed to fetch proposal ${id}:`, err);
+              return null;
+            }
+          })
+        );
 
         if (!cancelled) {
-          setProposals(mapped);
+          setProposals(results.filter((r): r is GraphProposal => r !== null));
           fetchedRef.current = true;
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load proposals from The Graph');
+          console.error('[ProposalsFromGraph] Error:', err);
+          setError(err instanceof Error ? err.message : 'Failed to load proposals');
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
 
-    return () => { cancelled = true; };
-  }, [address]);
+    return () => {
+      cancelled = true;
+    };
+    // Re-fetch when address or properties change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, allProperties.length]);
 
   return { proposals, loading, error };
 }

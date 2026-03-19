@@ -83,6 +83,7 @@ interface ActiveProposalWithVote extends Omit<ActiveProposal, 'userVoted'> {
   votesNo: number;
   propertyImage: string;
   userVoted: VoteChoice | null;
+  blockchainProposalId?: number;
 }
 
 // ─── Confetti Component ─────────────────────────────────────────────────────
@@ -189,6 +190,7 @@ export default function InvestProposalsPage() {
       totalVotes: g.totalVotes,
       quorum: g.quorum,
       userVoted: g.userVoted,
+      blockchainProposalId: g.blockchainProposalId,
     }));
 
   const [activeProposals, setActiveProposals] = useState<ActiveProposalWithVote[]>([]);
@@ -353,8 +355,9 @@ export default function InvestProposalsPage() {
 
     // Try blockchain vote (non-blocking, fire-and-forget)
     const proposal = activeProposals.find((p) => p.id === savedProposalId) as any;
-    if (proposal?.blockchain_proposal_id) {
-      castBlockchainVote(proposal.blockchain_proposal_id, savedChoice === 'yes').catch(
+    const bcId = proposal?.blockchainProposalId ?? proposal?.blockchain_proposal_id;
+    if (bcId) {
+      castBlockchainVote(bcId, savedChoice === 'yes').catch(
         () => console.log('On-chain vote skipped'),
       );
     }
@@ -370,11 +373,12 @@ export default function InvestProposalsPage() {
     const yesPct = pct(yes, total);
     const noPct = pct(no, total);
     const voted = yes + no;
+    const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
     return (
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span className="text-emerald-400">{yesPct}% Yes ({yes})</span>
-          <span className="text-muted-foreground">{noPct}% No ({no})</span>
+          <span className="text-emerald-400">{yesPct}% Yes ({fmt(yes)})</span>
+          <span className="text-muted-foreground">{noPct}% No ({fmt(no)})</span>
         </div>
         <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden flex">
           {voted > 0 && (
@@ -391,7 +395,7 @@ export default function InvestProposalsPage() {
           )}
         </div>
         <p className="text-[11px] text-muted-foreground">
-          {voted} of {total} shares voted
+          {fmt(voted)} of {fmt(total)} shares voted
         </p>
       </div>
     );
@@ -629,11 +633,18 @@ export default function InvestProposalsPage() {
                           <div className="space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               {/* Property image thumbnail */}
-                              <img
-                                src={p.propertyImage || PROPERTY_PLACEHOLDER_IMAGE}
-                                alt={p.propertyTitle}
-                                className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
-                              />
+                              {p.propertyImage && p.propertyImage !== '/placeholder.svg' ? (
+                                <img
+                                  src={p.propertyImage}
+                                  alt={p.propertyTitle}
+                                  className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
+                                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                              ) : (
+                                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm flex-shrink-0">
+                                  {p.propertyTitle.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}
+                                </div>
+                              )}
                               <Badge variant="outline" className="text-[11px]">{p.propertyTitle}</Badge>
                               <Badge variant="outline" className={cn('text-[11px]', typeBadgeColor(p.type))}>{p.type}</Badge>
                               {isActive && (
@@ -645,14 +656,14 @@ export default function InvestProposalsPage() {
                             <h3 className={cn('font-semibold', isActive ? 'text-base' : 'text-sm')}>
                               {p.title}
                             </h3>
-                            {isActive && (
-                              <p className="text-sm text-muted-foreground">
-                                {(p as ActiveProposalWithVote).description}
+                            {p.description && (
+                              <p className={cn('text-sm text-muted-foreground', !isActive && 'line-clamp-2')}>
+                                {p.description}
                               </p>
                             )}
                           </div>
                           <span className="text-xs text-muted-foreground shrink-0">
-                            {p.createdAt}
+                            {new Date(p.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </span>
                         </div>
 
@@ -681,7 +692,7 @@ export default function InvestProposalsPage() {
                         ) : (
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">
-                              {(p as PastProposal).votesYes} yes / {(p as PastProposal).votesNo} no
+                              {(p as PastProposal).votesYes >= 1000 ? `${((p as PastProposal).votesYes / 1000).toFixed(1)}K` : (p as PastProposal).votesYes} yes / {(p as PastProposal).votesNo >= 1000 ? `${((p as PastProposal).votesNo / 1000).toFixed(1)}K` : (p as PastProposal).votesNo} no
                             </span>
                             <ResultBadge result={(p as PastProposal).result} />
                           </div>

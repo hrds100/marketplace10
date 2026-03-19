@@ -365,12 +365,9 @@ function ClaimModal({
 
 const PROPERTY_PLACEHOLDER_IMAGE = '/placeholder.svg';
 
-/** Swap slow IPFS gateway for a faster one */
+/** Return the image URL as-is (ipfs.io works fine) */
 function resolveImageUrl(url: string): string {
   if (!url) return PROPERTY_PLACEHOLDER_IMAGE;
-  if (url.startsWith('https://ipfs.io/ipfs/')) {
-    return url.replace('https://ipfs.io/ipfs/', 'https://cloudflare-ipfs.com/ipfs/');
-  }
   return url;
 }
 

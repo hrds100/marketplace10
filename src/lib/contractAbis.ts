@@ -25,6 +25,8 @@ export const VOTING_ABI = [
   'function vote(uint256 proposalId, bool inFavor) external',
   'function encodeString(string description) external pure returns (bytes)',
   'function getProposalFees() external view returns (uint256)',
+  'function getProposal(uint256 proposalId) external view returns (uint256 _propertyId, address _proposer, uint256 _endTime, uint256 _votesInFavour, uint256 _votesInAgainst, bytes _description, uint8 _status)',
+  'function decodeString(bytes encodedDescription) external pure returns (string)',
 ];
 
 export const BOOSTER_ABI = [
