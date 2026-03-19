@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageCircle, ChevronLeft, ChevronRight, AlertTriangle, Trash2 } from 'lucide-react';
+import { MessageCircle, ChevronLeft, ChevronRight, AlertTriangle, Trash2, Wallet } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { tierDisplayName } from '@/lib/ghl';
@@ -9,6 +9,13 @@ import { logAdminAction } from '@/lib/auditLog';
 
 const PAGE_SIZE = 20;
 const TIER_FILTERS = ['all', 'free', 'monthly', 'yearly', 'lifetime'] as const;
+
+const WALLET_DURATION_OPTIONS = [
+  { label: '1 hour', hours: 1 },
+  { label: '24 hours', hours: 24 },
+  { label: '7 days', hours: 168 },
+  { label: 'Custom', hours: 0 },
+];
 
 interface Profile {
   id: string;
@@ -27,6 +34,11 @@ export default function AdminUsers() {
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
   const [hardDeleteTarget, setHardDeleteTarget] = useState<Profile | null>(null);
   const [pin, setPin] = useState('');
+  const [walletTarget, setWalletTarget] = useState<Profile | null>(null);
+  const [walletDuration, setWalletDuration] = useState<number>(24);
+  const [walletCustomHours, setWalletCustomHours] = useState('');
+  const [walletPassword, setWalletPassword] = useState('');
+  const [walletDurationChoice, setWalletDurationChoice] = useState<number>(24);
 
   // Fetch profiles
   const { data: allProfiles = [], isLoading } = useQuery({
@@ -105,6 +117,34 @@ export default function AdminUsers() {
       toast.success('User permanently deleted from database');
     },
     onError: (err: any) => toast.error(err.message || 'Failed to hard delete'),
+  });
+
+  // Allow wallet change mutation
+  const walletPermissionMutation = useMutation({
+    mutationFn: async ({ userId, hours, password }: { userId: string; hours: number; password: string }) => {
+      // Validate password: must be 5891 + last 3 digits of user's WhatsApp
+      const targetUser = allProfiles.find(u => u.id === userId);
+      if (!targetUser?.whatsapp) throw new Error('User has no WhatsApp number on file');
+      const digits = targetUser.whatsapp.replace(/\D/g, '');
+      if (digits.length < 3) throw new Error('WhatsApp number too short to derive password');
+      const expectedPassword = '5891' + digits.slice(-3);
+      if (password !== expectedPassword) throw new Error('Incorrect password');
+
+      const until = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+      const { error } = await (supabase.from('profiles') as any)
+        .update({ wallet_change_allowed_until: until })
+        .eq('id', userId);
+      if (error) throw error;
+      if (adminUser) logAdminAction(adminUser.id, { action: 'allow_wallet_change', target_table: 'profiles', target_id: userId, metadata: { hours, until } });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      setWalletTarget(null);
+      setWalletPassword('');
+      setWalletCustomHours('');
+      toast.success('Wallet change permission granted');
+    },
+    onError: (err: unknown) => toast.error((err as Error).message || 'Failed to grant permission'),
   });
 
   const tierBadge = (tier: string | null) => {
@@ -205,6 +245,12 @@ export default function AdminUsers() {
                           className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors inline-flex items-center gap-1"
                         >
                           <Trash2 className="w-3 h-3" /> Hard Delete
+                        </button>
+                        <button
+                          onClick={() => { setWalletTarget(u); setWalletDurationChoice(24); setWalletPassword(''); setWalletCustomHours(''); }}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50 transition-colors inline-flex items-center gap-1"
+                        >
+                          <Wallet className="w-3 h-3" /> Wallet
                         </button>
                       </div>
                     </td>
@@ -332,6 +378,87 @@ export default function AdminUsers() {
                 className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 {trueHardDeleteMutation.isPending ? 'Deleting...' : 'Hard Delete Forever'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wallet Change Permission Dialog */}
+      {walletTarget && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => { setWalletTarget(null); setWalletPassword(''); }}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[420px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Allow Wallet Change</h3>
+                <p className="text-xs text-muted-foreground">Grant temporary permission to change wallet address</p>
+              </div>
+            </div>
+            <p className="text-sm text-foreground mb-4">
+              User: <strong>{walletTarget.name || 'Unknown'}</strong>
+              {walletTarget.whatsapp && <span className="text-muted-foreground ml-1">({walletTarget.whatsapp})</span>}
+            </p>
+
+            {/* Duration picker */}
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Duration</label>
+              <div className="grid grid-cols-4 gap-2">
+                {WALLET_DURATION_OPTIONS.map(opt => (
+                  <button
+                    key={opt.hours}
+                    onClick={() => { setWalletDurationChoice(opt.hours); if (opt.hours > 0) setWalletDuration(opt.hours); }}
+                    className={`text-xs font-medium px-2 py-2 rounded-lg border transition-colors ${
+                      walletDurationChoice === opt.hours ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-border text-foreground hover:bg-secondary'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {walletDurationChoice === 0 && (
+                <div className="mt-2">
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Enter hours..."
+                    value={walletCustomHours}
+                    onChange={e => { setWalletCustomHours(e.target.value); if (Number(e.target.value) > 0) setWalletDuration(Number(e.target.value)); }}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Password</label>
+              <input
+                type="password"
+                value={walletPassword}
+                onChange={e => setWalletPassword(e.target.value)}
+                placeholder="Enter password to confirm"
+                className="w-full h-11 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoFocus
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Password = 5891 + last 3 digits of user's WhatsApp</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setWalletTarget(null); setWalletPassword(''); }}
+                className="flex-1 h-11 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => walletPermissionMutation.mutate({ userId: walletTarget.id, hours: walletDuration, password: walletPassword })}
+                disabled={walletPermissionMutation.isPending || !walletPassword || walletDuration < 1}
+                className="flex-1 h-11 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {walletPermissionMutation.isPending ? 'Granting...' : 'Confirm'}
               </button>
             </div>
           </div>
