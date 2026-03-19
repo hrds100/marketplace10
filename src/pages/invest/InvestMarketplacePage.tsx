@@ -78,6 +78,20 @@ interface PropertyData {
   highlights: string[];
   documents: string[];
   blockchain_property_id?: number;
+  rentCost?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Blockchain indicator dot
+// ---------------------------------------------------------------------------
+
+function BlockchainDot({ tooltip }: { tooltip?: string }) {
+  return (
+    <span className="relative inline-flex ml-1" title={tooltip || 'From blockchain'}>
+      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+      <span className="absolute h-1.5 w-1.5 rounded-full bg-green-500 animate-ping opacity-50" />
+    </span>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -427,7 +441,7 @@ function MetricPills({ property }: { property: PropertyData }) {
   const metrics = [
     { icon: TrendingUp, label: 'Yield', value: `${property.annualYield}%` },
     { icon: BarChart3, label: 'Occupancy', value: `${property.occupancyRate}%` },
-    { icon: DollarSign, label: 'Monthly Rent', value: `$${property.monthlyRent.toLocaleString()}` },
+    { icon: DollarSign, label: 'Rent Cost', value: `\u00A3${(property as any).rentCost?.toLocaleString() || '3,500'}` },
     { icon: Star, label: 'Property Value', value: `$${(property.propertyValue / 1000).toFixed(0)}k` },
   ];
 
@@ -461,6 +475,7 @@ function InvestCardContent({
   setTsaAgreed,
   onInvest,
   compact = false,
+  totalOwners = 0,
 }: {
   property: PropertyData;
   fundedPercent: number;
@@ -473,6 +488,7 @@ function InvestCardContent({
   setTsaAgreed: (v: boolean) => void;
   onInvest: () => void;
   compact?: boolean;
+  totalOwners?: number;
 }) {
   const shares = Math.floor(investAmount / property.pricePerShare);
   const monthlyIncome = ((property.monthlyRent / property.totalShares) * shares).toFixed(2);
@@ -490,8 +506,24 @@ function InvestCardContent({
       <div className="space-y-1.5">
         <Progress value={fundedPercent} className="h-2.5" />
         <p className="text-xs text-muted-foreground">
-          {fundedPercent}% funded &middot; {sharesRemaining} remaining
+          {property.sharesSold.toLocaleString()} shares sold<BlockchainDot tooltip="Shares sold from blockchain" /> &middot; {sharesRemaining.toLocaleString()} remaining
         </p>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="rounded-lg bg-muted/50 p-2">
+          <p className="text-[10px] text-muted-foreground">Owners<BlockchainDot tooltip="Owner count from blockchain" /></p>
+          <p className="text-sm font-bold">{totalOwners}</p>
+        </div>
+        <div className="rounded-lg bg-muted/50 p-2">
+          <p className="text-[10px] text-muted-foreground">Total Shares</p>
+          <p className="text-sm font-bold">{property.totalShares.toLocaleString()}</p>
+        </div>
+        <div className="rounded-lg bg-muted/50 p-2">
+          <p className="text-[10px] text-muted-foreground">Remaining</p>
+          <p className="text-sm font-bold">{sharesRemaining.toLocaleString()}</p>
+        </div>
       </div>
 
       {/* Dollar input */}
@@ -1112,6 +1144,7 @@ function Version1({
   onInvest,
   initialCalcAmount,
   setInitialCalcAmount,
+  totalOwners,
 }: {
   property: PropertyData;
   fundedPercent: number;
@@ -1129,6 +1162,7 @@ function Version1({
   onInvest: () => void;
   initialCalcAmount: number;
   setInitialCalcAmount: (v: number) => void;
+  totalOwners: number;
 }) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -1323,6 +1357,7 @@ function Version1({
                   setTsaAgreed={setTsaAgreed}
                   onInvest={onInvest}
                   compact
+                  totalOwners={totalOwners}
                 />
               </CardContent>
             </Card>
@@ -1365,6 +1400,7 @@ function Version2({
   onInvest,
   initialCalcAmount,
   setInitialCalcAmount,
+  totalOwners,
 }: {
   property: PropertyData;
   fundedPercent: number;
@@ -1380,6 +1416,7 @@ function Version2({
   onInvest: () => void;
   initialCalcAmount: number;
   setInitialCalcAmount: (v: number) => void;
+  totalOwners: number;
 }) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
@@ -1478,6 +1515,7 @@ function Version2({
               tsaAgreed={tsaAgreed}
               setTsaAgreed={setTsaAgreed}
               onInvest={onInvest}
+              totalOwners={totalOwners}
             />
           </CardContent>
         </Card>
@@ -1532,10 +1570,28 @@ export default function InvestMarketplacePage() {
     documents: dbProperty.documents || [],
     occupancyRate: dbProperty.occupancy_rate || 0,
     yearBuilt: dbProperty.year_built || 0,
+    rentCost: (dbProperty as any).rent_cost || 0,
   } : null;
 
   const fundedPercent = property ? Math.round((property.sharesSold / property.totalShares) * 100) : 0;
   const sharesRemaining = property ? property.totalShares - property.sharesSold : 0;
+
+  // Fetch totalOwners from blockchain
+  const [totalOwners, setTotalOwners] = useState(0);
+  useEffect(() => {
+    async function fetchOwners() {
+      try {
+        const ethers = await import('ethers');
+        const provider = new ethers.providers.JsonRpcProvider('https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T');
+        const rwa = new ethers.Contract('0xA588E7dC42a956cc6c412925dE99240cc329157b', [
+          'function getProperty(uint256) view returns (tuple(uint256 totalShares, uint256 totalOwners, uint256 pricePerShare, uint256 aprBips, string uri))',
+        ], provider);
+        const prop = await rwa.getProperty(1);
+        setTotalOwners(prop.totalOwners.toNumber());
+      } catch { /* silent */ }
+    }
+    fetchOwners();
+  }, []);
 
   const version = 1 as const;
   const [jvExpanded, setJvExpanded] = useState(false);
@@ -1618,6 +1674,7 @@ export default function InvestMarketplacePage() {
         onInvest={handleInvest}
         initialCalcAmount={initialCalcAmount}
         setInitialCalcAmount={setInitialCalcAmount}
+        totalOwners={totalOwners}
       />
 
       <InvestModal open={investOpen} onOpenChange={setInvestOpen} property={property} />

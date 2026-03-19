@@ -31,6 +31,7 @@ interface Property {
   occupancy_rate: number;
   status: 'open' | 'funded' | 'closed';
   blockchain_property_id: number;
+  rent_cost: number;
   image?: string;
   images?: string[];
 }
@@ -51,7 +52,7 @@ const emptyProperty: Omit<Property, 'id'> & { id?: number } = {
   title: '', location: '', country: '', price_per_share: 0, total_shares: 0,
   shares_sold: 0, annual_yield: 0, monthly_rent: 0, property_value: 0, type: 'Villa',
   bedrooms: 0, bathrooms: 0, area: 0, year_built: 2025, description: '',
-  occupancy_rate: 0, status: 'open', blockchain_property_id: 0, image: '', images: [],
+  occupancy_rate: 0, status: 'open', blockchain_property_id: 0, rent_cost: 0, image: '', images: [],
 };
 
 const statusColors: Record<string, string> = {
@@ -323,6 +324,10 @@ export default function AdminInvestProperties() {
               <label className="text-sm font-medium text-foreground mb-1.5 block">Blockchain Property ID</label>
               <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.blockchain_property_id as number} onChange={(e) => updateField('blockchain_property_id', Number(e.target.value))} />
             </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Rent Cost (GBP)</label>
+              <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.rent_cost as number} onChange={(e) => updateField('rent_cost', Number(e.target.value))} />
+            </div>
             <div className="col-span-2">
               <label className="text-sm font-medium text-foreground mb-1.5 block">Description</label>
               <textarea className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm resize-none" value={form.description as string} onChange={(e) => updateField('description', e.target.value)} />
@@ -380,6 +385,41 @@ export default function AdminInvestProperties() {
                 <Upload className="w-3.5 h-3.5" /> Add Gallery Images
               </Button>
               <p className="text-[11px] text-muted-foreground mt-1">Additional images for the property detail page</p>
+            </div>
+          </div>
+
+          {/* Marketplace Preview */}
+          <div className="mt-6 pt-4 border-t">
+            <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Marketplace Preview</h4>
+            <div className="rounded-xl border bg-card p-4 space-y-3 max-w-sm">
+              {(form.image as string) && (
+                <img src={mainImagePreview || (form.image as string)} alt="Preview" className="w-full h-32 object-cover rounded-lg" />
+              )}
+              <div>
+                <p className="font-bold">{(form.title as string) || 'Property Name'}</p>
+                <p className="text-xs text-muted-foreground">{(form.location as string) || 'Location'}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-muted/50 rounded p-2">
+                  <p className="text-muted-foreground">Yield</p>
+                  <p className="font-bold">{(form.annual_yield as number) || 0}%</p>
+                </div>
+                <div className="bg-muted/50 rounded p-2">
+                  <p className="text-muted-foreground">Monthly Rent</p>
+                  <p className="font-bold">${(form.monthly_rent as number)?.toLocaleString() || 0}</p>
+                </div>
+                <div className="bg-muted/50 rounded p-2">
+                  <p className="text-muted-foreground">Rent Cost</p>
+                  <p className="font-bold">&pound;{(form.rent_cost as number)?.toLocaleString() || 0}</p>
+                </div>
+                <div className="bg-muted/50 rounded p-2">
+                  <p className="text-muted-foreground">Property Value</p>
+                  <p className="font-bold">${(form.property_value as number)?.toLocaleString() || 0}</p>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {(form.bedrooms as number) || 0} beds &middot; {(form.bathrooms as number) || 0} baths &middot; {(form.area as number) || 0}m&sup2; &middot; {(form.type as string) || 'Type'}
+              </div>
             </div>
           </div>
 

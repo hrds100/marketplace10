@@ -108,6 +108,15 @@ function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`;
 }
 
+function BlockchainDot({ tooltip }: { tooltip?: string }) {
+  return (
+    <span className="relative inline-flex ml-1" title={tooltip || 'From blockchain'}>
+      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+      <span className="absolute h-1.5 w-1.5 rounded-full bg-green-500 animate-ping opacity-50" />
+    </span>
+  );
+}
+
 function StatusBadge({ status }: { status: PayoutStatus }) {
   const config = statusConfig[status];
   return (
@@ -493,7 +502,7 @@ export default function InvestPayoutsPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Available to Claim</span>
+                <span className="text-muted-foreground">Available to Claim<BlockchainDot tooltip="Claimable amount from blockchain" /></span>
                 <span className="font-bold text-green-500">{formatCurrency(totalClaimable)}</span>
               </div>
               <div className="flex justify-between text-sm">
@@ -554,7 +563,7 @@ export default function InvestPayoutsPage() {
                         <div>
                           <p className="font-medium">{payout.propertyTitle}</p>
                           <p className="text-sm text-muted-foreground">
-                            {formatDate(payout.date)} &middot; {payout.sharesOwned} shares
+                            {formatDate(payout.date)} &middot; {payout.sharesOwned} shares<BlockchainDot tooltip="Share count from blockchain" />
                           </p>
                         </div>
                       </div>
@@ -563,7 +572,7 @@ export default function InvestPayoutsPage() {
                           Claimable
                         </Badge>
                         <p className="text-lg font-bold text-green-500 whitespace-nowrap">
-                          {formatCurrency(payout.amount)}
+                          {formatCurrency(payout.amount)}<BlockchainDot tooltip="Amount from blockchain" />
                         </p>
                         <Button size="sm" onClick={() => handleClaim(payout)}>
                           Claim
