@@ -378,27 +378,31 @@ export default function SettingsPage() {
               <div className="max-w-[480px] mb-8">
                 <h3 className="text-sm font-bold text-foreground mb-3">Wallet Address</h3>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">Wallet Address</label>
-                  {walletConnected && walletAddress ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={walletAddress}
-                        readOnly
-                        className="flex-1 h-11 rounded-[10px] border border-border bg-muted/50 px-3.5 text-sm font-mono"
-                      />
-                      <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Connected</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => connectWallet().catch(() => {})}
-                      disabled={connecting}
-                      className="h-11 px-6 rounded-[10px] bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                      {connecting ? 'Connecting...' : 'Connect Wallet'}
-                    </button>
-                  )}
-                  <p className="text-[11px] text-muted-foreground">Connect your wallet to receive crypto payouts (USDC, STAY tokens)</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={walletAddress || 'No wallet connected'}
+                      readOnly
+                      disabled
+                      className="flex-1 h-11 rounded-[10px] border border-border bg-muted/50 px-3.5 text-sm font-mono text-muted-foreground"
+                    />
+                    {walletAddress ? (
+                      <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded flex-shrink-0">Active</span>
+                    ) : (
+                      <button
+                        onClick={() => connectWallet().catch(() => {})}
+                        disabled={connecting}
+                        className="text-xs font-medium text-primary hover:underline flex-shrink-0 disabled:opacity-50"
+                      >
+                        {connecting ? 'Connecting...' : 'Connect existing wallet'}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {walletAddress
+                      ? 'Your wallet is active for crypto payouts (USDC, STAY tokens)'
+                      : 'Your wallet will be created automatically. If you have an existing wallet, connect it here.'}
+                  </p>
                 </div>
               </div>
 
