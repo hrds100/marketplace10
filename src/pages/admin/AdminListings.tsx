@@ -1,15 +1,18 @@
-import { useState, useRef, useEffect } from 'react';
-import { listings as mockListings, type Listing } from '@/data/mockData';
+import { useState, useRef } from 'react';
 import { toast } from 'sonner';
-import { Upload, X, MessageCircle, Edit2, Trash2, Download } from 'lucide-react';
+import { Upload, X, MessageCircle, Edit2, Trash2, Download, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function AdminListings() {
+  const { session } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', city: '', rent: 0, profit: 0, status: 'live' as string });
+  const [hardDeleteTarget, setHardDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [pin, setPin] = useState('');
 
   // Fetch from Supabase
   const { data: dbListings } = useQuery({
@@ -65,6 +68,31 @@ export default function AdminListings() {
     queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
     toast.success('Property deleted');
   };
+
+  // Hard delete — removes property + all linked data (threads, messages, CRM, favourites)
+  const hardDeleteMutation = useMutation({
+    mutationFn: async ({ id, userPin }: { id: string; userPin: string }) => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const res = await fetch(`${supabaseUrl}/functions/v1/hard-delete-property`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ propertyId: id, pin: userPin }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
+      setHardDeleteTarget(null);
+      setPin('');
+      toast.success('Property permanently deleted with all linked data');
+    },
+    onError: (err: any) => toast.error(err.message || 'Failed to hard delete'),
+  });
 
   // CSV Import
   const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,6 +232,7 @@ export default function AdminListings() {
                   <div className="flex gap-2">
                     <button onClick={() => startEdit(l)} className="text-xs text-primary font-medium inline-flex items-center gap-1"><Edit2 className="w-3 h-3" /> Edit</button>
                     <button onClick={() => deleteProperty(l.id)} className="text-xs text-destructive font-medium inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Delete</button>
+                    <button onClick={() => setHardDeleteTarget({ id: l.id, name: l.name })} className="text-xs font-medium px-2 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Hard Delete</button>
                   </div>
                 </td>
               </tr>
@@ -211,6 +240,57 @@ export default function AdminListings() {
           </tbody>
         </table>
       </div>
+
+      {/* Hard Delete PIN Dialog */}
+      {hardDeleteTarget && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => { setHardDeleteTarget(null); setPin(''); }}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[400px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Hard Delete Property</h3>
+                <p className="text-xs text-red-600 font-semibold">Removes property + all messages, threads, CRM deals</p>
+              </div>
+            </div>
+            <p className="text-sm text-foreground mb-1">
+              Permanently delete <strong>{hardDeleteTarget.name}</strong>?
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              This will also delete all chat threads, messages, landlord invites, CRM deals, and favourites linked to this property.
+            </p>
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Enter PIN to confirm</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={pin}
+                onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••"
+                className="w-full h-11 px-3 rounded-lg border border-border bg-background text-center text-lg font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-red-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setHardDeleteTarget(null); setPin(''); }}
+                className="flex-1 h-11 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => hardDeleteMutation.mutate({ id: hardDeleteTarget.id, userPin: pin })}
+                disabled={hardDeleteMutation.isPending || pin.length !== 4}
+                className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {hardDeleteMutation.isPending ? 'Deleting...' : 'Hard Delete Forever'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
