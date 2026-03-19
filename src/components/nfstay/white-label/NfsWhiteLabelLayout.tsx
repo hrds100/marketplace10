@@ -1,123 +1,78 @@
+// White-label layout — wraps all white-label pages with themed navbar + footer
 import { Outlet, Link } from 'react-router-dom';
 import { useNfsWhiteLabel } from '@/hooks/nfstay/use-nfs-white-label';
-import { Mail, Phone, MessageCircle } from 'lucide-react';
+import { useNfsWhiteLabelTheme } from '@/hooks/nfstay/use-nfs-white-label-theme';
+import NfsWlNavbar from './NfsWlNavbar';
+import NfsWlFooter from './NfsWlFooter';
+import { TriangleAlert, RefreshCw } from 'lucide-react';
 
 export default function NfsWhiteLabelLayout() {
   const { operator, loading, error } = useNfsWhiteLabel();
+  useNfsWhiteLabelTheme(operator?.accent_color);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+        <p className="mt-4 text-sm text-gray-500">Loading...</p>
       </div>
     );
   }
 
   if (error || !operator) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 bg-background">
-        <h1 className="text-2xl font-bold">Storefront not found</h1>
-        <p className="text-sm text-muted-foreground">
-          This domain is not linked to an active storefront.
-        </p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md w-full text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-6">
+            <TriangleAlert className="w-8 h-8 text-red-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Website Not Available
+          </h1>
+          <p className="text-gray-600 mb-6">
+            This subdomain is not associated with any vacation rental operator.
+          </p>
+          <ul className="text-sm text-gray-500 text-left space-y-2 mb-8 max-w-xs mx-auto">
+            <li>• The website is still being set up</li>
+            <li>• The URL was entered incorrectly</li>
+            <li>• This is a temporary issue</li>
+          </ul>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </button>
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            >
+              Go to Main Site
+            </Link>
+          </div>
+          <p className="mt-8 text-xs text-gray-400">
+            Need help?{' '}
+            <a
+              href="mailto:support@nfstay.app"
+              className="underline hover:text-gray-600"
+            >
+              support@nfstay.app
+            </a>
+          </p>
+        </div>
       </div>
     );
   }
 
-  const accentColor = operator.accent_color || '#2563eb';
-
   return (
-    <div className="min-h-screen flex flex-col bg-background" style={{ '--nfs-accent': accentColor } as React.CSSProperties}>
-      {/* Header */}
-      <header className="border-b border-border/40 bg-white dark:bg-card">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            {operator.logo_url ? (
-              <img
-                src={operator.logo_url}
-                alt={operator.logo_alt || operator.brand_name || ''}
-                className="h-8 w-auto object-contain"
-              />
-            ) : (
-              <span className="text-lg font-bold" style={{ color: accentColor }}>
-                {operator.brand_name || 'Vacation Rentals'}
-              </span>
-            )}
-          </Link>
-          <nav className="flex items-center gap-4 text-sm">
-            <Link to="/search" className="text-muted-foreground hover:text-foreground transition-colors">
-              Properties
-            </Link>
-            {operator.contact_email && (
-              <a href={`mailto:${operator.contact_email}`} className="text-muted-foreground hover:text-foreground transition-colors">
-                Contact
-              </a>
-            )}
-          </nav>
-        </div>
-      </header>
-
-      {/* Content */}
+    <div className="min-h-screen flex flex-col nfs-wl-themed">
+      <NfsWlNavbar />
       <main className="flex-1">
         <Outlet />
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border/40 bg-muted/20">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <h4 className="font-semibold text-sm mb-2">
-                {operator.brand_name || 'Vacation Rentals'}
-              </h4>
-              {operator.about_bio && (
-                <p className="text-xs text-muted-foreground line-clamp-3">
-                  {operator.about_bio}
-                </p>
-              )}
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm mb-2">Contact</h4>
-              <div className="space-y-1.5">
-                {operator.contact_email && (
-                  <a href={`mailto:${operator.contact_email}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                    <Mail className="w-3.5 h-3.5" /> {operator.contact_email}
-                  </a>
-                )}
-                {operator.contact_phone && (
-                  <a href={`tel:${operator.contact_phone}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                    <Phone className="w-3.5 h-3.5" /> {operator.contact_phone}
-                  </a>
-                )}
-                {operator.contact_whatsapp && (
-                  <a href={`https://wa.me/${operator.contact_whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                    <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                  </a>
-                )}
-              </div>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm mb-2">Links</h4>
-              <div className="space-y-1.5">
-                {operator.social_instagram && (
-                  <a href={operator.social_instagram} target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground hover:text-foreground">Instagram</a>
-                )}
-                {operator.social_facebook && (
-                  <a href={operator.social_facebook} target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground hover:text-foreground">Facebook</a>
-                )}
-                {operator.airbnb_url && (
-                  <a href={operator.airbnb_url} target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground hover:text-foreground">Airbnb</a>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="mt-6 pt-4 border-t border-border/30 text-center">
-            <p className="text-xs text-muted-foreground">
-              Powered by <a href="https://nfstay.app" className="hover:underline" target="_blank" rel="noopener noreferrer">NFStay</a>
-            </p>
-          </div>
-        </div>
-      </footer>
+      <NfsWlFooter />
     </div>
   );
 }

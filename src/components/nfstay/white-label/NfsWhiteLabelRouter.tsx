@@ -12,6 +12,8 @@ import NfsWlSearch from '@/pages/nfstay/white-label/NfsWlSearch';
 import NfsWlProperty from '@/pages/nfstay/white-label/NfsWlProperty';
 import NfsWlPaymentSuccess from '@/pages/nfstay/white-label/NfsWlPaymentSuccess';
 import NfsWlPaymentCancel from '@/pages/nfstay/white-label/NfsWlPaymentCancel';
+import NfsWlBooking from '@/pages/nfstay/white-label/NfsWlBooking';
+import NfsWlPayment from '@/pages/nfstay/white-label/NfsWlPayment';
 // Traveler pages — reused for nfstay.app main site
 import NfsMainSiteLayout from '@/components/nfstay/NfsMainSiteLayout';
 import NfsSearch from '@/pages/nfstay/NfsSearch';
@@ -67,6 +69,8 @@ export default function NfsWhiteLabelRouter({ children }: Props) {
         <Route index element={<NfsWlLanding />} />
         <Route path="/search" element={<NfsWlSearch />} />
         <Route path="/property/:id" element={<NfsWlProperty />} />
+        <Route path="/booking/:id" element={<NfsWlBooking />} />
+        <Route path="/payment" element={<NfsWlPayment />} />
         <Route path="/payment/success" element={<NfsWlPaymentSuccess />} />
         <Route path="/payment/cancel" element={<NfsWlPaymentCancel />} />
         <Route path="*" element={<NfsWlLanding />} />
