@@ -555,7 +555,7 @@ export default function InvestPayoutsPage() {
 
   const handleClaim = (payout: PayoutItem) => {
     setSelectedPayout(payout);
-    setSelectedMethod(null);
+    setSelectedMethod('bank_transfer');
     setClaimStep('choose');
     setClaimTxHash(null);
     setClaimError(null);
