@@ -115,6 +115,15 @@ function Confetti() {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+function BlockchainDot({ tooltip }: { tooltip?: string }) {
+  return (
+    <span className="relative inline-flex ml-1" title={tooltip || 'From blockchain'}>
+      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+      <span className="absolute h-1.5 w-1.5 rounded-full bg-green-500 animate-ping opacity-50" />
+    </span>
+  );
+}
+
 function daysUntil(dateStr: string): number {
   const diff = new Date(dateStr).getTime() - Date.now();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
@@ -378,8 +387,8 @@ export default function InvestProposalsPage() {
     return (
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span className="text-emerald-400">{yesPct}% Yes ({fmt(yes)})</span>
-          <span className="text-muted-foreground">{noPct}% No ({fmt(no)})</span>
+          <span className="text-emerald-400">{yesPct}% Yes ({fmt(yes)})<BlockchainDot tooltip="Vote count from blockchain" /></span>
+          <span className="text-muted-foreground">{noPct}% No ({fmt(no)})<BlockchainDot tooltip="Vote count from blockchain" /></span>
         </div>
         <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden flex">
           {voted > 0 && (
@@ -533,15 +542,15 @@ export default function InvestProposalsPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Active</span>
+                <span className="text-muted-foreground">Active<BlockchainDot tooltip="Count from blockchain" /></span>
                 <span className="font-bold">{stats.activeCount}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Your Votes</span>
+                <span className="text-muted-foreground">Your Votes<BlockchainDot tooltip="Votes from blockchain" /></span>
                 <span className="font-bold">{stats.votesCast}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Past</span>
+                <span className="text-muted-foreground">Past<BlockchainDot tooltip="Count from blockchain" /></span>
                 <span className="font-bold">{pastProposals.length}</span>
               </div>
             </CardContent>

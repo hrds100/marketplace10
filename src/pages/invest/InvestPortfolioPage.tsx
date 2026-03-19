@@ -45,6 +45,15 @@ import { cn } from '@/lib/utils';
 const formatCurrency = (amount: number) =>
   `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+function BlockchainDot({ tooltip }: { tooltip?: string }) {
+  return (
+    <span className="relative inline-flex ml-1" title={tooltip || 'From blockchain'}>
+      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+      <span className="absolute h-1.5 w-1.5 rounded-full bg-green-500 animate-ping opacity-50" />
+    </span>
+  );
+}
+
 // Active proposal check — defined as a module-level factory, actual data injected in component
 
 // ---------------------------------------------------------------------------
@@ -265,9 +274,9 @@ export default function InvestPortfolioPage() {
   const roiMarkerPct = (roiTarget / profitTarget) * 100;
 
   const summaryItems = [
-    { label: 'Total Contributed', value: portfolio.totalContributed, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'Total Earnings', value: totalClaimed > 0 ? totalClaimed : portfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-    { label: 'Pending Payouts', value: pendingPayoutsTotal > 0 ? pendingPayoutsTotal : portfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { label: 'Total Contributed', value: portfolio.totalContributed, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10', blockchain: false },
+    { label: 'Total Earnings', value: totalClaimed > 0 ? totalClaimed : portfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10', blockchain: true },
+    { label: 'Pending Payouts', value: pendingPayoutsTotal > 0 ? pendingPayoutsTotal : portfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10', blockchain: true },
   ];
 
   const toggleCollapse = (propertyId: number) => {
@@ -337,7 +346,7 @@ export default function InvestPortfolioPage() {
                       <item.icon className={cn('h-4 w-4', item.color)} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.label}{item.blockchain && <BlockchainDot />}</p>
                       <p className="text-xl font-bold">{formatCurrency(item.value)}</p>
                     </div>
                   </div>
@@ -557,7 +566,7 @@ export default function InvestPortfolioPage() {
                           <div className="flex items-center gap-3 mt-1 text-sm flex-wrap">
                             <span>
                               <span className="text-muted-foreground">Shares: </span>
-                              <span className="font-medium">{h.sharesOwned}</span>
+                              <span className="font-medium">{h.sharesOwned}<BlockchainDot tooltip="Share balance from blockchain" /></span>
                             </span>
                             <span>
                               <span className="text-muted-foreground">Value: </span>
