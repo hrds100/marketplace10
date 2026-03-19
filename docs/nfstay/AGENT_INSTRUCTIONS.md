@@ -55,6 +55,7 @@ If any rule here conflicts with the repo-level instructions, the repo-level inst
 6. **NFStay Edge Functions are prefixed `nfs-`.** Example: `nfs-stripe-webhook`.
 7. **NFStay n8n workflows are prefixed `nfs-`.** Example: `nfs-hospitable-init-sync`.
 8. **Never modify shared UI components** (`components/ui/*`). Create wrappers in `components/nfstay/` instead.
+9. **Always update `docs/COMMUNICATIONS.md`** when adding, removing, or changing any email, WhatsApp, or in-app notification. Same commit. No exceptions.
 
 ### 3.2 Shared infrastructure rules
 

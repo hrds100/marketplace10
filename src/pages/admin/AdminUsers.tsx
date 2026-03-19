@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageCircle, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { MessageCircle, ChevronLeft, ChevronRight, AlertTriangle, Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { tierDisplayName } from '@/lib/ghl';
@@ -20,11 +20,13 @@ interface Profile {
 }
 
 export default function AdminUsers() {
-  const { user: adminUser } = useAuth();
+  const { user: adminUser, session } = useAuth();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
+  const [hardDeleteTarget, setHardDeleteTarget] = useState<Profile | null>(null);
+  const [pin, setPin] = useState('');
 
   // Fetch profiles
   const { data: allProfiles = [], isLoading } = useQuery({
@@ -78,6 +80,31 @@ export default function AdminUsers() {
       toast.success('User has been suspended (hard delete requires server-side admin API)');
     },
     onError: (err: any) => toast.error(err.message || 'Failed to delete'),
+  });
+
+  // TRUE hard delete — removes from auth.users + all data via Edge Function
+  const trueHardDeleteMutation = useMutation({
+    mutationFn: async ({ id, userPin }: { id: string; userPin: string }) => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const res = await fetch(`${supabaseUrl}/functions/v1/hard-delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ userId: id, pin: userPin }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      setHardDeleteTarget(null);
+      setPin('');
+      toast.success('User permanently deleted from database');
+    },
+    onError: (err: any) => toast.error(err.message || 'Failed to hard delete'),
   });
 
   const tierBadge = (tier: string | null) => {
@@ -173,6 +200,12 @@ export default function AdminUsers() {
                         >
                           Delete
                         </button>
+                        <button
+                          onClick={() => setHardDeleteTarget(u)}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors inline-flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" /> Hard Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -213,7 +246,7 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* Soft Delete Confirmation Dialog */}
       {deleteTarget && (
         <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => setDeleteTarget(null)}>
           <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[400px]" onClick={e => e.stopPropagation()}>
@@ -245,6 +278,60 @@ export default function AdminUsers() {
                 className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 {hardDeleteMutation.isPending ? 'Deleting...' : 'Delete User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hard Delete PIN Dialog */}
+      {hardDeleteTarget && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => { setHardDeleteTarget(null); setPin(''); }}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[400px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Permanent Hard Delete</h3>
+                <p className="text-xs text-red-600 font-semibold">This removes EVERYTHING — cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-foreground mb-1">
+              Permanently delete <strong>{hardDeleteTarget.name || 'this user'}</strong>?
+            </p>
+            <p className="text-xs text-muted-foreground mb-1">
+              This will remove their login, profile, messages, favourites, and all linked data.
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              User ID: {hardDeleteTarget.id}
+            </p>
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Enter PIN to confirm</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={pin}
+                onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••"
+                className="w-full h-11 px-3 rounded-lg border border-border bg-background text-center text-lg font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-red-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setHardDeleteTarget(null); setPin(''); }}
+                className="flex-1 h-11 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => trueHardDeleteMutation.mutate({ id: hardDeleteTarget.id, userPin: pin })}
+                disabled={trueHardDeleteMutation.isPending || pin.length !== 4}
+                className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {trueHardDeleteMutation.isPending ? 'Deleting...' : 'Hard Delete Forever'}
               </button>
             </div>
           </div>

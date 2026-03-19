@@ -105,6 +105,7 @@ Claude then:
 | Feature or flow work | + `docs/ACCEPTANCE.md` |
 | Bug / "X not working" | + `docs/runbooks/DIAGNOSE_BEFORE_FIX.md` |
 | Unknown / cross-cutting | + `docs/ARCHITECTURE.md` + `docs/DATABASE.md` + `docs/INTEGRATIONS.md` + `docs/CHANGELOG.md` |
+| Notifications / emails / WhatsApp / OTP | + `docs/COMMUNICATIONS.md` + `docs/INTEGRATIONS.md` |
 | **NFStay module** (any `/nfstay` route, `nfs_` table, `nfs-` function) | + `docs/nfstay/AGENT_INSTRUCTIONS.md` + `docs/nfstay/BOUNDARIES.md` + task-specific NFStay docs (see `docs/nfstay/README.md`) |
 
 ### 3b. Mandatory pre-task steps
@@ -523,6 +524,7 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 21. **Verification required before DONE.** Report must include VERIFICATION. Do not mark DONE without it.
 22. **Bugs: diagnose before fix.** Report must include ROOT CAUSE. No guess-and-fix. See Section 3e.
 23. **Always try to access tools before asking Hugo.** GitHub API, Vercel API, Supabase API, n8n API, GHL API — attempt access first. If credentials are missing, ask Hugo for them with a single clear sentence, then save them to memory.
+24. **Always update `docs/COMMUNICATIONS.md`** when adding, removing, or changing any email, WhatsApp, or in-app notification. Same commit. No exceptions.
 
 ---
 
