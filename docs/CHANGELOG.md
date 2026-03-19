@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+## [2026-03-19] — Particle Wallet Auto-Creation + Settings Payout UI
+
+### Added
+- **Automatic wallet creation at signup**: Particle MPC wallet created silently via `WalletProvisioner` in DashboardLayout. Uses `@particle-network/auth-core` directly (no React wrapper). Wallet created after OTP verification, retries on next login if failed.
+- **Vite WASM support**: Custom `particleWasmPlugin` copies `thresh-sig` WASM to build output + serves it in dev. Added `vite-plugin-node-polyfills` for Buffer/crypto/stream polyfills.
+- **Payout Address copy button**: Settings > Payout Settings shows wallet with green Copy button + "Copied" feedback.
+- **Wallet retry for existing users**: `useWallet` hook auto-retries wallet creation for users who signed up before this feature.
+- **WALLET_ARCHITECTURE.md**: Full documentation of wallet creation flow, MPC security model, recovery procedures, troubleshooting guide.
+
+### Changed
+- **Settings > Payout Settings**: Renamed "Wallet Address" to "Payout Address". Removed unused "Preferred Claim Method" radio buttons (not wired to DB). Removed "Your wallet is active..." subtitle.
+- **Bank Details**: Updated payout schedule — GBP: "Payout every Tuesday, same-day clearing". EUR: "Payout every Tuesday, cleared within 10 working days".
+
+### Fixed
+- **Particle SDK crash**: `AuthCoreContextProvider` crashed the app at runtime due to WASM loading issues in Vite. Fixed by using `auth-core` API directly (`particleAuth.init()` + `connect()`), bypassing the React wrapper entirely.
+- **Particle overlay blocking clicks**: SDK injected invisible modal overlays with high z-index. Fixed with targeted CSS (`pointer-events: none` on `pn-modal`/`pn-auth` classes only).
+- **Wallet creation killed by page navigation**: `VerifyOtp.tsx` did `window.location.href` 1.5s after OTP, destroying the React component mid-wallet-creation. Moved wallet creation to `WalletProvisioner` in DashboardLayout which persists across navigation.
+
+### Technical
+- Particle SDK lazy-loaded via dynamic `import()` — 1MB separate chunk, not in main bundle
+- JWT auth: Edge Function signs RS256 JWT with user UUID as `sub`, Particle verifies via JWKS endpoint
+- MPC wallet: private key split into 2 shares (Particle server + user browser), neither can sign alone
+- Recovery: user logs back in → same UUID → same JWT `sub` → Particle restores wallet
+
 ## [2026-03-17] — NFStay Module + Google Maps + n8n Cleanup
 
 ### Added
