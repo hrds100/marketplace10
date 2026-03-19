@@ -102,39 +102,10 @@ export default function VerifyOtp() {
         const jwtData = await jwtRes.json();
 
         if (jwtData.jwt) {
-          // 2. Connect to Particle with JWT — creates embedded wallet silently
-          try {
-            const { useConnect } = await import('@particle-network/authkit');
-            // Note: useConnect is a hook and can't be called here directly.
-            // Instead, use the Particle auth-core API directly
-            const authCore = await import('@particle-network/auth-core').catch(() => null);
-            if (authCore) {
-              // Try connecting via auth-core direct API
-              const connectFn = (window as any).__PARTICLE_CONNECT_FN__;
-              if (connectFn) {
-                const userInfo = await connectFn({
-                  provider: 'jwt',
-                  thirdpartyCode: jwtData.jwt,
-                });
-                let walletAddr: string | null = null;
-                if (userInfo?.evm_wallet_address) {
-                  walletAddr = userInfo.evm_wallet_address;
-                } else if (userInfo?.wallets) {
-                  const evmWallet = (userInfo.wallets as any[]).find((w) => w.chain === 'evm' || w.chain_name === 'evm');
-                  walletAddr = evmWallet?.public_address || null;
-                }
-                if (walletAddr) {
-                  await (supabase.from('profiles') as any)
-                    .update({ wallet_address: walletAddr })
-                    .eq('id', userId);
-                  console.log('Particle wallet created:', walletAddr);
-                }
-              }
-            }
-          } catch (particleErr) {
-            console.log('Particle wallet creation deferred:', particleErr);
-          }
-          // Always store JWT as fallback
+          // JWT generated successfully — store for wallet creation
+          // Wallet will be created when user first interacts with blockchain
+          // (Settings → Connect Wallet, or first crypto purchase)
+          console.log('Particle JWT generated for user:', userId);
           try { sessionStorage.setItem('particle_jwt', jwtData.jwt); } catch { /* skip */ }
         }
       }
