@@ -44,6 +44,7 @@ All documentation lives in `docs/invest/`. Before any task, read this file PLUS 
 | 12 | **EXECUTION_PLAN.md** | Step-by-step implementation sequence with dependencies |
 | 13 | **PAYOUT_FLOW.md** | Complete crypto + bank payout documentation (Revolut weekly batch) |
 | 14 | **USER_JOURNEY.md** | Every flow explained in simple English with emojis (non-technical) |
+| 15 | **WALLET_ARCHITECTURE.md** | Wallet creation flow, MPC security model, recovery procedures, backup map |
 
 ### Which docs to read per task
 
@@ -57,6 +58,7 @@ All documentation lives in `docs/invest/`. Before any task, read this file PLUS 
 | Admin features | + `DATABASE.md` + `BOUNDARIES.md` |
 | Payout / claim / Revolut | + `PAYOUT_FLOW.md` + `INTEGRATIONS.md` |
 | Notifications | + `INTEGRATIONS.md` |
+| Wallet / Particle / auth / recovery | + `WALLET_ARCHITECTURE.md` + `STACK.md` |
 | Feature acceptance | + `ACCEPTANCE.md` |
 | Full picture / planning | + `MODULE_AUDIT.md` + `EXECUTION_PLAN.md` + `USER_JOURNEY.md` |
 | Understanding what exists | + `MODULE_AUDIT.md` |
@@ -113,6 +115,7 @@ All rules from `docs/AGENT_INSTRUCTIONS.md` apply. These are ADDITIONAL rules fo
 12. **Payout amounts are always server-side calculated.** Never accept claim amounts from the frontend. Edge Function calculates from source tables.
 13. **One bank claim per user per week.** Enforced by UNIQUE(user_id, week_ref) constraint.
 14. **Bank details are locked after first successful payout.** Users cannot change bank details after is_verified = true without admin intervention.
+15. **Always update `docs/COMMUNICATIONS.md`** when adding, removing, or changing any email, WhatsApp, or in-app notification. Same commit. No exceptions.
 
 ---
 
