@@ -6,6 +6,8 @@ import { useBlockchain } from '@/hooks/useBlockchain';
 import { useProposals, useInvestProperties } from '@/hooks/useInvestData';
 import { useWallet } from '@/hooks/useWallet';
 import { SUBGRAPHS } from '@/lib/particle';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -112,14 +114,10 @@ function getAchievements(holdingsCount: number, totalClaimed: number, hasVoted: 
 }
 
 // ---------------------------------------------------------------------------
-// Monthly Earnings Data
+// Monthly Earnings Data — populated from Supabase payout_claims at runtime
 // ---------------------------------------------------------------------------
 
-// Earnings chart data will be populated from real payout history
-const MONTHLY_EARNINGS: { month: string; amount: number }[] = [];
-
-const maxEarning = Math.max(...MONTHLY_EARNINGS.map((m) => m.amount), 1);
-const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
+// Module-level constants removed: monthlyEarnings is now state in the component
 
 // ---------------------------------------------------------------------------
 // Main Page
@@ -127,6 +125,7 @@ const netProfit = MONTHLY_EARNINGS.reduce((sum, m) => sum + m.amount, 0);
 
 export default function InvestPortfolioPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { portfolio, isLoading, blockchainLoading } = usePortfolioWithBlockchain();
   const { boostApr, claimBoostRewards, getRentHistory, getBoostDetails, loading: boostLoading } = useBlockchain();
   const { data: proposals = [] } = useProposals();
@@ -139,6 +138,81 @@ export default function InvestPortfolioPage() {
     );
 
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
+
+  // F5: Boost cost from contract (read getBoostAmount from BOOSTER_ABI)
+  const [boostCost, setBoostCost] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const ethers = await import('ethers').catch(() => null);
+        if (!ethers) return;
+        const { BOOSTER_ABI } = await import('@/lib/contractAbis');
+        const { CONTRACTS } = await import('@/lib/particle');
+        const provider = new ethers.providers.JsonRpcProvider(
+          'https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T'
+        );
+        const boosterContract = new ethers.Contract(CONTRACTS.BOOSTER, BOOSTER_ABI, provider);
+        // getBoostAmount returns the USDC cost — use propertyId 1 as a representative default
+        const amount = await boosterContract.getBoostAmount(1);
+        const formatted = parseFloat(ethers.utils.formatUnits(amount, 18)).toFixed(3);
+        if (!cancelled) setBoostCost(formatted);
+      } catch {
+        // Non-critical: fall back to display "—" if unavailable
+        if (!cancelled) setBoostCost(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // F6: Monthly earnings chart from Supabase payout_claims
+  const [monthlyEarnings, setMonthlyEarnings] = useState<{ month: string; amount: number }[]>([]);
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+        sixMonthsAgo.setDate(1);
+        sixMonthsAgo.setHours(0, 0, 0, 0);
+
+        const { data } = await (supabase.from('payout_claims') as any)
+          .select('amount_entitled, created_at')
+          .eq('user_id', user.id)
+          .eq('status', 'paid')
+          .gte('created_at', sixMonthsAgo.toISOString())
+          .order('created_at', { ascending: true });
+
+        if (!data || cancelled) return;
+
+        // Build 6-month array
+        const months: { month: string; amount: number }[] = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date();
+          d.setMonth(d.getMonth() - i);
+          months.push({
+            month: d.toLocaleString('en-GB', { month: 'short' }),
+            amount: 0,
+          });
+        }
+
+        for (const row of data) {
+          const rowDate = new Date(row.created_at);
+          const rowMonth = rowDate.toLocaleString('en-GB', { month: 'short' });
+          const entry = months.find((m) => m.month === rowMonth);
+          if (entry) {
+            entry.amount += Number(row.amount_entitled || 0);
+          }
+        }
+
+        if (!cancelled) setMonthlyEarnings(months);
+      } catch {
+        // Non-critical
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // Fetch total claimed from blockchain (Total Earnings)
   const [totalClaimed, setTotalClaimed] = useState(0);
@@ -397,37 +471,42 @@ export default function InvestPortfolioPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1.5">
-                {MONTHLY_EARNINGS.length > 0 ? (
-                  <>
-                    {MONTHLY_EARNINGS.map((m) => (
-                      <div key={m.month} className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground w-7 text-right flex-shrink-0">{m.month}</span>
-                        <div className="flex-1 h-5 rounded bg-muted/30 overflow-hidden relative">
-                          {m.amount > 0 ? (
-                            <div
-                              className="h-full rounded bg-gradient-to-r from-primary to-primary/70 flex items-center justify-end pr-2 transition-all duration-500"
-                              style={{ width: `${Math.max((m.amount / maxEarning) * 100, 20)}%` }}
-                            >
-                              <span className="text-[10px] font-medium text-white">${m.amount.toFixed(0)}</span>
-                            </div>
-                          ) : (
-                            <div className="h-full w-full" />
-                          )}
+                {(() => {
+                  const hasData = monthlyEarnings.some((m) => m.amount > 0);
+                  const maxEarning = Math.max(...monthlyEarnings.map((m) => m.amount), 1);
+                  const netProfit = monthlyEarnings.reduce((sum, m) => sum + m.amount, 0);
+                  return hasData ? (
+                    <>
+                      {monthlyEarnings.map((m) => (
+                        <div key={m.month} className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground w-7 text-right flex-shrink-0">{m.month}</span>
+                          <div className="flex-1 h-5 rounded bg-muted/30 overflow-hidden relative">
+                            {m.amount > 0 ? (
+                              <div
+                                className="h-full rounded bg-gradient-to-r from-primary to-primary/70 flex items-center justify-end pr-2 transition-all duration-500"
+                                style={{ width: `${Math.max((m.amount / maxEarning) * 100, 20)}%` }}
+                              >
+                                <span className="text-[10px] font-medium text-white">${m.amount.toFixed(0)}</span>
+                              </div>
+                            ) : (
+                              <div className="h-full w-full" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      <div className="pt-3 border-t mt-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Net Profit</span>
+                          <span className="font-bold text-emerald-500">{formatCurrency(netProfit)}</span>
                         </div>
                       </div>
-                    ))}
-                    <div className="pt-3 border-t mt-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Net Profit</span>
-                        <span className="font-bold text-emerald-500">{formatCurrency(netProfit)}</span>
-                      </div>
+                    </>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <p className="text-sm text-muted-foreground">Earnings data will appear here after your first payout</p>
                     </div>
-                  </>
-                ) : (
-                  <div className="py-8 text-center">
-                    <p className="text-sm text-muted-foreground">Earnings data will appear here after your first payout</p>
-                  </div>
-                )}
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
@@ -672,7 +751,9 @@ export default function InvestPortfolioPage() {
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <p className="text-[10px] text-muted-foreground">Cost of Booster</p>
-                            <p className="text-sm font-bold">0.275 USDC</p>
+                            <p className="text-sm font-bold">
+                              {boostCost === null ? 'Loading...' : `${boostCost} USDC`}
+                            </p>
                           </div>
                           <div>
                             <p className="text-[10px] text-muted-foreground">Stay Earned</p>
