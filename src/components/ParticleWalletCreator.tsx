@@ -1,81 +1,75 @@
-// ParticleWalletCreator — Lazy-loaded component that creates a Particle wallet using JWT
-// This component renders nothing visible. It wraps AuthCoreContextProvider locally
-// (NOT at the app root) so if Particle crashes, only this component fails.
-//
-// Usage: dynamically import and render after OTP verification or as a retry.
+// ParticleWalletCreator — Creates a Particle wallet using auth-core directly (no React wrapper)
+// This avoids AuthCoreContextProvider which crashes in our Vite environment.
+// Exports a function, not a React component.
 
-import { useEffect, useRef } from 'react';
-import { AuthCoreContextProvider, useConnect, useEthereum } from '@particle-network/authkit';
+import { particleAuth, connect as particleConnect } from '@particle-network/auth-core';
 import { bsc } from '@particle-network/authkit/chains';
 import { PARTICLE_CONFIG } from '@/lib/particle';
 
-interface WalletCreatorInnerProps {
-  jwt: string;
-  onSuccess: (address: string) => void;
-  onError: (error: Error) => void;
-}
+let initialized = false;
 
-/** Inner component that uses Particle hooks (must be inside AuthCoreContextProvider) */
-function WalletCreatorInner({ jwt, onSuccess, onError }: WalletCreatorInnerProps) {
-  const { connect, connected } = useConnect();
-  const { address } = useEthereum();
-  const attemptedRef = useRef(false);
-
-  useEffect(() => {
-    if (attemptedRef.current) return;
-    attemptedRef.current = true;
-
-    connect({
-      provider: 'jwt' as any,
-      thirdpartyCode: jwt,
-    })
-      .then((userInfo) => {
-        // Address might come from useEthereum or from the response
-        const walletAddress =
-          userInfo?.wallets?.find((w: any) => w.chain_name === 'evm_chain')?.public_address ||
-          null;
-        if (walletAddress) {
-          onSuccess(walletAddress);
-        } else {
-          // Address not in response — wait for useEthereum to populate
-          // handled by the effect below
-        }
-      })
-      .catch((err) => {
-        onError(err instanceof Error ? err : new Error(String(err)));
-      });
-  }, [jwt, connect, onSuccess, onError]);
-
-  // If address populates after connect (from useEthereum), report success
-  useEffect(() => {
-    if (connected && address && attemptedRef.current) {
-      onSuccess(address);
+function ensureInit() {
+  if (initialized) return;
+  try {
+    particleAuth.init({
+      projectId: PARTICLE_CONFIG.projectId,
+      clientKey: PARTICLE_CONFIG.clientKey,
+      appId: PARTICLE_CONFIG.appId,
+      chains: [bsc],
+    });
+    initialized = true;
+    console.log('[Particle] auth-core initialized');
+  } catch (err) {
+    // If already initialized, that's fine
+    if ((err as Error)?.message?.includes('already')) {
+      initialized = true;
+    } else {
+      throw err;
     }
-  }, [connected, address, onSuccess]);
-
-  return null; // Renders nothing
+  }
 }
 
-interface ParticleWalletCreatorProps {
-  jwt: string;
-  onSuccess: (address: string) => void;
-  onError: (error: Error) => void;
-}
+/**
+ * Create a Particle wallet using JWT authentication.
+ * Uses auth-core directly — no React components, no AuthCoreContextProvider.
+ *
+ * @param jwt - Signed JWT from particle-generate-jwt Edge Function
+ * @returns Wallet address (0x...)
+ */
+export async function createWalletWithJWT(jwt: string): Promise<string> {
+  ensureInit();
 
-/** Wraps AuthCoreContextProvider locally — safe to lazy-load */
-export default function ParticleWalletCreator({ jwt, onSuccess, onError }: ParticleWalletCreatorProps) {
-  return (
-    <AuthCoreContextProvider
-      options={{
-        projectId: PARTICLE_CONFIG.projectId,
-        clientKey: PARTICLE_CONFIG.clientKey,
-        appId: PARTICLE_CONFIG.appId,
-        chains: [bsc],
-        authTypes: ['jwt' as any],
-        wallet: false, // Don't show wallet UI
-      }}
-    >
-      <WalletCreatorInner jwt={jwt} onSuccess={onSuccess} onError={onError} />
-    </AuthCoreContextProvider>
+  // Connect with JWT — this creates the wallet on Particle's servers
+  const userInfo = await particleConnect({
+    provider: 'jwt' as any,
+    thirdpartyCode: jwt,
+  });
+
+  // Extract EVM wallet address
+  const evmWallet = userInfo?.wallets?.find(
+    (w: any) => w.chain_name === 'evm_chain' || w.chain_name === 'bsc',
   );
+
+  const address = evmWallet?.public_address || null;
+
+  if (!address) {
+    // Try getting address from the ethereum provider
+    try {
+      const ethAddress = await particleAuth.ethereum.request({
+        method: 'eth_accounts',
+      });
+      if (Array.isArray(ethAddress) && ethAddress[0]) {
+        return ethAddress[0] as string;
+      }
+    } catch {
+      // Fall through
+    }
+
+    throw new Error('Wallet created but no EVM address found in response');
+  }
+
+  return address;
 }
+
+// Default export for backward compatibility with dynamic import
+export default { createWalletWithJWT };
