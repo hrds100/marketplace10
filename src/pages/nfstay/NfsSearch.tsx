@@ -111,7 +111,7 @@ export default function NfsSearch() {
           <div className="h-[600px] rounded-xl overflow-hidden border border-border/40">
             <NfsSearchMap
               properties={results}
-              onPropertyClick={(id) => navigate(`/nfstay/property/${id}`)}
+              onPropertyClick={(id) => navigate(`/property/${id}`)}
             />
           </div>
         ) : results.length === 0 ? (
@@ -125,7 +125,7 @@ export default function NfsSearch() {
               <NfsPropertyCard
                 key={p.id}
                 property={p}
-                onClick={() => navigate(`/nfstay/property/${p.id}`)}
+                onClick={() => navigate(`/property/${p.id}`)}
               />
             ))}
           </div>
