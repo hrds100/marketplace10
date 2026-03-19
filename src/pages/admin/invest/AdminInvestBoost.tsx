@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useInvestProperties } from '@/hooks/useInvestData';
-import { Rocket, Check, X } from 'lucide-react';
+import { useBlockchain } from '@/hooks/useBlockchain';
+import { supabase } from '@/integrations/supabase/client';
+import { Rocket, Check, X, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,36 +25,66 @@ interface BoostEntry {
   expires: string;
 }
 
-const initialBoosts: BoostEntry[] = [
-  { id: 'b1', user: 'Hugo Souza', email: 'hugo@nfstay.com', property: 'Seseh Beachfront Villa', propertyId: 1, boosted: true, baseApr: 12.4, boostedApr: 18.6, stayEarned: 245, costUsdc: 50, boostedDate: '2026-03-01', expires: '2026-06-01' },
-  { id: 'b2', user: 'John Smith', email: 'john@gmail.com', property: 'Marina Gate Apartment', propertyId: 2, boosted: true, baseApr: 9.8, boostedApr: 14.7, stayEarned: 180, costUsdc: 75, boostedDate: '2026-02-15', expires: '2026-05-15' },
-  { id: 'b3', user: 'Sarah Chen', email: 'sarah@outlook.com', property: 'Seseh Beachfront Villa', propertyId: 1, boosted: false, baseApr: 12.4, boostedApr: 12.4, stayEarned: 0, costUsdc: 0, boostedDate: '', expires: '' },
-  { id: 'b4', user: 'Ahmed Ali', email: 'ahmed@yahoo.com', property: 'KAEC Waterfront Residence', propertyId: 3, boosted: true, baseApr: 14.2, boostedApr: 21.3, stayEarned: 320, costUsdc: 60, boostedDate: '2026-03-10', expires: '2026-06-10' },
-  { id: 'b5', user: 'Maria Garcia', email: 'maria@gmail.com', property: 'Marina Gate Apartment', propertyId: 2, boosted: false, baseApr: 9.8, boostedApr: 9.8, stayEarned: 0, costUsdc: 0, boostedDate: '', expires: '' },
-  { id: 'b6', user: 'David Park', email: 'david@proton.me', property: 'KAEC Waterfront Residence', propertyId: 3, boosted: false, baseApr: 14.2, boostedApr: 14.2, stayEarned: 0, costUsdc: 0, boostedDate: '', expires: '' },
-];
 
 export default function AdminInvestBoost() {
   const { data: realProperties = [] } = useInvestProperties();
+  const { boostApr, claimBoostRewards, loading: blockchainLoading } = useBlockchain();
 
-  const [boosts, setBoosts] = useState<BoostEntry[]>(initialBoosts);
+  const [boosts, setBoosts] = useState<BoostEntry[]>([]);
   const [walletAddress, setWalletAddress] = useState('');
   const [propertyId, setPropertyId] = useState('');
   const [boosting, setBoosting] = useState(false);
-  const [claimed, setClaimed] = useState<Set<string>>(new Set());
+  const [claimingId, setClaimingId] = useState<string | null>(null);
 
-  const handleBoost = () => {
-    if (!walletAddress || !propertyId) return;
+  // Load all boost statuses from Supabase
+  useEffect(() => {
+    (supabase.from('inv_boost_status') as any)
+      .select('*, inv_properties(title, annual_yield)')
+      .then(({ data }: { data: any[] | null }) => {
+        if (!data) return;
+        setBoosts(data.map((r) => ({
+          id: r.id,
+          user: r.user_id?.slice(0, 8) || '—',
+          email: '—',
+          property: r.inv_properties?.title || `Property #${r.property_id}`,
+          propertyId: r.property_id,
+          boosted: !!r.is_boosted,
+          baseApr: Number(r.inv_properties?.annual_yield || 0),
+          boostedApr: r.is_boosted ? Number(r.inv_properties?.annual_yield || 0) * 1.5 : Number(r.inv_properties?.annual_yield || 0),
+          stayEarned: Number(r.stay_earned || 0),
+          costUsdc: Number(r.cost_usdc || 0),
+          boostedDate: r.boosted_at?.slice(0, 10) || '',
+          expires: r.expires_at?.slice(0, 10) || '',
+        })));
+      });
+  }, []);
+
+  const handleBoost = async () => {
+    if (!propertyId) return;
     setBoosting(true);
-    setTimeout(() => {
-      setBoosting(false);
+    try {
+      await boostApr(Number(propertyId));
+      toast.success(`APR boosted for property ${propertyId}${walletAddress ? ` (wallet: ${walletAddress.slice(0, 10)}…)` : ''}`);
       setWalletAddress('');
       setPropertyId('');
-    }, 1500);
+    } catch (err) {
+      toast.error('Boost failed — make sure your admin wallet is connected');
+    } finally {
+      setBoosting(false);
+    }
   };
 
-  const handleClaim = (id: string) => {
-    setClaimed((prev) => new Set([...prev, id]));
+  const handleClaim = async (b: BoostEntry) => {
+    setClaimingId(b.id);
+    try {
+      await claimBoostRewards(b.propertyId);
+      toast.success(`STAY rewards claimed for property ${b.propertyId}`);
+      setBoosts((prev) => prev.map((x) => x.id === b.id ? { ...x, stayEarned: 0 } : x));
+    } catch {
+      toast.error('Claim failed — wallet may not be connected');
+    } finally {
+      setClaimingId(null);
+    }
   };
 
   return (
@@ -72,7 +105,7 @@ export default function AdminInvestBoost() {
           </p>
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[200px]">
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Wallet Address</label>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Investor Wallet (reference only)</label>
               <input
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono"
                 placeholder="0x..."
@@ -144,20 +177,16 @@ export default function AdminInvestBoost() {
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <span className="text-sm">{b.stayEarned}</span>
-                      {b.stayEarned > 0 && !claimed.has(b.id) && (
+                      {b.stayEarned > 0 && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="text-xs h-7 px-2"
-                          onClick={() => handleClaim(b.id)}
+                          disabled={claimingId === b.id || blockchainLoading}
+                          onClick={() => handleClaim(b)}
                         >
-                          Claim
+                          {claimingId === b.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Claim'}
                         </Button>
-                      )}
-                      {claimed.has(b.id) && (
-                        <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                          Claimed
-                        </Badge>
                       )}
                     </div>
                   </TableCell>

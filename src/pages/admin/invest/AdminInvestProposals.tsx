@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useProposals } from '@/hooks/useInvestData';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Search, XCircle, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,43 +39,44 @@ const statusColors: Record<string, string> = {
   rejected: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
 };
 
-const initialProposals: Proposal[] = [
-  {
-    id: 'prop-1', property: 'Seseh Beachfront Villa', title: 'Pool renovation and infinity edge upgrade',
-    type: 'renovation', proposer: 'Hugo Souza', votesYes: 28, votesNo: 4, quorum: 51,
-    status: 'active', created: '2026-03-15', ends: '2026-03-29',
-  },
-  {
-    id: 'prop-2', property: 'KAEC Waterfront Residence', title: 'Increase monthly rent distribution to 85%',
-    type: 'distribution', proposer: 'Ahmed Ali', votesYes: 15, votesNo: 8, quorum: 51,
-    status: 'active', created: '2026-03-16', ends: '2026-03-30',
-  },
-  {
-    id: 'prop-3', property: 'Marina Gate Apartment', title: 'Switch property manager to Premium Stays LLC',
-    type: 'management', proposer: 'John Smith', votesYes: 42, votesNo: 3, quorum: 51,
-    status: 'approved', created: '2026-02-20', ends: '2026-03-06',
-  },
-  {
-    id: 'prop-4', property: 'Seseh Beachfront Villa', title: 'Add guest parking policy for Airbnb stays',
-    type: 'policy', proposer: 'Sarah Chen', votesYes: 12, votesNo: 31, quorum: 51,
-    status: 'rejected', created: '2026-02-10', ends: '2026-02-24',
-  },
-  {
-    id: 'prop-5', property: 'Marina Gate Apartment', title: 'Acquire adjacent unit for portfolio expansion',
-    type: 'expansion', proposer: 'David Park', votesYes: 38, votesNo: 7, quorum: 51,
-    status: 'approved', created: '2026-01-28', ends: '2026-02-11',
-  },
-];
-
-const propertyOptions = ['All', 'Seseh Beachfront Villa', 'Marina Gate Apartment', 'KAEC Waterfront Residence'];
 
 export default function AdminInvestProposals() {
+  const qc = useQueryClient();
   const { data: realProposals = [] } = useProposals();
 
-  const [proposals, setProposals] = useState<Proposal[]>(initialProposals);
   const [propertyFilter, setPropertyFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [search, setSearch] = useState('');
+
+  // Map real Supabase proposals to Proposal display shape
+  const proposals: Proposal[] = useMemo(() => {
+    return (realProposals as any[])
+      .filter((p) => p.result !== 'removed')
+      .map((p) => {
+        let status: Proposal['status'] = 'active';
+        if (p.result === 'approved') status = 'approved';
+        else if (p.result === 'rejected') status = 'rejected';
+        else if (p.result) status = 'rejected';
+        return {
+          id: p.id,
+          property: p.inv_properties?.title || `Property #${p.property_id}`,
+          title: p.title || '(no title)',
+          type: (p.type?.toLowerCase() || 'management') as Proposal['type'],
+          proposer: p.created_by?.slice(0, 8) || '—',
+          votesYes: Number(p.votes_yes || 0),
+          votesNo: Number(p.votes_no || 0),
+          quorum: Number(p.quorum || 51),
+          status,
+          created: p.created_at?.slice(0, 10) || '',
+          ends: p.ends_at?.slice(0, 10) || '',
+        };
+      });
+  }, [realProposals]);
+
+  const propertyOptions = useMemo(() => {
+    const titles = Array.from(new Set(proposals.map((p) => p.property)));
+    return ['All', ...titles];
+  }, [proposals]);
 
   const filtered = proposals.filter((p) => {
     if (propertyFilter !== 'All' && p.property !== propertyFilter) return false;
@@ -81,18 +85,33 @@ export default function AdminInvestProposals() {
     return true;
   });
 
-  const handleCloseEarly = (id: string) => {
-    setProposals((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const newStatus = p.votesYes > p.votesNo ? 'approved' : 'rejected';
-        return { ...p, status: newStatus as Proposal['status'], ends: '2026-03-18' };
-      })
-    );
+  const handleCloseEarly = async (id: string) => {
+    const p = proposals.find((x) => x.id === id);
+    if (!p) return;
+    const result = p.votesYes >= p.votesNo ? 'approved' : 'rejected';
+    try {
+      const { error } = await (supabase.from('inv_proposals') as any)
+        .update({ result, closed_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['inv_proposals'] });
+      toast.success(`Proposal closed — marked as ${result}`);
+    } catch {
+      toast.error('Failed to close proposal');
+    }
   };
 
-  const handleRemove = (id: string) => {
-    setProposals((prev) => prev.filter((p) => p.id !== id));
+  const handleRemove = async (id: string) => {
+    try {
+      const { error } = await (supabase.from('inv_proposals') as any)
+        .update({ result: 'removed' })
+        .eq('id', id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['inv_proposals'] });
+      toast.success('Proposal removed');
+    } catch {
+      toast.error('Failed to remove proposal');
+    }
   };
 
   return (
