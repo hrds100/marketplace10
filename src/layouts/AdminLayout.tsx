@@ -4,7 +4,7 @@ import {
   ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap,
   CreditCard, HelpCircle, UserCheck, Settings, Bell, TrendingUp,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
-  LayoutGrid, ArrowLeftRight, Plug,
+  LayoutGrid, ArrowLeftRight, Plug, Globe, CalendarCheck,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,10 +35,15 @@ const investLinks = [
   { to: '/admin/invest/endpoints', label: 'Endpoints', icon: Plug },
 ];
 
+const bookingLinks = [
+  { to: '/admin/nfstay', label: 'Reservations', icon: CalendarCheck, exact: true },
+  { to: '/admin/nfstay/properties', label: 'Properties', icon: Globe },
+];
+
 function getWorkspace(pathname: string): 'selector' | 'marketplace' | 'invest' | 'booking' {
   if (pathname.startsWith('/admin/invest')) return 'invest';
   if (pathname.startsWith('/admin/marketplace')) return 'marketplace';
-  if (pathname.startsWith('/admin/booking')) return 'booking';
+  if (pathname.startsWith('/admin/nfstay')) return 'booking';
   // Legacy routes without /marketplace/ prefix — treat as marketplace
   if (pathname === '/admin' || pathname === '/admin/') return 'selector';
   if (pathname.startsWith('/admin/')) return 'marketplace';
@@ -65,7 +70,7 @@ export default function AdminLayout() {
     return () => clearInterval(interval);
   }, [user]);
 
-  const links = workspace === 'invest' ? investLinks : marketplaceLinks;
+  const links = workspace === 'invest' ? investLinks : workspace === 'booking' ? bookingLinks : marketplaceLinks;
   const workspaceLabel = workspace === 'invest' ? 'JV Partners' : workspace === 'booking' ? 'Booking Site' : 'Marketplace';
 
   return (

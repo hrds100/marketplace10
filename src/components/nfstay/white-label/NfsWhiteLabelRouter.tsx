@@ -31,6 +31,9 @@ import NfsReservations from '@/pages/nfstay/NfsReservations';
 import NfsReservationDetail from '@/pages/nfstay/NfsReservationDetail';
 import NfsCreateReservation from '@/pages/nfstay/NfsCreateReservation';
 import NfsAnalytics from '@/pages/nfstay/NfsAnalytics';
+// Booking flow — checkout + guest lookup
+import NfsCheckoutPage from '@/pages/nfstay/NfsCheckoutPage';
+import NfsGuestBookingLookup from '@/pages/nfstay/NfsGuestBookingLookup';
 // Auth — needed so operators can sign in from nfstay.app
 import SignIn from '@/pages/SignIn';
 import SignUp from '@/pages/SignUp';
@@ -67,6 +70,10 @@ export default function NfsWhiteLabelRouter({ children }: Props) {
           <Route path="/payment/success" element={<NfsPaymentSuccess />} />
           <Route path="/payment/cancel" element={<NfsPaymentCancel />} />
         </Route>
+
+        {/* ── Booking flow — standalone pages ── */}
+        <Route path="/checkout" element={<NfsCheckoutPage />} />
+        <Route path="/booking" element={<NfsGuestBookingLookup />} />
 
         {/* ── Auth pages — standalone (no main layout) ── */}
         <Route path="/signin" element={<SignIn />} />
