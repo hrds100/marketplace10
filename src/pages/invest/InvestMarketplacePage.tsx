@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { mockProperties } from '@/data/investMockData';
 import { useInvestProperty } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,8 +51,7 @@ import {
 // Constants & Mock Data
 // ---------------------------------------------------------------------------
 
-const fallbackProperty = mockProperties[0];
-
+// Placeholder activity data — will be replaced with real transaction history
 const mockActivity = [
   { event: 'Purchase', price: '$500', from: 'Market', to: '0x8f3a...e2c1', date: 'Mar 15, 2026' },
   { event: 'Purchase', price: '$1,200', from: 'Market', to: '0x2b7c...f9a3', date: 'Mar 14, 2026' },
@@ -1386,34 +1384,36 @@ function Version2({
 // ---------------------------------------------------------------------------
 
 export default function InvestMarketplacePage() {
-  const { data: dbProperty } = useInvestProperty(1);
+  const { data: dbProperty, isLoading } = useInvestProperty(1);
 
+  // Map Supabase property to the shape used by sub-components
   const property = dbProperty ? {
-    ...fallbackProperty,
-    title: dbProperty.title || fallbackProperty.title,
-    location: dbProperty.location || fallbackProperty.location,
-    pricePerShare: dbProperty.price_per_share || fallbackProperty.pricePerShare,
-    totalShares: dbProperty.total_shares || fallbackProperty.totalShares,
-    sharesSold: dbProperty.shares_sold || fallbackProperty.sharesSold,
-    annualYield: dbProperty.annual_yield || fallbackProperty.annualYield,
-    monthlyRent: dbProperty.monthly_rent || fallbackProperty.monthlyRent,
-    propertyValue: dbProperty.property_value || fallbackProperty.propertyValue,
-    status: dbProperty.status || fallbackProperty.status,
-    type: dbProperty.type || fallbackProperty.type,
-    bedrooms: dbProperty.bedrooms || fallbackProperty.bedrooms,
-    bathrooms: dbProperty.bathrooms || fallbackProperty.bathrooms,
-    area: dbProperty.area || fallbackProperty.area,
-    description: dbProperty.description || fallbackProperty.description,
-    highlights: dbProperty.highlights || fallbackProperty.highlights,
-    documents: dbProperty.documents || fallbackProperty.documents,
-    occupancyRate: dbProperty.occupancy_rate || fallbackProperty.occupancyRate,
-    yearBuilt: dbProperty.year_built || fallbackProperty.yearBuilt,
-    images: dbProperty.images?.length ? dbProperty.images : fallbackProperty.images,
-    image: dbProperty.image || fallbackProperty.image,
-  } : fallbackProperty;
+    id: dbProperty.id,
+    title: dbProperty.title || '',
+    location: dbProperty.location || '',
+    country: dbProperty.country || '',
+    image: dbProperty.image || '',
+    images: dbProperty.images?.length ? dbProperty.images : [dbProperty.image || ''],
+    pricePerShare: dbProperty.price_per_share || 0,
+    totalShares: dbProperty.total_shares || 1,
+    sharesSold: dbProperty.shares_sold || 0,
+    annualYield: dbProperty.annual_yield || 0,
+    monthlyRent: dbProperty.monthly_rent || 0,
+    propertyValue: dbProperty.property_value || 0,
+    status: dbProperty.status || 'open',
+    type: dbProperty.type || '',
+    bedrooms: dbProperty.bedrooms || 0,
+    bathrooms: dbProperty.bathrooms || 0,
+    area: dbProperty.area || 0,
+    description: dbProperty.description || '',
+    highlights: dbProperty.highlights || [],
+    documents: dbProperty.documents || [],
+    occupancyRate: dbProperty.occupancy_rate || 0,
+    yearBuilt: dbProperty.year_built || 0,
+  } : null;
 
-  const fundedPercent = Math.round((property.sharesSold / property.totalShares) * 100);
-  const sharesRemaining = property.totalShares - property.sharesSold;
+  const fundedPercent = property ? Math.round((property.sharesSold / property.totalShares) * 100) : 0;
+  const sharesRemaining = property ? property.totalShares - property.sharesSold : 0;
 
   const version = 1 as const;
   const [jvExpanded, setJvExpanded] = useState(false);
@@ -1426,17 +1426,41 @@ export default function InvestMarketplacePage() {
 
   // Auto-rotate carousel
   useEffect(() => {
+    if (!property) return;
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % property.images.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [property]);
 
   const handleInvest = () => {
+    if (!property) return;
     const shares = Math.floor(investAmount / property.pricePerShare);
     if (shares < 1) return;
     setInvestOpen(true);
   };
+
+  // Empty state when no property exists
+  if (!isLoading && !property) {
+    return (
+      <div className="min-h-screen bg-background font-sans text-foreground flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <Home className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+          <p className="text-lg text-muted-foreground">No properties available yet</p>
+          <p className="text-sm text-muted-foreground">Check back soon for new investment opportunities.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-background font-sans text-foreground flex items-center justify-center">
+        <p className="text-muted-foreground">Loading property...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">

@@ -33,7 +33,6 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockPayouts } from '@/data/investMockData';
 
 type ClaimMethod = 'bank_transfer' | 'usdc' | 'stay_token' | 'lp_token';
 type ClaimStep = 'choose' | 'processing' | 'success';
@@ -344,8 +343,8 @@ export default function InvestPayoutsPage() {
   const { data: bankAccount } = useMyBankAccount();
   const { claimRent, loading: claimLoading } = useBlockchain();
 
-  // Use real payouts if available, otherwise mock
-  const payouts = (realPayouts.length > 0 ? realPayouts.map((p: any) => ({
+  // Map real payouts from Supabase
+  const payouts: PayoutItem[] = realPayouts.map((p: any) => ({
     id: p.id,
     propertyTitle: p.inv_properties?.title || 'Property',
     propertyId: p.property_id,
@@ -355,7 +354,7 @@ export default function InvestPayoutsPage() {
     currency: 'USDC',
     status: p.status as 'claimable' | 'claimed' | 'paid',
     method: p.claim_method,
-  })) : mockPayouts) as PayoutItem[];
+  }));
 
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState<PayoutItem | null>(null);
@@ -383,7 +382,17 @@ export default function InvestPayoutsPage() {
         </p>
       </div>
 
-      {/* Content */}
+      {payouts.length === 0 ? (
+        /* Empty state */
+        <Card>
+          <CardContent className="py-16 text-center">
+            <DollarSign className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-muted-foreground">No payouts yet. Rental income will appear here when available.</p>
+          </CardContent>
+        </Card>
+      ) : (
+
+      /* Content */
       <div className="flex gap-6">
         {/* Left sticky sidebar */}
         <div className="w-80 flex-shrink-0 space-y-4 sticky top-6 self-start">
@@ -527,6 +536,7 @@ export default function InvestPayoutsPage() {
           </Card>
         </div>
       </div>
+      )}
 
       {/* Claim Modal (shared) */}
       <ClaimModal
