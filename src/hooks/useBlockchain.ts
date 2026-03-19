@@ -32,12 +32,36 @@ async function getReadProvider() {
 }
 
 // Browser wallet provider for WRITE calls (requires signing)
+// Priority: Particle auth-core MPC wallet → window.particle → MetaMask
 async function getWalletProvider() {
   const ethers = await getEthers();
   if (!ethers) return null;
-  const w = (window as any).ethereum || (window as any).particle?.ethereum;
-  if (!w) return null;
-  return new ethers.providers.Web3Provider(w);
+
+  // Priority 1: Particle auth-core MPC wallet (our primary wallet, created via JWT)
+  try {
+    const { particleAuth } = await import('@particle-network/auth-core');
+    const pa = particleAuth as any;
+    if (pa?.ethereum) {
+      const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
+      if (Array.isArray(accounts) && accounts.length > 0) {
+        return new ethers.providers.Web3Provider(pa.ethereum);
+      }
+    }
+  } catch {
+    // auth-core not initialized or session expired — fall through
+  }
+
+  // Priority 2: window.particle?.ethereum (Particle browser extension)
+  if ((window as any).particle?.ethereum) {
+    return new ethers.providers.Web3Provider((window as any).particle.ethereum);
+  }
+
+  // Priority 3: window.ethereum (MetaMask — last resort only)
+  if ((window as any).ethereum) {
+    return new ethers.providers.Web3Provider((window as any).ethereum);
+  }
+
+  return null;
 }
 
 async function getSigner() {

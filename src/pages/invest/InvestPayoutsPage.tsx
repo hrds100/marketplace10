@@ -35,9 +35,10 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fixIpfsUrl } from '@/lib/ipfs';
+import BankDetailsForm from '@/components/BankDetailsForm';
 
 type ClaimMethod = 'bank_transfer' | 'usdc' | 'stay_token' | 'lp_token';
-type ClaimStep = 'choose' | 'processing' | 'success';
+type ClaimStep = 'choose' | 'bank_setup' | 'processing' | 'success';
 type PayoutStatus = 'claimable' | 'claimed' | 'paid' | 'processing';
 
 interface PayoutItem {
@@ -138,6 +139,8 @@ function ClaimModal({
   setSelectedMethod,
   claimTxHash,
   setClaimTxHash,
+  claimError,
+  setClaimError,
   user,
   onClaimRent,
   onBuyStayTokens,
@@ -152,6 +155,9 @@ function ClaimModal({
   setSelectedMethod: (method: ClaimMethod | null) => void;
   claimTxHash: string | null;
   setClaimTxHash: (hash: string | null) => void;
+  claimError: string | null;
+  setClaimError: (err: string | null) => void;
+  bankAccount: Record<string, unknown> | null;
   user: { id: string; email?: string } | null;
   onClaimRent?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
   onBuyStayTokens?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
@@ -161,6 +167,14 @@ function ClaimModal({
 
   const handleContinue = async () => {
     if (!selectedMethod) return;
+    setClaimError(null);
+
+    if (selectedMethod === 'bank_transfer' && !bankAccount) {
+      // No bank details on file — show setup form before proceeding
+      setClaimStep('bank_setup');
+      return;
+    }
+
     setClaimStep('processing');
 
     if (selectedMethod === 'bank_transfer') {
@@ -183,51 +197,39 @@ function ClaimModal({
           property: payout.propertyTitle || '',
         });
       } catch (err) {
-        console.error('Claim failed:', err);
-        // Fall back to simulated success for demo
-        setClaimStep('success');
+        setClaimError(err instanceof Error ? err.message : 'Bank transfer failed. Please try again.');
+        setClaimStep('choose');
       }
     } else if (selectedMethod === 'usdc' && payout && onClaimRent) {
       try {
         const result = await onClaimRent(payout.propertyId);
         setClaimTxHash(result.txHash || null);
         setClaimStep('success');
-      } catch {
-        // If blockchain unavailable, show error state — do not fake success
+      } catch (err) {
+        setClaimError(err instanceof Error ? err.message : 'Claim failed. Check your wallet and try again.');
         setClaimStep('choose');
       }
-    } else if (selectedMethod === 'stay_token' && payout) {
-      // F1: STAY path — claimRent first, then buyStayTokens
+    } else if (selectedMethod === 'stay_token' && payout && onBuyStayTokens) {
+      // buyStayTokens handles withdraw + approve + swap internally — do NOT call onClaimRent first
       try {
-        if (onClaimRent) {
-          await onClaimRent(payout.propertyId);
-        }
-        if (onBuyStayTokens) {
-          const result = await onBuyStayTokens(payout.propertyId);
-          setClaimTxHash(result.txHash || null);
-        }
+        const result = await onBuyStayTokens(payout.propertyId);
+        setClaimTxHash(result.txHash || null);
         setClaimStep('success');
-      } catch {
-        // If blockchain unavailable, revert to choose — do not fake success
+      } catch (err) {
+        setClaimError(err instanceof Error ? err.message : 'STAY token claim failed. Check your wallet and try again.');
         setClaimStep('choose');
       }
-    } else if (selectedMethod === 'lp_token' && payout) {
-      // F2: LP path — claimRent first, then buyLpTokens
+    } else if (selectedMethod === 'lp_token' && payout && onBuyLpTokens) {
+      // buyLpTokens handles withdraw + approve + swap internally — do NOT call onClaimRent first
       try {
-        if (onClaimRent) {
-          await onClaimRent(payout.propertyId);
-        }
-        if (onBuyLpTokens) {
-          const result = await onBuyLpTokens(payout.propertyId);
-          setClaimTxHash(result.txHash || null);
-        }
+        const result = await onBuyLpTokens(payout.propertyId);
+        setClaimTxHash(result.txHash || null);
         setClaimStep('success');
-      } catch {
-        // If blockchain unavailable, revert to choose — do not fake success
+      } catch (err) {
+        setClaimError(err instanceof Error ? err.message : 'LP token claim failed. Check your wallet and try again.');
         setClaimStep('choose');
       }
     } else {
-      // Fallback for unhandled methods
       setClaimStep('choose');
     }
   };
@@ -238,6 +240,7 @@ function ClaimModal({
       setClaimStep('choose');
       setSelectedMethod(null);
       setClaimTxHash(null);
+      setClaimError(null);
     }, 200);
   };
 
@@ -258,11 +261,13 @@ function ClaimModal({
         <DialogHeader>
           <DialogTitle>
             {claimStep === 'choose' && 'Claim Rental Income'}
+            {claimStep === 'bank_setup' && 'Add Bank Details'}
             {claimStep === 'processing' && 'Processing Claim'}
             {claimStep === 'success' && 'Claim Successful'}
           </DialogTitle>
           <DialogDescription>
             {claimStep === 'choose' && `${payout.propertyTitle} — ${formatCurrency(payout.amount)}`}
+            {claimStep === 'bank_setup' && 'We need your bank details before processing your payout.'}
             {claimStep === 'processing' && 'Please wait while we process your claim.'}
             {claimStep === 'success' && 'Your claim has been completed.'}
           </DialogDescription>
@@ -271,6 +276,11 @@ function ClaimModal({
         {/* Step 1: Choose Method */}
         {claimStep === 'choose' && (
           <div className="space-y-3 py-2">
+            {claimError && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2.5">
+                <p className="text-xs text-destructive leading-relaxed">{claimError}</p>
+              </div>
+            )}
             <p className="text-sm text-muted-foreground">
               Choose how you'd like to receive your payout:
             </p>
@@ -335,6 +345,39 @@ function ClaimModal({
           </div>
         )}
 
+        {/* Step 1b: Bank Setup (no bank account on file) */}
+        {claimStep === 'bank_setup' && (
+          <div className="py-2">
+            <BankDetailsForm
+              onSave={() => {
+                // After bank details saved, proceed straight to the claim
+                setClaimStep('processing');
+                setClaimError(null);
+                supabase.functions
+                  .invoke('submit-payout-claim', {
+                    body: { user_id: user?.id, user_type: 'investor', currency: 'GBP' },
+                  })
+                  .then(({ data, error }) => {
+                    if (error) throw new Error(error.message);
+                    if (data?.error) throw new Error(data.error);
+                    setClaimStep('success');
+                    sendInvestNotification({
+                      type: 'rent_claimed',
+                      user_id: user?.id,
+                      user_name: user?.email?.split('@')[0] || 'Investor',
+                      amount: payout.amount || 0,
+                      property: payout.propertyTitle || '',
+                    });
+                  })
+                  .catch((err: unknown) => {
+                    setClaimError(err instanceof Error ? err.message : 'Bank transfer failed. Please try again.');
+                    setClaimStep('choose');
+                  });
+              }}
+            />
+          </div>
+        )}
+
         {/* Step 2: Processing */}
         {claimStep === 'processing' && (
           <div className="flex flex-col items-center justify-center py-10 space-y-4">
@@ -343,6 +386,11 @@ function ClaimModal({
             <p className="text-xs text-muted-foreground/60">
               {formatCurrency(payout.amount)} via {selectedMethod ? methodLabels[selectedMethod] : ''}
             </p>
+            {selectedMethod !== 'bank_transfer' && (
+              <p className="text-xs text-muted-foreground/50 text-center max-w-xs">
+                Approve the transaction(s) in your Particle wallet to continue.
+              </p>
+            )}
           </div>
         )}
 
@@ -503,12 +551,14 @@ export default function InvestPayoutsPage() {
   const [selectedMethod, setSelectedMethod] = useState<ClaimMethod | null>(null);
   const [claimStep, setClaimStep] = useState<ClaimStep>('choose');
   const [claimTxHash, setClaimTxHash] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   const handleClaim = (payout: PayoutItem) => {
     setSelectedPayout(payout);
     setSelectedMethod(null);
     setClaimStep('choose');
     setClaimTxHash(null);
+    setClaimError(null);
     setClaimModalOpen(true);
   };
 
@@ -699,6 +749,9 @@ export default function InvestPayoutsPage() {
         setSelectedMethod={setSelectedMethod}
         claimTxHash={claimTxHash}
         setClaimTxHash={setClaimTxHash}
+        claimError={claimError}
+        setClaimError={setClaimError}
+        bankAccount={bankAccount ?? null}
         user={user}
         onClaimRent={claimRent}
         onBuyStayTokens={buyStayTokens}
