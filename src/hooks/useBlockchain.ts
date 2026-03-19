@@ -19,7 +19,17 @@ async function getEthers() {
   }
 }
 
-async function getProvider() {
+// Public RPC provider for READ-ONLY calls (no wallet popup)
+async function getReadProvider() {
+  const ethers = await getEthers();
+  if (!ethers) return null;
+  return new ethers.providers.JsonRpcProvider(
+    'https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T'
+  );
+}
+
+// Browser wallet provider for WRITE calls (requires signing)
+async function getWalletProvider() {
   const ethers = await getEthers();
   if (!ethers) return null;
   const w = (window as any).ethereum || (window as any).particle?.ethereum;
@@ -28,7 +38,7 @@ async function getProvider() {
 }
 
 async function getSigner() {
-  const provider = await getProvider();
+  const provider = await getWalletProvider();
   return provider?.getSigner() || null;
 }
 
@@ -36,11 +46,13 @@ async function getContract(address: string, abi: string[], withSigner = false) {
   const ethers = await getEthers();
   if (!ethers) return null;
   if (withSigner) {
+    // WRITE: use browser wallet (MetaMask/Particle) — requires signature
     const signer = await getSigner();
     if (!signer) return null;
     return new ethers.Contract(address, abi, signer);
   }
-  const provider = await getProvider();
+  // READ: use public RPC — no wallet popup
+  const provider = await getReadProvider();
   if (!provider) return null;
   return new ethers.Contract(address, abi, provider);
 }
