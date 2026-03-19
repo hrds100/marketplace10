@@ -6,6 +6,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { sendOtp } from '@/lib/n8n';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useConnect } from '@particle-network/connectkit';
 
 export default function VerifyOtp() {
   const navigate = useNavigate();
@@ -22,6 +23,15 @@ export default function VerifyOtp() {
   const [canResend, setCanResend] = useState(false);
   const verifyingRef = useRef(false);
   const toastFiredRef = useRef(false);
+
+  // Particle wallet connection — uses React hook (must be at component top level)
+  let particleConnect: ((params: { jwt: string }) => Promise<any>) | null = null;
+  try {
+    const { connect } = useConnect();
+    particleConnect = connect as any;
+  } catch {
+    // Particle not available — will skip wallet creation
+  }
 
   // Countdown timer
   useEffect(() => {
@@ -96,23 +106,19 @@ export default function VerifyOtp() {
         });
         const jwtData = await jwtRes.json();
 
-        if (jwtData.jwt) {
+        if (jwtData.jwt && particleConnect) {
           // 2. Connect to Particle with JWT — creates embedded wallet silently
           try {
-            const { connect } = await import('@particle-network/connectkit').catch(() => ({ connect: null }));
-            if (connect) {
-              const result = await (connect as any)({ jwt: jwtData.jwt });
-              // 3. Save wallet address to profile
-              if (result?.address || result?.accounts?.[0]) {
-                const walletAddr = result.address || result.accounts[0];
-                await (supabase.from('profiles') as any)
-                  .update({ wallet_address: walletAddr })
-                  .eq('id', userId);
-              }
+            const result = await particleConnect({ jwt: jwtData.jwt });
+            // 3. Save wallet address to profile
+            const walletAddr = result?.address || result?.accounts?.[0] || (typeof result === 'string' ? result : null);
+            if (walletAddr) {
+              await (supabase.from('profiles') as any)
+                .update({ wallet_address: walletAddr })
+                .eq('id', userId);
+              console.log('Particle wallet created:', walletAddr);
             }
           } catch (particleErr) {
-            // Particle connect might not be available in this context
-            // Try alternative: use Particle server-side API
             console.log('Particle wallet creation deferred:', particleErr);
           }
         }
