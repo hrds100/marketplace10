@@ -1,3 +1,5 @@
+// NFStay Property Map — Google Maps with graceful marker fallback
+// Uses AdvancedMarkerElement when available, falls back to classic Marker
 import { useEffect, useRef, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
 
@@ -27,9 +29,9 @@ export default function NfsPropertyMap({ lat, lng, title }: NfsPropertyMapProps)
 
     let cancelled = false;
 
-    loader
-      .importLibrary('maps')
-      .then((mapsLib) => {
+    const init = async () => {
+      try {
+        const mapsLib = await loader.importLibrary('maps');
         if (cancelled || !mapRef.current) return;
 
         const position = { lat, lng };
@@ -37,34 +39,44 @@ export default function NfsPropertyMap({ lat, lng, title }: NfsPropertyMapProps)
         const map = new mapsLib.Map(mapRef.current, {
           center: position,
           zoom: 15,
-          mapId: 'nfs-property-map',
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: 'cooperative',
         });
 
-        new google.maps.marker.AdvancedMarkerElement({
-          position,
-          map,
-          title: title ?? undefined,
-        });
-      })
-      .catch(() => {
+        // Try AdvancedMarkerElement (requires mapId + vector rendering)
+        // Fall back to classic Marker if it fails
+        try {
+          const markerLib = await loader.importLibrary('marker');
+          if (!cancelled) {
+            new (markerLib as any).AdvancedMarkerElement({
+              position,
+              map,
+              title: title ?? undefined,
+            });
+          }
+        } catch {
+          // Classic marker — always works
+          if (!cancelled) {
+            new google.maps.Marker({ position, map, title: title ?? undefined });
+          }
+        }
+      } catch {
         if (!cancelled) setError(true);
-      });
-
-    return () => {
-      cancelled = true;
+      }
     };
+
+    init();
+    return () => { cancelled = true; };
   }, [lat, lng, title]);
 
   if (!API_KEY || error) {
     return (
-      <div className="flex h-[250px] w-full items-center justify-center rounded-lg border bg-muted text-muted-foreground">
-        Map unavailable — configure VITE_GOOGLE_MAPS_API_KEY
+      <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+        Map unavailable
       </div>
     );
   }
 
-  return <div ref={mapRef} className="h-[250px] w-full rounded-lg" />;
+  return <div ref={mapRef} className="h-full w-full rounded-lg" />;
 }

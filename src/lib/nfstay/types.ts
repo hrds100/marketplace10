@@ -82,6 +82,7 @@ export interface NfsPropertyImage {
   url: string;
   caption?: string;
   order: number;
+  is_cover?: boolean;
 }
 
 export interface NfsProperty {
