@@ -18,19 +18,16 @@ export async function createParticleWallet(jwt: string): Promise<string> {
   return createWalletWithJWT(jwt);
 }
 
-/** Clean up any DOM elements injected by Particle SDK */
+/** Clean up visible overlay elements injected by Particle SDK.
+ *  Only removes modal/overlay divs — keeps functional iframes intact. */
 export function destroyIframe(): void {
   try {
-    // Particle SDK injects modals, iframes, and overlays into the DOM.
-    // Remove them all after wallet creation to prevent click-blocking.
+    // Only remove modal overlays that block user interaction.
+    // Do NOT remove iframes — Particle needs them for MPC communication.
     const selectors = [
-      '[id*="particle"]',
-      '[class*="particle-"]',
+      '.particle-auth-core-modal',
       '[class*="pn-modal"]',
       '[class*="pn-auth"]',
-      '.particle-auth-core-modal',
-      'div[data-particle]',
-      'iframe[src*="particle"]',
     ];
     selectors.forEach((sel) => {
       document.querySelectorAll(sel).forEach((el) => el.remove());

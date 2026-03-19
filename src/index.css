@@ -4,22 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Particle Network SDK injects invisible overlays/modals that block clicks.
-   Force them to be non-interactive and invisible. Wallet creation works
-   entirely via API calls — we never need Particle's UI. */
-[id*="particle"],
-[class*="particle-"],
+/* Particle Network SDK injects modal overlays that block clicks.
+   Make them non-interactive but keep internal iframes functional
+   (Particle needs them for MPC/WASM communication). */
 [class*="pn-modal"],
 [class*="pn-auth"],
-.particle-auth-core-modal,
-div[data-particle],
-iframe[src*="particle"] {
+.particle-auth-core-modal {
   pointer-events: none !important;
   opacity: 0 !important;
-  position: fixed !important;
-  width: 0 !important;
-  height: 0 !important;
-  overflow: hidden !important;
   z-index: -1 !important;
 }
 
