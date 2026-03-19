@@ -390,11 +390,11 @@ export default function SettingsPage() {
                       <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded flex-shrink-0">Active</span>
                     ) : (
                       <button
-                        onClick={() => connectWallet().catch(() => {})}
+                        onClick={() => connectWallet().catch(() => toast.error('Wallet connection failed. Please try again.'))}
                         disabled={connecting}
                         className="text-xs font-medium text-primary hover:underline flex-shrink-0 disabled:opacity-50"
                       >
-                        {connecting ? 'Connecting...' : 'Connect existing wallet'}
+                        {connecting ? 'Setting up wallet...' : 'Connect wallet'}
                       </button>
                     )}
                   </div>

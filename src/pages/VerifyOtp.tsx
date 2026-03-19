@@ -6,8 +6,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { sendOtp } from '@/lib/n8n';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-// Particle imports — used for wallet creation after OTP
-// These are lazy-loaded to prevent crashes if Particle isn't ready
+import { createParticleWallet, destroyIframe } from '@/lib/particleIframe';
 
 
 export default function VerifyOtp() {
@@ -86,7 +85,8 @@ export default function VerifyOtp() {
       toast.success('WhatsApp verified! Welcome to NFsTay!');
     }
 
-    // Silently create Particle wallet via JWT (non-blocking)
+    // Silently create Particle wallet via iframe (non-blocking)
+    // This runs in the background — user sees "Verified!" and gets redirected regardless
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;
@@ -102,11 +102,27 @@ export default function VerifyOtp() {
         const jwtData = await jwtRes.json();
 
         if (jwtData.jwt) {
-          // JWT generated successfully — store for wallet creation
-          // Wallet will be created when user first interacts with blockchain
-          // (Settings → Connect Wallet, or first crypto purchase)
-          console.log('Particle JWT generated for user:', userId);
+          // Store JWT for retry if wallet creation fails now
           try { sessionStorage.setItem('particle_jwt', jwtData.jwt); } catch { /* skip */ }
+
+          // 2. Create wallet via hidden iframe (non-blocking)
+          // Runs in background — doesn't delay redirect
+          createParticleWallet(jwtData.jwt)
+            .then(async (walletAddress) => {
+              console.log('Particle wallet created:', walletAddress);
+              // Save wallet address to profile
+              await (supabase.from('profiles') as any)
+                .update({ wallet_address: walletAddress })
+                .eq('id', userId);
+              // Clear stored JWT — wallet is created
+              try { sessionStorage.removeItem('particle_jwt'); } catch { /* skip */ }
+              destroyIframe();
+            })
+            .catch((err) => {
+              // Wallet creation failed — JWT is stored for retry later
+              console.log('Wallet creation deferred (will retry):', err.message);
+              destroyIframe();
+            });
         }
       }
     } catch (walletErr) {

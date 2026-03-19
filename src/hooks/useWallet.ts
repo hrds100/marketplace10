@@ -1,6 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { createParticleWallet, destroyIframe } from '@/lib/particleIframe';
 
 interface WalletState {
   address: string | null;
@@ -17,8 +18,10 @@ export function useWallet() {
     connecting: false,
     chainId: null,
   });
+  const retryAttemptedRef = useRef(false);
 
   // Load saved wallet address from profile on mount
+  // If no wallet exists but we have a stored JWT, retry wallet creation
   useEffect(() => {
     if (!user?.id) return;
     (supabase.from('profiles') as any)
@@ -33,9 +36,54 @@ export function useWallet() {
             connecting: false,
             chainId: 56,
           });
+        } else if (!retryAttemptedRef.current) {
+          // No wallet — try creating one from stored JWT (silent retry)
+          retryAttemptedRef.current = true;
+          retryWalletCreation(user.id);
         }
       });
   }, [user?.id]);
+
+  // Silent retry: attempt wallet creation from stored JWT
+  const retryWalletCreation = useCallback(async (userId: string) => {
+    try {
+      let jwt: string | null = null;
+      try { jwt = sessionStorage.getItem('particle_jwt'); } catch { /* skip */ }
+
+      if (!jwt) {
+        // No stored JWT — generate a fresh one
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+        const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
+          body: JSON.stringify({ user_id: userId }),
+        });
+        const data = await res.json();
+        jwt = data?.jwt || null;
+      }
+
+      if (!jwt) return;
+
+      const address = await createParticleWallet(jwt);
+      if (address) {
+        await (supabase.from('profiles') as any)
+          .update({ wallet_address: address })
+          .eq('id', userId);
+        setWallet({
+          address,
+          connected: true,
+          connecting: false,
+          chainId: 56,
+        });
+        try { sessionStorage.removeItem('particle_jwt'); } catch { /* skip */ }
+      }
+      destroyIframe();
+    } catch (err) {
+      console.log('Silent wallet retry failed (non-blocking):', err);
+      destroyIframe();
+    }
+  }, []);
 
   const connect = useCallback(async () => {
     setWallet(w => ({ ...w, connecting: true }));
@@ -84,14 +132,33 @@ export function useWallet() {
         return address;
       }
 
-      // No wallet available — show error
-      throw new Error('No wallet found. Please install MetaMask or use Particle Network.');
+      // Last resort: try creating via Particle iframe
+      if (user?.id) {
+        setWallet(w => ({ ...w, connecting: true }));
+        await retryWalletCreation(user.id);
+        // Check if retry succeeded
+        const { data } = await (supabase.from('profiles') as any)
+          .select('wallet_address')
+          .eq('id', user.id)
+          .single();
+        if (data?.wallet_address) {
+          setWallet({
+            address: data.wallet_address,
+            connected: true,
+            connecting: false,
+            chainId: 56,
+          });
+          return data.wallet_address;
+        }
+      }
+
+      throw new Error('No wallet found. Please try again or install MetaMask.');
     } catch (err) {
       console.error('Wallet connection failed:', err);
       setWallet(w => ({ ...w, connecting: false }));
       throw err;
     }
-  }, [user?.id]);
+  }, [user?.id, retryWalletCreation]);
 
   const disconnect = useCallback(() => {
     setWallet({ address: null, connected: false, connecting: false, chainId: null });
