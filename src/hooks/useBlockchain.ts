@@ -222,31 +222,13 @@ export function useBlockchain() {
           console.log('[ensureConnected] Auth method:', authMethod, '→ init type:', initType);
         }
 
-        // Fast path: session confirmed this tab session
+        // Fast path: signing session confirmed this tab session via particleConnect()
         if (_particleConnected) {
-          console.log('[ensureConnected] ✅ Session already confirmed');
+          console.log('[ensureConnected] ✅ Signing session already confirmed');
           return;
         }
 
-        // Check for existing session
-        let hasSession = false;
-        if (pa.ethereum) {
-          try {
-            const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
-            console.log('[ensureConnected] eth_accounts:', accounts);
-            hasSession = Array.isArray(accounts) && accounts.length > 0;
-          } catch (e) {
-            console.log('[ensureConnected] eth_accounts threw:', e);
-          }
-        }
-
-        if (hasSession) {
-          _particleConnected = true;
-          console.log('[ensureConnected] ✅ Existing session confirmed');
-          return;
-        }
-
-        // No session — re-read auth method if we haven't already
+        // Re-read auth method if we haven't already (might have been read during init)
         if (_particleInitType && authMethod === 'jwt') {
           const { data: profile } = await (supabase.from('profiles') as any)
             .select('wallet_auth_method')
@@ -256,12 +238,15 @@ export function useBlockchain() {
         }
 
         if (authMethod !== 'jwt') {
-          // Social login — reconnect via legacy project (same wallet as app.nfstay.com)
-          console.log('[ensureConnected] No session — reconnecting via social:', authMethod);
+          // Social login — ALWAYS call particleConnect() to refresh the MPC signing token.
+          // eth_accounts may return accounts (read-only check) but the signing token can be
+          // stale after a page refresh. Only particleConnect() establishes a valid signing session.
+          // With an active social session, particleConnect() refreshes silently (no popup).
+          console.log('[ensureConnected] Social user — calling particleConnect to refresh signing session:', authMethod);
           try {
             await particleConnect({ socialType: authMethod as any });
             _particleConnected = true;
-            console.log('[ensureConnected] ✅ Social particleConnect succeeded');
+            console.log('[ensureConnected] ✅ Social particleConnect succeeded — signing session active');
           } catch (e) {
             console.log('[ensureConnected] ❌ Social particleConnect threw:', e);
           }
@@ -616,66 +601,107 @@ export function useBlockchain() {
     [ensureConnected],
   );
 
-  // STAY Token claim: withdraw rent as USDC, then user swaps on PancakeSwap manually.
-  // The BuyLP contract's buyStay() only accepts BNB (zero address), not USDC directly.
-  // Legacy confirms: buyStay was only used with card payments (Wert.io BNB flow).
-  // UI already shows PancakeSwap link on success screen.
+  // STAY Token claim: withdraw rent → approve USDC → swap to STAY via BuyLP contract.
+  // Contract verified on-chain: buyStay DOES accept USDC (in whitelist).
+  // Legacy confirms: claim.jsx does withdrawRent → approve → buyStay(addr, USDC, amount).
   const buyStayTokens = useCallback(
     async (propertyId: number, onStep?: (step: number, total: number) => void) => {
       setLoading(true);
       setError(null);
       try {
         await ensureConnected();
+        const ethers = await getEthers();
+        if (!ethers) throw new Error('Blockchain not available');
 
-        onStep?.(1, 1);
+        // 1. Withdraw rent as USDC
+        onStep?.(1, 3);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
         await rentContract.callStatic.withdrawRent(propertyId);
-        const tx = await rentContract.withdrawRent(propertyId);
+        const withdrawTx = await rentContract.withdrawRent(propertyId);
+        const withdrawReceipt = await withdrawTx.wait();
+        console.log('[buyStayTokens] Step 1 done — rent withdrawn, tx:', withdrawReceipt.transactionHash);
+
+        // 2. Approve USDC for BuyLP contract
+        onStep?.(2, 3);
+        const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
+        if (!usdc) throw new Error('Could not connect to USDC contract');
+        const balance = await usdc.balanceOf(address);
+        console.log('[buyStayTokens] Step 2 — USDC balance:', ethers.utils.formatUnits(balance, 18));
+        if (balance.isZero()) throw new Error('No USDC balance after rent withdrawal');
+        const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
+        await approveTx.wait();
+        console.log('[buyStayTokens] Step 2 done — USDC approved for BuyLP');
+
+        // 3. Swap USDC → STAY via BuyLP contract (matches legacy claim.jsx)
+        onStep?.(3, 3);
+        const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
+        if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
+        const tx = await buyLpContract.buyStay(address, CONTRACTS.USDC, balance, { value: 0 });
         const receipt = await tx.wait();
-        console.log('[buyStayTokens] Rent withdrawn — swap to STAY via PancakeSwap. tx:', receipt.transactionHash);
+        console.log('[buyStayTokens] Step 3 done — STAY purchased, tx:', receipt.transactionHash);
 
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = extractBlockchainError(err, 'Claim failed');
+        const msg = extractBlockchainError(err, 'Buy STAY failed');
         console.error('[buyStayTokens] Failed for propertyId', propertyId, ':', err);
         setError(msg);
         setLoading(false);
         throw new Error(msg);
       }
     },
-    [ensureConnected],
+    [address, ensureConnected],
   );
 
-  // LP Token claim: withdraw rent as USDC, then user adds liquidity on PancakeSwap manually.
-  // Same pattern as STAY — UI already shows PancakeSwap LP link on success screen.
+  // LP Token claim: withdraw rent → approve USDC → create LP via BuyLP contract.
+  // Contract verified on-chain: buyLPToken DOES accept USDC.
+  // Legacy confirms: NfstayContext.jsx handleBuyLp calls buyLPToken(addr, USDC, amount).
   const buyLpTokens = useCallback(
     async (propertyId: number, onStep?: (step: number, total: number) => void) => {
       setLoading(true);
       setError(null);
       try {
         await ensureConnected();
+        const ethers = await getEthers();
+        if (!ethers) throw new Error('Blockchain not available');
 
-        onStep?.(1, 1);
+        // 1. Withdraw rent as USDC
+        onStep?.(1, 3);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
         await rentContract.callStatic.withdrawRent(propertyId);
-        const tx = await rentContract.withdrawRent(propertyId);
+        const withdrawTx = await rentContract.withdrawRent(propertyId);
+        await withdrawTx.wait();
+
+        // 2. Approve USDC for BuyLP contract
+        onStep?.(2, 3);
+        const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
+        if (!usdc) throw new Error('Could not connect to USDC contract');
+        const balance = await usdc.balanceOf(address);
+        if (balance.isZero()) throw new Error('No USDC balance after rent withdrawal');
+        const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
+        await approveTx.wait();
+
+        // 3. Create LP position via BuyLP contract (matches legacy handleBuyLp)
+        onStep?.(3, 3);
+        const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
+        if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
+        const tx = await buyLpContract.buyLPToken(address, CONTRACTS.USDC, balance, { value: 0 });
         const receipt = await tx.wait();
-        console.log('[buyLpTokens] Rent withdrawn — add LP via PancakeSwap. tx:', receipt.transactionHash);
+        console.log('[buyLpTokens] LP created, tx:', receipt.transactionHash);
 
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = extractBlockchainError(err, 'Claim failed');
+        const msg = extractBlockchainError(err, 'Buy LP failed');
         console.error('[buyLpTokens] Failed for propertyId', propertyId, ':', err);
         setError(msg);
         setLoading(false);
         throw new Error(msg);
       }
     },
-    [ensureConnected],
+    [address, ensureConnected],
   );
 
   return {
