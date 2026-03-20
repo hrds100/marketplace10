@@ -220,7 +220,7 @@ export default function InvestPortfolioPage() {
   const [totalClaimed, setTotalClaimed] = useState(0);
   const [pendingPayoutsTotal, setPendingPayoutsTotal] = useState(0);
   const [hasVoted, setHasVoted] = useState(false);
-  const [boostDetailsMap, setBoostDetailsMap] = useState<Record<number, { isBoosted: boolean; estimatedRewards: string; boostCost: string; boostAprValue: string }>>({});
+  const [boostDetailsMap, setBoostDetailsMap] = useState<Record<number, { isBoosted: boolean; estimatedRewards: string; boostCost: string; boostAprValue: string; sharesBoosted: string }>>({});
 
   useEffect(() => {
     if (!address || portfolio.holdings.length === 0) return;
@@ -313,7 +313,7 @@ export default function InvestPortfolioPage() {
         );
         const boosterContract = new ethers.Contract(CONTRACTS.BOOSTER, BOOSTER_ABI, provider);
 
-        const details: Record<number, { isBoosted: boolean; estimatedRewards: string; boostCost: string; boostAprValue: string }> = {};
+        const details: Record<number, { isBoosted: boolean; estimatedRewards: string; boostCost: string; boostAprValue: string; sharesBoosted: string }> = {};
         for (const h of portfolio.holdings) {
           try {
             const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
@@ -330,6 +330,7 @@ export default function InvestPortfolioPage() {
               details[h.propertyId] = {
                 isBoosted: bd.isBoosted,
                 estimatedRewards: bd.estimatedRewards,
+                sharesBoosted: bd.sharesBoosted || '0',
                 boostCost: costFormatted,
                 boostAprValue: bd.boostApr,
               };
