@@ -83,7 +83,7 @@ export default function AuthSlidePanel() {
             className="absolute inset-0 flex flex-col justify-end transition-opacity duration-500"
             style={{ opacity: i === active ? 1 : 0 }}
           >
-            <div className="flex flex-col gap-3 px-10 pb-4 pt-16">
+            <div className="flex flex-col gap-3 px-10 pb-20 pt-16">
               <h2 className="text-[36px] font-semibold leading-tight tracking-tight text-white">
                 {slide.headline}
               </h2>
