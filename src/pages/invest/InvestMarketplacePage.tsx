@@ -218,17 +218,53 @@ function InvestModal({
         </DialogHeader>
 
         {confirmed ? (
-          <div className="flex flex-col items-center gap-4 py-6">
-            <CheckCircle2 className="h-16 w-16 text-primary" />
-            <p className="text-center text-lg font-semibold">
-              You secured {shares} share{shares > 1 ? 's' : ''}!
-            </p>
-            <p className="text-center text-sm text-muted-foreground">
-              Total: ${total.toLocaleString()} &middot; Est. monthly income: ${monthlyIncome}
-            </p>
-            <Button className="mt-2 w-full" onClick={() => handleClose(false)}>
-              Done
-            </Button>
+          <div className="flex flex-col overflow-hidden w-full -m-6">
+            {/* Purple header — cloned from legacy congratulations.js */}
+            <div className="relative mb-16">
+              <div className="relative bg-gradient-to-br from-primary to-emerald-500 min-h-[120px] overflow-hidden">
+                {/* Decorative circles */}
+                <div className="absolute w-[300px] h-[300px] opacity-20 -top-[100px] -left-[140px] rounded-full bg-white/30" />
+                <div className="absolute w-[200px] h-[200px] opacity-10 -bottom-[80px] -right-[60px] rounded-full bg-white/30" />
+                {/* Confetti emojis */}
+                <div className="absolute top-4 left-6 text-2xl animate-bounce">🎉</div>
+                <div className="absolute top-3 right-8 text-2xl animate-bounce" style={{ animationDelay: '0.3s' }}>🎊</div>
+                <div className="absolute bottom-4 left-1/3 text-xl animate-bounce" style={{ animationDelay: '0.6s' }}>✨</div>
+              </div>
+              {/* Celebrate icon circle */}
+              <div className="w-24 h-24 rounded-full absolute -bottom-12 left-1/2 -translate-x-1/2 backdrop-blur-lg bg-white/20 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg">
+                  <span className="text-4xl">🏠</span>
+                </div>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="w-full flex px-8 pb-8 pt-4 bg-white flex-col items-center justify-center text-center gap-4">
+              <h1 className="text-2xl font-bold text-foreground">
+                Congratulations! 🎉
+              </h1>
+              <p className="text-foreground/80 max-w-[20rem]">
+                You secured <strong>{shares} share{shares > 1 ? 's' : ''}</strong> in {property.title}!
+              </p>
+              <div className="rounded-xl bg-muted/50 p-4 w-full max-w-[18rem] space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total invested</span>
+                  <span className="font-bold">${total.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Est. monthly income</span>
+                  <span className="font-bold text-emerald-600">${monthlyIncome}</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                We're thrilled to welcome you as our Partner!
+              </p>
+              <Button
+                className="w-full max-w-[15rem] bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white rounded-full h-11 font-semibold"
+                onClick={() => handleClose(false)}
+              >
+                View Portfolio
+              </Button>
+            </div>
           </div>
         ) : (
           <>
