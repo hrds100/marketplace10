@@ -59,15 +59,26 @@ async function getWalletProvider() {
       });
     } catch { /* already initialized */ }
 
-    // BSC network descriptor — pass explicitly so ethers never probes eth_chainId
-    // (Particle's EIP-1193 provider returns chainId inconsistently on first call,
-    //  causing "provider is disconnected from the specified chain" with auto-detect)
-    const BSC_NETWORK = { chainId: 56, name: 'bnb' };
+    // Helper: switch Particle's active chain to BSC before creating a provider.
+    // pa.ethereum defaults to Ethereum mainnet after particleConnect — must switch
+    // explicitly or ethers detects chainId 1 vs our BSC contracts → NETWORK_ERROR.
+    const switchToBsc = async () => {
+      try {
+        await pa.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x38' }], // 0x38 = 56 = BSC mainnet
+        });
+        console.log('[Provider] Switched Particle to BSC (chainId 56)');
+      } catch (e) {
+        console.log('[Provider] wallet_switchEthereumChain failed (may already be on BSC):', e);
+      }
+    };
 
     // Fast path: session confirmed by ensureConnected() in this tab lifetime
     if (_particleConnected && pa.ethereum) {
+      await switchToBsc();
       console.log('[Provider] Using Particle auth-core (session flag active)');
-      return new ethers.providers.Web3Provider(pa.ethereum, BSC_NETWORK);
+      return new ethers.providers.Web3Provider(pa.ethereum);
     }
 
     // Slow path: flag not set (e.g. hard refresh) — verify via eth_accounts
@@ -76,8 +87,9 @@ async function getWalletProvider() {
         const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
         console.log('[Provider] eth_accounts result:', accounts);
         if (Array.isArray(accounts) && accounts.length > 0) {
+          await switchToBsc();
           console.log('[Provider] Using Particle auth-core (eth_accounts verified)');
-          return new ethers.providers.Web3Provider(pa.ethereum, BSC_NETWORK);
+          return new ethers.providers.Web3Provider(pa.ethereum);
         }
         console.log('[Provider] Particle session not active — eth_accounts returned empty');
       } catch (e) {
