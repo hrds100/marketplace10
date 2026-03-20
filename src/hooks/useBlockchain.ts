@@ -14,13 +14,9 @@ import {
 } from '@/lib/contractAbis';
 import { supabase } from '@/integrations/supabase/client';
 
-// Module-level session state — persists for the tab lifetime.
-// _particleConnected: true only when Particle address === profile wallet address.
-//   Migration users (legacy wallet ≠ Particle JWT wallet) stay false → external wallet used.
-// _profileWalletAddress: set by ensureConnected() so getWalletProvider() can compare addresses
-//   without needing hook context.
+// Module-level Particle session flag — persists for the tab lifetime.
+// Set true once particleConnect(jwt) succeeds and address matches profile wallet.
 let _particleConnected = false;
-let _profileWalletAddress: string | null = null;
 
 // Helper to get ethers — lazy loaded
 async function getEthers() {
@@ -40,37 +36,14 @@ async function getReadProvider() {
   );
 }
 
-// Switch any EIP-1193 provider to BSC mainnet.
-async function switchProviderToBsc(provider: any) {
-  try {
-    await provider.request({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: '0x38' }], // 0x38 = 56 = BSC mainnet
-    });
-  } catch {
-    // Already on BSC, or provider doesn't support chain switching — safe to ignore
-  }
-}
-
-// Browser wallet provider for WRITE calls (requires signing).
-//
-// Selection logic (address-aware):
-//   1. Particle auth-core — ONLY if its address matches _profileWalletAddress.
-//      This covers new users (wallet provisioned via JWT on hub.nfstay.com).
-//   2. window.particle extension — same address check.
-//   3. External wallet (MetaMask/Phantom via window.ethereum) — covers migration
-//      users whose legacy wallet is registered in their profile. We request accounts
-//      once so the user can approve MetaMask, then switch to BSC.
-//
-// _profileWalletAddress is set by ensureConnected() before every tx, so the
-// comparison is always against the current profile wallet.
+// Browser wallet provider for WRITE calls — Particle only.
+// All users (new and migrated) sign via their Particle JWT wallet.
+// Migration = transfer on-chain assets to the user's Particle wallet + update profile.
+// No MetaMask, no external wallets.
 async function getWalletProvider() {
   const ethers = await getEthers();
   if (!ethers) return null;
 
-  const profileAddr = _profileWalletAddress?.toLowerCase() ?? null;
-
-  // ── Priority 1: Particle auth-core MPC wallet ──
   try {
     const { particleAuth } = await import('@particle-network/auth-core');
     const { bsc } = await import('@particle-network/authkit/chains');
@@ -86,70 +59,31 @@ async function getWalletProvider() {
       });
     } catch { /* already initialized */ }
 
-    // Fast path: ensureConnected() already confirmed address match this tab session
+    // Fast path: session confirmed by ensureConnected() this tab session
     if (_particleConnected && pa.ethereum) {
-      await switchProviderToBsc(pa.ethereum);
-      console.log('[Provider] ✅ Particle auth-core (session flag + address verified)');
+      console.log('[Provider] ✅ Particle (session flag active)');
       return new ethers.providers.Web3Provider(pa.ethereum);
     }
 
-    // Slow path: hard refresh cleared the flag — verify eth_accounts and address
+    // Slow path: hard refresh — verify via eth_accounts
     if (pa.ethereum) {
       try {
         const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
-        const particleAddr = (accounts?.[0] ?? '').toLowerCase();
-        console.log('[Provider] Particle eth_accounts:', accounts, '| profile:', profileAddr);
-
-        if (particleAddr && (!profileAddr || particleAddr === profileAddr)) {
-          await switchProviderToBsc(pa.ethereum);
-          console.log('[Provider] ✅ Particle auth-core (eth_accounts + address match)');
+        console.log('[Provider] eth_accounts:', accounts);
+        if (Array.isArray(accounts) && accounts.length > 0) {
+          console.log('[Provider] ✅ Particle (eth_accounts verified)');
           return new ethers.providers.Web3Provider(pa.ethereum);
         }
-
-        if (particleAddr && profileAddr && particleAddr !== profileAddr) {
-          console.log('[Provider] Particle address', particleAddr, '≠ profile', profileAddr, '— skipping Particle (migration user)');
-        }
       } catch (e) {
-        console.log('[Provider] Particle eth_accounts threw:', e);
+        console.log('[Provider] eth_accounts threw:', e);
       }
-    } else {
-      console.log('[Provider] pa.ethereum undefined — Particle session not established');
     }
+
+    console.log('[Provider] Particle session not active');
   } catch (e) {
-    console.log('[Provider] Particle auth-core unavailable:', e);
+    console.log('[Provider] Particle unavailable:', e);
   }
 
-  // ── Priority 2: window.particle extension ──
-  if ((window as any).particle?.ethereum) {
-    const ext = (window as any).particle.ethereum;
-    try {
-      const accounts = await ext.request({ method: 'eth_accounts' });
-      const extAddr = (accounts?.[0] ?? '').toLowerCase();
-      if (extAddr && (!profileAddr || extAddr === profileAddr)) {
-        await switchProviderToBsc(ext);
-        console.log('[Provider] ✅ window.particle extension');
-        return new ethers.providers.Web3Provider(ext);
-      }
-    } catch { /* extension not ready */ }
-  }
-
-  // ── Priority 3: External wallet (MetaMask/Phantom) ──
-  // This is the correct path for migration users whose profile wallet is a legacy
-  // address (e.g. from app.nfstay.com) — not a JWT-derived Particle wallet.
-  if ((window as any).ethereum) {
-    const ext = (window as any).ethereum;
-    try {
-      // Request accounts — prompts the user once to connect their external wallet
-      await ext.request({ method: 'eth_requestAccounts' });
-      await switchProviderToBsc(ext);
-      console.log('[Provider] ✅ External wallet (MetaMask/Phantom) — migration user or Particle unavailable');
-      return new ethers.providers.Web3Provider(ext);
-    } catch (e) {
-      console.log('[Provider] External wallet request failed:', e);
-    }
-  }
-
-  console.log('[Provider] No wallet provider found');
   return null;
 }
 
@@ -179,24 +113,11 @@ export function useBlockchain() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Ensure the correct wallet is ready to sign before any write tx.
-  // Runs synchronously at tx time — no race condition with WalletProvisioner.
-  //
-  // Strategy:
-  //   1. Save profile wallet address to module-level _profileWalletAddress so
-  //      getWalletProvider() can compare without hook context.
-  //   2. Try to establish a Particle session via JWT.
-  //   3. Compare Particle's address with profile wallet:
-  //        match   → _particleConnected = true  → getWalletProvider() uses Particle
-  //        mismatch → _particleConnected = false → getWalletProvider() falls through
-  //                   to external wallet (MetaMask) — correct path for migration users
-  //                   whose profile wallet is a legacy address from app.nfstay.com.
+  // Ensure Particle signing session is active before any write tx.
+  // Runs at tx time — no race condition with WalletProvisioner.
   const ensureConnected = useCallback(async () => {
-    // Always update the module-level profile address before any tx
-    _profileWalletAddress = address?.toLowerCase() ?? null;
-    console.log('[ensureConnected] profile wallet:', _profileWalletAddress, '| _particleConnected:', _particleConnected);
-
     if (user?.id) {
+      console.log('[ensureConnected] user.id =', user.id, '| _particleConnected =', _particleConnected);
       try {
         const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
         const { bsc } = await import('@particle-network/authkit/chains');
@@ -212,38 +133,28 @@ export function useBlockchain() {
           });
         } catch { /* already initialized */ }
 
-        // Helper: get current Particle address (null if no session)
-        const getParticleAddress = async (): Promise<string | null> => {
-          if (!pa.ethereum) return null;
-          try {
-            const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
-            return accounts?.[0]?.toLowerCase() ?? null;
-          } catch {
-            return null;
-          }
-        };
-
-        // Check if flag-confirmed session still matches (fast path on repeat txs)
+        // Fast path: session confirmed this tab session
         if (_particleConnected) {
-          const addr = await getParticleAddress();
-          if (addr && addr === _profileWalletAddress) {
-            console.log('[ensureConnected] ✅ Session confirmed (flag + address match) — no JWT needed');
-            return;
-          }
-          // Flag stale (e.g. wallet replaced mid-session) — re-evaluate
-          _particleConnected = false;
+          console.log('[ensureConnected] ✅ Session already confirmed');
+          return;
         }
 
-        // Try existing session before fetching a new JWT
-        let particleAddr = await getParticleAddress();
-        console.log('[ensureConnected] Particle current address:', particleAddr);
+        // Check for existing session
+        let hasSession = false;
+        if (pa.ethereum) {
+          try {
+            const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
+            console.log('[ensureConnected] eth_accounts:', accounts);
+            hasSession = Array.isArray(accounts) && accounts.length > 0;
+          } catch (e) {
+            console.log('[ensureConnected] eth_accounts threw:', e);
+          }
+        }
 
-        if (!particleAddr) {
-          // No active session — fetch JWT and reconnect
-          console.log('[ensureConnected] No Particle session — fetching JWT...');
+        if (!hasSession) {
+          console.log('[ensureConnected] No session — fetching JWT...');
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
           const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
-
           let jwt: string | null = null;
           try {
             const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
@@ -253,7 +164,7 @@ export function useBlockchain() {
             });
             const jwtData = await res.json();
             jwt = jwtData?.jwt ?? null;
-            console.log('[ensureConnected] JWT fetch →', jwt ? `${jwt.length} chars` : 'EMPTY', '| HTTP', res.status);
+            console.log('[ensureConnected] JWT →', jwt ? `${jwt.length} chars` : 'EMPTY', '| HTTP', res.status);
           } catch (e) {
             console.log('[ensureConnected] JWT fetch threw:', e);
           }
@@ -261,38 +172,18 @@ export function useBlockchain() {
           if (jwt) {
             try {
               await particleConnect({ provider: 'jwt' as any, thirdpartyCode: jwt });
-              particleAddr = await getParticleAddress();
-              console.log('[ensureConnected] particleConnect(jwt) done — address:', particleAddr);
+              _particleConnected = true;
+              console.log('[ensureConnected] ✅ particleConnect(jwt) succeeded');
             } catch (e) {
-              console.log('[ensureConnected] particleConnect(jwt) threw:', e);
+              console.log('[ensureConnected] ❌ particleConnect(jwt) threw:', e);
             }
           }
-        }
-
-        // Address comparison — determines which provider getWalletProvider() will use
-        if (particleAddr && _profileWalletAddress) {
-          if (particleAddr === _profileWalletAddress) {
-            _particleConnected = true;
-            console.log('[ensureConnected] ✅ Particle address matches profile wallet — will use Particle for signing');
-          } else {
-            _particleConnected = false;
-            console.log(
-              '[ensureConnected] ⚠️ Particle address', particleAddr,
-              '≠ profile wallet', _profileWalletAddress,
-              '— migration user detected. Will use external wallet (MetaMask) for signing.',
-            );
-          }
-        } else if (particleAddr) {
-          // No profile address yet (first-time setup) — trust Particle
-          _particleConnected = true;
-          console.log('[ensureConnected] No profile wallet yet — trusting Particle address:', particleAddr);
         } else {
-          _particleConnected = false;
-          console.log('[ensureConnected] No Particle address obtained — external wallet will be used');
+          _particleConnected = true;
+          console.log('[ensureConnected] ✅ Existing session confirmed');
         }
       } catch (e) {
         console.log('[ensureConnected] Particle module failed:', e);
-        _particleConnected = false;
       }
     }
 
