@@ -789,7 +789,7 @@ export default function InvestPortfolioPage() {
                           </div>
                           <div>
                             <p className="text-[10px] text-muted-foreground">Cost of Booster</p>
-                            <p className="text-sm font-bold">{boostCost} USDC</p>
+                            <p className="text-sm font-bold">{Number(boostCost) === 0 || boostCost === '0.000' ? 'Flexible' : `${boostCost} USDC`}</p>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
