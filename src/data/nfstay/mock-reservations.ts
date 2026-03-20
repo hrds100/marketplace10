@@ -1,3 +1,5 @@
+import { mockProperties } from "./mock-properties";
+
 export interface MockReservation {
   id: string;
   property_id: string;
@@ -17,13 +19,14 @@ export interface MockReservation {
   created_at: string;
 }
 
-/** Helper: resolve property display info (placeholder until Supabase is wired) */
-export function getReservationProperty(_r: MockReservation) {
+/** Helper: resolve property display info by joining with mock properties */
+export function getReservationProperty(r: MockReservation) {
+  const prop = mockProperties.find(p => p.id === r.property_id);
   return {
-    title: "Property",
-    image: "",
-    city: "",
-    country: "",
+    title: prop?.public_title ?? "Unknown Property",
+    image: prop?.images?.[0]?.url ?? "",
+    city: prop?.city ?? "",
+    country: prop?.country ?? "",
   };
 }
 
@@ -175,10 +178,10 @@ export const mockReservations: MockReservation[] = [
 ];
 
 export const mockTestimonials = [
-  { name: 'Sarah J.', location: 'London, UK', rating: 5, text: 'Absolutely stunning apartment with incredible marina views. The host was responsive and the check-in was seamless.', property: 'Dubai Marina Apartment' },
-  { name: 'James W.', location: 'Manchester, UK', rating: 5, text: 'The Balinese villa exceeded all expectations. Private pool, beautiful gardens, and the most peaceful stay we\'ve ever had.', property: 'Ubud Villa' },
-  { name: 'Maria G.', location: 'Madrid, Spain', rating: 4, text: 'Perfect location in Camden with great transport links. The loft was exactly as pictured — stylish and comfortable.', property: 'Camden Loft' },
-  { name: 'Tom B.', location: 'Bristol, UK', rating: 5, text: 'The Algarve villa was a dream. Infinity pool overlooking the ocean, spacious bedrooms, and a fully equipped kitchen.', property: 'Algarve Villa' },
-  { name: 'Emma D.', location: 'New York, USA', rating: 5, text: 'Such a charming studio in Montmartre! Waking up to views of Sacré-Cœur was magical.', property: 'Paris Studio' },
-  { name: 'Alex W.', location: 'Edinburgh, UK', rating: 5, text: 'The fjord cabin was the highlight of our Norway trip. Sauna with a view, cozy interiors, and absolute silence.', property: 'Fjord Cabin' },
+  { name: 'Sarah J.', location: 'London, UK', rating: 5, text: 'Absolutely stunning apartment with incredible marina views. The host was responsive and the check-in was seamless. Would definitely book again!', property: 'Dubai Marina Apartment' },
+  { name: 'James W.', location: 'Manchester, UK', rating: 5, text: 'The Balinese villa exceeded all expectations. Private pool, beautiful gardens, and the most peaceful stay we\'ve ever had. The kids loved it.', property: 'Ubud Villa' },
+  { name: 'Maria G.', location: 'Madrid, Spain', rating: 4, text: 'Perfect location in Camden with great transport links. The loft was exactly as pictured \u2014 stylish and comfortable. Great value for London.', property: 'Camden Loft' },
+  { name: 'Tom B.', location: 'Bristol, UK', rating: 5, text: 'The Algarve villa was a dream. Infinity pool overlooking the ocean, spacious bedrooms, and a fully equipped kitchen. Already planning our return.', property: 'Algarve Villa' },
+  { name: 'Emma D.', location: 'New York, USA', rating: 5, text: 'Such a charming studio in Montmartre! Waking up to views of Sacr\u00e9-C\u0153ur was magical. The neighbourhood is full of character.', property: 'Paris Studio' },
+  { name: 'Alex W.', location: 'Edinburgh, UK', rating: 5, text: 'The fjord cabin was the highlight of our Norway trip. Sauna with a view, cozy interiors, and absolute silence. Pure heaven.', property: 'Fjord Cabin' },
 ];

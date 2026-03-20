@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Search, Star, Shield, CreditCard, Globe, Clock, MessageCircle, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NfsHeroSearch } from "@/components/nfstay/main-site/NfsHeroSearch";
-import { NfsMockPropertyCard } from "@/components/nfstay/main-site/NfsMockPropertyCard";
+import { NfsPropertyCard } from "@/components/nfstay/main-site/NfsPropertyCard";
 import { mockProperties } from "@/data/nfstay/mock-properties";
 import { mockDestinations } from "@/data/nfstay/mock-destinations";
 import { mockTestimonials } from "@/data/nfstay/mock-reservations";
@@ -12,7 +12,7 @@ import { useRecentlyViewed } from "@/hooks/nfstay/useRecentlyViewed";
 
 const faqs = [
   { q: 'How does booking work?', a: 'Search for your ideal property, select your dates and guests, then complete booking with secure payment via Stripe. You\'ll receive instant confirmation.' },
-  { q: 'What is your cancellation policy?', a: 'Each property sets its own cancellation policy — Flexible, Moderate, Strict, or Non-refundable. Check the property listing for details before booking.' },
+  { q: 'What is your cancellation policy?', a: 'Each property sets its own cancellation policy \u2014 Flexible, Moderate, Strict, or Non-refundable. Check the property listing for details before booking.' },
   { q: 'How do I list my property?', a: 'Sign up as an operator, complete the onboarding wizard, and add your property details including photos, pricing, and availability. It takes about 10 minutes.' },
   { q: 'Are payments secure?', a: 'All payments are processed through Stripe, a PCI-compliant payment processor. Your card details are never stored on our servers.' },
   { q: 'Can I contact the host before booking?', a: 'Yes! Each listing includes a message option to contact the host with any questions before you book.' },
@@ -53,13 +53,13 @@ export default function NfsMainLanding() {
 
         <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-20 text-center">
           <span className="inline-block bg-primary/20 text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full mb-4 backdrop-blur-sm border border-primary/30">
-            ✨ Book direct. Save more.
+            \u2728 Book direct. Save more.
           </span>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
             Your next stay,<br />booked direct
           </h1>
           <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto">
-            Discover handpicked vacation rentals from verified hosts. No middlemen, no hidden fees — just incredible stays.
+            Discover handpicked vacation rentals from verified hosts. No middlemen, no hidden fees \u2014 just incredible stays.
           </p>
 
           <div className="max-w-3xl mx-auto">
@@ -74,7 +74,7 @@ export default function NfsMainLanding() {
           <h2 className="text-2xl font-bold tracking-tight mb-6">Recently Viewed</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {recentProperties.slice(0, 4).map((p) => (
-              <NfsMockPropertyCard key={p!.id} property={p!} />
+              <NfsPropertyCard key={p!.id} property={p!} />
             ))}
           </div>
         </section>
@@ -94,7 +94,7 @@ export default function NfsMainLanding() {
           </div>
         </div>
 
-        <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+        <div ref={scrollRef} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2" style={{ scrollbarWidth: 'none' }}>
           {mockDestinations.map((dest) => (
             <button
               key={dest.city}
@@ -119,12 +119,12 @@ export default function NfsMainLanding() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold tracking-tight">Featured Properties</h2>
           <Button variant="link" onClick={() => navigate('/search')} className="text-primary">
-            View all →
+            View all &rarr;
           </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {featuredProperties.map((p) => (
-            <NfsMockPropertyCard key={p.id} property={p} />
+            <NfsPropertyCard key={p.id} property={p} />
           ))}
         </div>
       </section>
@@ -198,7 +198,7 @@ export default function NfsMainLanding() {
                   <Star key={j} className="w-4 h-4 fill-primary text-primary" />
                 ))}
               </div>
-              <p className="text-sm text-foreground mb-4 line-clamp-4">"{t.text}"</p>
+              <p className="text-sm text-foreground mb-4 line-clamp-4">&ldquo;{t.text}&rdquo;</p>
               <div>
                 <p className="text-sm font-semibold">{t.name}</p>
                 <p className="text-xs text-muted-foreground">{t.location}</p>
@@ -231,9 +231,6 @@ export default function NfsMainLanding() {
           </Button>
         </div>
       </section>
-
-      {/* Bottom padding for mobile nav */}
-      <div className="h-20 lg:hidden" />
     </div>
   );
 }

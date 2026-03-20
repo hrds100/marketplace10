@@ -56,7 +56,7 @@ export function NfsHeroSearch() {
 
   const dateLabel = dateRange?.from
     ? dateRange.to
-      ? `${format(dateRange.from, 'MMM d')} – ${format(dateRange.to, 'MMM d')}`
+      ? `${format(dateRange.from, 'MMM d')} \u2013 ${format(dateRange.to, 'MMM d')}`
       : format(dateRange.from, 'MMM d')
     : null;
 
@@ -113,7 +113,7 @@ export function NfsHeroSearch() {
         </PopoverTrigger>
         <PopoverContent className="w-72 p-4" align="end">
           <Stepper label="Adults" sub="Ages 13 or above" value={adults} onChange={setAdults} min={1} />
-          <Stepper label="Children" sub="Ages 2–12" value={children} onChange={setChildren} />
+          <Stepper label="Children" sub="Ages 2\u201312" value={children} onChange={setChildren} />
           <Stepper label="Infants" sub="Under 2" value={infants} onChange={setInfants} />
         </PopoverContent>
       </Popover>

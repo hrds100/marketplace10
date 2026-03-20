@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search } from "lucide-react";
-import { NfsMockPropertyCard } from "@/components/nfstay/main-site/NfsMockPropertyCard";
+import { NfsPropertyCard } from "@/components/nfstay/main-site/NfsPropertyCard";
 import { NfsSearchFilters } from "@/components/nfstay/main-site/NfsSearchFilters";
-import NfsSearchMap from "@/components/nfstay/maps/NfsSearchMap";
-import { NfsEmptyState } from "@/components/nfstay/NfsEmptyState";
+import { NfsSearchMap } from "@/components/nfstay/main-site/NfsSearchMap";
+import { NfsEmptyState } from "@/components/nfstay/main-site/NfsEmptyState";
 import { mockProperties } from "@/data/nfstay/mock-properties";
 
 export default function NfsSearchPage() {
@@ -46,7 +46,7 @@ export default function NfsSearchPage() {
     return props;
   }, [query, activeType, priceMin, priceMax, bedrooms, sortBy]);
 
-  const hasFilters = activeType !== 'All' || !!priceMin || !!priceMax || bedrooms > 0;
+  const hasFilters = activeType !== 'All' || priceMin || priceMax || bedrooms > 0;
 
   const clearFilters = () => {
     setActiveType('All');
@@ -74,7 +74,7 @@ export default function NfsSearchPage() {
             onPriceMaxChange={setPriceMax}
             bedrooms={bedrooms}
             onBedroomsChange={setBedrooms}
-            hasFilters={hasFilters}
+            hasFilters={!!hasFilters}
             onClearFilters={clearFilters}
           />
         </div>
@@ -91,7 +91,7 @@ export default function NfsSearchPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
               {filteredProperties.map((p) => (
-                <NfsMockPropertyCard key={p.id} property={p} />
+                <NfsPropertyCard key={p.id} property={p} />
               ))}
             </div>
           )}
@@ -100,7 +100,7 @@ export default function NfsSearchPage() {
 
       {/* Right panel – map (hidden on mobile) */}
       <div className="hidden lg:block flex-1">
-        <NfsSearchMap properties={filteredProperties as any} />
+        <NfsSearchMap properties={filteredProperties} />
       </div>
     </div>
   );
