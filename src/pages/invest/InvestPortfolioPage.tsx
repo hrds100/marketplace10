@@ -225,21 +225,21 @@ export default function InvestPortfolioPage() {
   useEffect(() => {
     if (!address || portfolio.holdings.length === 0) return;
     let cancelled = false;
+    // Fetch total earnings from The Graph (more reliable than contract call)
     (async () => {
       try {
-        let claimed = 0;
-        for (const h of portfolio.holdings) {
-          try {
-            const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
-            const blockchainPropertyId = prop?.blockchain_property_id;
-            if (blockchainPropertyId == null) continue;
-            const historyStr = await getRentHistory(blockchainPropertyId);
-            claimed += parseFloat(historyStr) || 0;
-          } catch {
-            // skip
-          }
-        }
-        if (!cancelled) setTotalClaimed(claimed);
+        const res = await fetch('https://api.studio.thegraph.com/query/62641/nfstay-rwa-mainnet-rent/v3', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `{ rentWithdrawns(where: { _by: "${address.toLowerCase()}" }) { _rent } }`,
+          }),
+        });
+        const data = await res.json();
+        const total = (data.data?.rentWithdrawns || []).reduce(
+          (sum: number, w: any) => sum + parseInt(w._rent) / 1e18, 0
+        );
+        if (!cancelled) setTotalClaimed(total);
       } catch {
         // non-critical
       }
@@ -477,7 +477,7 @@ export default function InvestPortfolioPage() {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    {formatCurrency(portfolio.totalEarnings)} earned of {formatCurrency(roiTarget)} target returns
+                    {formatCurrency(totalClaimed > 0 ? totalClaimed : portfolio.totalEarnings)} earned of {formatCurrency(roiTarget)} target returns
                   </p>
                 </div>
               </CardContent>
