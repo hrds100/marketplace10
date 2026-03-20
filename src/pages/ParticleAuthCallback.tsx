@@ -140,15 +140,17 @@ export default function ParticleAuthCallback() {
         }
       }
 
-      // Always upsert wallet_address + wallet_auth_method — covers both new and returning users
+      // Always update wallet_auth_method — profile exists (created by trigger on signUp).
+      // Use .update() not .upsert() — profiles has no INSERT RLS for regular users.
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (userId) {
-        await (supabase.from('profiles') as any).upsert({
-          id: userId,
-          name: name || email.split('@')[0],
-          wallet_address: walletAddress || undefined,
+        const updatePayload: Record<string, string> = {
           wallet_auth_method: intent.provider,
-        } as any);
+        };
+        if (walletAddress) updatePayload.wallet_address = walletAddress;
+        await (supabase.from('profiles') as any)
+          .update(updatePayload)
+          .eq('id', userId);
       }
 
       const dest = intent.redirectTo ? decodeURIComponent(intent.redirectTo) : '/dashboard/deals';
