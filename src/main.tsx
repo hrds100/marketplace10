@@ -1,17 +1,3 @@
-// Ensure TextEncoder/TextDecoder are on globalThis/global BEFORE any imports.
-// vite-plugin-node-polyfills replaces 'global' with a polyfill object that lacks
-// browser APIs. Particle SDK's WASM layer needs global.TextEncoder.
-if (typeof globalThis !== 'undefined') {
-  const g = globalThis as any;
-  if (!g.TextEncoder) g.TextEncoder = TextEncoder;
-  if (!g.TextDecoder) g.TextDecoder = TextDecoder;
-  // Also patch 'global' if the polyfill created it
-  if (typeof global !== 'undefined' && !(global as any).TextEncoder) {
-    (global as any).TextEncoder = TextEncoder;
-    (global as any).TextDecoder = TextDecoder;
-  }
-}
-
 import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
 import App from "./App.tsx";
