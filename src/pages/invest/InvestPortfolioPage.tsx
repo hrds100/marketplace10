@@ -153,8 +153,9 @@ export default function InvestPortfolioPage() {
           'https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T'
         );
         const boosterContract = new ethers.Contract(CONTRACTS.BOOSTER, BOOSTER_ABI, provider);
-        // getBoostAmount returns the USDC cost — use propertyId 1 as a representative default
-        const amount = await boosterContract.getBoostAmount(1);
+        // getBoostAmount(address, propertyId) — legacy signature
+        if (!address) return;
+        const amount = await boosterContract.getBoostAmount(address, 1);
         const formatted = parseFloat(ethers.utils.formatUnits(amount, 18)).toFixed(3);
         if (!cancelled) setBoostCost(formatted);
       } catch {
@@ -321,7 +322,7 @@ export default function InvestPortfolioPage() {
             // Get per-property boost cost (legacy: getBoostAmount(address, propertyId))
             let costFormatted = '—';
             try {
-              const cost = await boosterContract.getBoostAmount(blockchainPropertyId);
+              const cost = await boosterContract.getBoostAmount(address, blockchainPropertyId);
               costFormatted = parseFloat(ethers.utils.formatUnits(cost, 18)).toFixed(3);
             } catch { /* some properties may not have boost */ }
             if (bd) {

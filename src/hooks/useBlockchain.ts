@@ -441,7 +441,7 @@ export function useBlockchain() {
         // 1. Get fresh boost cost (legacy line 53)
         const boosterRead = await getContract(CONTRACTS.BOOSTER, BOOSTER_ABI);
         if (!boosterRead) throw new Error('Could not read booster contract');
-        const boostAmountRaw = await boosterRead.getBoostAmount(propertyId);
+        const boostAmountRaw = await boosterRead.getBoostAmount(address, propertyId);
         const boostAmount = parseFloat(ethers.utils.formatUnits(boostAmountRaw, 18));
         console.log('[boostApr] Boost cost:', boostAmount, 'USDC');
 
