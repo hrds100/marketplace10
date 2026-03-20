@@ -2,6 +2,56 @@
 
 ## [Unreleased]
 
+## [2026-03-19] — Claiming Flow Fixes + Marketplace Enhancements + Bank Transfer Verification
+
+### Fixed — Claiming Flow
+
+- **USDC was opening MetaMask instead of Particle wallet**: `getWalletProvider()` in `useBlockchain.ts` had `window.ethereum || window.particle?.ethereum` — MetaMask always won because `window.ethereum` is registered first. Fixed: Particle auth-core (`@particle-network/auth-core particleAuth.ethereum`) is now tried first, then `window.particle?.ethereum`, then `window.ethereum` as last resort only.
+- **STAY / LP Token stuck forever on "Claiming..."**: Modal called `onClaimRent()` (which calls `withdrawRent` on-chain) AND then `onBuyStayTokens()`/`onBuyLpTokens()` which internally also call `withdrawRent`. The second `withdrawRent` call hangs forever because rent is already claimed. Fixed: removed the `onClaimRent()` pre-call from STAY and LP paths — each function handles its own internal withdraw.
+- **ReferenceError: bankAccount is not defined**: `bankAccount` was in the TypeScript prop type for `ClaimModal` but missing from the destructuring pattern. `handleContinue` crashed silently every time Continue was clicked. Fixed by adding `bankAccount` to destructuring. (Confirmed via Sentry: `ReferenceError: bankAccount is not defined at x (/assets/index-R9q6iJCl.js:1030:3704)`)
+- **Continue button did nothing**: Caused by the `ReferenceError` above. Fixed as above.
+- **Bank transfer fake-success**: Old catch block did `setClaimStep('success')` as a demo fallback. Removed — errors now surface to the user as a visible red banner.
+- **Errors swallowed silently**: Catch blocks just reset state with no message. Added `claimError` state — shown as a red banner at the top of the choose step.
+- **Continue button disabled on modal open**: `selectedMethod` was null until the user explicitly clicked a method. Fixed by pre-selecting `'bank_transfer'` in `handleClaim()`.
+
+### Added — Claiming Flow
+
+- **Bank setup gate**: If user has no bank details saved and selects Bank Transfer → modal shows inline `BankDetailsForm` (Step `bank_setup`) instead of proceeding. After save, fires `submit-payout-claim` immediately without user needing to click again.
+- **Wallet prompt in processing step**: For USDC / STAY / LP claims, shows "Approve the transaction(s) in your Particle wallet to continue."
+
+### Added — InvestMarketplacePage
+
+- **`appreciation_rate` from DB**: Property calculator reads `appreciation_rate` from `inv_properties` column (migration applied) instead of hardcoded 5.2%. Falls back to 5.2 if null.
+- **`property_docs` download links**: Documents section shows clickable `<a href>` links for `property_docs` JSONB column. Legacy name-only `documents[]` still shown as plain text for backwards compatibility.
+- **`BlockchainDot` on Recent Activity header**: Animated green ping added to "Recent Activity" card title to signal live on-chain data.
+- **`AgentReferralLink` from `referral_code`**: Replaced wallet address logic with `useMyAffiliateProfile()` hook — referral URL is `hub.nfstay.com/invest?ref={referral_code}&property={id}`. Shows "Set up affiliate profile" link if no profile exists.
+
+### Added — DB Migration
+
+- `20260319_inv_appreciation_docs.sql`: Adds `appreciation_rate NUMERIC DEFAULT 5.2` and `property_docs JSONB DEFAULT '[]'` to `inv_properties`. Creates `inv-property-docs` storage bucket (public) with 3 RLS policies (authenticated read, admin insert, admin delete).
+
+### Bank Transfer Flow — End-to-End Verification (2026-03-19)
+
+All components confirmed deployed and wired:
+
+| Step | What happens | Status |
+|------|-------------|--------|
+| User submits bank form | `save-bank-details` edge function saves to `user_bank_accounts` | ✅ deployed |
+| `onSave()` fires | `submit-payout-claim` edge function: validates bank, calculates server-side from `inv_payouts`, UNIQUE(user_id, week_ref) guard, creates `payout_claims` row (status: pending), logs to `payout_audit_log` | ✅ deployed |
+| Tuesday 05:00 AM UK | `inv-tuesday-payout-batch` n8n cron: registers Revolut counterparties, POSTs `/payment-drafts`, sets status → processing, WhatsApps Hugo | ✅ activated |
+| Hugo approves | Revolut Business app Face ID — releases Faster Payments (GBP same day), SEPA (EUR next day), SWIFT (1-5 days) | Manual |
+| Revolut fires webhook | `revolut-webhook` edge function: HMAC-SHA256 verified, `TRANSACTION_COMPLETED` → status = 'paid' + `paid_at`, WhatsApp to user | ✅ deployed |
+
+**Known limitation — GBP hardcode:** `submit-payout-claim` is called with `currency: 'GBP'` hardcoded in the `bank_setup` step. Users who saved EUR bank details will have a currency mismatch. Affects non-GBP investors only. Fix: pass the currency from `BankDetailsForm` via `onSave(currency)` callback when needed.
+
+### Commits
+
+- `3d5d572` — fix: claiming flow — wallet priority, double withdrawRent, bank setup gate
+- `37eac42` — fix: pre-select Bank Transfer in claim modal on open
+- `1eafdb7` — fix: add bankAccount to ClaimModal destructuring (ReferenceError)
+
+---
+
 ## [2026-03-19] — MILESTONE: Investment Module Fully Wired to Blockchain
 
 ### Summary

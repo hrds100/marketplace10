@@ -32,7 +32,9 @@ async function provisionWallet(userId: string) {
 
     if (data?.wallet_address) {
       console.log('[WalletProvisioner] Wallet exists:', data.wallet_address);
-      return; // Already has wallet — NEVER overwrite (may be manually set legacy wallet)
+      // Wallet exists — restore Particle signing session so auth-core is ready for tx signing
+      await restoreParticleSession(userId);
+      return;
     }
 
     // Also skip if wallet change was recently granted (user is managing their own wallet)
@@ -106,5 +108,63 @@ async function provisionWallet(userId: string) {
   } catch (err) {
     console.log('[WalletProvisioner] Failed (non-blocking):', err);
     destroyIframe();
+  }
+}
+
+// Restore Particle auth-core signing session for users who already have a wallet.
+// Called on every dashboard load so particleAuth.ethereum is ready before any tx.
+async function restoreParticleSession(userId: string) {
+  try {
+    const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
+    const { bsc } = await import('@particle-network/authkit/chains');
+    const { PARTICLE_CONFIG } = await import('@/lib/particle');
+    const pa = particleAuth as any;
+
+    // Step 1: init (idempotent — safe to call multiple times)
+    try {
+      pa.init({
+        projectId: PARTICLE_CONFIG.projectId,
+        clientKey: PARTICLE_CONFIG.clientKey,
+        appId: PARTICLE_CONFIG.appId,
+        chains: [bsc],
+      });
+    } catch { /* already initialized */ }
+
+    // Step 2: check if session is already live
+    // NOTE: must NOT use optional chaining + .catch() together — if pa.ethereum is
+    // undefined, `pa.ethereum?.request()` returns undefined, then undefined.catch()
+    // throws TypeError before the outer catch can help.
+    let accounts: string[] = [];
+    if (pa.ethereum) {
+      try {
+        accounts = await pa.ethereum.request({ method: 'eth_accounts' });
+      } catch { /* not connected yet */ }
+    }
+
+    if (Array.isArray(accounts) && accounts.length > 0) {
+      console.log('[WalletProvisioner] Particle session active:', accounts[0]);
+      return;
+    }
+
+    // Step 3: session expired or first load — reconnect silently with a fresh JWT
+    console.log('[WalletProvisioner] Particle session not found — reconnecting...');
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+    const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    const jwtData = await res.json();
+    const jwt: string | null = jwtData?.jwt || null;
+    if (!jwt) {
+      console.log('[WalletProvisioner] JWT fetch returned nothing — cannot restore Particle session');
+      return;
+    }
+
+    await particleConnect({ provider: 'jwt' as any, thirdpartyCode: jwt });
+    console.log('[WalletProvisioner] Particle signing session restored via JWT');
+  } catch (err) {
+    console.log('[WalletProvisioner] Particle session restore failed (non-blocking):', err);
   }
 }

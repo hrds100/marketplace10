@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useWallet } from '@/hooks/useWallet';
+import { useAuth } from '@/hooks/useAuth';
 import { CONTRACTS } from '@/lib/particle';
 import {
   MARKETPLACE_ABI,
@@ -12,6 +13,11 @@ import {
   FARM_ABI,
 } from '@/lib/contractAbis';
 import { supabase } from '@/integrations/supabase/client';
+
+// Module-level Particle session flag.
+// Set true when particleConnect(jwt) succeeds — persists for the tab lifetime.
+// Lets getWalletProvider() skip the unreliable eth_accounts check after a confirmed connect.
+let _particleConnected = false;
 
 // Helper to get ethers — lazy loaded
 async function getEthers() {
@@ -40,27 +46,58 @@ async function getWalletProvider() {
   // Priority 1: Particle auth-core MPC wallet (our primary wallet, created via JWT)
   try {
     const { particleAuth } = await import('@particle-network/auth-core');
+    const { bsc } = await import('@particle-network/authkit/chains');
+    const { PARTICLE_CONFIG } = await import('@/lib/particle');
     const pa = particleAuth as any;
-    if (pa?.ethereum) {
-      const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
-      if (Array.isArray(accounts) && accounts.length > 0) {
-        return new ethers.providers.Web3Provider(pa.ethereum);
-      }
+
+    try {
+      pa.init({
+        projectId: PARTICLE_CONFIG.projectId,
+        clientKey: PARTICLE_CONFIG.clientKey,
+        appId: PARTICLE_CONFIG.appId,
+        chains: [bsc],
+      });
+    } catch { /* already initialized */ }
+
+    // Fast path: session confirmed by ensureConnected() in this tab lifetime
+    if (_particleConnected && pa.ethereum) {
+      console.log('[Provider] Using Particle auth-core (session flag active)');
+      return new ethers.providers.Web3Provider(pa.ethereum);
     }
-  } catch {
-    // auth-core not initialized or session expired — fall through
+
+    // Slow path: flag not set (e.g. hard refresh) — verify via eth_accounts
+    if (pa.ethereum) {
+      try {
+        const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
+        console.log('[Provider] eth_accounts result:', accounts);
+        if (Array.isArray(accounts) && accounts.length > 0) {
+          console.log('[Provider] Using Particle auth-core (eth_accounts verified)');
+          return new ethers.providers.Web3Provider(pa.ethereum);
+        }
+        console.log('[Provider] Particle session not active — eth_accounts returned empty');
+      } catch (e) {
+        console.log('[Provider] eth_accounts threw:', e);
+      }
+    } else {
+      console.log('[Provider] pa.ethereum is undefined — Particle not connected yet');
+    }
+  } catch (e) {
+    console.log('[Provider] Particle auth-core import/init failed:', e);
   }
 
   // Priority 2: window.particle?.ethereum (Particle browser extension)
   if ((window as any).particle?.ethereum) {
+    console.log('[Provider] Using window.particle (browser extension)');
     return new ethers.providers.Web3Provider((window as any).particle.ethereum);
   }
 
-  // Priority 3: window.ethereum (MetaMask — last resort only)
+  // Priority 3: window.ethereum (MetaMask — last resort)
   if ((window as any).ethereum) {
+    console.log('[Provider] ⚠️ Falling back to window.ethereum (MetaMask/Phantom) — Particle session was not ready');
     return new ethers.providers.Web3Provider((window as any).ethereum);
   }
 
+  console.log('[Provider] No wallet provider found');
   return null;
 }
 
@@ -86,15 +123,98 @@ async function getContract(address: string, abi: string[], withSigner = false) {
 
 export function useBlockchain() {
   const { address, connected, connect } = useWallet();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Ensure wallet is connected before any write operation
+  // Ensure Particle signing session is active before any write tx.
+  // Runs at tx time (not on mount) so there's no race condition with user interaction.
   const ensureConnected = useCallback(async () => {
+    if (user?.id) {
+      console.log('[ensureConnected] user.id =', user.id, '| _particleConnected =', _particleConnected);
+      try {
+        const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
+        const { bsc } = await import('@particle-network/authkit/chains');
+        const { PARTICLE_CONFIG } = await import('@/lib/particle');
+        const pa = particleAuth as any;
+
+        try {
+          pa.init({
+            projectId: PARTICLE_CONFIG.projectId,
+            clientKey: PARTICLE_CONFIG.clientKey,
+            appId: PARTICLE_CONFIG.appId,
+            chains: [bsc],
+          });
+        } catch { /* already initialized */ }
+
+        // Check if session is already confirmed active
+        let sessionActive = _particleConnected;
+
+        if (!sessionActive) {
+          // Double-check via eth_accounts (covers hard refresh where flag was cleared)
+          if (pa.ethereum) {
+            try {
+              const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
+              console.log('[ensureConnected] eth_accounts check:', accounts);
+              sessionActive = Array.isArray(accounts) && accounts.length > 0;
+            } catch (e) {
+              console.log('[ensureConnected] eth_accounts threw:', e);
+            }
+          } else {
+            console.log('[ensureConnected] pa.ethereum is undefined before JWT fetch');
+          }
+        }
+
+        if (!sessionActive) {
+          // Session not active — fetch a fresh JWT and reconnect
+          console.log('[ensureConnected] Session not active — fetching JWT...');
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+          const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+
+          let jwt: string | null = null;
+          try {
+            const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
+              body: JSON.stringify({ user_id: user.id }),
+            });
+            const jwtData = await res.json();
+            jwt = jwtData?.jwt || null;
+            console.log(
+              '[ensureConnected] JWT fetch →',
+              jwt ? `received (${jwt.length} chars)` : 'EMPTY — edge function returned no jwt',
+              '| HTTP status:', res.status,
+            );
+          } catch (e) {
+            console.log('[ensureConnected] JWT fetch threw:', e);
+          }
+
+          if (jwt) {
+            try {
+              await particleConnect({ provider: 'jwt' as any, thirdpartyCode: jwt });
+              _particleConnected = true;
+              console.log('[ensureConnected] ✅ particleConnect(jwt) succeeded — Particle session active');
+            } catch (e) {
+              console.log('[ensureConnected] ❌ particleConnect(jwt) threw:', e);
+            }
+          } else {
+            console.log('[ensureConnected] ⚠️ No JWT available — Particle session will NOT be restored. MetaMask will be used as fallback.');
+          }
+        } else {
+          console.log('[ensureConnected] Session already active — skipping JWT fetch');
+        }
+      } catch (e) {
+        console.log('[ensureConnected] Particle module import failed:', e);
+      }
+    } else {
+      console.log('[ensureConnected] No user.id — skipping Particle reconnect');
+    }
+
+    // Ensure wallet address is loaded into hook state
     if (!connected || !address) {
       await connect();
     }
-  }, [connected, address, connect]);
+  }, [connected, address, connect, user?.id]);
 
   // ── READ FUNCTIONS ──
 
@@ -417,7 +537,7 @@ export function useBlockchain() {
   );
 
   const buyStayTokens = useCallback(
-    async (propertyId: number) => {
+    async (propertyId: number, onStep?: (step: number, total: number) => void) => {
       setLoading(true);
       setError(null);
       try {
@@ -425,13 +545,15 @@ export function useBlockchain() {
         const ethers = await getEthers();
         if (!ethers) throw new Error('Blockchain not available');
 
-        // 1. Withdraw rent first
+        // 1. Withdraw rent
+        onStep?.(1, 3);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
         const withdrawTx = await rentContract.withdrawRent(propertyId);
         await withdrawTx.wait();
 
-        // 2. Check USDC balance and approve for BUY_LP
+        // 2. Approve USDC for BUY_LP
+        onStep?.(2, 3);
         const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
         if (!usdc) throw new Error('Could not connect to USDC contract');
         const balance = await usdc.balanceOf(address);
@@ -439,7 +561,8 @@ export function useBlockchain() {
         const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
         await approveTx.wait();
 
-        // 3. Buy STAY tokens
+        // 3. Swap USDC → STAY
+        onStep?.(3, 3);
         const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
         if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
         const tx = await buyLpContract.buyStay(address, CONTRACTS.USDC, balance);
@@ -458,7 +581,7 @@ export function useBlockchain() {
   );
 
   const buyLpTokens = useCallback(
-    async (propertyId: number) => {
+    async (propertyId: number, onStep?: (step: number, total: number) => void) => {
       setLoading(true);
       setError(null);
       try {
@@ -466,13 +589,15 @@ export function useBlockchain() {
         const ethers = await getEthers();
         if (!ethers) throw new Error('Blockchain not available');
 
-        // 1. Withdraw rent first
+        // 1. Withdraw rent
+        onStep?.(1, 3);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
         const withdrawTx = await rentContract.withdrawRent(propertyId);
         await withdrawTx.wait();
 
-        // 2. Check USDC balance and approve for BUY_LP
+        // 2. Approve USDC for BUY_LP
+        onStep?.(2, 3);
         const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
         if (!usdc) throw new Error('Could not connect to USDC contract');
         const balance = await usdc.balanceOf(address);
@@ -480,7 +605,8 @@ export function useBlockchain() {
         const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
         await approveTx.wait();
 
-        // 3. Buy LP tokens
+        // 3. Create LP position
+        onStep?.(3, 3);
         const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
         if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
         const tx = await buyLpContract.buyLPToken(address, CONTRACTS.USDC, balance);
