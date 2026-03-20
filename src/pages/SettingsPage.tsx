@@ -48,12 +48,7 @@ export default function SettingsPage() {
   const [showWalletReplace, setShowWalletReplace] = useState(false);
   const [newWalletAddress, setNewWalletAddress] = useState('');
   const [savingWallet, setSavingWallet] = useState(false);
-  // Legacy wallet migration
   const [profileWalletAddress, setProfileWalletAddress] = useState<string | null>(null);
-  const [legacyDismissed, setLegacyDismissed] = useState(true);
-  const [legacyInput, setLegacyInput] = useState('');
-  const [legacyError, setLegacyError] = useState('');
-  const [savingLegacy, setSavingLegacy] = useState(false);
   // Avatar upload
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -63,7 +58,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!user) return;
     (supabase.from('profiles') as any)
-      .select('name, whatsapp, notif_whatsapp_new_deals, notif_whatsapp_daily, notif_email_daily, notif_whatsapp_status, wallet_change_allowed_until, avatar_url, wallet_address, legacy_wallet_dismissed')
+      .select('name, whatsapp, notif_whatsapp_new_deals, notif_whatsapp_daily, notif_email_daily, notif_whatsapp_status, wallet_change_allowed_until, avatar_url, wallet_address')
       .eq('id', user.id)
       .single()
       .then(({ data }: { data: Record<string, unknown> | null }) => {
@@ -78,7 +73,6 @@ export default function SettingsPage() {
           setWalletChangeUntil((data.wallet_change_allowed_until as string) || null);
           setAvatarUrl((data.avatar_url as string) || null);
           setProfileWalletAddress((data.wallet_address as string) || null);
-          setLegacyDismissed((data.legacy_wallet_dismissed as boolean) ?? false);
         } else {
           setProfile(p => ({ ...p, email: user.email || '' }));
         }
@@ -568,60 +562,7 @@ export default function SettingsPage() {
                 )}
               </div>
 
-              {/* Legacy wallet migration — shown when no wallet set and not dismissed */}
-              {!legacyDismissed && (
-                <div className="max-w-[480px] mb-8 p-4 rounded-xl border border-amber-200 bg-amber-50">
-                  <h3 className="text-sm font-bold text-amber-900 mb-1">Migrate your legacy wallet</h3>
-                  <p className="text-xs text-amber-700 mb-3">
-                    Did you use app.nfstay.com? Paste your wallet address to keep access to your on-chain shares and rent history.
-                  </p>
-                  <input
-                    type="text"
-                    placeholder="0x..."
-                    value={legacyInput}
-                    onChange={e => { setLegacyInput(e.target.value); setLegacyError(''); }}
-                    className="w-full h-10 px-3 rounded-lg border border-amber-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-400 mb-2"
-                    spellCheck={false}
-                  />
-                  {legacyError && <p className="text-xs text-red-600 mb-2">{legacyError}</p>}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={async () => {
-                        if (!user) return;
-                        if (!/^0x[0-9a-fA-F]{40}$/i.test(legacyInput.trim())) {
-                          setLegacyError('Invalid address — must be 0x followed by 40 hex characters.');
-                          return;
-                        }
-                        setSavingLegacy(true);
-                        const { error } = await (supabase.from('profiles') as any)
-                          .update({ wallet_address: legacyInput.trim(), legacy_wallet_dismissed: true })
-                          .eq('id', user.id);
-                        setSavingLegacy(false);
-                        if (error) { setLegacyError('Failed to save. Please try again.'); return; }
-                        setProfileWalletAddress(legacyInput.trim());
-                        setLegacyDismissed(true);
-                        toast.success('Legacy wallet saved');
-                      }}
-                      disabled={savingLegacy || !legacyInput.trim()}
-                      className="h-9 px-4 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold disabled:opacity-50 transition-colors"
-                    >
-                      {savingLegacy ? 'Saving…' : 'Save wallet'}
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!user) return;
-                        await (supabase.from('profiles') as any)
-                          .update({ legacy_wallet_dismissed: true })
-                          .eq('id', user.id);
-                        setLegacyDismissed(true);
-                      }}
-                      className="h-9 px-4 rounded-lg border border-amber-200 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
-                    >
-                      I don't have one
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Legacy wallet migration removed — ConnectKit now auto-recovers legacy wallets */}
 
               {/* Bank Details */}
               <div className="max-w-[480px] mb-8">
