@@ -186,46 +186,6 @@ export function usePortfolioWithBlockchain() {
       }
     }
 
-    // 3. Fetch per-property earnings + last payout from The Graph
-    if (address) {
-      try {
-        const res = await fetch('https://api.studio.thegraph.com/query/62641/nfstay-rwa-mainnet-rent/v3', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: `{ rentWithdrawns(where: { _by: "${address.toLowerCase()}" }, orderBy: blockTimestamp, orderDirection: desc) { _rent _propertyId blockTimestamp } }`,
-          }),
-        });
-        const gData = await res.json();
-        const withdrawals = gData.data?.rentWithdrawns || [];
-        // Sum earnings per property + find last payout date per property
-        const earningsMap = new Map<number, { total: number; lastDate: string }>();
-        for (const w of withdrawals) {
-          const pid = Number(w._propertyId);
-          const amount = parseInt(w._rent) / 1e18;
-          const date = new Date(parseInt(w.blockTimestamp) * 1000).toISOString();
-          const existing = earningsMap.get(pid);
-          if (existing) {
-            existing.total += amount;
-          } else {
-            earningsMap.set(pid, { total: amount, lastDate: date });
-          }
-        }
-        // Apply to holdings (match by blockchain_property_id)
-        for (const h of holdingMap.values()) {
-          const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
-          const bcId = prop?.blockchain_property_id;
-          if (bcId != null) {
-            const earned = earningsMap.get(bcId);
-            if (earned) {
-              h.totalEarned = earned.total;
-              h.lastPayout = earned.lastDate;
-            }
-          }
-        }
-      } catch { /* Graph query failed — non-critical */ }
-    }
-
     const holdings = Array.from(holdingMap.values());
 
     return {

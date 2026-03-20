@@ -216,8 +216,9 @@ export default function InvestPortfolioPage() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  // Fetch total claimed from blockchain (Total Earnings)
+  // Fetch total claimed from blockchain (Total Earnings) + per-property breakdown
   const [totalClaimed, setTotalClaimed] = useState(0);
+  const [perPropertyEarnings, setPerPropertyEarnings] = useState<Record<number, { total: number; lastDate: string }>>({});
   const [pendingPayoutsTotal, setPendingPayoutsTotal] = useState(0);
   const [hasVoted, setHasVoted] = useState(false);
   const [boostDetailsMap, setBoostDetailsMap] = useState<Record<number, { isBoosted: boolean; estimatedRewards: string; boostCost: string; boostAprValue: string; sharesBoosted: string }>>({});
@@ -225,21 +226,34 @@ export default function InvestPortfolioPage() {
   useEffect(() => {
     if (!address || portfolio.holdings.length === 0) return;
     let cancelled = false;
-    // Fetch total earnings from The Graph (more reliable than contract call)
+    // Fetch total earnings + per-property breakdown from The Graph
     (async () => {
       try {
         const res = await fetch('https://api.studio.thegraph.com/query/62641/nfstay-rwa-mainnet-rent/v3', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            query: `{ rentWithdrawns(where: { _by: "${address.toLowerCase()}" }) { _rent } }`,
+            query: `{ rentWithdrawns(where: { _by: "${address.toLowerCase()}" }, orderBy: blockTimestamp, orderDirection: desc) { _rent _propertyId blockTimestamp } }`,
           }),
         });
         const data = await res.json();
-        const total = (data.data?.rentWithdrawns || []).reduce(
-          (sum: number, w: any) => sum + parseInt(w._rent) / 1e18, 0
-        );
-        if (!cancelled) setTotalClaimed(total);
+        const withdrawals = data.data?.rentWithdrawns || [];
+        let total = 0;
+        const perProp: Record<number, { total: number; lastDate: string }> = {};
+        for (const w of withdrawals) {
+          const amount = parseInt(w._rent) / 1e18;
+          const pid = Number(w._propertyId);
+          total += amount;
+          if (!perProp[pid]) {
+            perProp[pid] = { total: amount, lastDate: new Date(parseInt(w.blockTimestamp) * 1000).toISOString() };
+          } else {
+            perProp[pid].total += amount;
+          }
+        }
+        if (!cancelled) {
+          setTotalClaimed(total);
+          setPerPropertyEarnings(perProp);
+        }
       } catch {
         // non-critical
       }
@@ -705,13 +719,14 @@ export default function InvestPortfolioPage() {
                             <div>
                               <p className="text-muted-foreground">Last Payout</p>
                               <p className="font-semibold">
-                                {h.lastPayout
-                                  ? new Date(h.lastPayout).toLocaleDateString('en-GB', {
-                                      day: 'numeric',
-                                      month: 'short',
-                                      year: 'numeric',
-                                    })
-                                  : 'No payouts yet'}
+                                {(() => {
+                                  const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
+                                  const bcId = prop?.blockchain_property_id;
+                                  const earned = bcId != null ? perPropertyEarnings[bcId] : null;
+                                  return earned?.lastDate
+                                    ? new Date(earned.lastDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                                    : 'No payouts yet';
+                                })()}
                               </p>
                             </div>
                             <div>
@@ -720,7 +735,14 @@ export default function InvestPortfolioPage() {
                             </div>
                             <div>
                               <p className="text-muted-foreground">Total Earned</p>
-                              <p className="font-semibold">{formatCurrency(h.totalEarned)}</p>
+                              <p className="font-semibold">
+                                {(() => {
+                                  const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
+                                  const bcId = prop?.blockchain_property_id;
+                                  const earned = bcId != null ? perPropertyEarnings[bcId] : null;
+                                  return formatCurrency(earned?.total || h.totalEarned);
+                                })()}
+                              </p>
                             </div>
                           </div>
 
