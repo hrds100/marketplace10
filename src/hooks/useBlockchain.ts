@@ -426,49 +426,88 @@ export function useBlockchain() {
     [ensureConnected],
   );
 
+  // Boost APR — exact clone of legacy boostedCheckout.js handleBoost()
+  // Legacy: checkForApproval → balanceChecker → callStatic.boost → boost
+  // Params: boost(connectedAddress, propertyId, currency, { value })
   const boostApr = useCallback(
     async (propertyId: number) => {
       setLoading(true);
       setError(null);
       try {
         await ensureConnected();
-        const contract = await getContract(
-          CONTRACTS.BOOSTER,
-          BOOSTER_ABI,
-          true,
+        const ethers = await getEthers();
+        if (!ethers || !address) throw new Error('Wallet not connected');
+
+        // 1. Get fresh boost cost (legacy line 53)
+        const boosterRead = await getContract(CONTRACTS.BOOSTER, BOOSTER_ABI);
+        if (!boosterRead) throw new Error('Could not read booster contract');
+        const boostAmountRaw = await boosterRead.getBoostAmount(propertyId);
+        const boostAmount = parseFloat(ethers.utils.formatUnits(boostAmountRaw, 18));
+        console.log('[boostApr] Boost cost:', boostAmount, 'USDC');
+
+        // 2. Approve USDC for Booster (legacy line 60-64)
+        const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
+        if (!usdc) throw new Error('Could not connect to USDC');
+        const boostAmountWei = ethers.utils.parseUnits(boostAmount.toString(), 18);
+        const allowance = await usdc.allowance(address, CONTRACTS.BOOSTER);
+        if (allowance.lt(boostAmountWei)) {
+          await usdc.callStatic.approve(CONTRACTS.BOOSTER, boostAmountWei);
+          const approveTx = await usdc.approve(CONTRACTS.BOOSTER, boostAmountWei);
+          await approveTx.wait();
+        }
+
+        // 3. Balance check (legacy line 66)
+        const usdcRead = await getContract(CONTRACTS.USDC, ERC20_ABI);
+        if (usdcRead) {
+          const balance = await usdcRead.balanceOf(address);
+          if (balance.lt(boostAmountWei)) {
+            throw new Error(`Insufficient USDC. Need ${boostAmount.toFixed(3)}, you have ${parseFloat(ethers.utils.formatUnits(balance, 18)).toFixed(3)}.`);
+          }
+        }
+
+        // 4. callStatic dry-run (legacy line 77-82)
+        const booster = await getContract(CONTRACTS.BOOSTER, BOOSTER_ABI, true);
+        if (!booster) throw new Error('Could not connect to booster');
+        await booster.callStatic.boost(
+          address, propertyId, CONTRACTS.USDC, { value: "0" }
         );
-        if (!contract) throw new Error('Could not connect to booster contract');
-        const tx = await contract.boost(propertyId);
+
+        // 5. Real transaction (legacy line 83-88)
+        const tx = await booster.boost(
+          address, propertyId, CONTRACTS.USDC, { value: "0" }
+        );
         const receipt = await tx.wait();
+
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
-      } catch (err) {
+      } catch (err: any) {
+        console.error('[boostApr] Failed:', err);
         const msg = err instanceof Error ? err.message : 'Boost failed';
         setError(msg);
         setLoading(false);
         throw err;
       }
     },
-    [ensureConnected],
+    [address, ensureConnected, getSignerProvider],
   );
 
+  // Claim boost rewards — legacy claimRewards with callStatic
   const claimBoostRewards = useCallback(
     async (propertyId: number) => {
       setLoading(true);
       setError(null);
       try {
         await ensureConnected();
-        const contract = await getContract(
-          CONTRACTS.BOOSTER,
-          BOOSTER_ABI,
-          true,
-        );
+        const contract = await getContract(CONTRACTS.BOOSTER, BOOSTER_ABI, true);
         if (!contract) throw new Error('Could not connect to booster contract');
+        // callStatic dry-run
+        await contract.callStatic.claimRewards(propertyId);
         const tx = await contract.claimRewards(propertyId);
         const receipt = await tx.wait();
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
-      } catch (err) {
+      } catch (err: any) {
+        console.error('[claimBoostRewards] Failed:', err);
         const msg = err instanceof Error ? err.message : 'Claim failed';
         setError(msg);
         setLoading(false);
