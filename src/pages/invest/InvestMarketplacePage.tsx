@@ -253,7 +253,7 @@ function InvestModal({
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full h-11 font-semibold mt-2"
               onClick={() => {
                 setConfirmed(false);
-                handleClose(false);
+                window.location.href = '/dashboard/invest/portfolio';
               }}
             >
               View Portfolio
@@ -347,10 +347,12 @@ function InvestModal({
                     // Close invest dialog, then show congratulations overlay
                     onOpenChange(false);
                     setConfirmed(true);
-                    // Refetch activity + blockchain stats after 3s (Graph indexing delay)
-                    setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('invest-purchase-complete'));
-                    }, 3000);
+                    // Refetch activity + blockchain stats — fire at 3s, 8s, 15s for Graph indexing
+                    [3000, 8000, 15000].forEach(delay => {
+                      setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('invest-purchase-complete'));
+                      }, delay);
+                    });
                   } catch (err: any) {
                     const msg = err?.message || 'Transaction failed. Please try again.';
                     console.error('[Marketplace] Buy failed:', err);
