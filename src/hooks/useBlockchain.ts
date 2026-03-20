@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { useEthereum } from '@particle-network/authkit';
-import { useAccount, useModal } from '@particle-network/connectkit';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
 import { CONTRACTS } from '@/lib/particle';
@@ -42,61 +41,75 @@ export function useBlockchain() {
   const { user } = useAuth();
   // useEthereum() from authkit — same as legacy NfstayContext.jsx line 66.
   const { provider: particleProvider } = useEthereum();
-  // ConnectKit account state — tells us if user has connected via ConnectKit
-  const { isConnected: ckConnected, address: ckAddress } = useAccount();
-  const { setOpen: openConnectModal } = useModal();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Ensure ConnectKit has an active session before signing.
-  // If user logged in via ParticleAuthCallback but hasn't connected
-  // through ConnectKit, the signer has no account → "unknown account #0".
-  // Opening the connect modal lets them tap Google → session syncs.
-  const ensureConnectKitSession = useCallback(async () => {
-    if (ckConnected && ckAddress) return true;
-    // Open ConnectKit modal — user taps Google to connect wallet
-    openConnectModal(true);
-    // Return false — caller should abort and wait for user to connect
-    return false;
-  }, [ckConnected, ckAddress, openConnectModal]);
-
-  // Get signer — exact legacy pattern (NfstayContext.jsx line 135):
-  //   new ethers.providers.Web3Provider(particleProvider).getSigner()
-  // Also ensures BSC chain (legacy handleNetwork() equivalent)
+  // Get signer provider. Try useEthereum() first (ConnectKit-managed).
+  // If that has no account, fall back to particleAuth.ethereum (auth-core).
+  // This handles both cases: fresh ConnectKit session AND ParticleAuthCallback login.
   const getSignerProvider = useCallback(async () => {
     const ethers = await getEthers();
-    if (!ethers || !particleProvider) return null;
+    if (!ethers) return null;
 
-    // Check ConnectKit session first
-    if (!ckConnected) {
-      console.log('[getSignerProvider] ConnectKit not connected — opening modal');
-      openConnectModal(true);
-      return null;
-    }
-
-    try {
-      // Ensure BSC chain — legacy handleNetwork() does this via switchChainAsync
-      const pp = particleProvider as any;
-      if (pp.request) {
-        try {
-          const chainId = await pp.request({ method: 'eth_chainId' });
-          if (chainId !== '0x38') {
-            console.log('[getSignerProvider] Switching to BSC from chain:', chainId);
-            await pp.request({
-              method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0x38' }],
-            });
-          }
-        } catch (e) {
-          console.log('[getSignerProvider] Chain switch error:', e);
+    // Try 1: useEthereum() provider (ConnectKit session)
+    if (particleProvider) {
+      try {
+        const web3 = new ethers.providers.Web3Provider(particleProvider as any);
+        // Test if it has an account
+        await web3.getSigner().getAddress();
+        console.log('[getSignerProvider] Using useEthereum() provider');
+        // Ensure BSC chain
+        const pp = particleProvider as any;
+        if (pp.request) {
+          try {
+            const chainId = await pp.request({ method: 'eth_chainId' });
+            if (chainId !== '0x38') {
+              await pp.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+            }
+          } catch { /* chain switch optional */ }
         }
+        return web3;
+      } catch {
+        console.log('[getSignerProvider] useEthereum() has no account, trying auth-core fallback');
       }
-      return new ethers.providers.Web3Provider(pp);
-    } catch (e) {
-      console.error('[getSignerProvider] Failed:', e);
-      return null;
     }
-  }, [particleProvider, ckConnected, openConnectModal]);
+
+    // Try 2: particleAuth.ethereum (direct auth-core — works after ParticleAuthCallback login)
+    try {
+      const { particleAuth } = await import('@particle-network/auth-core');
+      const { bsc } = await import('@particle-network/authkit/chains');
+      const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
+      const pa = particleAuth as any;
+      try {
+        pa.init({
+          projectId: PARTICLE_LEGACY_CONFIG.projectId,
+          clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
+          appId: PARTICLE_LEGACY_CONFIG.appId,
+          chains: [bsc],
+        });
+      } catch { /* already initialized */ }
+
+      if (pa.ethereum) {
+        // Ensure BSC
+        try {
+          const chainId = await pa.ethereum.request({ method: 'eth_chainId' });
+          if (chainId !== '0x38') {
+            await pa.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+          }
+        } catch { /* chain switch optional */ }
+
+        const web3 = new ethers.providers.Web3Provider(pa.ethereum);
+        await web3.getSigner().getAddress(); // verify it works
+        console.log('[getSignerProvider] Using auth-core fallback');
+        return web3;
+      }
+    } catch (e) {
+      console.log('[getSignerProvider] auth-core fallback failed:', e);
+    }
+
+    console.error('[getSignerProvider] No provider available');
+    return null;
+  }, [particleProvider]);
 
   async function getContract(contractAddress: string, abi: string[], withSigner = false) {
     const ethers = await getEthers();
@@ -112,18 +125,11 @@ export function useBlockchain() {
     return new ethers.Contract(contractAddress, abi, provider);
   }
 
-  // ensureConnected — check both wallet hook AND ConnectKit session.
-  // If ConnectKit isn't connected, open the modal for user to connect.
   const ensureConnected = useCallback(async () => {
-    if (!ckConnected) {
-      console.log('[ensureConnected] ConnectKit not connected — opening modal');
-      openConnectModal(true);
-      throw new Error('Please connect your wallet first. Click Google in the popup to connect.');
-    }
     if (!connected || !address) {
       await connect();
     }
-  }, [connected, address, connect, ckConnected, openConnectModal]);
+  }, [connected, address, connect]);
 
   // ── READ FUNCTIONS ──
 
