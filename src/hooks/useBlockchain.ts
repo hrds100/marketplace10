@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useEthereum } from '@particle-network/authkit';
+import { useAccount, useModal } from '@particle-network/connectkit';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
 import { CONTRACTS } from '@/lib/particle';
@@ -40,10 +41,24 @@ export function useBlockchain() {
   const { address, connected, connect } = useWallet();
   const { user } = useAuth();
   // useEthereum() from authkit — same as legacy NfstayContext.jsx line 66.
-  // ConnectKitProvider wraps the app, so this hook has a valid context.
   const { provider: particleProvider } = useEthereum();
+  // ConnectKit account state — tells us if user has connected via ConnectKit
+  const { isConnected: ckConnected, address: ckAddress } = useAccount();
+  const { setOpen: openConnectModal } = useModal();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Ensure ConnectKit has an active session before signing.
+  // If user logged in via ParticleAuthCallback but hasn't connected
+  // through ConnectKit, the signer has no account → "unknown account #0".
+  // Opening the connect modal lets them tap Google → session syncs.
+  const ensureConnectKitSession = useCallback(async () => {
+    if (ckConnected && ckAddress) return true;
+    // Open ConnectKit modal — user taps Google to connect wallet
+    openConnectModal(true);
+    // Return false — caller should abort and wait for user to connect
+    return false;
+  }, [ckConnected, ckAddress, openConnectModal]);
 
   // Get signer — exact legacy pattern (NfstayContext.jsx line 135):
   //   new ethers.providers.Web3Provider(particleProvider).getSigner()
@@ -51,6 +66,14 @@ export function useBlockchain() {
   const getSignerProvider = useCallback(async () => {
     const ethers = await getEthers();
     if (!ethers || !particleProvider) return null;
+
+    // Check ConnectKit session first
+    if (!ckConnected) {
+      console.log('[getSignerProvider] ConnectKit not connected — opening modal');
+      openConnectModal(true);
+      return null;
+    }
+
     try {
       // Ensure BSC chain — legacy handleNetwork() does this via switchChainAsync
       const pp = particleProvider as any;
@@ -73,7 +96,7 @@ export function useBlockchain() {
       console.error('[getSignerProvider] Failed:', e);
       return null;
     }
-  }, [particleProvider]);
+  }, [particleProvider, ckConnected, openConnectModal]);
 
   async function getContract(contractAddress: string, abi: string[], withSigner = false) {
     const ethers = await getEthers();
@@ -89,13 +112,18 @@ export function useBlockchain() {
     return new ethers.Contract(contractAddress, abi, provider);
   }
 
-  // ensureConnected — ConnectKit manages the session now.
-  // We just check wallet hook has an address.
+  // ensureConnected — check both wallet hook AND ConnectKit session.
+  // If ConnectKit isn't connected, open the modal for user to connect.
   const ensureConnected = useCallback(async () => {
+    if (!ckConnected) {
+      console.log('[ensureConnected] ConnectKit not connected — opening modal');
+      openConnectModal(true);
+      throw new Error('Please connect your wallet first. Click Google in the popup to connect.');
+    }
     if (!connected || !address) {
       await connect();
     }
-  }, [connected, address, connect]);
+  }, [connected, address, connect, ckConnected, openConnectModal]);
 
   // ── READ FUNCTIONS ──
 
