@@ -9,9 +9,7 @@
 // READS: Use public Alchemy RPC (no wallet popup needed).
 
 import { useCallback, useState } from 'react';
-import { useAccount, useSwitchChain } from '@particle-network/connectkit';
 import { useEthereum } from '@particle-network/authkit';
-import { isSocialAuthType, getLatestAuthType } from '@particle-network/auth-core';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
 import { CONTRACTS } from '@/lib/particle';
@@ -71,61 +69,35 @@ function extractBlockchainError(err: unknown, fallback: string): string {
 }
 
 export function useBlockchain() {
-  const { address: walletAddr, connected, connect } = useWallet();
+  const { address, connected, connect } = useWallet();
   const { user } = useAuth();
-  // ConnectKit hooks — same as legacy NfstayContext.jsx
-  const { address: ckAddress, status, chainId, isConnected, connector } = useAccount();
   const { provider: particleProvider } = useEthereum();
-  const { switchChainAsync } = useSwitchChain();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Use ConnectKit address if available, fallback to wallet hook address
-  const address = ckAddress || walletAddr;
-
-  // Get signer provider — matches EXACT legacy pattern from NfstayContext.jsx:
-  //   if social login → use particleProvider (from AuthCoreContextProvider / useEthereum)
-  //   else → use window.ethereum (MetaMask / injected)
-  //   fallback → particleProvider
+  // Get signer provider from AuthCoreContextProvider's useEthereum().
+  // particleProvider is the Particle MPC EVM provider — works for both
+  // social login and JWT users.
   const getSignerProvider = useCallback(async () => {
     const ethers = await getEthers();
     if (!ethers) return null;
     try {
-      let rawProvider: any;
-
-      // Check if this is a social auth user (safe — returns false if no auth)
-      let isParticleSocial = false;
-      try {
-        const connectorType = (connector as any)?.walletConnectorType;
-        isParticleSocial =
-          connectorType === 'particleAuth' &&
-          isSocialAuthType(getLatestAuthType());
-      } catch {
-        // getLatestAuthType() may throw if no auth session — that's fine
+      if (particleProvider) {
+        const web3Provider = new ethers.providers.Web3Provider(particleProvider as any);
+        return web3Provider;
       }
-
-      if (isParticleSocial && particleProvider) {
-        rawProvider = particleProvider;
-        console.log('[getSignerProvider] Using Particle provider (social auth)');
-      } else if (particleProvider) {
-        // AuthCoreContextProvider gives us particleProvider — use it (most common path)
-        rawProvider = particleProvider;
-        console.log('[getSignerProvider] Using Particle provider (AuthCore)');
-      } else if (typeof window !== 'undefined' && (window as any).ethereum) {
-        rawProvider = (window as any).ethereum;
-        console.log('[getSignerProvider] Using window.ethereum (external wallet)');
-      } else {
-        console.error('[getSignerProvider] No provider available');
-        return null;
+      // Fallback to window.ethereum (MetaMask / injected)
+      if (typeof window !== 'undefined' && (window as any).ethereum) {
+        const web3Provider = new ethers.providers.Web3Provider((window as any).ethereum);
+        return web3Provider;
       }
-
-      const web3Provider = new ethers.providers.Web3Provider(rawProvider);
-      return web3Provider;
+      console.error('[getSignerProvider] No provider available');
+      return null;
     } catch (e) {
       console.error('[getSignerProvider] Failed:', e);
       return null;
     }
-  }, [particleProvider, connector]);
+  }, [particleProvider]);
 
   async function getContract(contractAddress: string, abi: string[], withSigner = false) {
     const ethers = await getEthers();
@@ -827,7 +799,7 @@ export function useBlockchain() {
     loading,
     error,
     walletAddress: address,
-    walletConnected: connected || isConnected,
+    walletConnected: connected,
 
     // Read — existing
     getShareBalance,

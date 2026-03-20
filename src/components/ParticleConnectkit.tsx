@@ -1,83 +1,31 @@
-// ParticleConnectkit — direct port from legacy ParticleConnectkit.jsx.
+// ParticleConnectkit — provides Particle auth context for the app.
 //
-// Uses ConnectKitProvider which manages:
-//   1. MPC signing sessions (fixes WASM __wbg_ptr errors)
-//   2. Embedded wallet UI (Buy, Receive, Wallet, Account & Security modal)
-//   3. Social auth wallet connectors (Google, Apple, Twitter, Facebook)
-//   4. External wallet connectors (MetaMask, WalletConnect)
+// Uses AuthCoreContextProvider from @particle-network/authkit.
+// This gives us useEthereum() for the signing provider.
+//
+// ConnectKitProvider (legacy pattern) conflicts with AuthCoreContextProvider
+// when both init the same project — causes "Cannot read properties of undefined
+// (reading 'S')" crash. So we use AuthCoreContextProvider alone.
 //
 // Credentials: LEGACY project so social login → same wallet as app.nfstay.com
 
 import React from 'react';
-import { ConnectKitProvider, createConfig } from '@particle-network/connectkit';
-import { authWalletConnectors } from '@particle-network/connectkit/auth';
-import { EntryPosition, wallet } from '@particle-network/connectkit/wallet';
-import { bsc } from '@particle-network/connectkit/chains';
-import { evmWalletConnectors } from '@particle-network/connectkit/evm';
 import { AuthCoreContextProvider } from '@particle-network/authkit';
-import { bsc as authBsc } from '@particle-network/authkit/chains';
-import { PARTICLE_LEGACY_CONFIG, PARTICLE_CONFIG } from '@/lib/particle';
-
-const projectId = PARTICLE_LEGACY_CONFIG.projectId;
-const clientKey = PARTICLE_LEGACY_CONFIG.clientKey;
-const appId = PARTICLE_LEGACY_CONFIG.appId;
-const walletConnectProjectId = PARTICLE_CONFIG.walletConnectProjectId;
-
-if (!projectId || !clientKey || !appId) {
-  throw new Error('Particle Network credentials missing — check src/lib/particle.ts');
-}
-
-export const supportedChains = [bsc];
-
-export const isValidChain = (_id: number, _supportChains: typeof supportedChains) => {
-  return _supportChains.filter((c) => c.id === _id).length > 0;
-};
-
-const config = createConfig({
-  projectId,
-  clientKey,
-  appId,
-  appearance: {
-    logo: 'https://photos.pinksale.finance/file/pinksale-logo-upload/1721288952175-35ed0ed869e731b5d32a13ffb3a36d5a.png',
-    recommendedWallets: [{ walletId: 'metaMask', label: 'Recommended' }],
-    language: 'en-US',
-    mode: 'light',
-  },
-  walletConnectors: [
-    authWalletConnectors(),
-    evmWalletConnectors({
-      metadata: {
-        name: 'NFsTay',
-        icon: typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : '',
-        description: 'NFsTay Investment Platform',
-        url: typeof window !== 'undefined' ? window.location.origin : '',
-      },
-      walletConnectProjectId: walletConnectProjectId,
-    }),
-  ],
-  plugins: [
-    wallet({
-      visible: true,
-      entryPosition: EntryPosition.MC,
-    }),
-  ],
-  chains: supportedChains,
-});
+import { bsc } from '@particle-network/authkit/chains';
+import { PARTICLE_LEGACY_CONFIG } from '@/lib/particle';
 
 export const ParticleConnectkit = ({ children }: { children: React.ReactNode }) => {
   return (
-    <ConnectKitProvider config={config}>
-      <AuthCoreContextProvider
-        options={{
-          projectId: PARTICLE_LEGACY_CONFIG.projectId,
-          clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
-          appId: PARTICLE_LEGACY_CONFIG.appId,
-          chains: [authBsc],
-          wallet: false,
-        }}
-      >
-        {children}
-      </AuthCoreContextProvider>
-    </ConnectKitProvider>
+    <AuthCoreContextProvider
+      options={{
+        projectId: PARTICLE_LEGACY_CONFIG.projectId,
+        clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
+        appId: PARTICLE_LEGACY_CONFIG.appId,
+        chains: [bsc],
+        wallet: false,
+      }}
+    >
+      {children}
+    </AuthCoreContextProvider>
   );
 };
