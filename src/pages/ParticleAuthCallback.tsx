@@ -52,8 +52,29 @@ export default function ParticleAuthCallback() {
         });
       } catch { /* already initialized */ }
 
-      // Complete the OAuth flow — Particle reads the callback params from the URL
-      const userInfo = await particleConnect({ socialType: intent.provider as any });
+      // Decode Particle's callback params from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const particleThirdpartyParams = urlParams.get('particleThirdpartyParams');
+      let code: string | undefined;
+      let nonce: string | undefined;
+
+      if (particleThirdpartyParams) {
+        try {
+          const decoded = JSON.parse(atob(particleThirdpartyParams));
+          code = decoded.code;
+          nonce = decoded.nonce;
+          console.log('[ParticleCallback] Decoded params — code length:', code?.length, 'nonce:', nonce);
+        } catch (e) {
+          console.log('[ParticleCallback] Could not decode particleThirdpartyParams:', e);
+        }
+      }
+
+      // Complete the OAuth flow — pass code + nonce back to Particle
+      const userInfo = await particleConnect({
+        socialType: intent.provider as any,
+        ...(code ? { code } : {}),
+        ...(nonce ? { nonce } : {}),
+      });
 
       const evmWallet = (userInfo as any).wallets?.find((w: any) => w.chain_name === 'evm_chain');
       const walletAddress = evmWallet?.public_address || '';
