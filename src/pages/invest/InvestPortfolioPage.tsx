@@ -218,7 +218,7 @@ export default function InvestPortfolioPage() {
   const [totalClaimed, setTotalClaimed] = useState(0);
   const [pendingPayoutsTotal, setPendingPayoutsTotal] = useState(0);
   const [hasVoted, setHasVoted] = useState(false);
-  const [boostDetailsMap, setBoostDetailsMap] = useState<Record<number, { isBoosted: boolean; estimatedRewards: string }>>({});
+  const [boostDetailsMap, setBoostDetailsMap] = useState<Record<number, { isBoosted: boolean; estimatedRewards: string; boostCost: string; boostAprValue: string }>>({});
 
   useEffect(() => {
     if (!address || portfolio.holdings.length === 0) return;
@@ -299,18 +299,38 @@ export default function InvestPortfolioPage() {
       }
     })();
 
-    // Fetch boost details for each holding
+    // Fetch boost details + boost cost for each holding
     (async () => {
       try {
-        const details: Record<number, { isBoosted: boolean; estimatedRewards: string }> = {};
+        const ethers = await import('ethers').catch(() => null);
+        if (!ethers) return;
+        const { BOOSTER_ABI } = await import('@/lib/contractAbis');
+        const { CONTRACTS } = await import('@/lib/particle');
+        const provider = new ethers.providers.JsonRpcProvider(
+          'https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T'
+        );
+        const boosterContract = new ethers.Contract(CONTRACTS.BOOSTER, BOOSTER_ABI, provider);
+
+        const details: Record<number, { isBoosted: boolean; estimatedRewards: string; boostCost: string; boostAprValue: string }> = {};
         for (const h of portfolio.holdings) {
           try {
             const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
             const blockchainPropertyId = prop?.blockchain_property_id;
             if (blockchainPropertyId == null) continue;
             const bd = await getBoostDetails(blockchainPropertyId);
+            // Get per-property boost cost (legacy: getBoostAmount(address, propertyId))
+            let costFormatted = '—';
+            try {
+              const cost = await boosterContract.getBoostAmount(blockchainPropertyId);
+              costFormatted = parseFloat(ethers.utils.formatUnits(cost, 18)).toFixed(3);
+            } catch { /* some properties may not have boost */ }
             if (bd) {
-              details[h.propertyId] = { isBoosted: bd.isBoosted, estimatedRewards: bd.estimatedRewards };
+              details[h.propertyId] = {
+                isBoosted: bd.isBoosted,
+                estimatedRewards: bd.estimatedRewards,
+                boostCost: costFormatted,
+                boostAprValue: bd.boostApr,
+              };
             }
           } catch {
             // skip
@@ -752,7 +772,7 @@ export default function InvestPortfolioPage() {
                           <div>
                             <p className="text-[10px] text-muted-foreground">Cost of Booster</p>
                             <p className="text-sm font-bold">
-                              {boostCost === null ? 'Loading...' : `${boostCost} USDC`}
+                              {boostDetailsMap[h.propertyId]?.boostCost ? `${boostDetailsMap[h.propertyId].boostCost} USDC` : 'Loading...'}
                             </p>
                           </div>
                           <div>
