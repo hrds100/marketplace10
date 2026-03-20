@@ -243,30 +243,36 @@ export function useBlockchain() {
         if (!ethers) throw new Error('Blockchain not available');
 
         // 1. Get platform fee from contract (legacy: marketFees variable)
-        const marketplace = await getContract(CONTRACTS.RWA_MARKETPLACE, MARKETPLACE_ABI, true);
-        if (!marketplace) throw new Error('Could not connect to marketplace');
+        // Use READ provider for fee query — no wallet popup needed
+        const marketplaceRead = await getContract(CONTRACTS.RWA_MARKETPLACE, MARKETPLACE_ABI);
         let feePercent = 2.5; // default
         try {
-          const feeRaw = await marketplace.getMarketplaceFee();
-          feePercent = Number(feeRaw) / 10; // contract stores as bps/10
+          if (marketplaceRead) {
+            const feeRaw = await marketplaceRead.getMarketplaceFee();
+            feePercent = Number(feeRaw) / 10;
+          }
         } catch { /* use default */ }
+        console.log('[buyShares] Step 1 — fee:', feePercent, '%');
 
         // 2. Calculate fee-adjusted amount (legacy payment.js line 130-131)
         const costWithoutFee = amountUsdc;
         const amountWithFee = costWithoutFee + (costWithoutFee * feePercent / 100);
-        const amountWithFeeWei = ethers.utils.parseUnits(amountWithFee.toFixed(18), 18);
-        const costWithoutFeeWei = ethers.utils.parseUnits(costWithoutFee.toString(), 18);
+        const amountWithFeeWei = ethers.utils.parseUnits(amountWithFee.toFixed(6), 18);
+        const costWithoutFeeWei = ethers.utils.parseUnits(costWithoutFee.toFixed(6), 18);
+        console.log('[buyShares] Step 2 — cost:', costWithoutFee, '+ fee =', amountWithFee);
 
         // 3. Check USDC balance (legacy balanceChecker)
         const usdcRead = await getContract(CONTRACTS.USDC, ERC20_ABI);
         if (usdcRead) {
           const balance = await usdcRead.balanceOf(address);
+          console.log('[buyShares] Step 3 — USDC balance:', ethers.utils.formatUnits(balance, 18));
           if (balance.lt(amountWithFeeWei)) {
             throw new Error(`Insufficient USDC. Need ${amountWithFee.toFixed(2)} (includes ${feePercent}% fee). You have ${parseFloat(ethers.utils.formatUnits(balance, 18)).toFixed(2)}.`);
           }
         }
 
         // 4. Approve USDC with fee-adjusted amount (legacy checkForApproval)
+        console.log('[buyShares] Step 4 — approving USDC...');
         const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
         if (!usdc) throw new Error('Could not connect to USDC contract');
         const currentAllowance = await usdc.allowance(address, CONTRACTS.RWA_MARKETPLACE);
@@ -274,6 +280,9 @@ export function useBlockchain() {
           await usdc.callStatic.approve(CONTRACTS.RWA_MARKETPLACE, amountWithFeeWei);
           const approveTx = await usdc.approve(CONTRACTS.RWA_MARKETPLACE, amountWithFeeWei);
           await approveTx.wait();
+          console.log('[buyShares] Step 4 — USDC approved');
+        } else {
+          console.log('[buyShares] Step 4 — allowance sufficient, skipping approval');
         }
 
         // 5. Get agent wallet (legacy: localStorage referral)
@@ -282,6 +291,9 @@ export function useBlockchain() {
           : agentWallet || ethers.constants.AddressZero;
 
         // 6. callStatic dry-run (legacy payment.js line 216-224)
+        console.log('[buyShares] Step 6 — dry-run buyPrimaryShares...');
+        const marketplace = await getContract(CONTRACTS.RWA_MARKETPLACE, MARKETPLACE_ABI, true);
+        if (!marketplace) throw new Error('Could not connect to marketplace');
         await marketplace.callStatic.buyPrimaryShares(
           address,              // recipient
           CONTRACTS.USDC,       // currency
@@ -341,14 +353,16 @@ export function useBlockchain() {
 
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
-      } catch (err) {
+      } catch (err: any) {
+        console.error('[buyShares] FAILED:', err);
+        console.error('[buyShares] Error details:', err?.reason, err?.error?.message, err?.data);
         const msg = err instanceof Error ? err.message : 'Purchase failed';
         setError(msg);
         setLoading(false);
         throw err;
       }
     },
-    [address, ensureConnected],
+    [address, ensureConnected, getSignerProvider],
   );
 
   const claimRent = useCallback(
