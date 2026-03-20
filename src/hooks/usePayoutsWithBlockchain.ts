@@ -113,7 +113,7 @@ export function usePayoutsWithBlockchain() {
 
               if (claimableAmount > 0 || eligible) {
                 payouts.push({
-                  propertyId: prop.id,
+                  propertyId: blockchainPropertyId,
                   propertyTitle: prop.title || 'Property',
                   propertyImage: prop.image || '',
                   sharesOwned,
@@ -215,7 +215,7 @@ export function usePayoutsWithBlockchain() {
             id: `graph-rent-${w.id}`,
             propertyTitle: prop?.title || `Property #${blockchainPropId}`,
             propertyImage: prop?.image || '',
-            propertyId: prop?.id || blockchainPropId,
+            propertyId: blockchainPropId,
             date: new Date(Number(w.blockTimestamp) * 1000).toISOString(),
             sharesOwned: 0,
             amount: 0, // Amount not available in subgraph entity
