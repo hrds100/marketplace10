@@ -113,7 +113,7 @@ export function usePayoutsWithBlockchain() {
 
               if (claimableAmount > 0 || eligible) {
                 payouts.push({
-                  propertyId: prop.id,
+                  propertyId: blockchainPropertyId, // Must be blockchain ID, not Supabase row ID
                   propertyTitle: prop.title || 'Property',
                   propertyImage: prop.image || '',
                   sharesOwned,

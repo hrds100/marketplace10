@@ -61,6 +61,22 @@ async function getWalletProvider() {
       });
     } catch { /* already initialized */ }
 
+    // Ensure BSC chain before any provider usage
+    if (pa.ethereum) {
+      try {
+        const chainId = await pa.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== '0x38') {
+          console.log('[Provider] Wrong chain:', chainId, '→ switching to BSC');
+          await pa.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x38' }],
+          });
+        }
+      } catch (e) {
+        console.log('[Provider] Chain switch failed:', e);
+      }
+    }
+
     // Fast path: session confirmed by ensureConnected() this tab session
     if (_particleConnected && pa.ethereum) {
       console.log('[Provider] ✅ Particle (session flag active)');
@@ -124,17 +140,34 @@ export function useBlockchain() {
       try {
         const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
         const { bsc } = await import('@particle-network/authkit/chains');
-        const { PARTICLE_CONFIG } = await import('@/lib/particle');
+        // Always LEGACY — MPC keys live under legacy project
+        const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
         const pa = particleAuth as any;
 
         try {
           pa.init({
-            projectId: PARTICLE_CONFIG.projectId,
-            clientKey: PARTICLE_CONFIG.clientKey,
-            appId: PARTICLE_CONFIG.appId,
+            projectId: PARTICLE_LEGACY_CONFIG.projectId,
+            clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
+            appId: PARTICLE_LEGACY_CONFIG.appId,
             chains: [bsc],
           });
         } catch { /* already initialized */ }
+
+        // Ensure BSC chain (56) — Particle defaults to Ethereum
+        if (pa.ethereum) {
+          try {
+            const chainId = await pa.ethereum.request({ method: 'eth_chainId' });
+            if (chainId !== '0x38') { // 0x38 = 56 = BSC
+              console.log('[ensureConnected] Wrong chain:', chainId, '→ switching to BSC');
+              await pa.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x38' }],
+              });
+            }
+          } catch (e) {
+            console.log('[ensureConnected] Chain switch failed:', e);
+          }
+        }
 
         // Fast path: session confirmed this tab session
         if (_particleConnected) {
