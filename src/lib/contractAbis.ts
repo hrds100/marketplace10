@@ -42,6 +42,7 @@ export const BUY_LP_ABI = [
   'function buyLPToken(address _recipient, address _currency, uint256 _amountInUSDC) external payable',
   'function buyStay(address _recipient, address _currency, uint256 _usdcAmount) external payable',
   'function getLpEstimation(uint256 _amountInUSDC) external view returns (uint256 _lpAmount)',
+  'event LPBought(address indexed buyer, uint256 lpAmount, uint256 usdcSpent)',
 ];
 
 export const FARM_ABI = [
@@ -50,6 +51,10 @@ export const FARM_ABI = [
   'function deposit(uint256 _amount) external',
   'function withdraw(uint256 _amount) external',
   'function claimReward() external',
+  'function stakeLPs(uint256 _amount) external',
+  'function claimRewards() external',
+  'function getStayPerSecond() external view returns (uint256)',
+  'event RewardsClaimed(address indexed user, uint256 amount)',
 ];
 
 export const ERC20_ABI = [

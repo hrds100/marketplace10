@@ -568,6 +568,10 @@ export function useBlockchain() {
     [ensureConnected],
   );
 
+  // STAY claim — exact clone of legacy claim.jsx (payout source, steps.length === 4)
+  // Step 0: withdrawRent(propertyId) → get claimedUsdc amount from RentWithdrawn event
+  // Step 1: checkForApproval("USDC", claimedUsdc, buyLp)
+  // Step 2: callStatic.buyStay() dry-run → buyStay() → wait
   const buyStayTokens = useCallback(
     async (propertyId: number, onStep?: (step: number, total: number) => void) => {
       setLoading(true);
@@ -577,33 +581,54 @@ export function useBlockchain() {
         const ethers = await getEthers();
         if (!ethers) throw new Error('Blockchain not available');
 
-        // 1. Withdraw rent
-        onStep?.(1, 3);
+        // Step 0: Withdraw rent — legacy NfstayContext.jsx line 967-984
+        onStep?.(0, 3);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
-        const withdrawTx = await rentContract.withdrawRent(propertyId);
-        await withdrawTx.wait();
+        await rentContract.callStatic.withdrawRent(propertyId);
+        const _rent = await rentContract.withdrawRent(propertyId);
+        const rentTx = await _rent.wait();
+        // Get claimed USDC amount from RentWithdrawn event (legacy line 984)
+        const rentEvents = await rentContract.queryFilter('RentWithdrawn', rentTx.blockNumber);
+        const claimedUsdc = rentEvents[0]?.args?.[2]
+          ? parseFloat(ethers.utils.formatUnits(rentEvents[0].args[2], 18))
+          : 0;
+        console.log('[buyStayTokens] Step 0 done — rent withdrawn:', claimedUsdc, 'USDC');
+        if (claimedUsdc <= 0) throw new Error('No rent claimed');
 
-        // 2. Approve USDC for BUY_LP
+        // Step 1: Approve USDC for BuyLP — legacy claim.jsx line 78-83
+        onStep?.(1, 3);
+        const usdcContract = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
+        if (!usdcContract) throw new Error('Could not connect to USDC contract');
+        const allowance = await usdcContract.allowance(address, CONTRACTS.BUY_LP);
+        const requiredWei = ethers.utils.parseUnits(claimedUsdc.toString(), 18);
+        if (allowance.lt(requiredWei)) {
+          await usdcContract.callStatic.approve(CONTRACTS.BUY_LP, requiredWei);
+          const approveTx = await usdcContract.approve(CONTRACTS.BUY_LP, requiredWei);
+          await approveTx.wait();
+        }
+        console.log('[buyStayTokens] Step 1 done — USDC approved');
+
+        // Step 2: Buy STAY — legacy claim.jsx line 92-114
         onStep?.(2, 3);
-        const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
-        if (!usdc) throw new Error('Could not connect to USDC contract');
-        const balance = await usdc.balanceOf(address);
-        if (balance.isZero()) throw new Error('No USDC balance after rent withdrawal');
-        const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
-        await approveTx.wait();
-
-        // 3. Swap USDC → STAY
-        onStep?.(3, 3);
         const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
         if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
-        const tx = await buyLpContract.buyStay(address, CONTRACTS.USDC, balance);
-        const receipt = await tx.wait();
+        // callStatic dry-run first (legacy line 94-101)
+        await buyLpContract.callStatic.buyStay(
+          address, CONTRACTS.USDC, requiredWei, { value: 0 }
+        );
+        // Actual transaction (legacy line 103-111)
+        const _swap = await buyLpContract.buyStay(
+          address, CONTRACTS.USDC, requiredWei, { value: 0 }
+        );
+        await _swap.wait();
+        console.log('[buyStayTokens] Step 2 done — STAY purchased');
 
         setLoading(false);
-        return { txHash: receipt.transactionHash, success: true };
+        return { txHash: _swap.hash, success: true };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Buy STAY failed';
+        const msg = err instanceof Error ? err.message : 'STAY claim failed';
+        console.error('[buyStayTokens] Failed:', err);
         setError(msg);
         setLoading(false);
         throw err;
@@ -612,6 +637,12 @@ export function useBlockchain() {
     [address, ensureConnected],
   );
 
+  // LP claim — exact clone of legacy claim.jsx (payout source, steps.length === 5)
+  // Step 0: withdrawRent(propertyId) → get claimedUsdc from event
+  // Step 1: checkForApproval("USDC", claimedUsdc, buyLp)
+  // Step 2: handleBuyLp(address, claimedUsdc) → get lpBought from LPBought event
+  // Step 3: checkForApproval("PAIR", lpBought, farm)
+  // Step 4: handleAddToFarm(address, lpBought)
   const buyLpTokens = useCallback(
     async (propertyId: number, onStep?: (step: number, total: number) => void) => {
       setLoading(true);
@@ -621,33 +652,69 @@ export function useBlockchain() {
         const ethers = await getEthers();
         if (!ethers) throw new Error('Blockchain not available');
 
-        // 1. Withdraw rent
-        onStep?.(1, 3);
+        // Step 0: Withdraw rent — legacy line 967-984
+        onStep?.(0, 5);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
-        const withdrawTx = await rentContract.withdrawRent(propertyId);
-        await withdrawTx.wait();
+        await rentContract.callStatic.withdrawRent(propertyId);
+        const _rent = await rentContract.withdrawRent(propertyId);
+        const rentTx = await _rent.wait();
+        const rentEvents = await rentContract.queryFilter('RentWithdrawn', rentTx.blockNumber);
+        const claimedUsdc = rentEvents[0]?.args?.[2]
+          ? parseFloat(ethers.utils.formatUnits(rentEvents[0].args[2], 18))
+          : 0;
+        if (claimedUsdc <= 0) throw new Error('No rent claimed');
 
-        // 2. Approve USDC for BUY_LP
-        onStep?.(2, 3);
-        const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
-        if (!usdc) throw new Error('Could not connect to USDC contract');
-        const balance = await usdc.balanceOf(address);
-        if (balance.isZero()) throw new Error('No USDC balance after rent withdrawal');
-        const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
-        await approveTx.wait();
+        // Step 1: Approve USDC for BuyLP — legacy claim.jsx line 78-83
+        onStep?.(1, 5);
+        const usdcContract = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
+        if (!usdcContract) throw new Error('Could not connect to USDC');
+        const allowance = await usdcContract.allowance(address, CONTRACTS.BUY_LP);
+        const requiredWei = ethers.utils.parseUnits(claimedUsdc.toString(), 18);
+        if (allowance.lt(requiredWei)) {
+          await usdcContract.callStatic.approve(CONTRACTS.BUY_LP, requiredWei);
+          const approveTx = await usdcContract.approve(CONTRACTS.BUY_LP, requiredWei);
+          await approveTx.wait();
+        }
 
-        // 3. Create LP position
-        onStep?.(3, 3);
+        // Step 2: Buy LP — legacy NfstayContext.jsx line 898-934
+        onStep?.(2, 5);
         const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
-        if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
-        const tx = await buyLpContract.buyLPToken(address, CONTRACTS.USDC, balance);
-        const receipt = await tx.wait();
+        if (!buyLpContract) throw new Error('Could not connect to BuyLP');
+        await buyLpContract.callStatic.buyLPToken(address, CONTRACTS.USDC, requiredWei, { value: 0 });
+        const _buy = await buyLpContract.buyLPToken(address, CONTRACTS.USDC, requiredWei, { value: 0 });
+        const buyTx = await _buy.wait();
+        const lpEvents = await buyLpContract.queryFilter('LPBought', buyTx.blockNumber);
+        const lpBought = lpEvents[0]?.args?.[1]
+          ? parseFloat(ethers.utils.formatUnits(lpEvents[0].args[1], 18))
+          : 0;
+        if (lpBought <= 0) throw new Error('LP creation failed');
+
+        // Step 3: Approve LP for Farm — legacy claim.jsx line 116
+        onStep?.(3, 5);
+        const pairContract = await getContract(CONTRACTS.STAY_USDC_PAIR, ERC20_ABI, true);
+        if (!pairContract) throw new Error('Could not connect to LP pair');
+        const farmAllowance = await pairContract.allowance(address, CONTRACTS.FARM);
+        const lpWei = ethers.utils.parseUnits(lpBought.toString(), 18);
+        if (farmAllowance.lt(lpWei)) {
+          await pairContract.callStatic.approve(CONTRACTS.FARM, lpWei);
+          const approveLpTx = await pairContract.approve(CONTRACTS.FARM, lpWei);
+          await approveLpTx.wait();
+        }
+
+        // Step 4: Stake in Farm — legacy NfstayContext.jsx line 884-886
+        onStep?.(4, 5);
+        const farmContract = await getContract(CONTRACTS.FARM, FARM_ABI, true);
+        if (!farmContract) throw new Error('Could not connect to farm');
+        await farmContract.callStatic.stakeLPs(lpWei);
+        const _stake = await farmContract.stakeLPs(lpWei);
+        await _stake.wait();
 
         setLoading(false);
-        return { txHash: receipt.transactionHash, success: true };
+        return { txHash: _stake.hash, success: true };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Buy LP failed';
+        const msg = err instanceof Error ? err.message : 'LP claim failed';
+        console.error('[buyLpTokens] Failed:', err);
         setError(msg);
         setLoading(false);
         throw err;
