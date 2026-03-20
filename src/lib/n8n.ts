@@ -56,7 +56,11 @@ export async function submitInquiry(params: {
   return res.json();
 }
 
-/** POST /webhook/verify-otp → { phone, code, name, email? } → { success, error? } */
+/** POST /webhook/verify-otp → { phone, code, name, email? } → { success, error? }
+ *  NOTE: n8n verify-otp currently has no "Respond to Webhook" node so returns empty body.
+ *  We treat empty 200 as success (pass-through) until the workflow is configured to
+ *  explicitly return { success: false } for wrong codes.
+ */
 export async function verifyOtp(params: {
   phone: string;
   code: string;
@@ -75,7 +79,13 @@ export async function verifyOtp(params: {
     console.error('n8n verifyOtp ERROR:', res.status, errText);
     throw new Error(errText);
   }
-  const data = await res.json();
+  const text = await res.text();
+  if (!text.trim()) {
+    // n8n workflow ran but has no Respond to Webhook node — treat as success
+    console.log('verifyOtp: empty response from n8n — treating as success (TODO: add Respond to Webhook node)');
+    return { success: true };
+  }
+  const data = JSON.parse(text);
   console.log('n8n verifyOtp RESP:', data);
   return data;
 }
