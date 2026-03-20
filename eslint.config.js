@@ -10,6 +10,10 @@ export default tseslint.config(
       "dist",
       // shadcn/ui generated components — not hand-written, exclude from linting
       "src/components/ui/**",
+      // Legacy app (JSX without TS, causes parse errors)
+      "legacy/**",
+      // Supabase edge functions (Deno runtime, different TS context)
+      "supabase/functions/**",
     ],
   },
   {
