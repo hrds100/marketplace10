@@ -746,24 +746,35 @@ export default function InvestPortfolioPage() {
                       )}
                     </div>
 
-                    {/* Right — Boost card (always visible, aligned with property title) */}
+                    {/* Right — Boost card — cloned from legacy boostedApr.js */}
                     <div className="sm:w-64 flex-shrink-0">
+                      {(() => {
+                        const bd = boostDetailsMap[h.propertyId];
+                        const isBoosted = bd?.isBoosted || false;
+                        const sharesBoosted = bd?.sharesBoosted ? Number(bd.sharesBoosted) : 0;
+                        const sharesNotBoosted = h.sharesOwned - sharesBoosted;
+                        const boostAprPercent = bd?.boostAprValue ? (Number(bd.boostAprValue) / 10).toFixed(1) : '0';
+                        const currentApr = (h.annualYield + Number(boostAprPercent)).toFixed(2);
+                        const sixYrRoi = (h.sharesOwned * h.sharePrice * Math.pow(1 + (h.annualYield + Number(boostAprPercent)) / 100, 6)).toFixed(2);
+                        const estimatedRewards = bd?.estimatedRewards ? (Number(bd.estimatedRewards) / 1e18).toFixed(2) : '0';
+                        const boostCost = bd?.boostCost ?? '—';
+                        return (
                       <div className="rounded-xl border border-primary/30 bg-background p-4 space-y-3 shadow-sm">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-base font-bold">Boosted APR: {boostDetailsMap[h.propertyId]?.isBoosted ? (h.annualYield * 1.5).toFixed(1) : '0'}%</p>
-                            <p className="text-xs text-muted-foreground">{boostDetailsMap[h.propertyId]?.isBoosted ? 'Boosted' : 'Not Boosted'}</p>
+                            <p className="text-base font-bold">Current APR: {currentApr}%</p>
+                            <p className="text-xs text-muted-foreground">{isBoosted ? 'Boosted' : 'Not Boosted'}</p>
                           </div>
                           <span className="text-xl">{'\uD83D\uDE80'}</span>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <p className="text-base font-bold">${(h.sharesOwned * h.sharePrice).toLocaleString()}</p>
-                            <p className="text-[10px] text-muted-foreground">Your Shares</p>
+                            <p className="text-base font-bold">{sharesBoosted}</p>
+                            <p className="text-[10px] text-muted-foreground">Shares Boosted</p>
                           </div>
                           <div>
-                            <p className="text-base font-bold">{(h.annualYield * 6).toFixed(0)}%</p>
-                            <p className="text-[10px] text-muted-foreground">6YR Est. Returns</p>
+                            <p className="text-base font-bold">{sixYrRoi}</p>
+                            <p className="text-[10px] text-muted-foreground">6YR Expected ROI</p>
                           </div>
                           <div>
                             <p className="text-base font-bold">Monthly</p>
@@ -772,41 +783,44 @@ export default function InvestPortfolioPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <p className="text-[10px] text-muted-foreground">Cost of Booster</p>
-                            <p className="text-sm font-bold">
-                              {boostDetailsMap[h.propertyId]?.boostCost ? `${boostDetailsMap[h.propertyId].boostCost} USDC` : 'Loading...'}
-                            </p>
+                            <p className="text-[10px] text-muted-foreground">Shares Not Boosted</p>
+                            <p className="text-sm font-bold">{sharesNotBoosted < 0 ? 0 : sharesNotBoosted}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] text-muted-foreground">Stay Earned</p>
-                            <p className="text-sm font-bold">{boostDetailsMap[h.propertyId]?.estimatedRewards ? `${(Number(boostDetailsMap[h.propertyId].estimatedRewards) / 1e18).toFixed(2)} STAY` : '0 STAY'}</p>
+                            <p className="text-[10px] text-muted-foreground">Cost of Booster</p>
+                            <p className="text-sm font-bold">{boostCost} USDC</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">STAY Earned</p>
+                            <p className="text-sm font-bold">{estimatedRewards} STAY</p>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 pt-1">
                           <Button
                             size="sm"
                             className="w-full bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white text-xs rounded-full"
-                            disabled={boostLoading}
+                            disabled={boostLoading || isBoosted}
                             onClick={async () => {
                               const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
                               const bcId = prop?.blockchain_property_id;
                               if (!bcId) { toast.error('Property not mapped to blockchain'); return; }
                               try {
                                 await boostApr(bcId);
-                                const apr = boostDetailsMap[h.propertyId]?.boostAprValue || '';
-                                setBoostSuccess({ show: true, apr: apr ? (Number(apr) / 10).toFixed(1) : '' });
+                                setBoostSuccess({ show: true, apr: boostAprPercent });
                               } catch (err: any) {
                                 toast.error(err?.message || 'Boost failed');
                               }
                             }}
                           >
-                            Boost APR {'\uD83D\uDE80'}
+                            {isBoosted ? 'Already Boosted' : 'Boost APR \uD83D\uDE80'}
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             className="w-full text-xs rounded-full border-primary/30 text-primary hover:bg-primary/10"
-                            disabled={boostLoading}
+                            disabled={boostLoading || Number(estimatedRewards) === 0}
                             onClick={async () => {
                               const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
                               const bcId = prop?.blockchain_property_id;
@@ -819,10 +833,12 @@ export default function InvestPortfolioPage() {
                               }
                             }}
                           >
-                            Claim
+                            Claim STAY
                           </Button>
                         </div>
                       </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </CardContent>
