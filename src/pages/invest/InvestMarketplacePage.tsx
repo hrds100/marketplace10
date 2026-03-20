@@ -1595,6 +1595,7 @@ export default function InvestMarketplacePage() {
   // Map Supabase property to the shape used by sub-components
   const property = dbProperty ? {
     id: dbProperty.id,
+    blockchain_property_id: (dbProperty as any).blockchain_property_id as number | undefined,
     title: dbProperty.title || '',
     location: dbProperty.location || '',
     country: dbProperty.country || '',
