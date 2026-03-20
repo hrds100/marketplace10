@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+## [2026-03-20] — Social Login Fix + Chain Disconnection Fix
+
+### Fixed — Social Login (Particle Network)
+
+- **Google/Apple/Twitter/Facebook login redirected to verify-otp instead of dashboard**: Three root causes:
+  1. `ProtectedRoute` only queried `whatsapp_verified`, not `wallet_auth_method` — social users were never detected (`ea28010`)
+  2. Stale sessions with no profile triggered verify-otp loop — now signs out + redirects to /signin (`cd726eb`)
+  3. `profiles.update({ wallet_auth_method })` silently failed — no error checking on the Supabase call. Added error logging + retry after 1.5s delay (`bec2510` + this commit)
+- **ProtectedRoute sessionStorage fallback**: ParticleAuthCallback already stores `particle_auth_method` in sessionStorage (line 94), but ProtectedRoute ignored it. Now if the profile says `jwt` but sessionStorage says `google`, the user is let through immediately and the profile is fixed in the background.
+- **handle_new_user trigger missing email**: The Supabase trigger only inserted `(id, name)` — `email` was always null. Fixed to include `COALESCE(NEW.email, '')`.
+- **INSERT RLS policy added**: `CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id)` — required for upsert operations.
+
+### Fixed — Blockchain Provider ("The provider is disconnected from the specified chain")
+
+- **Root cause: Particle SDK initialized with wrong project credentials.** `ensureConnected()` called `pa.init(PARTICLE_CONFIG)` (hub project) BEFORE checking the user's `wallet_auth_method`. Particle SDK only allows one `init()` per page — subsequent calls throw "already initialized" and are silently caught. For social login users (Google/Apple), this meant the SDK was permanently locked to the hub project instead of the legacy project, so `particleConnect()` either failed or recovered a different wallet. The provider was left in a disconnected state.
+- **Fix — auth-method-first initialization.** New `initParticle(pa, type)` helper tracks which project was initialized via `_particleInitType`. `ensureConnected()` now queries `wallet_auth_method` from the profile BEFORE any `pa.init()` call. Social users → `PARTICLE_LEGACY_CONFIG` (same wallet as app.nfstay.com). JWT users → `PARTICLE_CONFIG`.
+- **Fix — `getWalletProvider()` no longer re-inits.** Previously hardcoded `pa.init(PARTICLE_CONFIG)` on every call, potentially overriding the correct init. Now defers to `_particleInitType` set by `ensureConnected()`.
+- **Fix — `ensureBscChain()` returns boolean.** If chain check fails (provider fully disconnected), `getWalletProvider()` now returns `null` instead of a broken provider.
+
+### Files Changed
+
+- `src/pages/ParticleAuthCallback.tsx` — error checking + retry on profile update
+- `src/components/ProtectedRoute.tsx` — sessionStorage fallback for social users
+- `src/hooks/useBlockchain.ts` — `initParticle()` helper, auth-method-first init, `ensureBscChain()` returns boolean
+- DB: `handle_new_user()` trigger updated to include email column
+
 ## [2026-03-19] — Claiming Flow Fixes + Marketplace Enhancements + Bank Transfer Verification
 
 ### Fixed — Claiming Flow

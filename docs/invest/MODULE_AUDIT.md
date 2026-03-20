@@ -5,7 +5,7 @@
 
 ---
 
-## Last Updated: 2026-03-19 08:00 UTC
+## Last Updated: 2026-03-20 UTC
 
 ---
 
@@ -191,6 +191,12 @@ All contract ABIs in `src/lib/contractAbis.ts`.
 - `getShareBalance(propertyId)` → read-only balance
 - `getRentDetails(propertyId)` → read-only rent info
 - `getBoostDetails(propertyId)` → read-only boost status
+
+### Particle Init + Chain Validation (2026-03-20)
+- **Auth-method-first init** — `ensureConnected()` now checks `wallet_auth_method` from the profile BEFORE calling `pa.init()`. Social users (Google/Apple) get `PARTICLE_LEGACY_CONFIG`, JWT users get `PARTICLE_CONFIG`. Prevents SDK from locking to the wrong project.
+- **`initParticle()` helper** — tracks `_particleInitType` (hub/legacy) at module level. Prevents double-init conflicts.
+- **`ensureBscChain()`** — checks `eth_chainId` and switches to BNB Chain (0x38) if needed. Returns `false` if provider is fully disconnected.
+- Fixes "The provider is disconnected from the specified chain" — root cause was `pa.init()` always using hub project, silently swallowing the legacy re-init, leaving social users' providers broken.
 
 ### Blockchain → UI Wiring Status
 - ✅ "Secure Your Shares" button → calls `purchaseShares()`

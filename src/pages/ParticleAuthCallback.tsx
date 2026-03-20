@@ -148,9 +148,24 @@ export default function ParticleAuthCallback() {
           wallet_auth_method: intent.provider,
         };
         if (walletAddress) updatePayload.wallet_address = walletAddress;
-        await (supabase.from('profiles') as any)
+
+        const { error: updateErr } = await (supabase.from('profiles') as any)
           .update(updatePayload)
           .eq('id', userId);
+
+        if (updateErr) {
+          console.error('[ParticleCallback] Profile update failed:', updateErr);
+          // Retry once after a short delay — trigger may not have created the profile yet
+          await new Promise((r) => setTimeout(r, 1500));
+          const { error: retryErr } = await (supabase.from('profiles') as any)
+            .update(updatePayload)
+            .eq('id', userId);
+          if (retryErr) {
+            console.error('[ParticleCallback] Profile update retry failed:', retryErr);
+          }
+        }
+      } else {
+        console.error('[ParticleCallback] getUser() returned no user after sign-in');
       }
 
       const dest = intent.redirectTo ? decodeURIComponent(intent.redirectTo) : '/dashboard/deals';

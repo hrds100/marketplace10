@@ -15,8 +15,15 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 
 // Module-level Particle session flag — persists for the tab lifetime.
-// Set true once particleConnect(jwt) succeeds and address matches profile wallet.
+// Set true once particleConnect succeeds.
 let _particleConnected = false;
+
+// Which Particle project was initialized this page session.
+// Particle SDK only allows ONE init per page — subsequent pa.init() calls throw
+// "already initialized" and are silently caught. So the FIRST init wins.
+// Social users (Google/Apple/etc) MUST use 'legacy' to recover the same wallet
+// as app.nfstay.com. JWT users use 'hub'.
+let _particleInitType: 'hub' | 'legacy' | null = null;
 
 // Helper to get ethers — lazy loaded
 async function getEthers() {
@@ -36,32 +43,78 @@ async function getReadProvider() {
   );
 }
 
+// Initialize Particle SDK with the correct project.
+// Must only be called ONCE per page — the first call wins.
+// Social users → legacy project (same wallet as app.nfstay.com)
+// JWT users → hub project
+async function initParticle(pa: any, type: 'hub' | 'legacy') {
+  if (_particleInitType === type) return; // Already initialized correctly
+  if (_particleInitType && _particleInitType !== type) {
+    // Already initialized with WRONG project — can't change. Log warning.
+    console.warn('[Particle] ⚠️ Already initialized as', _particleInitType, '— cannot switch to', type);
+    return;
+  }
+  const { bsc } = await import('@particle-network/authkit/chains');
+  const { PARTICLE_CONFIG, PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
+  const config = type === 'legacy' ? PARTICLE_LEGACY_CONFIG : PARTICLE_CONFIG;
+  try {
+    pa.init({
+      projectId: config.projectId,
+      clientKey: config.clientKey,
+      appId: config.appId,
+      chains: [bsc],
+    });
+    _particleInitType = type;
+    console.log('[Particle] ✅ Initialized as', type);
+  } catch {
+    // Already initialized — record which type won
+    if (!_particleInitType) _particleInitType = type;
+  }
+}
+
+// Ensure Particle provider is on BNB Chain (56). Switch if needed.
+// If the provider is fully disconnected, this logs and returns false.
+async function ensureBscChain(pa: any): Promise<boolean> {
+  if (!pa?.ethereum) return false;
+  try {
+    const chainIdHex = await pa.ethereum.request({ method: 'eth_chainId' });
+    const chainId = parseInt(chainIdHex, 16);
+    if (chainId !== 56) {
+      console.log('[Provider] Wrong chain:', chainId, '— switching to BSC (56)');
+      await pa.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x38' }],
+      });
+    }
+    return true;
+  } catch (e) {
+    console.log('[Provider] Chain check/switch failed (provider may be disconnected):', e);
+    return false;
+  }
+}
+
 // Browser wallet provider for WRITE calls — Particle only.
-// All users (new and migrated) sign via their Particle JWT wallet.
-// Migration = transfer on-chain assets to the user's Particle wallet + update profile.
-// No MetaMask, no external wallets.
+// ensureConnected() MUST be called before this function.
+// It sets _particleInitType and _particleConnected so the provider is ready.
 async function getWalletProvider() {
   const ethers = await getEthers();
   if (!ethers) return null;
 
   try {
     const { particleAuth } = await import('@particle-network/auth-core');
-    const { bsc } = await import('@particle-network/authkit/chains');
-    const { PARTICLE_CONFIG } = await import('@/lib/particle');
     const pa = particleAuth as any;
 
-    try {
-      pa.init({
-        projectId: PARTICLE_CONFIG.projectId,
-        clientKey: PARTICLE_CONFIG.clientKey,
-        appId: PARTICLE_CONFIG.appId,
-        chains: [bsc],
-      });
-    } catch { /* already initialized */ }
+    // Initialize with correct project if not yet initialized.
+    // If ensureConnected() already ran, _particleInitType is set — this is a no-op.
+    // If called standalone (shouldn't happen for write ops), default to hub.
+    if (!_particleInitType) {
+      await initParticle(pa, 'hub');
+    }
 
     // Fast path: session confirmed by ensureConnected() this tab session
     if (_particleConnected && pa.ethereum) {
       console.log('[Provider] ✅ Particle (session flag active)');
+      await ensureBscChain(pa);
       return new ethers.providers.Web3Provider(pa.ethereum);
     }
 
@@ -72,6 +125,11 @@ async function getWalletProvider() {
         console.log('[Provider] eth_accounts:', accounts);
         if (Array.isArray(accounts) && accounts.length > 0) {
           console.log('[Provider] ✅ Particle (eth_accounts verified)');
+          const chainOk = await ensureBscChain(pa);
+          if (!chainOk) {
+            console.log('[Provider] ❌ Provider disconnected — cannot use');
+            return null;
+          }
           return new ethers.providers.Web3Provider(pa.ethereum);
         }
       } catch (e) {
@@ -115,24 +173,30 @@ export function useBlockchain() {
   const [error, setError] = useState<string | null>(null);
 
   // Ensure Particle signing session is active before any write tx.
-  // Runs at tx time — no race condition with WalletProvisioner.
+  // CRITICAL: Must determine user's auth method BEFORE calling pa.init(),
+  // because Particle SDK only initializes once per page — subsequent init() calls
+  // throw "already initialized" and are silently caught. Social users need the
+  // legacy project (same wallet as app.nfstay.com), JWT users need the hub project.
   const ensureConnected = useCallback(async () => {
     if (user?.id) {
-      console.log('[ensureConnected] user.id =', user.id, '| _particleConnected =', _particleConnected);
+      console.log('[ensureConnected] user.id =', user.id, '| _particleConnected =', _particleConnected, '| _particleInitType =', _particleInitType);
       try {
         const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
-        const { bsc } = await import('@particle-network/authkit/chains');
-        const { PARTICLE_CONFIG } = await import('@/lib/particle');
         const pa = particleAuth as any;
 
-        try {
-          pa.init({
-            projectId: PARTICLE_CONFIG.projectId,
-            clientKey: PARTICLE_CONFIG.clientKey,
-            appId: PARTICLE_CONFIG.appId,
-            chains: [bsc],
-          });
-        } catch { /* already initialized */ }
+        // Determine auth method from profile FIRST — before any pa.init()
+        // This decides which Particle project credentials to use.
+        let authMethod = 'jwt';
+        if (!_particleInitType) {
+          const { data: profile } = await (supabase.from('profiles') as any)
+            .select('wallet_auth_method')
+            .eq('id', user.id)
+            .single();
+          authMethod = (profile as any)?.wallet_auth_method || 'jwt';
+          const initType = authMethod !== 'jwt' ? 'legacy' : 'hub';
+          await initParticle(pa, initType);
+          console.log('[ensureConnected] Auth method:', authMethod, '→ init type:', initType);
+        }
 
         // Fast path: session confirmed this tab session
         if (_particleConnected) {
@@ -158,27 +222,19 @@ export function useBlockchain() {
           return;
         }
 
-        // No session — determine auth method from profile
-        const { data: profile } = await (supabase.from('profiles') as any)
-          .select('wallet_auth_method')
-          .eq('id', user.id)
-          .single();
-        const authMethod = (profile as any)?.wallet_auth_method || 'jwt';
+        // No session — re-read auth method if we haven't already
+        if (_particleInitType && authMethod === 'jwt') {
+          const { data: profile } = await (supabase.from('profiles') as any)
+            .select('wallet_auth_method')
+            .eq('id', user.id)
+            .single();
+          authMethod = (profile as any)?.wallet_auth_method || 'jwt';
+        }
 
         if (authMethod !== 'jwt') {
           // Social login — reconnect via legacy project (same wallet as app.nfstay.com)
           console.log('[ensureConnected] No session — reconnecting via social:', authMethod);
           try {
-            const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
-            // Re-init with legacy credentials for social users
-            try {
-              pa.init({
-                projectId: PARTICLE_LEGACY_CONFIG.projectId,
-                clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
-                appId: PARTICLE_LEGACY_CONFIG.appId,
-                chains: [bsc],
-              });
-            } catch { /* already initialized */ }
             await particleConnect({ socialType: authMethod as any });
             _particleConnected = true;
             console.log('[ensureConnected] ✅ Social particleConnect succeeded');
