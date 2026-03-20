@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import { NfsMockPropertyCard } from "@/components/nfstay/main-site/NfsMockPropertyCard";
 import { NfsSearchFilters } from "@/components/nfstay/main-site/NfsSearchFilters";
 import NfsSearchMap from "@/components/nfstay/maps/NfsSearchMap";
-import NfsEmptyState from "@/components/nfstay/NfsEmptyState";
+import { NfsEmptyState } from "@/components/nfstay/NfsEmptyState";
 import { mockProperties } from "@/data/nfstay/mock-properties";
 
 export default function NfsSearchPage() {
