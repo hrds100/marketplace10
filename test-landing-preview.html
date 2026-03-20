@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NFsTay — Landing Redesign Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #f3f3ee;
+      color: #1b1b1b;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { text-decoration: none; color: inherit; }
+    img { display: block; }
+
+    /* ── Tokens ── */
+    :root {
+      --teal: #1e9a80;
+      --teal-hover: #178870;
+      --teal-light: rgba(30,154,128,0.08);
+      --teal-ring: rgba(30,154,128,0.15);
+      --beige: #f3f3ee;
+      --card: #ffffff;
+      --card-border: #e8e5df;
+      --border: #e5e5e5;
+      --text: #0a0a0a;
+      --text-secondary: #737373;
+      --text-muted: #525252;
+      --dark: #041613;
+      --dark-surface: #0c2420;
+      --dark-text: #e8ebe6;
+      --radius: 24px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --radius-xs: 10px;
+      --shadow: 0 4px 8px -1px rgba(0,0,0,0.05);
+      --shadow-lg: 0 20px 50px rgba(0,0,0,0.08);
+      --max-w: 1200px;
+    }
+
+    /* ── NAV ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 68px; display: flex; align-items: center;
+      background: transparent; transition: all 0.2s;
+    }
+    .nav.scrolled {
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border); box-shadow: var(--shadow);
+    }
+    .nav-inner {
+      max-width: var(--max-w); width: 100%; margin: 0 auto; padding: 0 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { font-size: 20px; font-weight: 800; color: white; letter-spacing: -0.02em; }
+    .nav.scrolled .nav-logo { color: var(--text); }
+    .nav-links { display: flex; gap: 32px; }
+    .nav-links a { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); transition: color 0.15s; }
+    .nav-links a:hover { color: white; }
+    .nav.scrolled .nav-links a { color: var(--text-secondary); }
+    .nav.scrolled .nav-links a:hover { color: var(--text); }
+    .nav-cta { display: flex; align-items: center; gap: 12px; }
+    .nav-signin { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); padding: 8px 12px; }
+    .nav.scrolled .nav-signin { color: var(--text-secondary); }
+    .nav-btn {
+      height: 40px; padding: 0 20px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      background: var(--teal); color: white; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s;
+    }
+    .nav-btn:hover { background: var(--teal-hover); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; min-height: 100vh; display: flex; align-items: center;
+      background: var(--dark); overflow: hidden;
+    }
+    .hero-glow {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 70% 30%, rgba(30,154,128,0.1) 0%, transparent 60%);
+    }
+    .hero-inner {
+      position: relative; max-width: var(--max-w); width: 100%; margin: 0 auto;
+      padding: 120px 40px 80px; display: grid; grid-template-columns: 55% 45%; gap: 60px; align-items: center;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px;
+      border-radius: 9999px; background: var(--teal-light); margin-bottom: 28px;
+    }
+    .hero-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+    .hero-eyebrow span { font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--teal); }
+    .hero h1 {
+      font-size: clamp(34px, 5vw, 58px); font-weight: 800; line-height: 1.08;
+      letter-spacing: -0.035em; color: white;
+    }
+    .hero h1 em { font-style: normal; position: relative; }
+    .hero h1 em::after {
+      content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px;
+      background: var(--teal); border-radius: 2px; opacity: 0.6;
+    }
+    .hero-sub { margin-top: 24px; font-size: 18px; line-height: 1.6; color: var(--dark-text); max-width: 480px; opacity: 0.7; }
+    .hero-buttons { margin-top: 36px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-hero-primary {
+      height: 52px; padding: 0 28px; border-radius: var(--radius-xs); font-size: 15px; font-weight: 600;
+      background: var(--teal); color: white; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; transition: background 0.15s;
+    }
+    .btn-hero-primary:hover { background: var(--teal-hover); }
+    .btn-hero-secondary {
+      height: 52px; padding: 0 28px; border-radius: var(--radius-xs); font-size: 15px; font-weight: 500;
+      background: transparent; color: white; border: 1.5px solid rgba(255,255,255,0.15);
+      cursor: pointer; display: inline-flex; align-items: center; transition: border-color 0.15s;
+    }
+    .btn-hero-secondary:hover { border-color: rgba(255,255,255,0.4); }
+
+    .hero-stats { margin-top: 48px; display: flex; gap: 32px; flex-wrap: wrap; }
+    .hero-stat-num { font-size: 20px; font-weight: 700; color: white; }
+    .hero-stat-label { font-size: 13px; color: var(--dark-text); opacity: 0.6; }
+    .hero-stat-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.1); align-self: center; }
+
+    .hero-avatars { margin-top: 20px; display: flex; align-items: center; gap: 12px; }
+    .hero-avatars img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--dark); margin-left: -8px; object-fit: cover; }
+    .hero-avatars img:first-child { margin-left: 0; }
+    .hero-avatars-text { font-size: 13px; color: var(--dark-text); opacity: 0.6; }
+
+    /* Hero right — floating cards */
+    .hero-right { position: relative; height: 480px; }
+    .hero-card {
+      position: absolute; border-radius: var(--radius-md); overflow: hidden;
+      background: var(--card); box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+    }
+    .hero-card-1 { top: 20px; right: 0; width: 320px; }
+    .hero-card-1 img { width: 100%; height: 200px; object-fit: cover; }
+    .hero-card-1-body { padding: 16px 20px 20px; }
+    .hero-card-1-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .hero-card-1-profit { font-size: 12px; font-weight: 600; color: var(--teal); background: var(--teal-light); padding: 2px 8px; border-radius: 6px; }
+    .hero-card-1-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+    .hero-card-2 {
+      top: 10px; left: 20px; z-index: 20; border-radius: var(--radius-md);
+      background: var(--dark-surface); padding: 14px 20px; min-width: 280px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .hero-card-2 img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
+    .hero-card-2 .title { font-size: 14px; font-weight: 700; color: white; }
+    .hero-card-2 .sub { font-size: 12px; color: var(--dark-text); opacity: 0.65; }
+    .hero-card-2 .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); margin-left: auto; }
+
+    .hero-fade {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 120px;
+      background: linear-gradient(transparent, var(--beige));
+    }
+
+    /* ── SECTION SHARED ── */
+    .section { padding: 80px 0; }
+    .section-inner { max-width: var(--max-w); margin: 0 auto; padding: 0 40px; }
+    .section-title { font-size: clamp(28px, 3.5vw, 42px); font-weight: 700; letter-spacing: -0.025em; color: var(--text); }
+    .section-sub { font-size: 18px; color: var(--text-secondary); margin-top: 16px; line-height: 1.6; max-width: 560px; }
+    .section-center { text-align: center; }
+    .section-center .section-sub { margin-left: auto; margin-right: auto; }
+    .bg-white { background: var(--card); }
+    .bg-beige { background: var(--beige); }
+
+    /* ── LANDLORD CTA ── */
+    .landlord-cta {
+      padding: 48px 0; background: linear-gradient(135deg, rgba(30,154,128,0.06) 0%, rgba(30,154,128,0.02) 100%);
+      border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border);
+    }
+    .landlord-cta .section-inner {
+      display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+    }
+    .landlord-cta h2 { font-size: 24px; font-weight: 700; color: var(--text); }
+    .landlord-cta p { font-size: 15px; color: var(--text-secondary); margin-top: 4px; }
+    .btn-teal-lg {
+      height: 52px; padding: 0 32px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600;
+      background: var(--teal); color: white; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; box-shadow: var(--shadow-lg); transition: background 0.15s;
+    }
+    .btn-teal-lg:hover { background: var(--teal-hover); }
+
+    /* ── DEAL CARDS ── */
+    .deals-scroll { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 16px; }
+    .deals-scroll::-webkit-scrollbar { display: none; }
+    .deal-card {
+      min-width: 280px; border-radius: var(--radius-md); overflow: hidden;
+      background: var(--card); border: 1px solid var(--card-border);
+      box-shadow: var(--shadow); transition: box-shadow 0.2s, transform 0.2s; flex-shrink: 0;
+    }
+    .deal-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+    .deal-card img { width: 100%; height: 180px; object-fit: cover; }
+    .deal-card-body { padding: 16px; }
+    .deal-card-row { display: flex; justify-content: space-between; align-items: start; }
+    .deal-card-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .deal-card-badge { font-size: 12px; font-weight: 600; color: var(--teal); background: var(--teal-light); padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+    .deal-card-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .deal-card-stats { display: flex; gap: 24px; margin-top: 12px; }
+    .deal-card-stats .label { font-size: 11px; color: var(--text-secondary); }
+    .deal-card-stats .value { font-size: 13px; font-weight: 500; color: var(--text); }
+    .deal-card-stats .value.profit { color: var(--teal); font-weight: 700; }
+
+    .tab-row { display: flex; gap: 32px; border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 20px; }
+    .tab-row button { font-size: 15px; font-weight: 600; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding-bottom: 14px; margin-bottom: -15px; }
+    .tab-row button.active { color: var(--text); border-bottom: 2px solid var(--text); }
+    .tab-row .view-all { margin-left: auto; font-size: 14px; font-weight: 600; color: var(--teal); cursor: pointer; }
+
+    /* ── HOW IT WORKS ── */
+    .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 56px; }
+    .step-card {
+      background: var(--card); border-radius: var(--radius-md); padding: 32px;
+      border: 1px solid var(--card-border); transition: box-shadow 0.2s;
+    }
+    .step-card:hover { box-shadow: var(--shadow-lg); }
+    .step-icon {
+      width: 48px; height: 48px; border-radius: var(--radius-sm); background: var(--teal-light);
+      display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 22px;
+    }
+    .step-num { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
+    .step-title { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 8px; }
+    .step-desc { font-size: 14px; color: var(--text-secondary); margin-top: 12px; line-height: 1.6; }
+
+    /* ── PRICING ── */
+    .pricing-card {
+      max-width: 480px; margin: 56px auto 0; background: var(--card); border-radius: var(--radius);
+      padding: 32px; border: 2px solid var(--teal); position: relative;
+    }
+    .pricing-badge {
+      display: inline-block; font-size: 12px; font-weight: 600; color: white;
+      background: var(--teal); padding: 4px 12px; border-radius: 6px;
+    }
+    .pricing-price { margin-top: 16px; display: flex; align-items: baseline; gap: 4px; }
+    .pricing-price .amount { font-size: 36px; font-weight: 800; color: var(--text); }
+    .pricing-price .period { font-size: 14px; color: var(--text-secondary); }
+    .pricing-desc { font-size: 14px; color: var(--text-secondary); margin-top: 8px; }
+    .pricing-list { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+    .pricing-list li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); list-style: none; }
+    .pricing-check { width: 16px; height: 16px; color: var(--teal); flex-shrink: 0; }
+    .pricing-btn {
+      margin-top: 32px; width: 100%; height: 48px; border-radius: var(--radius-xs); font-size: 16px; font-weight: 600;
+      background: var(--teal); color: white; border: none; cursor: pointer; transition: background 0.15s;
+    }
+    .pricing-btn:hover { background: var(--teal-hover); }
+    .pricing-note { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 12px; }
+
+    /* ── UNIVERSITY ── */
+    .uni-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
+    .uni-card {
+      background: var(--card); border-radius: var(--radius-md); padding: 24px;
+      border: 1px solid var(--card-border); cursor: pointer; transition: box-shadow 0.2s;
+    }
+    .uni-card:hover { box-shadow: var(--shadow-lg); }
+    .uni-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .uni-card-head .emoji { font-size: 24px; }
+    .uni-card-head h3 { font-size: 16px; font-weight: 700; color: var(--text); }
+    .uni-card p { font-size: 14px; color: var(--text-secondary); }
+    .uni-card .lessons { font-size: 12px; color: var(--text-secondary); margin-top: 12px; }
+
+    /* ── TESTIMONIALS ── */
+    .testi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
+    .testi-card {
+      background: var(--card); border-radius: var(--radius-md); padding: 24px;
+      border: 1px solid var(--card-border);
+    }
+    .testi-stars { display: flex; gap: 2px; margin-bottom: 16px; }
+    .testi-stars svg { width: 16px; height: 16px; fill: #FBBF24; color: #FBBF24; }
+    .testi-quote { font-size: 14px; color: var(--text); line-height: 1.6; }
+    .testi-author { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+    .testi-author img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+    .testi-author .name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .testi-author .role { font-size: 12px; color: var(--text-secondary); }
+
+    /* ── FAQ ── */
+    .faq-list { max-width: 720px; margin: 48px auto 0; display: flex; flex-direction: column; gap: 12px; }
+    .faq-item {
+      background: var(--card); border-radius: var(--radius-md); border: 1px solid var(--card-border); overflow: hidden;
+    }
+    .faq-q {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: 20px; background: none; border: none; cursor: pointer; text-align: left;
+      font-size: 15px; font-weight: 500; color: var(--text); font-family: inherit;
+    }
+    .faq-q svg { width: 20px; height: 20px; color: var(--text-secondary); transition: transform 0.2s; flex-shrink: 0; }
+    .faq-item.open .faq-q svg { transform: rotate(180deg); }
+    .faq-a { padding: 0 20px 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.6; display: none; }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ── FINAL CTA ── */
+    .final-cta {
+      padding: 80px 0; background: var(--dark);
+      background-image: radial-gradient(ellipse at 50% 0%, rgba(30,154,128,0.12) 0%, transparent 60%);
+    }
+    .final-cta .section-inner { text-align: center; max-width: 640px; }
+    .final-cta h2 { font-size: clamp(28px, 3.5vw, 42px); font-weight: 700; color: white; letter-spacing: -0.025em; }
+    .final-cta p { font-size: 18px; color: var(--dark-text); opacity: 0.65; margin-top: 16px; }
+    .final-cta-buttons { margin-top: 32px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── FOOTER ── */
+    .footer { padding: 48px 0; background: var(--card); border-top: 1px solid var(--card-border); }
+    .footer-inner { max-width: var(--max-w); margin: 0 auto; padding: 0 40px; }
+    .footer-top { display: flex; justify-content: space-between; gap: 32px; }
+    .footer-logo { font-size: 18px; font-weight: 800; color: var(--text); }
+    .footer-desc { font-size: 14px; color: var(--text-secondary); margin-top: 8px; max-width: 300px; line-height: 1.5; }
+    .footer-cols { display: flex; gap: 48px; }
+    .footer-col h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin-bottom: 12px; }
+    .footer-col a { display: block; font-size: 14px; color: var(--text); margin-bottom: 8px; transition: color 0.15s; }
+    .footer-col a:hover { color: var(--teal); }
+    .footer-bottom {
+      margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+    }
+    .footer-copy { font-size: 12px; color: var(--text-secondary); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 12px; color: var(--text-secondary); transition: color 0.15s; }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ── BTN SHARED ── */
+    .btn-dark {
+      height: 52px; padding: 0 32px; border-radius: var(--radius-xs); font-size: 15px; font-weight: 600;
+      background: var(--text); color: white; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.15s;
+    }
+    .btn-dark:hover { opacity: 0.9; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .hero-inner { grid-template-columns: 1fr; padding: 100px 24px 60px; }
+      .hero-right { display: none; }
+      .steps-grid, .uni-grid, .testi-grid { grid-template-columns: 1fr; }
+      .nav-links, .nav-cta { display: none; }
+      .footer-top { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════ NAV ══════ -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">NFsTay</a>
+    <div class="nav-links">
+      <a href="#deals">Deals</a>
+      <a href="#how">How it Works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#university">University</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#" class="nav-signin">Sign In</a>
+      <button class="nav-btn">Get Started →</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════ HERO ══════ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">
+        <span class="dot"></span>
+        <span>£680 average monthly profit per deal</span>
+      </div>
+      <h1>Airbnb-ready properties with <em>permission to operate and profit</em></h1>
+      <p class="hero-sub">NFsTay connects short-term rental operators with verified, landlord-approved rent-to-rent opportunities. Browse, analyse, and close deals — all in one place.</p>
+      <div class="hero-buttons">
+        <button class="btn-hero-primary">Browse Live Deals →</button>
+        <button class="btn-hero-secondary">See How It Works</button>
+      </div>
+      <div class="hero-stats">
+        <div><div class="hero-stat-num">4,200+</div><div class="hero-stat-label">UK operators</div></div>
+        <div class="hero-stat-divider"></div>
+        <div><div class="hero-stat-num">1,800+</div><div class="hero-stat-label">verified deals</div></div>
+        <div class="hero-stat-divider"></div>
+        <div><div class="hero-stat-num">10</div><div class="hero-stat-label">cities covered</div></div>
+      </div>
+      <div class="hero-avatars">
+        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=face" alt="" />
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop&crop=face" alt="" />
+        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=64&h=64&fit=crop&crop=face" alt="" />
+        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=64&h=64&fit=crop&crop=face" alt="" />
+        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=64&h=64&fit=crop&crop=face" alt="" />
+        <span class="hero-avatars-text">Joined by 47 operators this month</span>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-card hero-card-2">
+        <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=80&h=80&fit=crop" alt="" />
+        <div>
+          <div class="title">New deal matched in Manchester</div>
+          <div class="sub">3-bed flat · Est. profit £680/mo</div>
+        </div>
+        <div class="pulse"></div>
+      </div>
+      <div class="hero-card hero-card-1">
+        <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=640&h=400&fit=crop" alt="" />
+        <div class="hero-card-1-body">
+          <div style="display:flex;justify-content:space-between;align-items:start">
+            <span class="hero-card-1-title">Maple House, Manchester</span>
+            <span class="hero-card-1-profit">+£680/mo</span>
+          </div>
+          <div class="hero-card-1-meta">3-bed flat · M14 · Live</div>
+          <div style="display:flex;gap:24px;margin-top:12px">
+            <div><div style="font-size:11px;color:var(--text-secondary)">Monthly rent</div><div style="font-size:13px;font-weight:500;color:var(--text)">£1,250</div></div>
+            <div><div style="font-size:11px;color:var(--text-secondary)">Profit</div><div style="font-size:13px;font-weight:700;color:var(--teal)">£680</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-fade"></div>
+</section>
+
+<!-- ══════ LANDLORD CTA ══════ -->
+<section class="landlord-cta">
+  <div class="section-inner">
+    <div>
+      <h2>Landlords: List Your Property</h2>
+      <p>Get qualified operators who guarantee rent. No management hassle.</p>
+    </div>
+    <button class="btn-teal-lg">Submit a Deal →</button>
+  </div>
+</section>
+
+<!-- ══════ DEALS ══════ -->
+<section class="section bg-white" id="deals">
+  <div class="section-inner">
+    <div class="tab-row">
+      <button class="active">Live Deals</button>
+      <button>Featured Deals</button>
+      <span class="view-all">View all deals →</span>
+    </div>
+    <p style="font-size:15px;color:var(--text-secondary);margin-bottom:24px">Updated daily — 1,800+ landlord-approved rent-to-rent listings across the UK</p>
+    <div class="deals-scroll">
+      <div class="deal-card">
+        <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=560&h=360&fit=crop" alt="" />
+        <div class="deal-card-body">
+          <div class="deal-card-row"><span class="deal-card-title">Maple House, Manchester</span><span class="deal-card-badge">+£680/mo</span></div>
+          <div class="deal-card-meta">3-bed flat · M14 · Live</div>
+          <div class="deal-card-stats"><div><div class="label">Rent</div><div class="value">£1,250</div></div><div><div class="label">Profit</div><div class="value profit">£680</div></div></div>
+        </div>
+      </div>
+      <div class="deal-card">
+        <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=560&h=360&fit=crop" alt="" />
+        <div class="deal-card-body">
+          <div class="deal-card-row"><span class="deal-card-title">Victoria Court, Leeds</span><span class="deal-card-badge">+£540/mo</span></div>
+          <div class="deal-card-meta">2-bed apartment · LS1 · Live</div>
+          <div class="deal-card-stats"><div><div class="label">Rent</div><div class="value">£950</div></div><div><div class="label">Profit</div><div class="value profit">£540</div></div></div>
+        </div>
+      </div>
+      <div class="deal-card">
+        <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=560&h=360&fit=crop" alt="" />
+        <div class="deal-card-body">
+          <div class="deal-card-row"><span class="deal-card-title">Park Lane Studio, London</span><span class="deal-card-badge">+£920/mo</span></div>
+          <div class="deal-card-meta">Studio · W1 · Live</div>
+          <div class="deal-card-stats"><div><div class="label">Rent</div><div class="value">£1,800</div></div><div><div class="label">Profit</div><div class="value profit">£920</div></div></div>
+        </div>
+      </div>
+      <div class="deal-card">
+        <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=560&h=360&fit=crop" alt="" />
+        <div class="deal-card-body">
+          <div class="deal-card-row"><span class="deal-card-title">Riverside, Birmingham</span><span class="deal-card-badge">+£450/mo</span></div>
+          <div class="deal-card-meta">2-bed house · B5 · Live</div>
+          <div class="deal-card-stats"><div><div class="label">Rent</div><div class="value">£800</div></div><div><div class="label">Profit</div><div class="value profit">£450</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:36px">
+      <button class="btn-dark">Browse All 1,800+ Deals →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ HOW IT WORKS ══════ -->
+<section class="section bg-beige" id="how">
+  <div class="section-inner section-center">
+    <h2 class="section-title">How NFsTay works</h2>
+    <p class="section-sub">Three steps to your first rent-to-rent deal. No experience needed.</p>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-icon">🎯</div>
+        <span class="step-num">Step 01</span>
+        <h3 class="step-title">Browse deals</h3>
+        <p class="step-desc">Search 1,800+ landlord-approved properties across 10 UK cities. Filter by rent, profit, and type.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-icon">📊</div>
+        <span class="step-num">Step 02</span>
+        <h3 class="step-title">Analyse & compare</h3>
+        <p class="step-desc">Use the earnings estimator, track deals in your CRM pipeline, and compare profit margins side by side.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-icon">📈</div>
+        <span class="step-num">Step 03</span>
+        <h3 class="step-title">Close & earn</h3>
+        <p class="step-desc">Contact landlords directly, sign your rent-to-rent agreement, and start earning from day one.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ PRICING ══════ -->
+<section class="section bg-white" id="pricing">
+  <div class="section-inner section-center">
+    <h2 class="section-title">Simple pricing</h2>
+    <p class="section-sub">Try everything for £4. Cancel any time.</p>
+    <div class="pricing-card">
+      <span class="pricing-badge">Full Access</span>
+      <div class="pricing-price"><span class="amount">£4</span><span class="period">/ 3-day trial</span></div>
+      <p class="pricing-desc">Then £97/month after trial. Cancel any time.</p>
+      <p class="pricing-desc">Full access to everything. No restrictions.</p>
+      <ul class="pricing-list">
+        <li><svg class="pricing-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>1,800+ verified deals</li>
+        <li><svg class="pricing-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Priority deal alerts</li>
+        <li><svg class="pricing-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Affiliate programme</li>
+        <li><svg class="pricing-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Direct landlord contact</li>
+        <li><svg class="pricing-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Full CRM access</li>
+        <li><svg class="pricing-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Airbnb University</li>
+        <li><svg class="pricing-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Earnings estimator</li>
+        <li><svg class="pricing-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Cancel any time</li>
+      </ul>
+      <button class="pricing-btn">Get access — no credit card needed</button>
+      <p class="pricing-note">Access dashboard without credit card</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ UNIVERSITY ══════ -->
+<section class="section bg-beige" id="university">
+  <div class="section-inner section-center">
+    <div class="hero-eyebrow" style="margin-bottom:16px">
+      <span>🎓</span>
+      <span>Powered by GPT-4.1 AI</span>
+    </div>
+    <h2 class="section-title">Airbnb University</h2>
+    <p class="section-sub">15yr operator knowledge, 100+ properties trained in AI. Learn everything about rent-to-rent with step-by-step modules.</p>
+    <div class="uni-grid">
+      <div class="uni-card">
+        <div class="uni-card-head"><span class="emoji">🚀</span><h3>Getting Started</h3></div>
+        <p>Set up your R2R business from scratch</p>
+        <p class="lessons">6 lessons</p>
+      </div>
+      <div class="uni-card">
+        <div class="uni-card-head"><span class="emoji">🏠</span><h3>Property Hunting</h3></div>
+        <p>Find the best opportunities</p>
+        <p class="lessons">8 lessons</p>
+      </div>
+      <div class="uni-card">
+        <div class="uni-card-head"><span class="emoji">💬</span><h3>Landlord Pitching</h3></div>
+        <p>Win landlords with proven scripts</p>
+        <p class="lessons">5 lessons</p>
+      </div>
+    </div>
+    <div style="margin-top:40px">
+      <span style="font-size:14px;font-weight:600;color:var(--teal);cursor:pointer">📖 View all 9 modules →</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ TESTIMONIALS ══════ -->
+<section class="section bg-white">
+  <div class="section-inner section-center">
+    <h2 class="section-title">Trusted by operators</h2>
+    <div class="testi-grid">
+      <div class="testi-card">
+        <div class="testi-stars"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+        <p class="testi-quote">"NFsTay helped me find my first three deals in under a month. The CRM is a game-changer for staying organised."</p>
+        <div class="testi-author">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face" alt="" />
+          <div><div class="name">Sarah K.</div><div class="role">Manchester</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+        <p class="testi-quote">"The university modules alone are worth the subscription. I went from zero knowledge to closing my first property in 6 weeks."</p>
+        <div class="testi-author">
+          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" alt="" />
+          <div><div class="name">Tom P.</div><div class="role">London</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+        <p class="testi-quote">"Finally a platform that takes rent-to-rent seriously. Every deal is verified and the earnings estimator is spot-on."</p>
+        <div class="testi-author">
+          <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face" alt="" />
+          <div><div class="name">Priya S.</div><div class="role">Birmingham</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ FAQ ══════ -->
+<section class="section bg-beige">
+  <div class="section-inner section-center">
+    <h2 class="section-title">Frequently asked questions</h2>
+    <div class="faq-list">
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <button class="faq-q">What is rent-to-rent?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-a">Rent-to-rent is when you lease a property from a landlord and then sublet it on platforms like Airbnb. You pay the landlord a guaranteed monthly rent and keep the profit from short-term bookings.</div>
+      </div>
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <button class="faq-q">Are the deals verified?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-a">Yes. Every property on NFsTay is landlord-approved and verified by our team before listing. We check planning permission, landlord consent, and projected earnings.</div>
+      </div>
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <button class="faq-q">How much can I earn?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-a">Average profit per deal is £680/month. Top operators with multiple properties earn £5,000–£15,000/month. Our earnings estimator gives you a projection before you commit.</div>
+      </div>
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <button class="faq-q">Do I need experience?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-a">No. Our Airbnb University has step-by-step modules covering everything from finding deals to managing guests. Most members close their first deal within 6 weeks.</div>
+      </div>
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <button class="faq-q">Can I cancel any time?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-a">Yes. No contracts, no commitments. Cancel from your dashboard in one click. Your access continues until the end of your billing period.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ FINAL CTA ══════ -->
+<section class="final-cta">
+  <div class="section-inner">
+    <h2>Ready to find your next deal?</h2>
+    <p>Join 4,200+ operators already using NFsTay to build their rent-to-rent portfolio.</p>
+    <div class="final-cta-buttons">
+      <button class="btn-hero-primary">Get Started — No Credit Card Needed →</button>
+      <button class="btn-hero-secondary">Sign In</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ FOOTER ══════ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-logo">NFsTay</div>
+        <p class="footer-desc">The UK's leading rent-to-rent deal platform. Find, analyse, and close landlord-approved opportunities.</p>
+      </div>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <a href="#">Deals</a>
+          <a href="#">University</a>
+          <a href="#">CRM</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="#">Pricing</a>
+          <a href="#">How it Works</a>
+          <a href="#">Sign In</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2026 NFsTay Ltd. All rights reserved. Registered in England & Wales.</p>
+      <div class="footer-links">
+        <a href="#">About</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Nav scroll effect
+  window.addEventListener('scroll', function() {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 60);
+  });
+</script>
+
+</body>
+</html>

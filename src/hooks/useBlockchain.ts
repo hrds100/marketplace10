@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useEthereum } from '@particle-network/authkit';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
 import { CONTRACTS } from '@/lib/particle';
@@ -13,10 +14,6 @@ import {
   FARM_ABI,
 } from '@/lib/contractAbis';
 import { supabase } from '@/integrations/supabase/client';
-
-// Module-level Particle session flag — persists for the tab lifetime.
-// Set true once particleConnect(jwt) succeeds and address matches profile wallet.
-let _particleConnected = false;
 
 // Helper to get ethers — lazy loaded
 async function getEthers() {
@@ -36,229 +33,52 @@ async function getReadProvider() {
   );
 }
 
-// Browser wallet provider for WRITE calls — Particle only.
-// All users (new and migrated) sign via their Particle JWT wallet.
-// Migration = transfer on-chain assets to the user's Particle wallet + update profile.
-// No MetaMask, no external wallets.
-async function getWalletProvider() {
-  const ethers = await getEthers();
-  if (!ethers) return null;
-
-  try {
-    const { particleAuth } = await import('@particle-network/auth-core');
-    const { bsc } = await import('@particle-network/authkit/chains');
-    // LEGACY credentials — social login MPC keys live under the legacy project.
-    // Using HUB credentials lets you read (eth_accounts) but not sign.
-    const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
-    const pa = particleAuth as any;
-
-    try {
-      pa.init({
-        projectId: PARTICLE_LEGACY_CONFIG.projectId,
-        clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
-        appId: PARTICLE_LEGACY_CONFIG.appId,
-        chains: [bsc],
-      });
-    } catch { /* already initialized */ }
-
-    // Ensure BSC chain before any provider usage
-    if (pa.ethereum) {
-      try {
-        const chainId = await pa.ethereum.request({ method: 'eth_chainId' });
-        if (chainId !== '0x38') {
-          console.log('[Provider] Wrong chain:', chainId, '→ switching to BSC');
-          await pa.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x38' }],
-          });
-        }
-      } catch (e) {
-        console.log('[Provider] Chain switch failed:', e);
-      }
-    }
-
-    // Fast path: session confirmed by ensureConnected() this tab session
-    if (_particleConnected && pa.ethereum) {
-      console.log('[Provider] ✅ Particle (session flag active)');
-      return new ethers.providers.Web3Provider(pa.ethereum);
-    }
-
-    // Slow path: hard refresh — verify via eth_accounts
-    if (pa.ethereum) {
-      try {
-        const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
-        console.log('[Provider] eth_accounts:', accounts);
-        if (Array.isArray(accounts) && accounts.length > 0) {
-          console.log('[Provider] ✅ Particle (eth_accounts verified)');
-          return new ethers.providers.Web3Provider(pa.ethereum);
-        }
-      } catch (e) {
-        console.log('[Provider] eth_accounts threw:', e);
-      }
-    }
-
-    console.log('[Provider] Particle session not active');
-  } catch (e) {
-    console.log('[Provider] Particle unavailable:', e);
-  }
-
-  console.log('[Provider] No wallet provider found');
-  return null;
-}
-
-async function getSigner() {
-  const provider = await getWalletProvider();
-  return provider?.getSigner() || null;
-}
-
-async function getContract(address: string, abi: string[], withSigner = false) {
-  const ethers = await getEthers();
-  if (!ethers) return null;
-  if (withSigner) {
-    // WRITE: use browser wallet (MetaMask/Particle) — requires signature
-    const signer = await getSigner();
-    if (!signer) return null;
-    return new ethers.Contract(address, abi, signer);
-  }
-  // READ: use public RPC — no wallet popup
-  const provider = await getReadProvider();
-  if (!provider) return null;
-  return new ethers.Contract(address, abi, provider);
-}
+// Signer and contract creation now happen INSIDE useBlockchain() because
+// they need the particleProvider from useEthereum() hook (React context).
 
 export function useBlockchain() {
   const { address, connected, connect } = useWallet();
   const { user } = useAuth();
+  // useEthereum() from authkit — same as legacy NfstayContext.jsx line 66.
+  // ConnectKitProvider wraps the app, so this hook has a valid context.
+  const { provider: particleProvider } = useEthereum();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Ensure Particle signing session is active before any write tx.
-  // Runs at tx time — no race condition with WalletProvisioner.
-  const ensureConnected = useCallback(async () => {
-    if (user?.id) {
-      console.log('[ensureConnected] user.id =', user.id, '| _particleConnected =', _particleConnected);
-      try {
-        const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
-        const { bsc } = await import('@particle-network/authkit/chains');
-        // Always LEGACY — MPC keys live under legacy project
-        const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
-        const pa = particleAuth as any;
-
-        try {
-          pa.init({
-            projectId: PARTICLE_LEGACY_CONFIG.projectId,
-            clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
-            appId: PARTICLE_LEGACY_CONFIG.appId,
-            chains: [bsc],
-          });
-        } catch { /* already initialized */ }
-
-        // Ensure BSC chain (56) — Particle defaults to Ethereum
-        if (pa.ethereum) {
-          try {
-            const chainId = await pa.ethereum.request({ method: 'eth_chainId' });
-            if (chainId !== '0x38') { // 0x38 = 56 = BSC
-              console.log('[ensureConnected] Wrong chain:', chainId, '→ switching to BSC');
-              await pa.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x38' }],
-              });
-            }
-          } catch (e) {
-            console.log('[ensureConnected] Chain switch failed:', e);
-          }
-        }
-
-        // Fast path: session confirmed this tab session
-        if (_particleConnected) {
-          console.log('[ensureConnected] ✅ Session already confirmed');
-          return;
-        }
-
-        // Check for existing session
-        let hasSession = false;
-        if (pa.ethereum) {
-          try {
-            const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
-            console.log('[ensureConnected] eth_accounts:', accounts);
-            hasSession = Array.isArray(accounts) && accounts.length > 0;
-          } catch (e) {
-            console.log('[ensureConnected] eth_accounts threw:', e);
-          }
-        }
-
-        if (hasSession) {
-          _particleConnected = true;
-          console.log('[ensureConnected] ✅ Existing session confirmed');
-          return;
-        }
-
-        // No session — determine auth method from profile
-        const { data: profile } = await (supabase.from('profiles') as any)
-          .select('wallet_auth_method')
-          .eq('id', user.id)
-          .single();
-        const authMethod = (profile as any)?.wallet_auth_method || 'jwt';
-
-        if (authMethod !== 'jwt') {
-          // Social login — reconnect via legacy project (same wallet as app.nfstay.com)
-          console.log('[ensureConnected] No session — reconnecting via social:', authMethod);
-          try {
-            const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
-            // Re-init with legacy credentials for social users
-            try {
-              pa.init({
-                projectId: PARTICLE_LEGACY_CONFIG.projectId,
-                clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
-                appId: PARTICLE_LEGACY_CONFIG.appId,
-                chains: [bsc],
-              });
-            } catch { /* already initialized */ }
-            await particleConnect({ socialType: authMethod as any });
-            _particleConnected = true;
-            console.log('[ensureConnected] ✅ Social particleConnect succeeded');
-          } catch (e) {
-            console.log('[ensureConnected] ❌ Social particleConnect threw:', e);
-          }
-        } else {
-          // JWT user — fetch JWT and reconnect
-          console.log('[ensureConnected] No session — fetching JWT...');
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
-          const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
-
-          let jwt: string | null = null;
-          try {
-            const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
-              body: JSON.stringify({ user_id: user.id }),
-            });
-            const jwtData = await res.json();
-            jwt = jwtData?.jwt ?? null;
-            console.log('[ensureConnected] JWT →', jwt ? `${jwt.length} chars` : 'EMPTY', '| HTTP', res.status);
-          } catch (e) {
-            console.log('[ensureConnected] JWT fetch threw:', e);
-          }
-
-          if (jwt) {
-            try {
-              await particleConnect({ provider: 'jwt' as any, thirdpartyCode: jwt });
-              _particleConnected = true;
-              console.log('[ensureConnected] ✅ particleConnect(jwt) succeeded');
-            } catch (e) {
-              console.log('[ensureConnected] ❌ particleConnect(jwt) threw:', e);
-            }
-          }
-        }
-      } catch (e) {
-        console.log('[ensureConnected] Particle module failed:', e);
-      }
+  // Get signer — exact legacy pattern (NfstayContext.jsx line 135):
+  //   new ethers.providers.Web3Provider(particleProvider).getSigner()
+  const getSignerProvider = useCallback(async () => {
+    const ethers = await getEthers();
+    if (!ethers || !particleProvider) return null;
+    try {
+      return new ethers.providers.Web3Provider(particleProvider as any);
+    } catch (e) {
+      console.error('[getSignerProvider] Failed:', e);
+      return null;
     }
+  }, [particleProvider]);
 
+  async function getContract(contractAddress: string, abi: string[], withSigner = false) {
+    const ethers = await getEthers();
+    if (!ethers) return null;
+    if (withSigner) {
+      const provider = await getSignerProvider();
+      if (!provider) return null;
+      const signer = provider.getSigner();
+      return new ethers.Contract(contractAddress, abi, signer);
+    }
+    const provider = await getReadProvider();
+    if (!provider) return null;
+    return new ethers.Contract(contractAddress, abi, provider);
+  }
+
+  // ensureConnected — ConnectKit manages the session now.
+  // We just check wallet hook has an address.
+  const ensureConnected = useCallback(async () => {
     if (!connected || !address) {
       await connect();
     }
-  }, [connected, address, connect, user?.id]);
+  }, [connected, address, connect]);
 
   // ── READ FUNCTIONS ──
 
