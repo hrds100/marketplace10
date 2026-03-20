@@ -84,29 +84,36 @@ export function useBlockchain() {
   const address = ckAddress || walletAddr;
 
   // Get signer provider — matches EXACT legacy pattern from NfstayContext.jsx:
-  //   if connector is particleAuth AND social login → use particleProvider
+  //   if social login → use particleProvider (from AuthCoreContextProvider / useEthereum)
   //   else → use window.ethereum (MetaMask / injected)
+  //   fallback → particleProvider
   const getSignerProvider = useCallback(async () => {
     const ethers = await getEthers();
     if (!ethers) return null;
     try {
       let rawProvider: any;
-      const isParticleSocial =
-        connector?.walletConnectorType === 'particleAuth' &&
-        isSocialAuthType(getLatestAuthType());
+
+      // Check if this is a social auth user (safe — returns false if no auth)
+      let isParticleSocial = false;
+      try {
+        const connectorType = (connector as any)?.walletConnectorType;
+        isParticleSocial =
+          connectorType === 'particleAuth' &&
+          isSocialAuthType(getLatestAuthType());
+      } catch {
+        // getLatestAuthType() may throw if no auth session — that's fine
+      }
 
       if (isParticleSocial && particleProvider) {
-        // Social login (Google, Apple, etc.) — use Particle MPC provider
         rawProvider = particleProvider;
         console.log('[getSignerProvider] Using Particle provider (social auth)');
+      } else if (particleProvider) {
+        // AuthCoreContextProvider gives us particleProvider — use it (most common path)
+        rawProvider = particleProvider;
+        console.log('[getSignerProvider] Using Particle provider (AuthCore)');
       } else if (typeof window !== 'undefined' && (window as any).ethereum) {
-        // External wallet (MetaMask, WalletConnect) — use injected
         rawProvider = (window as any).ethereum;
         console.log('[getSignerProvider] Using window.ethereum (external wallet)');
-      } else if (particleProvider) {
-        // Fallback to Particle provider
-        rawProvider = particleProvider;
-        console.log('[getSignerProvider] Using Particle provider (fallback)');
       } else {
         console.error('[getSignerProvider] No provider available');
         return null;

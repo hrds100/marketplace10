@@ -14,6 +14,8 @@ import { authWalletConnectors } from '@particle-network/connectkit/auth';
 import { EntryPosition, wallet } from '@particle-network/connectkit/wallet';
 import { bsc } from '@particle-network/connectkit/chains';
 import { evmWalletConnectors } from '@particle-network/connectkit/evm';
+import { AuthCoreContextProvider } from '@particle-network/authkit';
+import { bsc as authBsc } from '@particle-network/authkit/chains';
 import { PARTICLE_LEGACY_CONFIG, PARTICLE_CONFIG } from '@/lib/particle';
 
 const projectId = PARTICLE_LEGACY_CONFIG.projectId;
@@ -63,5 +65,19 @@ const config = createConfig({
 });
 
 export const ParticleConnectkit = ({ children }: { children: React.ReactNode }) => {
-  return <ConnectKitProvider config={config}>{children}</ConnectKitProvider>;
+  return (
+    <ConnectKitProvider config={config}>
+      <AuthCoreContextProvider
+        options={{
+          projectId: PARTICLE_LEGACY_CONFIG.projectId,
+          clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
+          appId: PARTICLE_LEGACY_CONFIG.appId,
+          chains: [authBsc],
+          wallet: false,
+        }}
+      >
+        {children}
+      </AuthCoreContextProvider>
+    </ConnectKitProvider>
+  );
 };
