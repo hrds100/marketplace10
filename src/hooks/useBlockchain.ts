@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { useEthereum } from '@particle-network/authkit';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
 import { CONTRACTS } from '@/lib/particle';
@@ -39,42 +38,17 @@ async function getReadProvider() {
 export function useBlockchain() {
   const { address, connected, connect } = useWallet();
   const { user } = useAuth();
-  // useEthereum() from authkit — same as legacy NfstayContext.jsx line 66.
-  const { provider: particleProvider } = useEthereum();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get signer provider. Try useEthereum() first (ConnectKit-managed).
-  // If that has no account, fall back to particleAuth.ethereum (auth-core).
-  // This handles both cases: fresh ConnectKit session AND ParticleAuthCallback login.
+  // Get signer provider — use particleAuth.ethereum from auth-core.
+  // This is what actually worked for the STAY claim.
+  // useEthereum() from authkit loses its session after page refresh,
+  // but auth-core's particleAuth.ethereum persists via browser storage.
   const getSignerProvider = useCallback(async () => {
     const ethers = await getEthers();
     if (!ethers) return null;
 
-    // Try 1: useEthereum() provider (ConnectKit session)
-    if (particleProvider) {
-      try {
-        const web3 = new ethers.providers.Web3Provider(particleProvider as any);
-        // Test if it has an account
-        await web3.getSigner().getAddress();
-        console.log('[getSignerProvider] Using useEthereum() provider');
-        // Ensure BSC chain
-        const pp = particleProvider as any;
-        if (pp.request) {
-          try {
-            const chainId = await pp.request({ method: 'eth_chainId' });
-            if (chainId !== '0x38') {
-              await pp.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
-            }
-          } catch { /* chain switch optional */ }
-        }
-        return web3;
-      } catch {
-        console.log('[getSignerProvider] useEthereum() has no account, trying auth-core fallback');
-      }
-    }
-
-    // Try 2: particleAuth.ethereum (direct auth-core — works after ParticleAuthCallback login)
     try {
       const { particleAuth } = await import('@particle-network/auth-core');
       const { bsc } = await import('@particle-network/authkit/chains');
@@ -89,27 +63,25 @@ export function useBlockchain() {
         });
       } catch { /* already initialized */ }
 
-      if (pa.ethereum) {
-        // Ensure BSC
-        try {
-          const chainId = await pa.ethereum.request({ method: 'eth_chainId' });
-          if (chainId !== '0x38') {
-            await pa.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
-          }
-        } catch { /* chain switch optional */ }
-
-        const web3 = new ethers.providers.Web3Provider(pa.ethereum);
-        await web3.getSigner().getAddress(); // verify it works
-        console.log('[getSignerProvider] Using auth-core fallback');
-        return web3;
+      if (!pa.ethereum) {
+        console.error('[getSignerProvider] No Particle session');
+        return null;
       }
-    } catch (e) {
-      console.log('[getSignerProvider] auth-core fallback failed:', e);
-    }
 
-    console.error('[getSignerProvider] No provider available');
-    return null;
-  }, [particleProvider]);
+      // Ensure BSC chain
+      try {
+        const chainId = await pa.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== '0x38') {
+          await pa.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+        }
+      } catch { /* chain switch optional */ }
+
+      return new ethers.providers.Web3Provider(pa.ethereum);
+    } catch (e) {
+      console.error('[getSignerProvider] Failed:', e);
+      return null;
+    }
+  }, []);
 
   async function getContract(contractAddress: string, abi: string[], withSigner = false) {
     const ethers = await getEthers();
