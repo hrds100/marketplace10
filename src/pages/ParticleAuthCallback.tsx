@@ -93,37 +93,61 @@ export default function ParticleAuthCallback() {
         sessionStorage.setItem('particle_auth_method', intent.provider);
       } catch { /* skip */ }
 
-      if (intent.type === 'signup') {
-        // Save particle info for SignUp phone collection step
-        localStorage.setItem(
-          'particle_user',
-          JSON.stringify({ email, name, wallet: walletAddress, uuid, authMethod: intent.provider }),
-        );
-        window.location.href = '/signup';
-        return;
-      }
-
-      // signin: create Supabase session
       if (!uuid || !email) {
-        setErrMsg('Could not retrieve account details. Please try signing up first.');
+        setErrMsg('Could not retrieve your account details. Please try again.');
         setStatus('error');
         return;
       }
 
-      const { error: signInErr } = await supabase.auth.signInWithPassword({
-        email,
-        password: derivedPassword(uuid),
-      });
+      const pw = derivedPassword(uuid);
 
-      if (signInErr) {
-        // No account — redirect to signup
+      if (intent.type === 'signup') {
+        // Signup path: collect WhatsApp number before creating account
         localStorage.setItem(
           'particle_user',
           JSON.stringify({ email, name, wallet: walletAddress, uuid, authMethod: intent.provider }),
         );
-        toast.error('No account found. Please sign up first.');
         window.location.href = '/signup';
         return;
+      }
+
+      // Signin path: try signIn first, auto-create if no account
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password: pw });
+
+      if (signInErr) {
+        // No account yet — create one automatically (WhatsApp can be added in Settings)
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email,
+          password: pw,
+          options: { data: { name } },
+        });
+
+        if (signUpErr) {
+          setErrMsg(`Could not create account: ${signUpErr.message}`);
+          setStatus('error');
+          return;
+        }
+
+        // Ensure we have a session (signUp may not return one)
+        if (!signUpData?.session) {
+          const { error: reSignInErr } = await supabase.auth.signInWithPassword({ email, password: pw });
+          if (reSignInErr) {
+            setErrMsg(`Sign in after signup failed: ${reSignInErr.message}`);
+            setStatus('error');
+            return;
+          }
+        }
+
+        // Save wallet + auth method to profile
+        const userId = signUpData?.user?.id || (await supabase.auth.getUser()).data.user?.id;
+        if (userId) {
+          await (supabase.from('profiles') as any).upsert({
+            id: userId,
+            name: name || email.split('@')[0],
+            wallet_address: walletAddress,
+            wallet_auth_method: intent.provider,
+          } as any);
+        }
       }
 
       const dest = intent.redirectTo ? decodeURIComponent(intent.redirectTo) : '/dashboard/deals';
