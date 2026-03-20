@@ -45,30 +45,32 @@ export async function createWalletWithJWT(jwt: string): Promise<string> {
     thirdpartyCode: jwt,
   });
 
-  // Extract EVM wallet address
+  // Primary: get the actual signing address from the EVM provider.
+  // This MUST match what pa.ethereum.request({ method: 'eth_accounts' }) returns
+  // during signing — otherwise the profile wallet_address and the signing address
+  // will diverge (which causes contract reverts because shares belong to wrong address).
+  try {
+    const accounts = await particleAuth.ethereum.request({ method: 'eth_accounts' });
+    if (Array.isArray(accounts) && accounts[0]) {
+      console.log('[Particle] Wallet address from eth_accounts:', accounts[0]);
+      return accounts[0] as string;
+    }
+  } catch (e) {
+    console.log('[Particle] eth_accounts failed, falling back to userInfo.wallets:', e);
+  }
+
+  // Fallback: extract from the particleConnect response wallets array
   const evmWallet = userInfo?.wallets?.find(
     (w: any) => w.chain_name === 'evm_chain' || w.chain_name === 'bsc',
   );
-
   const address = evmWallet?.public_address || null;
 
-  if (!address) {
-    // Try getting address from the ethereum provider
-    try {
-      const ethAddress = await particleAuth.ethereum.request({
-        method: 'eth_accounts',
-      });
-      if (Array.isArray(ethAddress) && ethAddress[0]) {
-        return ethAddress[0] as string;
-      }
-    } catch {
-      // Fall through
-    }
-
-    throw new Error('Wallet created but no EVM address found in response');
+  if (address) {
+    console.log('[Particle] Wallet address from userInfo.wallets:', address);
+    return address;
   }
 
-  return address;
+  throw new Error('Wallet created but no EVM address found in response');
 }
 
 // Default export for backward compatibility with dynamic import
