@@ -80,11 +80,11 @@ if (typeof window !== 'undefined') {
 }
 
 import { FavouritesProvider } from '@/hooks/useFavourites';
-import ParticleProvider from './components/ParticleProvider';
+import { ParticleConnectkit } from './components/ParticleConnectkit';
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ParticleProvider>
+    <ParticleConnectkit>
     <TooltipProvider>
       <Sonner />
       <BrowserRouter>
@@ -173,7 +173,7 @@ const App = () => (
       </FavouritesProvider>
       </BrowserRouter>
     </TooltipProvider>
-    </ParticleProvider>
+    </ParticleConnectkit>
   </QueryClientProvider>
 );
 

@@ -25,7 +25,7 @@ export const PARTICLE_CONFIG = {
   rpcUrl: 'https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T',
 };
 
-// Contract addresses (BNB Chain mainnet)
+// Contract addresses (BNB Chain mainnet) — all from legacy config.js
 export const CONTRACTS = {
   RWA_MARKETPLACE: '0xDD22fDC50062F49a460E5a6bADF96Cbec85ac128',
   RWA_TOKEN: '0xA588E7dC42a956cc6c412925dE99240cc329157b',
@@ -37,7 +37,21 @@ export const CONTRACTS = {
   USDC: '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d',
   STAY: '0x7F14ce2A5df31Ad0D2BF658d3840b1F7559d3EE0',
   ROUTER: '0x10ED43C718714eb63d5aA57B78B54704E256024E',
+  STAY_USDC_PAIR: '0x2397C1722CCb6934BECF579351685A56030EA8F7',
+  WBNB: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+  ROCK: '0x6D635dc4a2A54664B54dF6a63e5ee31D5b29CF6e',
+  TRANSAK: '0x4A598B7eC77b1562AD0dF7dc64a162695cE4c78A',
+  ZERO: '0x0000000000000000000000000000000000000000',
 };
+
+// Alchemy RPC
+export const RPC_URL = 'https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T';
+
+// Approve amount for ERC20 (legacy: 50000 USDC)
+export const APPROVE_AMOUNT = '50000';
+
+// CoinGecko
+export const COINGECKO_API_KEY = 'CG-Dm77JnkKntWqUcF9AoaZskEL';
 
 // Key wallets
 export const WALLETS = {
