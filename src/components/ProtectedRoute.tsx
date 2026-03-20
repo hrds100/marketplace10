@@ -41,11 +41,11 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           .single();
 
         // Profile doesn't exist — stale session with no matching DB record.
-        // Sign out so the user lands cleanly on /signin rather than looping into verify-otp.
+        // Sign out and hard-redirect to /signin so React state can't trigger verify-otp.
         if (queryErr && queryErr.code === 'PGRST116') {
           queryInFlight.current = false;
           await supabase.auth.signOut();
-          setStatus('unverified');
+          window.location.href = '/signin';
           return;
         }
 
