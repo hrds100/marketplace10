@@ -305,6 +305,11 @@ function InvestModal({
                   try {
                     await buyShares(property.blockchain_property_id || property.id, shares, total);
                     setConfirmed(true);
+                    toast.success(`Successfully purchased ${shares} share${shares > 1 ? 's' : ''}!`);
+                    // Refetch activity + blockchain stats after 3s (Graph indexing delay)
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('invest-purchase-complete'));
+                    }, 3000);
                   } catch (err: any) {
                     const msg = err?.message || 'Transaction failed. Please try again.';
                     console.error('[Marketplace] Buy failed:', err);
@@ -974,12 +979,20 @@ function RecentActivityTable() {
   const [activity, setActivity] = useState<Activity[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
 
-  useEffect(() => {
+  const loadActivity = useCallback(() => {
     fetchRecentPurchases()
       .then(setActivity)
       .catch(() => setActivity([]))
       .finally(() => setActivityLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadActivity();
+    // Refresh when a purchase completes
+    const handler = () => loadActivity();
+    window.addEventListener('invest-purchase-complete', handler);
+    return () => window.removeEventListener('invest-purchase-complete', handler);
+  }, [loadActivity]);
 
   return (
     <Card className="rounded-2xl">
@@ -1651,6 +1664,10 @@ export default function InvestMarketplacePage() {
       } catch { /* silent */ }
     }
     fetchBlockchainStats();
+    // Refresh after purchase
+    const handler = () => fetchBlockchainStats();
+    window.addEventListener('invest-purchase-complete', handler);
+    return () => window.removeEventListener('invest-purchase-complete', handler);
   }, []);
 
   const displayTotalShares = bcTotalShares || (property?.totalShares ?? 0);
