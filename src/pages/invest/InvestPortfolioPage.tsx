@@ -786,11 +786,14 @@ export default function InvestPortfolioPage() {
                             className="w-full bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white text-xs rounded-full"
                             disabled={boostLoading}
                             onClick={async () => {
+                              const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
+                              const bcId = prop?.blockchain_property_id;
+                              if (!bcId) { toast.error('Property not mapped to blockchain'); return; }
                               try {
-                                await boostApr(h.propertyId);
+                                await boostApr(bcId);
                                 toast.success('APR boosted successfully!');
-                              } catch (err) {
-                                toast.error('Boost failed — wallet may not be connected');
+                              } catch (err: any) {
+                                toast.error(err?.message || 'Boost failed');
                               }
                             }}
                           >
@@ -802,11 +805,14 @@ export default function InvestPortfolioPage() {
                             className="w-full text-xs rounded-full border-primary/30 text-primary hover:bg-primary/10"
                             disabled={boostLoading}
                             onClick={async () => {
+                              const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
+                              const bcId = prop?.blockchain_property_id;
+                              if (!bcId) { toast.error('Property not mapped to blockchain'); return; }
                               try {
-                                await claimBoostRewards(h.propertyId);
+                                await claimBoostRewards(bcId);
                                 toast.success('STAY rewards claimed!');
-                              } catch (err) {
-                                toast.error('Claim failed — no rewards available');
+                              } catch (err: any) {
+                                toast.error(err?.message || 'Claim failed');
                               }
                             }}
                           >
