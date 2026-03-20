@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Eye, EyeOff, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Loader2, Eye, EyeOff, CheckCircle2, ArrowLeft, Mail, Lock, User, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { sendOtp } from '@/lib/n8n';
 import { supabase } from '@/integrations/supabase/client';
 import { signupSchema, type SignupFormData, passwordStrength, strengthLabels, strengthColors } from '@/lib/validation';
 import CountryCodeSelect from '@/components/CountryCodeSelect';
+import AuthSlidePanel from '@/components/AuthSlidePanel';
 import { toast } from 'sonner';
 
 // ── Social provider definitions ─────────────────────────────────────────────
@@ -39,7 +40,7 @@ const PROVIDERS: { id: SocialProvider; label: string; icon: React.ReactNode }[] 
   },
   {
     id: 'twitter',
-    label: 'Continue with X (Twitter)',
+    label: 'Continue with X',
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -70,6 +71,40 @@ type ViewState = 'social' | 'phone' | 'email';
 // Derive a deterministic Supabase password from Particle UUID
 function derivedPassword(uuid: string): string {
   return uuid.slice(0, 10) + '_NFsTay2!' + uuid.slice(-6);
+}
+
+// ── Shared shell for all views ──────────────────────────────────────────────
+
+function AuthShell({ children, showTabs, heading, subtitle }: { children: React.ReactNode; showTabs: boolean; heading: string; subtitle: string }) {
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center" style={{ backgroundColor: '#f3f3ee' }}>
+      <div className="flex w-full h-screen overflow-hidden p-2 gap-2" style={{ backgroundColor: '#f3f3ee' }}>
+        <div className="flex flex-col items-center justify-between flex-1 lg:w-1/2 w-full h-full overflow-y-auto bg-white rounded-3xl border" style={{ borderColor: '#e8e5df', padding: 'clamp(24px, 3.5vh, 64px)' }}>
+          <div className="flex items-center justify-center w-full">
+            <Link to="/" className="font-extrabold text-[#0a0a0a] tracking-tight" style={{ fontSize: 'clamp(18px, 2.5vh, 24px)' }}>NFsTay</Link>
+          </div>
+
+          <div className="flex flex-col items-center justify-center w-full max-w-[480px] flex-1">
+            <div className="text-center w-full" style={{ marginBottom: 'clamp(16px, 2.5vh, 32px)' }}>
+              <h2 className="font-semibold text-[#0a0a0a] leading-tight tracking-tight" style={{ fontSize: 'clamp(20px, 2.7vh, 30px)' }}>{heading}</h2>
+              <p className="text-base text-[#737373] text-center mt-1.5 leading-relaxed">{subtitle}</p>
+            </div>
+
+            {showTabs && (
+              <div className="grid grid-cols-2 w-full border rounded-xl" style={{ height: 40, gap: 2, backgroundColor: '#f3f3ee', borderColor: '#e8e5df', padding: 2, marginBottom: 'clamp(11px, 2vh, 29px)' }}>
+                <Link to="/signin" className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-transparent text-[#73757c] hover:bg-white/50">Sign In</Link>
+                <button className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-white text-[#1b1b1b]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)' }}>Register</button>
+              </div>
+            )}
+
+            {children}
+          </div>
+          <div />
+        </div>
+        <AuthSlidePanel />
+      </div>
+    </div>
+  );
 }
 
 export default function SignUp() {
@@ -135,8 +170,6 @@ export default function SignUp() {
       const { bsc } = await import('@particle-network/authkit/chains');
       const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
       const pa = particleAuth as any;
-
-      // Legacy project: same Google account → same wallet as app.nfstay.com
       try {
         pa.init({
           projectId: PARTICLE_LEGACY_CONFIG.projectId,
@@ -145,16 +178,11 @@ export default function SignUp() {
           chains: [bsc],
         });
       } catch { /* already initialized */ }
-
-      // Save intent before redirect — callback page reads this
       localStorage.setItem('particle_intent', JSON.stringify({ type: 'signup', provider }));
-
-      // Redirect to OAuth provider (no popup — redirects current page)
       await thirdpartyAuth({
         authType: provider as any,
         redirectUrl: window.location.origin + '/auth/particle',
       });
-      // Page redirects away here — code below never runs
     } catch (err: any) {
       localStorage.removeItem('particle_intent');
       console.error('[SignUp] Social login error:', err);
@@ -192,13 +220,9 @@ export default function SignUp() {
       const cleanName = data.name.trim();
 
       const { data: authData, error: authError } = await signUp(cleanEmail, data.password, cleanName, fullPhone);
-      if (authError) {
-        toast.error(authError.message);
-        return;
-      }
+      if (authError) { toast.error(authError.message); return; }
       if (authData?.user && (!authData.user.identities || authData.user.identities.length === 0)) {
-        toast.error('An account with this email already exists. Please sign in.');
-        return;
+        toast.error('An account with this email already exists. Please sign in.'); return;
       }
 
       let userId = authData?.user?.id;
@@ -214,7 +238,6 @@ export default function SignUp() {
           .eq('id', userId);
       }
 
-      // Referral tracking
       const refCode = localStorage.getItem('nfstay_ref');
       if (refCode && userId) {
         (supabase.from('profiles') as any).update({ referred_by: refCode } as any).eq('id', userId).then(() => {}).catch(() => {});
@@ -222,116 +245,56 @@ export default function SignUp() {
         localStorage.removeItem('nfstay_ref');
       }
 
-      // Notifications
       supabase.functions.invoke('send-email', { body: { type: 'welcome-member', data: { email: cleanEmail, name: cleanName } } }).catch(() => {});
       supabase.functions.invoke('send-email', { body: { type: 'new-signup-admin', data: { email: cleanEmail, name: cleanName, phone: fullPhone } } }).catch(() => {});
       (supabase.from('notifications') as any).insert({ type: 'new_signup', title: 'New user signed up', body: `${cleanName} (${cleanEmail}) just created an account.` }).then(() => {}).catch(() => {});
 
-      try {
-        await sendOtp(fullPhone);
-        toast.success('Account created! Check WhatsApp for your code.');
-      } catch {
-        toast.success('Account created! Sending verification code...');
-      }
+      try { await sendOtp(fullPhone); toast.success('Account created! Check WhatsApp for your code.'); }
+      catch { toast.success('Account created! Sending verification code...'); }
 
       navigate(`/verify-otp?phone=${encodeURIComponent(fullPhone)}&name=${encodeURIComponent(cleanName)}&email=${encodeURIComponent(cleanEmail)}`);
-    } catch {
-      toast.error('Something went wrong. Please try again.');
-    } finally {
-      setEmailLoading(false);
-    }
+    } catch { toast.error('Something went wrong. Please try again.'); }
+    finally { setEmailLoading(false); }
   };
-
-  // ── Right panel (shared) ─────────────────────────────────────────────────
-
-  const RightPanel = () => (
-    <div
-      className="hidden lg:flex relative overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(215 50% 11%) 100%)' }}
-    >
-      <div className="absolute inset-0 backdrop-blur-3xl" />
-      <div className="relative w-full h-full flex flex-col py-8 lg:py-12">
-        <div className="flex-1 min-h-[40px]" />
-        <div className="text-center px-8 lg:px-12 xl:px-16 max-w-[520px] mx-auto">
-          <div className="flex flex-col items-center mb-6 lg:mb-8">
-            <div className="flex -space-x-3 mb-2">
-              {[
-                'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=face',
-                'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=96&h=96&fit=crop&crop=face',
-                'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&crop=face',
-                'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=face',
-                'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=face',
-              ].map((src, i) => (
-                <img key={i} src={src} className="w-12 h-12 lg:w-14 lg:h-14 rounded-full border-2 border-white/20 object-cover" alt="" />
-              ))}
-            </div>
-            <p className="text-sm lg:text-base font-medium text-white/80">4,200+ UK operators trust NFsTay</p>
-          </div>
-          <h2 className="text-[44px] sm:text-[52px] lg:text-[56px] xl:text-6xl font-bold text-white leading-[1.05] mb-6">
-            Your Airbnb portfolio<br />starts here
-          </h2>
-          <p className="text-base lg:text-lg text-white/70 leading-relaxed max-w-[420px] mx-auto">
-            Join thousands of operators using NFsTay to find and close deals faster.
-          </p>
-        </div>
-        <div className="flex-1 min-h-[40px]" />
-        <div className="flex items-center justify-center gap-2 pb-4 lg:pb-6">
-          <CheckCircle2 className="w-5 h-5 text-white/70 shrink-0" />
-          <p className="text-sm font-medium text-white/60">Fully authorised properties, ready for Airbnb income</p>
-        </div>
-      </div>
-    </div>
-  );
 
   // ── Social button view ───────────────────────────────────────────────────
 
   if (view === 'social') {
     return (
-      <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-        <div className="flex items-center justify-center px-6 md:px-8 lg:px-12 py-10">
-          <div className="w-full max-w-[400px] mx-auto">
-            <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">NFsTay</Link>
-
-            <h1 className="text-[28px] font-bold text-foreground mt-8">Create your account</h1>
-            <p className="text-sm text-muted-foreground mt-1">Sign up with your social account to get started.</p>
-
-            <div className="mt-8 space-y-3">
-              {PROVIDERS.map(({ id, label, icon }) => (
-                <button
-                  key={id}
-                  onClick={() => handleSocialLogin(id)}
-                  disabled={socialLoading !== null}
-                  className="w-full h-12 rounded-lg border border-border bg-card hover:bg-secondary/60 transition-all flex items-center gap-3 px-4 font-medium text-sm text-foreground disabled:opacity-50 relative"
-                >
-                  {icon}
-                  <span className="flex-1 text-center">{label}</span>
-                  {socialLoading === id && <Loader2 className="w-4 h-4 animate-spin absolute right-4" />}
-                </button>
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 my-6">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-xs text-muted-foreground">or</span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-
-            <button
-              onClick={() => setView('email')}
-              className="w-full h-12 rounded-lg border border-border bg-card hover:bg-secondary/60 transition-all flex items-center justify-center gap-2 font-medium text-sm text-foreground"
-            >
-              Continue with email
-            </button>
-
-            <p className="text-sm text-muted-foreground mt-6 text-center">
-              Already have an account?{' '}
-              <Link to="/signin" className="text-primary font-semibold">Sign in</Link>
-            </p>
+      <AuthShell showTabs heading="Create your account" subtitle="Join thousands of operators building Airbnb portfolios">
+        <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
+          {/* Social stacked */}
+          <div className="flex flex-col gap-2 w-full">
+            {PROVIDERS.map(({ id, label, icon }) => (
+              <button key={id} onClick={() => handleSocialLogin(id)} disabled={socialLoading !== null}
+                className="w-full flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8] disabled:opacity-50 relative"
+                style={{ height: 45, padding: '8px 12px' }}>
+                {icon} {label}
+                {socialLoading === id && <Loader2 className="w-4 h-4 animate-spin absolute right-4" />}
+              </button>
+            ))}
           </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 w-full">
+            <div className="h-px flex-1 bg-[#e5e5e5]" />
+            <span className="text-base text-[#737373] whitespace-nowrap">Or</span>
+            <div className="h-px flex-1 bg-[#e5e5e5]" />
+          </div>
+
+          {/* Email signup button */}
+          <button onClick={() => setView('email')}
+            className="w-full flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8]"
+            style={{ height: 45, padding: '8px 12px' }}>
+            <Mail className="w-5 h-5" /> Sign up with Email
+          </button>
+
+          <p className="text-sm text-[#737373] text-center mt-2">
+            Already have an account?{' '}
+            <Link to="/signin" className="text-[#1e9a80] font-semibold">Sign in</Link>
+          </p>
         </div>
-        <RightPanel />
-      </div>
+      </AuthShell>
     );
   }
 
@@ -339,215 +302,179 @@ export default function SignUp() {
 
   if (view === 'phone') {
     return (
-      <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-        <div className="flex items-center justify-center px-6 md:px-8 lg:px-12 py-10">
-          <div className="w-full max-w-[400px] mx-auto">
-            <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">NFsTay</Link>
+      <AuthShell showTabs={false} heading="Add your WhatsApp" subtitle="One last step to verify your account">
+        <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
+          <button onClick={() => setView('social')} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a] mb-2">
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
 
-            <button
-              onClick={() => setView('social')}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mt-8 mb-4"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Back
-            </button>
-
-            <h1 className="text-[28px] font-bold text-foreground">Add your WhatsApp</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Signed in as <span className="font-medium text-foreground">{particleUser?.email || 'you'}</span>.<br />
-              We'll send deal alerts and your verification code here.
+          <div className="mb-2">
+            <p className="text-sm text-[#737373]">
+              Signed in as <span className="font-medium text-[#0a0a0a]">{particleUser?.email || 'you'}</span>
             </p>
-
-            <div className="mt-8 space-y-5">
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">
-                  WhatsApp number <span className="text-red-500">*</span>
-                </label>
-                <div className="flex">
-                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
-                  <input
-                    type="tel"
-                    placeholder="7863 992 555"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    className="input-nfstay flex-1 rounded-l-none"
-                  />
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-1">We'll send a 4-digit verification code via WhatsApp</p>
-              </div>
-
-              <button
-                onClick={handleSendOtp}
-                disabled={phoneLoading || !phone.trim()}
-                className="w-full h-12 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ background: '#00D084' }}
-              >
-                {phoneLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                {phoneLoading ? 'Sending code...' : 'Send verification code'}
-              </button>
-            </div>
-
-            <p className="text-xs text-muted-foreground mt-6 text-center">
-              By continuing you agree to our{' '}
-              <Link to="/terms" className="text-primary font-semibold underline" target="_blank">Terms</Link>{' '}
-              and{' '}
-              <Link to="/privacy" className="text-primary font-semibold underline" target="_blank">Privacy Policy</Link>.
-            </p>
+            <p className="text-[13px] text-[#737373] mt-1">We'll send deal alerts and your verification code here.</p>
           </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-[#525252] tracking-wide">WhatsApp Number <span className="text-red-500">*</span></label>
+            <div className="flex">
+              <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+              <div className="relative flex-1">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
+                <input type="tel" placeholder="7863 992 555" value={phone} onChange={e => setPhone(e.target.value)}
+                  className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-r-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
+                  style={{ padding: '4px 12px 4px 40px' }} />
+              </div>
+            </div>
+            <p className="text-[11px] text-[#737373] mt-1">We'll send a 4-digit verification code via WhatsApp</p>
+          </div>
+
+          <button onClick={handleSendOtp} disabled={phoneLoading || !phone.trim()}
+            className="w-full rounded-lg font-medium text-white cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+            style={{ height: 37, backgroundColor: '#1e9a80', fontSize: 16, padding: '8px 16px', border: 'none', boxShadow: '0 4px 8px -1px rgba(0,0,0,0.05)' }}>
+            {phoneLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+            {phoneLoading ? 'Sending code...' : 'Send verification code'}
+          </button>
+
+          <p className="text-xs text-[#737373] text-center mt-2">
+            By continuing you agree to our{' '}
+            <Link to="/terms" className="text-[#1e9a80] font-semibold underline" target="_blank">Terms</Link> and{' '}
+            <Link to="/privacy" className="text-[#1e9a80] font-semibold underline" target="_blank">Privacy Policy</Link>.
+          </p>
         </div>
-        <RightPanel />
-      </div>
+      </AuthShell>
     );
   }
 
   // ── Email / password view ────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      <div className="flex items-center justify-center px-6 md:px-8 lg:px-12 py-10">
-        <div className="w-full max-w-[440px] mx-auto">
-          <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">NFsTay</Link>
+    <AuthShell showTabs={false} heading="Sign up with Email" subtitle="Fill in your details to create an account">
+      <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
+        <button onClick={() => setView('social')} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a] mb-2">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
 
-          <button
-            onClick={() => setView('social')}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mt-8 mb-4"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back
-          </button>
-
-          <h1 className="text-[28px] font-bold text-foreground">Create your account</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign up with your email address.</p>
-
-          <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
-            {/* Full name */}
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">
-                Full name <span className="text-red-500">*</span>
-              </label>
-              <input {...register('name')} type="text" placeholder="James Walker" className="input-nfstay w-full" />
-              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+          {/* Name */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-[#525252] tracking-wide">Full Name <span className="text-red-500">*</span></label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
+              <input {...register('name')} type="text" placeholder="Enter full name"
+                className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
+                style={{ padding: '4px 12px 4px 40px' }} />
             </div>
+            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+          </div>
 
-            {/* Email */}
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input {...register('email')} type="email" placeholder="james@example.com" className="input-nfstay w-full" />
-              {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+          {/* Email */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-[#525252] tracking-wide">Email <span className="text-red-500">*</span></label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
+              <input {...register('email')} type="email" placeholder="Enter your email"
+                className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
+                style={{ padding: '4px 12px 4px 40px' }} />
             </div>
+            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+          </div>
 
-            {/* Password */}
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">
-                Password <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  {...register('password')}
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Min 8 characters"
-                  className="input-nfstay w-full pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {pw.length > 0 && (
-                <div className="mt-2">
-                  <div className="flex gap-1">
-                    {[0, 1, 2, 3].map((i) => (
-                      <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300" style={{ backgroundColor: i <= strength ? strengthColors[strength] : '#E5E7EB' }} />
-                    ))}
-                  </div>
-                  <p className="text-[11px] font-medium mt-1 transition-colors" style={{ color: strengthColors[strength] }}>{strengthLabels[strength]}</p>
+          {/* Password */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-[#525252] tracking-wide">Password <span className="text-red-500">*</span></label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
+              <input {...register('password')} type={showPassword ? 'text' : 'password'} placeholder="Min 8 characters"
+                className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
+                style={{ padding: '4px 40px 4px 40px' }} />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer p-0.5 text-[#737373] hover:text-[#0a0a0a] flex items-center">
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            {pw.length > 0 && (
+              <div className="mt-2">
+                <div className="flex gap-1">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300" style={{ backgroundColor: i <= strength ? strengthColors[strength] : '#E5E7EB' }} />
+                  ))}
                 </div>
+                <p className="text-[11px] font-medium mt-1 transition-colors" style={{ color: strengthColors[strength] }}>{strengthLabels[strength]}</p>
+              </div>
+            )}
+            {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
+          </div>
+
+          {/* Confirm password */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-[#525252] tracking-wide">Confirm Password <span className="text-red-500">*</span></label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
+              <input {...register('confirmPassword')} type={showConfirm ? 'text' : 'password'} placeholder="Re-enter password"
+                className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
+                style={{ padding: '4px 40px 4px 40px' }} />
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} tabIndex={-1}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer p-0.5 text-[#737373] hover:text-[#0a0a0a] flex items-center">
+                {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            {errors.confirmPassword && <p className="text-xs text-red-500 mt-1">{errors.confirmPassword.message}</p>}
+          </div>
+
+          {/* WhatsApp */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-[#525252] tracking-wide">WhatsApp Number <span className="text-red-500">*</span></label>
+            <div className="flex">
+              <CountryCodeSelect value={formCountryCode} onChange={(val) => setValue('countryCode', val)} />
+              <div className="relative flex-1">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
+                <input {...register('phone')} type="tel" placeholder="7863 992 555"
+                  className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-r-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
+                  style={{ padding: '4px 12px 4px 40px' }} />
+              </div>
+            </div>
+            <p className="text-[11px] text-[#737373] mt-1">We'll send a verification code via WhatsApp</p>
+            {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
+          </div>
+
+          {/* Terms */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" {...register('terms')}
+              className="mt-0.5 appearance-none w-5 h-5 border border-[#e5e5e5] rounded cursor-pointer transition-all duration-150 checked:bg-[#1e9a80] checked:border-[#1e9a80] bg-white shrink-0" />
+            <span className="text-xs text-[#737373] leading-relaxed">
+              I agree to the{' '}
+              <Link to="/terms" className="text-[#1e9a80] font-semibold underline" target="_blank">Terms of Service</Link>
+              {' '}and{' '}
+              <Link to="/privacy" className="text-[#1e9a80] font-semibold underline" target="_blank">Privacy Policy</Link>
+              {' '}<span className="text-red-500">*</span>
+            </span>
+          </label>
+          {errors.terms && <p className="text-xs text-red-500 -mt-2">{errors.terms.message}</p>}
+
+          {/* Submit */}
+          <button type="submit" disabled={emailLoading}
+            className="w-full rounded-lg font-medium text-white cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+            style={{ height: 37, backgroundColor: '#1e9a80', fontSize: 16, padding: '8px 16px', border: 'none', boxShadow: '0 4px 8px -1px rgba(0,0,0,0.05)' }}>
+            <AnimatePresence mode="wait">
+              {emailLoading ? (
+                <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />Creating account...
+                </motion.span>
+              ) : (
+                <motion.span key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />Create account
+                </motion.span>
               )}
-              {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
-            </div>
+            </AnimatePresence>
+          </button>
+        </form>
 
-            {/* Confirm password */}
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">
-                Confirm password <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  {...register('confirmPassword')}
-                  type={showConfirm ? 'text' : 'password'}
-                  placeholder="Re-enter password"
-                  className="input-nfstay w-full pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  tabIndex={-1}
-                >
-                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.confirmPassword && <p className="text-xs text-red-500 mt-1">{errors.confirmPassword.message}</p>}
-            </div>
-
-            {/* WhatsApp number */}
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">
-                WhatsApp number <span className="text-red-500">*</span>
-              </label>
-              <div className="flex">
-                <CountryCodeSelect value={formCountryCode} onChange={(val) => setValue('countryCode', val)} />
-                <input {...register('phone')} type="tel" placeholder="7863 992 555" className="input-nfstay flex-1 rounded-l-none" />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">We'll send a verification code via WhatsApp</p>
-              {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
-            </div>
-
-            {/* Terms */}
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input type="checkbox" {...register('terms')} className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#00D084]" />
-              <span className="text-xs text-muted-foreground leading-relaxed">
-                I agree to the{' '}
-                <Link to="/terms" className="text-primary font-semibold underline" target="_blank">Terms of Service</Link>
-                {' '}and{' '}
-                <Link to="/privacy" className="text-primary font-semibold underline" target="_blank">Privacy Policy</Link>{' '}
-                <span className="text-red-500">*</span>
-              </span>
-            </label>
-            {errors.terms && <p className="text-xs text-red-500 -mt-2">{errors.terms.message}</p>}
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={emailLoading}
-              className="w-full h-12 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              style={{ background: '#00D084' }}
-            >
-              <AnimatePresence mode="wait">
-                {emailLoading ? (
-                  <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />Creating account...
-                  </motion.span>
-                ) : (
-                  <motion.span key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" />Create account
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </button>
-          </form>
-
-          <p className="text-sm text-muted-foreground mt-6 text-center">
-            Already have an account?{' '}
-            <Link to="/signin" className="text-primary font-semibold">Sign in</Link>
-          </p>
-        </div>
+        <p className="text-sm text-[#737373] text-center mt-2">
+          Already have an account?{' '}
+          <Link to="/signin" className="text-[#1e9a80] font-semibold">Sign in</Link>
+        </p>
       </div>
-      <RightPanel />
-    </div>
+    </AuthShell>
   );
 }
