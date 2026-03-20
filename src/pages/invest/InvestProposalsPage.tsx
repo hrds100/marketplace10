@@ -315,9 +315,11 @@ export default function InvestProposalsPage() {
           if (ethers) {
             const { VOTING_ABI } = await import('@/lib/contractAbis');
             const { CONTRACTS } = await import('@/lib/particle');
-            const w = (window as any).ethereum || (window as any).particle?.ethereum;
-            if (w) {
-              const provider = new ethers.providers.Web3Provider(w);
+            // Use Particle provider from useEthereum (via ConnectKit) — not window.ethereum
+            const { particleAuth } = await import('@particle-network/auth-core');
+            const pa = particleAuth as any;
+            if (pa?.ethereum) {
+              const provider = new ethers.providers.Web3Provider(pa.ethereum);
               const signer = provider.getSigner();
               const votingContract = new ethers.Contract(CONTRACTS.VOTING, VOTING_ABI, signer);
               const startTimestamp = Math.floor(Date.now() / 1000);
