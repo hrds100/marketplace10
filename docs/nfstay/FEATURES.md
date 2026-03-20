@@ -14,6 +14,23 @@
 
 ---
 
+## Phase 0 — Lovable UI Build (2026-03-20)
+
+| Feature | Status | System | Notes |
+|---------|--------|--------|-------|
+| Lovable prompt created | Done | docs/LOVABLE_PROMPT.md | 2,361 lines — all 30+ routes, 3 portals, 15+ modals, email flows, nice-to-haves |
+| Lovable UI generation | Planned | Lovable AI | Paste LOVABLE_PROMPT.md into Lovable |
+| Hook migration | Planned | src/hooks/nfstay/ | Copy 20 hooks into Lovable project |
+| Auth (email + password / magic link) | Planned | Supabase Auth + Resend | Operators: email+password. Travelers: email magic link. No WhatsApp OTP. |
+| Design system applied | Planned | Lovable | Inter font, green hsl(145 63% 42%), exact CSS variables |
+| All traveler pages | Planned | Lovable | Landing, search, property view, checkout, payment success/cancel, booking lookup |
+| All operator pages | Planned | Lovable | Dashboard, onboarding, properties, reservations, settings, analytics |
+| All admin pages | Planned | Lovable | AdminNfsReservations, AdminNfsProperties, AdminNfsOperators |
+| White-label portal | Planned | Lovable | 5 pages + NfsWhiteLabelProvider domain detection |
+| Google Maps (search + property) | Planned | Lovable + Google Maps API | Price markers, mini property card on click, Places autocomplete |
+
+---
+
 ## Phase 1 — Core Foundation
 
 | Feature | Status | System | Notes |

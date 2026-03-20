@@ -27,6 +27,28 @@ This prompt is ONLY for NFStay booking module.
 NFStay must remain logically isolated.
 marketplace10 and hub.nfstay.com are off limits unless the docs explicitly allow it and Hugo approves.
 
+BUILD APPROACH — READ THIS FIRST
+The NFStay UI has been built by Lovable AI using the prompt at docs/LOVABLE_PROMPT.md (2,361 lines).
+Do NOT manually rebuild UI pages that Lovable has already generated.
+
+Tajuul's job is now infrastructure wiring in this order:
+  1. Take the Lovable-generated project and download/export it
+  2. Copy the 20 pre-built hooks from src/hooks/nfstay/ into the Lovable project
+     (These replace Lovable's generated data-fetching stubs with real Supabase queries)
+  3. Run all DB migrations (SQL from docs/nfstay/DATABASE.md)
+  4. Deploy Edge Functions (nfs-stripe-checkout, nfs-stripe-connect-oauth, nfs-email-send, nfs-hospitable-oauth, nfs-domain-verify, nfs-ical-feed, nfs-stripe-webhook)
+  5. Import and activate n8n workflows (all nfs-* prefixed)
+  6. Set all env vars in Vercel (VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, VITE_GOOGLE_MAPS_API_KEY)
+
+Hooks to copy (src/hooks/nfstay/ → Lovable project):
+  use-nfs-operator, use-nfs-properties, use-nfs-property, use-nfs-property-search,
+  use-nfs-reservations, use-nfs-reservation, use-nfs-pricing, use-nfs-analytics,
+  use-nfs-promo-codes, use-nfs-availability, use-nfs-white-label, use-nfs-google-maps,
+  use-nfs-property-mutation, use-nfs-reservation-mutation, use-nfs-operator-update,
+  use-nfs-property-wizard, use-nfs-image-upload, use-nfs-stripe, use-nfs-hospitable, use-nfs-onboarding
+
+See docs/nfstay/EXECUTION_PLAN.md Phase 0 for the full step-by-step.
+
 THREE PROTECTED SYSTEMS — NEVER TOUCH
 1. MARKETPLACE (hub.nfstay.com) — live revenue-generating platform
 2. INVEST MODULE (src/pages/invest/*, useBlockchain, useInvestData, Particle wallet) — live crypto/blockchain features

@@ -39,6 +39,8 @@ git push origin main # auto-deploys to Vercel → hub.nfstay.com
 - DB schema: `docs/DATABASE.md`
 - Integrations: `docs/INTEGRATIONS.md`
 - Recent changes: `docs/CHANGELOG.md`
+- NFStay Lovable prompt: `docs/LOVABLE_PROMPT.md` (2,361 lines — paste into Lovable to build full UI)
+- NFStay module docs: `docs/nfstay/` (agent instructions, architecture, database, decisions, execution plan)
 
 ## Top Rules (full list in docs/AGENT_INSTRUCTIONS.md)
 1. Read the file before editing it. Never guess.

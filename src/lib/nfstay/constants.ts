@@ -126,3 +126,23 @@ export const NFS_PAYMENT_STATUS_LABELS: Record<(typeof NFS_PAYMENT_STATUSES)[num
 export const NFS_PROMO_CODE_STATUSES = [
   'active', 'expired', 'inactive', 'draft',
 ] as const;
+
+// ============================================================================
+// Currency
+// ============================================================================
+
+export const CURRENCIES = [
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham' },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
+] as const;
+
+export const CURRENCY_RATES: Record<string, number> = {
+  GBP: 1,
+  USD: 1.27,
+  EUR: 1.17,
+  AED: 4.67,
+  SGD: 1.71,
+};

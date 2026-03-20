@@ -16,6 +16,11 @@ Key capabilities:
 - White-label branded storefronts on custom subdomains/domains
 - Operator analytics dashboard
 
+**Current build approach (2026-03-20):**
+The UI is being built by **Lovable AI** using `docs/LOVABLE_PROMPT.md` (2,361 lines).
+After Lovable generates the UI, the 20 pre-built hooks in `src/hooks/nfstay/` are copied in to replace Lovable's generated stubs with real Supabase queries.
+Do NOT manually rebuild UI pages — Lovable handles all of that.
+
 ---
 
 ## 2. READ THESE FIRST
@@ -90,9 +95,13 @@ Check `docs/nfstay/CHANGELOG.md` for recent changes.
 
 | Document | Purpose |
 |----------|---------|
+| `docs/LOVABLE_PROMPT.md` | **START HERE** — 2,361-line Lovable AI build prompt. Paste into Lovable to generate the full UI. |
+| `docs/NFSTAY_FRONTEND_SPEC.md` | Complete legacy VPS frontend spec — all routes, components, auth flow |
+| `docs/NFSTAY_DATABASE_SPEC.md` | Full SQL DDL for all 9 nfs_* tables with indexes, RLS, JSONB shapes |
+| `docs/nfstay/EXECUTION_PLAN.md` | Step-by-step build plan starting with Phase 0 (Lovable) |
+| `docs/nfstay/DECISIONS.md` | Why key architecture decisions were made (ADR-001 to ADR-012) |
 | `Nfstay-VPS-backup/FORENSIC_TAKEOVER_AUDIT_REPORT.md` | Complete audit of the legacy system |
-| `Nfstay-VPS-backup/NFSTAY_REBUILD_STRATEGY.md` | Full rebuild plan with schema and phases |
-| `Nfstay-VPS-backup/INTEGRATION_ACCESS_REQUIREMENTS.md` | What Hugo needs to do for each integration |
+| `Nfstay-VPS-backup/NFSTAY_REBUILD_STRATEGY.md` | Original rebuild plan with schema and phases |
 
 ---
 

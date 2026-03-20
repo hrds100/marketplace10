@@ -73,6 +73,8 @@ export default {
           black: "hsl(var(--btn-black))",
           "black-foreground": "hsl(var(--btn-black-foreground))",
         },
+        warning: "hsl(var(--warning))",
+        info: "hsl(var(--info))",
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -75,6 +75,17 @@ import NfsCheckoutPage from "./pages/nfstay/NfsCheckoutPage";
 import NfsGuestBookingLookup from "./pages/nfstay/NfsGuestBookingLookup";
 import AdminNfsReservations from "./pages/admin/nfstay/AdminNfsReservations";
 import AdminNfsProperties from "./pages/admin/nfstay/AdminNfsProperties";
+import AdminNfsDashboard from "./pages/admin/nfstay/AdminNfsDashboard";
+import AdminNfsUsers from "./pages/admin/nfstay/AdminNfsUsers";
+import AdminNfsOperators from "./pages/admin/nfstay/AdminNfsOperators";
+import AdminNfsAnalytics from "./pages/admin/nfstay/AdminNfsAnalytics";
+import AdminNfsSettings from "./pages/admin/nfstay/AdminNfsSettings";
+import NfsTravelerReservations from "./pages/nfstay/NfsTravelerReservations";
+import NfsTravelerReservationDetail from "./pages/nfstay/NfsTravelerReservationDetail";
+import NfsOAuthCallbackPage from "./pages/NfsOAuthCallbackPage";
+import NfsVerifyEmailPage from "./pages/NfsVerifyEmailPage";
+import NfsAuthCallbackPage from "./pages/NfsAuthCallbackPage";
+import { NfsCurrencyProvider } from "./contexts/NfsCurrencyContext";
 import NfsWhiteLabelProvider from "./components/nfstay/white-label/NfsWhiteLabelProvider";
 import NfsWhiteLabelRouter from "./components/nfstay/white-label/NfsWhiteLabelRouter";
 
@@ -111,6 +122,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
       <FavouritesProvider>
+      <NfsCurrencyProvider>
       <NfsWhiteLabelProvider>
       <NfsWhiteLabelRouter>
         <Routes>
@@ -192,6 +204,11 @@ const App = () => (
             <Route path="nfstay" element={<AdminNfsReservations />} />
             <Route path="nfstay/reservations" element={<AdminNfsReservations />} />
             <Route path="nfstay/properties" element={<AdminNfsProperties />} />
+            <Route path="nfstay/dashboard" element={<AdminNfsDashboard />} />
+            <Route path="nfstay/users" element={<AdminNfsUsers />} />
+            <Route path="nfstay/operators" element={<AdminNfsOperators />} />
+            <Route path="nfstay/analytics" element={<AdminNfsAnalytics />} />
+            <Route path="nfstay/settings" element={<AdminNfsSettings />} />
 
             {/* Architecture overview */}
             <Route path="architecture" element={<AdminArchitecture />} />
@@ -218,10 +235,18 @@ const App = () => (
           {/* NFStay booking flow — available on hub too */}
           <Route path="/checkout" element={<NfsCheckoutPage />} />
           <Route path="/booking" element={<NfsGuestBookingLookup />} />
+          {/* NFStay traveler reservation portal */}
+          <Route path="/nfstay/traveler/reservations" element={<NfsTravelerReservations />} />
+          <Route path="/nfstay/traveler/reservation/:id" element={<NfsTravelerReservationDetail />} />
+          {/* NFStay auth callbacks */}
+          <Route path="/nfstay/oauth-callback" element={<NfsOAuthCallbackPage />} />
+          <Route path="/nfstay/verify-email" element={<NfsVerifyEmailPage />} />
+          <Route path="/auth/callback" element={<NfsAuthCallbackPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </NfsWhiteLabelRouter>
       </NfsWhiteLabelProvider>
+      </NfsCurrencyProvider>
       </FavouritesProvider>
       </BrowserRouter>
     </TooltipProvider>

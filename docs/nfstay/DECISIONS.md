@@ -105,6 +105,26 @@
 
 ---
 
+## ADR-011: UI built with Lovable AI
+
+**Date:** 2026-03-20
+**Status:** Accepted
+**Context:** The NFStay UI was being built manually page by page. After reviewing the scope (30+ pages, 15+ modals, 3 portals, Google Maps, Stripe, Hospitable), it was clear that manual building would take significantly longer than using an AI UI builder.
+**Decision:** Build the complete NFStay UI using Lovable AI, driven by the prompt at `docs/LOVABLE_PROMPT.md` (2,361 lines). Tajuul's pre-built 20 hooks (`src/hooks/nfstay/`) are then copied into the Lovable project to replace Lovable's generated data-fetching stubs.
+**Rationale:** Lovable generates polished, production-quality UI from a detailed spec in one pass. The hooks Tajuul already built contain all the Supabase wiring — this is the hardest part and it's already done. Combining Lovable's UI generation with Tajuul's hooks gives us the best of both: speed + proven backend logic.
+
+---
+
+## ADR-012: Email via Resend + Supabase Auth (no WhatsApp OTP for NFStay)
+
+**Date:** 2026-03-20
+**Status:** Accepted
+**Context:** The hub.nfstay.com marketplace uses WhatsApp OTP for auth (via n8n + GHL). Question arose whether NFStay should also use WhatsApp OTP.
+**Decision:** NFStay uses email-only auth for now. Operators use email + password. Travelers use email magic link. Supabase handles auth. Resend handles all transactional emails via `nfs-email-send` edge function. WhatsApp OTP can be added later as a Phase 2 enhancement.
+**Rationale:** Supabase + Resend is simpler, faster to implement, and sufficient for launch. WhatsApp OTP requires n8n + GHL workflows and custom verification logic — adds 2-3 days of setup for a feature that can be added post-launch without breaking changes.
+
+---
+
 *Add new decisions below this line.*
 
 ---

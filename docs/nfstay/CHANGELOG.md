@@ -4,6 +4,39 @@
 
 ---
 
+## 2026-03-20
+
+### Build Strategy: Lovable AI for UI
+
+**Decision:** NFStay UI will be built by Lovable AI, not manually.
+
+**What was created:**
+- `docs/LOVABLE_PROMPT.md` — 2,361-line complete Lovable build prompt covering all 30+ routes, 3 portals, 15+ modals, Google Maps deep spec, admin pages, white-label portal, email flows, nice-to-have features
+- `docs/NFSTAY_FRONTEND_SPEC.md` — legacy VPS frontend spec (all routes, components, auth flow)
+- `docs/NFSTAY_DATABASE_SPEC.md` — complete SQL DDL for all 9 `nfs_*` tables with indexes and RLS
+
+**LOVABLE_PROMPT.md sections:**
+- Design system (Inter font, green `hsl(145 63% 42%)`, exact CSS variables)
+- App bootstrap: white-label domain detection, operator guard logic, OAuth callback page
+- All layouts (NfsMainLayout, NfsOperatorLayout, NfsWhiteLabelLayout + mobile bottom tab bar)
+- Traveler portal (landing, search with Google Maps price markers, property view, checkout, payment)
+- Operator portal (dashboard, 8-step onboarding, 10-step property wizard, reservations, settings 11 tabs, analytics)
+- Admin portal (3 pages: reservations, properties, operators)
+- White-label portal (5 pages: landing, search, property, payment success/cancel)
+- 15 modals (refund, send email, amenities, Stripe/Hospitable disconnect, invites, promo codes, etc.)
+- Email flows: 8 guest emails + 14 operator emails via Resend nfs-email-send edge function
+- Nice-to-have features: 12 extras (sharing, recently viewed, comparison, currency selector, etc.)
+- 20 hooks reference table with file names and signatures
+- Supabase `as any` type cast workaround for nfs_* tables
+
+**Auth decision:** Email + password for operators, email magic link for travelers. No WhatsApp OTP for now (ADR-012).
+
+**Migration strategy:** Lovable builds the UI → copy 20 hooks from src/hooks/nfstay/ → run DB migrations → deploy Edge Functions → wire n8n.
+
+**Sanity check audit result:** 96% alignment after patching 5 critical gaps (white-label detection, operator guard, OAuth callback, hooks reference, types workaround).
+
+---
+
 ## 2026-03-18
 
 ### nfstay.app Traveler Routing
