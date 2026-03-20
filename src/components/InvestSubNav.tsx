@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Store, Wallet, Receipt, Vote } from 'lucide-react';
+import { Store, Wallet, Receipt, Vote, CreditCard } from 'lucide-react';
+import { useEmbeddedWallet } from '@particle-network/connectkit';
 
 const tabs = [
   { to: '/dashboard/invest/marketplace', icon: Store, label: 'Marketplace' },
@@ -10,6 +11,7 @@ const tabs = [
 
 export default function InvestSubNav() {
   const location = useLocation();
+  const embeddedWallet = useEmbeddedWallet();
 
   return (
     <div className="border-b border-border/30 bg-white/60 backdrop-blur-sm flex-shrink-0">
@@ -31,6 +33,16 @@ export default function InvestSubNav() {
             </NavLink>
           );
         })}
+        {/* Wallet button — opens Particle embedded wallet (same as legacy top-right button) */}
+        <div className="ml-auto">
+          <button
+            onClick={() => embeddedWallet?.openWallet()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] transition-all duration-200 whitespace-nowrap text-primary font-semibold bg-primary/10 hover:bg-primary/20"
+          >
+            <CreditCard className="w-[13px] h-[13px]" strokeWidth={1.8} />
+            <span>Wallet</span>
+          </button>
+        </div>
       </nav>
     </div>
   );
