@@ -119,6 +119,14 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Force ALL React imports to use our React 18 — not the React 19 copy
+      // nested inside @particle-network/authkit's @ant-design/v5-patch-for-react-19.
+      // Without this, Vite resolves some React internals from React 19 which has
+      // ReactSharedInternals.S (Suspense) that React 18 doesn't → crash: "reading 'S'"
+      "react": path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
+      "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime"),
     },
   },
   // Pre-bundle Particle SDK deps so Vite handles them correctly
