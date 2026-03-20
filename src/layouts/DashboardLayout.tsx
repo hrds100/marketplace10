@@ -9,7 +9,6 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import PaymentSuccessRefresher from '@/components/PaymentSuccessRefresher';
 import WalletProvisioner from '@/components/WalletProvisioner';
 import ClaimAccountBanner from '@/components/ClaimAccountBanner';
-import LegacyWalletBanner from '@/components/LegacyWalletBanner';
 import InvestSubNav from '@/components/InvestSubNav';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -105,7 +104,6 @@ export default function DashboardLayout() {
         {/* ── Top bar — always present ──────────────────────── */}
         <TopBar />
         {claimBanner}
-        <LegacyWalletBanner />
 
         {/* ── Content area — sidebar + main ─────────────────── */}
         <div className="flex-1 flex overflow-hidden relative">

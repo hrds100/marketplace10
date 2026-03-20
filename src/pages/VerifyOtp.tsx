@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { sendOtp } from '@/lib/n8n';
+import { sendOtp, verifyOtp } from '@/lib/n8n';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -47,10 +47,19 @@ export default function VerifyOtp() {
     verifyingRef.current = true;
     setLoading(true);
     setError('');
-    // MVP: fixed code 3467 — verified on frontend
-    if (otp !== '3467') {
+    // Verify OTP via n8n webhook (real WhatsApp code)
+    try {
+      const result = await verifyOtp({ phone, code: otp, name, email });
+      if (!result.success) {
+        verifyingRef.current = false;
+        setError('Invalid code. Please check your WhatsApp and try again.');
+        setOtp('');
+        setLoading(false);
+        return;
+      }
+    } catch {
       verifyingRef.current = false;
-      setError('Invalid code. Please check your WhatsApp and try again.');
+      setError('Could not verify code. Please try again.');
       setOtp('');
       setLoading(false);
       return;
