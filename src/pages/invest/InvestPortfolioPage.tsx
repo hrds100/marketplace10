@@ -705,11 +705,13 @@ export default function InvestPortfolioPage() {
                             <div>
                               <p className="text-muted-foreground">Last Payout</p>
                               <p className="font-semibold">
-                                {new Date(h.lastPayout).toLocaleDateString('en-GB', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })}
+                                {h.lastPayout
+                                  ? new Date(h.lastPayout).toLocaleDateString('en-GB', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })
+                                  : 'No payouts yet'}
                               </p>
                             </div>
                             <div>
