@@ -616,101 +616,66 @@ export function useBlockchain() {
     [ensureConnected],
   );
 
+  // STAY Token claim: withdraw rent as USDC, then user swaps on PancakeSwap manually.
+  // The BuyLP contract's buyStay() only accepts BNB (zero address), not USDC directly.
+  // Legacy confirms: buyStay was only used with card payments (Wert.io BNB flow).
+  // UI already shows PancakeSwap link on success screen.
   const buyStayTokens = useCallback(
     async (propertyId: number, onStep?: (step: number, total: number) => void) => {
       setLoading(true);
       setError(null);
       try {
         await ensureConnected();
-        const ethers = await getEthers();
-        if (!ethers) throw new Error('Blockchain not available');
 
-        // 1. Withdraw rent
-        onStep?.(1, 3);
+        onStep?.(1, 1);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
-        // Dry-run first — catches "NoRentAvailable" before sending tx
         await rentContract.callStatic.withdrawRent(propertyId);
-        const withdrawTx = await rentContract.withdrawRent(propertyId);
-        await withdrawTx.wait();
-        console.log('[buyStayTokens] Step 1 done — rent withdrawn for property', propertyId);
-
-        // 2. Approve USDC for BUY_LP
-        onStep?.(2, 3);
-        const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
-        if (!usdc) throw new Error('Could not connect to USDC contract');
-        const balance = await usdc.balanceOf(address);
-        console.log('[buyStayTokens] Step 2 — USDC balance:', balance.toString());
-        if (balance.isZero()) throw new Error('No USDC balance after rent withdrawal');
-        const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
-        await approveTx.wait();
-        console.log('[buyStayTokens] Step 2 done — USDC approved');
-
-        // 3. Swap USDC → STAY
-        onStep?.(3, 3);
-        const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
-        if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
-        const tx = await buyLpContract.buyStay(address, CONTRACTS.USDC, balance);
+        const tx = await rentContract.withdrawRent(propertyId);
         const receipt = await tx.wait();
-        console.log('[buyStayTokens] Step 3 done — STAY purchased, tx:', receipt.transactionHash);
+        console.log('[buyStayTokens] Rent withdrawn — swap to STAY via PancakeSwap. tx:', receipt.transactionHash);
 
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = extractBlockchainError(err, 'Buy STAY failed');
+        const msg = extractBlockchainError(err, 'Claim failed');
         console.error('[buyStayTokens] Failed for propertyId', propertyId, ':', err);
         setError(msg);
         setLoading(false);
         throw new Error(msg);
       }
     },
-    [address, ensureConnected],
+    [ensureConnected],
   );
 
+  // LP Token claim: withdraw rent as USDC, then user adds liquidity on PancakeSwap manually.
+  // Same pattern as STAY — UI already shows PancakeSwap LP link on success screen.
   const buyLpTokens = useCallback(
     async (propertyId: number, onStep?: (step: number, total: number) => void) => {
       setLoading(true);
       setError(null);
       try {
         await ensureConnected();
-        const ethers = await getEthers();
-        if (!ethers) throw new Error('Blockchain not available');
 
-        // 1. Withdraw rent
-        onStep?.(1, 3);
+        onStep?.(1, 1);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
         await rentContract.callStatic.withdrawRent(propertyId);
-        const withdrawTx = await rentContract.withdrawRent(propertyId);
-        await withdrawTx.wait();
-
-        // 2. Approve USDC for BUY_LP
-        onStep?.(2, 3);
-        const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
-        if (!usdc) throw new Error('Could not connect to USDC contract');
-        const balance = await usdc.balanceOf(address);
-        if (balance.isZero()) throw new Error('No USDC balance after rent withdrawal');
-        const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
-        await approveTx.wait();
-
-        // 3. Create LP position
-        onStep?.(3, 3);
-        const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
-        if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
-        const tx = await buyLpContract.buyLPToken(address, CONTRACTS.USDC, balance);
+        const tx = await rentContract.withdrawRent(propertyId);
         const receipt = await tx.wait();
+        console.log('[buyLpTokens] Rent withdrawn — add LP via PancakeSwap. tx:', receipt.transactionHash);
 
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = extractBlockchainError(err, 'Buy LP failed');
+        const msg = extractBlockchainError(err, 'Claim failed');
         console.error('[buyLpTokens] Failed for propertyId', propertyId, ':', err);
         setError(msg);
         setLoading(false);
         throw new Error(msg);
       }
     },
-    [address, ensureConnected],
+    [ensureConnected],
   );
 
   return {
