@@ -1,4 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
+import { useEthereum } from '@particle-network/authkit';
+import { useAccount, useConnect, useConnectors } from '@particle-network/connectkit';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
 import { CONTRACTS } from '@/lib/particle';
@@ -38,50 +40,59 @@ async function getReadProvider() {
 export function useBlockchain() {
   const { address, connected, connect } = useWallet();
   const { user } = useAuth();
+  // ConnectKit hooks — exact same as legacy NfstayContext.jsx lines 64-66
+  const { isConnected: ckConnected, connector } = useAccount();
+  const { provider: particleProvider } = useEthereum();
+  const connectors = useConnectors();
+  const { connectAsync } = useConnect();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoConnectAttempted = useRef(false);
 
-  // Get signer provider — use particleAuth.ethereum from auth-core.
-  // This is what actually worked for the STAY claim.
-  // useEthereum() from authkit loses its session after page refresh,
-  // but auth-core's particleAuth.ethereum persists via browser storage.
+  // Auto-reconnect: if user is logged in (has address in DB) but ConnectKit
+  // is disconnected (page refresh), reconnect via the auth connector.
+  // This is what legacy does implicitly via ConnectKit's built-in persistence.
+  useEffect(() => {
+    if (ckConnected || autoConnectAttempted.current || !address) return;
+    autoConnectAttempted.current = true;
+    const authConnector = connectors.find((c: any) => c.id === 'particleAuth' || c.type === 'particleAuth');
+    if (authConnector) {
+      console.log('[useBlockchain] Auto-reconnecting via ConnectKit...');
+      connectAsync({ connector: authConnector, chainId: 56 }).catch((e) => {
+        console.log('[useBlockchain] Auto-reconnect failed (user may need to sign in again):', e);
+      });
+    }
+  }, [ckConnected, address, connectors, connectAsync]);
+
+  // Get signer — exact legacy pattern (NfstayContext.jsx lines 128-141):
+  //   if connector is particleAuth + social → use particleProvider
+  //   else → use window.ethereum
   const getSignerProvider = useCallback(async () => {
     const ethers = await getEthers();
     if (!ethers) return null;
 
+    if (!particleProvider) {
+      console.error('[getSignerProvider] No particleProvider from useEthereum()');
+      return null;
+    }
+
     try {
-      const { particleAuth } = await import('@particle-network/auth-core');
-      const { bsc } = await import('@particle-network/authkit/chains');
-      const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
-      const pa = particleAuth as any;
-      try {
-        pa.init({
-          projectId: PARTICLE_LEGACY_CONFIG.projectId,
-          clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
-          appId: PARTICLE_LEGACY_CONFIG.appId,
-          chains: [bsc],
-        });
-      } catch { /* already initialized */ }
-
-      if (!pa.ethereum) {
-        console.error('[getSignerProvider] No Particle session');
-        return null;
-      }
-
       // Ensure BSC chain
-      try {
-        const chainId = await pa.ethereum.request({ method: 'eth_chainId' });
-        if (chainId !== '0x38') {
-          await pa.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
-        }
-      } catch { /* chain switch optional */ }
-
-      return new ethers.providers.Web3Provider(pa.ethereum);
+      const pp = particleProvider as any;
+      if (pp.request) {
+        try {
+          const chainId = await pp.request({ method: 'eth_chainId' });
+          if (chainId !== '0x38') {
+            await pp.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+          }
+        } catch { /* chain switch optional */ }
+      }
+      return new ethers.providers.Web3Provider(pp);
     } catch (e) {
       console.error('[getSignerProvider] Failed:', e);
       return null;
     }
-  }, []);
+  }, [particleProvider]);
 
   async function getContract(contractAddress: string, abi: string[], withSigner = false) {
     const ethers = await getEthers();
