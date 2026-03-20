@@ -113,7 +113,7 @@ export function usePayoutsWithBlockchain() {
 
               if (claimableAmount > 0 || eligible) {
                 payouts.push({
-                  propertyId: prop.id,
+                  propertyId: blockchainPropertyId, // Must be blockchain ID, not Supabase row ID
                   propertyTitle: prop.title || 'Property',
                   propertyImage: prop.image || '',
                   sharesOwned,
@@ -166,6 +166,7 @@ export function usePayoutsWithBlockchain() {
             id
             _by
             _propertyId
+            _rent
             blockTimestamp
             transactionHash
           }
@@ -190,6 +191,7 @@ export function usePayoutsWithBlockchain() {
           id: string;
           _by: string;
           _propertyId: string;
+          _rent: string;
           blockTimestamp: string;
           transactionHash: string;
         }> = json.data?.rentWithdrawns || [];
@@ -218,7 +220,7 @@ export function usePayoutsWithBlockchain() {
             propertyId: prop?.id || blockchainPropId,
             date: new Date(Number(w.blockTimestamp) * 1000).toISOString(),
             sharesOwned: 0,
-            amount: 0, // Amount not available in subgraph entity
+            amount: w._rent ? parseFloat(w._rent) / 1e18 : 0,
             currency: 'USDC',
             status: 'paid' as const,
             method: 'usdc',
@@ -302,6 +304,12 @@ export function usePayoutsWithBlockchain() {
     isLoading: payoutsLoading,
     blockchainLoading,
     blockchainError,
-    refetchRentData: () => { fetchedRef.current = false; },
+    refetchRentData: () => {
+      fetchedRef.current = false;
+      graphFetchedRef.current = false;
+      // Trigger re-fetch by toggling a state
+      setBlockchainPayouts([]);
+      setGraphHistory([]);
+    },
   };
 }

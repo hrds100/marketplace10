@@ -146,6 +146,7 @@ function ClaimModal({
   onClaimRent,
   onBuyStayTokens,
   onBuyLpTokens,
+  onClaimSuccess,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -163,6 +164,7 @@ function ClaimModal({
   onClaimRent?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
   onBuyStayTokens?: (propertyId: number, onStep?: (step: number, total: number) => void) => Promise<{ txHash: string; success: boolean }>;
   onBuyLpTokens?: (propertyId: number, onStep?: (step: number, total: number) => void) => Promise<{ txHash: string; success: boolean }>;
+  onClaimSuccess?: () => void;
 }) {
   const [txStep, setTxStep] = useState(0);
 
@@ -193,6 +195,7 @@ function ClaimModal({
         if (error) throw new Error(error.message);
         if (data?.error) throw new Error(data.error);
         setClaimStep('success');
+        onClaimSuccess?.();
         sendInvestNotification({
           type: 'rent_claimed',
           user_id: user?.id,
@@ -209,6 +212,7 @@ function ClaimModal({
         const result = await onClaimRent(payout.propertyId);
         setClaimTxHash(result.txHash || null);
         setClaimStep('success');
+        onClaimSuccess?.();
       } catch (err) {
         setClaimError(err instanceof Error ? err.message : 'Claim failed. Check your wallet and try again.');
         setClaimStep('choose');
@@ -218,6 +222,7 @@ function ClaimModal({
         const result = await onBuyStayTokens(payout.propertyId, (step) => setTxStep(step));
         setClaimTxHash(result.txHash || null);
         setClaimStep('success');
+        onClaimSuccess?.();
       } catch (err) {
         setClaimError(err instanceof Error ? err.message : 'STAY token claim failed. Check your wallet and try again.');
         setClaimStep('choose');
@@ -227,6 +232,7 @@ function ClaimModal({
         const result = await onBuyLpTokens(payout.propertyId, (step) => setTxStep(step));
         setClaimTxHash(result.txHash || null);
         setClaimStep('success');
+        onClaimSuccess?.();
       } catch (err) {
         setClaimError(err instanceof Error ? err.message : 'LP token claim failed. Check your wallet and try again.');
         setClaimStep('choose');
@@ -556,7 +562,7 @@ function PropertyImage({ src, alt, className }: { src: string; alt: string; clas
 
 export default function InvestPayoutsPage() {
   const { user } = useAuth();
-  const { payouts: mergedPayouts, blockchainLoading } = usePayoutsWithBlockchain();
+  const { payouts: mergedPayouts, blockchainLoading, refetchRentData } = usePayoutsWithBlockchain();
   const { data: bankAccount } = useMyBankAccount();
   const { claimRent, buyStayTokens, buyLpTokens, loading: claimLoading } = useBlockchain();
 
@@ -812,6 +818,10 @@ export default function InvestPayoutsPage() {
         onClaimRent={claimRent}
         onBuyStayTokens={buyStayTokens}
         onBuyLpTokens={buyLpTokens}
+        onClaimSuccess={() => {
+          // Auto-refresh payouts after successful claim
+          setTimeout(() => refetchRentData(), 2000);
+        }}
       />
     </div>
   );
