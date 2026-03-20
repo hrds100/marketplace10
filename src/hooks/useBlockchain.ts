@@ -84,6 +84,7 @@ async function getWalletProvider() {
     console.log('[Provider] Particle unavailable:', e);
   }
 
+  console.log('[Provider] No wallet provider found');
   return null;
 }
 
@@ -155,6 +156,7 @@ export function useBlockchain() {
           console.log('[ensureConnected] No session — fetching JWT...');
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
           const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+
           let jwt: string | null = null;
           try {
             const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
@@ -358,27 +360,16 @@ export function useBlockchain() {
         const receipt = await tx.wait();
 
         // F9: Write confirmed order to Supabase after on-chain tx succeeds
-        // Wrapped in try/catch — DB write failure must not surface as a purchase failure
         try {
-          // Write to inv_orders using column names from DATABASE.md
           await (supabase.from('inv_orders') as any).insert({
             property_id: propertyId,
-            // user_id will be set by RLS / service role — passing wallet_address as reference
             shares_requested: shares,
             amount_paid: amountUsdc,
             payment_method: 'crypto_usdc',
             status: 'completed',
             tx_hash: receipt.transactionHash,
-            // agent_id: TODO — resolve agentWallet to profiles.id when agent lookup is available
           });
-
-          // Upsert inv_shareholdings — per DATABASE.md: UNIQUE(user_id, property_id)
-          // NOTE: user_id from auth session is not available here (blockchain hook has no auth context)
-          // TODO: wire auth user_id once useAuth is available in this hook context
-          // For now, log wallet address in notes field is not available; skipping upsert
-          // to avoid breaking the flow with a missing required field.
         } catch (dbErr) {
-          // Non-fatal: on-chain tx already succeeded
           console.error('[F9] Supabase order record failed (tx already confirmed):', dbErr);
         }
 
@@ -400,7 +391,6 @@ export function useBlockchain() {
             });
           }
         } catch (notifyErr) {
-          // Non-fatal: notification failure must never block the user flow
           console.error('[N4] n8n notify failed (purchase already confirmed):', notifyErr);
         }
 
