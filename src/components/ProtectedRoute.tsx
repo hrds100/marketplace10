@@ -36,7 +36,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       try {
         const { data, error: queryErr } = await (supabase
           .from('profiles') as any)
-          .select('whatsapp_verified')
+          .select('whatsapp_verified, wallet_auth_method')
           .eq('id', user.id)
           .single();
 
@@ -62,7 +62,10 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           return;
         }
 
-        const verified = !!(data as any)?.whatsapp_verified;
+        const profile = data as any;
+        // Social login users are identity-verified (Google/Apple/etc) — skip WhatsApp gate
+        const isSocialUser = profile?.wallet_auth_method && profile.wallet_auth_method !== 'jwt';
+        const verified = !!(profile?.whatsapp_verified) || isSocialUser;
         if (verified) {
           checkedRef.current = user.id;
         }
