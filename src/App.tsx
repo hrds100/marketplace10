@@ -85,6 +85,7 @@ import NfsTravelerReservationDetail from "./pages/nfstay/NfsTravelerReservationD
 import NfsOAuthCallbackPage from "./pages/NfsOAuthCallbackPage";
 import NfsVerifyEmailPage from "./pages/NfsVerifyEmailPage";
 import NfsAuthCallbackPage from "./pages/NfsAuthCallbackPage";
+import ParticleAuthCallback from "./pages/ParticleAuthCallback";
 import { NfsCurrencyProvider } from "./contexts/NfsCurrencyContext";
 import NfsWhiteLabelProvider from "./components/nfstay/white-label/NfsWhiteLabelProvider";
 import NfsWhiteLabelRouter from "./components/nfstay/white-label/NfsWhiteLabelRouter";
@@ -242,6 +243,7 @@ const App = () => (
           <Route path="/nfstay/oauth-callback" element={<NfsOAuthCallbackPage />} />
           <Route path="/nfstay/verify-email" element={<NfsVerifyEmailPage />} />
           <Route path="/auth/callback" element={<NfsAuthCallbackPage />} />
+          <Route path="/auth/particle" element={<ParticleAuthCallback />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </NfsWhiteLabelRouter>

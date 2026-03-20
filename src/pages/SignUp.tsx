@@ -112,12 +112,26 @@ export default function SignUp() {
   const strength = passwordStrength(pw);
   const formCountryCode = watch('countryCode');
 
-  // ── Social login ────────────────────────────────────────────────────────
+  // ── Detect particle_user set by callback page ────────────────────────────
+
+  useEffect(() => {
+    const raw = localStorage.getItem('particle_user');
+    if (raw) {
+      try {
+        const pu = JSON.parse(raw) as ParticleUserInfo;
+        localStorage.removeItem('particle_user');
+        setParticleUser(pu);
+        setView('phone');
+      } catch { /* ignore */ }
+    }
+  }, []);
+
+  // ── Social login — redirect approach (no popup, no blocking) ─────────────
 
   const handleSocialLogin = async (provider: SocialProvider) => {
     setSocialLoading(provider);
     try {
-      const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
+      const { particleAuth, thirdpartyAuth } = await import('@particle-network/auth-core');
       const { bsc } = await import('@particle-network/authkit/chains');
       const { PARTICLE_CONFIG } = await import('@/lib/particle');
       const pa = particleAuth as any;
@@ -131,39 +145,19 @@ export default function SignUp() {
         });
       } catch { /* already initialized */ }
 
-      const userInfo = await particleConnect({ socialType: provider });
+      // Save intent before redirect — callback page reads this
+      localStorage.setItem('particle_intent', JSON.stringify({ type: 'signup', provider }));
 
-      // Extract EVM wallet address
-      const evmWallet = (userInfo as any).wallets?.find((w: any) => w.chain_name === 'evm_chain');
-      const walletAddress = evmWallet?.public_address || '';
-
-      // Extract email (varies by provider)
-      const email =
-        (userInfo as any)[`${provider}_email`] ||
-        (userInfo as any).thirdparty_user_info?.user_info?.email ||
-        '';
-      const name =
-        (userInfo as any).thirdparty_user_info?.user_info?.name ||
-        email.split('@')[0] ||
-        provider;
-      const uuid = (userInfo as any).uuid || '';
-
-      // Persist Particle identity for VerifyOtp
-      try {
-        sessionStorage.setItem('particle_uuid', uuid);
-        sessionStorage.setItem('particle_auth_method', provider);
-      } catch { /* skip */ }
-
-      setParticleUser({ email, name, wallet: walletAddress, uuid, authMethod: provider });
-      setView('phone');
+      // Redirect to OAuth provider (no popup — redirects current page)
+      await thirdpartyAuth({
+        authType: provider as any,
+        redirectUrl: window.location.origin + '/auth/particle',
+      });
+      // Page redirects away here — code below never runs
     } catch (err: any) {
-      if (err?.message?.includes('cancel') || err?.message?.includes('close')) {
-        // User closed the popup — not an error
-      } else {
-        console.error('[SignUp] Social login error:', err);
-        toast.error('Social login failed. Please try again.');
-      }
-    } finally {
+      localStorage.removeItem('particle_intent');
+      console.error('[SignUp] Social login error:', err);
+      toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);
     }
   };

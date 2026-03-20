@@ -71,7 +71,7 @@ export default function SignIn() {
     setSocialLoading(provider);
     setError('');
     try {
-      const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
+      const { particleAuth, thirdpartyAuth } = await import('@particle-network/auth-core');
       const { bsc } = await import('@particle-network/authkit/chains');
       const { PARTICLE_CONFIG } = await import('@/lib/particle');
       const pa = particleAuth as any;
@@ -85,48 +85,22 @@ export default function SignIn() {
         });
       } catch { /* already initialized */ }
 
-      const userInfo = await particleConnect({ socialType: provider });
-      const uuid = (userInfo as any).uuid || '';
-      const userEmail =
-        (userInfo as any)[`${provider}_email`] ||
-        (userInfo as any).thirdparty_user_info?.user_info?.email ||
-        '';
+      // Save intent before redirect
+      localStorage.setItem(
+        'particle_intent',
+        JSON.stringify({ type: 'signin', provider, redirectTo: redirectTo || '' }),
+      );
 
-      if (!userEmail || !uuid) {
-        setError('Could not retrieve account details. Please try again.');
-        return;
-      }
-
-      // Store Particle identity for session restore
-      try {
-        sessionStorage.setItem('particle_uuid', uuid);
-        sessionStorage.setItem('particle_auth_method', provider);
-      } catch { /* skip */ }
-
-      const { error: signInErr } = await supabase.auth.signInWithPassword({
-        email: userEmail,
-        password: derivedPassword(uuid),
+      // Redirect to OAuth provider (no popup)
+      await thirdpartyAuth({
+        authType: provider as any,
+        redirectUrl: window.location.origin + '/auth/particle',
       });
-
-      if (signInErr) {
-        // Account doesn't exist yet — redirect to signup
-        toast.error('No account found. Please sign up first.');
-        window.location.href = '/signup';
-        return;
-      }
-
-      if (rememberMe) {
-        localStorage.setItem(REMEMBER_KEY, userEmail);
-      }
-      window.location.href = redirectTo ? decodeURIComponent(redirectTo) : '/dashboard/deals';
+      // Page redirects away here
     } catch (err: any) {
-      if (err?.message?.includes('cancel') || err?.message?.includes('close')) {
-        // User closed the popup
-      } else {
-        console.error('[SignIn] Social login error:', err);
-        setError('Social login failed. Please try again.');
-      }
-    } finally {
+      localStorage.removeItem('particle_intent');
+      console.error('[SignIn] Social login error:', err);
+      setError(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);
     }
   };
