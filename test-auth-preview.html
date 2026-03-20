@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NFsTay Auth Redesign — Preview v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f3f3ee;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .auth-container {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #f3f3ee;
+      padding: 8px;
+      gap: 8px;
+    }
+
+    /* ── LEFT PANEL ── */
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      flex: 1;
+      width: 50%;
+      height: 100%;
+      overflow-y: auto;
+      background-color: #ffffff;
+      border-radius: 24px;
+      border: 1px solid #e8e5df;
+      padding: clamp(24px, 3.5vh, 64px);
+    }
+
+    .logo {
+      font-size: clamp(18px, 2.5vh, 24px);
+      font-weight: 800;
+      color: #0a0a0a;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+    }
+
+    .form-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 480px;
+      flex: 1;
+    }
+
+    .heading-block {
+      text-align: center;
+      width: 100%;
+      margin-bottom: clamp(16px, 2.5vh, 32px);
+    }
+    .heading-block h2 {
+      font-size: clamp(20px, 2.7vh, 30px);
+      font-weight: 600;
+      color: #0a0a0a;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+    }
+    .heading-block p {
+      font-size: 16px;
+      color: #737373;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    /* ── TAB SWITCHER ── */
+    .tab-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      width: 100%;
+      height: 40px;
+      background-color: #f3f3ee;
+      border: 1px solid #e8e5df;
+      border-radius: 12px;
+      padding: 2px;
+      margin-bottom: clamp(11px, 2vh, 29px);
+    }
+    .tab-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      outline: none;
+      height: 100%;
+    }
+    .tab-btn.active {
+      background-color: #ffffff;
+      color: #1b1b1b;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+    }
+    .tab-btn.inactive {
+      background-color: transparent;
+      color: #73757c;
+    }
+    .tab-btn.inactive:hover { background-color: rgba(255,255,255,0.5); color: #1b1b1b; }
+
+    /* ── PANELS ── */
+    .view { width: 100%; display: none; }
+    .view.active { display: block; }
+
+    .form-root {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(9px, 1.8vh, 22px);
+      width: 100%;
+    }
+    .form-fields-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    label.field-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #525252;
+      letter-spacing: 0.025em;
+      user-select: none;
+    }
+    .input-wrapper { position: relative; }
+    .input-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      color: #737373;
+      pointer-events: none;
+    }
+    .field-input {
+      width: 100%;
+      height: 41px;
+      background-color: #ffffff;
+      color: #0a0a0a;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      padding: 4px 12px 4px 40px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 8px -1px rgba(0,0,0,0.05);
+    }
+    .field-input::placeholder { color: #a3a3a3; }
+    .field-input:focus {
+      border-color: #1e9a80;
+      box-shadow: 0 0 0 3px rgba(30,154,128,0.15);
+    }
+    .field-input.has-toggle { padding-right: 40px; }
+
+    .eye-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px;
+      color: #737373;
+      display: flex;
+      align-items: center;
+    }
+    .eye-toggle:hover { color: #0a0a0a; }
+
+    /* ── REMEMBER + FORGOT ── */
+    .row-remember {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .remember-left { display: flex; align-items: center; gap: 8px; }
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      background-color: #ffffff;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: all 0.15s;
+    }
+    .checkbox:checked {
+      background-color: #1e9a80;
+      border-color: #1e9a80;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 12px;
+    }
+    .remember-label { font-size: 14px; color: #1b1b1b; cursor: pointer; user-select: none; }
+    .forgot-btn {
+      background: none; border: none; color: #1e9a80; font-family: inherit;
+      font-size: 14px; font-weight: 500; cursor: pointer; padding: 0;
+    }
+    .forgot-btn:hover { text-decoration: underline; }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      width: 100%;
+      height: 37px;
+      background-color: #1e9a80;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      padding: 8px 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px -1px rgba(0,0,0,0.05);
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary:hover { background-color: #178870; }
+
+    .btn-email-signup {
+      width: 100%;
+      height: 45px;
+      background-color: transparent;
+      color: #0a0a0a;
+      border: 1px solid #e5e5e5;
+      border-radius: 9999px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 12px;
+    }
+    .btn-email-signup:hover { background-color: #f5f5f5; border-color: #c8c8c8; }
+
+    .or-divider { display: flex; align-items: center; gap: 12px; width: 100%; }
+    .or-line { height: 1px; flex: 1; background-color: #e5e5e5; }
+    .or-text { font-size: 16px; color: #737373; }
+
+    .social-row { display: flex; gap: 8px; width: 100%; }
+    .social-col { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .btn-social {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background-color: transparent;
+      color: #0a0a0a;
+      border: 1px solid #e5e5e5;
+      border-radius: 9999px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      padding: 8px 12px;
+      height: 45px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-social:hover { background-color: #f5f5f5; border-color: #c8c8c8; }
+    .btn-social svg { flex-shrink: 0; }
+    .btn-social-full { width: 100%; }
+
+    .bottom-link { font-size: 14px; color: #737373; text-align: center; margin-top: 12px; }
+    .bottom-link button {
+      color: #1e9a80; font-weight: 600; background: none; border: none;
+      cursor: pointer; font-family: inherit; font-size: 14px;
+    }
+
+    /* ── BACK BUTTON ── */
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 14px; color: #737373; background: none; border: none;
+      cursor: pointer; font-family: inherit; padding: 0; margin-bottom: 16px;
+      transition: color 0.15s;
+    }
+    .back-btn:hover { color: #0a0a0a; }
+
+    /* ── PASSWORD STRENGTH ── */
+    .strength-bar { display: flex; gap: 4px; margin-top: 8px; }
+    .strength-seg { height: 4px; flex: 1; border-radius: 9999px; transition: background-color 0.3s; background-color: #E5E7EB; }
+    .strength-label { font-size: 11px; font-weight: 500; margin-top: 4px; transition: color 0.3s; }
+
+    /* ── PHONE ── */
+    .phone-row { display: flex; }
+    .country-code {
+      display: flex; align-items: center; gap: 6px; height: 41px; padding: 0 12px;
+      border-radius: 10px 0 0 10px; border: 1px solid #e5e5e5; border-right: none;
+      background: white; font-size: 14px; font-weight: 500; color: #0a0a0a;
+      box-shadow: 0 4px 8px -1px rgba(0,0,0,0.05); flex-shrink: 0;
+    }
+    .phone-input {
+      width: 100%; height: 41px; background-color: #ffffff; color: #0a0a0a;
+      border: 1px solid #e5e5e5; border-radius: 0 10px 10px 0; font-family: inherit;
+      font-size: 14px; padding: 4px 12px 4px 40px; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 8px -1px rgba(0,0,0,0.05);
+    }
+    .phone-input:focus { border-color: #1e9a80; box-shadow: 0 0 0 3px rgba(30,154,128,0.15); }
+    .phone-hint { font-size: 11px; color: #737373; margin-top: 4px; }
+
+    /* ── TERMS ── */
+    .terms-row { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+    .terms-text { font-size: 12px; color: #737373; line-height: 1.6; }
+    .terms-text a { color: #1e9a80; font-weight: 600; text-decoration: underline; }
+
+    /* ════════════════════════════════════════
+       RIGHT PANEL — slider text moved UP
+    ════════════════════════════════════════ */
+    .right-panel {
+      position: relative;
+      width: 50%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 24px;
+      display: flex;
+      flex-shrink: 0;
+    }
+    .slide {
+      position: absolute; inset: 0; opacity: 0; transition: opacity 0.5s ease;
+    }
+    .slide.active { opacity: 1; }
+    .slide img { width: 100%; height: 100%; object-fit: cover; }
+
+    .slide-gradient {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, #041613 0%, rgba(4,22,19,0.60) 50%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .slide-content {
+      position: relative; display: flex; flex-direction: column;
+      justify-content: flex-end; width: 100%; height: 100%;
+    }
+
+    .slide-text-wrap {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      justify-content: flex-end; opacity: 0; transition: opacity 0.5s ease;
+    }
+    .slide-text-wrap.active { opacity: 1; }
+
+    /* KEY CHANGE: increased bottom padding from 16px → 72px to clear the dots */
+    .slide-text {
+      padding: 64px 40px 72px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .slide-text h2 {
+      font-size: 36px; font-weight: 600; line-height: 1.15;
+      letter-spacing: -0.02em; color: #ffffff;
+    }
+    .slide-text p.slide-body {
+      font-size: 16px; line-height: 1.625; letter-spacing: 0.025em; color: #e8ebe6;
+    }
+
+    .slide-stats { display: flex; gap: 32px; margin-top: 4px; }
+    .stat-number { font-size: 24px; font-weight: 600; line-height: 2rem; color: #ffffff; }
+    .stat-label { font-size: 16px; color: rgba(232,235,230,0.70); letter-spacing: 0.025em; }
+
+    .slide-bullets { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .slide-bullets li {
+      font-size: 16px; line-height: 1.625; color: #e8ebe6; list-style: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .bullet-check { width: 16px; height: 16px; color: #1e9a80; flex-shrink: 0; }
+
+    .avatar-row { display: flex; margin-top: 8px; }
+    .avatar-row img {
+      width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
+      object-fit: cover; margin-left: -8px;
+    }
+    .avatar-row img:first-child { margin-left: 0; }
+    .avatar-label { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.6); margin-top: 8px; }
+
+    .slide-dots {
+      position: relative; display: flex; gap: 12px; padding: 24px;
+      backdrop-filter: blur(4px);
+    }
+    .dot {
+      height: 2px; flex: 1; border-radius: 1px;
+      background-color: rgba(255,255,255,0.35);
+      transition: background-color 0.3s; cursor: pointer; border: none;
+    }
+    .dot.active { background-color: #ffffff; }
+
+    @media (max-width: 1023px) {
+      .right-panel { display: none; }
+      .left-panel { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-container">
+
+  <!-- ══════ LEFT PANEL ══════ -->
+  <div class="left-panel">
+    <div style="display:flex;align-items:center;justify-content:center;width:100%;">
+      <a href="#" class="logo">NFsTay</a>
+    </div>
+
+    <div class="form-center">
+      <div class="heading-block">
+        <h2 id="heading-text">Welcome back</h2>
+        <p id="subtitle-text">Sign in to your NFsTay account</p>
+      </div>
+
+      <!-- Tab switcher -->
+      <div class="tab-list" id="tab-list" role="tablist">
+        <button class="tab-btn active" id="tab-signin" onclick="switchTab('signin')">Sign In</button>
+        <button class="tab-btn inactive" id="tab-register" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           VIEW: SIGN IN
+           Social on top → Or → Email+Password
+      ═══════════════════════════════════ -->
+      <div class="view active" id="view-signin">
+        <div class="form-root">
+          <!-- Social 2×2 on top -->
+          <div class="social-row">
+            <button class="btn-social">
+              <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Google
+            </button>
+            <button class="btn-social">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.43c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 3.96zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+              Apple
+            </button>
+          </div>
+          <div class="social-row">
+            <button class="btn-social">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              X
+            </button>
+            <button class="btn-social">
+              <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/></svg>
+              Facebook
+            </button>
+          </div>
+
+          <!-- Divider -->
+          <div class="or-divider">
+            <div class="or-line"></div>
+            <span class="or-text">or sign in with email</span>
+            <div class="or-line"></div>
+          </div>
+
+          <!-- Email + Password -->
+          <div class="form-fields-group">
+            <div class="form-field">
+              <label class="field-label">Email</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+                <input class="field-input" type="email" placeholder="Enter your email" />
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="field-label">Password</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input class="field-input has-toggle" type="password" id="si-pw" placeholder="Enter your password" />
+                <button type="button" class="eye-toggle" onclick="togglePw('si-pw')">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row-remember">
+            <div class="remember-left">
+              <input type="checkbox" class="checkbox" id="remember-me" checked />
+              <label class="remember-label" for="remember-me">Remember me</label>
+            </div>
+            <button type="button" class="forgot-btn">Forgot Password?</button>
+          </div>
+
+          <button class="btn-primary">Sign In</button>
+
+          <p class="bottom-link">
+            Don't have an account? <button onclick="switchTab('register')">Sign up</button>
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           VIEW: REGISTER — Step 1 (Social + Email choice)
+      ═══════════════════════════════════ -->
+      <div class="view" id="view-register-social">
+        <div class="form-root">
+          <!-- Social stacked -->
+          <div class="social-col">
+            <button class="btn-social btn-social-full" onclick="showView('view-register-whatsapp')">
+              <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Continue with Google
+            </button>
+            <button class="btn-social btn-social-full" onclick="showView('view-register-whatsapp')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.43c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 3.96zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+              Continue with Apple
+            </button>
+            <button class="btn-social btn-social-full" onclick="showView('view-register-whatsapp')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              Continue with X
+            </button>
+            <button class="btn-social btn-social-full" onclick="showView('view-register-whatsapp')">
+              <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/></svg>
+              Continue with Facebook
+            </button>
+          </div>
+
+          <!-- Divider -->
+          <div class="or-divider">
+            <div class="or-line"></div>
+            <span class="or-text">Or</span>
+            <div class="or-line"></div>
+          </div>
+
+          <!-- Email signup button -->
+          <button class="btn-email-signup" onclick="showView('view-register-email')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+            Sign up with Email
+          </button>
+
+          <p class="bottom-link">
+            Already have an account? <button onclick="switchTab('signin')">Sign in</button>
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           VIEW: REGISTER — Step 2a (WhatsApp only, after social login)
+      ═══════════════════════════════════ -->
+      <div class="view" id="view-register-whatsapp">
+        <div class="form-root">
+          <button class="back-btn" onclick="showView('view-register-social')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            Back
+          </button>
+
+          <div style="margin-bottom:8px">
+            <p style="font-size:14px;color:#737373">
+              Signed in as <span style="font-weight:500;color:#0a0a0a">user@gmail.com</span>
+            </p>
+            <p style="font-size:13px;color:#737373;margin-top:4px">We'll send deal alerts and your verification code here.</p>
+          </div>
+
+          <div class="form-field">
+            <label class="field-label">WhatsApp Number <span style="color:#ef4444">*</span></label>
+            <div class="phone-row">
+              <div class="country-code">
+                <span>🇬🇧</span>
+                <span>+44</span>
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#737373"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </div>
+              <div style="position:relative;flex:1">
+                <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:20px;height:20px;color:#737373;pointer-events:none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <input class="phone-input" type="tel" placeholder="7863 992 555" />
+              </div>
+            </div>
+            <p class="phone-hint">We'll send a 4-digit verification code via WhatsApp</p>
+          </div>
+
+          <button class="btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Send verification code
+          </button>
+
+          <p style="font-size:12px;color:#737373;text-align:center;margin-top:8px">
+            By continuing you agree to our
+            <a href="#" style="color:#1e9a80;font-weight:600;text-decoration:underline">Terms</a> and
+            <a href="#" style="color:#1e9a80;font-weight:600;text-decoration:underline">Privacy Policy</a>.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           VIEW: REGISTER — Step 2b (Full email form)
+      ═══════════════════════════════════ -->
+      <div class="view" id="view-register-email">
+        <div class="form-root">
+          <button class="back-btn" onclick="showView('view-register-social')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            Back
+          </button>
+
+          <div class="form-fields-group">
+            <div class="form-field">
+              <label class="field-label">Full Name <span style="color:#ef4444">*</span></label>
+              <div class="input-wrapper">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <input class="field-input" type="text" placeholder="Enter full name" />
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="field-label">Email <span style="color:#ef4444">*</span></label>
+              <div class="input-wrapper">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+                <input class="field-input" type="email" placeholder="Enter your email" />
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="field-label">Password <span style="color:#ef4444">*</span></label>
+              <div class="input-wrapper">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input class="field-input has-toggle" type="password" id="reg-pw" placeholder="Min 8 characters" oninput="updateStrength(this.value)" />
+                <button type="button" class="eye-toggle" onclick="togglePw('reg-pw')">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <div id="strength-wrap" style="display:none">
+                <div class="strength-bar">
+                  <div class="strength-seg" id="seg0"></div>
+                  <div class="strength-seg" id="seg1"></div>
+                  <div class="strength-seg" id="seg2"></div>
+                  <div class="strength-seg" id="seg3"></div>
+                </div>
+                <p class="strength-label" id="strength-label"></p>
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="field-label">Confirm Password <span style="color:#ef4444">*</span></label>
+              <div class="input-wrapper">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input class="field-input has-toggle" type="password" id="reg-confirm" placeholder="Re-enter password" />
+                <button type="button" class="eye-toggle" onclick="togglePw('reg-confirm')">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="field-label">WhatsApp Number <span style="color:#ef4444">*</span></label>
+              <div class="phone-row">
+                <div class="country-code">
+                  <span>🇬🇧</span>
+                  <span>+44</span>
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#737373"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+                <div style="position:relative;flex:1">
+                  <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:20px;height:20px;color:#737373;pointer-events:none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  <input class="phone-input" type="tel" placeholder="7863 992 555" />
+                </div>
+              </div>
+              <p class="phone-hint">We'll send a verification code via WhatsApp</p>
+            </div>
+          </div>
+
+          <label class="terms-row">
+            <input type="checkbox" class="checkbox" />
+            <span class="terms-text">
+              I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a> <span style="color:#ef4444">*</span>
+            </span>
+          </label>
+
+          <button class="btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Create account
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div></div>
+  </div>
+
+  <!-- ══════ RIGHT PANEL ══════ -->
+  <div class="right-panel">
+    <div class="slide active" id="slide-0">
+      <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=1200&fit=crop" alt="" />
+    </div>
+    <div class="slide" id="slide-1">
+      <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=1200&fit=crop" alt="" />
+    </div>
+    <div class="slide" id="slide-2">
+      <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=1200&fit=crop" alt="" />
+    </div>
+
+    <div class="slide-gradient"></div>
+
+    <div class="slide-content">
+      <div class="slide-text-wrap active" id="text-0">
+        <div class="slide-text">
+          <h2>From landlord listing to first booking</h2>
+          <p class="slide-body">NFsTay connects you with verified rent-to-rent deals across the UK. Find, negotiate, and launch your Airbnb in days.</p>
+          <div class="slide-stats">
+            <div>
+              <p class="stat-number">1,800+</p>
+              <p class="stat-label">Verified deals</p>
+            </div>
+            <div>
+              <p class="stat-number">4,200+</p>
+              <p class="stat-label">Active operators</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-text-wrap" id="text-1">
+        <div class="slide-text">
+          <h2>Built-in CRM. Deal pipeline. University.</h2>
+          <p class="slide-body">Everything you need to manage your rent-to-rent portfolio in one platform.</p>
+          <ul class="slide-bullets">
+            <li>
+              <svg class="bullet-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+              Track deals from inquiry to keys
+            </li>
+            <li>
+              <svg class="bullet-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+              WhatsApp-first landlord communication
+            </li>
+            <li>
+              <svg class="bullet-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+              Step-by-step Airbnb University courses
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-text-wrap" id="text-2">
+        <div class="slide-text">
+          <h2>Trusted by UK operators since 2024</h2>
+          <p class="slide-body">Join the fastest-growing rent-to-rent community. Fully authorised properties, ready for Airbnb income.</p>
+          <div class="avatar-row">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=face" alt="" />
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=96&h=96&fit=crop&crop=face" alt="" />
+            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&crop=face" alt="" />
+            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=face" alt="" />
+            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=face" alt="" />
+          </div>
+          <p class="avatar-label">4,200+ operators trust NFsTay</p>
+        </div>
+      </div>
+
+      <div class="slide-dots">
+        <button class="dot active" id="dot-0" onclick="goSlide(0)"></button>
+        <button class="dot" id="dot-1" onclick="goSlide(1)"></button>
+        <button class="dot" id="dot-2" onclick="goSlide(2)"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Current state ──
+  let currentView = 'view-signin';
+
+  // ── Tab switching ──
+  function switchTab(tab) {
+    if (tab === 'signin') {
+      showView('view-signin');
+      document.getElementById('heading-text').textContent = 'Welcome back';
+      document.getElementById('subtitle-text').textContent = 'Sign in to your NFsTay account';
+    } else {
+      showView('view-register-social');
+      document.getElementById('heading-text').textContent = 'Create your account';
+      document.getElementById('subtitle-text').textContent = 'Join thousands of operators building Airbnb portfolios';
+    }
+    const isSignin = tab === 'signin';
+    document.getElementById('tab-signin').className = 'tab-btn ' + (isSignin ? 'active' : 'inactive');
+    document.getElementById('tab-register').className = 'tab-btn ' + (isSignin ? 'inactive' : 'active');
+    // Show/hide tab list (hide on sub-views)
+    document.getElementById('tab-list').style.display = 'grid';
+  }
+
+  function showView(viewId) {
+    // Hide all views
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    // Show target
+    document.getElementById(viewId).classList.add('active');
+    currentView = viewId;
+
+    // Hide tab switcher on sub-views, show on main views
+    const isSubView = viewId === 'view-register-whatsapp' || viewId === 'view-register-email';
+    document.getElementById('tab-list').style.display = isSubView ? 'none' : 'grid';
+
+    // Update heading for sub-views
+    if (viewId === 'view-register-whatsapp') {
+      document.getElementById('heading-text').textContent = 'Add your WhatsApp';
+      document.getElementById('subtitle-text').textContent = 'One last step to verify your account';
+    } else if (viewId === 'view-register-email') {
+      document.getElementById('heading-text').textContent = 'Sign up with Email';
+      document.getElementById('subtitle-text').textContent = 'Fill in your details to create an account';
+    }
+  }
+
+  // ── Password toggle ──
+  function togglePw(id) {
+    const el = document.getElementById(id);
+    el.type = el.type === 'password' ? 'text' : 'password';
+  }
+
+  // ── Password strength ──
+  const sLabels = ['Weak', 'Fair', 'Good', 'Strong'];
+  const sColors = ['#EF4444', '#F59E0B', '#F97316', '#1e9a80'];
+  function updateStrength(pw) {
+    const wrap = document.getElementById('strength-wrap');
+    if (!pw) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (pw.length >= 12) score++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    const s = score <= 1 ? 0 : score <= 2 ? 1 : score <= 3 ? 2 : 3;
+    for (let i = 0; i < 4; i++) {
+      document.getElementById('seg' + i).style.backgroundColor = i <= s ? sColors[s] : '#E5E7EB';
+    }
+    const lbl = document.getElementById('strength-label');
+    lbl.textContent = sLabels[s];
+    lbl.style.color = sColors[s];
+  }
+
+  // ── Slide carousel ──
+  let current = 0;
+  function goSlide(n) {
+    document.getElementById('slide-' + current).classList.remove('active');
+    document.getElementById('text-' + current).classList.remove('active');
+    document.getElementById('dot-' + current).classList.remove('active');
+    current = n;
+    document.getElementById('slide-' + current).classList.add('active');
+    document.getElementById('text-' + current).classList.add('active');
+    document.getElementById('dot-' + current).classList.add('active');
+  }
+  setInterval(function() { goSlide((current + 1) % 3); }, 6000);
+</script>
+
+</body>
+</html>

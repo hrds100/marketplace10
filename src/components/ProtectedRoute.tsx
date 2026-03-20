@@ -59,29 +59,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         const profile = data as any;
         // Social login users are identity-verified (Google/Apple/etc) — skip WhatsApp gate
         const isSocialUser = profile?.wallet_auth_method && profile.wallet_auth_method !== 'jwt';
-
-        // Fallback: ParticleAuthCallback stores auth method in sessionStorage before
-        // the profile update. If the DB update failed/lagged, trust sessionStorage
-        // and fix the profile in the background.
-        let socialFallback = false;
-        if (!isSocialUser) {
-          try {
-            const ssMethod = sessionStorage.getItem('particle_auth_method');
-            if (ssMethod && ssMethod !== 'jwt') {
-              socialFallback = true;
-              // Fire-and-forget: fix the profile so future loads work without fallback
-              (supabase.from('profiles') as any)
-                .update({ wallet_auth_method: ssMethod })
-                .eq('id', user.id)
-                .then(({ error: fixErr }: any) => {
-                  if (fixErr) console.error('[ProtectedRoute] Background profile fix failed:', fixErr);
-                  else sessionStorage.removeItem('particle_auth_method');
-                });
-            }
-          } catch { /* sessionStorage unavailable */ }
-        }
-
-        const verified = !!(profile?.whatsapp_verified) || isSocialUser || socialFallback;
+        const verified = !!(profile?.whatsapp_verified) || isSocialUser;
         if (verified) {
           checkedRef.current = user.id;
         }
