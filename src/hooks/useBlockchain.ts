@@ -59,10 +59,15 @@ async function getWalletProvider() {
       });
     } catch { /* already initialized */ }
 
+    // BSC network descriptor — pass explicitly so ethers never probes eth_chainId
+    // (Particle's EIP-1193 provider returns chainId inconsistently on first call,
+    //  causing "provider is disconnected from the specified chain" with auto-detect)
+    const BSC_NETWORK = { chainId: 56, name: 'bnb' };
+
     // Fast path: session confirmed by ensureConnected() in this tab lifetime
     if (_particleConnected && pa.ethereum) {
       console.log('[Provider] Using Particle auth-core (session flag active)');
-      return new ethers.providers.Web3Provider(pa.ethereum);
+      return new ethers.providers.Web3Provider(pa.ethereum, BSC_NETWORK);
     }
 
     // Slow path: flag not set (e.g. hard refresh) — verify via eth_accounts
@@ -72,7 +77,7 @@ async function getWalletProvider() {
         console.log('[Provider] eth_accounts result:', accounts);
         if (Array.isArray(accounts) && accounts.length > 0) {
           console.log('[Provider] Using Particle auth-core (eth_accounts verified)');
-          return new ethers.providers.Web3Provider(pa.ethereum);
+          return new ethers.providers.Web3Provider(pa.ethereum, BSC_NETWORK);
         }
         console.log('[Provider] Particle session not active — eth_accounts returned empty');
       } catch (e) {
