@@ -1,7 +1,20 @@
 // Particle Network configuration for NFsTay Investment module
-// Hub project credentials — configured for JWT auth (JWKS endpoint registered in Particle dashboard)
-// Legacy users migrate their wallet via Settings > Payout Settings > "Migrate your legacy wallet"
+//
+// TWO PROJECTS:
+//   LEGACY — social login (Google/Apple/Twitter/Facebook). Same project as app.nfstay.com.
+//            Google account → same wallet returned (0xAA884...). Used for all OAuth flows.
+//   HUB    — JWT auth only. JWKS endpoint configured. Used for email/password signups.
+//
+// Rule: social login always uses PARTICLE_LEGACY_CONFIG so legacy wallets are recovered.
 
+// Legacy project — social login (Google, Apple, Twitter, Facebook)
+export const PARTICLE_LEGACY_CONFIG = {
+  projectId: '4f8aca10-0c7e-4617-bfff-7ccb5269f365',
+  clientKey: 'cWniBMIDt2lhrhdIERSBWURpannCk30SGNwdPK7D',
+  appId: 'd80e484f-a690-4f0b-80a8-d1a1d0264b90',
+};
+
+// Hub project — JWT auth (email/password users)
 export const PARTICLE_CONFIG = {
   projectId: '470629ca-91af-45fa-a52b-62ed2adf9ef0',
   clientKey: 'cTHFOA18eAs4iRrkgn8lG1QARC8HFkkv5jeYQPc1',

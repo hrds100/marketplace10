@@ -133,14 +133,15 @@ export default function SignUp() {
     try {
       const { particleAuth, thirdpartyAuth } = await import('@particle-network/auth-core');
       const { bsc } = await import('@particle-network/authkit/chains');
-      const { PARTICLE_CONFIG } = await import('@/lib/particle');
+      const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
       const pa = particleAuth as any;
 
+      // Legacy project: same Google account → same wallet as app.nfstay.com
       try {
         pa.init({
-          projectId: PARTICLE_CONFIG.projectId,
-          clientKey: PARTICLE_CONFIG.clientKey,
-          appId: PARTICLE_CONFIG.appId,
+          projectId: PARTICLE_LEGACY_CONFIG.projectId,
+          clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
+          appId: PARTICLE_LEGACY_CONFIG.appId,
           chains: [bsc],
         });
       } catch { /* already initialized */ }

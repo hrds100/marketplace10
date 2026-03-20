@@ -166,9 +166,19 @@ export function useBlockchain() {
         const authMethod = (profile as any)?.wallet_auth_method || 'jwt';
 
         if (authMethod !== 'jwt') {
-          // Social login — reconnect via social provider (popup)
+          // Social login — reconnect via legacy project (same wallet as app.nfstay.com)
           console.log('[ensureConnected] No session — reconnecting via social:', authMethod);
           try {
+            const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
+            // Re-init with legacy credentials for social users
+            try {
+              pa.init({
+                projectId: PARTICLE_LEGACY_CONFIG.projectId,
+                clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
+                appId: PARTICLE_LEGACY_CONFIG.appId,
+                chains: [bsc],
+              });
+            } catch { /* already initialized */ }
             await particleConnect({ socialType: authMethod as any });
             _particleConnected = true;
             console.log('[ensureConnected] ✅ Social particleConnect succeeded');
