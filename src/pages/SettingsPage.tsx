@@ -569,7 +569,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Legacy wallet migration — shown when no wallet set and not dismissed */}
-              {!profileWalletAddress && !legacyDismissed && (
+              {!legacyDismissed && (
                 <div className="max-w-[480px] mb-8 p-4 rounded-xl border border-amber-200 bg-amber-50">
                   <h3 className="text-sm font-bold text-amber-900 mb-1">Migrate your legacy wallet</h3>
                   <p className="text-xs text-amber-700 mb-3">
