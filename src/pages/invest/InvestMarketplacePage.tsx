@@ -303,7 +303,7 @@ function InvestModal({
                 disabled={blockchainLoading}
                 onClick={async () => {
                   try {
-                    await buyShares(property.id, shares, total);
+                    await buyShares(property.blockchain_property_id || property.id, shares, total);
                     setConfirmed(true);
                   } catch (err) {
                     toast.error('Transaction failed. Please try again.');
