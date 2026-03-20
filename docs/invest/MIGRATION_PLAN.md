@@ -1,146 +1,209 @@
-# Investment Module Migration Plan
+# Legacy Investment Module Port — Migration Plan
 
-> Port legacy app.nfstay.com investment features into hub.nfstay.com.
-> Copy proven logic. Keep our UI. No reinvention.
+> Approved 2026-03-20. This is the single execution plan for porting all investment features from legacy app.nfstay.com into hub.nfstay.com.
+
+---
 
 ## Principle
 
-Everything that works in legacy gets ported verbatim. The only changes are:
-- Next.js → React + Vite + TypeScript
-- MongoDB → Supabase
-- Backend routes → Supabase Edge Functions + n8n
-- UI components → shadcn/ui (our existing design)
+**Port the proven engine. Keep our shell.**
 
-## What stays unchanged
-- Our auth (Supabase + Google social login + WhatsApp OTP)
-- Our admin panel (Supabase CRUD for properties, orders, commissions)
-- Our database schema (inv_ / aff_ prefixed tables)
-- Our n8n workflows
-- Our bank transfer / Revolut payout system
-- Our notification system (WhatsApp + email via GHL + n8n)
+Every contract call, every subgraph query, every wallet interaction comes from legacy verbatim. Our UI, auth, admin panel, and database layer stay.
 
 ---
 
-## Phase 0 — Foundation (Wallet + Provider)
+## Hard Rules (learned from 2026-03-20 incident)
 
-| Legacy Source | Our Target | Status |
-|--------------|-----------|--------|
-| `ParticleConnectkit.jsx` | `ParticleProvider.tsx` | Shipped (AuthCoreContextProvider) |
-| `useEthereum()` from authkit | `useBlockchain.ts` | Shipped |
-| `utils/abis.js` (full Solidity ABIs) | `lib/contractAbis.ts` | Needs update (human-readable → full) |
-| `config.js` (addresses, RPC, Graph) | `lib/particle.ts` | Already matches |
-| Particle wallet embed UI (Buy/Receive/Wallet modal) | `ParticleProvider.tsx` wallet plugin | Not yet ported |
-
-**Test gate:** Successfully sign and execute one on-chain transaction (withdrawRent).
+1. **All work on `feature/invest-wiring` branch** — never push to main
+2. **Vercel preview URL for every push** — verify before merge
+3. **One phase at a time** — test each before starting next
+4. **Do not touch `vite.config.ts`** — `@particle-network/authkit@2.1.1` ships React 19 internally; bundler config changes expose the conflict and crash the app
+5. **Do not install new Particle packages** — authkit@2.1.1 is what works; connectkit and others conflict
+6. **Do not modify `package.json` dependencies** without verifying the build loads in a browser first
+7. **Every change must be tested on a preview URL before merge**
 
 ---
 
-## Phase 1 — Payouts (Rent Claiming)
+## What We Bring From Legacy
 
-| Legacy Source | Our Target |
-|--------------|-----------|
-| `payouts/rentalYieldModal.js` | `InvestPayoutsPage.tsx` ClaimModal |
-| `utils/claim.jsx` (multi-step executor) | Inline in ClaimModal |
-| `NfstayContext.withdrawRent()` | `useBlockchain.claimRent()` |
-| `claim.jsx` STAY steps (0-2) | `useBlockchain.buyStayTokens()` |
-| `claim.jsx` LP steps (0-5) | `useBlockchain.buyLpTokens()` |
-| `subgraphHelper.js` rent queries | `usePayoutsWithBlockchain.ts` |
-| `payouts/congratulation.js` | Success step in ClaimModal |
+| From Legacy | File | What It Does |
+|---|---|---|
+| Contract interactions | `NfstayContext.jsx` | All contract functions: buy, sell, claim, vote, boost, farm |
+| Graph queries | `subgraphHelper.js` | All 17 subgraph queries: sales, rent, commissions, proposals, leaderboards |
+| Claim flow | `claim.jsx` | Multi-step: USDC → approve → STAY or LP → farm |
+| Config | `config.js` | Contract addresses, Graph endpoints, Particle credentials |
+| ABIs | `abis.js` | Full Solidity ABIs for all 11 contracts |
+| Utilities | `helper.js` | Wei conversion, encoding, formatting |
+| Agent hub | `agentHub/*` | Commission tracking, analytics, performance fees |
+| Payouts | `payouts/*` | Rent claim modal with 3 crypto options |
+| Portfolio | `portfolio/*` | Boost APR, STAY rewards, LP staking |
 
----
+## What Stays (Our Shell)
 
-## Phase 2 — Portfolio
-
-| Legacy Source | Our Target |
-|--------------|-----------|
-| `NfstayContext.getShareCount()` | `useBlockchain.getShareBalance()` |
-| `portfolio/currentApr.js` | InvestPortfolioPage APR display |
-| `portfolio/boostedApr.js` | InvestPortfolioPage boosted display |
-| `NfstayContext.handleBoost()` | `useBlockchain.boostApr()` |
-| `portfolio/stayEarned.js` | `useBlockchain.claimBoostRewards()` |
-| `NfstayContext.handleAddToFarm()` | Farm staking (new) |
-| `NfstayContext.getBalances()` | Token balance display |
-| `subgraphHelper.js` boost queries | Portfolio data hook |
-
----
-
-## Phase 3 — Proposals (Voting)
-
-| Legacy Source | Our Target |
-|--------------|-----------|
-| `subgraphHelper.js` voting queries | InvestProposalsPage data |
-| `NfstayContext.getProposalDetails()` | `useBlockchain.getProposalDetails()` |
-| `NfstayContext.handleVote()` | `useBlockchain.castVote()` |
-| Proposal list + detail UI | Restyle existing page |
+| Keep | Why |
+|---|---|
+| React + Vite + TypeScript | Our stack |
+| Supabase (not MongoDB) | Our database |
+| shadcn/ui components | Our design system |
+| Auth (Supabase + Particle social + WhatsApp OTP) | Our auth flow |
+| Admin panel | Our property management |
+| n8n workflows | Our automation |
+| Bank transfer / Revolut payouts | New feature not in legacy |
 
 ---
 
-## Phase 4 — Marketplace (Buy Shares)
+## User Flows (all cloned from legacy)
 
-| Legacy Source | Our Target |
-|--------------|-----------|
-| `details/payment.js` (card + crypto) | InvestMarketplacePage purchase flow |
-| `NfstayContext.handlePurchase()` | `useBlockchain.buyShares()` |
-| SamCart checkout iframe | SamCart redirect (already wired) |
-| `subgraphHelper.js` purchase events | Activity feed |
-| Property details | Supabase `inv_properties` (admin-managed) |
-
----
-
-## Phase 5 — Agent Dashboard
-
-| Legacy Source | Our Target |
-|--------------|-----------|
-| `agentHub/agent.js` | Become An Agent page |
-| `agentHub/analytics.js` | Agent analytics section |
-| `agentHub/properties.js` | Referral link per property |
-| `agentHub/revenue.js` | Revenue display |
-| `agentHub/recentTransaction.js` | Transaction history |
-| `agentHub/agentPerformanceFee.js` | Commission display |
-| `subgraphHelper.js` agent queries | Agent data hooks |
-
----
-
-## Phase 6 — Admin Enhancements
-
-| What | Status |
-|------|--------|
-| Property CRUD + photos | Already built |
-| Rent distribution (addRent) | Port from legacy admin |
-| Order management | Already built |
-| Commission settings | Already built |
-| Wallet change permission | Already built |
-
----
-
-## Execution Order
+### Flow 1 — Sign Up & Get a Wallet
 
 ```
-Phase 0 → test one tx → if pass:
-  Phase 1 (Payouts) → test all 3 claim options →
-  Phase 2 (Portfolio) → test balances + boost →
-  Phase 3 (Proposals) → test vote →
-  Phase 4 (Marketplace) → test buy →
-  Phase 5 (Agent) → test commission tracking →
-  Phase 6 (Admin) → final QA
+User clicks Google on hub.nfstay.com
+→ Google login screen appears
+→ User signs in with Google
+→ Particle creates an invisible wallet (same wallet as app.nfstay.com)
+→ Wallet address saved to profile
+→ User lands on dashboard
 ```
 
-Each phase: audit legacy → port logic → restyle to our UI → test on hub.nfstay.com → next phase.
+**Result:** Same wallet `0xAA884...` on both sites.
+
+### Flow 2 — Buy Shares with Card
+
+```
+User goes to Marketplace
+→ Sees Pembroke Place (real blockchain data)
+→ Types $500, clicks "Invest with Card"
+→ SamCart payment page opens
+→ User pays
+→ SamCart webhook → backend → sendPrimaryShares() on-chain
+→ Shares appear in wallet
+→ Visible on Portfolio page
+```
+
+### Flow 3 — Buy Shares with Crypto (USDC)
+
+```
+User goes to Marketplace
+→ Types $500, clicks "Invest with Crypto"
+→ Wallet popup: approve USDC
+→ Confirms → smart contract transfers USDC, gives shares
+→ Shares in wallet
+```
+
+### Flow 4 — Claim Rent (Payout)
+
+```
+User goes to Payouts
+→ Sees "Pembroke Place — $0.56 available"
+→ Clicks "Claim"
+→ Modal with 4 options:
+    Bank Transfer → Revolut batch next Tuesday
+    USDC → straight to wallet
+    STAY Token → withdraw USDC, swap to STAY
+    LP Token → withdraw USDC, create LP, stake
+→ User picks, confirms in wallet
+→ Money moves
+```
+
+### Flow 5 — Vote on a Proposal
+
+```
+User goes to Proposals
+→ Sees active proposal
+→ Clicks "Vote Yes" or "Vote No"
+→ Wallet popup: sign vote
+→ Vote recorded on-chain (weighted by shares)
+```
+
+### Flow 6 — Boost APR
+
+```
+User goes to Portfolio
+→ Sees "Boost APR" button
+→ Clicks → pays USDC fee
+→ Yield increases
+→ STAY rewards accumulate
+→ "Claim Rewards" → STAY to wallet
+```
+
+### Flow 7 — Agent Commissions
+
+```
+Agent shares referral link
+→ New user signs up + buys shares
+→ Agent earns 5% (first purchase) + 2% (ongoing rent)
+→ Agent Dashboard shows commissions
+→ "Claim" → same 4 payout options
+```
 
 ---
 
-## Key Legacy Files
+## Phases
 
-| File | Lines | Contains |
-|------|-------|----------|
-| `frontend/src/context/NfstayContext.jsx` | 1475 | ALL contract functions |
-| `frontend/src/context/ParticleConnectkit.jsx` | 76 | Particle provider setup |
-| `frontend/src/context/subgraphHelper.js` | ~500 | ALL Graph queries |
-| `frontend/src/utils/abis.js` | ~2100 | ALL contract ABIs |
-| `frontend/src/utils/claim.jsx` | 389 | Multi-step claim executor |
-| `frontend/src/config.js` | 130 | Addresses, RPC, config |
-| `frontend/src/context/helper.js` | ~200 | Utility functions |
+### Phase 0 — Signing Fix
+- Fix Particle MPC signing so `withdrawRent()` works
+- Must work before anything else
+- **Gate:** One successful on-chain transaction from hub.nfstay.com
+
+### Phase 1 — Payouts (Claim Rent)
+- Port `claim.jsx` multi-step flow
+- All 4 methods: Bank, USDC, STAY, LP
+- Real data from Rent contract + The Graph
+- **Gate:** Successfully claim $0.56 from Pembroke Place
+
+### Phase 2 — Portfolio
+- Port share balances, boost APR, STAY rewards, LP staking
+- From `NfstayContext.jsx` boost/farm functions
+- **Gate:** See real share balance, boost APR, claim rewards
+
+### Phase 3 — Proposals (Voting)
+- Port governance voting
+- From `subgraphHelper.js` proposal queries
+- **Gate:** Cast a vote and see it recorded
+
+### Phase 4 — Marketplace (Buy Shares)
+- Port crypto purchase flow
+- SamCart card flow already wired
+- **Gate:** Buy 1 share with USDC
+
+### Phase 5 — Agent Dashboard
+- Port commission tracking, analytics, referral system
+- From `subgraphHelper.js` agent/commission queries
+- **Gate:** See real commission data for whitelisted agent
 
 ---
 
-*Last updated: 2026-03-20*
+## Execution Method
+
+```
+For each phase:
+  1. Audit legacy implementation (read, don't copy)
+  2. Write adapted code for our stack (TypeScript, Supabase, shadcn/ui)
+  3. Build locally — must pass
+  4. Push to feature/invest-wiring
+  5. Get Vercel preview URL
+  6. Test on preview URL
+  7. Hugo confirms
+  8. Merge to main
+  9. Verify on hub.nfstay.com
+  10. Move to next phase
+```
+
+---
+
+## What Changes vs Legacy
+
+| | Legacy (app.nfstay.com) | New (hub.nfstay.com) |
+|---|---|---|
+| Look & feel | Old design | New shadcn/ui design |
+| Wallet | Same | Same |
+| Contracts | Same | Same |
+| Shares | Same | Same |
+| Money | Same | Same |
+| Sign in | Google only | Google + WhatsApp + Email |
+| Admin | Basic | Full property management |
+| Bank payouts | Not available | New — Revolut weekly batch |
+
+---
+
+*Every arrow, every wallet popup, every dollar — identical to legacy. We're putting a new coat of paint on a running engine.*
