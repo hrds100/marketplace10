@@ -203,16 +203,16 @@ function InvestModal({
   const handleClose = (v: boolean) => {
     if (!v) {
       setShares(1);
-      setConfirmed(false);
     }
     onOpenChange(v);
   };
 
-  // Congratulations overlay — shown after successful purchase
-  if (confirmed) {
-    return (
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-sm p-0 overflow-hidden rounded-2xl border-0">
+  return (
+    <>
+    {/* Congratulations overlay — separate from invest dialog so it survives dialog close */}
+    {confirmed && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="w-full max-w-sm mx-4 bg-white rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
           {/* Gradient header */}
           <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 min-h-[130px] overflow-hidden">
             <div className="absolute w-[300px] h-[300px] opacity-15 -top-[100px] -left-[140px] rounded-full bg-white/30" />
@@ -251,17 +251,18 @@ function InvestModal({
             </p>
             <Button
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full h-11 font-semibold mt-2"
-              onClick={() => handleClose(false)}
+              onClick={() => {
+                setConfirmed(false);
+                handleClose(false);
+              }}
             >
               View Portfolio
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+        </div>
+      </div>
+    )}
 
-  return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -343,8 +344,9 @@ function InvestModal({
                 onClick={async () => {
                   try {
                     await buyShares(property.blockchain_property_id || property.id, shares, total);
+                    // Close invest dialog, then show congratulations overlay
+                    onOpenChange(false);
                     setConfirmed(true);
-                    toast.success(`Successfully purchased ${shares} share${shares > 1 ? 's' : ''}!`);
                     // Refetch activity + blockchain stats after 3s (Graph indexing delay)
                     setTimeout(() => {
                       window.dispatchEvent(new CustomEvent('invest-purchase-complete'));
@@ -363,6 +365,7 @@ function InvestModal({
           </>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 
