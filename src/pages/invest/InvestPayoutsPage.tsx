@@ -160,14 +160,17 @@ function ClaimModal({
   bankAccount: Record<string, unknown> | null;
   user: { id: string; email?: string } | null;
   onClaimRent?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
-  onBuyStayTokens?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
-  onBuyLpTokens?: (propertyId: number) => Promise<{ txHash: string; success: boolean }>;
+  onBuyStayTokens?: (propertyId: number, onStep?: (step: number, total: number) => void) => Promise<{ txHash: string; success: boolean }>;
+  onBuyLpTokens?: (propertyId: number, onStep?: (step: number, total: number) => void) => Promise<{ txHash: string; success: boolean }>;
 }) {
+  const [txStep, setTxStep] = useState(0);
+
   if (!payout) return null;
 
   const handleContinue = async () => {
     if (!selectedMethod) return;
     setClaimError(null);
+    setTxStep(0);
 
     if (selectedMethod === 'bank_transfer' && !bankAccount) {
       // No bank details on file — show setup form before proceeding
@@ -210,9 +213,8 @@ function ClaimModal({
         setClaimStep('choose');
       }
     } else if (selectedMethod === 'stay_token' && payout && onBuyStayTokens) {
-      // buyStayTokens handles withdraw + approve + swap internally — do NOT call onClaimRent first
       try {
-        const result = await onBuyStayTokens(payout.propertyId);
+        const result = await onBuyStayTokens(payout.propertyId, (step) => setTxStep(step));
         setClaimTxHash(result.txHash || null);
         setClaimStep('success');
       } catch (err) {
@@ -220,9 +222,8 @@ function ClaimModal({
         setClaimStep('choose');
       }
     } else if (selectedMethod === 'lp_token' && payout && onBuyLpTokens) {
-      // buyLpTokens handles withdraw + approve + swap internally — do NOT call onClaimRent first
       try {
-        const result = await onBuyLpTokens(payout.propertyId);
+        const result = await onBuyLpTokens(payout.propertyId, (step) => setTxStep(step));
         setClaimTxHash(result.txHash || null);
         setClaimStep('success');
       } catch (err) {
@@ -241,6 +242,7 @@ function ClaimModal({
       setSelectedMethod(null);
       setClaimTxHash(null);
       setClaimError(null);
+      setTxStep(0);
     }, 200);
   };
 
@@ -380,17 +382,70 @@ function ClaimModal({
 
         {/* Step 2: Processing */}
         {claimStep === 'processing' && (
-          <div className="flex flex-col items-center justify-center py-10 space-y-4">
-            <Loader2 className="h-10 w-10 text-primary animate-spin" />
-            <p className="text-sm text-muted-foreground">Claiming your rental income...</p>
-            <p className="text-xs text-muted-foreground/60">
-              {formatCurrency(payout.amount)} via {selectedMethod ? methodLabels[selectedMethod] : ''}
-            </p>
-            {selectedMethod !== 'bank_transfer' && (
-              <p className="text-xs text-muted-foreground/50 text-center max-w-xs">
-                Approve the transaction(s) in your Particle wallet to continue.
-              </p>
+          <div className="flex flex-col items-center justify-center py-8 space-y-4 w-full">
+            {/* Bank Transfer — simple spinner */}
+            {(selectedMethod === 'bank_transfer' || selectedMethod === 'usdc') && (
+              <>
+                <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                <p className="text-sm text-muted-foreground">
+                  {selectedMethod === 'bank_transfer' ? 'Submitting your claim...' : 'Withdrawing rent to your wallet...'}
+                </p>
+                {selectedMethod === 'usdc' && (
+                  <p className="text-xs text-muted-foreground/50 text-center max-w-xs">
+                    Approve the transaction in your Particle wallet.
+                  </p>
+                )}
+              </>
             )}
+
+            {/* STAY / LP — 3-step progress */}
+            {(selectedMethod === 'stay_token' || selectedMethod === 'lp_token') && (() => {
+              const steps = selectedMethod === 'stay_token'
+                ? ['Withdraw rent from contract', 'Approve STAY swap', 'Swap USDC → STAY']
+                : ['Withdraw rent from contract', 'Approve LP deposit', 'Create LP position'];
+              return (
+                <div className="w-full space-y-2">
+                  <div className="flex flex-col items-center mb-3">
+                    <Loader2 className="h-7 w-7 text-primary animate-spin mb-2" />
+                    <p className="text-xs text-muted-foreground/70 text-center">
+                      Approve each prompt in your Particle wallet
+                    </p>
+                  </div>
+                  {steps.map((label, i) => {
+                    const n = i + 1;
+                    const done = txStep > n;
+                    const active = txStep === n;
+                    return (
+                      <div
+                        key={n}
+                        className={cn(
+                          'flex items-center gap-3 rounded-lg px-3 py-2.5 border transition-all',
+                          done ? 'border-green-500/30 bg-green-500/5' :
+                          active ? 'border-primary/40 bg-primary/5' :
+                          'border-border opacity-40'
+                        )}
+                      >
+                        <div className={cn(
+                          'h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
+                          done ? 'bg-green-500 text-white' :
+                          active ? 'bg-primary text-primary-foreground' :
+                          'bg-muted text-muted-foreground'
+                        )}>
+                          {done ? '✓' : n}
+                        </div>
+                        <span className={cn(
+                          'text-sm flex-1',
+                          active ? 'text-foreground font-medium' : 'text-muted-foreground'
+                        )}>
+                          {label}
+                        </span>
+                        {active && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 
