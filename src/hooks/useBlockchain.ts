@@ -151,6 +151,30 @@ async function getSigner() {
   return provider?.getSigner() || null;
 }
 
+// Extract readable error message from ethers.js errors.
+// Ethers v5 revert errors are often NOT standard Error instances —
+// they're plain objects with reason/code/error nested fields.
+function extractBlockchainError(err: unknown, fallback: string): string {
+  if (!err) return fallback;
+  // Standard Error
+  if (err instanceof Error) {
+    // Ethers wraps the revert reason in .reason
+    const anyErr = err as any;
+    if (anyErr.reason) return anyErr.reason;
+    if (anyErr.error?.message) return anyErr.error.message;
+    return err.message || fallback;
+  }
+  // Plain object (some ethers errors)
+  if (typeof err === 'object') {
+    const obj = err as any;
+    if (obj.reason) return obj.reason;
+    if (obj.message) return obj.message;
+    if (obj.error?.message) return obj.error.message;
+  }
+  if (typeof err === 'string') return err;
+  return fallback;
+}
+
 async function getContract(address: string, abi: string[], withSigner = false) {
   const ethers = await getEthers();
   if (!ethers) return null;
@@ -484,7 +508,7 @@ export function useBlockchain() {
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Purchase failed';
+        const msg = extractBlockchainError(err, 'Purchase failed');
         setError(msg);
         setLoading(false);
         throw err;
@@ -501,15 +525,18 @@ export function useBlockchain() {
         await ensureConnected();
         const contract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!contract) throw new Error('Could not connect to rent contract');
+        // Dry-run first (like legacy) — catches revert with readable reason
+        await contract.callStatic.withdrawRent(propertyId);
         const tx = await contract.withdrawRent(propertyId);
         const receipt = await tx.wait();
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Claim failed';
+        const msg = extractBlockchainError(err, 'Claim failed');
+        console.error('[claimRent] Failed for propertyId', propertyId, ':', err);
         setError(msg);
         setLoading(false);
-        throw err;
+        throw new Error(msg);
       }
     },
     [ensureConnected],
@@ -528,7 +555,7 @@ export function useBlockchain() {
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Vote failed';
+        const msg = extractBlockchainError(err, 'Vote failed');
         setError(msg);
         setLoading(false);
         throw err;
@@ -554,7 +581,7 @@ export function useBlockchain() {
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Boost failed';
+        const msg = extractBlockchainError(err, 'Boost failed');
         setError(msg);
         setLoading(false);
         throw err;
@@ -580,7 +607,7 @@ export function useBlockchain() {
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Claim failed';
+        const msg = extractBlockchainError(err, 'Claim failed');
         setError(msg);
         setLoading(false);
         throw err;
@@ -602,17 +629,22 @@ export function useBlockchain() {
         onStep?.(1, 3);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
+        // Dry-run first — catches "NoRentAvailable" before sending tx
+        await rentContract.callStatic.withdrawRent(propertyId);
         const withdrawTx = await rentContract.withdrawRent(propertyId);
         await withdrawTx.wait();
+        console.log('[buyStayTokens] Step 1 done — rent withdrawn for property', propertyId);
 
         // 2. Approve USDC for BUY_LP
         onStep?.(2, 3);
         const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
         if (!usdc) throw new Error('Could not connect to USDC contract');
         const balance = await usdc.balanceOf(address);
+        console.log('[buyStayTokens] Step 2 — USDC balance:', balance.toString());
         if (balance.isZero()) throw new Error('No USDC balance after rent withdrawal');
         const approveTx = await usdc.approve(CONTRACTS.BUY_LP, balance);
         await approveTx.wait();
+        console.log('[buyStayTokens] Step 2 done — USDC approved');
 
         // 3. Swap USDC → STAY
         onStep?.(3, 3);
@@ -620,14 +652,16 @@ export function useBlockchain() {
         if (!buyLpContract) throw new Error('Could not connect to BuyLP contract');
         const tx = await buyLpContract.buyStay(address, CONTRACTS.USDC, balance);
         const receipt = await tx.wait();
+        console.log('[buyStayTokens] Step 3 done — STAY purchased, tx:', receipt.transactionHash);
 
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Buy STAY failed';
+        const msg = extractBlockchainError(err, 'Buy STAY failed');
+        console.error('[buyStayTokens] Failed for propertyId', propertyId, ':', err);
         setError(msg);
         setLoading(false);
-        throw err;
+        throw new Error(msg);
       }
     },
     [address, ensureConnected],
@@ -646,6 +680,7 @@ export function useBlockchain() {
         onStep?.(1, 3);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
+        await rentContract.callStatic.withdrawRent(propertyId);
         const withdrawTx = await rentContract.withdrawRent(propertyId);
         await withdrawTx.wait();
 
@@ -668,10 +703,11 @@ export function useBlockchain() {
         setLoading(false);
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Buy LP failed';
+        const msg = extractBlockchainError(err, 'Buy LP failed');
+        console.error('[buyLpTokens] Failed for propertyId', propertyId, ':', err);
         setError(msg);
         setLoading(false);
-        throw err;
+        throw new Error(msg);
       }
     },
     [address, ensureConnected],
