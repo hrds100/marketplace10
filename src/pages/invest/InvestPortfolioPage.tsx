@@ -165,7 +165,7 @@ export default function InvestPortfolioPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [address]);
 
   // F6: Monthly earnings chart from Supabase payout_claims
   const [monthlyEarnings, setMonthlyEarnings] = useState<{ month: string; amount: number }[]>([]);
