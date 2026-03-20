@@ -222,12 +222,33 @@ export function useBlockchain() {
           console.log('[ensureConnected] Auth method:', authMethod, '→ init type:', initType);
         }
 
-        // Fast path: signing session confirmed this tab session via particleConnect()
+        // Fast path: signing session already confirmed this tab session
         if (_particleConnected) {
           console.log('[ensureConnected] ✅ Signing session already confirmed');
           return;
         }
 
+        // Check if WalletProvisioner already established a session.
+        // WalletProvisioner runs on dashboard load and inits Particle + verifies eth_accounts.
+        // If accounts exist, the session is live and signing should work.
+        let hasSession = false;
+        if (pa.ethereum) {
+          try {
+            const accounts = await pa.ethereum.request({ method: 'eth_accounts' });
+            console.log('[ensureConnected] eth_accounts:', accounts);
+            hasSession = Array.isArray(accounts) && accounts.length > 0;
+          } catch (e) {
+            console.log('[ensureConnected] eth_accounts threw:', e);
+          }
+        }
+
+        if (hasSession) {
+          _particleConnected = true;
+          console.log('[ensureConnected] ✅ Session confirmed via eth_accounts (WalletProvisioner)');
+          return;
+        }
+
+        // No session — need to establish one.
         // Re-read auth method if we haven't already (might have been read during init)
         if (_particleInitType && authMethod === 'jwt') {
           const { data: profile } = await (supabase.from('profiles') as any)
@@ -238,17 +259,16 @@ export function useBlockchain() {
         }
 
         if (authMethod !== 'jwt') {
-          // Social login — ALWAYS call particleConnect() to refresh the MPC signing token.
-          // eth_accounts may return accounts (read-only check) but the signing token can be
-          // stale after a page refresh. Only particleConnect() establishes a valid signing session.
-          // With an active social session, particleConnect() refreshes silently (no popup).
-          console.log('[ensureConnected] Social user — calling particleConnect to refresh signing session:', authMethod);
+          // Social login — try to reconnect. This may open a popup if the session is fully expired.
+          console.log('[ensureConnected] No session — reconnecting via social:', authMethod);
           try {
             await particleConnect({ socialType: authMethod as any });
             _particleConnected = true;
-            console.log('[ensureConnected] ✅ Social particleConnect succeeded — signing session active');
+            console.log('[ensureConnected] ✅ Social particleConnect succeeded');
           } catch (e) {
             console.log('[ensureConnected] ❌ Social particleConnect threw:', e);
+            // Session may still work for signing if eth_accounts returned accounts above.
+            // Don't block — let the transaction try and fail with a specific error.
           }
         } else {
           // JWT user — fetch JWT and reconnect
