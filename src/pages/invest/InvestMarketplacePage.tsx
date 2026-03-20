@@ -305,8 +305,10 @@ function InvestModal({
                   try {
                     await buyShares(property.blockchain_property_id || property.id, shares, total);
                     setConfirmed(true);
-                  } catch (err) {
-                    toast.error('Transaction failed. Please try again.');
+                  } catch (err: any) {
+                    const msg = err?.message || 'Transaction failed. Please try again.';
+                    console.error('[Marketplace] Buy failed:', err);
+                    toast.error(msg);
                   }
                 }}
               >

@@ -301,7 +301,7 @@ export function useBlockchain() {
           costWithoutFeeWei,    // usdcAmount (base, no fee — contract adds fee)
           0,                    // minShares (no slippage protection)
           storedReferral,       // agent
-          { value: 0 },        // no ETH sent for USDC purchases
+          { value: "0" },       // legacy uses string "0", not number 0
         );
 
         // 7. Real transaction (legacy payment.js line 225-233)
