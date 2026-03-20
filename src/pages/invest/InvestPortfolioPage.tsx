@@ -129,6 +129,7 @@ export default function InvestPortfolioPage() {
   const { portfolio, isLoading, blockchainLoading } = usePortfolioWithBlockchain();
   const { boostApr, claimBoostRewards, getRentHistory, getBoostDetails, loading: boostLoading } = useBlockchain();
   const { data: proposals = [] } = useProposals();
+  const [boostSuccess, setBoostSuccess] = useState<{ show: boolean; apr: string }>({ show: false, apr: '' });
   const { data: allProperties = [] } = useInvestProperties();
   const { address } = useWallet();
 
@@ -792,7 +793,8 @@ export default function InvestPortfolioPage() {
                               if (!bcId) { toast.error('Property not mapped to blockchain'); return; }
                               try {
                                 await boostApr(bcId);
-                                toast.success('APR boosted successfully!');
+                                const apr = boostDetailsMap[h.propertyId]?.boostAprValue || '';
+                                setBoostSuccess({ show: true, apr: apr ? (Number(apr) / 10).toFixed(1) : '' });
                               } catch (err: any) {
                                 toast.error(err?.message || 'Boost failed');
                               }
@@ -898,6 +900,39 @@ export default function InvestPortfolioPage() {
           </div>
         )}
       </div>
+
+      {/* Boost Congratulations Overlay — cloned from legacy congrats.js */}
+      {boostSuccess.show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-sm mx-4 bg-white rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 min-h-[130px] overflow-hidden">
+              <div className="absolute w-[300px] h-[300px] opacity-15 -top-[100px] -left-[140px] rounded-full bg-white/30" />
+              <div className="absolute top-5 left-8 text-2xl animate-bounce">🚀</div>
+              <div className="absolute top-4 right-10 text-2xl animate-bounce" style={{ animationDelay: '0.3s' }}>🎉</div>
+              <div className="absolute bottom-5 left-1/3 text-xl animate-bounce" style={{ animationDelay: '0.6s' }}>✨</div>
+            </div>
+            <div className="flex justify-center -mt-12 relative z-10">
+              <div className="w-24 h-24 rounded-full backdrop-blur-lg bg-white/30 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg">
+                  <span className="text-4xl">📈</span>
+                </div>
+              </div>
+            </div>
+            <div className="px-8 pb-8 pt-2 flex flex-col items-center text-center gap-3">
+              <h1 className="text-2xl font-bold">Congratulations!</h1>
+              <p className="text-muted-foreground max-w-[20rem]">
+                Your returns are now boosted{boostSuccess.apr ? ` by ${boostSuccess.apr}%` : ''} for the next 12 months. Enjoy the ride! 🚀
+              </p>
+              <Button
+                className="w-full max-w-[15rem] bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full h-11 font-semibold mt-2"
+                onClick={() => setBoostSuccess({ show: false, apr: '' })}
+              >
+                Okay
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
