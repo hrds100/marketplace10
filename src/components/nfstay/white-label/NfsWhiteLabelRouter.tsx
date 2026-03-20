@@ -16,6 +16,7 @@ import NfsWlPaymentCancel from '@/pages/nfstay/white-label/NfsWlPaymentCancel';
 import { Navigate } from 'react-router-dom';
 import NfsMainLayout from '@/components/nfstay/main-site/NfsMainLayout';
 import NfsMainLanding from '@/pages/nfstay/NfsMainLanding';
+import NfsSearchPage from '@/pages/nfstay/NfsSearchPage';
 import NfsPropertyView from '@/pages/nfstay/NfsPropertyView';
 import NfsPaymentSuccess from '@/pages/nfstay/NfsPaymentSuccess';
 import NfsPaymentCancel from '@/pages/nfstay/NfsPaymentCancel';
@@ -65,7 +66,7 @@ export default function NfsWhiteLabelRouter({ children }: Props) {
         {/* ── Traveler-facing pages — wrapped in NfsMainLayout (navbar + footer) ── */}
         <Route element={<NfsMainLayout />}>
           <Route index element={<NfsMainLanding />} />
-          <Route path="/search" element={<Navigate to="/" replace />} />
+          <Route path="/search" element={<NfsSearchPage />} />
           <Route path="/property/:id" element={<NfsPropertyView />} />
           <Route path="/payment/success" element={<NfsPaymentSuccess />} />
           <Route path="/payment/cancel" element={<NfsPaymentCancel />} />
