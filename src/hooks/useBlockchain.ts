@@ -225,6 +225,9 @@ export function useBlockchain() {
 
   // ── WRITE FUNCTIONS ──
 
+  // Buy shares — exact clone of legacy payment.js lines 188-244
+  // Uses buyPrimaryShares(recipient, currency, propertyId, usdcAmount, minShares, agent)
+  // NOT sendPrimaryShares (that's for SamCart webhook backend only)
   const buyShares = useCallback(
     async (
       propertyId: number,
@@ -239,26 +242,65 @@ export function useBlockchain() {
         const ethers = await getEthers();
         if (!ethers) throw new Error('Blockchain not available');
 
-        // 1. Approve USDC
+        // 1. Get platform fee from contract (legacy: marketFees variable)
+        const marketplace = await getContract(CONTRACTS.RWA_MARKETPLACE, MARKETPLACE_ABI, true);
+        if (!marketplace) throw new Error('Could not connect to marketplace');
+        let feePercent = 2.5; // default
+        try {
+          const feeRaw = await marketplace.getMarketplaceFee();
+          feePercent = Number(feeRaw) / 10; // contract stores as bps/10
+        } catch { /* use default */ }
+
+        // 2. Calculate fee-adjusted amount (legacy payment.js line 130-131)
+        const costWithoutFee = amountUsdc;
+        const amountWithFee = costWithoutFee + (costWithoutFee * feePercent / 100);
+        const amountWithFeeWei = ethers.utils.parseUnits(amountWithFee.toFixed(18), 18);
+        const costWithoutFeeWei = ethers.utils.parseUnits(costWithoutFee.toString(), 18);
+
+        // 3. Check USDC balance (legacy balanceChecker)
+        const usdcRead = await getContract(CONTRACTS.USDC, ERC20_ABI);
+        if (usdcRead) {
+          const balance = await usdcRead.balanceOf(address);
+          if (balance.lt(amountWithFeeWei)) {
+            throw new Error(`Insufficient USDC. Need ${amountWithFee.toFixed(2)} (includes ${feePercent}% fee). You have ${parseFloat(ethers.utils.formatUnits(balance, 18)).toFixed(2)}.`);
+          }
+        }
+
+        // 4. Approve USDC with fee-adjusted amount (legacy checkForApproval)
         const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
         if (!usdc) throw new Error('Could not connect to USDC contract');
-        const amount = ethers.utils.parseUnits(amountUsdc.toString(), 18);
-        const approveTx = await usdc.approve(CONTRACTS.RWA_MARKETPLACE, amount);
-        await approveTx.wait();
+        const currentAllowance = await usdc.allowance(address, CONTRACTS.RWA_MARKETPLACE);
+        if (currentAllowance.lt(amountWithFeeWei)) {
+          await usdc.callStatic.approve(CONTRACTS.RWA_MARKETPLACE, amountWithFeeWei);
+          const approveTx = await usdc.approve(CONTRACTS.RWA_MARKETPLACE, amountWithFeeWei);
+          await approveTx.wait();
+        }
 
-        // 2. Buy shares
-        const marketplace = await getContract(
-          CONTRACTS.RWA_MARKETPLACE,
-          MARKETPLACE_ABI,
-          true,
+        // 5. Get agent wallet (legacy: localStorage referral)
+        const storedReferral = typeof window !== 'undefined'
+          ? localStorage.getItem('referral') || agentWallet || ethers.constants.AddressZero
+          : agentWallet || ethers.constants.AddressZero;
+
+        // 6. callStatic dry-run (legacy payment.js line 216-224)
+        await marketplace.callStatic.buyPrimaryShares(
+          address,              // recipient
+          CONTRACTS.USDC,       // currency
+          propertyId,           // propertyId
+          costWithoutFeeWei,    // usdcAmount (base, no fee — contract adds fee)
+          0,                    // minShares (no slippage protection)
+          storedReferral,       // agent
+          { value: 0 },        // no ETH sent for USDC purchases
         );
-        if (!marketplace) throw new Error('Could not connect to marketplace');
-        const agent = agentWallet || ethers.constants.AddressZero;
-        const tx = await marketplace.sendPrimaryShares(
+
+        // 7. Real transaction (legacy payment.js line 225-233)
+        const tx = await marketplace.buyPrimaryShares(
           address,
-          agent,
+          CONTRACTS.USDC,
           propertyId,
-          shares,
+          costWithoutFeeWei,
+          0,
+          storedReferral,
+          { value: 0 },
         );
         const receipt = await tx.wait();
 

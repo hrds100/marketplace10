@@ -2,10 +2,14 @@
 // Extracted from legacy app — only functions we actually call
 
 export const MARKETPLACE_ABI = [
+  // Legacy uses buyPrimaryShares for crypto purchases (payment.js line 216-233)
+  'function buyPrimaryShares(address recipient, address currency, uint256 propertyId, uint256 usdcAmount, uint256 minShares, address agent) external payable',
+  // sendPrimaryShares is used by SamCart webhook (backend, not frontend)
   'function sendPrimaryShares(address recipient, address agentWallet, uint256 propertyId, uint256 sharesRequested) external',
   'function getPropertyDetails(uint256 propertyId) external view returns (uint256 totalShares, uint256 sharesSold, uint256 pricePerShare, address owner)',
   'function getPrimaryPropertyRemainingShares(uint256 propertyId) external view returns (uint256)',
   'function getMarketplaceFee() external view returns (uint256)',
+  'function getPrimarySaleQuote(uint256 usdcAmount, uint256 sharePrice) external view returns (uint256 _sharesToBuy, uint256 _usdcQuotation, uint256 _marketFees)',
 ];
 
 export const RWA_TOKEN_ABI = [
