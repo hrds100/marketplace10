@@ -8,12 +8,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 
+// Derive a deterministic Supabase password from Particle UUID (must match SignUp.tsx)
+function derivedPassword(uuid: string): string {
+  return uuid.slice(0, 10) + '_NFsTay2!' + uuid.slice(-6);
+}
+
 export default function VerifyOtp() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const phone = params.get('phone') || '';
   const name = params.get('name') || '';
   const email = params.get('email') || '';
+  const wallet = params.get('wallet') || '';
+  const authMethod = params.get('authMethod') || '';
 
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -93,8 +100,49 @@ export default function VerifyOtp() {
       toast.success('WhatsApp verified! Welcome to NFsTay!');
     }
 
-    // Generate JWT and store it — wallet will be created on dashboard load
-    // (We can't create it here because the redirect kills the React component)
+    // ── Social login: create Supabase account now (wallet already known) ──
+    if (authMethod && wallet) {
+      try {
+        const uuid = (() => { try { return sessionStorage.getItem('particle_uuid') || ''; } catch { return ''; } })();
+        if (uuid) {
+          const pw = derivedPassword(uuid);
+          // Try sign up (new user)
+          const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+            email,
+            password: pw,
+            options: { data: { name } },
+          });
+          let userId: string | undefined = signUpData?.user?.id;
+
+          if (signUpErr || !userId) {
+            // Already registered — sign in instead
+            const { data: signInData } = await supabase.auth.signInWithPassword({ email, password: pw });
+            userId = signInData?.user?.id;
+          }
+
+          if (userId) {
+            await (supabase.from('profiles') as any)
+              .upsert({
+                id: userId,
+                name: name || email.split('@')[0],
+                whatsapp: phone,
+                whatsapp_verified: true,
+                wallet_address: wallet,
+                wallet_auth_method: authMethod,
+              } as any);
+            console.log('[VerifyOtp] Social profile saved. wallet:', wallet, 'authMethod:', authMethod);
+          }
+        }
+      } catch (err) {
+        console.error('[VerifyOtp] Social account creation failed (non-blocking):', err);
+      }
+
+      setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
+      setLoading(false);
+      return;
+    }
+
+    // ── JWT path: generate JWT and store for WalletProvisioner ────────────
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;

@@ -26,14 +26,28 @@ async function provisionWallet(userId: string) {
   try {
     // 1. Check if wallet already exists
     const { data } = await (supabase.from('profiles') as any)
-      .select('wallet_address, wallet_change_allowed_until')
+      .select('wallet_address, wallet_auth_method, wallet_change_allowed_until')
       .eq('id', userId)
       .single();
 
     if (data?.wallet_address) {
       console.log('[WalletProvisioner] Wallet exists:', data.wallet_address);
-      // Wallet exists — restore Particle signing session so auth-core is ready for tx signing
-      await restoreParticleSession(userId);
+      const authMethod = (data as any).wallet_auth_method || 'jwt';
+      if (authMethod !== 'jwt') {
+        // Social login user — wallet was set at signup. Restore session via social reconnect.
+        await restoreParticleSocialSession(authMethod);
+      } else {
+        // JWT user — restore via JWT
+        await restoreParticleSession(userId);
+      }
+      return;
+    }
+
+    // Skip JWT creation for social users (wallet should have been set at signup)
+    const authMethod = (data as any)?.wallet_auth_method || 'jwt';
+    if (authMethod !== 'jwt') {
+      console.log('[WalletProvisioner] Social user — skipping JWT wallet creation');
+      await restoreParticleSocialSession(authMethod);
       return;
     }
 
@@ -108,6 +122,47 @@ async function provisionWallet(userId: string) {
   } catch (err) {
     console.log('[WalletProvisioner] Failed (non-blocking):', err);
     destroyIframe();
+  }
+}
+
+// Restore Particle session for social login users (Google, Apple, Twitter, Facebook).
+// Checks if session is already live; if not, triggers social reconnect.
+async function restoreParticleSocialSession(authMethod: string) {
+  try {
+    const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
+    const { bsc } = await import('@particle-network/authkit/chains');
+    const { PARTICLE_CONFIG } = await import('@/lib/particle');
+    const pa = particleAuth as any;
+
+    try {
+      pa.init({
+        projectId: PARTICLE_CONFIG.projectId,
+        clientKey: PARTICLE_CONFIG.clientKey,
+        appId: PARTICLE_CONFIG.appId,
+        chains: [bsc],
+      });
+    } catch { /* already initialized */ }
+
+    // Check if already connected
+    let accounts: string[] = [];
+    if (pa.ethereum) {
+      try {
+        accounts = await pa.ethereum.request({ method: 'eth_accounts' });
+      } catch { /* not connected yet */ }
+    }
+
+    if (Array.isArray(accounts) && accounts.length > 0) {
+      console.log('[WalletProvisioner] Social Particle session active:', accounts[0]);
+      return;
+    }
+
+    // Session expired — reconnect with social provider (opens popup on interaction)
+    console.log('[WalletProvisioner] Social session not found — reconnecting via', authMethod);
+    await particleConnect({ socialType: authMethod as any });
+    console.log('[WalletProvisioner] Social Particle session restored via', authMethod);
+  } catch (err) {
+    // Expected if user hasn't interacted yet — not an error
+    console.log('[WalletProvisioner] Social session restore deferred (no user interaction):', (err as any)?.message || err);
   }
 }
 

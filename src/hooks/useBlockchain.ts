@@ -152,7 +152,31 @@ export function useBlockchain() {
           }
         }
 
-        if (!hasSession) {
+        if (hasSession) {
+          _particleConnected = true;
+          console.log('[ensureConnected] ✅ Existing session confirmed');
+          return;
+        }
+
+        // No session — determine auth method from profile
+        const { data: profile } = await (supabase.from('profiles') as any)
+          .select('wallet_auth_method')
+          .eq('id', user.id)
+          .single();
+        const authMethod = (profile as any)?.wallet_auth_method || 'jwt';
+
+        if (authMethod !== 'jwt') {
+          // Social login — reconnect via social provider (popup)
+          console.log('[ensureConnected] No session — reconnecting via social:', authMethod);
+          try {
+            await particleConnect({ socialType: authMethod as any });
+            _particleConnected = true;
+            console.log('[ensureConnected] ✅ Social particleConnect succeeded');
+          } catch (e) {
+            console.log('[ensureConnected] ❌ Social particleConnect threw:', e);
+          }
+        } else {
+          // JWT user — fetch JWT and reconnect
           console.log('[ensureConnected] No session — fetching JWT...');
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
           const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
@@ -180,9 +204,6 @@ export function useBlockchain() {
               console.log('[ensureConnected] ❌ particleConnect(jwt) threw:', e);
             }
           }
-        } else {
-          _particleConnected = true;
-          console.log('[ensureConnected] ✅ Existing session confirmed');
         }
       } catch (e) {
         console.log('[ensureConnected] Particle module failed:', e);
