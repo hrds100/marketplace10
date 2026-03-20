@@ -220,17 +220,21 @@ export function useBlockchain() {
       try {
         const contract = await getContract(CONTRACTS.BOOSTER, BOOSTER_ABI);
         if (!contract) return null;
-        const details = await contract.getBoostdetails(address, propertyId);
-        const isBoosted = address
-          ? await contract.isBoosted(address, propertyId)
-          : false;
-        const rewards = address
-          ? await contract.getEstimatedRewards(address, propertyId)
-          : 0;
+        // getBoostDetails returns: (sharesBoosted, startTime, endTime, rewardStartTime, reboostTimeLimit, pendingRewards)
+        const details = await contract.getBoostDetails(address, propertyId);
+        const boosted = await contract.isBoosted(address, propertyId);
+        const rewards = await contract.getEstimatedRewards(address, propertyId);
+        // Get global boost APR
+        let boostAprVal = '0';
+        try {
+          const apr = await contract.getBoostApr();
+          boostAprVal = apr.toString();
+        } catch { /* optional */ }
         return {
-          boostApr: details.boostApr.toString(),
-          totalBoosted: details.totalBoosted.toString(),
-          isBoosted,
+          boostApr: boostAprVal,
+          sharesBoosted: details.sharesBoosted.toString(),
+          pendingRewards: details.pendingRewards.toString(),
+          isBoosted: boosted,
           estimatedRewards: rewards.toString(),
         };
       } catch {

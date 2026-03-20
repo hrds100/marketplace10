@@ -33,14 +33,16 @@ export const VOTING_ABI = [
   'function decodeString(bytes encodedDescription) external pure returns (string)',
 ];
 
+// Booster ABI — exact match of legacy abis.js boosterABI
 export const BOOSTER_ABI = [
-  // Legacy uses: boost(address recipient, uint256 propertyId, address currency, { value })
   'function boost(address recipient, uint256 propertyId, address currency) external payable',
   'function claimRewards(uint256 propertyId) external',
-  'function getBoostAmount(address user, uint256 propertyId) external view returns (uint256)',
-  'function getBoostdetails(address user, uint256 propertyId) external view returns (uint256 boostApr, uint256 totalBoosted, uint256 reboostTime)',
-  'function isBoosted(address user, uint256 propertyId) external view returns (bool)',
-  'function getEstimatedRewards(address user, uint256 propertyId) external view returns (uint256)',
+  'function getBoostAmount(address _userAddress, uint256 _propertyId) external view returns (uint256 _estimatedAmount)',
+  'function getBoostApr() external view returns (uint256)',
+  'function getBoostDetails(address _userAddress, uint256 _propertyId) external view returns (uint256 sharesBoosted, uint256 startTime, uint256 endTime, uint256 rewardStartTime, uint256 reboostTimeLimit, uint256 pendingRewards)',
+  'function getEstimatedRewards(address _userAddress, uint256 _propertyId) external view returns (uint256 _totalRewards)',
+  'function isBoosted(address _userAddress, uint256 _propertyId) external view returns (bool _status)',
+  'function getBoostFeeBips() external view returns (uint256)',
 ];
 
 export const BUY_LP_ABI = [
