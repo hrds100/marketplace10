@@ -47,11 +47,28 @@ export function useBlockchain() {
 
   // Get signer — exact legacy pattern (NfstayContext.jsx line 135):
   //   new ethers.providers.Web3Provider(particleProvider).getSigner()
+  // Also ensures BSC chain (legacy handleNetwork() equivalent)
   const getSignerProvider = useCallback(async () => {
     const ethers = await getEthers();
     if (!ethers || !particleProvider) return null;
     try {
-      return new ethers.providers.Web3Provider(particleProvider as any);
+      // Ensure BSC chain — legacy handleNetwork() does this via switchChainAsync
+      const pp = particleProvider as any;
+      if (pp.request) {
+        try {
+          const chainId = await pp.request({ method: 'eth_chainId' });
+          if (chainId !== '0x38') {
+            console.log('[getSignerProvider] Switching to BSC from chain:', chainId);
+            await pp.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: '0x38' }],
+            });
+          }
+        } catch (e) {
+          console.log('[getSignerProvider] Chain switch error:', e);
+        }
+      }
+      return new ethers.providers.Web3Provider(pp);
     } catch (e) {
       console.error('[getSignerProvider] Failed:', e);
       return null;
