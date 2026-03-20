@@ -138,17 +138,17 @@ export default function ParticleAuthCallback() {
             return;
           }
         }
+      }
 
-        // Save wallet + auth method to profile
-        const userId = signUpData?.user?.id || (await supabase.auth.getUser()).data.user?.id;
-        if (userId) {
-          await (supabase.from('profiles') as any).upsert({
-            id: userId,
-            name: name || email.split('@')[0],
-            wallet_address: walletAddress,
-            wallet_auth_method: intent.provider,
-          } as any);
-        }
+      // Always upsert wallet_address + wallet_auth_method — covers both new and returning users
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (userId) {
+        await (supabase.from('profiles') as any).upsert({
+          id: userId,
+          name: name || email.split('@')[0],
+          wallet_address: walletAddress || undefined,
+          wallet_auth_method: intent.provider,
+        } as any);
       }
 
       const dest = intent.redirectTo ? decodeURIComponent(intent.redirectTo) : '/dashboard/deals';

@@ -40,17 +40,11 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           .eq('id', user.id)
           .single();
 
-        // Profile doesn't exist — create it (trigger may be broken)
+        // Profile doesn't exist — stale session with no matching DB record.
+        // Sign out so the user lands cleanly on /signin rather than looping into verify-otp.
         if (queryErr && queryErr.code === 'PGRST116') {
-          const meta = (user.user_metadata || {}) as Record<string, string>;
-          await (supabase.from('profiles') as any).upsert({
-            id: user.id,
-            name: meta.name || user.email || 'User',
-            whatsapp: meta.whatsapp || null,
-            whatsapp_verified: false,
-          } as any);
-          // Profile created but not verified
           queryInFlight.current = false;
+          await supabase.auth.signOut();
           setStatus('unverified');
           return;
         }
