@@ -208,66 +208,69 @@ function InvestModal({
     onOpenChange(v);
   };
 
+  // Congratulations overlay — shown after successful purchase
+  if (confirmed) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-sm p-0 overflow-hidden rounded-2xl border-0">
+          {/* Gradient header */}
+          <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 min-h-[130px] overflow-hidden">
+            <div className="absolute w-[300px] h-[300px] opacity-15 -top-[100px] -left-[140px] rounded-full bg-white/30" />
+            <div className="absolute w-[200px] h-[200px] opacity-10 -bottom-[80px] -right-[60px] rounded-full bg-white/30" />
+            <div className="absolute top-5 left-8 text-2xl animate-bounce">🎉</div>
+            <div className="absolute top-4 right-10 text-2xl animate-bounce" style={{ animationDelay: '0.3s' }}>🎊</div>
+            <div className="absolute bottom-5 left-1/3 text-xl animate-bounce" style={{ animationDelay: '0.6s' }}>✨</div>
+            <div className="absolute top-6 left-1/2 text-lg animate-bounce" style={{ animationDelay: '0.9s' }}>🥳</div>
+          </div>
+          {/* Icon circle */}
+          <div className="flex justify-center -mt-12 relative z-10">
+            <div className="w-24 h-24 rounded-full backdrop-blur-lg bg-white/30 flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg">
+                <span className="text-4xl">🏠</span>
+              </div>
+            </div>
+          </div>
+          {/* Content */}
+          <div className="px-8 pb-8 pt-2 flex flex-col items-center text-center gap-3">
+            <h1 className="text-2xl font-bold">Congratulations!</h1>
+            <p className="text-muted-foreground">
+              You secured <strong className="text-foreground">{shares} share{shares > 1 ? 's' : ''}</strong> in {property.title}!
+            </p>
+            <div className="rounded-xl bg-muted/50 p-4 w-full space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total invested</span>
+                <span className="font-bold">${total.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Est. monthly income</span>
+                <span className="font-bold text-emerald-600">${monthlyIncome}</span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              We're thrilled to welcome you as our Partner!
+            </p>
+            <Button
+              className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full h-11 font-semibold mt-2"
+              onClick={() => handleClose(false)}
+            >
+              View Portfolio
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {confirmed ? 'Investment Confirmed' : 'Invest in ' + property.title}
+            {'Invest in ' + property.title}
           </DialogTitle>
         </DialogHeader>
 
-        {confirmed ? (
-          <div className="flex flex-col overflow-hidden w-full -m-6">
-            {/* Purple header — cloned from legacy congratulations.js */}
-            <div className="relative mb-16">
-              <div className="relative bg-gradient-to-br from-primary to-emerald-500 min-h-[120px] overflow-hidden">
-                {/* Decorative circles */}
-                <div className="absolute w-[300px] h-[300px] opacity-20 -top-[100px] -left-[140px] rounded-full bg-white/30" />
-                <div className="absolute w-[200px] h-[200px] opacity-10 -bottom-[80px] -right-[60px] rounded-full bg-white/30" />
-                {/* Confetti emojis */}
-                <div className="absolute top-4 left-6 text-2xl animate-bounce">🎉</div>
-                <div className="absolute top-3 right-8 text-2xl animate-bounce" style={{ animationDelay: '0.3s' }}>🎊</div>
-                <div className="absolute bottom-4 left-1/3 text-xl animate-bounce" style={{ animationDelay: '0.6s' }}>✨</div>
-              </div>
-              {/* Celebrate icon circle */}
-              <div className="w-24 h-24 rounded-full absolute -bottom-12 left-1/2 -translate-x-1/2 backdrop-blur-lg bg-white/20 flex items-center justify-center">
-                <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg">
-                  <span className="text-4xl">🏠</span>
-                </div>
-              </div>
-            </div>
-            {/* Content */}
-            <div className="w-full flex px-8 pb-8 pt-4 bg-white flex-col items-center justify-center text-center gap-4">
-              <h1 className="text-2xl font-bold text-foreground">
-                Congratulations! 🎉
-              </h1>
-              <p className="text-foreground/80 max-w-[20rem]">
-                You secured <strong>{shares} share{shares > 1 ? 's' : ''}</strong> in {property.title}!
-              </p>
-              <div className="rounded-xl bg-muted/50 p-4 w-full max-w-[18rem] space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total invested</span>
-                  <span className="font-bold">${total.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Est. monthly income</span>
-                  <span className="font-bold text-emerald-600">${monthlyIncome}</span>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                We're thrilled to welcome you as our Partner!
-              </p>
-              <Button
-                className="w-full max-w-[15rem] bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white rounded-full h-11 font-semibold"
-                onClick={() => handleClose(false)}
-              >
-                View Portfolio
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
+        <>
             <div className="space-y-5 py-2">
               <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3 dark:bg-muted/30">
                 <span className="text-sm text-muted-foreground">Share price</span>
@@ -358,7 +361,6 @@ function InvestModal({
               </Button>
             </DialogFooter>
           </>
-        )}
       </DialogContent>
     </Dialog>
   );
