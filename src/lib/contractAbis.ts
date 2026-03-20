@@ -38,7 +38,7 @@ export const BOOSTER_ABI = [
   'function boost(address recipient, uint256 propertyId, address currency) external payable',
   'function claimRewards(uint256 propertyId) external',
   'function getBoostAmount(address user, uint256 propertyId) external view returns (uint256)',
-  'function getBoostdetails(uint256 propertyId) external view returns (uint256 boostApr, uint256 totalBoosted, uint256 reboostTime)',
+  'function getBoostdetails(address user, uint256 propertyId) external view returns (uint256 boostApr, uint256 totalBoosted, uint256 reboostTime)',
   'function isBoosted(address user, uint256 propertyId) external view returns (bool)',
   'function getEstimatedRewards(address user, uint256 propertyId) external view returns (uint256)',
 ];

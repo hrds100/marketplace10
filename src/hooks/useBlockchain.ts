@@ -220,7 +220,7 @@ export function useBlockchain() {
       try {
         const contract = await getContract(CONTRACTS.BOOSTER, BOOSTER_ABI);
         if (!contract) return null;
-        const details = await contract.getBoostdetails(propertyId);
+        const details = await contract.getBoostdetails(address, propertyId);
         const isBoosted = address
           ? await contract.isBoosted(address, propertyId)
           : false;
