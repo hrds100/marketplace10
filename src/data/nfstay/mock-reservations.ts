@@ -1,5 +1,3 @@
-import { mockProperties } from "./mock-properties";
-
 export interface MockReservation {
   id: string;
   property_id: string;
@@ -19,14 +17,13 @@ export interface MockReservation {
   created_at: string;
 }
 
-/** Helper: resolve property display info by joining with mock properties */
-export function getReservationProperty(r: MockReservation) {
-  const prop = mockProperties.find(p => p.id === r.property_id);
+/** Helper: resolve property display info (placeholder until Supabase is wired) */
+export function getReservationProperty(_r: MockReservation) {
   return {
-    title: prop?.public_title ?? "Unknown Property",
-    image: prop?.images?.[0]?.url ?? "",
-    city: prop?.city ?? "",
-    country: prop?.country ?? "",
+    title: "Property",
+    image: "",
+    city: "",
+    country: "",
   };
 }
 

@@ -66,7 +66,6 @@ import NfsPropertyDetail from "./pages/nfstay/NfsPropertyDetail";
 import NfsReservations from "./pages/nfstay/NfsReservations";
 import NfsReservationDetail from "./pages/nfstay/NfsReservationDetail";
 import NfsCreateReservation from "./pages/nfstay/NfsCreateReservation";
-import NfsSearch from "./pages/nfstay/NfsSearch";
 import NfsPropertyView from "./pages/nfstay/NfsPropertyView";
 import NfsPaymentSuccess from "./pages/nfstay/NfsPaymentSuccess";
 import NfsPaymentCancel from "./pages/nfstay/NfsPaymentCancel";
@@ -229,7 +228,6 @@ const App = () => (
             <Route path="analytics" element={<NfsAnalytics />} />
           </Route>
           {/* NFStay traveler-facing routes — standalone (no operator layout) */}
-          <Route path="/nfstay/search" element={<NfsSearch />} />
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
           <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />
           <Route path="/nfstay/payment/cancel" element={<NfsPaymentCancel />} />

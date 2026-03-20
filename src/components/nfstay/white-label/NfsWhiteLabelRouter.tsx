@@ -13,8 +13,8 @@ import NfsWlProperty from '@/pages/nfstay/white-label/NfsWlProperty';
 import NfsWlPaymentSuccess from '@/pages/nfstay/white-label/NfsWlPaymentSuccess';
 import NfsWlPaymentCancel from '@/pages/nfstay/white-label/NfsWlPaymentCancel';
 // Main site pages — nfstay.app traveler-facing
+import { Navigate } from 'react-router-dom';
 import NfsMainLayout from '@/components/nfstay/main-site/NfsMainLayout';
-import NfsSearch from '@/pages/nfstay/NfsSearch';
 import NfsPropertyView from '@/pages/nfstay/NfsPropertyView';
 import NfsPaymentSuccess from '@/pages/nfstay/NfsPaymentSuccess';
 import NfsPaymentCancel from '@/pages/nfstay/NfsPaymentCancel';
@@ -63,8 +63,8 @@ export default function NfsWhiteLabelRouter({ children }: Props) {
       <Routes>
         {/* ── Traveler-facing pages — wrapped in NfsMainLayout (navbar + footer) ── */}
         <Route element={<NfsMainLayout />}>
-          <Route index element={<NfsSearch />} />
-          <Route path="/search" element={<NfsSearch />} />
+          <Route index element={<Navigate to="/nfstay" replace />} />
+          <Route path="/search" element={<Navigate to="/nfstay" replace />} />
           <Route path="/property/:id" element={<NfsPropertyView />} />
           <Route path="/payment/success" element={<NfsPaymentSuccess />} />
           <Route path="/payment/cancel" element={<NfsPaymentCancel />} />
@@ -95,13 +95,13 @@ export default function NfsWhiteLabelRouter({ children }: Props) {
           <Route path="analytics" element={<NfsAnalytics />} />
         </Route>
         {/* Traveler-facing nfstay search/property (standalone, no operator layout) */}
-        <Route path="/nfstay/search" element={<NfsSearch />} />
+        <Route path="/nfstay/search" element={<Navigate to="/nfstay" replace />} />
         <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
         <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />
         <Route path="/nfstay/payment/cancel" element={<NfsPaymentCancel />} />
 
         {/* ── Fallback ── */}
-        <Route path="*" element={<NfsSearch />} />
+        <Route path="*" element={<Navigate to="/nfstay" replace />} />
       </Routes>
     );
   }
