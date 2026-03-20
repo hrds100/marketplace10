@@ -15,7 +15,6 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import DealsPage from "./pages/DealsPage";
 import DealsPageV2 from "./pages/DealsPageV2";
 import InboxPage from "./pages/InboxPage";
-// FavouritesPage removed — replaced by FavouritesDropdown in top bar
 import DealDetail from "./pages/DealDetail";
 import CRMPage from "./pages/CRMPage";
 import UniversityPage from "./pages/UniversityPage";
@@ -55,39 +54,7 @@ import InvestMarketplacePage from "./pages/invest/InvestMarketplacePage";
 import InvestPortfolioPage from "./pages/invest/InvestPortfolioPage";
 import InvestPayoutsPage from "./pages/invest/InvestPayoutsPage";
 import InvestProposalsPage from "./pages/invest/InvestProposalsPage";
-// NFStay — operator module (isolated, see docs/nfstay/BOUNDARIES.md)
-import NfsOperatorLayout from "./components/nfstay/NfsOperatorLayout";
-import NfsOperatorDashboard from "./pages/nfstay/NfsOperatorDashboard";
-import NfsOnboarding from "./pages/nfstay/NfsOnboarding";
-import NfsOperatorSettings from "./pages/nfstay/NfsOperatorSettings";
-import NfsProperties from "./pages/nfstay/NfsProperties";
-import NfsPropertyNew from "./pages/nfstay/NfsPropertyNew";
-import NfsPropertyDetail from "./pages/nfstay/NfsPropertyDetail";
-import NfsReservations from "./pages/nfstay/NfsReservations";
-import NfsReservationDetail from "./pages/nfstay/NfsReservationDetail";
-import NfsCreateReservation from "./pages/nfstay/NfsCreateReservation";
-import NfsPropertyView from "./pages/nfstay/NfsPropertyView";
-import NfsPaymentSuccess from "./pages/nfstay/NfsPaymentSuccess";
-import NfsPaymentCancel from "./pages/nfstay/NfsPaymentCancel";
-import NfsAnalytics from "./pages/nfstay/NfsAnalytics";
-import NfsCheckoutPage from "./pages/nfstay/NfsCheckoutPage";
-import NfsGuestBookingLookup from "./pages/nfstay/NfsGuestBookingLookup";
-import AdminNfsReservations from "./pages/admin/nfstay/AdminNfsReservations";
-import AdminNfsProperties from "./pages/admin/nfstay/AdminNfsProperties";
-import AdminNfsDashboard from "./pages/admin/nfstay/AdminNfsDashboard";
-import AdminNfsUsers from "./pages/admin/nfstay/AdminNfsUsers";
-import AdminNfsOperators from "./pages/admin/nfstay/AdminNfsOperators";
-import AdminNfsAnalytics from "./pages/admin/nfstay/AdminNfsAnalytics";
-import AdminNfsSettings from "./pages/admin/nfstay/AdminNfsSettings";
-import NfsTravelerReservations from "./pages/nfstay/NfsTravelerReservations";
-import NfsTravelerReservationDetail from "./pages/nfstay/NfsTravelerReservationDetail";
-import NfsOAuthCallbackPage from "./pages/NfsOAuthCallbackPage";
-import NfsVerifyEmailPage from "./pages/NfsVerifyEmailPage";
-import NfsAuthCallbackPage from "./pages/NfsAuthCallbackPage";
 import ParticleAuthCallback from "./pages/ParticleAuthCallback";
-import { NfsCurrencyProvider } from "./contexts/NfsCurrencyContext";
-import NfsWhiteLabelProvider from "./components/nfstay/white-label/NfsWhiteLabelProvider";
-import NfsWhiteLabelRouter from "./components/nfstay/white-label/NfsWhiteLabelRouter";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -122,9 +89,6 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
       <FavouritesProvider>
-      <NfsCurrencyProvider>
-      <NfsWhiteLabelProvider>
-      <NfsWhiteLabelRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
@@ -142,7 +106,6 @@ const App = () => (
             <Route path="deals" element={<DealsPageV2 />} />
             <Route path="deals-v2" element={<DealsPage />} />
             <Route path="inbox" element={<InboxPage />} />
-            {/* Favourites page removed — now a dropdown in top bar */}
             <Route path="crm" element={<CRMPage />} />
             <Route path="university" element={<UniversityPage />} />
             <Route path="affiliates" element={<AffiliatesPage />} />
@@ -200,53 +163,13 @@ const App = () => (
             <Route path="invest/boost" element={<AdminInvestBoost />} />
             <Route path="invest/endpoints" element={<AdminEndpoints />} />
 
-            {/* Booking Site (NFStay) workspace */}
-            <Route path="nfstay" element={<AdminNfsReservations />} />
-            <Route path="nfstay/reservations" element={<AdminNfsReservations />} />
-            <Route path="nfstay/properties" element={<AdminNfsProperties />} />
-            <Route path="nfstay/dashboard" element={<AdminNfsDashboard />} />
-            <Route path="nfstay/users" element={<AdminNfsUsers />} />
-            <Route path="nfstay/operators" element={<AdminNfsOperators />} />
-            <Route path="nfstay/analytics" element={<AdminNfsAnalytics />} />
-            <Route path="nfstay/settings" element={<AdminNfsSettings />} />
-
             {/* Architecture overview */}
             <Route path="architecture" element={<AdminArchitecture />} />
           </Route>
           <Route path="/testing/design" element={<TestingDesign />} />
-          {/* NFStay operator routes — isolated module */}
-          <Route path="/nfstay" element={<NfsOperatorLayout />}>
-            <Route index element={<NfsOperatorDashboard />} />
-            <Route path="onboarding" element={<NfsOnboarding />} />
-            <Route path="properties" element={<NfsProperties />} />
-            <Route path="properties/new" element={<NfsPropertyNew />} />
-            <Route path="properties/:id" element={<NfsPropertyDetail />} />
-            <Route path="reservations" element={<NfsReservations />} />
-            <Route path="reservations/:id" element={<NfsReservationDetail />} />
-            <Route path="create-reservation" element={<NfsCreateReservation />} />
-            <Route path="settings" element={<NfsOperatorSettings />} />
-            <Route path="analytics" element={<NfsAnalytics />} />
-          </Route>
-          {/* NFStay traveler-facing routes — standalone (no operator layout) */}
-          <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
-          <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />
-          <Route path="/nfstay/payment/cancel" element={<NfsPaymentCancel />} />
-          {/* NFStay booking flow — available on hub too */}
-          <Route path="/checkout" element={<NfsCheckoutPage />} />
-          <Route path="/booking" element={<NfsGuestBookingLookup />} />
-          {/* NFStay traveler reservation portal */}
-          <Route path="/nfstay/traveler/reservations" element={<NfsTravelerReservations />} />
-          <Route path="/nfstay/traveler/reservation/:id" element={<NfsTravelerReservationDetail />} />
-          {/* NFStay auth callbacks */}
-          <Route path="/nfstay/oauth-callback" element={<NfsOAuthCallbackPage />} />
-          <Route path="/nfstay/verify-email" element={<NfsVerifyEmailPage />} />
-          <Route path="/auth/callback" element={<NfsAuthCallbackPage />} />
           <Route path="/auth/particle" element={<ParticleAuthCallback />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </NfsWhiteLabelRouter>
-      </NfsWhiteLabelProvider>
-      </NfsCurrencyProvider>
       </FavouritesProvider>
       </BrowserRouter>
     </TooltipProvider>
@@ -255,4 +178,3 @@ const App = () => (
 );
 
 export default App;
-
