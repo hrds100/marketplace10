@@ -1,0 +1,17 @@
+{
+    "name": "RWA NFsTay",
+    "short_name": "NFsTay",
+    "description": "NFsTay is a marketplace for investing in tokenized real estate assets, offering opportunities to invest in income-generating properties through NFTs. Easily create your profile, choose properties, and start investing in the real estate market.",
+    "theme_color": "#FFFFFF",
+    "background_color": "#FFFFFF",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "icons": [
+      {
+        "src": "/nfstay-logo.png",
+        "sizes": "16x16"
+      }
+    ]
+  }
+  
