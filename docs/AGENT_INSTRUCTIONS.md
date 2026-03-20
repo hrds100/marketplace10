@@ -571,12 +571,41 @@ When any task involves a third-party platform, Claude MUST attempt API/MCP execu
 - **GHL API version header:** `Version: 2021-07-28`
 - **GHL Location ID:** `eFBsWXY3BmWDGIRez13x`
 
-### n8n
-- **Import workflow:** n8n → Workflows → + New → ⋮ → Import from JSON
-- **Add credential:** n8n → Settings → Credentials → + New
-- **Activate workflow:** toggle top-right of workflow editor
-- **n8n base URL:** https://n8n.srv886554.hstgr.cloud
-- **Prefer n8n MCP over manual UI**
+### n8n — Full API Access
+
+**Instance:** https://n8n.srv886554.hstgr.cloud
+**Login:** `hello@agencin.com` / `@#Dgs58913367.$%`
+**API Key:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZmI1M2JkZS0zZTdjLTQ2NWItOGI5MS1hOTQwOTlkZGM2YTMiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzczNDI0MDQ5fQ.7lz1_W28UkD0SwjITXHn1t75A8Fl5eVM46XfENFkEtg`
+
+**Always prefer API over manual UI.** The n8n API can create, update, activate, deactivate, and inspect executions.
+
+```bash
+# List workflows
+curl -H "X-N8N-API-KEY: <key>" https://n8n.srv886554.hstgr.cloud/api/v1/workflows
+
+# Get / Update / Activate / Deactivate
+curl -H "X-N8N-API-KEY: <key>" https://n8n.srv886554.hstgr.cloud/api/v1/workflows/<id>
+curl -X PUT -H "X-N8N-API-KEY: <key>" -H "Content-Type: application/json" https://n8n.srv886554.hstgr.cloud/api/v1/workflows/<id> -d '{...}'
+curl -X POST -H "X-N8N-API-KEY: <key>" https://n8n.srv886554.hstgr.cloud/api/v1/workflows/<id>/activate
+curl -X POST -H "X-N8N-API-KEY: <key>" https://n8n.srv886554.hstgr.cloud/api/v1/workflows/<id>/deactivate
+
+# Check executions
+curl -H "X-N8N-API-KEY: <key>" "https://n8n.srv886554.hstgr.cloud/api/v1/executions?workflowId=<id>&limit=5&includeData=true"
+
+# Trigger a webhook
+curl -X POST https://n8n.srv886554.hstgr.cloud/webhook/<path> -H "Content-Type: application/json" -d '{...}'
+```
+
+**Key lessons:**
+1. Webhook nodes MUST have a `webhookId` field — without it the webhook URL won't register.
+2. Webhook data arrives at `$input.first().json.body` — use `const data = $input.first().json.body || $input.first().json;` in Code nodes.
+3. Emails use Resend API via `this.helpers.httpRequest()` in Code nodes — not n8n Email Send nodes.
+4. Deactivate before updating, then reactivate — PUT updates don't always take effect on a live workflow.
+
+**UI fallback (if API doesn't cover it):**
+- Import workflow: n8n → Workflows → + New → ⋮ → Import from JSON
+- Add credential: n8n → Settings → Credentials → + New
+- Activate workflow: toggle top-right of workflow editor
 
 ### Vercel
 - **Add env var:** Vercel MCP → or → Vercel dashboard → Project → Settings → Environment Variables
