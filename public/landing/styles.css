@@ -1676,11 +1676,11 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   .nav_button { display: block; }
   .language-switcher-wrapper.mobile-only { display: flex; }
 
-  /* Hero: iPhone-like single panel, taller for proper demo */
+  /* Hero: iPhone-like single panel, stretched vertically */
   .hero-demo-component {
     flex-direction: column;
-    min-height: 580px;
-    max-height: 75vh;
+    min-height: 70vh;
+    max-height: none;
     border-radius: 24px;
     box-shadow: 0 8px 40px rgba(0,0,0,0.08);
     border: 2px solid rgba(255,255,255,0.5);
@@ -1692,10 +1692,13 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
     border-bottom: 1px solid rgba(0,0,0,0.06);
     flex: 1;
     min-height: 0;
+    overflow: hidden;
   }
   .preview-panel {
     display: none;
   }
+  /* Show cursor on mobile too during story */
+  .animated-cursor { display: none; }
   .chat-tabs {
     padding: 8px 12px;
     gap: 4px;

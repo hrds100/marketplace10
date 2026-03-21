@@ -467,7 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Create overlay inside chat panel (covers earnings banner + messages)
       const screen = document.createElement('div');
       screen.className = 'mobile-story-screen';
-      screen.style.cssText = 'position:absolute;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;opacity:0;transform:scale(0.96);transition:opacity 400ms ease,transform 400ms ease;';
+      screen.style.cssText = 'position:absolute;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;opacity:0;transform:scale(0.96);transition:opacity 400ms ease,transform 400ms ease;overflow-y:auto;';
       screen.innerHTML = html;
 
       const panel = document.querySelector('.chat-panel');
@@ -495,49 +495,73 @@ document.addEventListener('DOMContentLoaded', () => {
   async function runMobileStory() {
     setProgress(10);
 
-    // SCREEN 1: Show one deal card
+    // SCREEN 1: Show one deal card (stretched, with mouse cursor)
     await showMobileScreen(`
-      <div style="width:100%;max-width:280px;">
-        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Deal Found</div>
-        <div style="border:1px solid #e8e5df;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-          <div style="height:120px;background:url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=200&fit=crop') center/cover;position:relative;">
-            <span style="position:absolute;top:8px;left:8px;background:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">Featured</span>
+      <div style="width:100%;max-width:320px;position:relative;">
+        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;text-align:center;">Deal Found</div>
+        <div style="border:1px solid #e8e5df;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+          <div style="height:160px;background:url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=240&fit=crop') center/cover;position:relative;">
+            <span style="position:absolute;top:10px;left:10px;background:#fff;font-size:10px;font-weight:600;padding:3px 10px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.1);">Featured</span>
           </div>
-          <div style="padding:14px;">
-            <div style="font-size:14px;font-weight:600;color:#1a1a1a;">2-Bed Flat, Ancoats</div>
-            <div style="font-size:11px;color:#6b7280;margin-top:2px;">Manchester &middot; M4 6BF</div>
-            <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid #f3f4f6;">
-              <span style="font-size:12px;color:#6b7280;">Rent: &pound;850/mo</span>
-              <span style="font-size:12px;font-weight:700;color:#1e9a80;">+&pound;1,200/mo</span>
+          <div style="padding:18px;">
+            <div style="font-size:16px;font-weight:700;color:#1a1a1a;">2-Bed Flat, Ancoats</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:3px;">Manchester &middot; M4 6BF</div>
+            <div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:10px;border-top:1px solid #f3f4f6;">
+              <div><div style="font-size:11px;color:#6b7280;">Monthly rent</div><div style="font-size:14px;font-weight:600;color:#1a1a1a;">&pound;850</div></div>
+              <div style="text-align:right;"><div style="font-size:11px;color:#6b7280;">Est. profit</div><div style="font-size:14px;font-weight:700;color:#1e9a80;">&pound;1,200/mo</div></div>
             </div>
-            <div id="mobileInquireBtn" style="margin-top:12px;width:100%;height:36px;border-radius:8px;background:#1e9a80;color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;">Inquire Now</div>
+            <div id="mobileInquireBtn" style="margin-top:16px;width:100%;height:42px;border-radius:10px;background:#1e9a80;color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;">Inquire Now</div>
           </div>
+        </div>
+        <!-- Mobile cursor -->
+        <div id="mobileCursor" style="position:absolute;bottom:120px;right:40px;z-index:30;opacity:0;transition:all 1s cubic-bezier(0.22,1,0.36,1);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86h8.14a.5.5 0 00.35-.85L5.85 2.86a.5.5 0 00-.35.35z" fill="#1a1a1a" stroke="#fff" stroke-width="1"/></svg>
         </div>
       </div>
     `);
     setProgress(20);
-    await delay(2500);
+    await delay(1000);
 
-    // Animate the button click
+    // Show cursor and move it toward "Inquire Now" button
+    const mobileCur = document.getElementById('mobileCursor');
+    if (mobileCur) {
+      mobileCur.style.opacity = '1';
+      await delay(500);
+      // Move cursor to the button
+      mobileCur.style.bottom = '28px';
+      mobileCur.style.right = '50%';
+      mobileCur.style.transform = 'translateX(50%)';
+      await delay(1200);
+    }
+
+    // Click the button
     const mBtn = document.getElementById('mobileInquireBtn');
     if (mBtn) {
+      // Cursor click animation
+      if (mobileCur) { mobileCur.style.transform = 'translateX(50%) scale(0.8)'; }
       mBtn.style.transform = 'scale(0.95)';
+      mBtn.style.boxShadow = '0 0 0 3px rgba(30,154,128,0.3)';
+      await delay(200);
+      if (mobileCur) { mobileCur.style.transform = 'translateX(50%) scale(1)'; }
       mBtn.textContent = 'Inquiry Sent';
       mBtn.style.background = '#178f72';
-      await delay(300);
       mBtn.style.transform = 'scale(1)';
+      playMessageSound();
     }
     setProgress(30);
     await delay(1500);
 
-    // SCREEN 2: Chat conversation
+    // SCREEN 2: Chat conversation (stretched)
     hideMobileScreens();
     await delay(500);
     await showMobileScreen(`
-      <div style="width:100%;max-width:300px;">
+      <div style="width:100%;max-width:320px;height:100%;display:flex;flex-direction:column;">
         <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Conversation</div>
-        <div style="border:1px solid #e8e5df;border-radius:14px;background:#fafafa;padding:14px;display:flex;flex-direction:column;gap:8px;" id="mobileChatArea">
-          <div style="padding:8px;font-size:12px;font-weight:600;color:#1a1a1a;border-bottom:1px solid #f3f4f6;margin-bottom:4px;">James Thornton <span style="font-size:9px;font-weight:600;color:#1e9a80;background:rgba(30,154,128,0.1);padding:2px 6px;border-radius:100px;margin-left:4px;">2-Bed, Ancoats</span></div>
+        <div style="border:1px solid #e8e5df;border-radius:16px;background:#fafafa;padding:16px;display:flex;flex-direction:column;gap:10px;flex:1;" id="mobileChatArea">
+          <div style="padding:10px;font-size:13px;font-weight:600;color:#1a1a1a;border-bottom:1px solid #f3f4f6;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+            <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;"><img src="https://i.pravatar.cc/56?img=12" style="width:100%;height:100%;object-fit:cover;" alt=""></div>
+            James Thornton <span style="font-size:9px;font-weight:600;color:#1e9a80;background:rgba(30,154,128,0.1);padding:2px 6px;border-radius:100px;margin-left:auto;">2-Bed, Ancoats</span>
+          </div>
         </div>
       </div>
     `);
@@ -581,11 +605,11 @@ document.addEventListener('DOMContentLoaded', () => {
     await addMobileBubble('them', 'Booked! See you at 5pm tomorrow. 🎉', 2000);
     setProgress(80);
 
-    // SCREEN 3: Pipeline
+    // SCREEN 3: Pipeline (stretched)
     hideMobileScreens();
     await delay(500);
     await showMobileScreen(`
-      <div style="width:100%;max-width:300px;">
+      <div style="width:100%;max-width:320px;">
         <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Pipeline Updated</div>
         <div style="display:flex;gap:6px;overflow-x:auto;">
           <div style="flex:1;min-width:0;background:#f8f9fa;border-radius:8px;padding:8px;">
