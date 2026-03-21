@@ -9,10 +9,14 @@ import Variant07 from './landing-variants/Variant07';
 import Variant08 from './landing-variants/Variant08';
 import Variant09 from './landing-variants/Variant09';
 import Variant10 from './landing-variants/Variant10';
+import Variant11 from './landing-variants/Variant11';
+import Variant12 from './landing-variants/Variant12';
+import Variant13 from './landing-variants/Variant13';
 
 const variants = [
   Variant01, Variant02, Variant03, Variant04, Variant05,
   Variant06, Variant07, Variant08, Variant09, Variant10,
+  Variant11, Variant12, Variant13,
 ];
 
 const variantLabels = [
@@ -26,6 +30,9 @@ const variantLabels = [
   'Social Proof',
   'Minimal Type',
   'Journey Path',
+  'SHIPPER Classic',
+  'SHIPPER Dark',
+  'SHIPPER Bold',
 ];
 
 export default function LandingTestPage() {
