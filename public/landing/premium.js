@@ -152,55 +152,39 @@
     });
   });
 
-  // ── HORIZONTAL SCROLL TRACK (Journey) ──
-  var journeyOuter = document.getElementById('journeyOuter');
-  var journeyTrack = document.getElementById('journeyTrack');
-  var journeyGlow = document.getElementById('journeyGlow');
+  // ── VERTICAL EXPANDING CARDS (Journey) ──
+  var vexpCards = document.querySelectorAll('.vexp-card');
+  var activeVexp = null;
 
-  if (journeyOuter && journeyTrack && window.innerWidth > 768) {
-    var currentX = 0;
-    var targetX = 0;
-    var cards = journeyTrack.querySelectorAll('.hscroll-card');
-    var totalWidth = 0;
-
-    // Calculate total scroll width
-    cards.forEach(function (c) { totalWidth += c.offsetWidth + 32; });
-    totalWidth -= 32; // remove last gap
-    var maxTranslate = Math.max(0, totalWidth - window.innerWidth + 160);
-
-    function updateHScroll() {
-      var outerRect = journeyOuter.getBoundingClientRect();
-      var scrollRange = journeyOuter.offsetHeight - window.innerHeight;
-      var scrolled = -outerRect.top;
-      var progress = Math.max(0, Math.min(1, scrolled / scrollRange));
-
-      targetX = progress * maxTranslate;
-
-      // Lerp for inertia
-      currentX += (targetX - currentX) * 0.08;
-      journeyTrack.style.transform = 'translateX(' + (-currentX) + 'px)';
-
-      // Move glow dot along rail
-      if (journeyGlow) {
-        journeyGlow.style.left = 'calc(' + (progress * 100) + '% - 6px)';
-      }
-
-      // Activate nearest card
-      var centerX = window.innerWidth / 2;
-      cards.forEach(function (card) {
-        var cardRect = card.getBoundingClientRect();
-        var cardCenter = cardRect.left + cardRect.width / 2;
-        if (Math.abs(cardCenter - centerX) < cardRect.width * 0.6) {
-          card.classList.add('active');
-        } else {
-          card.classList.remove('active');
+  if (vexpCards.length > 0) {
+    var vexpObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting && entry.target !== activeVexp) {
+          // Deactivate previous
+          if (activeVexp) {
+            activeVexp.classList.remove('active');
+            // Reset progress bar
+            var oldFill = activeVexp.querySelector('.vexp-progress-fill');
+            if (oldFill) oldFill.style.width = '0%';
+          }
+          // Activate new (simultaneous — don't wait for collapse)
+          entry.target.classList.add('active');
+          activeVexp = entry.target;
         }
       });
+    }, { threshold: 0.5, rootMargin: '-20% 0px -20% 0px' });
 
-      requestAnimationFrame(updateHScroll);
-    }
+    vexpCards.forEach(function (card) {
+      vexpObs.observe(card);
+    });
 
-    requestAnimationFrame(updateHScroll);
+    // Activate the first card by default after a short delay
+    setTimeout(function () {
+      if (!activeVexp && vexpCards[0]) {
+        vexpCards[0].classList.add('active');
+        activeVexp = vexpCards[0];
+      }
+    }, 800);
   }
 
 })();
