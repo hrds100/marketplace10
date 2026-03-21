@@ -304,6 +304,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========================================
   const inquireBtn1 = document.getElementById('inquireBtn1');
 
+  const isMobile = () => window.innerWidth <= 991;
+
   async function runStory() {
     storyActive = true;
     stopAutoCycle();
@@ -313,17 +315,20 @@ document.addEventListener('DOMContentLoaded', () => {
     clearTypewriter();
     setProgress(0);
 
-    // --- STEP 1: FIND A DEAL (0-4s) ---
+    if (isMobile()) {
+      // MOBILE STORY: chat-only, no preview panels
+      return runMobileStory();
+    }
+
+    // --- DESKTOP STEP 1: FIND A DEAL (0-4s) ---
     switchPreview('deals', true);
     setProgress(10);
     await delay(1000);
 
-    // Show cursor at bottom-right of demo component
     showCursor();
     gsap.set(animCursor, { left: demoComponent.offsetWidth - 60, top: demoComponent.offsetHeight - 60 });
     await delay(500);
 
-    // Cursor glides toward card 1
     if (nfsCard1) {
       await moveCursorTo(nfsCard1, 1.5);
       nfsCard1.classList.add('highlighted');
@@ -331,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await delay(2000);
     }
 
-    // --- STEP 2: CLICK "INQUIRE NOW" (4-7s) ---
+    // --- DESKTOP STEP 2: CLICK "INQUIRE NOW" (4-7s) ---
     if (inquireBtn1) {
       await clickCursorOn(inquireBtn1);
       inquireBtn1.textContent = '✓ Inquiry Sent';
@@ -344,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     hideCursor();
 
-    // --- STEP 3: START CHATTING (7-16s) ---
+    // --- DESKTOP STEP 3: START CHATTING ---
     switchPreview('inbox');
     setProgress(40);
     await delay(800);
@@ -452,6 +457,61 @@ document.addEventListener('DOMContentLoaded', () => {
     await delay(4500);
 
     // --- RESET ---
+    resetStory();
+  }
+
+  // ── MOBILE STORY (chat-only, no preview panels) ──
+  async function runMobileStory() {
+    setProgress(10);
+
+    // Step 1: System message about finding a deal
+    await addMessage('them', '📍 Found: 2-Bed Flat, Ancoats, Manchester');
+    await delay(500);
+    await addMessage('them', '💰 Rent: £850/mo · Est. profit: £1,200/mo');
+    setProgress(20);
+    await delay(1500);
+
+    // Step 2: User inquires
+    await typeText('Is this available for Airbnb?', 50);
+    await delay(400);
+    await addMessage('me', 'Is this available for Airbnb?');
+    clearTypewriter();
+    setProgress(35);
+    await delay(1000);
+
+    // Step 3: Landlord typing + reply
+    await showTypingIndicator('them');
+    await delay(1200);
+    await addMessage('them', 'Yes! Landlord approved for short-term lets. Would you like to view it?');
+    setProgress(50);
+    await delay(1500);
+
+    // Step 4: User confirms viewing
+    await typeText('Tomorrow at 5pm works!', 50);
+    await delay(400);
+    await addMessage('me', 'Tomorrow at 5pm works!');
+    clearTypewriter();
+    setProgress(65);
+    await delay(1000);
+
+    // Step 5: Landlord confirms
+    await showTypingIndicator('them');
+    await delay(1000);
+    await addMessage('them', 'Booked! See you at 5pm tomorrow. 🎉');
+    setProgress(75);
+    await delay(1500);
+
+    // Step 6: Pipeline update
+    await addMessage('them', '📊 Deal moved to "Viewing" in your pipeline');
+    setProgress(90);
+    await delay(2000);
+
+    // Step 7: Success
+    await addMessage('them', '✅ This is how easy it is to grow your Airbnb portfolio.');
+    setProgress(100);
+    await delay(3000);
+
+    // Reset
     resetStory();
   }
 

@@ -258,18 +258,21 @@
 .timeline::before { content: ''; position: absolute; left: 20px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--green), var(--bg-warm)); }
 .tl-step {
   display: flex; gap: 24px; padding: 28px 0; position: relative;
-  /* Scroll expand: starts collapsed, expands on viewport entry */
+  /* Scroll animation: slides in from left or right, expands */
   opacity: 0;
-  transform: translateY(30px) scale(0.94);
-  max-height: 40px;
+  transform: translateX(-40px) scale(0.95);
+  max-height: 50px;
   overflow: hidden;
   transition: opacity 600ms cubic-bezier(0.22,1,0.36,1),
               transform 600ms cubic-bezier(0.22,1,0.36,1),
-              max-height 700ms cubic-bezier(0.22,1,0.36,1);
+              max-height 800ms cubic-bezier(0.22,1,0.36,1);
+}
+.tl-step:nth-child(even) {
+  transform: translateX(40px) scale(0.95);
 }
 .tl-step.visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateX(0) scale(1);
   max-height: 400px;
   overflow: visible;
 }
