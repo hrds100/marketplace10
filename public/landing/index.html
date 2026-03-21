@@ -407,6 +407,149 @@
     <div class="inbox-features sr"><div class="inbox-feat sr-child">Auto-link messages to deals</div><div class="inbox-feat sr-child">Reminders before viewings and renewals</div><div class="inbox-feat sr-child">See deal stage inside every thread</div></div>
   </div></div>
 
+  <!-- BOOKING SITE BUILDER DEMO -->
+  <div class="s bg-white sr" style="padding:80px 0;">
+    <div style="max-width:1100px;margin:0 auto;padding:0 24px;">
+      <div style="text-align:center;margin-bottom:40px;">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(30,154,128,0.06);padding:5px 14px;border-radius:100px;margin-bottom:14px;font-size:11px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          White-Label Booking Site
+        </div>
+        <h2 style="font-size:34px;font-weight:700;color:#1a1a1a;letter-spacing:0.01em;">Build your direct booking channel</h2>
+        <p style="font-size:15px;color:#6b7280;margin-top:10px;max-width:500px;margin-left:auto;margin-right:auto;">Launch a branded booking site in minutes. Try it now &mdash; type your brand name and pick a colour.</p>
+      </div>
+
+      <div style="display:flex;gap:24px;align-items:flex-start;" id="bookingDemo">
+        <!-- Controls (left) -->
+        <div style="width:280px;flex-shrink:0;background:#fafafa;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="margin-bottom:20px;">
+            <label style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Brand Name</label>
+            <input type="text" id="demoName" value="Your Brand" style="width:100%;height:38px;border:1px solid #e8e5df;border-radius:10px;padding:0 12px;font-size:14px;color:#1a1a1a;outline:none;" onfocus="this.style.borderColor='#1e9a80';this.style.boxShadow='0 0 0 3px rgba(30,154,128,0.08)'" onblur="this.style.borderColor='#e8e5df';this.style.boxShadow='none'">
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Accent Colour</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="demo-color active" data-color="#10b981" style="width:32px;height:32px;border-radius:8px;background:#10b981;border:2px solid #10b981;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+              <button class="demo-color" data-color="#3b82f6" style="width:32px;height:32px;border-radius:8px;background:#3b82f6;border:2px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+              <button class="demo-color" data-color="#8b5cf6" style="width:32px;height:32px;border-radius:8px;background:#8b5cf6;border:2px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+              <button class="demo-color" data-color="#f59e0b" style="width:32px;height:32px;border-radius:8px;background:#f59e0b;border:2px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+              <button class="demo-color" data-color="#ef4444" style="width:32px;height:32px;border-radius:8px;background:#ef4444;border:2px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+              <button class="demo-color" data-color="#1a1a1a" style="width:32px;height:32px;border-radius:8px;background:#1a1a1a;border:2px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+            </div>
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Your URL</label>
+            <div style="display:flex;align-items:center;gap:0;border:1px solid #e8e5df;border-radius:10px;overflow:hidden;background:#fff;">
+              <input type="text" id="demoSubdomain" value="yourbrand" style="flex:1;height:38px;border:none;padding:0 12px;font-size:13px;color:#1a1a1a;outline:none;">
+              <span style="font-size:12px;color:#6b7280;padding:0 12px;white-space:nowrap;border-left:1px solid #e8e5df;background:#fafafa;">.nfstay.app</span>
+            </div>
+          </div>
+          <a href="/signup" style="display:flex;align-items:center;justify-content:center;width:100%;height:40px;border-radius:10px;background:linear-gradient(135deg,#1e9a80,#10b981);color:#fff;font-size:13px;font-weight:600;text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Build Your Site</a>
+        </div>
+
+        <!-- Live Preview (right) -->
+        <div style="flex:1;border:1px solid rgba(0,0,0,0.06);border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.06);">
+          <!-- Browser chrome -->
+          <div style="background:#fafafa;border-bottom:1px solid rgba(0,0,0,0.06);padding:10px 16px;display:flex;align-items:center;gap:8px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#ff5f57;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#ffbd2e;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#28c840;"></span>
+            <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:6px;padding:4px 12px;font-size:11px;color:#6b7280;margin-left:8px;" id="demoUrlBar">yourbrand.nfstay.app</div>
+          </div>
+
+          <!-- Site preview -->
+          <div style="background:#fff;">
+            <!-- Header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #f3f4f6;">
+              <span style="font-size:15px;font-weight:700;" id="demoLogo">Your Brand</span>
+              <div style="display:flex;gap:16px;font-size:12px;color:#6b7280;">
+                <span>Properties</span><span>About</span><span>Contact</span>
+              </div>
+            </div>
+
+            <!-- Hero -->
+            <div style="position:relative;height:200px;overflow:hidden;">
+              <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" style="width:100%;height:100%;object-fit:cover;" alt="">
+              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7),rgba(0,0,0,0.2),transparent);"></div>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:20px;">
+                <h3 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:4px;">Find Your Perfect Stay</h3>
+                <p style="font-size:12px;color:rgba(255,255,255,0.8);">Book directly with us for the best rates</p>
+              </div>
+            </div>
+
+            <!-- Search bar -->
+            <div style="padding:0 20px;margin-top:-16px;position:relative;z-index:1;">
+              <div style="background:#fff;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.08);border:1px solid #f3f4f6;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;display:block;">Location</span><span style="font-size:11px;color:#1a1a1a;">Where are you going?</span></div>
+                <div style="width:1px;height:24px;background:#e5e7eb;"></div>
+                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;display:block;">Dates</span><span style="font-size:11px;color:#1a1a1a;">Add dates</span></div>
+                <button id="demoSearchBtn" style="padding:6px 14px;border-radius:8px;color:#fff;font-size:11px;font-weight:600;border:none;cursor:pointer;background:#10b981;">Search</button>
+              </div>
+            </div>
+
+            <!-- Properties -->
+            <div style="padding:16px 20px;">
+              <span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;margin-bottom:10px;">Featured Properties</span>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                <div style="border:1px solid #f3f4f6;border-radius:10px;overflow:hidden;">
+                  <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=300&q=80" style="width:100%;height:80px;object-fit:cover;" alt="">
+                  <div style="padding:8px;"><span style="font-size:11px;font-weight:600;color:#1a1a1a;display:block;">City Apartment</span><span style="font-size:10px;color:#6b7280;">London</span><span class="demo-price" style="font-size:11px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;120/night</span></div>
+                </div>
+                <div style="border:1px solid #f3f4f6;border-radius:10px;overflow:hidden;">
+                  <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=300&q=80" style="width:100%;height:80px;object-fit:cover;" alt="">
+                  <div style="padding:8px;"><span style="font-size:11px;font-weight:600;color:#1a1a1a;display:block;">Penthouse Suite</span><span style="font-size:10px;color:#6b7280;">Manchester</span><span class="demo-price" style="font-size:11px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;185/night</span></div>
+                </div>
+                <div style="border:1px solid #f3f4f6;border-radius:10px;overflow:hidden;">
+                  <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=300&q=80" style="width:100%;height:80px;object-fit:cover;" alt="">
+                  <div style="padding:8px;"><span style="font-size:11px;font-weight:600;color:#1a1a1a;display:block;">Cosy Studio</span><span style="font-size:10px;color:#6b7280;">Birmingham</span><span class="demo-price" style="font-size:11px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;85/night</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:10px 20px;background:#fafafa;border-top:1px solid #f3f4f6;">
+              <span style="font-size:11px;font-weight:600;" id="demoFooterName">Your Brand</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Booking site demo interactivity
+  var demoNameInput = document.getElementById('demoName');
+  var demoSubInput = document.getElementById('demoSubdomain');
+  var demoLogo = document.getElementById('demoLogo');
+  var demoFooter = document.getElementById('demoFooterName');
+  var demoUrl = document.getElementById('demoUrlBar');
+  var demoSearch = document.getElementById('demoSearchBtn');
+  var currentColor = '#10b981';
+
+  if (demoNameInput) {
+    demoNameInput.addEventListener('input', function() {
+      var v = this.value || 'Your Brand';
+      demoLogo.textContent = v;
+      demoFooter.textContent = v;
+      demoLogo.style.color = currentColor;
+      demoFooter.style.color = currentColor;
+      var sub = v.toLowerCase().replace(/[^a-z0-9]/g, '');
+      demoSubInput.value = sub || 'yourbrand';
+      demoUrl.textContent = (sub || 'yourbrand') + '.nfstay.app';
+    });
+  }
+
+  function pickColor(btn) {
+    currentColor = btn.dataset.color;
+    document.querySelectorAll('.demo-color').forEach(function(b) { b.style.borderColor = 'transparent'; });
+    btn.style.borderColor = currentColor;
+    demoSearch.style.backgroundColor = currentColor;
+    demoLogo.style.color = currentColor;
+    demoFooter.style.color = currentColor;
+    document.querySelectorAll('.demo-price').forEach(function(p) { p.style.color = currentColor; });
+  }
+  </script>
+
   <!-- JOURNEY — ZIGZAG PATH (alternating left-right) -->
   <section style="background:#f3f3ee;padding:100px 0;overflow:hidden;">
     <div style="max-width:900px;margin:0 auto;padding:0 24px;">
