@@ -197,8 +197,8 @@ function InvestModal({
   const { buyShares, loading: blockchainLoading } = useBlockchain();
 
   const total = shares * property.pricePerShare;
-  const monthlyIncome = ((property.monthlyRent / property.totalShares) * shares).toFixed(2);
-  const annualReturn = (shares * property.pricePerShare * (property.annualYield / 100)).toFixed(2);
+  const annualReturn = (total * (property.annualYield / 100)).toFixed(2);
+  const monthlyIncome = (parseFloat(annualReturn) / 12).toFixed(2);
 
   const handleClose = (v: boolean) => {
     if (!v) {
@@ -543,8 +543,9 @@ function InvestCardContent({
   totalOwners?: number;
 }) {
   const shares = Math.floor(investAmount / property.pricePerShare);
-  const monthlyIncome = ((property.monthlyRent / property.totalShares) * shares).toFixed(2);
-  const annualReturn = (shares * property.pricePerShare * (property.annualYield / 100)).toFixed(2);
+  const investTotal = shares * property.pricePerShare;
+  const annualReturn = (investTotal * (property.annualYield / 100)).toFixed(2);
+  const monthlyIncome = (parseFloat(annualReturn) / 12).toFixed(2);
 
   return (
     <div className="space-y-4">
@@ -746,8 +747,9 @@ function ProfitCalculator({
   const maxValue = projections[projections.length - 1]?.value ?? initialCalcAmount;
   const totalROI = maxValue > 0 ? (((maxValue - initialCalcAmount) / initialCalcAmount) * 100).toFixed(1) : '0';
   const sharesCalc = Math.floor(initialCalcAmount / property.pricePerShare);
-  const monthlyIncome = ((property.monthlyRent / property.totalShares) * sharesCalc).toFixed(2);
-  const yearlyIncome = (sharesCalc * property.pricePerShare * (dividendYield / 100)).toFixed(2);
+  const calcInvestTotal = sharesCalc * property.pricePerShare;
+  const yearlyIncome = (calcInvestTotal * (dividendYield / 100)).toFixed(2);
+  const monthlyIncome = (parseFloat(yearlyIncome) / 12).toFixed(2);
   const totalGain = maxValue - initialCalcAmount;
 
   const quickAmounts = [500, 1000, 2500, 5000];
@@ -1678,22 +1680,24 @@ export default function InvestMarketplacePage() {
     rentCost: (dbProperty as any).rent_cost || 0,
   } : null;
 
-  // Fetch blockchain stats: Owners, Total Shares (aprBips = deal price = shares at $1), Shares Remaining
+  // Fetch blockchain stats: Owners, Total Shares, APR (aprBips), Shares Remaining
   const [totalOwners, setTotalOwners] = useState(0);
   const [bcTotalShares, setBcTotalShares] = useState(0);
   const [bcSharesRemaining, setBcSharesRemaining] = useState(0);
+  const [bcAprBips, setBcAprBips] = useState(0);
   useEffect(() => {
     async function fetchBlockchainStats() {
       try {
         const ethers = await import('ethers');
         const provider = new ethers.providers.JsonRpcProvider('https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T');
-        // RWA Token: owners + aprBips (= total share capacity at $1/share)
+        // RWA Token: owners, totalShares, aprBips (yield in basis points)
         const rwa = new ethers.Contract('0xA588E7dC42a956cc6c412925dE99240cc329157b', [
           'function getProperty(uint256) view returns (tuple(uint256 totalShares, uint256 totalOwners, uint256 pricePerShare, uint256 aprBips, string uri))',
         ], provider);
         const prop = await rwa.getProperty(1);
         setTotalOwners(prop.totalOwners.toNumber());
-        setBcTotalShares(prop.aprBips.toNumber()); // aprBips = deal price = total shares at $1
+        setBcTotalShares(prop.totalShares.toNumber());
+        setBcAprBips(prop.aprBips.toNumber()); // yield in basis points (e.g. 3000 = 30%)
 
         // Marketplace: shares remaining
         const mktIface = new ethers.utils.Interface([
@@ -1718,6 +1722,11 @@ export default function InvestMarketplacePage() {
   const displaySharesSold = displayTotalShares - displaySharesRemaining;
   const fundedPercent = displayTotalShares > 0 ? Math.round((displaySharesSold / displayTotalShares) * 100) : 0;
   const sharesRemaining = displaySharesRemaining;
+
+  // If admin hasn't set annual_yield, fall back to blockchain aprBips
+  if (property && property.annualYield === 0 && bcAprBips > 0) {
+    property.annualYield = (bcAprBips / 10000) * 100;
+  }
 
   const version = 1 as const;
   const [jvExpanded, setJvExpanded] = useState(false);
