@@ -734,9 +734,10 @@ function ProfitCalculator({
 }) {
   const [chartVersion, setChartVersion] = useState(1);
   const appreciationRate = property.appreciationRate || 5.2;
-  const dividendYield = property.annualYield;
+  const monthlyYield = property.annualYield; // DB field stores monthly yield %
+  const annualizedYield = monthlyYield * 12;
   const holdingYears = 5;
-  const totalAnnualRate = appreciationRate + dividendYield;
+  const totalAnnualRate = appreciationRate + annualizedYield;
 
   const projections = Array.from({ length: holdingYears }, (_, i) => {
     const year = i + 1;
@@ -748,7 +749,7 @@ function ProfitCalculator({
   const totalROI = maxValue > 0 ? (((maxValue - initialCalcAmount) / initialCalcAmount) * 100).toFixed(1) : '0';
   const sharesCalc = Math.floor(initialCalcAmount / property.pricePerShare);
   const calcInvestTotal = sharesCalc * property.pricePerShare;
-  const monthlyIncome = (calcInvestTotal * (dividendYield / 100)).toFixed(2);
+  const monthlyIncome = (calcInvestTotal * (monthlyYield / 100)).toFixed(2);
   const yearlyIncome = (parseFloat(monthlyIncome) * 12).toFixed(2);
   const totalGain = maxValue - initialCalcAmount;
 
@@ -949,7 +950,7 @@ function ProfitCalculator({
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  {appreciationRate}% + {dividendYield}% yield
+                  {appreciationRate}% appreciation + {annualizedYield.toFixed(1)}% yield
                 </span>
               </div>
             </div>
@@ -1011,7 +1012,7 @@ function ProfitCalculator({
               </div>
             </div>
             <p className="text-[10px] text-muted-foreground leading-relaxed">
-              Based on {appreciationRate}% appreciation + {dividendYield}% yield. Past performance does not guarantee future results.
+              Based on {appreciationRate}% appreciation + {annualizedYield.toFixed(1)}% annual yield ({monthlyYield}%/mo). Past performance does not guarantee future results.
             </p>
           </div>
         </div>
