@@ -13,6 +13,11 @@
   <link rel="stylesheet" href="/landing/sections.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+.lang-dropdown .lang-menu { display: none !important; }
+.lang-dropdown.open .lang-menu { display: block !important; }
+.lang-dropdown .lang-menu a:hover { background: rgba(30,154,128,0.06); }
+</style>
 </head>
 <body>
 
@@ -37,15 +42,18 @@
 
           <!-- Right: Language + Demo + Login + CTA -->
           <div class="nav-end-wrapper">
-            <div class="language-switcher-wrapper">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M2 12h20"/>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-              </svg>
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M2.5 4l2.5 2.5L7.5 4"/>
-              </svg>
+            <div class="lang-dropdown" style="position:relative;">
+              <button onclick="this.parentElement.classList.toggle('open')" style="display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:10px;border:1px solid rgba(0,0,0,0.08);background:#fff;cursor:pointer;font-size:12px;font-weight:500;color:#1a1a1a;">
+                <span style="font-size:14px;">&#127468;&#127463;</span> EN
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg>
+              </button>
+              <div class="lang-menu" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.1);padding:6px;min-width:160px;z-index:200;">
+                <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;font-weight:500;background:rgba(30,154,128,0.06);"><span style="font-size:16px;">&#127468;&#127463;</span> English</a>
+                <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;"><span style="font-size:16px;">&#127463;&#127479;</span> Portugu&ecirc;s</a>
+                <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;"><span style="font-size:16px;">&#127466;&#127480;</span> Espa&ntilde;ol</a>
+                <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;"><span style="font-size:16px;">&#127467;&#127479;</span> Fran&ccedil;ais</a>
+                <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;"><span style="font-size:16px;">&#127462;&#127466;</span> &#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</a>
+              </div>
             </div>
             <a href="/signup" class="nav_menu_link">Login</a>
             <a href="/signup" class="nav-btn">Get Started</a>
@@ -391,9 +399,9 @@
   </div></div>
 
   <!-- UNIFIED INBOX -->
-  <div class="s bg-cream sr"><div class="wrap"><div class="sh"><h2>Every landlord. One inbox.</h2><p>WhatsApp, email and portal messages in a single thread &mdash; linked to your deals.</p></div>
+  <div class="s bg-cream sr"><div class="wrap"><div class="sh"><h2>Landlords, Agents, Airbnb Operators &mdash; One Unified Inbox</h2><p>WhatsApp, email and portal messages in a single thread &mdash; linked to your deals.</p></div>
     <div class="inbox-mock">
-      <div class="inbox-list"><div class="inbox-list-head">Conversations</div><div class="inbox-thread active"><div class="inbox-thread-name">James Thornton</div><div class="inbox-thread-preview">Is the Manchester flat available?</div></div><div class="inbox-thread"><div class="inbox-thread-name">Sarah Chen</div><div class="inbox-thread-preview">Viewing confirmed for Thursday</div></div><div class="inbox-thread"><div class="inbox-thread-name">David Walsh</div><div class="inbox-thread-preview">Contract sent for review</div></div></div>
+      <div class="inbox-list"><div class="inbox-list-head">Conversations</div><div class="inbox-thread active"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=12" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">James Thornton</div><div class="inbox-thread-preview">Is the Manchester flat available?</div></div></div></div><div class="inbox-thread"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=5" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">Sarah Chen</div><div class="inbox-thread-preview">Viewing confirmed for Thursday</div></div></div></div><div class="inbox-thread"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=33" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">David Walsh</div><div class="inbox-thread-preview">Contract sent for review</div></div></div></div></div>
       <div class="inbox-chat"><div class="inbox-chat-head">James Thornton <span class="deal-tag">2-Bed, Ancoats</span></div><div class="inbox-msgs"><div class="msg them">Is the 2-bed in Ancoats still available for serviced accommodation?</div><div class="msg me">Yes, the landlord has approved it. Monthly rent is &pound;850 with an estimated profit of &pound;1,200.</div><div class="msg them">That sounds ideal. When can I arrange a viewing?</div><div class="msg me">Thursday at 5pm works. I will send the address now.</div></div></div>
     </div>
     <div class="inbox-features sr"><div class="inbox-feat sr-child">Auto-link messages to deals</div><div class="inbox-feat sr-child">Reminders before viewings and renewals</div><div class="inbox-feat sr-child">See deal stage inside every thread</div></div>
@@ -411,7 +419,7 @@
 
         <div class="prem-step">
           <div class="prem-step-node ripple-container">01</div>
-          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:1s;">
+          <div class="prem-step-card morph-card shimmer-card sr-child" style="--shimmer-delay:1s;">
             <h4>Browse 1,800+ verified deals</h4>
             <p>Filter by city, type and profit. Every listing is landlord-approved.</p>
             <span class="prem-tag">Deal Marketplace</span>
@@ -420,7 +428,7 @@
 
         <div class="prem-step">
           <div class="prem-step-node ripple-container">02</div>
-          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:1.5s;">
+          <div class="prem-step-card morph-card shimmer-card sr-child" style="--shimmer-delay:1.5s;">
             <h4>Analyse profit with the earnings estimator</h4>
             <p>Model nightly rates, occupancy and costs before you commit.</p>
             <span class="prem-tag">Earnings Estimator</span>
@@ -429,7 +437,7 @@
 
         <div class="prem-step">
           <div class="prem-step-node ripple-container">03</div>
-          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:2s;">
+          <div class="prem-step-card morph-card shimmer-card sr-child" style="--shimmer-delay:2s;">
             <h4>Message the landlord from your unified inbox</h4>
             <p>Property context, earnings data and templates alongside every thread.</p>
             <span class="prem-tag">Unified Inbox</span>
@@ -438,7 +446,7 @@
 
         <div class="prem-step">
           <div class="prem-step-node ripple-container">04</div>
-          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:2.5s;">
+          <div class="prem-step-card morph-card shimmer-card sr-child" style="--shimmer-delay:2.5s;">
             <h4>Track progress in your CRM pipeline</h4>
             <p>From cold lead to signed agreement &mdash; every stage in one view.</p>
             <span class="prem-tag">CRM Pipeline</span>
@@ -447,7 +455,7 @@
 
         <div class="prem-step">
           <div class="prem-step-node ripple-container">05</div>
-          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:3s;">
+          <div class="prem-step-card morph-card shimmer-card sr-child" style="--shimmer-delay:3s;">
             <h4>Sign the rent-to-rent agreement</h4>
             <p>Templates, checklists and reminders. Never miss a step.</p>
             <span class="prem-tag">Deal Closing</span>
@@ -456,7 +464,7 @@
 
         <div class="prem-step">
           <div class="prem-step-node ripple-container">06</div>
-          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:3.5s;">
+          <div class="prem-step-card morph-card shimmer-card sr-child" style="--shimmer-delay:3.5s;">
             <h4>Go live on Airbnb and earn</h4>
             <p>Your first profit usually arrives within 30 days of going live.</p>
             <span class="prem-tag">Live &amp; Earning</span>
@@ -466,111 +474,351 @@
     </div>
   </section>
 
-  <!-- ACADEMY (premium animated) -->
-  <section class="prem-academy">
-    <div class="particles"></div>
-    <div class="wrap">
-      <div class="sh" style="margin-bottom:48px;">
-        <h2 class="word-stagger" style="font-size:34px;letter-spacing:0.01em;">Learn rent-to-rent. A to Z.</h2>
-        <p class="word-stagger" style="margin-top:12px;">15 years of operator knowledge, structured into six step-by-step modules.</p>
+  <!-- ACADEMY (with emojis, progress bars, gamification) -->
+  <div class="s bg-cream sr"><div class="wrap">
+    <div class="sh">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(30,154,128,0.06);padding:8px 20px;border-radius:10px;margin-bottom:16px;">
+        <span style="font-size:20px;">&#127891;</span>
+        <span style="font-size:13px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">NFsTay Academy</span>
       </div>
-      <div class="prem-academy-grid">
+      <h2>Learn rent-to-rent. Then do it. In the same place.</h2>
+      <p>15 years of operator knowledge, structured into step-by-step modules with progress tracking.</p>
+    </div>
 
-        <div class="prem-course morph-card">
-          <div class="shimmer-once"></div>
-          <span class="prem-level beginner">Beginner</span>
-          <h3>Getting Started</h3>
-          <div class="lesson-count">6 lessons</div>
-          <p class="desc">The fundamentals of rent-to-rent. How the model works, what you need, and how to get started.</p>
-          <a href="/signup" class="start-link">Start module &rarr;</a>
-        </div>
-
-        <div class="prem-course morph-card">
-          <div class="shimmer-once"></div>
-          <span class="prem-level beginner">Beginner</span>
-          <h3>Property Hunting</h3>
-          <div class="lesson-count">8 lessons</div>
-          <p class="desc">Where to find deals, how to evaluate areas, and what makes a property Airbnb-ready.</p>
-          <a href="/signup" class="start-link">Start module &rarr;</a>
-        </div>
-
-        <div class="prem-course morph-card">
-          <div class="shimmer-once"></div>
-          <span class="prem-level intermediate">Intermediate</span>
-          <h3>Landlord Pitching</h3>
-          <div class="lesson-count">6 lessons</div>
-          <p class="desc">Scripts, objection handling, and how to build trust with property owners.</p>
-          <a href="/signup" class="start-link">Start module &rarr;</a>
-        </div>
-
-        <div class="prem-course morph-card">
-          <div class="shimmer-once"></div>
-          <span class="prem-level intermediate">Intermediate</span>
-          <h3>Numbers and Profit</h3>
-          <div class="lesson-count">8 lessons</div>
-          <p class="desc">How to model returns, calculate costs, and know your margins before signing.</p>
-          <a href="/signup" class="start-link">Start module &rarr;</a>
-        </div>
-
-        <div class="prem-course morph-card">
-          <div class="shimmer-once"></div>
-          <span class="prem-level intermediate">Intermediate</span>
-          <h3>Scaling Your Portfolio</h3>
-          <div class="lesson-count">10 lessons</div>
-          <p class="desc">Systems, automation, and team building to go from one unit to ten.</p>
-          <a href="/signup" class="start-link">Start module &rarr;</a>
-        </div>
-
-        <div class="prem-course morph-card">
-          <div class="shimmer-once"></div>
-          <span class="prem-level beginner">Beginner</span>
-          <h3>Direct Bookings</h3>
-          <div class="lesson-count">6 lessons</div>
-          <p class="desc">Build your own booking site, cut OTA fees, and own your guest relationships.</p>
-          <a href="/signup" class="start-link">Start module &rarr;</a>
-        </div>
-
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:32px;">
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
+        <span style="font-size:18px;">&#127942;</span>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">Level 3</div><div style="font-size:10px;color:#6b7280;">Cashflow Builder</div></div>
       </div>
-      <div class="prem-academy-cta">
-        <p>All six modules included in your membership.</p>
-        <a href="/signup" class="prem-academy-btn">Free Access &mdash; No Credit Card Needed</a>
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
+        <span style="font-size:18px;">&#9889;</span>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">560 XP</div><div style="font-size:10px;color:#6b7280;">Total earned</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
+        <span style="font-size:18px;">&#128293;</span>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">7-day streak</div><div style="font-size:10px;color:#6b7280;">Keep it going</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
+        <span style="font-size:18px;">&#128202;</span>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">44 lessons</div><div style="font-size:10px;color:#6b7280;">6 modules</div></div>
       </div>
     </div>
-  </section>
 
-  <!-- TESTIMONIALS -->
-  <div class="s bg-cream sr">
-    <div class="wrap">
-      <div class="sh"><h2>Trusted by thousands of operators</h2><div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:8px;"><span style="font-size:18px;color:#1e9a80;">&#9733;&#9733;&#9733;&#9733;&#9733;</span><span style="font-size:14px;color:#6b7280;margin-left:6px;">4.8 out of 5</span></div></div>
-      <div class="g3">
-        <div class="sr-child" style="background:#fff;border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:16px;letter-spacing:1px;margin-bottom:12px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:15px;color:#1a1a1a;line-height:1.6;margin-bottom:16px;">&ldquo;NFsTay helped me close my first three deals in under a month. The CRM is the reason I stay organised.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:10px;padding-top:14px;border-top:1px solid #f3f4f6;">
-            <div style="width:36px;height:36px;border-radius:50%;background:#1e9a80;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;">SK</div>
-            <div><div style="font-size:14px;font-weight:600;color:#1a1a1a;">Sarah K.</div><div style="font-size:12px;color:#6b7280;">Manchester</div></div>
+    <div class="g3">
+      <div class="course sr-child" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#1e9a80,#10b981);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#128218;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Getting Started</h3><div style="font-size:11px;color:#6b7280;">6 lessons &middot; <span style="color:#1e9a80;font-weight:600;">Beginner</span></div></div><span style="font-size:11px;font-weight:600;color:#1e9a80;">100%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:100%;height:100%;background:#1e9a80;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">The fundamentals of rent-to-rent.</p></div></div>
+      <div class="course sr-child" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#1e9a80,#10b981);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#128269;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Property Hunting</h3><div style="font-size:11px;color:#6b7280;">8 lessons &middot; <span style="color:#1e9a80;font-weight:600;">Beginner</span></div></div><span style="font-size:11px;font-weight:600;color:#1e9a80;">75%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:75%;height:100%;background:#1e9a80;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Where to find deals and evaluate areas.</p></div></div>
+      <div class="course sr-child" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#128172;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Landlord Pitching</h3><div style="font-size:11px;color:#6b7280;">6 lessons &middot; <span style="color:#f59e0b;font-weight:600;">Intermediate</span></div></div><span style="font-size:11px;font-weight:600;color:#f59e0b;">40%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:40%;height:100%;background:#f59e0b;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Scripts and objection handling.</p></div></div>
+      <div class="course sr-child" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#128176;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Numbers and Profit</h3><div style="font-size:11px;color:#6b7280;">8 lessons &middot; <span style="color:#f59e0b;font-weight:600;">Intermediate</span></div></div><span style="font-size:11px;font-weight:600;color:#6b7280;">0%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:0%;height:100%;background:#f59e0b;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Model returns and know your margins.</p></div></div>
+      <div class="course sr-child" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#128200;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Scaling Your Portfolio</h3><div style="font-size:11px;color:#6b7280;">10 lessons &middot; <span style="color:#f59e0b;font-weight:600;">Intermediate</span></div></div><span style="font-size:11px;font-weight:600;color:#6b7280;">0%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:0%;height:100%;background:#f59e0b;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Systems, automation, team building.</p></div></div>
+      <div class="course sr-child" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#1e9a80,#10b981);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#127968;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Direct Bookings</h3><div style="font-size:11px;color:#6b7280;">6 lessons &middot; <span style="color:#1e9a80;font-weight:600;">Beginner</span></div></div><span style="font-size:11px;font-weight:600;color:#6b7280;">0%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:0%;height:100%;background:#1e9a80;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Build your own booking site.</p></div></div>
+    </div>
+    <p style="text-align:center;font-size:13px;color:#6b7280;margin-top:24px;">All modules included in your membership</p>
+  </div></div>
+
+  <!-- TESTIMONIALS (auto-sliding carousel) -->
+  <div class="s bg-cream sr" style="overflow:hidden;">
+    <div class="wrap"><div class="sh"><h2>Trusted by thousands of operators</h2><div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:8px;"><span style="font-size:18px;color:#1e9a80;">&#9733;&#9733;&#9733;&#9733;&#9733;</span><span style="font-size:14px;color:#6b7280;margin-left:6px;">4.8 out of 5</span></div></div></div>
+    <div style="overflow:hidden;padding:0 0 20px;">
+      <div class="review-track" style="display:flex;gap:16px;animation:reviewSlide 60s linear infinite;">
+        <div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;NFsTay helped me close my first three deals in under a month. The CRM is the reason I stay organised.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=12" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sarah K.</div><div style="font-size:11px;color:#6b7280;">Manchester</div></div>
           </div>
         </div>
-        <div class="sr-child" style="background:#fff;border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:16px;letter-spacing:1px;margin-bottom:12px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:15px;color:#1a1a1a;line-height:1.6;margin-bottom:16px;">&ldquo;The Academy alone paid for itself. I went from zero to signing my first property in six weeks.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:10px;padding-top:14px;border-top:1px solid #f3f4f6;">
-            <div style="width:36px;height:36px;border-radius:50%;background:#1e9a80;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;">TP</div>
-            <div><div style="font-size:14px;font-weight:600;color:#1a1a1a;">Tom P.</div><div style="font-size:12px;color:#6b7280;">London</div></div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The Academy alone paid for itself. I went from zero to signing my first property in six weeks.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=15" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Tom P.</div><div style="font-size:11px;color:#6b7280;">London</div></div>
           </div>
         </div>
-        <div class="sr-child" style="background:#fff;border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:16px;letter-spacing:1px;margin-bottom:12px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:15px;color:#1a1a1a;line-height:1.6;margin-bottom:16px;">&ldquo;Every deal is verified. The earnings estimator is accurate. I use it before every viewing.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:10px;padding-top:14px;border-top:1px solid #f3f4f6;">
-            <div style="width:36px;height:36px;border-radius:50%;background:#1e9a80;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;">PS</div>
-            <div><div style="font-size:14px;font-weight:600;color:#1a1a1a;">Priya S.</div><div style="font-size:12px;color:#6b7280;">Birmingham</div></div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Every deal is verified. The earnings estimator is accurate. I use it before every viewing.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=5" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Priya S.</div><div style="font-size:11px;color:#6b7280;">Birmingham</div></div>
           </div>
         </div>
-      </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The inbox saved me hours of back-and-forth emails. Everything in one place.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=33" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">James H.</div><div style="font-size:11px;color:#6b7280;">Liverpool</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I closed two deals in my first month. The pipeline keeps me on track.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=9" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Rachel L.</div><div style="font-size:11px;color:#6b7280;">Bristol</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Best investment I have made. The university content is world-class.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=25" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">David W.</div><div style="font-size:11px;color:#6b7280;">Leeds</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The direct booking site builder paid for the subscription in week one.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=44" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Amara O.</div><div style="font-size:11px;color:#6b7280;">Nottingham</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;From zero properties to five in eight months. NFsTay made it possible.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=11" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Callum M.</div><div style="font-size:11px;color:#6b7280;">Sheffield</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The earnings estimator is scary accurate. I trust it more than my spreadsheets.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=23" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Fatima R.</div><div style="font-size:11px;color:#6b7280;">Cardiff</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I love that every deal is landlord-approved. No wasted viewings.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=8" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Michael T.</div><div style="font-size:11px;color:#6b7280;">Newcastle</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The CRM pipeline is exactly what I needed. Visual, simple, effective.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=36" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sophie B.</div><div style="font-size:11px;color:#6b7280;">Edinburgh</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;NFsTay University took me from knowing nothing to running two properties.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=17" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Daniel F.</div><div style="font-size:11px;color:#6b7280;">Glasgow</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The agent programme earns me passive income just by sharing my link.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=41" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Hannah G.</div><div style="font-size:11px;color:#6b7280;">Manchester</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Finally a platform built specifically for UK rent-to-rent operators.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=7" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Oliver P.</div><div style="font-size:11px;color:#6b7280;">London</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The unified inbox is a game-changer. No more lost messages.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=29" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Emma C.</div><div style="font-size:11px;color:#6b7280;">Birmingham</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I have referred eight people. The commissions are genuinely good.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=13" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Jack S.</div><div style="font-size:11px;color:#6b7280;">Leeds</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Compliance-checked deals save me so much due diligence time.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=38" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Lucy W.</div><div style="font-size:11px;color:#6b7280;">Bristol</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The booking site builder is incredibly easy. Live in under an hour.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=19" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Nathan D.</div><div style="font-size:11px;color:#6b7280;">Liverpool</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;NFsTay helped me close my first three deals in under a month. The CRM is the reason I stay organised.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=12" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sarah K.</div><div style="font-size:11px;color:#6b7280;">Manchester</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The Academy alone paid for itself. I went from zero to signing my first property in six weeks.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=15" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Tom P.</div><div style="font-size:11px;color:#6b7280;">London</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Every deal is verified. The earnings estimator is accurate. I use it before every viewing.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=5" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Priya S.</div><div style="font-size:11px;color:#6b7280;">Birmingham</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The inbox saved me hours of back-and-forth emails. Everything in one place.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=33" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">James H.</div><div style="font-size:11px;color:#6b7280;">Liverpool</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I closed two deals in my first month. The pipeline keeps me on track.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=9" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Rachel L.</div><div style="font-size:11px;color:#6b7280;">Bristol</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Best investment I have made. The university content is world-class.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=25" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">David W.</div><div style="font-size:11px;color:#6b7280;">Leeds</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The direct booking site builder paid for the subscription in week one.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=44" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Amara O.</div><div style="font-size:11px;color:#6b7280;">Nottingham</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;From zero properties to five in eight months. NFsTay made it possible.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=11" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Callum M.</div><div style="font-size:11px;color:#6b7280;">Sheffield</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The earnings estimator is scary accurate. I trust it more than my spreadsheets.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=23" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Fatima R.</div><div style="font-size:11px;color:#6b7280;">Cardiff</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I love that every deal is landlord-approved. No wasted viewings.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=8" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Michael T.</div><div style="font-size:11px;color:#6b7280;">Newcastle</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The CRM pipeline is exactly what I needed. Visual, simple, effective.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=36" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sophie B.</div><div style="font-size:11px;color:#6b7280;">Edinburgh</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;NFsTay University took me from knowing nothing to running two properties.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=17" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Daniel F.</div><div style="font-size:11px;color:#6b7280;">Glasgow</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The agent programme earns me passive income just by sharing my link.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=41" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Hannah G.</div><div style="font-size:11px;color:#6b7280;">Manchester</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Finally a platform built specifically for UK rent-to-rent operators.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=7" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Oliver P.</div><div style="font-size:11px;color:#6b7280;">London</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The unified inbox is a game-changer. No more lost messages.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=29" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Emma C.</div><div style="font-size:11px;color:#6b7280;">Birmingham</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I have referred eight people. The commissions are genuinely good.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=13" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Jack S.</div><div style="font-size:11px;color:#6b7280;">Leeds</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Compliance-checked deals save me so much due diligence time.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=38" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Lucy W.</div><div style="font-size:11px;color:#6b7280;">Bristol</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The booking site builder is incredibly easy. Live in under an hour.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=19" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Nathan D.</div><div style="font-size:11px;color:#6b7280;">Liverpool</div></div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
+  <style>
+    @keyframes reviewSlide {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .review-track:hover { animation-play-state: paused; }
+  </style>
 
   <!-- PRICING (£67 crossed out, £5 big) -->
   <div class="s bg-white sr"><div class="wrap narrow"><div class="sh"><h2>Simple pricing for serious operators</h2><p>One plan. Everything included. Cancel any time.</p></div>
@@ -582,7 +830,7 @@
       </div>
       <div style="font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:4px;">3-day trial for &pound;5, then &pound;67/month</div>
       <div class="price-cancel">Cancel online at any time. No contracts.</div>
-      <ul class="price-list"><li>1,800+ verified deals</li><li>CRM pipeline</li><li>Unified inbox</li><li>Earnings estimator</li><li>NFsTay Academy</li><li>Direct landlord contact</li><li>Priority deal alerts</li><li>Affiliate programme</li></ul>
+      <ul class="price-list"><li>1,800+ verified deals</li><li>CRM pipeline</li><li>Unified inbox</li><li>Earnings estimator</li><li>NFsTay Academy</li><li>Direct landlord contact</li><li>Priority deal alerts</li><li>Affiliate Agent programme</li><li>White-label booking site</li></ul>
       <a href="/signup" class="btn btn-green btn-full">Free Access &mdash; No Credit Card Needed</a>
       <div class="price-micro">Cancel online at any time. No contracts.</div>
     </div>
