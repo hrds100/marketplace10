@@ -605,34 +605,78 @@ document.addEventListener('DOMContentLoaded', () => {
     await addMobileBubble('them', 'Booked! See you at 5pm tomorrow. 🎉', 2000);
     setProgress(80);
 
-    // SCREEN 3: Pipeline (stretched)
+    // SCREEN 3: Full-screen pipeline with deals + drag animation
     hideMobileScreens();
     await delay(500);
     await showMobileScreen(`
-      <div style="width:100%;max-width:320px;">
-        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Pipeline Updated</div>
-        <div style="display:flex;gap:6px;overflow-x:auto;">
-          <div style="flex:1;min-width:0;background:#f8f9fa;border-radius:8px;padding:8px;">
-            <div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span>Spotted</div>
-            <div style="background:#fff;border:1px solid #e8e5df;border-radius:6px;padding:6px 8px;font-size:10px;margin-bottom:3px;border-left:2px solid #3b82f6;"><strong>1-Bed, Hulme</strong></div>
+      <div style="width:100%;height:100%;display:flex;flex-direction:column;">
+        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Your Pipeline</div>
+        <div id="mobilePipeScroll" style="flex:1;display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scroll-behavior:smooth;">
+          <div style="min-width:200px;flex-shrink:0;background:#f8f9fa;border-radius:12px;padding:10px;">
+            <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;"></span>Spotted <span style="margin-left:auto;background:#fff;padding:1px 6px;border-radius:6px;font-size:9px;border:1px solid #e5e7eb;">3</span></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #3b82f6;"><strong style="font-size:12px;display:block;">2-Bed, Salford</strong><span style="font-size:10px;color:#6b7280;">Manchester &middot; &pound;820/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,050/mo</div></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #3b82f6;"><strong style="font-size:12px;display:block;">1-Bed, Hulme</strong><span style="font-size:10px;color:#6b7280;">Manchester &middot; &pound;700/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;890/mo</div></div>
+            <div id="mobileDragCard" style="background:#fff;border:1px solid #1e9a80;border-radius:8px;padding:10px;border-left:3px solid #1e9a80;box-shadow:0 0 0 3px rgba(30,154,128,0.12);transition:all 600ms cubic-bezier(0.22,1,0.36,1);"><strong style="font-size:12px;display:block;color:#1a1a1a;">2-Bed, Ancoats</strong><span style="font-size:10px;color:#6b7280;">Manchester &middot; &pound;850/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,200/mo</div></div>
           </div>
-          <div style="flex:1;min-width:0;background:#f8f9fa;border-radius:8px;padding:8px;">
-            <div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;"></span>Viewing</div>
-            <div id="mobilePipeCard" style="background:#fff;border:1px solid #1e9a80;border-radius:6px;padding:6px 8px;font-size:10px;border-left:2px solid #1e9a80;box-shadow:0 0 0 2px rgba(30,154,128,0.15);opacity:0;transform:translateY(-8px);transition:opacity 400ms,transform 400ms;"><strong style="color:#1a1a1a;">2-Bed, Ancoats</strong><div style="font-size:9px;color:#1e9a80;font-weight:600;">+&pound;1,200/mo</div></div>
+          <div style="min-width:200px;flex-shrink:0;background:#f8f9fa;border-radius:12px;padding:10px;">
+            <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;"></span>Shortlisted <span style="margin-left:auto;background:#fff;padding:1px 6px;border-radius:6px;font-size:9px;border:1px solid #e5e7eb;">2</span></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #f59e0b;"><strong style="font-size:12px;display:block;">3-Bed, Headingley</strong><span style="font-size:10px;color:#6b7280;">Leeds &middot; &pound;950/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,400/mo</div></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #f59e0b;"><strong style="font-size:12px;display:block;">1-Bed, Leith</strong><span style="font-size:10px;color:#6b7280;">Edinburgh &middot; &pound;750/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,020/mo</div></div>
           </div>
-          <div style="flex:1;min-width:0;background:#f8f9fa;border-radius:8px;padding:8px;">
-            <div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#1e9a80;"></span>Signed</div>
-            <div style="background:#fff;border:1px solid #e8e5df;border-radius:6px;padding:6px 8px;font-size:10px;border-left:2px solid #1e9a80;"><strong>1-Bed, London</strong></div>
+          <div id="mobilePipeViewingCol" style="min-width:200px;flex-shrink:0;background:#f8f9fa;border-radius:12px;padding:10px;">
+            <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#8b5cf6;"></span>Viewing <span style="margin-left:auto;background:#fff;padding:1px 6px;border-radius:6px;font-size:9px;border:1px solid #e5e7eb;">2</span></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #8b5cf6;"><strong style="font-size:12px;display:block;">2-Bed, Digbeth</strong><span style="font-size:10px;color:#6b7280;">Birmingham &middot; &pound;780/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,100/mo</div></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #8b5cf6;"><strong style="font-size:12px;display:block;">3-Bed, Clifton</strong><span style="font-size:10px;color:#6b7280;">Bristol &middot; &pound;1,100/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,650/mo</div></div>
+          </div>
+          <div style="min-width:200px;flex-shrink:0;background:#f8f9fa;border-radius:12px;padding:10px;">
+            <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#1e9a80;"></span>Signed <span style="margin-left:auto;background:#fff;padding:1px 6px;border-radius:6px;font-size:9px;border:1px solid #e5e7eb;">1</span></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #1e9a80;"><strong style="font-size:12px;display:block;">1-Bed, Shoreditch</strong><span style="font-size:10px;color:#6b7280;">London &middot; &pound;1,350/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,900/mo</div></div>
           </div>
         </div>
       </div>
     `);
-    setProgress(90);
-    await delay(600);
+    setProgress(85);
+    await delay(1000);
 
-    // Animate the deal card appearing in pipeline
-    const pipeCard = document.getElementById('mobilePipeCard');
-    if (pipeCard) { pipeCard.style.opacity = '1'; pipeCard.style.transform = 'translateY(0)'; }
+    // Animate: lift the deal card, scroll pipeline right, drop into Viewing column
+    const dragCard = document.getElementById('mobileDragCard');
+    const pipeScroll = document.getElementById('mobilePipeScroll');
+    const viewingCol = document.getElementById('mobilePipeViewingCol');
+
+    if (dragCard && pipeScroll) {
+      // Lift card
+      dragCard.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+      dragCard.style.transform = 'scale(1.05)';
+      dragCard.style.background = '#f0fdf4';
+      await delay(600);
+
+      // Scroll pipeline to the right smoothly
+      pipeScroll.scrollTo({ left: 200, behavior: 'smooth' });
+      await delay(800);
+
+      // Move card out (fade)
+      dragCard.style.opacity = '0';
+      dragCard.style.transform = 'scale(0.9) translateX(40px)';
+      await delay(400);
+      dragCard.remove();
+
+      // Scroll to viewing column
+      pipeScroll.scrollTo({ left: 400, behavior: 'smooth' });
+      await delay(600);
+
+      // Add card to Viewing column
+      if (viewingCol) {
+        const newCard = document.createElement('div');
+        newCard.style.cssText = 'background:#fff;border:1px solid #1e9a80;border-radius:8px;padding:10px;border-left:3px solid #1e9a80;box-shadow:0 0 0 3px rgba(30,154,128,0.15);opacity:0;transform:translateY(-10px);transition:all 400ms cubic-bezier(0.22,1,0.36,1);';
+        newCard.innerHTML = '<strong style="font-size:12px;display:block;color:#1a1a1a;">2-Bed, Ancoats</strong><span style="font-size:10px;color:#6b7280;">Manchester &middot; &pound;850/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,200/mo</div>';
+        viewingCol.appendChild(newCard);
+        playMessageSound();
+        await delay(100);
+        newCard.style.opacity = '1';
+        newCard.style.transform = 'translateY(0)';
+      }
+    }
+    setProgress(92);
     await delay(2500);
 
     // SCREEN 4: Finale
