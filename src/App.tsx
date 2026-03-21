@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import LandingPage from "./pages/LandingPage";
+import LandingPageV8 from "./pages/LandingPageV8";
+import LandingPageV10 from "./pages/LandingPageV10";
 import MagicLoginPage from "./pages/MagicLoginPage";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -129,7 +131,8 @@ const App = () => (
       <NfsWhiteLabelProvider>
       <NfsWhiteLabelRouter>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<LandingPageV8 />} />
+          <Route path="/retired" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
