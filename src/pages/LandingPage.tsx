@@ -6,6 +6,7 @@ import LandingNav from '@/components/LandingNav';
 import { listings, faqItems } from '@/data/mockData';
 import PropertyCard from '@/components/PropertyCard';
 import { useFavourites } from '@/hooks/useFavourites';
+import HeroSection from '@/components/landing/HeroSection';
 
 function Counter({ target, suffix = '' }: {target: number;suffix?: string;}) {
   const [count, setCount] = useState(0);
@@ -154,6 +155,9 @@ export default function LandingPage() {
 
         <div className="absolute bottom-0 left-0 right-0 h-[120px] z-10" style={{ background: 'linear-gradient(transparent, hsl(0 0% 100%))' }} />
       </section>
+
+      {/* INTERACTIVE HERO DEMO */}
+      <HeroSection />
 
       {/* LANDLORD CTA */}
       <section className="py-16 bg-gradient-to-r from-emerald-50 to-teal-50 border-y border-emerald-100">

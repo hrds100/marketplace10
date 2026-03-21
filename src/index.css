@@ -185,6 +185,16 @@
     50% { opacity: 0.4; }
   }
 
+  /* Hero ripple rings for "Click here" tooltip */
+  .hero-ripple {
+    animation: hero-ripple 2s ease-out infinite;
+  }
+  @keyframes hero-ripple {
+    0% { transform: scale(1); opacity: 0; }
+    10% { opacity: 0.4; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+
   /* Float animation */
   .float-slow {
     animation: float-slow 6s ease-in-out infinite;
