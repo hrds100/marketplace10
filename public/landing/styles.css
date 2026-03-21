@@ -1676,9 +1676,14 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   .nav_button { display: block; }
   .language-switcher-wrapper.mobile-only { display: flex; }
 
-  /* Hero */
-  .hero-demo-component { flex-direction: column; min-height: auto; }
-  .chat-panel { width: 100%; min-width: auto; border-right: none; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  /* Hero: single panel mode — hide preview, show only chat */
+  .hero-demo-component { flex-direction: column; min-height: 420px; max-height: none; }
+  .chat-panel { width: 100%; min-width: auto; border-right: none; border-bottom: none; }
+  .preview-panel { display: none; }
+  .hero-text-block { padding: 40px 0 24px; }
+  .hero-heading { font-size: 28px; line-height: 34px; }
+  .hero-heading .italic-accent { font-size: 28px; }
+  .animated-cursor { display: none !important; }
 
   /* Grids */
   .steps-grid { grid-template-columns: 1fr; }
