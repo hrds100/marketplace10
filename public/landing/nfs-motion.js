@@ -27,6 +27,21 @@
     srObserver.observe(el);
   });
 
+  // 1b. TIMELINE STEP SCROLL REVEAL (expand on scroll)
+  var tlObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        tlObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.2, rootMargin: '0px 0px -60px 0px' });
+
+  document.querySelectorAll('.tl-step').forEach(function (el, i) {
+    el.style.transitionDelay = (i * 80) + 'ms';
+    tlObserver.observe(el);
+  });
+
   // 2. NUMBER COUNTERS
   var counterObserver = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
