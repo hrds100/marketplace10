@@ -7,7 +7,7 @@ export default function LogosPage() {
     <div style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", background: '#fafafa', color: '#111', minHeight: '100vh', padding: '40px 20px' }}>
       {/* Google Fonts for all variations */}
       <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Sora:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Sora:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap"
         rel="stylesheet"
       />
 
@@ -562,6 +562,53 @@ export default function LogosPage() {
           <span style={{ fontFamily: "'Plus Jakarta Sans'", fontSize: 38, letterSpacing: -0.5 }}>
             <span style={{ fontWeight: 800 }}>nf</span><span style={{ fontWeight: 500 }}>stay</span>
           </span>
+        </Card>
+
+        {/* ═══════════════════════════════════════════════════════ */}
+        {/* PUSHING IT (#70–#74) — bolder, more creative            */}
+        {/* ═══════════════════════════════════════════════════════ */}
+
+        <div className="section-label" style={{ borderTop: '3px solid #111', paddingTop: 32 }}>Pushing it — bolder ideas</div>
+
+        {/* #70: "stay" is the hero word, "nf" is a tiny prefix above — luxury hotel style */}
+        <Card n={70} cat="Luxury hotel · tiny nf above stay">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1 }}>
+            <span style={{ fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 700, letterSpacing: 5, textTransform: 'uppercase', marginBottom: 2, marginLeft: 2 }}>nf</span>
+            <span style={{ fontFamily: "'Playfair Display'", fontSize: 48, fontWeight: 400, fontStyle: 'italic', letterSpacing: -1 }}>stay</span>
+          </div>
+        </Card>
+
+        {/* #71: Filled circle mark with "nf" + elegant serif "stay" — like a hotel stamp */}
+        <Card n={71} cat="Stamp mark + serif stay">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Plus Jakarta Sans'", fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: -0.5 }}>nf</div>
+            <span style={{ fontFamily: "'Cormorant Garamond'", fontSize: 38, fontWeight: 600, fontStyle: 'italic', letterSpacing: 1 }}>stay</span>
+          </div>
+        </Card>
+
+        {/* #72: One word, serif+sans mix — "nf" geometric, "stay" elegant serif */}
+        <Card n={72} cat="Sans + serif blend">
+          <div style={{ display: 'flex', alignItems: 'baseline' }}>
+            <span style={{ fontFamily: "'Plus Jakarta Sans'", fontSize: 40, fontWeight: 800, letterSpacing: -1 }}>nf</span>
+            <span style={{ fontFamily: "'Playfair Display'", fontSize: 40, fontWeight: 400, fontStyle: 'italic', letterSpacing: 0, marginLeft: 2 }}>stay</span>
+          </div>
+        </Card>
+
+        {/* #73: Minimal — tiny "nf" dot, big "stay" — like a boutique brand */}
+        <Card n={73} cat="Boutique · dot nf + big stay">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, border: '2px solid #111', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Plus Jakarta Sans'", fontWeight: 800, fontSize: 12, letterSpacing: -0.5 }}>nf</div>
+            <span style={{ fontFamily: "'Plus Jakarta Sans'", fontSize: 42, fontWeight: 700, letterSpacing: -1.5 }}>stay</span>
+          </div>
+        </Card>
+
+        {/* #74: Full wordmark — mixed weight, playful like Airbnb but with personality */}
+        <Card n={74} cat="Airbnb energy · one word, alive">
+          <div style={{ display: 'flex', alignItems: 'baseline' }}>
+            <span style={{ fontFamily: "'Nunito Sans'", fontSize: 42, fontWeight: 800, letterSpacing: -1 }}>nf</span>
+            <span style={{ fontFamily: "'Nunito Sans'", fontSize: 42, fontWeight: 400, letterSpacing: -1 }}>s</span>
+            <span style={{ fontFamily: "'Nunito Sans'", fontSize: 42, fontWeight: 400, fontStyle: 'italic', letterSpacing: -1 }}>tay</span>
+          </div>
         </Card>
 
       </div>
