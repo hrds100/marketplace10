@@ -304,6 +304,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========================================
   const inquireBtn1 = document.getElementById('inquireBtn1');
 
+  const isMobile = () => window.innerWidth <= 991;
+
   async function runStory() {
     storyActive = true;
     stopAutoCycle();
@@ -313,17 +315,20 @@ document.addEventListener('DOMContentLoaded', () => {
     clearTypewriter();
     setProgress(0);
 
-    // --- STEP 1: FIND A DEAL (0-4s) ---
+    if (isMobile()) {
+      // MOBILE STORY: chat-only, no preview panels
+      return runMobileStory();
+    }
+
+    // --- DESKTOP STEP 1: FIND A DEAL (0-4s) ---
     switchPreview('deals', true);
     setProgress(10);
     await delay(1000);
 
-    // Show cursor at bottom-right of demo component
     showCursor();
     gsap.set(animCursor, { left: demoComponent.offsetWidth - 60, top: demoComponent.offsetHeight - 60 });
     await delay(500);
 
-    // Cursor glides toward card 1
     if (nfsCard1) {
       await moveCursorTo(nfsCard1, 1.5);
       nfsCard1.classList.add('highlighted');
@@ -331,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await delay(2000);
     }
 
-    // --- STEP 2: CLICK "INQUIRE NOW" (4-7s) ---
+    // --- DESKTOP STEP 2: CLICK "INQUIRE NOW" (4-7s) ---
     if (inquireBtn1) {
       await clickCursorOn(inquireBtn1);
       inquireBtn1.textContent = '✓ Inquiry Sent';
@@ -344,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     hideCursor();
 
-    // --- STEP 3: START CHATTING (7-16s) ---
+    // --- DESKTOP STEP 3: START CHATTING ---
     switchPreview('inbox');
     setProgress(40);
     await delay(800);
@@ -452,6 +457,244 @@ document.addEventListener('DOMContentLoaded', () => {
     await delay(4500);
 
     // --- RESET ---
+    resetStory();
+  }
+
+  // ── MOBILE STORY (full-screen panels, one at a time) ──
+
+  function showMobileScreen(html) {
+    return new Promise(resolve => {
+      // Create overlay inside chat panel (covers earnings banner + messages)
+      const screen = document.createElement('div');
+      screen.className = 'mobile-story-screen';
+      screen.style.cssText = 'position:absolute;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;opacity:0;transform:scale(0.96);transition:opacity 400ms ease,transform 400ms ease;overflow-y:auto;';
+      screen.innerHTML = html;
+
+      const panel = document.querySelector('.chat-panel');
+      panel.style.position = 'relative';
+      panel.appendChild(screen);
+
+      // Animate in
+      requestAnimationFrame(() => {
+        screen.style.opacity = '1';
+        screen.style.transform = 'scale(1)';
+      });
+
+      setTimeout(resolve, 500);
+    });
+  }
+
+  function hideMobileScreens() {
+    document.querySelectorAll('.mobile-story-screen').forEach(s => {
+      s.style.opacity = '0';
+      s.style.transform = 'scale(0.96)';
+      setTimeout(() => s.remove(), 400);
+    });
+  }
+
+  async function runMobileStory() {
+    setProgress(10);
+
+    // SCREEN 1: Show one deal card (stretched, with mouse cursor)
+    await showMobileScreen(`
+      <div style="width:100%;max-width:320px;position:relative;">
+        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;text-align:center;">Deal Found</div>
+        <div style="border:1px solid #e8e5df;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+          <div style="height:160px;background:url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=240&fit=crop') center/cover;position:relative;">
+            <span style="position:absolute;top:10px;left:10px;background:#fff;font-size:10px;font-weight:600;padding:3px 10px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.1);">Featured</span>
+          </div>
+          <div style="padding:18px;">
+            <div style="font-size:16px;font-weight:700;color:#1a1a1a;">2-Bed Flat, Ancoats</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:3px;">Manchester &middot; M4 6BF</div>
+            <div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:10px;border-top:1px solid #f3f4f6;">
+              <div><div style="font-size:11px;color:#6b7280;">Monthly rent</div><div style="font-size:14px;font-weight:600;color:#1a1a1a;">&pound;850</div></div>
+              <div style="text-align:right;"><div style="font-size:11px;color:#6b7280;">Est. profit</div><div style="font-size:14px;font-weight:700;color:#1e9a80;">&pound;1,200/mo</div></div>
+            </div>
+            <div id="mobileInquireBtn" style="margin-top:16px;width:100%;height:42px;border-radius:10px;background:#1e9a80;color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;">Inquire Now</div>
+          </div>
+        </div>
+        <!-- Mobile cursor -->
+        <div id="mobileCursor" style="position:absolute;bottom:120px;right:40px;z-index:30;opacity:0;transition:all 1s cubic-bezier(0.22,1,0.36,1);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86h8.14a.5.5 0 00.35-.85L5.85 2.86a.5.5 0 00-.35.35z" fill="#1a1a1a" stroke="#fff" stroke-width="1"/></svg>
+        </div>
+      </div>
+    `);
+    setProgress(20);
+    await delay(1000);
+
+    // Show cursor and move it toward "Inquire Now" button
+    const mobileCur = document.getElementById('mobileCursor');
+    if (mobileCur) {
+      mobileCur.style.opacity = '1';
+      await delay(500);
+      // Move cursor to the button
+      mobileCur.style.bottom = '28px';
+      mobileCur.style.right = '50%';
+      mobileCur.style.transform = 'translateX(50%)';
+      await delay(1200);
+    }
+
+    // Click the button
+    const mBtn = document.getElementById('mobileInquireBtn');
+    if (mBtn) {
+      // Cursor click animation
+      if (mobileCur) { mobileCur.style.transform = 'translateX(50%) scale(0.8)'; }
+      mBtn.style.transform = 'scale(0.95)';
+      mBtn.style.boxShadow = '0 0 0 3px rgba(30,154,128,0.3)';
+      await delay(200);
+      if (mobileCur) { mobileCur.style.transform = 'translateX(50%) scale(1)'; }
+      mBtn.textContent = 'Inquiry Sent';
+      mBtn.style.background = '#178f72';
+      mBtn.style.transform = 'scale(1)';
+      playMessageSound();
+    }
+    setProgress(30);
+    await delay(1500);
+
+    // SCREEN 2: Chat conversation (stretched)
+    hideMobileScreens();
+    await delay(500);
+    await showMobileScreen(`
+      <div style="width:100%;max-width:320px;height:100%;display:flex;flex-direction:column;">
+        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Conversation</div>
+        <div style="border:1px solid #e8e5df;border-radius:16px;background:#fafafa;padding:16px;display:flex;flex-direction:column;gap:10px;flex:1;" id="mobileChatArea">
+          <div style="padding:10px;font-size:13px;font-weight:600;color:#1a1a1a;border-bottom:1px solid #f3f4f6;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+            <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;"><img src="https://i.pravatar.cc/56?img=12" style="width:100%;height:100%;object-fit:cover;" alt=""></div>
+            James Thornton <span style="font-size:9px;font-weight:600;color:#1e9a80;background:rgba(30,154,128,0.1);padding:2px 6px;border-radius:100px;margin-left:auto;">2-Bed, Ancoats</span>
+          </div>
+        </div>
+      </div>
+    `);
+    setProgress(40);
+
+    // Type messages one by one into the chat area
+    const chatArea = document.getElementById('mobileChatArea');
+    async function addMobileBubble(from, text, delayMs) {
+      const bubble = document.createElement('div');
+      const isMe = from === 'me';
+      bubble.style.cssText = 'max-width:85%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.5;opacity:0;transform:translateY(6px);transition:opacity 300ms,transform 300ms;' +
+        (isMe ? 'background:#1e9a80;color:#fff;border-bottom-right-radius:4px;align-self:flex-end;margin-left:auto;' : 'background:#fff;border:1px solid #e8e5df;border-bottom-left-radius:4px;color:#1a1a1a;');
+      bubble.textContent = text;
+      chatArea.appendChild(bubble);
+      requestAnimationFrame(() => { bubble.style.opacity = '1'; bubble.style.transform = 'translateY(0)'; });
+      playMessageSound();
+      await delay(delayMs);
+    }
+
+    await addMobileBubble('me', 'Is this available for Airbnb?', 1200);
+    setProgress(50);
+
+    // Typing dots
+    const dots = document.createElement('div');
+    dots.style.cssText = 'display:flex;gap:3px;padding:8px 12px;align-self:flex-start;';
+    dots.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite;"></span><span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite 0.15s;"></span><span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite 0.3s;"></span>';
+    chatArea.appendChild(dots);
+    await delay(1200);
+    dots.remove();
+
+    await addMobileBubble('them', 'Yes! Landlord approved. Would you like to arrange a viewing?', 1500);
+    setProgress(60);
+    await addMobileBubble('me', 'Tomorrow at 5pm works!', 1000);
+    setProgress(70);
+
+    const dots2 = dots.cloneNode(true);
+    chatArea.appendChild(dots2);
+    await delay(1000);
+    dots2.remove();
+
+    await addMobileBubble('them', 'Booked! See you at 5pm tomorrow. 🎉', 2000);
+    setProgress(80);
+
+    // SCREEN 3: Full-screen pipeline with deals + drag animation
+    hideMobileScreens();
+    await delay(500);
+    await showMobileScreen(`
+      <div style="width:100%;height:100%;display:flex;flex-direction:column;">
+        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Your Pipeline</div>
+        <div id="mobilePipeScroll" style="flex:1;display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scroll-behavior:smooth;">
+          <div style="min-width:200px;flex-shrink:0;background:#f8f9fa;border-radius:12px;padding:10px;">
+            <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;"></span>Spotted <span style="margin-left:auto;background:#fff;padding:1px 6px;border-radius:6px;font-size:9px;border:1px solid #e5e7eb;">3</span></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #3b82f6;"><strong style="font-size:12px;display:block;">2-Bed, Salford</strong><span style="font-size:10px;color:#6b7280;">Manchester &middot; &pound;820/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,050/mo</div></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #3b82f6;"><strong style="font-size:12px;display:block;">1-Bed, Hulme</strong><span style="font-size:10px;color:#6b7280;">Manchester &middot; &pound;700/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;890/mo</div></div>
+            <div id="mobileDragCard" style="background:#fff;border:1px solid #1e9a80;border-radius:8px;padding:10px;border-left:3px solid #1e9a80;box-shadow:0 0 0 3px rgba(30,154,128,0.12);transition:all 600ms cubic-bezier(0.22,1,0.36,1);"><strong style="font-size:12px;display:block;color:#1a1a1a;">2-Bed, Ancoats</strong><span style="font-size:10px;color:#6b7280;">Manchester &middot; &pound;850/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,200/mo</div></div>
+          </div>
+          <div style="min-width:200px;flex-shrink:0;background:#f8f9fa;border-radius:12px;padding:10px;">
+            <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;"></span>Shortlisted <span style="margin-left:auto;background:#fff;padding:1px 6px;border-radius:6px;font-size:9px;border:1px solid #e5e7eb;">2</span></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #f59e0b;"><strong style="font-size:12px;display:block;">3-Bed, Headingley</strong><span style="font-size:10px;color:#6b7280;">Leeds &middot; &pound;950/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,400/mo</div></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #f59e0b;"><strong style="font-size:12px;display:block;">1-Bed, Leith</strong><span style="font-size:10px;color:#6b7280;">Edinburgh &middot; &pound;750/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,020/mo</div></div>
+          </div>
+          <div id="mobilePipeViewingCol" style="min-width:200px;flex-shrink:0;background:#f8f9fa;border-radius:12px;padding:10px;">
+            <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#8b5cf6;"></span>Viewing <span style="margin-left:auto;background:#fff;padding:1px 6px;border-radius:6px;font-size:9px;border:1px solid #e5e7eb;">2</span></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #8b5cf6;"><strong style="font-size:12px;display:block;">2-Bed, Digbeth</strong><span style="font-size:10px;color:#6b7280;">Birmingham &middot; &pound;780/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,100/mo</div></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #8b5cf6;"><strong style="font-size:12px;display:block;">3-Bed, Clifton</strong><span style="font-size:10px;color:#6b7280;">Bristol &middot; &pound;1,100/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,650/mo</div></div>
+          </div>
+          <div style="min-width:200px;flex-shrink:0;background:#f8f9fa;border-radius:12px;padding:10px;">
+            <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#1e9a80;"></span>Signed <span style="margin-left:auto;background:#fff;padding:1px 6px;border-radius:6px;font-size:9px;border:1px solid #e5e7eb;">1</span></div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid #1e9a80;"><strong style="font-size:12px;display:block;">1-Bed, Shoreditch</strong><span style="font-size:10px;color:#6b7280;">London &middot; &pound;1,350/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,900/mo</div></div>
+          </div>
+        </div>
+      </div>
+    `);
+    setProgress(85);
+    await delay(1000);
+
+    // Animate: lift the deal card, scroll pipeline right, drop into Viewing column
+    const dragCard = document.getElementById('mobileDragCard');
+    const pipeScroll = document.getElementById('mobilePipeScroll');
+    const viewingCol = document.getElementById('mobilePipeViewingCol');
+
+    if (dragCard && pipeScroll) {
+      // Lift card
+      dragCard.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+      dragCard.style.transform = 'scale(1.05)';
+      dragCard.style.background = '#f0fdf4';
+      await delay(600);
+
+      // Scroll pipeline to the right smoothly
+      pipeScroll.scrollTo({ left: 200, behavior: 'smooth' });
+      await delay(800);
+
+      // Move card out (fade)
+      dragCard.style.opacity = '0';
+      dragCard.style.transform = 'scale(0.9) translateX(40px)';
+      await delay(400);
+      dragCard.remove();
+
+      // Scroll to viewing column
+      pipeScroll.scrollTo({ left: 400, behavior: 'smooth' });
+      await delay(600);
+
+      // Add card to Viewing column
+      if (viewingCol) {
+        const newCard = document.createElement('div');
+        newCard.style.cssText = 'background:#fff;border:1px solid #1e9a80;border-radius:8px;padding:10px;border-left:3px solid #1e9a80;box-shadow:0 0 0 3px rgba(30,154,128,0.15);opacity:0;transform:translateY(-10px);transition:all 400ms cubic-bezier(0.22,1,0.36,1);';
+        newCard.innerHTML = '<strong style="font-size:12px;display:block;color:#1a1a1a;">2-Bed, Ancoats</strong><span style="font-size:10px;color:#6b7280;">Manchester &middot; &pound;850/mo</span><div style="font-size:10px;color:#1e9a80;font-weight:600;margin-top:3px;">+&pound;1,200/mo</div>';
+        viewingCol.appendChild(newCard);
+        playMessageSound();
+        await delay(100);
+        newCard.style.opacity = '1';
+        newCard.style.transform = 'translateY(0)';
+      }
+    }
+    setProgress(92);
+    await delay(2500);
+
+    // SCREEN 4: Finale
+    hideMobileScreens();
+    await delay(500);
+    await showMobileScreen(`
+      <div style="text-align:center;padding:24px;">
+        <div style="font-size:36px;margin-bottom:12px;">🏡</div>
+        <h3 style="font-size:18px;font-weight:700;color:#1a1a1a;line-height:1.3;margin-bottom:8px;">This is how easy it is to grow your Airbnb portfolio.</h3>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">From deal to doorstep — powered by NFsTay</p>
+        <a href="/signup" style="display:inline-block;padding:10px 24px;border-radius:10px;background:#1e9a80;color:#fff;font-size:13px;font-weight:600;text-decoration:none;">Get Started</a>
+      </div>
+    `);
+    setProgress(100);
+    await delay(4000);
+
+    // Reset
+    hideMobileScreens();
     resetStory();
   }
 
