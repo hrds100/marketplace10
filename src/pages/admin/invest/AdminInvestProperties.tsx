@@ -387,7 +387,7 @@ export default function AdminInvestProperties() {
               <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.price_per_share as number} onChange={(e) => updateField('price_per_share', Number(e.target.value))} />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Annual Yield (%)</label>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Monthly Yield (%)</label>
               <input type="number" step="0.1" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.annual_yield as number} onChange={(e) => updateField('annual_yield', Number(e.target.value))} />
             </div>
             <div>

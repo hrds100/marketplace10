@@ -197,8 +197,8 @@ function InvestModal({
   const { buyShares, loading: blockchainLoading } = useBlockchain();
 
   const total = shares * property.pricePerShare;
-  const annualReturn = (total * (property.annualYield / 100)).toFixed(2);
-  const monthlyIncome = (parseFloat(annualReturn) / 12).toFixed(2);
+  const monthlyIncome = (total * (property.annualYield / 100)).toFixed(2);
+  const annualReturn = (parseFloat(monthlyIncome) * 12).toFixed(2);
 
   const handleClose = (v: boolean) => {
     if (!v) {
@@ -544,8 +544,8 @@ function InvestCardContent({
 }) {
   const shares = Math.floor(investAmount / property.pricePerShare);
   const investTotal = shares * property.pricePerShare;
-  const annualReturn = (investTotal * (property.annualYield / 100)).toFixed(2);
-  const monthlyIncome = (parseFloat(annualReturn) / 12).toFixed(2);
+  const monthlyIncome = (investTotal * (property.annualYield / 100)).toFixed(2);
+  const annualReturn = (parseFloat(monthlyIncome) * 12).toFixed(2);
 
   return (
     <div className="space-y-4">
@@ -748,8 +748,8 @@ function ProfitCalculator({
   const totalROI = maxValue > 0 ? (((maxValue - initialCalcAmount) / initialCalcAmount) * 100).toFixed(1) : '0';
   const sharesCalc = Math.floor(initialCalcAmount / property.pricePerShare);
   const calcInvestTotal = sharesCalc * property.pricePerShare;
-  const yearlyIncome = (calcInvestTotal * (dividendYield / 100)).toFixed(2);
-  const monthlyIncome = (parseFloat(yearlyIncome) / 12).toFixed(2);
+  const monthlyIncome = (calcInvestTotal * (dividendYield / 100)).toFixed(2);
+  const yearlyIncome = (parseFloat(monthlyIncome) * 12).toFixed(2);
   const totalGain = maxValue - initialCalcAmount;
 
   const quickAmounts = [500, 1000, 2500, 5000];
