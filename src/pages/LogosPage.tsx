@@ -484,6 +484,52 @@ export default function LogosPage() {
           </div>
         </Card>
 
+        {/* ═══════════════════════════════════════════════════════ */}
+        {/* REFINEMENTS (#61–#65) — #29 × #27 explorations        */}
+        {/* ═══════════════════════════════════════════════════════ */}
+
+        <div className="section-label" style={{ borderTop: '3px solid #111', paddingTop: 32 }}>Refinements — #29 × #27 explorations</div>
+
+        {/* #61: #29 layout but Sora font from #27 — box on "nf" */}
+        <Card n={61} cat="Sora · box on nf">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 52, height: 52, border: '2.5px solid #111', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora'", fontWeight: 700, fontSize: 22 }}>nf</div>
+            <span style={{ fontFamily: "'Sora'", fontSize: 34, fontWeight: 400, letterSpacing: 3 }}>stay</span>
+          </div>
+        </Card>
+
+        {/* #62: Flipped — box on "stay", "nf" standalone, Sora */}
+        <Card n={62} cat="Sora · box on stay">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ fontFamily: "'Sora'", fontSize: 34, fontWeight: 400, letterSpacing: 3 }}>nf</span>
+            <div style={{ border: '2.5px solid #111', borderRadius: 10, padding: '10px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora'", fontWeight: 700, fontSize: 22 }}>stay</div>
+          </div>
+        </Card>
+
+        {/* #63: Box on "stay", thin border, wider spacing, Sora light */}
+        <Card n={63} cat="Sora light · thin box on stay">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontFamily: "'Sora'", fontSize: 36, fontWeight: 300, letterSpacing: 4 }}>nf</span>
+            <div style={{ border: '1.5px solid #111', borderRadius: 8, padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora'", fontWeight: 600, fontSize: 24, letterSpacing: 2 }}>stay</div>
+          </div>
+        </Card>
+
+        {/* #64: Filled black box on "stay", "nf" standalone, Sora */}
+        <Card n={64} cat="Sora · filled box on stay">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ fontFamily: "'Sora'", fontSize: 34, fontWeight: 400, letterSpacing: 3 }}>nf</span>
+            <div style={{ background: '#111', borderRadius: 10, padding: '10px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora'", fontWeight: 700, fontSize: 22, color: '#fff' }}>stay</div>
+          </div>
+        </Card>
+
+        {/* #65: Pill/rounded box on "stay", "nf" standalone, Sora */}
+        <Card n={65} cat="Sora · pill on stay">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ fontFamily: "'Sora'", fontSize: 34, fontWeight: 400, letterSpacing: 3 }}>nf</span>
+            <div style={{ border: '2.5px solid #111', borderRadius: 50, padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora'", fontWeight: 600, fontSize: 22, letterSpacing: 1 }}>stay</div>
+          </div>
+        </Card>
+
       </div>
 
       {/* Footer */}
