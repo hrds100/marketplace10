@@ -1676,14 +1676,18 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   .nav_button { display: block; }
   .language-switcher-wrapper.mobile-only { display: flex; }
 
-  /* Hero: single panel mode — hide preview, show only chat */
-  .hero-demo-component { flex-direction: column; min-height: 420px; max-height: none; }
-  .chat-panel { width: 100%; min-width: auto; border-right: none; border-bottom: none; }
-  .preview-panel { display: none; }
+  /* Hero: single panel mode — taller, phone-like aspect */
+  .hero-demo-component { flex-direction: column; min-height: 560px; max-height: none; border-radius: 16px; }
+  .chat-panel { width: 100%; min-width: auto; border-right: none; border-bottom: 1px solid rgba(0,0,0,0.06); min-height: 360px; }
+  .preview-panel { display: block; height: 300px; overflow: hidden; }
+  .preview-content { position: relative; top: auto; left: auto; right: auto; bottom: auto; }
   .hero-text-block { padding: 40px 0 24px; }
   .hero-heading { font-size: 28px; line-height: 34px; }
   .hero-heading .italic-accent { font-size: 28px; }
   .animated-cursor { display: none !important; }
+
+  /* Persona pills: keep horizontal on tablet */
+  .persona-bar { flex-direction: row !important; flex-wrap: wrap; }
 
   /* Grids */
   .steps-grid { grid-template-columns: 1fr; }
