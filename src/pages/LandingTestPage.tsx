@@ -12,11 +12,23 @@ import Variant10 from './landing-variants/Variant10';
 import Variant11 from './landing-variants/Variant11';
 import Variant12 from './landing-variants/Variant12';
 import Variant13 from './landing-variants/Variant13';
+import Variant14 from './landing-variants/Variant14';
+import Variant15 from './landing-variants/Variant15';
+import Variant16 from './landing-variants/Variant16';
+import Variant17 from './landing-variants/Variant17';
+import Variant18 from './landing-variants/Variant18';
+import Variant19 from './landing-variants/Variant19';
+import Variant20 from './landing-variants/Variant20';
+import Variant21 from './landing-variants/Variant21';
+import Variant22 from './landing-variants/Variant22';
+import Variant23 from './landing-variants/Variant23';
 
 const variants = [
   Variant01, Variant02, Variant03, Variant04, Variant05,
   Variant06, Variant07, Variant08, Variant09, Variant10,
   Variant11, Variant12, Variant13,
+  Variant14, Variant15, Variant16, Variant17, Variant18,
+  Variant19, Variant20, Variant21, Variant22, Variant23,
 ];
 
 const variantLabels = [
@@ -33,6 +45,16 @@ const variantLabels = [
   'SHIPPER Classic',
   'SHIPPER Dark',
   'SHIPPER Bold',
+  'Lovable Classic',
+  'Lovable Returns',
+  'Lovable CRM',
+  'Lovable Booking',
+  'Lovable University',
+  'Lovable Agent',
+  'Lovable Inbox',
+  'Lovable Social',
+  'Lovable Minimal',
+  'Lovable Journey',
 ];
 
 export default function LandingTestPage() {
