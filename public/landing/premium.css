@@ -306,213 +306,213 @@
 }
 
 
+
 /* ═══════════════════════════════════════════
-   VERTICAL EXPANDING CARDS — Journey
+   ZIGZAG JOURNEY PATH — left-right cards
    ═══════════════════════════════════════════ */
-.vexp-section {
-  background: #f3f3ee;
-  padding: 120px 0;
-}
-.vexp-wrap {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-.vexp-head {
-  text-align: center;
-  margin-bottom: 56px;
-}
-.vexp-title {
-  font-size: 34px;
-  font-weight: 700;
-  color: #1a1a1a;
-  letter-spacing: 0.01em;
-  line-height: 1.15;
-}
-.vexp-sub {
-  font-size: 15px;
-  color: #6b7280;
-  margin-top: 10px;
+.zigzag-path {
+  position: relative;
+  padding: 20px 0;
 }
 
-/* Connector dots between cards */
-.vexp-connector {
+/* Centre connecting line */
+.zigzag-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
   width: 2px;
-  height: 8px;
-  margin: 0 auto;
-  border-left: 2px dashed rgba(30,154,128,0.2);
+  background: linear-gradient(to bottom, #1e9a80, rgba(30,154,128,0.15));
+  transform: translateX(-50%);
+  transform-origin: top;
+  filter: drop-shadow(0 0 4px rgba(30,154,128,0.3));
 }
 
-/* ── CARD (collapsed default) ── */
-.vexp-card {
+/* Row: two halves */
+.zigzag-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  position: relative;
+  margin-bottom: 24px;
+}
+.zigzag-spacer {
+  position: relative;
+}
+
+/* Card */
+.zigzag-card {
   background: #fff;
   border: 1px solid rgba(30,154,128,0.1);
   border-radius: 20px;
-  max-height: 72px;
-  overflow: hidden;
-  opacity: 0.55;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  margin-bottom: 0;
+  padding: 28px 32px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.05);
   position: relative;
-  transition: all 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+  /* Scroll entrance */
+  opacity: 0;
+  transition: opacity 600ms cubic-bezier(0.22,1,0.36,1),
+              transform 600ms cubic-bezier(0.22,1,0.36,1),
+              box-shadow 300ms ease, border-color 300ms ease;
 }
 
-.vexp-collapsed {
-  height: 72px;
-  padding: 0 32px;
+/* Left cards slide in from left */
+.zigzag-left .zigzag-card {
+  transform: translateX(-40px);
+  margin-right: 40px;
+}
+/* Right cards slide in from right */
+.zigzag-right .zigzag-card {
+  transform: translateX(40px);
+  margin-left: 40px;
+}
+
+.zigzag-card.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Shimmer sweep on cards */
+.zigzag-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%);
+  transform: translateX(-100%);
+  animation: shimmerSweep 5s ease-in-out infinite;
+}
+
+/* Active glow on scroll */
+.zigzag-card.active {
+  border-color: rgba(30,154,128,0.35);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.05),
+              0 0 20px rgba(30,154,128,0.15),
+              0 0 40px rgba(30,154,128,0.06);
+}
+
+/* Step number node */
+.zigzag-node {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1e9a80;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 16px;
-  cursor: default;
-}
-
-.vexp-pill {
-  background: rgba(30,154,128,0.08);
-  color: #1e9a80;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  flex-shrink: 0;
-}
-
-.vexp-card-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  flex: 1;
-}
-
-.vexp-tag-mini {
-  font-size: 0.7rem;
-  color: #6b7280;
-  flex-shrink: 0;
-}
-
-.vexp-chev {
-  font-size: 20px;
-  color: #6b7280;
-  flex-shrink: 0;
-  transition: transform 300ms ease;
-  line-height: 1;
-}
-
-/* ── EXPANDED CONTENT (hidden by max-height) ── */
-.vexp-expanded {
-  padding: 0 32px 32px;
+  justify-content: center;
+  margin-bottom: 14px;
   position: relative;
 }
 
-.vexp-accent {
+/* Ripple on active */
+.zigzag-card.active .zigzag-node::before,
+.zigzag-card.active .zigzag-node::after {
+  content: "";
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: linear-gradient(to bottom, #1e9a80, rgba(30,154,128,0.2));
-  border-radius: 0 2px 2px 0;
-  transform: scaleY(0);
-  transform-origin: top;
-  transition: transform 400ms ease-out 100ms;
+  inset: -4px;
+  border-radius: 50%;
+  background: rgba(30,154,128,0.2);
+  animation: rippleExpand 800ms ease-out forwards;
+}
+.zigzag-card.active .zigzag-node::after {
+  animation-delay: 200ms;
 }
 
-.vexp-desc {
-  font-size: 0.95rem;
+/* Connector arm from card to centre line */
+.zigzag-left .zigzag-card::before {
+  content: "";
+  position: absolute;
+  right: -41px;
+  top: 38px;
+  width: 40px;
+  height: 2px;
+  background: rgba(30,154,128,0.2);
+}
+.zigzag-right .zigzag-card::before {
+  content: "";
+  position: absolute;
+  left: -41px;
+  top: 38px;
+  width: 40px;
+  height: 2px;
+  background: rgba(30,154,128,0.2);
+}
+
+/* Centre dot on the line where arm connects */
+.zigzag-left .zigzag-spacer::before,
+.zigzag-right .zigzag-spacer::before {
+  content: "";
+  position: absolute;
+  top: 34px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1e9a80;
+  border: 2px solid #f3f3ee;
+  z-index: 1;
+}
+.zigzag-left .zigzag-spacer::before {
+  left: -5px;
+}
+.zigzag-right .zigzag-spacer::before {
+  right: -5px;
+}
+
+.zigzag-card h4 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+}
+.zigzag-card p {
+  font-size: 14px;
   color: #6b7280;
-  line-height: 1.7;
-  margin-bottom: 14px;
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 350ms ease 100ms, transform 350ms ease 100ms;
+  line-height: 1.6;
+  margin-bottom: 12px;
 }
-
-.vexp-tag {
+.zigzag-tag {
   display: inline-block;
   background: rgba(30,154,128,0.08);
   border: 1px solid rgba(30,154,128,0.2);
   color: #1e9a80;
   border-radius: 100px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 4px 14px;
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 350ms ease 180ms, transform 350ms ease 180ms;
+  padding: 3px 12px;
 }
 
-.vexp-progress {
-  height: 3px;
-  background: #e8e5df;
-  border-radius: 2px;
-  margin-top: 20px;
-  overflow: hidden;
-}
-.vexp-progress-fill {
-  height: 100%;
-  background: #1e9a80;
-  border-radius: 2px;
-  width: 0%;
-  transition: width 800ms ease-out 200ms;
-}
-
-/* ── ACTIVE STATE ── */
-.vexp-card.active {
-  max-height: 400px;
-  opacity: 1;
-  border-color: rgba(30,154,128,0.3);
-  box-shadow: 0 8px 40px rgba(30,154,128,0.12), 0 2px 8px rgba(0,0,0,0.04);
-}
-.vexp-card.active .vexp-chev {
-  transform: rotate(90deg);
-}
-.vexp-card.active .vexp-accent {
-  transform: scaleY(1);
-}
-.vexp-card.active .vexp-desc {
-  opacity: 1;
-  transform: translateY(0);
-}
-.vexp-card.active .vexp-tag {
-  opacity: 1;
-  transform: translateY(0);
-}
-.vexp-card.active .vexp-progress-fill {
-  width: 100%;
-}
-
-/* Ripple on expand */
-.vexp-card.active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 40px;
-  height: 40px;
-  margin-top: -20px;
-  margin-left: -20px;
-  border-radius: 50%;
-  background: rgba(30,154,128,0.2);
-  animation: rippleExpand 800ms ease-out forwards;
-  pointer-events: none;
-}
-
-/* ── MOBILE ── */
+/* Mobile: single column, no zigzag */
 @media (max-width: 768px) {
-  .vexp-section { padding: 80px 0; }
-  .vexp-wrap { padding: 0 20px; }
-  .vexp-title { font-size: 26px; }
-  .vexp-card { max-height: 64px; }
-  .vexp-collapsed { height: 64px; padding: 0 20px; gap: 10px; }
-  .vexp-card-title { font-size: 0.9rem; }
-  .vexp-tag-mini { display: none; }
-  .vexp-expanded { padding: 0 20px 24px; }
-  .vexp-connector { display: none; }
-  .vexp-card.active { max-height: 350px; }
+  .zigzag-row {
+    grid-template-columns: 1fr;
+    margin-bottom: 16px;
+  }
+  .zigzag-spacer { display: none; }
+  .zigzag-line { left: 20px; }
+  .zigzag-left .zigzag-card,
+  .zigzag-right .zigzag-card {
+    margin-left: 36px;
+    margin-right: 0;
+    transform: translateY(20px);
+  }
+  .zigzag-card.visible { transform: translateY(0); }
+  .zigzag-left .zigzag-card::before,
+  .zigzag-right .zigzag-card::before {
+    left: -37px;
+    right: auto;
+    top: 34px;
+    width: 36px;
+  }
+  .zigzag-card { padding: 20px 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vexp-card, .vexp-accent, .vexp-desc, .vexp-tag, .vexp-chev, .vexp-progress-fill {
-    transition-duration: 0.01ms !important;
-  }
-  .vexp-card.active::before { animation-duration: 0.01ms !important; }
+  .zigzag-card { transition-duration: 0.01ms !important; }
+  .zigzag-card.active .zigzag-node::before,
+  .zigzag-card.active .zigzag-node::after { animation-duration: 0.01ms !important; }
 }

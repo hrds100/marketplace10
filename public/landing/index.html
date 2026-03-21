@@ -407,48 +407,83 @@
     <div class="inbox-features sr"><div class="inbox-feat sr-child">Auto-link messages to deals</div><div class="inbox-feat sr-child">Reminders before viewings and renewals</div><div class="inbox-feat sr-child">See deal stage inside every thread</div></div>
   </div></div>
 
-  <!-- JOURNEY — VERTICAL EXPANDING CARDS -->
-  <section class="vexp-section" id="vexpJourney">
-    <div class="vexp-wrap">
-      <div class="vexp-head">
-        <h2 class="vexp-title word-stagger">From first search to first profit</h2>
-        <p class="vexp-sub">Six steps. One platform. Everything you need.</p>
+  <!-- JOURNEY — ZIGZAG PATH (alternating left-right) -->
+  <section style="background:#f3f3ee;padding:100px 0;overflow:hidden;">
+    <div style="max-width:900px;margin:0 auto;padding:0 24px;">
+      <div style="text-align:center;margin-bottom:64px;">
+        <h2 style="font-size:34px;font-weight:700;color:#1a1a1a;letter-spacing:0.01em;">From first search to first profit</h2>
+        <p style="font-size:15px;color:#6b7280;margin-top:10px;">Six steps. One platform. Your journey starts here.</p>
       </div>
 
-      <div class="vexp-stack">
-        <div class="vexp-card" data-vexp="0">
-          <div class="vexp-collapsed"><span class="vexp-pill">01</span><span class="vexp-card-title">Browse 1,800+ verified deals</span><span class="vexp-tag-mini">Deal Marketplace</span><span class="vexp-chev">&rsaquo;</span></div>
-          <div class="vexp-expanded"><div class="vexp-accent"></div><p class="vexp-desc">Filter by city, type and profit. Every listing is landlord-approved.</p><span class="vexp-tag">Deal Marketplace</span><div class="vexp-progress"><div class="vexp-progress-fill"></div></div></div>
-        </div>
-        <div class="vexp-connector"></div>
+      <!-- Zigzag grid: alternating left/right cards with centre line -->
+      <div class="zigzag-path" id="zigzagPath">
+        <!-- Centre connecting line -->
+        <div class="zigzag-line" id="zigzagLine"></div>
 
-        <div class="vexp-card" data-vexp="1">
-          <div class="vexp-collapsed"><span class="vexp-pill">02</span><span class="vexp-card-title">Analyse profit with the earnings estimator</span><span class="vexp-tag-mini">Earnings Estimator</span><span class="vexp-chev">&rsaquo;</span></div>
-          <div class="vexp-expanded"><div class="vexp-accent"></div><p class="vexp-desc">Model nightly rates, occupancy and costs before you commit.</p><span class="vexp-tag">Earnings Estimator</span><div class="vexp-progress"><div class="vexp-progress-fill"></div></div></div>
+        <!-- Step 01 — LEFT -->
+        <div class="zigzag-row zigzag-left">
+          <div class="zigzag-card" data-zig="0">
+            <div class="zigzag-node">01</div>
+            <h4>Browse 1,800+ verified deals</h4>
+            <p>Filter by city, type and profit. Every listing is landlord-approved.</p>
+            <span class="zigzag-tag">Deal Marketplace</span>
+          </div>
+          <div class="zigzag-spacer"></div>
         </div>
-        <div class="vexp-connector"></div>
 
-        <div class="vexp-card" data-vexp="2">
-          <div class="vexp-collapsed"><span class="vexp-pill">03</span><span class="vexp-card-title">Message the landlord from your unified inbox</span><span class="vexp-tag-mini">Unified Inbox</span><span class="vexp-chev">&rsaquo;</span></div>
-          <div class="vexp-expanded"><div class="vexp-accent"></div><p class="vexp-desc">Property context, earnings data and templates alongside every thread.</p><span class="vexp-tag">Unified Inbox</span><div class="vexp-progress"><div class="vexp-progress-fill"></div></div></div>
+        <!-- Step 02 — RIGHT -->
+        <div class="zigzag-row zigzag-right">
+          <div class="zigzag-spacer"></div>
+          <div class="zigzag-card" data-zig="1">
+            <div class="zigzag-node">02</div>
+            <h4>Analyse profit with the earnings estimator</h4>
+            <p>Model nightly rates, occupancy and costs before you commit.</p>
+            <span class="zigzag-tag">Earnings Estimator</span>
+          </div>
         </div>
-        <div class="vexp-connector"></div>
 
-        <div class="vexp-card" data-vexp="3">
-          <div class="vexp-collapsed"><span class="vexp-pill">04</span><span class="vexp-card-title">Track progress in your CRM pipeline</span><span class="vexp-tag-mini">CRM Pipeline</span><span class="vexp-chev">&rsaquo;</span></div>
-          <div class="vexp-expanded"><div class="vexp-accent"></div><p class="vexp-desc">From cold lead to signed agreement &mdash; every stage in one view.</p><span class="vexp-tag">CRM Pipeline</span><div class="vexp-progress"><div class="vexp-progress-fill"></div></div></div>
+        <!-- Step 03 — LEFT -->
+        <div class="zigzag-row zigzag-left">
+          <div class="zigzag-card" data-zig="2">
+            <div class="zigzag-node">03</div>
+            <h4>Message the landlord from your unified inbox</h4>
+            <p>Property context, earnings data and templates alongside every thread.</p>
+            <span class="zigzag-tag">Unified Inbox</span>
+          </div>
+          <div class="zigzag-spacer"></div>
         </div>
-        <div class="vexp-connector"></div>
 
-        <div class="vexp-card" data-vexp="4">
-          <div class="vexp-collapsed"><span class="vexp-pill">05</span><span class="vexp-card-title">Sign the rent-to-rent agreement</span><span class="vexp-tag-mini">Deal Closing</span><span class="vexp-chev">&rsaquo;</span></div>
-          <div class="vexp-expanded"><div class="vexp-accent"></div><p class="vexp-desc">Templates, checklists and reminders. Never miss a step.</p><span class="vexp-tag">Deal Closing</span><div class="vexp-progress"><div class="vexp-progress-fill"></div></div></div>
+        <!-- Step 04 — RIGHT -->
+        <div class="zigzag-row zigzag-right">
+          <div class="zigzag-spacer"></div>
+          <div class="zigzag-card" data-zig="3">
+            <div class="zigzag-node">04</div>
+            <h4>Track progress in your CRM pipeline</h4>
+            <p>From cold lead to signed agreement &mdash; every stage in one view.</p>
+            <span class="zigzag-tag">CRM Pipeline</span>
+          </div>
         </div>
-        <div class="vexp-connector"></div>
 
-        <div class="vexp-card" data-vexp="5">
-          <div class="vexp-collapsed"><span class="vexp-pill">06</span><span class="vexp-card-title">Go live on Airbnb and earn</span><span class="vexp-tag-mini">Live &amp; Earning</span><span class="vexp-chev">&rsaquo;</span></div>
-          <div class="vexp-expanded"><div class="vexp-accent"></div><p class="vexp-desc">Your first profit usually arrives within 30 days of going live.</p><span class="vexp-tag">Live &amp; Earning</span><div class="vexp-progress"><div class="vexp-progress-fill"></div></div></div>
+        <!-- Step 05 — LEFT -->
+        <div class="zigzag-row zigzag-left">
+          <div class="zigzag-card" data-zig="4">
+            <div class="zigzag-node">05</div>
+            <h4>Sign the rent-to-rent agreement</h4>
+            <p>Templates, checklists and reminders. Never miss a step.</p>
+            <span class="zigzag-tag">Deal Closing</span>
+          </div>
+          <div class="zigzag-spacer"></div>
+        </div>
+
+        <!-- Step 06 — RIGHT -->
+        <div class="zigzag-row zigzag-right">
+          <div class="zigzag-spacer"></div>
+          <div class="zigzag-card" data-zig="5">
+            <div class="zigzag-node">06</div>
+            <h4>Go live on Airbnb and earn</h4>
+            <p>Your first profit usually arrives within 30 days of going live.</p>
+            <span class="zigzag-tag">Live &amp; Earning</span>
+          </div>
         </div>
       </div>
     </div>

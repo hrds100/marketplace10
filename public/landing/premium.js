@@ -152,39 +152,55 @@
     });
   });
 
-  // ── VERTICAL EXPANDING CARDS (Journey) ──
-  var vexpCards = document.querySelectorAll('.vexp-card');
-  var activeVexp = null;
+  // ── ZIGZAG JOURNEY PATH ──
+  var zigCards = document.querySelectorAll('.zigzag-card');
+  var activeZig = null;
 
-  if (vexpCards.length > 0) {
-    var vexpObs = new IntersectionObserver(function (entries) {
+  if (zigCards.length > 0) {
+    // Scroll reveal: cards slide in from left/right
+    var zigRevealObs = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        if (entry.isIntersecting && entry.target !== activeVexp) {
-          // Deactivate previous
-          if (activeVexp) {
-            activeVexp.classList.remove('active');
-            // Reset progress bar
-            var oldFill = activeVexp.querySelector('.vexp-progress-fill');
-            if (oldFill) oldFill.style.width = '0%';
-          }
-          // Activate new (simultaneous — don't wait for collapse)
-          entry.target.classList.add('active');
-          activeVexp = entry.target;
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          zigRevealObs.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.5, rootMargin: '-20% 0px -20% 0px' });
+    }, { threshold: 0.2 });
 
-    vexpCards.forEach(function (card) {
-      vexpObs.observe(card);
+    zigCards.forEach(function (card, i) {
+      card.style.transitionDelay = (i * 80) + 'ms';
+      zigRevealObs.observe(card);
     });
 
-    // Activate the first card by default after a short delay
-    setTimeout(function () {
-      if (!activeVexp && vexpCards[0]) {
-        vexpCards[0].classList.add('active');
-        activeVexp = vexpCards[0];
+    // Active glow: nearest card to viewport centre
+    var zigActiveObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          if (activeZig) activeZig.classList.remove('active');
+          entry.target.classList.add('active');
+          activeZig = entry.target;
+        }
+      });
+    }, { threshold: 0.6 });
+
+    zigCards.forEach(function (card) {
+      zigActiveObs.observe(card);
+    });
+
+    // Scroll-driven line growth
+    var zigLine = document.getElementById('zigzagLine');
+    var zigPath = document.getElementById('zigzagPath');
+    if (zigLine && zigPath) {
+      function updateZigLine() {
+        var rect = zigPath.getBoundingClientRect();
+        var vh = window.innerHeight;
+        var progress = Math.max(0, Math.min(1, (vh * 0.4 - rect.top) / (rect.height + vh * 0.2)));
+        zigLine.style.transform = 'translateX(-50%) scaleY(' + progress + ')';
+        zigLine.style.transformOrigin = 'top';
+        requestAnimationFrame(updateZigLine);
       }
-    }, 800);
+      requestAnimationFrame(updateZigLine);
+    }
   }
 
 })();
