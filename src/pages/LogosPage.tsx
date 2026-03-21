@@ -7,7 +7,7 @@ export default function LogosPage() {
     <div style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", background: '#fafafa', color: '#111', minHeight: '100vh', padding: '40px 20px' }}>
       {/* Google Fonts for all variations */}
       <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Sora:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Sora:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap"
         rel="stylesheet"
       />
 
@@ -528,6 +528,40 @@ export default function LogosPage() {
             <span style={{ fontFamily: "'Sora'", fontSize: 34, fontWeight: 400, letterSpacing: 3 }}>nf</span>
             <div style={{ border: '2.5px solid #111', borderRadius: 50, padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora'", fontWeight: 600, fontSize: 22, letterSpacing: 1 }}>stay</div>
           </div>
+        </Card>
+
+        {/* ═══════════════════════════════════════════════════════ */}
+        {/* AIRBNB-STYLE (#66–#69) — rounded, warm, friendly       */}
+        {/* ═══════════════════════════════════════════════════════ */}
+
+        <div className="section-label" style={{ borderTop: '3px solid #111', paddingTop: 32 }}>Airbnb style — rounded, warm, friendly</div>
+
+        {/* #66: Nunito Sans — box on nf, clean wordmark, no italic */}
+        <Card n={66} cat="Nunito Sans · rounded box + clean">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, border: '2px solid #111', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Nunito Sans'", fontWeight: 800, fontSize: 16 }}>nf</div>
+            <span style={{ fontFamily: "'Nunito Sans'", fontSize: 32, fontWeight: 700, letterSpacing: -0.5 }}>stay</span>
+          </div>
+        </Card>
+
+        {/* #67: Plus Jakarta Sans — no box, just clean wordmark like Airbnb */}
+        <Card n={67} cat="Plus Jakarta Sans · pure wordmark">
+          <span style={{ fontFamily: "'Plus Jakarta Sans'", fontSize: 38, fontWeight: 700, letterSpacing: -0.5 }}>nfstay</span>
+        </Card>
+
+        {/* #68: Poppins — box on nf, italic stay */}
+        <Card n={68} cat="Poppins · box nf + italic stay">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, border: '2px solid #111', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Poppins'", fontWeight: 700, fontSize: 16 }}>nf</div>
+            <span style={{ fontFamily: "'Poppins'", fontSize: 30, fontWeight: 600, fontStyle: 'italic', letterSpacing: -0.3 }}>stay</span>
+          </div>
+        </Card>
+
+        {/* #69: Plus Jakarta Sans — bold nf, regular stay, one word like "airbnb" */}
+        <Card n={69} cat="Plus Jakarta · weight split like Airbnb">
+          <span style={{ fontFamily: "'Plus Jakarta Sans'", fontSize: 38, letterSpacing: -0.5 }}>
+            <span style={{ fontWeight: 800 }}>nf</span><span style={{ fontWeight: 500 }}>stay</span>
+          </span>
         </Card>
 
       </div>
