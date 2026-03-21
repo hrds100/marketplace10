@@ -351,19 +351,19 @@
   overflow: hidden;
   /* Scroll entrance */
   opacity: 0;
-  transition: opacity 600ms cubic-bezier(0.22,1,0.36,1),
-              transform 600ms cubic-bezier(0.22,1,0.36,1),
+  transition: opacity 350ms cubic-bezier(0.22,1,0.36,1),
+              transform 350ms cubic-bezier(0.22,1,0.36,1),
               box-shadow 300ms ease, border-color 300ms ease;
 }
 
 /* Left cards slide in from left */
 .zigzag-left .zigzag-card {
-  transform: translateX(-40px);
+  transform: translateX(-30px);
   margin-right: 40px;
 }
 /* Right cards slide in from right */
 .zigzag-right .zigzag-card {
-  transform: translateX(40px);
+  transform: translateX(30px);
   margin-left: 40px;
 }
 
@@ -515,4 +515,22 @@
   .zigzag-card { transition-duration: 0.01ms !important; }
   .zigzag-card.active .zigzag-node::before,
   .zigzag-card.active .zigzag-node::after { animation-duration: 0.01ms !important; }
+}
+
+/* Visual distinction per card — alternating accent */
+.zigzag-card[data-zig="0"] { border-top: 3px solid #1e9a80; }
+.zigzag-card[data-zig="1"] { border-top: 3px solid #10b981; }
+.zigzag-card[data-zig="2"] { border-top: 3px solid #1e9a80; }
+.zigzag-card[data-zig="3"] { border-top: 3px solid #059669; }
+.zigzag-card[data-zig="4"] { border-top: 3px solid #1e9a80; }
+.zigzag-card[data-zig="5"] { border-top: 3px solid #10b981; }
+
+/* Subtle scale on card entrance for punch */
+.zigzag-card.visible {
+  animation: zigPop 300ms ease-out forwards;
+}
+@keyframes zigPop {
+  0% { transform: scale(0.96); }
+  60% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }

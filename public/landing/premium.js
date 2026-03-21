@@ -165,10 +165,10 @@
           zigRevealObs.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.2 });
+    }, { threshold: 0.1, rootMargin: '0px 0px -10% 0px' });
 
     zigCards.forEach(function (card, i) {
-      card.style.transitionDelay = (i * 80) + 'ms';
+      card.style.transitionDelay = (i * 40) + 'ms';
       zigRevealObs.observe(card);
     });
 
