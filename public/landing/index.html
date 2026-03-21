@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@1,400;1,700&family=Sora:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/landing/styles.css">
   <link rel="stylesheet" href="/landing/nfs-system.css">
+  <link rel="stylesheet" href="/landing/premium.css">
   <link rel="stylesheet" href="/landing/sections.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
@@ -398,126 +399,144 @@
     <div class="inbox-features sr"><div class="inbox-feat sr-child">Auto-link messages to deals</div><div class="inbox-feat sr-child">Reminders before viewings and renewals</div><div class="inbox-feat sr-child">See deal stage inside every thread</div></div>
   </div></div>
 
-  <!-- JOURNEY TIMELINE (vertical) -->
-  <div class="s bg-white sr"><div class="wrap"><div class="sh"><h2>From first search to first profit</h2></div>
-    <div class="timeline">
-      <div class="tl-step sr-child"><div class="tl-dot">01</div><div class="tl-body"><h4>Browse 1,800+ verified deals</h4><p>Filter by city, type and profit. Every listing is landlord-approved.</p><span class="tl-tag">Deal Marketplace</span><div class="tl-mock">Manchester, Leeds, London&hellip;</div></div></div>
-      <div class="tl-step sr-child"><div class="tl-dot">02</div><div class="tl-body"><h4>Analyse profit with the earnings estimator</h4><p>Model nightly rates, occupancy and costs before you commit.</p><span class="tl-tag">Earnings Estimator</span><div class="tl-mock">Est. profit: &pound;1,200/mo &middot; 22 nights &middot; &pound;102/night</div></div></div>
-      <div class="tl-step sr-child"><div class="tl-dot">03</div><div class="tl-body"><h4>Message the landlord from your unified inbox</h4><p>Property context, earnings data and templates alongside every thread.</p><span class="tl-tag">Unified Inbox</span><div class="tl-mock">&ldquo;Is this property available for short-term lets?&rdquo;</div></div></div>
-      <div class="tl-step sr-child"><div class="tl-dot">04</div><div class="tl-body"><h4>Track progress in your CRM pipeline</h4><p>Drag deals between stages. Spotted, Shortlisted, Offer Sent, Signed.</p><span class="tl-tag">CRM Pipeline</span><div class="tl-mock">Spotted &rarr; Shortlisted &rarr; Offer &rarr; Signed</div></div></div>
-      <div class="tl-step sr-child"><div class="tl-dot">05</div><div class="tl-body"><h4>Sign the rent-to-rent agreement</h4><p>Close the deal. Everything documented: messages, notes, timeline.</p><span class="tl-tag">Contracts</span><div class="tl-mock">Contract signed &middot; 3-year term &middot; &pound;850/mo</div></div></div>
-      <div class="tl-step sr-child"><div class="tl-dot">06</div><div class="tl-body"><h4>Go live on Airbnb and earn</h4><p>List on Airbnb, Booking.com or your own direct booking site.</p><span class="tl-tag">Revenue</span><div class="tl-mock">First guest booked &middot; &pound;102/night &middot; Revenue: &pound;2,040</div></div></div>
-    </div>
-  </div></div>
+  <!-- JOURNEY TIMELINE (premium animated) -->
+  <section class="prem-journey">
+    <div class="particles"></div>
+    <div class="wrap">
+      <div class="sh" style="margin-bottom:56px;">
+        <h2 class="word-stagger" style="font-size:34px;letter-spacing:0.01em;">From first search to first profit</h2>
+      </div>
+      <div class="prem-journey-grid">
+        <div class="journey-line" style="transform-origin:top;transform:translateX(-50%) scaleY(0);"></div>
 
-  <!-- ACADEMY (university style with progress, trophies, streaks) -->
-  <div class="s bg-cream sr"><div class="wrap">
-    <div class="sh">
-      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(30,154,128,0.06);padding:8px 20px;border-radius:10px;margin-bottom:16px;">
-        <span style="font-size:20px;">🎓</span>
-        <span style="font-size:13px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">NFsTay Academy</span>
-      </div>
-      <h2>Learn rent-to-rent. Then do it. In the same place.</h2>
-      <p>15 years of operator knowledge, structured into step-by-step modules with progress tracking.</p>
-    </div>
+        <div class="prem-step">
+          <div class="prem-step-node ripple-container">01</div>
+          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:1s;">
+            <h4>Browse 1,800+ verified deals</h4>
+            <p>Filter by city, type and profit. Every listing is landlord-approved.</p>
+            <span class="prem-tag">Deal Marketplace</span>
+          </div>
+        </div>
 
-    <!-- Gamification strip -->
-    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:32px;">
-      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
-        <span style="font-size:18px;">🏆</span>
-        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">Level 3</div><div style="font-size:10px;color:#6b7280;">Cashflow Builder</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
-        <span style="font-size:18px;">⚡</span>
-        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">560 XP</div><div style="font-size:10px;color:#6b7280;">Total earned</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
-        <span style="font-size:18px;">🔥</span>
-        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">7-day streak</div><div style="font-size:10px;color:#6b7280;">Keep it going</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
-        <span style="font-size:18px;">📊</span>
-        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">44 lessons</div><div style="font-size:10px;color:#6b7280;">6 modules</div></div>
-      </div>
-    </div>
+        <div class="prem-step">
+          <div class="prem-step-node ripple-container">02</div>
+          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:1.5s;">
+            <h4>Analyse profit with the earnings estimator</h4>
+            <p>Model nightly rates, occupancy and costs before you commit.</p>
+            <span class="prem-tag">Earnings Estimator</span>
+          </div>
+        </div>
 
-    <!-- Course cards with progress bars -->
-    <div class="g3">
-      <div class="course sr-child" style="padding:0;overflow:hidden;">
-        <div style="height:6px;background:linear-gradient(90deg,#1e9a80,#10b981);"></div>
-        <div style="padding:20px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            <span style="font-size:28px;">📚</span>
-            <div style="flex:1;"><h3 style="margin:0;font-size:15px;">Getting Started</h3><div style="font-size:11px;color:#6b7280;">6 lessons &middot; <span style="color:#1e9a80;font-weight:600;">Beginner</span></div></div>
-            <span style="font-size:11px;font-weight:600;color:#1e9a80;">100%</span>
+        <div class="prem-step">
+          <div class="prem-step-node ripple-container">03</div>
+          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:2s;">
+            <h4>Message the landlord from your unified inbox</h4>
+            <p>Property context, earnings data and templates alongside every thread.</p>
+            <span class="prem-tag">Unified Inbox</span>
           </div>
-          <div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:100%;height:100%;background:#1e9a80;border-radius:2px;"></div></div>
-          <p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">The fundamentals of rent-to-rent. How the model works, what you need, and how to get started.</p>
         </div>
-      </div>
-      <div class="course sr-child" style="padding:0;overflow:hidden;">
-        <div style="height:6px;background:linear-gradient(90deg,#1e9a80,#10b981);"></div>
-        <div style="padding:20px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            <span style="font-size:28px;">🔍</span>
-            <div style="flex:1;"><h3 style="margin:0;font-size:15px;">Property Hunting</h3><div style="font-size:11px;color:#6b7280;">8 lessons &middot; <span style="color:#1e9a80;font-weight:600;">Beginner</span></div></div>
-            <span style="font-size:11px;font-weight:600;color:#1e9a80;">75%</span>
+
+        <div class="prem-step">
+          <div class="prem-step-node ripple-container">04</div>
+          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:2.5s;">
+            <h4>Track progress in your CRM pipeline</h4>
+            <p>From cold lead to signed agreement &mdash; every stage in one view.</p>
+            <span class="prem-tag">CRM Pipeline</span>
           </div>
-          <div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:75%;height:100%;background:#1e9a80;border-radius:2px;"></div></div>
-          <p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Where to find deals, how to evaluate areas, and what makes a property Airbnb-ready.</p>
         </div>
-      </div>
-      <div class="course sr-child" style="padding:0;overflow:hidden;">
-        <div style="height:6px;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div>
-        <div style="padding:20px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            <span style="font-size:28px;">💬</span>
-            <div style="flex:1;"><h3 style="margin:0;font-size:15px;">Landlord Pitching</h3><div style="font-size:11px;color:#6b7280;">6 lessons &middot; <span style="color:#f59e0b;font-weight:600;">Intermediate</span></div></div>
-            <span style="font-size:11px;font-weight:600;color:#f59e0b;">40%</span>
+
+        <div class="prem-step">
+          <div class="prem-step-node ripple-container">05</div>
+          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:3s;">
+            <h4>Sign the rent-to-rent agreement</h4>
+            <p>Templates, checklists and reminders. Never miss a step.</p>
+            <span class="prem-tag">Deal Closing</span>
           </div>
-          <div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:40%;height:100%;background:#f59e0b;border-radius:2px;"></div></div>
-          <p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Scripts, objection handling, and how to build trust with property owners.</p>
         </div>
-      </div>
-      <div class="course sr-child" style="padding:0;overflow:hidden;">
-        <div style="height:6px;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div>
-        <div style="padding:20px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            <span style="font-size:28px;">💰</span>
-            <div style="flex:1;"><h3 style="margin:0;font-size:15px;">Numbers and Profit</h3><div style="font-size:11px;color:#6b7280;">8 lessons &middot; <span style="color:#f59e0b;font-weight:600;">Intermediate</span></div></div>
-            <span style="font-size:11px;font-weight:600;color:#6b7280;">0%</span>
+
+        <div class="prem-step">
+          <div class="prem-step-node ripple-container">06</div>
+          <div class="prem-step-card morph-card shimmer-card" style="--shimmer-delay:3.5s;">
+            <h4>Go live on Airbnb and earn</h4>
+            <p>Your first profit usually arrives within 30 days of going live.</p>
+            <span class="prem-tag">Live &amp; Earning</span>
           </div>
-          <div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:0%;height:100%;background:#f59e0b;border-radius:2px;"></div></div>
-          <p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">How to model returns, calculate costs, and know your margins before signing.</p>
-        </div>
-      </div>
-      <div class="course sr-child" style="padding:0;overflow:hidden;">
-        <div style="height:6px;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div>
-        <div style="padding:20px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            <span style="font-size:28px;">📈</span>
-            <div style="flex:1;"><h3 style="margin:0;font-size:15px;">Scaling Your Portfolio</h3><div style="font-size:11px;color:#6b7280;">10 lessons &middot; <span style="color:#f59e0b;font-weight:600;">Intermediate</span></div></div>
-            <span style="font-size:11px;font-weight:600;color:#6b7280;">0%</span>
-          </div>
-          <div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:0%;height:100%;background:#f59e0b;border-radius:2px;"></div></div>
-          <p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Systems, automation, and team building to go from one unit to ten.</p>
-        </div>
-      </div>
-      <div class="course sr-child" style="padding:0;overflow:hidden;">
-        <div style="height:6px;background:linear-gradient(90deg,#1e9a80,#10b981);"></div>
-        <div style="padding:20px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            <span style="font-size:28px;">🏠</span>
-            <div style="flex:1;"><h3 style="margin:0;font-size:15px;">Direct Bookings</h3><div style="font-size:11px;color:#6b7280;">6 lessons &middot; <span style="color:#1e9a80;font-weight:600;">Beginner</span></div></div>
-            <span style="font-size:11px;font-weight:600;color:#6b7280;">0%</span>
-          </div>
-          <div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:0%;height:100%;background:#1e9a80;border-radius:2px;"></div></div>
-          <p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Build your own booking site, cut OTA fees, and own your guest relationships.</p>
         </div>
       </div>
     </div>
-    <p style="text-align:center;font-size:13px;color:#6b7280;margin-top:24px;">All modules included in your &pound;67/month membership</p>
-  </div></div>
+  </section>
+
+  <!-- ACADEMY (premium animated) -->
+  <section class="prem-academy">
+    <div class="particles"></div>
+    <div class="wrap">
+      <div class="sh" style="margin-bottom:48px;">
+        <h2 class="word-stagger" style="font-size:34px;letter-spacing:0.01em;">Learn rent-to-rent. A to Z.</h2>
+        <p class="word-stagger" style="margin-top:12px;">15 years of operator knowledge, structured into six step-by-step modules.</p>
+      </div>
+      <div class="prem-academy-grid">
+
+        <div class="prem-course morph-card">
+          <div class="shimmer-once"></div>
+          <span class="prem-level beginner">Beginner</span>
+          <h3>Getting Started</h3>
+          <div class="lesson-count">6 lessons</div>
+          <p class="desc">The fundamentals of rent-to-rent. How the model works, what you need, and how to get started.</p>
+          <a href="/signup" class="start-link">Start module &rarr;</a>
+        </div>
+
+        <div class="prem-course morph-card">
+          <div class="shimmer-once"></div>
+          <span class="prem-level beginner">Beginner</span>
+          <h3>Property Hunting</h3>
+          <div class="lesson-count">8 lessons</div>
+          <p class="desc">Where to find deals, how to evaluate areas, and what makes a property Airbnb-ready.</p>
+          <a href="/signup" class="start-link">Start module &rarr;</a>
+        </div>
+
+        <div class="prem-course morph-card">
+          <div class="shimmer-once"></div>
+          <span class="prem-level intermediate">Intermediate</span>
+          <h3>Landlord Pitching</h3>
+          <div class="lesson-count">6 lessons</div>
+          <p class="desc">Scripts, objection handling, and how to build trust with property owners.</p>
+          <a href="/signup" class="start-link">Start module &rarr;</a>
+        </div>
+
+        <div class="prem-course morph-card">
+          <div class="shimmer-once"></div>
+          <span class="prem-level intermediate">Intermediate</span>
+          <h3>Numbers and Profit</h3>
+          <div class="lesson-count">8 lessons</div>
+          <p class="desc">How to model returns, calculate costs, and know your margins before signing.</p>
+          <a href="/signup" class="start-link">Start module &rarr;</a>
+        </div>
+
+        <div class="prem-course morph-card">
+          <div class="shimmer-once"></div>
+          <span class="prem-level intermediate">Intermediate</span>
+          <h3>Scaling Your Portfolio</h3>
+          <div class="lesson-count">10 lessons</div>
+          <p class="desc">Systems, automation, and team building to go from one unit to ten.</p>
+          <a href="/signup" class="start-link">Start module &rarr;</a>
+        </div>
+
+        <div class="prem-course morph-card">
+          <div class="shimmer-once"></div>
+          <span class="prem-level beginner">Beginner</span>
+          <h3>Direct Bookings</h3>
+          <div class="lesson-count">6 lessons</div>
+          <p class="desc">Build your own booking site, cut OTA fees, and own your guest relationships.</p>
+          <a href="/signup" class="start-link">Start module &rarr;</a>
+        </div>
+
+      </div>
+      <div class="prem-academy-cta">
+        <p>All six modules included in your membership.</p>
+        <a href="/signup" class="prem-academy-btn">Free Access &mdash; No Credit Card Needed</a>
+      </div>
+    </div>
+  </section>
 
   <!-- TESTIMONIALS -->
   <div class="s bg-cream sr">
@@ -564,7 +583,7 @@
       <div style="font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:4px;">3-day trial for &pound;5, then &pound;67/month</div>
       <div class="price-cancel">Cancel online at any time. No contracts.</div>
       <ul class="price-list"><li>1,800+ verified deals</li><li>CRM pipeline</li><li>Unified inbox</li><li>Earnings estimator</li><li>NFsTay Academy</li><li>Direct landlord contact</li><li>Priority deal alerts</li><li>Affiliate programme</li></ul>
-      <a href="/signup" class="btn btn-green btn-full">Start 3-day trial for &pound;5</a>
+      <a href="/signup" class="btn btn-green btn-full">Free Access &mdash; No Credit Card Needed</a>
       <div class="price-micro">Cancel online at any time. No contracts.</div>
     </div>
   </div></div>
@@ -585,5 +604,6 @@
   </footer>
   <script src="/landing/script.js"></script>
   <script src="/landing/nfs-motion.js"></script>
+  <script src="/landing/premium.js"></script>
 </body>
 </html>
