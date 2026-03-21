@@ -2,32 +2,33 @@ import { Link } from "react-router-dom";
 
 export function NfsLogo({ className = '' }: { className?: string }) {
   return (
-    <Link to="/" className={`flex items-center gap-4 ${className}`}>
+    <Link to="/" className={`flex items-center ${className}`} style={{ gap: 6 }}>
       <div
         style={{
-          width: 36,
-          height: 36,
-          border: '2px solid #111',
+          width: 34,
+          height: 34,
+          border: '1.5px solid #111',
           borderRadius: 7,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontFamily: "'Sora', sans-serif",
-          fontWeight: 700,
-          fontSize: 15,
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontWeight: 500,
+          fontSize: 14,
           color: '#111',
+          letterSpacing: -0.5,
         }}
       >
         nf
       </div>
       <span
         style={{
-          fontFamily: "'Sora', sans-serif",
+          fontFamily: "'Playfair Display', serif",
           fontWeight: 400,
-          fontSize: 22,
-          letterSpacing: 3,
+          fontSize: 28,
           fontStyle: 'italic',
           color: '#111',
+          letterSpacing: 0,
         }}
       >
         stay
