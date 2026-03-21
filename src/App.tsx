@@ -52,6 +52,7 @@ import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 import LogosPage from "./pages/LogosPage";
 import TestingDesign from "./pages/TestingDesign";
+import LandingTestPage from "./pages/LandingTestPage";
 import TestAuthRedesign from "./pages/TestAuthRedesign";
 import InvestMarketplacePage from "./pages/invest/InvestMarketplacePage";
 import InvestPortfolioPage from "./pages/invest/InvestPortfolioPage";
@@ -216,6 +217,7 @@ const App = () => (
             <Route path="architecture" element={<AdminArchitecture />} />
           </Route>
           <Route path="/logos" element={<LogosPage />} />
+          <Route path="/landingtest" element={<LandingTestPage />} />
           <Route path="/testing/design" element={<TestingDesign />} />
           <Route path="/testing/auth-redesign" element={<TestAuthRedesign />} />
           {/* NFStay operator routes — isolated module */}
