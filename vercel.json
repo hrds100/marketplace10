@@ -19,12 +19,60 @@
       "destination": "https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/health"
     },
     {
-      "source": "/",
-      "destination": "/landing/index.html"
+      "source": "/signin",
+      "destination": "/app.html"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/signup",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/verify-otp",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/forgot-password",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/reset-password",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/inbox",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/deals/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/retired",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/logos",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/landingtest",
+      "destination": "/app.html"
     }
   ]
 }
