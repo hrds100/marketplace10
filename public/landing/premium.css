@@ -304,3 +304,192 @@
   .prem-academy { padding: 64px 0; }
   .prem-course { padding: 24px; }
 }
+
+/* ═══════════════════════════════════════════
+   HORIZONTAL SCROLL TRACK — Journey
+   Scroll-hijacked horizontal pan
+   ═══════════════════════════════════════════ */
+.hscroll-outer {
+  height: calc(6 * 100vh);
+  position: relative;
+  background: #f3f3ee;
+}
+.hscroll-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #f3f3ee;
+}
+.hscroll-header {
+  text-align: center;
+  padding: 0 24px;
+  margin-bottom: 40px;
+  flex-shrink: 0;
+}
+.hscroll-header h2 {
+  font-size: 34px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+}
+.hscroll-header p {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+/* Rail line */
+.hscroll-rail {
+  position: relative;
+  height: 2px;
+  margin: 0 80px 40px;
+  flex-shrink: 0;
+}
+.hscroll-rail-line {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(30,154,128,0.15), #1e9a80, rgba(30,154,128,0.15));
+  border-radius: 1px;
+}
+.hscroll-rail-glow {
+  position: absolute;
+  top: -4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #1e9a80;
+  box-shadow: 0 0 12px rgba(30,154,128,0.5), 0 0 24px rgba(30,154,128,0.25);
+  left: 0;
+  transition: none;
+}
+
+/* Track */
+.hscroll-track {
+  display: flex;
+  gap: 32px;
+  padding: 0 max(80px, calc((100vw - 1100px) / 2));
+  will-change: transform;
+}
+
+/* Cards */
+.hscroll-card {
+  min-width: 340px;
+  max-width: 340px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid rgba(30,154,128,0.1);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+  position: relative;
+  overflow: hidden;
+  transition: transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease;
+}
+.hscroll-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%);
+  transform: translateX(-100%);
+  animation: shimmerSweep 5s ease-in-out infinite;
+}
+.hscroll-card.active {
+  border-color: rgba(30,154,128,0.35);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.05), 0 0 20px rgba(30,154,128,0.15), 0 0 40px rgba(30,154,128,0.06);
+  transform: translateY(-4px);
+}
+.hscroll-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #1e9a80;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  position: relative;
+}
+/* Ripple on active */
+.hscroll-card.active .hscroll-num::before,
+.hscroll-card.active .hscroll-num::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: rgba(30,154,128,0.2);
+  animation: rippleExpand 800ms ease-out forwards;
+}
+.hscroll-card.active .hscroll-num::after {
+  animation-delay: 200ms;
+}
+.hscroll-card h4 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+  letter-spacing: 0.01em;
+}
+.hscroll-card p {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.hscroll-tag {
+  display: inline-block;
+  background: rgba(30,154,128,0.08);
+  border: 1px solid rgba(30,154,128,0.2);
+  color: #1e9a80;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 12px;
+}
+
+/* Floating particles in the sticky container */
+.hscroll-sticky .particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Mobile: normal vertical scroll, no hijacking */
+@media (max-width: 768px) {
+  .hscroll-outer {
+    height: auto;
+  }
+  .hscroll-sticky {
+    position: relative;
+    height: auto;
+    padding: 64px 0;
+  }
+  .hscroll-rail {
+    display: none;
+  }
+  .hscroll-track {
+    flex-direction: column;
+    gap: 16px;
+    padding: 0 20px;
+  }
+  .hscroll-card {
+    min-width: auto;
+    max-width: none;
+  }
+  .hscroll-header {
+    margin-bottom: 24px;
+  }
+  .hscroll-header h2 {
+    font-size: 26px;
+  }
+}

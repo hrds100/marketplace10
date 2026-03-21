@@ -152,4 +152,55 @@
     });
   });
 
+  // ── HORIZONTAL SCROLL TRACK (Journey) ──
+  var journeyOuter = document.getElementById('journeyOuter');
+  var journeyTrack = document.getElementById('journeyTrack');
+  var journeyGlow = document.getElementById('journeyGlow');
+
+  if (journeyOuter && journeyTrack && window.innerWidth > 768) {
+    var currentX = 0;
+    var targetX = 0;
+    var cards = journeyTrack.querySelectorAll('.hscroll-card');
+    var totalWidth = 0;
+
+    // Calculate total scroll width
+    cards.forEach(function (c) { totalWidth += c.offsetWidth + 32; });
+    totalWidth -= 32; // remove last gap
+    var maxTranslate = Math.max(0, totalWidth - window.innerWidth + 160);
+
+    function updateHScroll() {
+      var outerRect = journeyOuter.getBoundingClientRect();
+      var scrollRange = journeyOuter.offsetHeight - window.innerHeight;
+      var scrolled = -outerRect.top;
+      var progress = Math.max(0, Math.min(1, scrolled / scrollRange));
+
+      targetX = progress * maxTranslate;
+
+      // Lerp for inertia
+      currentX += (targetX - currentX) * 0.08;
+      journeyTrack.style.transform = 'translateX(' + (-currentX) + 'px)';
+
+      // Move glow dot along rail
+      if (journeyGlow) {
+        journeyGlow.style.left = 'calc(' + (progress * 100) + '% - 6px)';
+      }
+
+      // Activate nearest card
+      var centerX = window.innerWidth / 2;
+      cards.forEach(function (card) {
+        var cardRect = card.getBoundingClientRect();
+        var cardCenter = cardRect.left + cardRect.width / 2;
+        if (Math.abs(cardCenter - centerX) < cardRect.width * 0.6) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+
+      requestAnimationFrame(updateHScroll);
+    }
+
+    requestAnimationFrame(updateHScroll);
+  }
+
 })();
