@@ -408,107 +408,152 @@
   </div></div>
 
   <!-- BOOKING SITE BUILDER DEMO -->
-  <div class="s bg-white sr" style="padding:80px 0;">
+  <div class="s bg-white" style="padding:80px 0;overflow:hidden;">
     <div style="max-width:1100px;margin:0 auto;padding:0 24px;">
-      <div style="text-align:center;margin-bottom:40px;">
+      <div style="text-align:center;margin-bottom:48px;">
         <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(30,154,128,0.06);padding:5px 14px;border-radius:100px;margin-bottom:14px;font-size:11px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           White-Label Booking Site
         </div>
-        <h2 style="font-size:34px;font-weight:700;color:#1a1a1a;letter-spacing:0.01em;">Build your direct booking channel</h2>
-        <p style="font-size:15px;color:#6b7280;margin-top:10px;max-width:500px;margin-left:auto;margin-right:auto;">Launch a branded booking site in minutes. Try it now &mdash; type your brand name and pick a colour.</p>
+        <h2 style="font-size:34px;font-weight:700;color:#1a1a1a;">Build your direct booking channel</h2>
+        <p style="font-size:15px;color:#6b7280;margin-top:10px;max-width:480px;margin-left:auto;margin-right:auto;">Stop paying 15-20% OTA commissions. Launch your branded booking site in minutes.</p>
       </div>
 
-      <div style="display:flex;gap:24px;align-items:flex-start;" id="bookingDemo">
-        <!-- Controls (left) -->
-        <div style="width:280px;flex-shrink:0;background:#fafafa;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="margin-bottom:20px;">
-            <label style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Brand Name</label>
-            <input type="text" id="demoName" value="Your Brand" style="width:100%;height:38px;border:1px solid #e8e5df;border-radius:10px;padding:0 12px;font-size:14px;color:#1a1a1a;outline:none;" onfocus="this.style.borderColor='#1e9a80';this.style.boxShadow='0 0 0 3px rgba(30,154,128,0.08)'" onblur="this.style.borderColor='#e8e5df';this.style.boxShadow='none'">
-          </div>
-          <div style="margin-bottom:20px;">
-            <label style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Accent Colour</label>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button class="demo-color active" data-color="#10b981" style="width:32px;height:32px;border-radius:8px;background:#10b981;border:2px solid #10b981;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
-              <button class="demo-color" data-color="#3b82f6" style="width:32px;height:32px;border-radius:8px;background:#3b82f6;border:2px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
-              <button class="demo-color" data-color="#8b5cf6" style="width:32px;height:32px;border-radius:8px;background:#8b5cf6;border:2px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
-              <button class="demo-color" data-color="#f59e0b" style="width:32px;height:32px;border-radius:8px;background:#f59e0b;border:2px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
-              <button class="demo-color" data-color="#ef4444" style="width:32px;height:32px;border-radius:8px;background:#ef4444;border:2px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
-              <button class="demo-color" data-color="#1a1a1a" style="width:32px;height:32px;border-radius:8px;background:#1a1a1a;border:2px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+      <div style="display:flex;gap:28px;align-items:flex-start;">
+        <!-- Controls -->
+        <div style="width:300px;flex-shrink:0;">
+          <div style="background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:20px;padding:28px;box-shadow:0 4px 24px rgba(0,0,0,0.04);">
+            <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M12 2L2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              Customise Your Site
             </div>
-          </div>
-          <div style="margin-bottom:20px;">
-            <label style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Your URL</label>
-            <div style="display:flex;align-items:center;gap:0;border:1px solid #e8e5df;border-radius:10px;overflow:hidden;background:#fff;">
-              <input type="text" id="demoSubdomain" value="yourbrand" style="flex:1;height:38px;border:none;padding:0 12px;font-size:13px;color:#1a1a1a;outline:none;">
-              <span style="font-size:12px;color:#6b7280;padding:0 12px;white-space:nowrap;border-left:1px solid #e8e5df;background:#fafafa;">.nfstay.app</span>
+
+            <!-- Brand Name -->
+            <div style="margin-bottom:16px;">
+              <label style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Brand Name</label>
+              <input type="text" id="demoName" value="Luxe Stays" style="width:100%;height:40px;border:1px solid #e8e5df;border-radius:10px;padding:0 14px;font-size:14px;color:#1a1a1a;outline:none;transition:all 0.2s;" onfocus="this.style.borderColor='#1e9a80';this.style.boxShadow='0 0 0 3px rgba(30,154,128,0.08)'" onblur="this.style.borderColor='#e8e5df';this.style.boxShadow='none'">
             </div>
+
+            <!-- Logo Upload -->
+            <div style="margin-bottom:16px;">
+              <label style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Logo</label>
+              <label id="logoUploadZone" style="display:flex;align-items:center;justify-content:center;gap:8px;height:64px;border:2px dashed #e8e5df;border-radius:10px;cursor:pointer;transition:all 0.2s;background:#fafafa;font-size:12px;color:#6b7280;" onmouseover="this.style.borderColor='#1e9a80';this.style.background='rgba(30,154,128,0.02)'" onmouseout="this.style.borderColor='#e8e5df';this.style.background='#fafafa'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span id="logoLabel">Upload your logo</span>
+                <input type="file" id="logoInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
+              </label>
+            </div>
+
+            <!-- Hero Background -->
+            <div style="margin-bottom:16px;">
+              <label style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Hero Background</label>
+              <label style="display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border:2px dashed #e8e5df;border-radius:10px;cursor:pointer;transition:all 0.2s;background:#fafafa;font-size:12px;color:#6b7280;" onmouseover="this.style.borderColor='#1e9a80'" onmouseout="this.style.borderColor='#e8e5df'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span id="bgLabel">Change background</span>
+                <input type="file" id="bgInput" accept="image/*" style="display:none;" onchange="handleBgUpload(this)">
+              </label>
+            </div>
+
+            <!-- Accent Colour -->
+            <div style="margin-bottom:20px;">
+              <label style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Accent Colour</label>
+              <div style="display:flex;gap:8px;">
+                <button class="demo-color active" data-color="#10b981" style="width:36px;height:36px;border-radius:10px;background:#10b981;border:2.5px solid #10b981;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#3b82f6" style="width:36px;height:36px;border-radius:10px;background:#3b82f6;border:2.5px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#8b5cf6" style="width:36px;height:36px;border-radius:10px;background:#8b5cf6;border:2.5px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#f59e0b" style="width:36px;height:36px;border-radius:10px;background:#f59e0b;border:2.5px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#ef4444" style="width:36px;height:36px;border-radius:10px;background:#ef4444;border:2.5px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#1a1a1a" style="width:36px;height:36px;border-radius:10px;background:#1a1a1a;border:2.5px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+              </div>
+            </div>
+
+            <!-- URL -->
+            <div style="margin-bottom:20px;">
+              <label style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Site URL</label>
+              <div style="display:flex;align-items:center;border:1px solid #e8e5df;border-radius:10px;overflow:hidden;">
+                <input type="text" id="demoSubdomain" value="luxestays" style="flex:1;height:38px;border:none;padding:0 12px;font-size:13px;color:#1a1a1a;outline:none;" readonly>
+                <span style="font-size:11px;color:#6b7280;padding:0 12px;white-space:nowrap;border-left:1px solid #e8e5df;background:#fafafa;">.nfstay.app</span>
+              </div>
+            </div>
+
+            <a href="/signup" style="display:flex;align-items:center;justify-content:center;width:100%;height:44px;border-radius:12px;background:linear-gradient(135deg,#1e9a80,#10b981);color:#fff;font-size:14px;font-weight:600;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(30,154,128,0.2);">Build Your Site Free</a>
+            <p style="text-align:center;font-size:11px;color:#6b7280;margin-top:8px;">No credit card needed</p>
           </div>
-          <a href="/signup" style="display:flex;align-items:center;justify-content:center;width:100%;height:40px;border-radius:10px;background:linear-gradient(135deg,#1e9a80,#10b981);color:#fff;font-size:13px;font-weight:600;text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Build Your Site</a>
         </div>
 
-        <!-- Live Preview (right) -->
-        <div style="flex:1;border:1px solid rgba(0,0,0,0.06);border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.06);">
-          <!-- Browser chrome -->
-          <div style="background:#fafafa;border-bottom:1px solid rgba(0,0,0,0.06);padding:10px 16px;display:flex;align-items:center;gap:8px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:#ff5f57;"></span>
-            <span style="width:8px;height:8px;border-radius:50%;background:#ffbd2e;"></span>
-            <span style="width:8px;height:8px;border-radius:50%;background:#28c840;"></span>
-            <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:6px;padding:4px 12px;font-size:11px;color:#6b7280;margin-left:8px;" id="demoUrlBar">yourbrand.nfstay.app</div>
-          </div>
+        <!-- Live Preview -->
+        <div style="flex:1;">
+          <div style="border:1px solid rgba(0,0,0,0.06);border-radius:16px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,0.08);background:#fff;">
+            <!-- Browser chrome -->
+            <div style="background:linear-gradient(180deg,#f8f9fa,#f3f4f6);border-bottom:1px solid rgba(0,0,0,0.06);padding:12px 16px;display:flex;align-items:center;gap:8px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#ffbd2e;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#28c840;"></span>
+              <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:8px;padding:6px 14px;font-size:12px;color:#6b7280;margin-left:12px;display:flex;align-items:center;gap:4px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span id="demoUrlBar">luxestays.nfstay.app</span>
+              </div>
+            </div>
 
-          <!-- Site preview -->
-          <div style="background:#fff;">
             <!-- Header -->
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #f3f4f6;">
-              <span style="font-size:15px;font-weight:700;" id="demoLogo">Your Brand</span>
-              <div style="display:flex;gap:16px;font-size:12px;color:#6b7280;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid #f3f4f6;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <img id="demoLogoImg" src="" style="width:28px;height:28px;border-radius:6px;object-fit:cover;display:none;" alt="">
+                <span style="font-size:16px;font-weight:700;" id="demoLogo">Luxe Stays</span>
+              </div>
+              <div style="display:flex;gap:20px;font-size:12px;color:#6b7280;font-weight:500;">
                 <span>Properties</span><span>About</span><span>Contact</span>
               </div>
             </div>
 
             <!-- Hero -->
-            <div style="position:relative;height:200px;overflow:hidden;">
-              <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" style="width:100%;height:100%;object-fit:cover;" alt="">
-              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7),rgba(0,0,0,0.2),transparent);"></div>
-              <div style="position:absolute;bottom:0;left:0;right:0;padding:20px;">
-                <h3 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:4px;">Find Your Perfect Stay</h3>
-                <p style="font-size:12px;color:rgba(255,255,255,0.8);">Book directly with us for the best rates</p>
+            <div style="position:relative;height:220px;overflow:hidden;">
+              <img id="demoHeroImg" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" style="width:100%;height:100%;object-fit:cover;" alt="">
+              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7),rgba(0,0,0,0.15),transparent);"></div>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:24px;">
+                <h3 style="font-size:22px;font-weight:700;color:#fff;margin-bottom:6px;">Find Your Perfect Stay</h3>
+                <p style="font-size:13px;color:rgba(255,255,255,0.8);">Book directly for the best rates and personal experience</p>
               </div>
             </div>
 
             <!-- Search bar -->
-            <div style="padding:0 20px;margin-top:-16px;position:relative;z-index:1;">
-              <div style="background:#fff;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.08);border:1px solid #f3f4f6;padding:10px 14px;display:flex;align-items:center;gap:8px;">
-                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;display:block;">Location</span><span style="font-size:11px;color:#1a1a1a;">Where are you going?</span></div>
-                <div style="width:1px;height:24px;background:#e5e7eb;"></div>
-                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;display:block;">Dates</span><span style="font-size:11px;color:#1a1a1a;">Add dates</span></div>
-                <button id="demoSearchBtn" style="padding:6px 14px;border-radius:8px;color:#fff;font-size:11px;font-weight:600;border:none;cursor:pointer;background:#10b981;">Search</button>
+            <div style="padding:0 24px;margin-top:-18px;position:relative;z-index:1;">
+              <div style="background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08);border:1px solid #f3f4f6;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Location</span><span style="font-size:12px;color:#1a1a1a;">Where are you going?</span></div>
+                <div style="width:1px;height:28px;background:#e5e7eb;"></div>
+                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Check in &mdash; Check out</span><span style="font-size:12px;color:#1a1a1a;">Add dates</span></div>
+                <div style="width:1px;height:28px;background:#e5e7eb;"></div>
+                <div style="flex:0.6;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Guests</span><span style="font-size:12px;color:#1a1a1a;">2</span></div>
+                <button id="demoSearchBtn" style="padding:8px 18px;border-radius:10px;color:#fff;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#10b981;">Search</button>
               </div>
             </div>
 
             <!-- Properties -->
-            <div style="padding:16px 20px;">
-              <span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;margin-bottom:10px;">Featured Properties</span>
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-                <div style="border:1px solid #f3f4f6;border-radius:10px;overflow:hidden;">
-                  <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=300&q=80" style="width:100%;height:80px;object-fit:cover;" alt="">
-                  <div style="padding:8px;"><span style="font-size:11px;font-weight:600;color:#1a1a1a;display:block;">City Apartment</span><span style="font-size:10px;color:#6b7280;">London</span><span class="demo-price" style="font-size:11px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;120/night</span></div>
+            <div style="padding:20px 24px;">
+              <span style="font-size:13px;font-weight:600;color:#1a1a1a;display:block;margin-bottom:12px;">Featured Properties</span>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+                  <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=300&q=80" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Modern City Apartment</span><span style="font-size:10px;color:#6b7280;">London, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;120 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
                 </div>
-                <div style="border:1px solid #f3f4f6;border-radius:10px;overflow:hidden;">
-                  <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=300&q=80" style="width:100%;height:80px;object-fit:cover;" alt="">
-                  <div style="padding:8px;"><span style="font-size:11px;font-weight:600;color:#1a1a1a;display:block;">Penthouse Suite</span><span style="font-size:10px;color:#6b7280;">Manchester</span><span class="demo-price" style="font-size:11px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;185/night</span></div>
+                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+                  <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=300&q=80" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Luxury Penthouse Suite</span><span style="font-size:10px;color:#6b7280;">Manchester, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;185 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
                 </div>
-                <div style="border:1px solid #f3f4f6;border-radius:10px;overflow:hidden;">
-                  <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=300&q=80" style="width:100%;height:80px;object-fit:cover;" alt="">
-                  <div style="padding:8px;"><span style="font-size:11px;font-weight:600;color:#1a1a1a;display:block;">Cosy Studio</span><span style="font-size:10px;color:#6b7280;">Birmingham</span><span class="demo-price" style="font-size:11px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;85/night</span></div>
+                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+                  <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=300&q=80" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Cosy Studio Retreat</span><span style="font-size:10px;color:#6b7280;">Birmingham, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;85 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
                 </div>
               </div>
             </div>
 
             <!-- Footer -->
-            <div style="padding:10px 20px;background:#fafafa;border-top:1px solid #f3f4f6;">
-              <span style="font-size:11px;font-weight:600;" id="demoFooterName">Your Brand</span>
+            <div style="padding:12px 24px;background:#fafafa;border-top:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <img id="demoFooterLogo" src="" style="width:20px;height:20px;border-radius:4px;object-fit:cover;display:none;" alt="">
+                <span style="font-size:12px;font-weight:600;" id="demoFooterName">Luxe Stays</span>
+              </div>
+              <span style="font-size:10px;color:#6b7280;">Powered by NFsTay</span>
             </div>
           </div>
         </div>
@@ -517,13 +562,16 @@
   </div>
 
   <script>
-  // Booking site demo interactivity
+  // Booking demo interactivity
   var demoNameInput = document.getElementById('demoName');
   var demoSubInput = document.getElementById('demoSubdomain');
   var demoLogo = document.getElementById('demoLogo');
+  var demoLogoImg = document.getElementById('demoLogoImg');
+  var demoFooterLogo = document.getElementById('demoFooterLogo');
   var demoFooter = document.getElementById('demoFooterName');
   var demoUrl = document.getElementById('demoUrlBar');
   var demoSearch = document.getElementById('demoSearchBtn');
+  var demoHeroImg = document.getElementById('demoHeroImg');
   var currentColor = '#10b981';
 
   if (demoNameInput) {
@@ -533,9 +581,9 @@
       demoFooter.textContent = v;
       demoLogo.style.color = currentColor;
       demoFooter.style.color = currentColor;
-      var sub = v.toLowerCase().replace(/[^a-z0-9]/g, '');
-      demoSubInput.value = sub || 'yourbrand';
-      demoUrl.textContent = (sub || 'yourbrand') + '.nfstay.app';
+      var sub = v.toLowerCase().replace(/[^a-z0-9]/g, '') || 'yourbrand';
+      demoSubInput.value = sub;
+      demoUrl.textContent = sub + '.nfstay.app';
     });
   }
 
@@ -548,89 +596,136 @@
     demoFooter.style.color = currentColor;
     document.querySelectorAll('.demo-price').forEach(function(p) { p.style.color = currentColor; });
   }
+
+  function handleLogoUpload(input) {
+    if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        demoLogoImg.src = e.target.result;
+        demoLogoImg.style.display = 'block';
+        demoFooterLogo.src = e.target.result;
+        demoFooterLogo.style.display = 'block';
+        document.getElementById('logoLabel').textContent = 'Logo uploaded';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  function handleBgUpload(input) {
+    if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        demoHeroImg.src = e.target.result;
+        document.getElementById('bgLabel').textContent = 'Background changed';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
   </script>
 
-  <!-- JOURNEY — ZIGZAG PATH (alternating left-right) -->
-  <section style="background:#f3f3ee;padding:100px 0;overflow:hidden;">
-    <div style="max-width:900px;margin:0 auto;padding:0 24px;">
-      <div style="text-align:center;margin-bottom:64px;">
-        <h2 style="font-size:34px;font-weight:700;color:#1a1a1a;letter-spacing:0.01em;">From first search to first profit</h2>
-        <p style="font-size:15px;color:#6b7280;margin-top:10px;">Six steps. One platform. Your journey starts here.</p>
+  <!-- JOURNEY — ANIMATED STEP CARDS -->
+  <div class="s sr" style="background:linear-gradient(180deg,#f3f3ee 0%,#fff 100%);padding:100px 0;">
+    <div style="max-width:1000px;margin:0 auto;padding:0 24px;">
+      <div style="text-align:center;margin-bottom:56px;">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(30,154,128,0.06);padding:5px 14px;border-radius:100px;margin-bottom:14px;font-size:11px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">Your Journey</div>
+        <h2 style="font-size:34px;font-weight:700;color:#1a1a1a;">From first search to first profit</h2>
+        <p style="font-size:15px;color:#6b7280;margin-top:10px;">Six steps. One platform. Everything you need.</p>
       </div>
 
-      <!-- Zigzag grid: alternating left/right cards with centre line -->
-      <div class="zigzag-path" id="zigzagPath">
-        <!-- Centre connecting line -->
-        <div class="zigzag-line" id="zigzagLine"></div>
-
-        <!-- Step 01 — LEFT -->
-        <div class="zigzag-row zigzag-left">
-          <div class="zigzag-card" data-zig="0">
-            <div class="zigzag-node">01</div>
-            <h4>Browse 1,800+ verified deals</h4>
-            <p>Filter by city, type and profit. Every listing is landlord-approved.</p>
-            <span class="zigzag-tag">Deal Marketplace</span>
-          </div>
-          <div class="zigzag-spacer"></div>
-        </div>
-
-        <!-- Step 02 — RIGHT -->
-        <div class="zigzag-row zigzag-right">
-          <div class="zigzag-spacer"></div>
-          <div class="zigzag-card" data-zig="1">
-            <div class="zigzag-node">02</div>
-            <h4>Analyse profit with the earnings estimator</h4>
-            <p>Model nightly rates, occupancy and costs before you commit.</p>
-            <span class="zigzag-tag">Earnings Estimator</span>
+      <!-- Step cards in a 2x3 grid with numbering -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="journey-grid-fancy">
+        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
+          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1e9a80,#10b981);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
+          <div style="display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <span style="font-size:16px;font-weight:800;color:#1e9a80;">01</span>
+            </div>
+            <div>
+              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Browse 1,800+ verified deals</h4>
+              <p style="font-size:13px;color:#6b7280;line-height:1.6;">Filter by city, type and profit. Every listing is landlord-approved.</p>
+              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">Deal Marketplace</span>
+            </div>
           </div>
         </div>
 
-        <!-- Step 03 — LEFT -->
-        <div class="zigzag-row zigzag-left">
-          <div class="zigzag-card" data-zig="2">
-            <div class="zigzag-node">03</div>
-            <h4>Message the landlord from your unified inbox</h4>
-            <p>Property context, earnings data and templates alongside every thread.</p>
-            <span class="zigzag-tag">Unified Inbox</span>
-          </div>
-          <div class="zigzag-spacer"></div>
-        </div>
-
-        <!-- Step 04 — RIGHT -->
-        <div class="zigzag-row zigzag-right">
-          <div class="zigzag-spacer"></div>
-          <div class="zigzag-card" data-zig="3">
-            <div class="zigzag-node">04</div>
-            <h4>Track progress in your CRM pipeline</h4>
-            <p>From cold lead to signed agreement &mdash; every stage in one view.</p>
-            <span class="zigzag-tag">CRM Pipeline</span>
+        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
+          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#10b981,#059669);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
+          <div style="display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <span style="font-size:16px;font-weight:800;color:#1e9a80;">02</span>
+            </div>
+            <div>
+              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Analyse profit with the earnings estimator</h4>
+              <p style="font-size:13px;color:#6b7280;line-height:1.6;">Model nightly rates, occupancy and costs before you commit.</p>
+              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">Earnings Estimator</span>
+            </div>
           </div>
         </div>
 
-        <!-- Step 05 — LEFT -->
-        <div class="zigzag-row zigzag-left">
-          <div class="zigzag-card" data-zig="4">
-            <div class="zigzag-node">05</div>
-            <h4>Sign the rent-to-rent agreement</h4>
-            <p>Templates, checklists and reminders. Never miss a step.</p>
-            <span class="zigzag-tag">Deal Closing</span>
+        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
+          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1e9a80,#10b981);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
+          <div style="display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <span style="font-size:16px;font-weight:800;color:#1e9a80;">03</span>
+            </div>
+            <div>
+              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Message the landlord from your unified inbox</h4>
+              <p style="font-size:13px;color:#6b7280;line-height:1.6;">Property context, earnings data and templates alongside every thread.</p>
+              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">Unified Inbox</span>
+            </div>
           </div>
-          <div class="zigzag-spacer"></div>
         </div>
 
-        <!-- Step 06 — RIGHT -->
-        <div class="zigzag-row zigzag-right">
-          <div class="zigzag-spacer"></div>
-          <div class="zigzag-card" data-zig="5">
-            <div class="zigzag-node">06</div>
-            <h4>Go live on Airbnb and earn</h4>
-            <p>Your first profit usually arrives within 30 days of going live.</p>
-            <span class="zigzag-tag">Live &amp; Earning</span>
+        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
+          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#059669,#1e9a80);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
+          <div style="display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <span style="font-size:16px;font-weight:800;color:#1e9a80;">04</span>
+            </div>
+            <div>
+              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Track progress in your CRM pipeline</h4>
+              <p style="font-size:13px;color:#6b7280;line-height:1.6;">From cold lead to signed agreement &mdash; every stage in one view.</p>
+              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">CRM Pipeline</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
+          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1e9a80,#10b981);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
+          <div style="display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <span style="font-size:16px;font-weight:800;color:#1e9a80;">05</span>
+            </div>
+            <div>
+              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Sign the rent-to-rent agreement</h4>
+              <p style="font-size:13px;color:#6b7280;line-height:1.6;">Templates, checklists and reminders. Never miss a step.</p>
+              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">Deal Closing</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
+          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#10b981,#1e9a80);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
+          <div style="display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <span style="font-size:16px;font-weight:800;color:#1e9a80;">06</span>
+            </div>
+            <div>
+              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Go live on Airbnb and earn</h4>
+              <p style="font-size:13px;color:#6b7280;line-height:1.6;">Your first profit usually arrives within 30 days of going live.</p>
+              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">Live &amp; Earning</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+
+  <style>
+  .jf-card:hover { transform:translateY(-4px);box-shadow:0 12px 40px rgba(30,154,128,0.12);border-color:rgba(30,154,128,0.3); }
+  .jf-card:hover .jf-bar { transform:scaleX(1) !important; }
+  @media (max-width:768px) { .journey-grid-fancy { grid-template-columns:1fr !important; } }
+  </style>
 
   <!-- ACADEMY (with emojis, progress bars, gamification) -->
   <div class="s bg-cream sr"><div class="wrap">
