@@ -651,18 +651,18 @@ export default function AdminInvestProperties() {
                 <div className="space-y-1">
                   <Progress value={(() => { const t = (form.total_shares as number) || 1; const s = (form.shares_sold as number) || 0; return Math.round((s / t) * 100); })()} className="h-2" />
                   <p className="text-[10px] text-muted-foreground">
-                    {((form.shares_sold as number) || 0).toLocaleString()} shares sold &middot; {(((form.total_shares as number) || 0) - ((form.shares_sold as number) || 0)).toLocaleString()} remaining
+                    {((form.shares_sold as number) || 0).toLocaleString()} allocations sold &middot; {(((form.total_shares as number) || 0) - ((form.shares_sold as number) || 0)).toLocaleString()} remaining
                   </p>
                 </div>
 
-                {/* Share price + invest preview */}
+                {/* Allocation price + invest preview */}
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <div>
-                    <p className="text-[10px] text-muted-foreground">Share price</p>
+                    <p className="text-[10px] text-muted-foreground">Allocation price</p>
                     <p className="text-lg font-bold">${(form.price_per_share as number) || 0}</p>
                   </div>
                   <Button size="sm" className="text-xs" disabled>
-                    Secure Your Shares
+                    Secure Your Allocations
                   </Button>
                 </div>
 

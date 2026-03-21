@@ -234,7 +234,7 @@ function InvestModal({
           <div className="px-8 pb-8 pt-2 flex flex-col items-center text-center gap-3">
             <h1 className="text-2xl font-bold">Congratulations!</h1>
             <p className="text-muted-foreground">
-              You secured <strong className="text-foreground">{shares} share{shares > 1 ? 's' : ''}</strong> in {property.title}!
+              You secured <strong className="text-foreground">{shares} allocation{shares > 1 ? 's' : ''}</strong> in {property.title}!
             </p>
             <div className="rounded-xl bg-muted/50 p-4 w-full space-y-2">
               <div className="flex justify-between text-sm">
@@ -274,12 +274,12 @@ function InvestModal({
         <>
             <div className="space-y-5 py-2">
               <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3 dark:bg-muted/30">
-                <span className="text-sm text-muted-foreground">Share price</span>
+                <span className="text-sm text-muted-foreground">Allocation price</span>
                 <span className="text-lg font-bold">${property.pricePerShare}</span>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium">Number of shares</label>
+                <label className="mb-2 block text-sm font-medium">Number of allocations</label>
                 <div className="flex items-center gap-3">
                   <Button
                     size="icon"
@@ -548,9 +548,9 @@ function InvestCardContent({
 
   return (
     <div className="space-y-4">
-      {/* Share price */}
+      {/* Allocation price */}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Share price</span>
+        <span className="text-sm text-muted-foreground">Allocation price</span>
         <span className="text-xl font-bold">${property.pricePerShare}</span>
       </div>
 
@@ -558,7 +558,7 @@ function InvestCardContent({
       <div className="space-y-1.5">
         <Progress value={fundedPercent} className="h-2.5" />
         <p className="text-xs text-muted-foreground">
-          {property.sharesSold.toLocaleString()} shares sold<BlockchainDot tooltip="Shares sold from blockchain" /> &middot; {sharesRemaining.toLocaleString()} remaining
+          {property.sharesSold.toLocaleString()} allocations sold<BlockchainDot tooltip="Allocations sold from blockchain" /> &middot; {sharesRemaining.toLocaleString()} remaining
         </p>
       </div>
 
@@ -569,7 +569,7 @@ function InvestCardContent({
           <p className="text-sm font-bold">{totalOwners}</p>
         </div>
         <div className="rounded-lg bg-muted/50 p-2">
-          <p className="text-[10px] text-muted-foreground">Total Shares<BlockchainDot tooltip="Deal price at $1/share from blockchain" /></p>
+          <p className="text-[10px] text-muted-foreground">Total Allocations<BlockchainDot tooltip="Deal price at $1/allocation from blockchain" /></p>
           <p className="text-sm font-bold">{property.totalShares.toLocaleString()}</p>
         </div>
         <div className="rounded-lg bg-muted/50 p-2">
@@ -595,7 +595,7 @@ function InvestCardContent({
             className="flex-1 bg-transparent text-lg font-semibold outline-none"
           />
           <span className="whitespace-nowrap text-sm text-muted-foreground">
-            = {shares} share{shares !== 1 ? 's' : ''}
+            = {shares} allocation{shares !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
@@ -686,7 +686,7 @@ function InvestCardContent({
         onClick={onInvest}
       >
         <Shield className="h-4 w-4" />
-        Secure Your Shares
+        Secure Your Allocations
       </Button>
 
       {/* Trust badge */}
@@ -934,7 +934,7 @@ function ProfitCalculator({
             </div>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            = {sharesCalc} share{sharesCalc !== 1 ? 's' : ''} at ${property.pricePerShare}/share
+            = {sharesCalc} allocation{sharesCalc !== 1 ? 's' : ''} at ${property.pricePerShare}/allocation
           </p>
         </div>
 

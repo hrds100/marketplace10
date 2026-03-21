@@ -456,7 +456,7 @@ export default function InvestProposalsPage() {
           )}
         </div>
         <p className="text-[11px] text-muted-foreground">
-          {fmt(voted)} of {fmt(total)} shares voted
+          {fmt(voted)} of {fmt(total)} allocations voted
         </p>
       </div>
     );
@@ -645,7 +645,7 @@ export default function InvestProposalsPage() {
                 <span>Fee: ~{proposalFee} USDC in STAY tokens</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                You must own shares in a property to submit a proposal. Proposals are open for 30 days.
+                You must own allocations in a property to submit a proposal. Proposals are open for 30 days.
               </p>
             </CardContent>
           </Card>
