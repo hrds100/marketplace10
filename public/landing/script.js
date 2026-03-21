@@ -460,58 +460,173 @@ document.addEventListener('DOMContentLoaded', () => {
     resetStory();
   }
 
-  // ── MOBILE STORY (chat-only, no preview panels) ──
+  // ── MOBILE STORY (full-screen panels, one at a time) ──
+
+  function showMobileScreen(html) {
+    return new Promise(resolve => {
+      // Create overlay inside chat panel (covers earnings banner + messages)
+      const screen = document.createElement('div');
+      screen.className = 'mobile-story-screen';
+      screen.style.cssText = 'position:absolute;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;opacity:0;transform:scale(0.96);transition:opacity 400ms ease,transform 400ms ease;';
+      screen.innerHTML = html;
+
+      const panel = document.querySelector('.chat-panel');
+      panel.style.position = 'relative';
+      panel.appendChild(screen);
+
+      // Animate in
+      requestAnimationFrame(() => {
+        screen.style.opacity = '1';
+        screen.style.transform = 'scale(1)';
+      });
+
+      setTimeout(resolve, 500);
+    });
+  }
+
+  function hideMobileScreens() {
+    document.querySelectorAll('.mobile-story-screen').forEach(s => {
+      s.style.opacity = '0';
+      s.style.transform = 'scale(0.96)';
+      setTimeout(() => s.remove(), 400);
+    });
+  }
+
   async function runMobileStory() {
     setProgress(10);
 
-    // Step 1: System message about finding a deal
-    await addMessage('them', '📍 Found: 2-Bed Flat, Ancoats, Manchester');
-    await delay(500);
-    await addMessage('them', '💰 Rent: £850/mo · Est. profit: £1,200/mo');
+    // SCREEN 1: Show one deal card
+    await showMobileScreen(`
+      <div style="width:100%;max-width:280px;">
+        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Deal Found</div>
+        <div style="border:1px solid #e8e5df;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+          <div style="height:120px;background:url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=200&fit=crop') center/cover;position:relative;">
+            <span style="position:absolute;top:8px;left:8px;background:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">Featured</span>
+          </div>
+          <div style="padding:14px;">
+            <div style="font-size:14px;font-weight:600;color:#1a1a1a;">2-Bed Flat, Ancoats</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:2px;">Manchester &middot; M4 6BF</div>
+            <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid #f3f4f6;">
+              <span style="font-size:12px;color:#6b7280;">Rent: &pound;850/mo</span>
+              <span style="font-size:12px;font-weight:700;color:#1e9a80;">+&pound;1,200/mo</span>
+            </div>
+            <div id="mobileInquireBtn" style="margin-top:12px;width:100%;height:36px;border-radius:8px;background:#1e9a80;color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;">Inquire Now</div>
+          </div>
+        </div>
+      </div>
+    `);
     setProgress(20);
+    await delay(2500);
+
+    // Animate the button click
+    const mBtn = document.getElementById('mobileInquireBtn');
+    if (mBtn) {
+      mBtn.style.transform = 'scale(0.95)';
+      mBtn.textContent = 'Inquiry Sent';
+      mBtn.style.background = '#178f72';
+      await delay(300);
+      mBtn.style.transform = 'scale(1)';
+    }
+    setProgress(30);
     await delay(1500);
 
-    // Step 2: User inquires
-    await typeText('Is this available for Airbnb?', 50);
-    await delay(400);
-    await addMessage('me', 'Is this available for Airbnb?');
-    clearTypewriter();
-    setProgress(35);
-    await delay(1000);
+    // SCREEN 2: Chat conversation
+    hideMobileScreens();
+    await delay(500);
+    await showMobileScreen(`
+      <div style="width:100%;max-width:300px;">
+        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Conversation</div>
+        <div style="border:1px solid #e8e5df;border-radius:14px;background:#fafafa;padding:14px;display:flex;flex-direction:column;gap:8px;" id="mobileChatArea">
+          <div style="padding:8px;font-size:12px;font-weight:600;color:#1a1a1a;border-bottom:1px solid #f3f4f6;margin-bottom:4px;">James Thornton <span style="font-size:9px;font-weight:600;color:#1e9a80;background:rgba(30,154,128,0.1);padding:2px 6px;border-radius:100px;margin-left:4px;">2-Bed, Ancoats</span></div>
+        </div>
+      </div>
+    `);
+    setProgress(40);
 
-    // Step 3: Landlord typing + reply
-    await showTypingIndicator('them');
-    await delay(1200);
-    await addMessage('them', 'Yes! Landlord approved for short-term lets. Would you like to view it?');
+    // Type messages one by one into the chat area
+    const chatArea = document.getElementById('mobileChatArea');
+    async function addMobileBubble(from, text, delayMs) {
+      const bubble = document.createElement('div');
+      const isMe = from === 'me';
+      bubble.style.cssText = 'max-width:85%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.5;opacity:0;transform:translateY(6px);transition:opacity 300ms,transform 300ms;' +
+        (isMe ? 'background:#1e9a80;color:#fff;border-bottom-right-radius:4px;align-self:flex-end;margin-left:auto;' : 'background:#fff;border:1px solid #e8e5df;border-bottom-left-radius:4px;color:#1a1a1a;');
+      bubble.textContent = text;
+      chatArea.appendChild(bubble);
+      requestAnimationFrame(() => { bubble.style.opacity = '1'; bubble.style.transform = 'translateY(0)'; });
+      playMessageSound();
+      await delay(delayMs);
+    }
+
+    await addMobileBubble('me', 'Is this available for Airbnb?', 1200);
     setProgress(50);
-    await delay(1500);
 
-    // Step 4: User confirms viewing
-    await typeText('Tomorrow at 5pm works!', 50);
-    await delay(400);
-    await addMessage('me', 'Tomorrow at 5pm works!');
-    clearTypewriter();
-    setProgress(65);
+    // Typing dots
+    const dots = document.createElement('div');
+    dots.style.cssText = 'display:flex;gap:3px;padding:8px 12px;align-self:flex-start;';
+    dots.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite;"></span><span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite 0.15s;"></span><span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite 0.3s;"></span>';
+    chatArea.appendChild(dots);
+    await delay(1200);
+    dots.remove();
+
+    await addMobileBubble('them', 'Yes! Landlord approved. Would you like to arrange a viewing?', 1500);
+    setProgress(60);
+    await addMobileBubble('me', 'Tomorrow at 5pm works!', 1000);
+    setProgress(70);
+
+    const dots2 = dots.cloneNode(true);
+    chatArea.appendChild(dots2);
     await delay(1000);
+    dots2.remove();
 
-    // Step 5: Landlord confirms
-    await showTypingIndicator('them');
-    await delay(1000);
-    await addMessage('them', 'Booked! See you at 5pm tomorrow. 🎉');
-    setProgress(75);
-    await delay(1500);
+    await addMobileBubble('them', 'Booked! See you at 5pm tomorrow. 🎉', 2000);
+    setProgress(80);
 
-    // Step 6: Pipeline update
-    await addMessage('them', '📊 Deal moved to "Viewing" in your pipeline');
+    // SCREEN 3: Pipeline
+    hideMobileScreens();
+    await delay(500);
+    await showMobileScreen(`
+      <div style="width:100%;max-width:300px;">
+        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Pipeline Updated</div>
+        <div style="display:flex;gap:6px;overflow-x:auto;">
+          <div style="flex:1;min-width:0;background:#f8f9fa;border-radius:8px;padding:8px;">
+            <div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span>Spotted</div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:6px;padding:6px 8px;font-size:10px;margin-bottom:3px;border-left:2px solid #3b82f6;"><strong>1-Bed, Hulme</strong></div>
+          </div>
+          <div style="flex:1;min-width:0;background:#f8f9fa;border-radius:8px;padding:8px;">
+            <div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;"></span>Viewing</div>
+            <div id="mobilePipeCard" style="background:#fff;border:1px solid #1e9a80;border-radius:6px;padding:6px 8px;font-size:10px;border-left:2px solid #1e9a80;box-shadow:0 0 0 2px rgba(30,154,128,0.15);opacity:0;transform:translateY(-8px);transition:opacity 400ms,transform 400ms;"><strong style="color:#1a1a1a;">2-Bed, Ancoats</strong><div style="font-size:9px;color:#1e9a80;font-weight:600;">+&pound;1,200/mo</div></div>
+          </div>
+          <div style="flex:1;min-width:0;background:#f8f9fa;border-radius:8px;padding:8px;">
+            <div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#1e9a80;"></span>Signed</div>
+            <div style="background:#fff;border:1px solid #e8e5df;border-radius:6px;padding:6px 8px;font-size:10px;border-left:2px solid #1e9a80;"><strong>1-Bed, London</strong></div>
+          </div>
+        </div>
+      </div>
+    `);
     setProgress(90);
-    await delay(2000);
+    await delay(600);
 
-    // Step 7: Success
-    await addMessage('them', '✅ This is how easy it is to grow your Airbnb portfolio.');
+    // Animate the deal card appearing in pipeline
+    const pipeCard = document.getElementById('mobilePipeCard');
+    if (pipeCard) { pipeCard.style.opacity = '1'; pipeCard.style.transform = 'translateY(0)'; }
+    await delay(2500);
+
+    // SCREEN 4: Finale
+    hideMobileScreens();
+    await delay(500);
+    await showMobileScreen(`
+      <div style="text-align:center;padding:24px;">
+        <div style="font-size:36px;margin-bottom:12px;">🏡</div>
+        <h3 style="font-size:18px;font-weight:700;color:#1a1a1a;line-height:1.3;margin-bottom:8px;">This is how easy it is to grow your Airbnb portfolio.</h3>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">From deal to doorstep — powered by NFsTay</p>
+        <a href="/signup" style="display:inline-block;padding:10px 24px;border-radius:10px;background:#1e9a80;color:#fff;font-size:13px;font-weight:600;text-decoration:none;">Get Started</a>
+      </div>
+    `);
     setProgress(100);
-    await delay(3000);
+    await delay(4000);
 
     // Reset
+    hideMobileScreens();
     resetStory();
   }
 
