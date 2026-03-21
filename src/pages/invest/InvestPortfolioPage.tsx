@@ -165,54 +165,95 @@ export default function InvestPortfolioPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // F6: Monthly earnings chart from Supabase payout_claims
+  // F6: Monthly earnings chart — merges blockchain withdrawals + Supabase bank payouts
   const [monthlyEarnings, setMonthlyEarnings] = useState<{ month: string; amount: number }[]>([]);
+  const [blockchainEarnings, setBlockchainEarnings] = useState<{ amount: number; timestamp: number }[]>([]);
+
+  // Fetch blockchain withdrawal events with timestamps from The Graph
   useEffect(() => {
-    if (!user?.id) return;
+    if (!address) return;
     let cancelled = false;
     (async () => {
       try {
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-        sixMonthsAgo.setDate(1);
-        sixMonthsAgo.setHours(0, 0, 0, 0);
-
-        const { data } = await (supabase.from('payout_claims') as any)
-          .select('amount_entitled, created_at')
-          .eq('user_id', user.id)
-          .eq('status', 'paid')
-          .gte('created_at', sixMonthsAgo.toISOString())
-          .order('created_at', { ascending: true });
-
-        if (!data || cancelled) return;
-
-        // Build 6-month array
-        const months: { month: string; amount: number }[] = [];
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date();
-          d.setMonth(d.getMonth() - i);
-          months.push({
-            month: d.toLocaleString('en-GB', { month: 'short' }),
-            amount: 0,
-          });
-        }
-
-        for (const row of data) {
-          const rowDate = new Date(row.created_at);
-          const rowMonth = rowDate.toLocaleString('en-GB', { month: 'short' });
-          const entry = months.find((m) => m.month === rowMonth);
-          if (entry) {
-            entry.amount += Number(row.amount_entitled || 0);
-          }
-        }
-
-        if (!cancelled) setMonthlyEarnings(months);
+        const res = await fetch(SUBGRAPHS.RENT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `{ rentWithdrawns(first: 1000, orderBy: blockTimestamp, orderDirection: desc, where: { _by: "${address.toLowerCase()}" }) { _rent blockTimestamp } }`,
+          }),
+        });
+        const data = await res.json();
+        const withdrawals = data.data?.rentWithdrawns || [];
+        const events = withdrawals.map((w: any) => ({
+          amount: parseInt(w._rent) / 1e18,
+          timestamp: parseInt(w.blockTimestamp),
+        }));
+        if (!cancelled) setBlockchainEarnings(events);
       } catch {
         // Non-critical
       }
     })();
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [address]);
+
+  // Build monthly chart from blockchain events + Supabase bank payouts
+  useEffect(() => {
+    // Build 6-month array
+    const months: { month: string; amount: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      months.push({
+        month: d.toLocaleString('en-GB', { month: 'short' }),
+        amount: 0,
+      });
+    }
+
+    // Source 1: Blockchain withdrawal events (The Graph)
+    for (const evt of blockchainEarnings) {
+      const evtDate = new Date(evt.timestamp * 1000);
+      const evtMonth = evtDate.toLocaleString('en-GB', { month: 'short' });
+      const entry = months.find((m) => m.month === evtMonth);
+      if (entry) {
+        entry.amount += evt.amount;
+      }
+    }
+
+    // Source 2: Bank transfer payouts (Supabase payout_claims) — additive
+    if (user?.id) {
+      (async () => {
+        try {
+          const sixMonthsAgo = new Date();
+          sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+          sixMonthsAgo.setDate(1);
+          sixMonthsAgo.setHours(0, 0, 0, 0);
+
+          const { data } = await (supabase.from('payout_claims') as any)
+            .select('amount_entitled, created_at')
+            .eq('user_id', user.id)
+            .eq('status', 'paid')
+            .gte('created_at', sixMonthsAgo.toISOString())
+            .order('created_at', { ascending: true });
+
+          if (data) {
+            for (const row of data) {
+              const rowDate = new Date(row.created_at);
+              const rowMonth = rowDate.toLocaleString('en-GB', { month: 'short' });
+              const entry = months.find((m) => m.month === rowMonth);
+              if (entry) {
+                entry.amount += Number(row.amount_entitled || 0);
+              }
+            }
+          }
+        } catch {
+          // Non-critical — blockchain data already in chart
+        }
+        setMonthlyEarnings([...months]);
+      })();
+    } else {
+      setMonthlyEarnings(months);
+    }
+  }, [user?.id, blockchainEarnings]);
 
   // Fetch total claimed from blockchain (Total Earnings)
   const [totalClaimed, setTotalClaimed] = useState(0);
@@ -619,7 +660,7 @@ export default function InvestPortfolioPage() {
             <Card className="rounded-2xl shadow-sm">
               <CardContent className="py-12 text-center">
                 <Home className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground">You don't own any shares yet. Visit the Marketplace to start investing.</p>
+                <p className="text-muted-foreground">You don't own any allocations yet. Visit the Marketplace to start investing.</p>
               </CardContent>
             </Card>
           ) : null}
@@ -664,8 +705,8 @@ export default function InvestPortfolioPage() {
                           <p className="text-xs text-muted-foreground">{h.location}</p>
                           <div className="flex items-center gap-3 mt-1 text-sm flex-wrap">
                             <span>
-                              <span className="text-muted-foreground">Shares: </span>
-                              <span className="font-medium">{h.sharesOwned}<BlockchainDot tooltip="Share balance from blockchain" /></span>
+                              <span className="text-muted-foreground">Allocations: </span>
+                              <span className="font-medium">{h.sharesOwned}<BlockchainDot tooltip="Allocation balance from blockchain" /></span>
                             </span>
                             <span>
                               <span className="text-muted-foreground">Value: </span>
@@ -727,7 +768,7 @@ export default function InvestPortfolioPage() {
                             </Button>
                             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/invest/marketplace')}>
                               <ArrowUpRight className="h-3.5 w-3.5" />
-                              Buy More Shares
+                              Buy More Allocations
                             </Button>
                             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/invest/proposals')}>
                               <FileText className="h-3.5 w-3.5" />
@@ -757,7 +798,7 @@ export default function InvestPortfolioPage() {
                         <div className="grid grid-cols-3 gap-2">
                           <div>
                             <p className="text-base font-bold">${(h.sharesOwned * h.sharePrice).toLocaleString()}</p>
-                            <p className="text-[10px] text-muted-foreground">Your Shares</p>
+                            <p className="text-[10px] text-muted-foreground">Your Allocations</p>
                           </div>
                           <div>
                             <p className="text-base font-bold">{(h.annualYield * 6).toFixed(0)}%</p>

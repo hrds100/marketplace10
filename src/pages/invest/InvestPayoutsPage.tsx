@@ -731,7 +731,7 @@ export default function InvestPayoutsPage() {
                         <div>
                           <p className="font-medium">{payout.propertyTitle}</p>
                           <p className="text-sm text-muted-foreground">
-                            {formatDate(payout.date)} &middot; {payout.sharesOwned} shares<BlockchainDot tooltip="Share count from blockchain" />
+                            {formatDate(payout.date)} &middot; {payout.sharesOwned} allocations<BlockchainDot tooltip="Allocation count from blockchain" />
                           </p>
                         </div>
                       </div>
