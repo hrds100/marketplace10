@@ -405,7 +405,8 @@ export default function InvestPortfolioPage() {
   // ROI progress
   const roiTarget = portfolio.totalContributed;
   const profitTarget = roiTarget * 1.5;
-  const roiProgress = Math.min((portfolio.totalEarnings / profitTarget) * 100, 100);
+  const displayEarnings = totalClaimed > 0 ? totalClaimed : portfolio.totalEarnings;
+  const roiProgress = Math.min((displayEarnings / profitTarget) * 100, 100);
   const roiMarkerPct = (roiTarget / profitTarget) * 100;
 
   const summaryItems = [
@@ -490,32 +491,21 @@ export default function InvestPortfolioPage() {
                 {/* ROI Progress */}
                 <div className="pt-3 border-t space-y-2">
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Returns Progress</p>
-                  <div className="relative">
+                  <div>
                     <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-400 transition-all duration-500"
                         style={{ width: `${roiProgress}%` }}
                       />
                     </div>
-                    {/* ROI marker */}
-                    <div
-                      className="absolute top-3 flex flex-col items-center"
-                      style={{ left: `${roiMarkerPct}%`, transform: 'translateX(-50%)' }}
-                    >
-                      <div className="w-px h-2 bg-muted-foreground/40" />
-                      <span className="text-[9px] text-muted-foreground mt-0.5">Returns</span>
-                    </div>
-                    {/* Profit marker */}
-                    <div
-                      className="absolute top-3 flex flex-col items-center"
-                      style={{ left: '100%', transform: 'translateX(-50%)' }}
-                    >
-                      <div className="w-px h-2 bg-muted-foreground/40" />
-                      <span className="text-[9px] text-muted-foreground mt-0.5">Profit</span>
+                    <div className="flex justify-between mt-1.5">
+                      <span className="text-[9px] text-muted-foreground">0%</span>
+                      <span className="text-[9px] text-muted-foreground">Returns</span>
+                      <span className="text-[9px] text-muted-foreground">Profit</span>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    {formatCurrency(portfolio.totalEarnings)} earned of {formatCurrency(roiTarget)} target returns
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {formatCurrency(displayEarnings)} earned of {formatCurrency(roiTarget)} target returns
                   </p>
                 </div>
               </CardContent>
