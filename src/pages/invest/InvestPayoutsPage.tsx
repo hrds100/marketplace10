@@ -190,6 +190,7 @@ function ClaimModal({
             user_id: user?.id,
             user_type: 'investor',
             currency: 'GBP',
+            amount: payout.amount || 0,
           },
         });
         if (error) throw new Error(error.message);
@@ -364,7 +365,7 @@ function ClaimModal({
                 setClaimError(null);
                 supabase.functions
                   .invoke('submit-payout-claim', {
-                    body: { user_id: user?.id, user_type: 'investor', currency: 'GBP' },
+                    body: { user_id: user?.id, user_type: 'investor', currency: 'GBP', amount: payout.amount || 0 },
                   })
                   .then(({ data, error }) => {
                     if (error) throw new Error(error.message);

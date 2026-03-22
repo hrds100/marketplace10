@@ -1,8 +1,8 @@
 // submit-payout-claim — Submit a bank transfer payout claim
 // Trigger: User clicks "Claim" → selects "Bank Transfer"
-// Input: { user_id, user_type, currency }
+// Input: { user_id, user_type, currency, amount }
 // Output: { claim_id, amount, week_ref }
-// CRITICAL: amount is ALWAYS calculated server-side
+// Amount comes from blockchain rent read (getRentDetails) on the frontend
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -29,7 +29,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const { user_id, user_type, currency } = await req.json()
+    const { user_id, user_type, currency, amount: clientAmount } = await req.json()
     if (!user_id || !user_type || !currency) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders })
     }
@@ -45,16 +45,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No bank details found. Please add bank details first.' }), { status: 400, headers: corsHeaders })
     }
 
-    // Calculate amount server-side
-    let amount = 0
-    if (user_type === 'investor') {
+    // Amount from frontend (read from blockchain getRentDetails)
+    // Falls back to inv_payouts table if not provided
+    let amount = Number(clientAmount) || 0
+
+    if (amount <= 0 && user_type === 'investor') {
       const { data: payouts } = await supabase
         .from('inv_payouts')
         .select('amount')
         .eq('user_id', user_id)
         .eq('status', 'claimable')
       amount = (payouts || []).reduce((sum: number, p: { amount: number }) => sum + p.amount, 0)
-    } else if (user_type === 'affiliate') {
+    }
+
+    if (amount <= 0 && user_type === 'affiliate') {
       const { data: commissions } = await supabase
         .from('aff_commissions')
         .select('commission_amount')
