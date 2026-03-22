@@ -397,7 +397,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 }
 
 .hero-cta {
-  background-color: #1e9a80;
+  background-color: #1c1c1c;
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -1701,7 +1701,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 
 /* ---- Responsive: Tablet (≤991px / medium breakpoint) ---- */
 @media (max-width: 991px) {
-  h1, .hero-heading { font-size: 36px; line-height: 40px; }
+  h1, .hero-heading { font-size: 46px; line-height: 52px; }
   h2 { font-size: 32px; line-height: 38px; }
   .padding-global { padding-left: 1.5rem; padding-right: 1.5rem; }
   .padding-section-large { padding-top: 80px; padding-bottom: 80px; }
@@ -1758,10 +1758,10 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   .click-here-tooltip { font-size: 10px; padding: 4px 10px; right: 12px; bottom: 52px; }
   .chat-input-glow { left: 8px; right: 8px; top: 6px; bottom: 10px; border-radius: 16px; }
   .hero-text-block { padding: 100px 0 20px; }
-  .hero-heading { font-size: 26px; line-height: 32px; }
-  .hero-heading .italic-accent { font-size: 26px; }
-  .hero-buttons { gap: 8px; }
-  .hero-cta, .hero-login { padding: 8px 20px; font-size: 13px; }
+  .hero-heading { font-size: 46px; line-height: 52px; }
+  .hero-heading .italic-accent { font-size: 46px; }
+  .hero-buttons { gap: 10px; flex-direction: row; }
+  .hero-cta, .hero-login { padding: 10px 24px; font-size: 14px; }
   .animated-cursor { display: none !important; }
   .hero-scroll-indicator { display: none; }
 
@@ -1789,14 +1789,15 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 
 /* ---- Responsive: Small mobile (≤479px) ---- */
 @media (max-width: 479px) {
-  h1, .hero-heading { font-size: 28px; line-height: 32px; }
+  h1, .hero-heading { font-size: 40px; line-height: 46px; }
+  .hero-heading .italic-accent { font-size: 40px; }
   .section { margin: 8px; border-radius: 20px; }
   .nav_fixed { margin: 0.5rem 0.5rem 0; }
   .padding-global { padding-left: 1.25rem; padding-right: 1.25rem; }
   .padding-section-large { padding-top: 48px; padding-bottom: 48px; }
-  .hero-buttons { flex-direction: column; width: 100%; }
+  .hero-buttons { flex-direction: row; }
   .hero-buttons .hero-cta,
-  .hero-buttons .hero-login { width: 100%; text-align: center; }
+  .hero-buttons .hero-login { width: auto; text-align: center; }
   .templates-grid { grid-template-columns: 1fr; }
   .why-choose-container { padding: 24px; }
   .cta-inner { margin: 16px; padding: 48px 24px; }
