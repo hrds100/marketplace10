@@ -234,6 +234,31 @@ export default function AdminInvestPayouts() {
         ))}
       </div>
 
+      {/* Credit Test Rent — Admin can add claimable amount for testing */}
+      <Card className="mb-8 border-dashed border-yellow-500/40 bg-yellow-500/5">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                <FlaskConical className="w-5 h-5 text-yellow-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Credit Test Rent</p>
+                <p className="text-xs text-muted-foreground">Add claimable amount to your account for testing bank payout flow</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">$</span>
+              <input type="number" min="0.01" max="100" step="0.01" value={testAmount} onChange={(e) => setTestAmount(e.target.value)} className="w-20 h-9 px-2 rounded-md border border-input bg-background text-sm text-center" />
+              <Button size="sm" onClick={handleCreditTestRent} disabled={creditLoading} className="gap-1.5">
+                {creditLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FlaskConical className="h-3.5 w-3.5" />}
+                Credit
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
         <select
