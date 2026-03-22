@@ -1,298 +1,286 @@
 /* ════════════════════════════════════════════
-   Journey Section — all styles
+   Journey Section — Alternating Timeline
    ════════════════════════════════════════════ */
 
-.journey-section {
+.tl-section {
   background: #f3f3ee;
-  padding: 140px 0;
+  padding: 120px 0;
   position: relative;
   overflow: hidden;
 }
-.journey-dots {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.journey-container {
-  max-width: 900px;
+
+.tl-container {
+  max-width: 1000px;
   margin: 0 auto;
   padding: 0 24px;
-  position: relative;
 }
-.journey-counter {
-  position: absolute;
-  top: 0;
-  right: 24px;
-  font-size: 0.8rem;
-  color: #6b7280;
-  letter-spacing: 0.08em;
-  font-weight: 500;
-}
-.journey-counter span {
-  display: inline-block;
-}
-.journey-heading {
+
+/* ── Heading ── */
+.tl-heading {
+  text-align: center;
   margin-bottom: 64px;
 }
-.journey-heading h2 {
+.tl-heading h2 {
   font-size: 40px;
   font-weight: 700;
   color: #1a1a1a;
   line-height: 1.15;
   letter-spacing: 0.01em;
 }
-.journey-heading p {
+.tl-heading p {
   font-size: 15px;
   color: #6b7280;
   margin-top: 12px;
 }
-.journey-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-@media (max-width: 768px) {
-  .journey-section {
-    padding: 80px 0;
-  }
-  .journey-heading {
-    margin-bottom: 40px;
-  }
-  .journey-heading h2 {
-    font-size: 28px;
-  }
-  .journey-counter {
-    display: none;
-  }
-}
-
-/* ════════════════════════════════════════════
-   TASK 2: Journey section — IntersectionObserver CSS
-   ════════════════════════════════════════════ */
-
-/* Word entrance (replaces gsap.from .jword) */
-.jword {
-  display: inline-block;
-  opacity: 0;
-  transform: translateY(60px);
-  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.jword.jword-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Profit underline (replaces gsap.from .profit-underline) */
-.profit-underline {
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: #1e9a80;
-  border-radius: 2px;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.profit-underline.underline-visible {
-  transform: scaleX(1);
-}
-
-/* jword-profit: needs position:relative for underline */
-.jword-profit {
+.tl-accent {
   position: relative;
   display: inline-block;
+  border-bottom: 3px solid #1e9a80;
+  padding-bottom: 2px;
 }
 
-/* Accent bar animation (replaces gsap) */
-.accent-bar {
-  transform: scaleY(0);
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+/* ── Timeline spine ── */
+.tl-timeline {
+  position: relative;
 }
-.accent-bar.bar-visible {
-  transform: scaleY(1);
-}
-
-/* Body row stagger (replaces gsap) */
-.card-body-row {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.card-body-row.row-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Progress fill (replaces gsap) */
-.progress-fill {
-  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.progress-fill.fill-visible {
-  transform: scaleX(1) !important;
-}
-
-/* Shimmer sweep (replaces gsap) */
-.shimmer-layer {
-  transition: transform 0.7s cubic-bezier(0.33, 1, 0.68, 1);
-}
-.shimmer-layer.shimmer-go {
-  transform: translateX(200%) !important;
-}
-
-/* Sonar ripple (replaces gsap sonar) */
-.journey-sonar {
+.tl-timeline::before {
+  content: '';
   position: absolute;
-  left: -20px;
-  top: 50%;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e0e0e0;
+  transform: translateX(-50%);
+}
+
+/* ── Item layout ── */
+.tl-item {
+  position: relative;
+  width: 50%;
+  padding: 0 40px;
+  margin-bottom: 48px;
+  /* scroll reveal — hidden by default */
+  opacity: 0;
+  transition: opacity 600ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Odd items — left side */
+.tl-item:nth-child(odd) {
+  left: 0;
+  text-align: right;
+  transform: translateX(-60px);
+}
+/* Even items — right side */
+.tl-item:nth-child(even) {
+  left: 50%;
+  text-align: left;
+  transform: translateX(60px);
+}
+
+/* Visible state */
+.tl-item.tl-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Stagger delays */
+.tl-item:nth-child(1) { transition-delay: 0ms; }
+.tl-item:nth-child(2) { transition-delay: 80ms; }
+.tl-item:nth-child(3) { transition-delay: 160ms; }
+.tl-item:nth-child(4) { transition-delay: 240ms; }
+.tl-item:nth-child(5) { transition-delay: 320ms; }
+.tl-item:nth-child(6) { transition-delay: 400ms; }
+
+/* ── Node circle ── */
+.tl-node {
+  position: absolute;
+  top: 28px;
   width: 40px;
   height: 40px;
-  margin-top: -20px;
   border-radius: 50%;
-  background: rgba(30,154,128,0.15);
-  pointer-events: none;
-  transform: scale(1);
-  opacity: 1;
-  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.9s ease-out;
+  background: #fff;
+  border: 3px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transform: scale(0);
+  transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1) 200ms,
+              border-color 400ms ease 200ms,
+              box-shadow 400ms ease 200ms;
 }
-.journey-sonar.sonar-go {
-  transform: scale(4);
-  opacity: 0;
+.tl-node span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e9a80;
+  line-height: 1;
+}
+
+/* Node positioning — odd: right edge, even: left edge */
+.tl-item:nth-child(odd) .tl-node {
+  right: -20px;
+}
+.tl-item:nth-child(even) .tl-node {
+  left: -20px;
+}
+
+/* Node active state when visible */
+.tl-item.tl-visible .tl-node {
+  transform: scale(1);
+  border-color: #1e9a80;
+  box-shadow: 0 0 0 6px rgba(30, 154, 128, 0.1);
+}
+
+/* ── Card ── */
+.tl-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  position: relative;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.tl-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Card arrow — odd items: arrow on right */
+.tl-item:nth-child(odd) .tl-card::before {
+  content: '';
+  position: absolute;
+  right: -8px;
+  top: 32px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  transform: rotate(-45deg);
+  border-radius: 0 0 3px 0;
+}
+/* Card arrow — even items: arrow on left */
+.tl-item:nth-child(even) .tl-card::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 32px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  transform: rotate(-45deg);
+  border-radius: 3px 0 0 0;
+}
+
+/* ── Tag pill ── */
+.tl-tag {
+  display: inline-block;
+  background: rgba(30, 154, 128, 0.08);
+  color: #1e9a80;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 100px;
+  padding: 4px 12px;
+  margin-bottom: 12px;
+}
+
+/* ── Card typography ── */
+.tl-card h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+.tl-card p {
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.6;
 }
 
 /* ════════════════════════════════════════════
-   TASK 7: Step card styles (moved from inline <style>)
+   Responsive — Mobile (≤768px)
    ════════════════════════════════════════════ */
-.step-card {
-  background: #fff;
-  border: 1px solid rgba(30,154,128,0.1);
-  border-radius: 20px;
-  height: 72px;
-  overflow: hidden;
-  opacity: 0.5;
-  position: relative;
-  transition: height 0.55s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
-  cursor: pointer;
-}
-.sc-collapsed {
-  height: 72px;
-  padding: 0 32px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.sc-pill {
-  background: rgba(30,154,128,0.08);
-  color: #1e9a80;
-  border-radius: 100px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  flex-shrink: 0;
-}
-.sc-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  flex: 1;
-}
-.sc-tag-mini {
-  font-size: 0.7rem;
-  color: rgba(30,154,128,0.5);
-  flex-shrink: 0;
-}
-.sc-chev {
-  font-size: 1.2rem;
-  color: #6b7280;
-  flex-shrink: 0;
-  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
-}
-.sc-body {
-  padding: 0 32px 32px;
-}
-.sc-body p {
-  font-size: 0.95rem;
-  color: #6b7280;
-  line-height: 1.7;
-  margin-bottom: 12px;
-}
-.sc-tag {
-  display: inline-block;
-  background: rgba(30,154,128,0.08);
-  border: 1px solid rgba(30,154,128,0.2);
-  color: #1e9a80;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 4px 14px;
-}
-.sc-progress {
-  height: 3px;
-  background: #e8e5df;
-  border-radius: 2px;
-  overflow: hidden;
-  margin-top: 20px;
-}
-.progress-fill {
-  height: 100%;
-  background: #1e9a80;
-  border-radius: 2px;
-  width: 100%;
-  transform: scaleX(0);
-  transform-origin: left;
-}
-.accent-bar {
-  position: absolute;
-  left: 0;
-  top: 16px;
-  bottom: 16px;
-  width: 3px;
-  background: linear-gradient(to bottom, #1e9a80, rgba(30,154,128,0.2));
-  border-radius: 0 2px 2px 0;
-  transform: scaleY(0);
-  transform-origin: top;
-}
-.shimmer-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.55) 50%, transparent 65%);
-  transform: translateX(-100%);
-}
-.sc-connector {
-  width: 2px;
-  height: 16px;
-  margin: 0 0 0 35px;
-  border-left: 2px dashed rgba(30,154,128,0.2);
-}
-
-/* Active state */
-.step-card.active {
-  opacity: 1;
-  border-color: rgba(30,154,128,0.25);
-  animation: stepGlowBreathe 3s ease-in-out infinite;
-}
-.step-card.active .sc-chev {
-  transform: rotate(90deg);
-}
-@keyframes stepGlowBreathe {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(30,154,128,0.1), 0 8px 48px rgba(30,154,128,0.08); }
-  50% { box-shadow: 0 0 0 1px rgba(30,154,128,0.2), 0 8px 48px rgba(30,154,128,0.18), 0 0 32px rgba(30,154,128,0.08); }
-}
-
-/* Step card mobile */
 @media (max-width: 768px) {
-  .step-card { height: 64px; }
-  .sc-collapsed { height: 64px; padding: 0 20px; gap: 10px; }
-  .sc-title { font-size: 0.85rem; }
-  .sc-tag-mini { display: none; }
-  .sc-body { padding: 0 20px 24px; }
-  .sc-connector { display: none; }
+  .tl-section {
+    padding: 80px 0;
+  }
+  .tl-heading h2 {
+    font-size: 28px;
+  }
+  .tl-heading {
+    margin-bottom: 40px;
+  }
+
+  /* Single column, left-aligned */
+  .tl-timeline::before {
+    left: 20px;
+    transform: none;
+  }
+  .tl-item,
+  .tl-item:nth-child(odd),
+  .tl-item:nth-child(even) {
+    width: 100%;
+    left: 0;
+    padding-left: 60px;
+    padding-right: 0;
+    text-align: left;
+    transform: translateX(-30px);
+  }
+  .tl-item.tl-visible {
+    transform: translateX(0);
+  }
+
+  /* Nodes always on left */
+  .tl-item:nth-child(odd) .tl-node,
+  .tl-item:nth-child(even) .tl-node {
+    left: 0;
+    right: auto;
+  }
+
+  /* Arrows always on left */
+  .tl-item:nth-child(odd) .tl-card::before,
+  .tl-item:nth-child(even) .tl-card::before {
+    left: -8px;
+    right: auto;
+    border-right: none;
+    border-bottom: none;
+    border-left: 1px solid rgba(0, 0, 0, 0.06);
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    transform: rotate(-45deg);
+    border-radius: 3px 0 0 0;
+  }
 }
 
+/* ════════════════════════════════════════════
+   Desktop large (≥1280px)
+   ════════════════════════════════════════════ */
+@media (min-width: 1280px) {
+  .tl-section {
+    padding: 140px 0;
+  }
+  .tl-card {
+    padding: 32px 36px;
+  }
+}
+
+/* ════════════════════════════════════════════
+   Reduced motion
+   ════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-  .step-card, .accent-bar, .shimmer-layer, .progress-fill, .sc-chev { transition-duration: 0.01ms !important; }
-  .step-card.active { animation: none !important; }
+  .tl-item {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+  .tl-node {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+  .tl-card {
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -17,7 +17,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <!-- ScrollTrigger removed — journey section uses IntersectionObserver -->
 </head>
-</head>
 <body>
 
   <!-- ========== NAVBAR ========== -->
@@ -563,95 +562,59 @@
   </div>
 
   <!-- JOURNEY — GSAP EXPANDING CARDS -->
-  <section id="journey" class="journey-section">
-    <!-- Floating dots -->
-    <div id="journeyDots" class="journey-dots"></div>
-
-    <div class="journey-container">
-      <!-- Step counter -->
-      <div id="stepCounter" class="journey-counter">
-        <span id="counterNum">01</span> / 06
-      </div>
-
-      <!-- Heading -->
-      <div class="journey-heading">
-        <h2>
-          <span class="jword">From</span> <span class="jword">first</span> <span class="jword">search</span><br>
-          <span class="jword">to</span> <span class="jword">first</span> <span class="jword jword-profit">profit<span class="profit-underline"></span></span>
-        </h2>
+  <section id="journey" class="tl-section">
+    <div class="tl-container">
+      <div class="tl-heading">
+        <h2>From first search<br>to first <span class="tl-accent">profit</span></h2>
         <p>Six steps. One platform. Everything you need.</p>
       </div>
-
-      <!-- Card stack -->
-      <div id="journeyStack" class="journey-stack">
-        <div class="step-card" data-step="0">
-          <div class="sc-collapsed"><span class="sc-pill">01</span><span class="sc-title">Browse 1,800+ verified deals</span><span class="sc-tag-mini">Deal Marketplace</span><span class="sc-chev">&rsaquo;</span></div>
-          <div class="sc-body">
-            <div class="accent-bar"></div>
-            <div class="shimmer-layer"></div>
-            <p class="card-body-row">Filter by city, type and profit. Every listing is landlord-approved.</p>
-            <span class="card-body-row sc-tag">Deal Marketplace</span>
-            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
+      <div class="tl-timeline">
+        <div class="tl-item">
+          <div class="tl-node"><span>01</span></div>
+          <div class="tl-card">
+            <div class="tl-tag">Deal Marketplace</div>
+            <h3>Browse 1,800+ verified deals</h3>
+            <p>Filter by city, type and profit. Every listing is landlord-approved.</p>
           </div>
         </div>
-        <div class="sc-connector"></div>
-
-        <div class="step-card" data-step="1">
-          <div class="sc-collapsed"><span class="sc-pill">02</span><span class="sc-title">Analyse profit with the earnings estimator</span><span class="sc-tag-mini">Earnings Estimator</span><span class="sc-chev">&rsaquo;</span></div>
-          <div class="sc-body">
-            <div class="accent-bar"></div>
-            <div class="shimmer-layer"></div>
-            <p class="card-body-row">Model nightly rates, occupancy and costs before you commit.</p>
-            <span class="card-body-row sc-tag">Earnings Estimator</span>
-            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
+        <div class="tl-item">
+          <div class="tl-node"><span>02</span></div>
+          <div class="tl-card">
+            <div class="tl-tag">Earnings Estimator</div>
+            <h3>Analyse profit with the earnings estimator</h3>
+            <p>Model nightly rates, occupancy and costs before you commit.</p>
           </div>
         </div>
-        <div class="sc-connector"></div>
-
-        <div class="step-card" data-step="2">
-          <div class="sc-collapsed"><span class="sc-pill">03</span><span class="sc-title">Message the landlord from your unified inbox</span><span class="sc-tag-mini">Unified Inbox</span><span class="sc-chev">&rsaquo;</span></div>
-          <div class="sc-body">
-            <div class="accent-bar"></div>
-            <div class="shimmer-layer"></div>
-            <p class="card-body-row">Property context, earnings data and templates alongside every thread.</p>
-            <span class="card-body-row sc-tag">Unified Inbox</span>
-            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
+        <div class="tl-item">
+          <div class="tl-node"><span>03</span></div>
+          <div class="tl-card">
+            <div class="tl-tag">Unified Inbox</div>
+            <h3>Message the landlord from your unified inbox</h3>
+            <p>Property context, earnings data and templates alongside every thread.</p>
           </div>
         </div>
-        <div class="sc-connector"></div>
-
-        <div class="step-card" data-step="3">
-          <div class="sc-collapsed"><span class="sc-pill">04</span><span class="sc-title">Track progress in your CRM pipeline</span><span class="sc-tag-mini">CRM Pipeline</span><span class="sc-chev">&rsaquo;</span></div>
-          <div class="sc-body">
-            <div class="accent-bar"></div>
-            <div class="shimmer-layer"></div>
-            <p class="card-body-row">From cold lead to signed agreement &mdash; every stage in one view.</p>
-            <span class="card-body-row sc-tag">CRM Pipeline</span>
-            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
+        <div class="tl-item">
+          <div class="tl-node"><span>04</span></div>
+          <div class="tl-card">
+            <div class="tl-tag">CRM Pipeline</div>
+            <h3>Track progress in your CRM pipeline</h3>
+            <p>From cold lead to signed agreement &mdash; every stage in one view.</p>
           </div>
         </div>
-        <div class="sc-connector"></div>
-
-        <div class="step-card" data-step="4">
-          <div class="sc-collapsed"><span class="sc-pill">05</span><span class="sc-title">Sign the rent-to-rent agreement</span><span class="sc-tag-mini">Deal Closing</span><span class="sc-chev">&rsaquo;</span></div>
-          <div class="sc-body">
-            <div class="accent-bar"></div>
-            <div class="shimmer-layer"></div>
-            <p class="card-body-row">Templates, checklists and reminders. Never miss a step.</p>
-            <span class="card-body-row sc-tag">Deal Closing</span>
-            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
+        <div class="tl-item">
+          <div class="tl-node"><span>05</span></div>
+          <div class="tl-card">
+            <div class="tl-tag">Deal Closing</div>
+            <h3>Sign the rent-to-rent agreement</h3>
+            <p>Templates, checklists and reminders. Never miss a step.</p>
           </div>
         </div>
-        <div class="sc-connector"></div>
-
-        <div class="step-card" data-step="5">
-          <div class="sc-collapsed"><span class="sc-pill">06</span><span class="sc-title">Go live on Airbnb and earn</span><span class="sc-tag-mini">Live &amp; Earning</span><span class="sc-chev">&rsaquo;</span></div>
-          <div class="sc-body">
-            <div class="accent-bar"></div>
-            <div class="shimmer-layer"></div>
-            <p class="card-body-row">Your first profit usually arrives within 30 days of going live.</p>
-            <span class="card-body-row sc-tag">Live &amp; Earning</span>
-            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
+        <div class="tl-item">
+          <div class="tl-node"><span>06</span></div>
+          <div class="tl-card">
+            <div class="tl-tag">Live &amp; Earning</div>
+            <h3>Go live on Airbnb and earn</h3>
+            <p>Your first profit usually arrives within 30 days of going live.</p>
           </div>
         </div>
       </div>
