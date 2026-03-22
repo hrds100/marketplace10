@@ -4,6 +4,7 @@ import {
   ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap,
   CreditCard, HelpCircle, UserCheck, Settings, Bell, TrendingUp,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
+  LayoutGrid, ArrowLeftRight, Plug, Globe, CalendarCheck,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
