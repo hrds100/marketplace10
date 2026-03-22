@@ -47,7 +47,7 @@
                 <span style="font-size:14px;">&#127468;&#127463;</span> EN
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg>
               </button>
-              <div class="lang-menu" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.1);padding:6px;min-width:160px;z-index:200;">
+              <div class="lang-menu" style="position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.1);padding:6px;min-width:160px;z-index:200;">
                 <a href="#" data-lang="en" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;font-weight:500;background:rgba(30,154,128,0.06);">&#127468;&#127463; English</a>
                 <a href="#" data-lang="pt" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;">&#127463;&#127479; Portugu&ecirc;s</a>
                 <a href="#" data-lang="es" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;">&#127466;&#127480; Espa&ntilde;ol</a>
@@ -1110,20 +1110,18 @@
 
   <script>
   // Language switcher engine
-  function switchLang(lang) {
+  window.switchLang = function(lang) {
+    if (typeof TRANSLATIONS === 'undefined') return;
     var t = TRANSLATIONS[lang];
     if (!t) return;
 
-    // Update all elements with data-i18n
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
       var key = el.getAttribute('data-i18n');
       if (t[key]) el.textContent = t[key];
     });
 
-    // Update HTML dir for Arabic
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
 
-    // Update the language button display
     var flags = { en: '\ud83c\uddec\ud83c\udde7', pt: '\ud83c\udde7\ud83c\uddf7', es: '\ud83c\uddea\ud83c\uddf8', fr: '\ud83c\uddeb\ud83c\uddf7', ar: '\ud83c\udde6\ud83c\uddea' };
     var labels = { en: 'EN', pt: 'PT', es: 'ES', fr: 'FR', ar: 'AR' };
     var langBtn = document.querySelector('.lang-dropdown button');
@@ -1131,21 +1129,23 @@
       langBtn.innerHTML = '<span style="font-size:14px;">' + (flags[lang] || flags.en) + '</span> ' + (labels[lang] || 'EN') + ' <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg>';
     }
 
-    // Close dropdown
-    document.querySelector('.lang-dropdown').classList.remove('open');
+    var dd = document.querySelector('.lang-dropdown');
+    if (dd) dd.classList.remove('open');
 
-    // Mark active language in dropdown
     document.querySelectorAll('.lang-dropdown .lang-menu a').forEach(function(a) {
       a.style.background = a.getAttribute('data-lang') === lang ? 'rgba(30,154,128,0.06)' : '';
     });
-  }
+  };
 
-  // Attach click handlers to language links
-  document.querySelectorAll('.lang-dropdown .lang-menu a').forEach(function(a) {
-    a.addEventListener('click', function(e) {
+  // Use onclick directly on language links for maximum reliability
+  document.querySelectorAll('[data-lang]').forEach(function(a) {
+    a.onclick = function(e) {
       e.preventDefault();
-      switchLang(a.getAttribute('data-lang'));
-    });
+      e.stopPropagation();
+      var lang = this.getAttribute('data-lang');
+      window.switchLang(lang);
+      return false;
+    };
   });
   </script>
 
