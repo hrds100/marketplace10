@@ -119,6 +119,35 @@ All rules from `docs/AGENT_INSTRUCTIONS.md` apply. These are ADDITIONAL rules fo
 
 ---
 
+## 3b. CRITICAL BUILD RULES (Learned from 2026-03-22 incident)
+
+These rules exist because breaking them crashed the entire app for all users.
+
+16. **NEVER modify `vite.config.ts` unless you are 100% certain it won't break the build.** The Particle SDK, node polyfills, WASM loader, and React resolution are all fragile. Adding resolve.alias entries for React 18 caused a TextEncoder crash that blanked the entire site.
+
+17. **NEVER modify `src/main.tsx` entry point.** The import order and polyfill setup are critical. ES module imports are hoisted — inline code before `import` does NOT run first.
+
+18. **NEVER use `sed` to inject code into React/TypeScript files.** It creates malformed merges (duplicate hooks, broken syntax) that crash the entire app. Always use proper file editing tools.
+
+19. **If the site goes blank (white page on all routes), check these in order:**
+    - `vite.config.ts` — was `resolve.alias` changed? Revert it.
+    - `src/main.tsx` — was it modified? Revert it.
+    - `src/layouts/AdminLayout.tsx` — are all lucide-react icon imports present? Missing icons = `ReferenceError` = blank page.
+    - `src/App.tsx` — are all imported components' files present? Missing file = crash.
+    - Run `git show <last-working-commit>:vite.config.ts` and `git show <last-working-commit>:src/main.tsx` to compare.
+
+20. **The known working state of `vite.config.ts` has NO React 18 resolve aliases.** The site works without them. Do not add `"react": path.resolve(...)` aliases — they break the node polyfills plugin and cause `TextEncoder is not a constructor`.
+
+21. **Before pushing ANY change to main, verify the build passes AND the app renders.** Run `npm run build` and check for errors. A passing build does NOT guarantee the app renders — runtime crashes (missing imports, duplicate hooks) are not caught by the build.
+
+22. **After any merge from another branch, always diff the critical files:**
+    ```bash
+    git diff <before-merge>..HEAD -- vite.config.ts src/main.tsx src/App.tsx src/layouts/AdminLayout.tsx
+    ```
+    If any of these changed unexpectedly, investigate before pushing.
+
+---
+
 ## 4. COMMISSION SYSTEM RULES
 
 ### Subscription Commissions (off-chain)

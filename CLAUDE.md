@@ -50,6 +50,13 @@ git push origin main # auto-deploys to Vercel → hub.nfstay.com
 5. Every DB write: confirm RLS policy covers it first.
 6. Destructive actions: STOP and ask Hugo.
 
+## DO NOT TOUCH (crash risk)
+- **`vite.config.ts`** — Do NOT add resolve.alias for React. Do NOT change node polyfills. The Particle SDK + WASM + polyfills are fragile. Adding React 18 aliases caused a site-wide crash on 2026-03-22.
+- **`src/main.tsx`** — Do NOT modify. Import order is critical. ES module imports are hoisted above inline code.
+- **`src/layouts/AdminLayout.tsx`** — All lucide-react icons must be imported. A missing icon = ReferenceError = blank page everywhere.
+- **Never use `sed` to edit .tsx/.ts files** — use proper Edit tools. sed creates malformed code (duplicate hooks, merged lines) that crashes React.
+- **After any branch merge**, always check: `git diff <before>..HEAD -- vite.config.ts src/main.tsx src/App.tsx src/layouts/AdminLayout.tsx`
+
 ## Admin
 - Admin emails: `admin@hub.nfstay.com`, `hugo@nfstay.com` (hardcoded in `src/hooks/useAuth.ts`)
 - Admin routes: `/admin/*` wrapped in `AdminGuard`
