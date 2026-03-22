@@ -464,14 +464,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showMobileScreen(html) {
     return new Promise(resolve => {
-      // Create overlay inside chat panel (covers earnings banner + messages)
+      // Create overlay inside chat panel (covers earnings banner + messages but keeps tabs + input visible)
       const screen = document.createElement('div');
       screen.className = 'mobile-story-screen';
-      screen.style.cssText = 'position:absolute;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;opacity:0;transform:scale(0.96);transition:opacity 400ms ease,transform 400ms ease;overflow-y:auto;';
-      screen.innerHTML = html;
 
+      // Calculate offsets to keep tabs and input area visible
       const panel = document.querySelector('.chat-panel');
       panel.style.position = 'relative';
+      const tabsEl = panel.querySelector('.chat-tabs');
+      const inputEl = panel.querySelector('.chat-input-area');
+      const topOffset = tabsEl ? tabsEl.offsetHeight + (panel.querySelector('.chat-progress-bar') ? panel.querySelector('.chat-progress-bar').offsetHeight : 0) : 0;
+      const bottomOffset = inputEl ? inputEl.offsetHeight : 0;
+
+      screen.style.cssText = 'position:absolute;left:0;right:0;top:' + topOffset + 'px;bottom:' + bottomOffset + 'px;z-index:20;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 20px;opacity:0;transform:scale(0.96);transition:opacity 400ms ease,transform 400ms ease;overflow-y:auto;';
+      screen.innerHTML = html;
+
       panel.appendChild(screen);
 
       // Animate in
@@ -581,6 +588,10 @@ document.addEventListener('DOMContentLoaded', () => {
       await delay(delayMs);
     }
 
+    // Type in the real input area, then show as bubble
+    await typeText('Is this available for Airbnb?', 45);
+    await delay(300);
+    clearTypewriter();
     await addMobileBubble('me', 'Is this available for Airbnb?', 1200);
     setProgress(50);
 
@@ -594,6 +605,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     await addMobileBubble('them', 'Yes! Landlord approved. Would you like to arrange a viewing?', 1500);
     setProgress(60);
+
+    await typeText('Tomorrow at 5pm works!', 45);
+    await delay(300);
+    clearTypewriter();
     await addMobileBubble('me', 'Tomorrow at 5pm works!', 1000);
     setProgress(70);
 
