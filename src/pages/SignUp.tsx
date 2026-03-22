@@ -79,9 +79,12 @@ function AuthShell({ children, showTabs, heading, subtitle }: { children: React.
   return (
     <div className="min-h-screen w-full flex items-center justify-center" style={{ backgroundColor: '#f3f3ee' }}>
       <div className="flex w-full h-screen overflow-hidden p-2 gap-2" style={{ backgroundColor: '#f3f3ee' }}>
-        <div className="flex flex-col items-center justify-between flex-1 lg:w-1/2 w-full h-full overflow-y-auto bg-white rounded-3xl border" style={{ borderColor: '#e8e5df', padding: 'clamp(24px, 3.5vh, 64px)' }}>
+        <div className="flex flex-col items-center justify-start gap-6 pt-6 flex-1 lg:w-1/2 w-full h-full overflow-y-auto bg-white rounded-3xl border" style={{ borderColor: '#e8e5df', padding: 'clamp(24px, 3.5vh, 64px)' }}>
           <div className="flex items-center justify-center w-full">
-            <Link to="/" className="font-extrabold text-[#0a0a0a] tracking-tight" style={{ fontSize: 'clamp(18px, 2.5vh, 24px)' }}>NFsTay</Link>
+            <Link to="/" className="flex items-center gap-1" aria-label="NFsTay Home" style={{ fontFamily: "'Sora', sans-serif" }}>
+              <span className="flex items-center justify-center w-8 h-8 border-2 border-[#0a0a0a] rounded-lg text-xs font-bold">nf</span>
+              <span className="text-lg tracking-widest font-bold">stay</span>
+            </Link>
           </div>
 
           <div className="flex flex-col items-center justify-center w-full max-w-[480px] flex-1">
@@ -99,7 +102,6 @@ function AuthShell({ children, showTabs, heading, subtitle }: { children: React.
 
             {children}
           </div>
-          <div />
         </div>
         <AuthSlidePanel />
       </div>
