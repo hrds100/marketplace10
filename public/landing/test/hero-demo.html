@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hero Demo — Isolated Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@1,400;1,700&family=Sora:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/base.css">
+  <link rel="stylesheet" href="/landing/css/nav.css">
+  <link rel="stylesheet" href="/landing/css/hero.css">
+  <link rel="stylesheet" href="/landing/css/animations.css">
+  <link rel="stylesheet" href="/landing/css/responsive.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <style>body { background: #F9F9F9; }</style>
+</head>
+<body>
+
+  <!-- Minimal navbar for GSAP entrance -->
+  <div class="nav_fixed" id="navbar">
+    <div class="nav_component" role="banner">
+      <div class="padding-global">
+        <div class="nav_container">
+          <div class="nav-left-group">
+            <a href="/" class="logo-link" aria-label="NFsTay Home">
+              <span class="logo-61"><span class="logo-61-box">nf</span><span class="logo-61-text">stay</span></span>
+            </a>
+          </div>
+          <div class="nav-end-wrapper">
+            <a href="/signup" class="nav-btn">Get Started</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero section (copy from main page) -->
+  <section class="section section_hero" id="hero">
+    <div class="hero-bg-clouds">
+      <svg class="cloud-svg cloud-1" viewBox="0 0 600 200" fill="none"><ellipse cx="300" cy="150" rx="280" ry="80" fill="rgba(255,255,255,0.6)"/></svg>
+      <svg class="cloud-svg cloud-2" viewBox="0 0 500 180" fill="none"><ellipse cx="250" cy="130" rx="230" ry="70" fill="rgba(255,255,255,0.5)"/></svg>
+    </div>
+    <div class="padding-global">
+      <div class="container-large">
+        <div class="hero-text-block">
+          <h1 class="hero-heading">Find, negotiate and grow<br><span class="italic-accent">your Airbnb portfolio</span></h1>
+          <div class="hero-buttons">
+            <a href="/signup" class="hero-cta">Get Started</a>
+            <a href="/signup" class="hero-login">Login</a>
+          </div>
+        </div>
+        <div class="hero-demo-component" id="heroDemoComponent">
+          <div class="animated-cursor" id="animatedCursor" style="display:none;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86h8.14a.5.5 0 00.35-.85L5.85 2.86a.5.5 0 00-.35.35z" fill="#0a0a0a" stroke="white" stroke-width="1"/></svg>
+          </div>
+          <div class="chat-panel">
+            <div class="chat-tabs">
+              <button class="chat-tab active" data-tab="deals">Deals</button>
+              <button class="chat-tab" data-tab="crm">CRM Pipeline</button>
+              <button class="chat-tab" data-tab="inbox">Unified Inbox</button>
+            </div>
+            <div class="chat-progress-bar"><div class="chat-progress-fill" id="chatProgressFill"></div></div>
+            <div class="chat-earnings-banner" id="chatEarningsBanner">
+              <div class="earnings-thumb"><div style="width:100%;height:100%;background:#e8e5df;"></div></div>
+              <h2 class="earnings-headline">You could earn <span class="earnings-amount">£1,200</span><br>hosting this property on Airbnb</h2>
+              <p class="earnings-sub">Message the landlord and ask what matters first.</p>
+            </div>
+            <div class="chat-messages-area" id="chatMessagesArea"></div>
+            <div class="chat-input-area">
+              <div class="chat-input-glow"></div>
+              <div class="chat-input-container">
+                <span class="chat-typewriter" id="chatTypewriter"></span>
+                <span class="typewriter-cursor" id="typewriterCursor">|</span>
+              </div>
+              <div class="click-here-tooltip" id="clickHereTooltip" style="display:none;">
+                <span>Click here</span>
+                <div class="tooltip-arrow"></div>
+              </div>
+              <div class="chat-input-actions">
+                <button class="chat-mic-btn" aria-label="Voice"><div class="mic-dot"></div></button>
+                <button class="chat-send-btn" id="chatSendBtn" aria-label="Send" style="position:relative;overflow:visible;">
+                  <div class="send-pulse-ring"></div>
+                  <div class="send-pulse-ring delay"></div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="preview-panel">
+            <div class="preview-content active" id="previewDeals">
+              <div class="nfs-mock-page">
+                <div class="nfs-cards-grid">
+                  <div class="nfs-pcard" id="nfsCard1">
+                    <div class="nfs-pcard-img" style="background:#e8e5df"><span class="nfs-pcard-badge">Featured</span></div>
+                    <div class="nfs-pcard-body">
+                      <div class="nfs-pcard-name"><span class="nfs-status-dot green"></span>2-Bed Flat, Ancoats</div>
+                      <div class="nfs-pcard-loc">Manchester</div>
+                      <div class="nfs-pcard-btns"><a class="nfs-pcard-btn primary">Visit</a><button class="nfs-pcard-btn outline" id="inquireBtn1">Inquire</button></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="preview-content" id="previewCrm">
+              <div class="nfs-mock-page"><div class="nfs-pipe-header"><strong>Pipeline</strong></div><div class="nfs-pipe-columns"><div class="nfs-pipe-col" id="pipeColNewLead"><div class="nfs-pipe-col-head"><span class="nfs-status-dot blue"></span>New Lead</div></div><div class="nfs-pipe-col" id="pipeColContacted"><div class="nfs-pipe-col-head"><span class="nfs-status-dot amber"></span>Contacted</div></div></div></div>
+            </div>
+            <div class="preview-content" id="previewInbox"><div class="nfs-mock-page"><p style="padding:20px;color:#737373;">Inbox mock</p></div></div>
+            <div class="preview-content" id="previewFinale">
+              <div class="nfs-finale"><div class="nfs-finale-icon">🏡</div><h3>This is how easy it is.</h3><p>Powered by NFsTay</p><a href="/signup" class="nfs-finale-btn">Get Started</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="/landing/js/hero-demo.js"></script>
+</body>
+</html>

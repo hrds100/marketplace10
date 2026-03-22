@@ -7,17 +7,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@1,400;1,700&family=Sora:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/landing/styles.css">
-  <link rel="stylesheet" href="/landing/nfs-system.css">
-  <link rel="stylesheet" href="/landing/premium.css">
-  <link rel="stylesheet" href="/landing/sections.css">
+  <link rel="stylesheet" href="/landing/css/base.css">
+  <link rel="stylesheet" href="/landing/css/nav.css">
+  <link rel="stylesheet" href="/landing/css/hero.css">
+  <link rel="stylesheet" href="/landing/css/journey.css">
+  <link rel="stylesheet" href="/landing/css/sections.css">
+  <link rel="stylesheet" href="/landing/css/animations.css">
+  <link rel="stylesheet" href="/landing/css/responsive.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <!-- ScrollTrigger removed — journey section uses IntersectionObserver -->
-<style>
-.lang-dropdown .lang-menu { display: none !important; }
-.lang-dropdown.open .lang-menu { display: block !important; }
-.lang-dropdown .lang-menu a:hover { background: rgba(30,154,128,0.06); }
-</style>
+</head>
 </head>
 <body>
 
@@ -563,68 +562,6 @@
     </div>
   </div>
 
-  <script>
-  // Booking demo interactivity
-  var demoNameInput = document.getElementById('demoName');
-  var demoSubInput = document.getElementById('demoSubdomain');
-  var demoLogo = document.getElementById('demoLogo');
-  var demoLogoImg = document.getElementById('demoLogoImg');
-  var demoFooterLogo = document.getElementById('demoFooterLogo');
-  var demoFooter = document.getElementById('demoFooterName');
-  var demoUrl = document.getElementById('demoUrlBar');
-  var demoSearch = document.getElementById('demoSearchBtn');
-  var demoHeroImg = document.getElementById('demoHeroImg');
-  var currentColor = '#10b981';
-
-  if (demoNameInput) {
-    demoNameInput.addEventListener('input', function() {
-      var v = this.value || 'Your Brand';
-      demoLogo.textContent = v;
-      demoFooter.textContent = v;
-      demoLogo.style.color = currentColor;
-      demoFooter.style.color = currentColor;
-      var sub = v.toLowerCase().replace(/[^a-z0-9]/g, '') || 'yourbrand';
-      demoSubInput.value = sub;
-      demoUrl.textContent = sub + '.nfstay.app';
-    });
-  }
-
-  function pickColor(btn) {
-    currentColor = btn.dataset.color;
-    document.querySelectorAll('.demo-color').forEach(function(b) { b.style.borderColor = 'transparent'; });
-    btn.style.borderColor = currentColor;
-    demoSearch.style.backgroundColor = currentColor;
-    demoLogo.style.color = currentColor;
-    demoFooter.style.color = currentColor;
-    document.querySelectorAll('.demo-price').forEach(function(p) { p.style.color = currentColor; });
-  }
-
-  function handleLogoUpload(input) {
-    if (input.files && input.files[0]) {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        demoLogoImg.src = e.target.result;
-        demoLogoImg.style.display = 'block';
-        demoFooterLogo.src = e.target.result;
-        demoFooterLogo.style.display = 'block';
-        document.getElementById('logoLabel').textContent = 'Logo uploaded';
-      };
-      reader.readAsDataURL(input.files[0]);
-    }
-  }
-
-  function handleBgUpload(input) {
-    if (input.files && input.files[0]) {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        demoHeroImg.src = e.target.result;
-        document.getElementById('bgLabel').textContent = 'Background changed';
-      };
-      reader.readAsDataURL(input.files[0]);
-    }
-  }
-  </script>
-
   <!-- JOURNEY — GSAP EXPANDING CARDS -->
   <section id="journey" class="journey-section">
     <!-- Floating dots -->
@@ -720,156 +657,6 @@
       </div>
     </div>
   </section>
-
-
-  <script>
-  // Journey Animation — IntersectionObserver (no ScrollTrigger)
-  (function(){
-    // Heading word entrance via IntersectionObserver
-    var headingObs = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(e.isIntersecting){
-          var words = document.querySelectorAll('.jword');
-          words.forEach(function(w,i){
-            setTimeout(function(){ w.classList.add('jword-visible'); }, i * 70);
-          });
-          var underline = document.querySelector('.profit-underline');
-          if(underline) setTimeout(function(){ underline.classList.add('underline-visible'); }, 600);
-          headingObs.unobserve(e.target);
-        }
-      });
-    }, {threshold:0.2});
-    var jh = document.querySelector('.journey-heading');
-    if(jh) headingObs.observe(jh);
-
-    // Cards
-    var cards = document.querySelectorAll('.step-card');
-    var currentCard = null;
-
-    function expandCard(card) {
-      card.style.height = 'auto';
-      card.style.overflow = 'hidden';
-      var fullHeight = card.scrollHeight;
-      card.style.height = (window.innerWidth <= 768 ? '64px' : '72px');
-      card.offsetHeight;
-      card.classList.add('active');
-      card.style.height = fullHeight + 'px';
-      card.addEventListener('transitionend', function handler(e) {
-        if (e.propertyName === 'height') {
-          card.style.height = 'auto';
-          card.removeEventListener('transitionend', handler);
-        }
-      });
-
-      var bar = card.querySelector('.accent-bar');
-      if (bar) setTimeout(function(){ bar.classList.add('bar-visible'); }, 100);
-
-      var rows = card.querySelectorAll('.card-body-row');
-      rows.forEach(function(row, i){
-        setTimeout(function(){ row.classList.add('row-visible'); }, 150 + i * 80);
-      });
-
-      var fill = card.querySelector('.progress-fill');
-      if (fill) setTimeout(function(){ fill.classList.add('fill-visible'); }, 300);
-
-      var shimmer = card.querySelector('.shimmer-layer');
-      if (shimmer) setTimeout(function(){ shimmer.classList.add('shimmer-go'); }, 500);
-
-      for (var r = 0; r < 2; r++) {
-        (function(delay){
-          var ripple = document.createElement('span');
-          ripple.className = 'journey-sonar';
-          card.appendChild(ripple);
-          setTimeout(function(){ ripple.classList.add('sonar-go'); }, delay);
-          setTimeout(function(){ ripple.remove(); }, delay + 1000);
-        })(r * 200);
-      }
-    }
-
-    function collapseCard(card) {
-      card.classList.remove('active');
-      card.style.height = card.scrollHeight + 'px';
-      requestAnimationFrame(function(){
-        requestAnimationFrame(function(){
-          card.style.height = (window.innerWidth <= 768 ? '64px' : '72px');
-        });
-      });
-      var bar = card.querySelector('.accent-bar');
-      if(bar) bar.classList.remove('bar-visible');
-      card.querySelectorAll('.card-body-row').forEach(function(r){ r.classList.remove('row-visible'); });
-      var fill = card.querySelector('.progress-fill');
-      if(fill) fill.classList.remove('fill-visible');
-      var shimmer = card.querySelector('.shimmer-layer');
-      if(shimmer) shimmer.classList.remove('shimmer-go');
-    }
-
-    function updateCounter(n) {
-      var el = document.getElementById('counterNum');
-      if (!el) return;
-      el.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
-      el.style.transform = 'translateY(-24px)';
-      el.style.opacity = '0';
-      setTimeout(function(){
-        el.textContent = (n < 10 ? '0' : '') + n;
-        el.style.transform = 'translateY(24px)';
-        requestAnimationFrame(function(){
-          el.style.transform = 'translateY(0)';
-          el.style.opacity = '1';
-        });
-      }, 250);
-    }
-
-    var cardObs = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(e.isIntersecting){
-          var card = e.target;
-          var i = Array.prototype.indexOf.call(cards, card);
-          if (currentCard && currentCard !== card) collapseCard(currentCard);
-          expandCard(card);
-          currentCard = card;
-          updateCounter(i + 1);
-        }
-      });
-    }, {threshold:0.3, rootMargin:'0px 0px -20% 0px'});
-
-    cards.forEach(function(card){ cardObs.observe(card); });
-
-    cards.forEach(function(card, i){
-      card.addEventListener('click', function(){
-        if(card.classList.contains('active')){
-          collapseCard(card);
-          currentCard = null;
-        } else {
-          if(currentCard && currentCard !== card) collapseCard(currentCard);
-          expandCard(card);
-          currentCard = card;
-          updateCounter(i + 1);
-        }
-      });
-    });
-
-    // Floating dots (CSS animations)
-    var dotsContainer = document.getElementById('journeyDots');
-    if (dotsContainer) {
-      var durations = [7,9,11,8,10,6];
-      for (var d = 0; d < 6; d++) {
-        var dot = document.createElement('div');
-        var sz = 5 + Math.random() * 5;
-        dot.style.cssText = 'position:absolute;width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:rgba(30,154,128,'+(0.05+Math.random()*0.05)+');left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;animation:floatDot'+d+' '+durations[d]+'s ease-in-out infinite;';
-        dotsContainer.appendChild(dot);
-      }
-      var style = document.createElement('style');
-      var kf = '';
-      for (var k = 0; k < 6; k++) {
-        var dx = -10 + Math.random()*20, dy = -15 - Math.random()*15;
-        kf += '@keyframes floatDot'+k+'{0%,100%{transform:translate(0,0);}33%{transform:translate('+Math.round(dx)+'px,'+Math.round(dy)+'px);}66%{transform:translate('+Math.round(-dx*0.6)+'px,'+Math.round(-dy*0.4)+'px);}}';
-      }
-      style.textContent = kf;
-      document.head.appendChild(style);
-    }
-  })();
-  </script>
-
   <!-- ACADEMY (with emojis, progress bars, gamification) -->
   <div class="s bg-cream sr"><div class="wrap">
     <div class="sh">
@@ -1064,21 +851,6 @@
       </div>
     </div>
   </div>
-  <style>
-    @keyframes reviewSlide {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    .review-track:hover { animation-play-state: paused; }
-  </style>
-  <script>
-  // Clone review slides for seamless infinite loop
-  document.addEventListener('DOMContentLoaded', function() {
-    var track = document.querySelector('.review-track');
-    if (track) { track.innerHTML = track.innerHTML + track.innerHTML; }
-  });
-  </script>
-
   <!-- PRICING (£67 crossed out, £5 big) -->
   <div class="s bg-white sr"><div class="wrap narrow"><div class="sh"><h2 data-i18n="price_h">Simple pricing for serious operators</h2><p>One plan. Everything included. Cancel any time.</p></div>
     <div class="price-card">
@@ -1110,8 +882,9 @@
     </div>
   </footer>
   <script src="/landing/translations.js"></script>
-  <script src="/landing/script.js"></script>
-  <script src="/landing/nfs-motion.js"></script>
+  <script src="/landing/js/hero-demo.js"></script>
+  <script src="/landing/js/journey.js"></script>
+  <script src="/landing/js/global.js"></script>
   <script src="/landing/premium.js"></script>
 
   <script>
