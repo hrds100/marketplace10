@@ -747,7 +747,7 @@ function ProfitCalculator({
   const appreciationRate = property.appreciationRate || 5.2;
   const monthlyYield = property.annualYield; // DB field stores monthly yield %
   const annualizedYield = monthlyYield * 12;
-  const holdingYears = 5;
+  const holdingYears = 6;
   const totalAnnualRate = appreciationRate + annualizedYield;
 
   const projections = Array.from({ length: holdingYears }, (_, i) => {
@@ -957,7 +957,7 @@ function ProfitCalculator({
           {/* Left — Chart (3 cols) */}
           <div className="lg:col-span-3 rounded-xl border bg-muted/10 dark:bg-muted/5 p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold">5-Year Projection</p>
+              <p className="text-sm font-semibold">6-Year Projection</p>
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -994,7 +994,7 @@ function ProfitCalculator({
           {/* Right — Results (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
             <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4">
-              <p className="text-xs text-muted-foreground mb-1">Total Return (5 Years)</p>
+              <p className="text-xs text-muted-foreground mb-1">Total Return (6 Years)</p>
               <p className="text-2xl font-bold text-primary">{totalROI}%</p>
               <p className="text-xs text-muted-foreground mt-1">
                 ${initialCalcAmount.toLocaleString()} &rarr; ${maxValue.toLocaleString()}
