@@ -61,13 +61,24 @@ export default function AdminInvestPayouts() {
   const { data: realClaims = [], isLoading } = useAllPayoutClaims();
   const [testAmount, setTestAmount] = useState('5.00');
   const [creditLoading, setCreditLoading] = useState(false);
+  const [creditUserId, setCreditUserId] = useState('');
+  const [allUsers, setAllUsers] = useState<{ id: string; name: string }[]>([]);
+
+  // Load all users for credit dropdown
+  useState(() => {
+    (async () => {
+      const { data } = await (supabase.from('profiles') as any).select('id, name').order('name');
+      if (data) setAllUsers(data);
+    })();
+  });
   const [statusFilter, setStatusFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
   const [weekFilter, setWeekFilter] = useState('All');
   const [batchTriggered, setBatchTriggered] = useState(false);
 
   const handleCreditTestRent = async () => {
-    if (!user?.id) return;
+    const targetUserId = creditUserId || user?.id;
+    if (!targetUserId) return;
     const amount = parseFloat(testAmount);
     if (!amount || amount <= 0 || amount > 100) { toast.error('Enter $0.01–$100'); return; }
     setCreditLoading(true);
@@ -75,11 +86,12 @@ export default function AdminInvestPayouts() {
       const { data: prop } = await (supabase.from('inv_properties') as any).select('id').limit(1).single();
       if (!prop) throw new Error('No property found');
       const { error } = await (supabase.from('inv_payouts') as any).insert({
-        user_id: user.id, property_id: prop.id, period_date: new Date().toISOString().slice(0, 10),
+        user_id: targetUserId, property_id: prop.id, period_date: new Date().toISOString().slice(0, 10),
         shares_owned: 1, amount, status: 'claimable',
       });
       if (error) throw error;
-      toast.success(`$${amount.toFixed(2)} test rent credited — go to Payouts page to claim`);
+      const userName = allUsers.find((u) => u.id === targetUserId)?.name || targetUserId.slice(0, 8);
+      toast.success(`$${amount.toFixed(2)} credited to ${userName}`);
       qc.invalidateQueries({ queryKey: ['inv_payouts'] });
     } catch (err: any) { toast.error(err.message || 'Failed'); }
     finally { setCreditLoading(false); }
@@ -246,10 +258,14 @@ export default function AdminInvestPayouts() {
               </div>
               <div>
                 <p className="font-semibold text-sm">Credit Test Rent</p>
-                <p className="text-xs text-muted-foreground">Add claimable amount to your account for testing bank payout flow</p>
+                <p className="text-xs text-muted-foreground">Add claimable amount to any user for testing</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <select value={creditUserId} onChange={(e) => setCreditUserId(e.target.value)} className="h-9 px-2 rounded-md border border-input bg-background text-sm max-w-[180px]">
+                <option value="">Me (admin)</option>
+                {allUsers.map((u) => <option key={u.id} value={u.id}>{u.name || u.id.slice(0, 8)}</option>)}
+              </select>
               <span className="text-sm text-muted-foreground">$</span>
               <input type="number" min="0.01" max="100" step="0.01" value={testAmount} onChange={(e) => setTestAmount(e.target.value)} className="w-20 h-9 px-2 rounded-md border border-input bg-background text-sm text-center" />
               <Button size="sm" onClick={handleCreditTestRent} disabled={creditLoading} className="gap-1.5">
