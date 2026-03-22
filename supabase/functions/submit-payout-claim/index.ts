@@ -93,6 +93,15 @@ serve(async (req) => {
       throw error
     }
 
+    // Mark inv_payouts rows as claimed so they don't show as claimable again
+    if (user_type === 'investor') {
+      await supabase
+        .from('inv_payouts')
+        .update({ status: 'claimed', claim_method: 'bank_transfer', claimed_at: new Date().toISOString() })
+        .eq('user_id', user_id)
+        .eq('status', 'claimable')
+    }
+
     // Log to audit
     await supabase.from('payout_audit_log').insert({
       claim_id: claim.id,
