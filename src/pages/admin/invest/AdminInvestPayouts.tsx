@@ -57,8 +57,13 @@ const statusColors: Record<string, string> = {
 export default function AdminInvestPayouts() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { data: realClaims = [], isLoading } = useAllPayoutClaims();
   const [testAmount, setTestAmount] = useState('5.00');
   const [creditLoading, setCreditLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState('All');
+  const [weekFilter, setWeekFilter] = useState('All');
+  const [batchTriggered, setBatchTriggered] = useState(false);
 
   const handleCreditTestRent = async () => {
     if (!user?.id) return;
@@ -77,12 +82,7 @@ export default function AdminInvestPayouts() {
       qc.invalidateQueries({ queryKey: ['inv_payouts'] });
     } catch (err: any) { toast.error(err.message || 'Failed'); }
     finally { setCreditLoading(false); }
-  };  const { data: realClaims = [], isLoading } = useAllPayoutClaims();
-
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [typeFilter, setTypeFilter] = useState('All');
-  const [weekFilter, setWeekFilter] = useState('All');
-  const [batchTriggered, setBatchTriggered] = useState(false);
+  };
 
   // Map real data
   const payouts: PayoutClaim[] = realClaims.map((c: any) => ({
