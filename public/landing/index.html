@@ -53,7 +53,7 @@
                 <a href="#" data-lang="ar" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;">&#127462;&#127466; &#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</a>
               </div>
             </div>
-            <a href="/signup" class="nav_menu_link" data-i18n="nav_login">Login</a>
+            <a href="/signin" class="nav_menu_link" data-i18n="nav_login">Login</a>
             <a href="/signup" class="nav-btn" data-i18n="nav_cta">Get Started</a>
           </div>
 
@@ -80,7 +80,7 @@
       <a href="#pricing" class="nav_menu_link mobile">Pricing</a>
       <a href="/signup" class="nav_menu_link mobile">University</a>
       <div class="nav-end-wrapper mobile">
-        <a href="/signup" class="nav_menu_link secondary">Login</a>
+        <a href="/signin" class="nav_menu_link secondary">Login</a>
         <a href="/signup" class="nav-btn mobile">Get Started</a>
       </div>
     </nav>
@@ -100,7 +100,7 @@
           <h1 class="hero-heading" data-i18n="hero_h1a">Landlord-Approved Airbnb Properties<br><span class="italic-accent" data-i18n="hero_h1b">Find, negotiate and grow your portfolio</span></h1>
           <div class="hero-buttons">
             <a href="/signup" class="hero-cta" data-i18n="hero_cta">Get Started</a>
-            <a href="/signup" class="hero-login" data-i18n="hero_login">Login</a>
+            <a href="/signin" class="hero-login" data-i18n="hero_login">Login</a>
           </div>
         </div>
 
@@ -569,60 +569,95 @@
         <p>Six steps. One platform. Everything you need.</p>
       </div>
       <div class="tl-timeline">
+
+        <!-- STYLE A: Bento — large step number bg, split layout, metric pill -->
         <div class="tl-item">
           <div class="tl-node"><span>01</span></div>
-          <div class="tl-card">
-            <div class="tl-card-banner">Deal Marketplace</div>
-            <h3>Browse 1,800+ verified deals</h3>
-            <p>Filter by city, type and profit. Every listing is landlord-approved.</p>
-            <div class="tl-card-metric"><span class="tl-metric-value">1,800+</span><span class="tl-metric-label">verified listings</span></div>
+          <div class="tl-card tl-v-bento">
+            <div class="tl-bento-num">01</div>
+            <div class="tl-bento-body">
+              <div class="tl-bento-label">Deal Marketplace</div>
+              <h3>Browse 1,800+ verified deals</h3>
+              <p>Filter by city, type and profit. Every listing is landlord-approved.</p>
+              <div class="tl-bento-pill">1,800+ verified listings</div>
+            </div>
           </div>
         </div>
+
+        <!-- STYLE B: Spotlight — dark card, glowing green accent line, big metric -->
         <div class="tl-item">
           <div class="tl-node"><span>02</span></div>
-          <div class="tl-card">
-            <div class="tl-card-banner">Earnings Estimator</div>
+          <div class="tl-card tl-v-spotlight">
+            <div class="tl-spot-glow"></div>
+            <div class="tl-spot-label">Earnings Estimator</div>
             <h3>Analyse profit before you commit</h3>
             <p>Model nightly rates, occupancy and costs in seconds.</p>
-            <div class="tl-card-metric"><span class="tl-metric-value">&pound;680</span><span class="tl-metric-label">avg. monthly profit</span></div>
+            <div class="tl-spot-metric">&pound;680<span>/mo avg.</span></div>
           </div>
         </div>
+
+        <!-- STYLE C: Glass stack — layered glass cards, soft depth -->
         <div class="tl-item">
           <div class="tl-node"><span>03</span></div>
-          <div class="tl-card">
-            <div class="tl-card-banner">Unified Inbox</div>
-            <h3>Message landlords from one inbox</h3>
-            <p>Property context, earnings data and templates alongside every thread.</p>
-            <div class="tl-card-metric"><span class="tl-metric-value">3x</span><span class="tl-metric-label">faster response time</span></div>
+          <div class="tl-card tl-v-glass">
+            <div class="tl-glass-bg"></div>
+            <div class="tl-glass-content">
+              <div class="tl-glass-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+              <div class="tl-glass-label">Unified Inbox</div>
+              <h3>Message landlords from one inbox</h3>
+              <p>Property context, earnings data and templates alongside every thread.</p>
+            </div>
           </div>
         </div>
+
+        <!-- STYLE D: Kanban preview — mini pipeline UI inside the card -->
         <div class="tl-item">
           <div class="tl-node"><span>04</span></div>
-          <div class="tl-card">
-            <div class="tl-card-banner">CRM Pipeline</div>
+          <div class="tl-card tl-v-kanban">
+            <div class="tl-kanban-header">
+              <span class="tl-kanban-label">CRM Pipeline</span>
+              <span class="tl-kanban-badge">14 deals</span>
+            </div>
             <h3>Track every deal from lead to signed</h3>
-            <p>Spotted, shortlisted, viewing, signed &mdash; every stage in one drag-and-drop view.</p>
-            <div class="tl-card-metric"><span class="tl-metric-value">14</span><span class="tl-metric-label">active deals tracked</span></div>
+            <div class="tl-kanban-cols">
+              <div class="tl-kanban-col"><div class="tl-kanban-dot" style="background:#3b82f6"></div><span>Spotted</span><strong>5</strong></div>
+              <div class="tl-kanban-col"><div class="tl-kanban-dot" style="background:#f59e0b"></div><span>Viewing</span><strong>4</strong></div>
+              <div class="tl-kanban-col"><div class="tl-kanban-dot" style="background:#8b5cf6"></div><span>Offer</span><strong>3</strong></div>
+              <div class="tl-kanban-col"><div class="tl-kanban-dot" style="background:#1e9a80"></div><span>Signed</span><strong>2</strong></div>
+            </div>
           </div>
         </div>
+
+        <!-- STYLE E: Checklist — interactive feel, checkmarks, progress -->
         <div class="tl-item">
           <div class="tl-node"><span>05</span></div>
-          <div class="tl-card">
-            <div class="tl-card-banner">Deal Closing</div>
+          <div class="tl-card tl-v-checklist">
+            <div class="tl-check-label">Deal Closing</div>
             <h3>Sign the rent-to-rent agreement</h3>
-            <p>Templates, checklists and reminders. Never miss a step.</p>
-            <div class="tl-card-metric"><span class="tl-metric-value">48hrs</span><span class="tl-metric-label">avg. time to close</span></div>
+            <div class="tl-check-list">
+              <div class="tl-check-item done"><div class="tl-check-box">&#10003;</div><span>Property verified</span></div>
+              <div class="tl-check-item done"><div class="tl-check-box">&#10003;</div><span>Terms agreed</span></div>
+              <div class="tl-check-item done"><div class="tl-check-box">&#10003;</div><span>Contract signed</span></div>
+              <div class="tl-check-item"><div class="tl-check-box"></div><span>Keys collected</span></div>
+            </div>
+            <div class="tl-check-progress"><div class="tl-check-fill"></div></div>
           </div>
         </div>
+
+        <!-- STYLE F: Revenue — celebration card, big number, confetti feel -->
         <div class="tl-item">
           <div class="tl-node"><span>06</span></div>
-          <div class="tl-card">
-            <div class="tl-card-banner">Live &amp; Earning</div>
+          <div class="tl-card tl-v-revenue">
+            <div class="tl-rev-sparkles"></div>
+            <div class="tl-rev-emoji">&#127881;</div>
+            <div class="tl-rev-label">Live &amp; Earning</div>
             <h3>Go live on Airbnb and earn</h3>
-            <p>Your first profit usually arrives within 30 days of going live.</p>
-            <div class="tl-card-metric"><span class="tl-metric-value">&pound;680</span><span class="tl-metric-label">avg. monthly profit</span></div>
+            <div class="tl-rev-amount">&pound;680<span>/month</span></div>
+            <p>Your first profit usually arrives within 30 days.</p>
+            <a href="/signup" class="tl-rev-cta">Start earning &rarr;</a>
           </div>
         </div>
+
       </div>
     </div>
   </section>
