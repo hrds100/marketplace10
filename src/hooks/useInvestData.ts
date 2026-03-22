@@ -361,7 +361,7 @@ export function useAllPayoutClaims() {
     queryKey: ['payout_claims', 'all'],
     queryFn: async () => {
       const { data, error } = await (supabase.from('payout_claims') as any)
-        .select('*')
+        .select('*, profiles:user_id(name, whatsapp)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];

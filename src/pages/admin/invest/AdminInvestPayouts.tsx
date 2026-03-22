@@ -15,7 +15,8 @@ import { useQueryClient } from '@tanstack/react-query';
 interface PayoutClaim {
   id: string;
   user_id: string;
-  user_email: string;
+  user_name: string;
+  user_whatsapp: string;
   type: string;
   amount: number;
   currency: string;
@@ -88,15 +89,16 @@ export default function AdminInvestPayouts() {
   const payouts: PayoutClaim[] = realClaims.map((c: any) => ({
     id: c.id?.toString() || '',
     user_id: c.user_id || '',
-    user_email: c.user_email || c.email || '',
-    type: c.type || 'investor',
+    user_name: c.profiles?.name || '—',
+    user_whatsapp: c.profiles?.whatsapp || '',
+    type: c.user_type || 'investor',
     amount: c.amount_entitled || c.amount || 0,
     currency: c.currency || 'GBP',
     method: c.method || 'bank_transfer',
     status: c.status || 'pending',
     week_ref: c.week_ref || '',
-    created_at: c.created_at ? new Date(c.created_at).toLocaleDateString('en-CA') : '',
-    paid_at: c.paid_at ? new Date(c.paid_at).toLocaleDateString('en-CA') : '',
+    created_at: c.created_at ? new Date(c.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
+    paid_at: c.paid_at ? new Date(c.paid_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
   }));
 
   // Derive stats from real data
@@ -315,7 +317,14 @@ export default function AdminInvestPayouts() {
               {filtered.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
-                    <div className="text-xs text-muted-foreground">{p.user_email || p.user_id?.slice(0, 8)}</div>
+                    <div className="space-y-0.5">
+                      <div className="text-sm font-medium">{p.user_name}</div>
+                      {p.user_whatsapp && (
+                        <a href={`https://wa.me/${p.user_whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                          {p.user_whatsapp}
+                        </a>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={cn('text-xs capitalize', typeColors[p.type] || '')}>
