@@ -19,7 +19,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       return;
     }
     // Admin emails bypass OTP verification
-    const adminEmails = ['admin@hub.nfstay.com'];
+    const adminEmails = ['admin@hub.nfstay.com', 'hugo@nfstay.com', 'hugo24eu@gmail.com'];
     if (user.email && adminEmails.includes(user.email)) {
       checkedRef.current = user.id;
       setStatus('verified');
@@ -59,7 +59,9 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         const profile = data as any;
         // Social login users are identity-verified (Google/Apple/etc) — skip WhatsApp gate
         const isSocialUser = profile?.wallet_auth_method && profile.wallet_auth_method !== 'jwt';
-        const verified = !!(profile?.whatsapp_verified) || isSocialUser;
+        // Existing users who signed in (not fresh signup) should not be blocked by OTP
+        const hasExistingAccount = !!profile;
+        const verified = !!(profile?.whatsapp_verified) || isSocialUser || hasExistingAccount;
         if (verified) {
           checkedRef.current = user.id;
         }
