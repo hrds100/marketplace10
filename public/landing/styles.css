@@ -109,6 +109,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   padding-top: 0.3rem;
   padding-bottom: 0.3rem;
   display: flex;
+  overflow: visible;
 }
 
 /* ---- Left group: logo + divider + links ---- */
@@ -205,6 +206,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   justify-content: center;
   align-items: center;
   display: flex;
+  flex-shrink: 0;
 }
 
 /* Language switcher — globe icon + chevron, grey, rounded */
@@ -234,7 +236,9 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   color: #fff;
   border: none;
   border-radius: 1rem;
-  width: 8rem;
+  min-width: 8rem;
+  white-space: nowrap;
+  flex-shrink: 0;
   padding: 0.8125rem 1rem;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
@@ -1598,9 +1602,9 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 .template-card span { display: block; padding: 16px; color: rgb(28,28,28); font-weight: 500; }
 
 .steps-grid { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 16px; align-items: start; }
-.step-card { display: flex; flex-direction: column; gap: 8px; padding: 24px; background: white; border: 1px solid rgb(223,225,231); border-radius: 16px; }
+.steps-grid .step-card { display: flex; flex-direction: column; gap: 8px; padding: 24px; background: white; border: 1px solid rgb(223,225,231); border-radius: 16px; }
 .step-icon { width: 48px; height: 48px; background: var(--soft-lavender); border-radius: 12px; margin-bottom: 8px; }
-.step-connector { display: flex; align-items: center; justify-content: center; padding-top: 40px; opacity: 0.3; }
+.steps-grid .step-connector { display: flex; align-items: center; justify-content: center; padding-top: 40px; opacity: 0.3; }
 .secret-weapon-badge { display: inline-flex; background: #E0DEF5; color: #372E7D; border-radius: 90px; padding: 6px 10px; margin-top: 8px; width: fit-content; }
 .secret-weapon-badge .text-size-14px { color: #372E7D; }
 
