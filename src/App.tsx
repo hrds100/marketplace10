@@ -51,6 +51,7 @@ import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
 import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
 import AdminArchitecture from "./pages/admin/AdminArchitecture";
 import AdminGuard from "./components/AdminGuard";
+import NickelLandingPage from "./pages/NickelLandingPage";
 import NotFound from "./pages/NotFound";
 import LogosPage from "./pages/LogosPage";
 import TestingDesign from "./pages/TestingDesign";
@@ -132,6 +133,7 @@ const App = () => (
       <NfsWhiteLabelRouter>
         <Routes>
           <Route path="/" element={<LandingPageV8 />} />
+          <Route path="/nickel" element={<NickelLandingPage />} />
           <Route path="/retired" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
