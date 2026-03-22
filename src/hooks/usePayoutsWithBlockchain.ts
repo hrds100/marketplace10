@@ -295,8 +295,8 @@ export function usePayoutsWithBlockchain() {
     }
 
     // 4. Add bank transfer claims (payout_claims) — paid, processing, pending
-    for (const c of payoutClaims as any[]) {
-      if (c.status === 'cancelled') continue;
+    for (const c of (payoutClaims || []) as any[]) {
+      if (!c || c.status === 'cancelled') continue;
       items.push({
         id: `claim-${c.id}`,
         propertyTitle: 'Bank Transfer',
