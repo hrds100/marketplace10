@@ -119,13 +119,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // Force React 18 — @particle-network/authkit pulls in React 19 via
-      // @ant-design/v5-patch-for-react-19. Without these aliases, Vite resolves
-      // some React internals from React 19 which crashes: "reading 'S'" → blank page.
-      "react": path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
-      "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
-      "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime"),
     },
   },
   // Pre-bundle Particle SDK deps so Vite handles them correctly
