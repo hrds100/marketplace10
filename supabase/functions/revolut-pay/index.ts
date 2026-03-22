@@ -74,7 +74,28 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: `Revolut counterparty failed: ${cpData.message || JSON.stringify(cpData)}` }), { status: 400, headers: corsHeaders })
     }
 
-    // 4. Send payment
+    // 4. Convert USD to GBP via Revolut exchange rate
+    const usdAmount = Number(claim.amount_entitled)
+    let gbpAmount = usdAmount
+    let exchangeRate = 1
+
+    try {
+      const rateRes = await fetch(
+        `https://b2b.revolut.com/api/1.0/rate?from=USD&to=GBP&amount=${usdAmount}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      )
+      const rateData = await rateRes.json()
+      if (rateData.to?.amount) {
+        gbpAmount = rateData.to.amount
+        exchangeRate = rateData.rate || (gbpAmount / usdAmount)
+      }
+    } catch {
+      // Fallback: use approximate rate if API fails
+      gbpAmount = Math.round(usdAmount * 0.75 * 100) / 100
+      exchangeRate = 0.75
+    }
+
+    // 5. Send payment in GBP
     const payRes = await fetch('https://b2b.revolut.com/api/1.0/pay', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -82,8 +103,8 @@ serve(async (req) => {
         request_id: `nfs-${claim_id.slice(0, 8)}-${Date.now()}`,
         account_id: '9e512c4e-ebe5-4389-a20f-5e3be3a912a6', // nfstay shares GBP
         receiver: { counterparty_id: cpData.id, account_id: cpData.accounts[0].id },
-        amount: Number(claim.amount_entitled),
-        currency: bank.currency || 'GBP',
+        amount: gbpAmount,
+        currency: 'GBP',
         reference: 'NFsTay payout',
       }),
     })
@@ -93,13 +114,13 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: `Payment failed: ${payData.message || JSON.stringify(payData)}` }), { status: 400, headers: corsHeaders })
     }
 
-    // 5. Update claim to paid
+    // 6. Update claim to paid
     await supabase
       .from('payout_claims')
       .update({ status: 'paid', paid_at: new Date().toISOString(), revolut_transaction_id: payData.id })
       .eq('id', claim_id)
 
-    // 6. Audit log
+    // 7. Audit log
     await supabase.from('payout_audit_log').insert({
       claim_id,
       user_id: claim.user_id,
@@ -107,13 +128,15 @@ serve(async (req) => {
       old_status: claim.status,
       new_status: 'paid',
       performed_by: 'admin',
-      metadata: { revolut_tx_id: payData.id, amount: claim.amount_entitled },
+      metadata: { revolut_tx_id: payData.id, usd_amount: usdAmount, gbp_amount: gbpAmount, exchange_rate: exchangeRate },
     })
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      tx_id: payData.id, 
-      amount: claim.amount_entitled,
+    return new Response(JSON.stringify({
+      success: true,
+      tx_id: payData.id,
+      usd_amount: usdAmount,
+      gbp_amount: gbpAmount,
+      exchange_rate: exchangeRate,
       state: payData.state,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

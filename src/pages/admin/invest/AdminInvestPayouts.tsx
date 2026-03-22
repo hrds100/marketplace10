@@ -153,7 +153,7 @@ export default function AdminInvestPayouts() {
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
-      toast.success(`£${data.amount} paid via Revolut (tx: ${data.tx_id?.slice(0, 8)}...)`);
+      toast.success(`$${data.usd_amount} → £${data.gbp_amount} paid via Revolut (rate: ${data.exchange_rate?.toFixed(4)})`);
       qc.invalidateQueries({ queryKey: ['payout_claims'] });
     } catch (err: any) {
       toast.error(err.message || 'Payment failed');
