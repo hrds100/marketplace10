@@ -39,7 +39,7 @@ import BankDetailsForm from '@/components/BankDetailsForm';
 
 type ClaimMethod = 'bank_transfer' | 'usdc' | 'stay_token' | 'lp_token';
 type ClaimStep = 'choose' | 'bank_setup' | 'processing' | 'success';
-type PayoutStatus = 'claimable' | 'claimed' | 'paid' | 'processing';
+type PayoutStatus = 'claimable' | 'claimed' | 'paid' | 'processing' | 'pending';
 
 interface PayoutItem {
   id: string;
@@ -55,11 +55,12 @@ interface PayoutItem {
   txHash?: string;
 }
 
-const statusConfig: Record<PayoutStatus, { label: string; variant: string; className: string }> = {
+const statusConfig: Record<string, { label: string; variant: string; className: string }> = {
   claimable: { label: 'Claimable', variant: 'default', className: 'bg-green-500/15 text-green-400 border-green-500/30' },
   claimed: { label: 'Claimed', variant: 'default', className: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
   paid: { label: 'Paid', variant: 'default', className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
   processing: { label: 'Processing', variant: 'default', className: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+  pending: { label: 'Pending', variant: 'default', className: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' },
 };
 
 const methodLabels: Record<string, string> = {
@@ -118,8 +119,8 @@ function BlockchainDot({ tooltip }: { tooltip?: string }) {
   );
 }
 
-function StatusBadge({ status }: { status: PayoutStatus }) {
-  const config = statusConfig[status];
+function StatusBadge({ status }: { status: string }) {
+  const config = statusConfig[status] || { label: status, className: 'bg-gray-500/15 text-gray-400 border-gray-500/30' };
   return (
     <Badge variant="outline" className={cn('text-xs font-medium', config.className)}>
       {config.label}
