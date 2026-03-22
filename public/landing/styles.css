@@ -85,6 +85,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   left: 0;
   right: 0;
   box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.02);
+  overflow: visible;
 }
 
 /* Inner nav component — white bg, rounded, vertical padding */
