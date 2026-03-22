@@ -212,6 +212,17 @@ function InvestModal({
     {/* Congratulations overlay — separate from invest dialog so it survives dialog close */}
     {confirmed && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        {/* Confetti */}
+        <div className="fixed inset-0 pointer-events-none z-[101] overflow-hidden">
+          {Array.from({ length: 40 }).map((_, i) => (
+            <div key={i} className="absolute animate-confetti-particle" style={{
+              left: `${Math.random() * 100}%`, top: '-10px',
+              width: `${6 + Math.random() * 8}px`, height: `${6 + Math.random() * 8}px`,
+              backgroundColor: ['#00D084', '#FFD700', '#FF6B6B', '#4ECDC4', '#A855F7', '#3B82F6'][i % 6],
+              animationDelay: `${Math.random() * 2}s`, animationDuration: `${2 + Math.random() * 2}s`,
+            }} />
+          ))}
+        </div>
         <div className="w-full max-w-sm mx-4 bg-white rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
           {/* Gradient header */}
           <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 min-h-[130px] overflow-hidden">

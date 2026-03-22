@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useOutletContext, Link, useNavigate } from 'react-router-dom';
-import { PlusCircle, Gem } from 'lucide-react';
+import { PlusCircle, Gem, Wallet } from 'lucide-react';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import NotificationBell from '@/components/NotificationBell';
 import BurgerMenu from '@/components/BurgerMenu';
@@ -57,6 +57,14 @@ function TopBar() {
         >
           <PlusCircle className="w-[14px] h-[14px]" strokeWidth={1.8} />
           Submit a Deal
+        </button>
+        <button
+          onClick={() => navigate('/dashboard/settings')}
+          className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-secondary"
+          title="Wallet"
+        >
+          <Wallet className="w-[14px] h-[14px]" strokeWidth={1.8} />
+          <span className="hidden md:inline">Wallet</span>
         </button>
         <FavouritesDropdown />
         <NotificationBell />

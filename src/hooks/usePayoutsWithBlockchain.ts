@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { useMyPayouts, useInvestProperties } from '@/hooks/useInvestData';
+import { useAuth } from '@/hooks/useAuth';
 import { CONTRACTS, SUBGRAPHS } from '@/lib/particle';
 import { RWA_TOKEN_ABI, RENT_ABI } from '@/lib/contractAbis';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface BlockchainPayout {
   propertyId: number;
@@ -43,7 +45,18 @@ export interface MergedPayoutItem {
  */
 export function usePayoutsWithBlockchain() {
   const { address, connected } = useWallet();
+  const { user } = useAuth();
   const { data: supabasePayouts = [], isLoading: payoutsLoading } = useMyPayouts();
+
+  // Fallback: use wallet_address from profile if wallet not connected
+  const [profileWallet, setProfileWallet] = useState<string | null>(null);
+  useEffect(() => {
+    if (address || !user?.id) return;
+    (supabase.from('profiles') as any).select('wallet_address').eq('id', user.id).single()
+      .then(({ data }: any) => { if (data?.wallet_address) setProfileWallet(data.wallet_address); });
+  }, [user?.id, address]);
+
+  const effectiveAddress = address || profileWallet;
   const { data: allProperties = [] } = useInvestProperties();
 
   const [blockchainPayouts, setBlockchainPayouts] = useState<BlockchainPayout[]>([]);
@@ -58,7 +71,7 @@ export function usePayoutsWithBlockchain() {
   const fetchedRef = useRef(false);
 
   useEffect(() => {
-    if (!connected || !address) return;
+    if (!effectiveAddress) return;
     // Wait for properties to load from Supabase
     if (allProperties.length === 0) return;
     if (fetchedRef.current) return;
@@ -78,7 +91,7 @@ export function usePayoutsWithBlockchain() {
         );
         const rwaContract = new ethers.Contract(CONTRACTS.RWA_TOKEN, RWA_TOKEN_ABI, provider);
         const rentContract = new ethers.Contract(CONTRACTS.RENT, RENT_ABI, provider);
-        const walletAddr = address!; // Guaranteed non-null by guard above
+        const walletAddr = effectiveAddress!; // From useWallet or profile fallback
 
         const payouts: BlockchainPayout[] = [];
 
@@ -147,11 +160,11 @@ export function usePayoutsWithBlockchain() {
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, address, allProperties.length]);
+  }, [effectiveAddress, allProperties.length]);
 
   // Fetch historical rent withdrawals from The Graph
   useEffect(() => {
-    if (!connected || !address) return;
+    if (!effectiveAddress) return;
     if (allProperties.length === 0) return;
     if (graphFetchedRef.current) return;
 
@@ -195,7 +208,7 @@ export function usePayoutsWithBlockchain() {
         }> = json.data?.rentWithdrawns || [];
 
         // Filter by the current user's wallet
-        const walletLower = address.toLowerCase();
+        const walletLower = (effectiveAddress || '').toLowerCase();
         const userWithdrawals = withdrawals.filter(
           (w) => w._by.toLowerCase() === walletLower,
         );
@@ -238,7 +251,7 @@ export function usePayoutsWithBlockchain() {
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, address, allProperties.length]);
+  }, [effectiveAddress, allProperties.length]);
 
   // Merge: Supabase history + blockchain claimable + Graph history
   const mergedPayouts: MergedPayoutItem[] = (() => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { sendInvestNotification } from '@/lib/notifications';
-import { useMyBankAccount } from '@/hooks/useInvestData';
+import { useMyBankAccount, useInvestProperties } from '@/hooks/useInvestData';
 import { usePayoutsWithBlockchain } from '@/hooks/usePayoutsWithBlockchain';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -462,7 +462,18 @@ function ClaimModal({
 
         {/* Step 3: Success */}
         {claimStep === 'success' && (
-          <div className="flex flex-col items-center justify-center py-8 space-y-4">
+          <div className="flex flex-col items-center justify-center py-8 space-y-4 relative">
+            {/* Confetti */}
+            <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+              {Array.from({ length: 30 }).map((_, i) => (
+                <div key={i} className="absolute animate-confetti-particle" style={{
+                  left: `${Math.random() * 100}%`, top: '-10px',
+                  width: `${6 + Math.random() * 8}px`, height: `${6 + Math.random() * 8}px`,
+                  backgroundColor: ['#00D084', '#FFD700', '#FF6B6B', '#4ECDC4', '#A855F7', '#3B82F6'][i % 6],
+                  animationDelay: `${Math.random() * 2}s`, animationDuration: `${2 + Math.random() * 2}s`,
+                }} />
+              ))}
+            </div>
             <div className="h-14 w-14 rounded-full bg-green-500/10 flex items-center justify-center">
               <CheckCircle2 className="h-8 w-8 text-green-500" />
             </div>
@@ -567,6 +578,7 @@ function PropertyImage({ src, alt, className }: { src: string; alt: string; clas
 export default function InvestPayoutsPage() {
   const { user } = useAuth();
   const { payouts: mergedPayouts, blockchainLoading, refetchRentData } = usePayoutsWithBlockchain();
+  const { data: allProperties = [] } = useInvestProperties();
   const { data: bankAccount } = useMyBankAccount();
   const { claimRent, buyStayTokens, buyLpTokens, loading: claimLoading } = useBlockchain();
 
@@ -613,15 +625,17 @@ export default function InvestPayoutsPage() {
   });
 
   // Add bank transfer claims from payout_claims (not in blockchain merge)
+  // Get first property for image fallback
+  const firstProperty = (allProperties as any[])?.[0];
   for (const c of dbPayoutClaims) {
     if (c.status === 'cancelled') continue;
     // Skip if already in payouts (avoid duplicates)
     if (payouts.some((p) => p.id === `claim-${c.id}`)) continue;
     payouts.push({
       id: `claim-${c.id}`,
-      propertyTitle: 'Bank Transfer',
-      propertyImage: '',
-      propertyId: 0,
+      propertyTitle: firstProperty?.title || 'Bank Transfer',
+      propertyImage: firstProperty?.image || '',
+      propertyId: firstProperty?.id || 0,
       date: c.paid_at || c.created_at,
       sharesOwned: 0,
       amount: Number(c.amount_entitled || 0),
