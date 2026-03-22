@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/landing/nfs-system.css">
   <link rel="stylesheet" href="/landing/premium.css">
   <link rel="stylesheet" href="/landing/sections.css">
+  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <style>
@@ -623,109 +624,289 @@
   }
   </script>
 
-  <!-- JOURNEY — ANIMATED STEP CARDS -->
-  <div class="s sr" style="background:linear-gradient(180deg,#f3f3ee 0%,#fff 100%);padding:100px 0;">
-    <div style="max-width:1000px;margin:0 auto;padding:0 24px;">
-      <div style="text-align:center;margin-bottom:56px;">
-        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(30,154,128,0.06);padding:5px 14px;border-radius:100px;margin-bottom:14px;font-size:11px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">Your Journey</div>
-        <h2 style="font-size:34px;font-weight:700;color:#1a1a1a;" data-i18n="journey_h">From first search to first profit</h2>
-        <p style="font-size:15px;color:#6b7280;margin-top:10px;">Six steps. One platform. Everything you need.</p>
+  <!-- JOURNEY — GSAP EXPANDING CARDS -->
+  <section id="journey" style="background:#f3f3ee;padding:140px 0;position:relative;overflow:hidden;">
+    <!-- Floating dots -->
+    <div id="journeyDots" style="position:absolute;inset:0;pointer-events:none;"></div>
+
+    <div style="max-width:900px;margin:0 auto;padding:0 24px;position:relative;">
+      <!-- Step counter -->
+      <div id="stepCounter" style="position:absolute;top:0;right:24px;font-size:0.8rem;color:#6b7280;letter-spacing:0.08em;font-weight:500;">
+        <span id="counterNum" style="display:inline-block;">01</span> / 06
       </div>
 
-      <!-- Step cards in a 2x3 grid with numbering -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="journey-grid-fancy">
-        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
-          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1e9a80,#10b981);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
-          <div style="display:flex;align-items:flex-start;gap:16px;">
-            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <span style="font-size:16px;font-weight:800;color:#1e9a80;">01</span>
-            </div>
-            <div>
-              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Browse 1,800+ verified deals</h4>
-              <p style="font-size:13px;color:#6b7280;line-height:1.6;">Filter by city, type and profit. Every listing is landlord-approved.</p>
-              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">Deal Marketplace</span>
-            </div>
+      <!-- Heading -->
+      <div class="journey-heading" style="margin-bottom:64px;">
+        <h2 style="font-size:40px;font-weight:700;color:#1a1a1a;line-height:1.15;letter-spacing:0.01em;">
+          <span class="jword">From</span> <span class="jword">first</span> <span class="jword">search</span><br>
+          <span class="jword">to</span> <span class="jword">first</span> <span class="jword" style="position:relative;display:inline-block;">profit<span class="profit-underline" style="position:absolute;bottom:-4px;left:0;width:100%;height:3px;background:#1e9a80;border-radius:2px;transform:scaleX(0);transform-origin:left;"></span></span>
+        </h2>
+        <p style="font-size:15px;color:#6b7280;margin-top:12px;">Six steps. One platform. Everything you need.</p>
+      </div>
+
+      <!-- Card stack -->
+      <div id="journeyStack" style="display:flex;flex-direction:column;gap:0;">
+        <div class="step-card" data-step="0">
+          <div class="sc-collapsed"><span class="sc-pill">01</span><span class="sc-title">Browse 1,800+ verified deals</span><span class="sc-tag-mini">Deal Marketplace</span><span class="sc-chev">&rsaquo;</span></div>
+          <div class="sc-body">
+            <div class="accent-bar"></div>
+            <div class="shimmer-layer"></div>
+            <p class="card-body-row">Filter by city, type and profit. Every listing is landlord-approved.</p>
+            <span class="card-body-row sc-tag">Deal Marketplace</span>
+            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
           </div>
         </div>
+        <div class="sc-connector"></div>
 
-        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
-          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#10b981,#059669);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
-          <div style="display:flex;align-items:flex-start;gap:16px;">
-            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <span style="font-size:16px;font-weight:800;color:#1e9a80;">02</span>
-            </div>
-            <div>
-              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Analyse profit with the earnings estimator</h4>
-              <p style="font-size:13px;color:#6b7280;line-height:1.6;">Model nightly rates, occupancy and costs before you commit.</p>
-              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">Earnings Estimator</span>
-            </div>
+        <div class="step-card" data-step="1">
+          <div class="sc-collapsed"><span class="sc-pill">02</span><span class="sc-title">Analyse profit with the earnings estimator</span><span class="sc-tag-mini">Earnings Estimator</span><span class="sc-chev">&rsaquo;</span></div>
+          <div class="sc-body">
+            <div class="accent-bar"></div>
+            <div class="shimmer-layer"></div>
+            <p class="card-body-row">Model nightly rates, occupancy and costs before you commit.</p>
+            <span class="card-body-row sc-tag">Earnings Estimator</span>
+            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
           </div>
         </div>
+        <div class="sc-connector"></div>
 
-        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
-          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1e9a80,#10b981);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
-          <div style="display:flex;align-items:flex-start;gap:16px;">
-            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <span style="font-size:16px;font-weight:800;color:#1e9a80;">03</span>
-            </div>
-            <div>
-              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Message the landlord from your unified inbox</h4>
-              <p style="font-size:13px;color:#6b7280;line-height:1.6;">Property context, earnings data and templates alongside every thread.</p>
-              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">Unified Inbox</span>
-            </div>
+        <div class="step-card" data-step="2">
+          <div class="sc-collapsed"><span class="sc-pill">03</span><span class="sc-title">Message the landlord from your unified inbox</span><span class="sc-tag-mini">Unified Inbox</span><span class="sc-chev">&rsaquo;</span></div>
+          <div class="sc-body">
+            <div class="accent-bar"></div>
+            <div class="shimmer-layer"></div>
+            <p class="card-body-row">Property context, earnings data and templates alongside every thread.</p>
+            <span class="card-body-row sc-tag">Unified Inbox</span>
+            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
           </div>
         </div>
+        <div class="sc-connector"></div>
 
-        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
-          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#059669,#1e9a80);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
-          <div style="display:flex;align-items:flex-start;gap:16px;">
-            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <span style="font-size:16px;font-weight:800;color:#1e9a80;">04</span>
-            </div>
-            <div>
-              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Track progress in your CRM pipeline</h4>
-              <p style="font-size:13px;color:#6b7280;line-height:1.6;">From cold lead to signed agreement &mdash; every stage in one view.</p>
-              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">CRM Pipeline</span>
-            </div>
+        <div class="step-card" data-step="3">
+          <div class="sc-collapsed"><span class="sc-pill">04</span><span class="sc-title">Track progress in your CRM pipeline</span><span class="sc-tag-mini">CRM Pipeline</span><span class="sc-chev">&rsaquo;</span></div>
+          <div class="sc-body">
+            <div class="accent-bar"></div>
+            <div class="shimmer-layer"></div>
+            <p class="card-body-row">From cold lead to signed agreement &mdash; every stage in one view.</p>
+            <span class="card-body-row sc-tag">CRM Pipeline</span>
+            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
           </div>
         </div>
+        <div class="sc-connector"></div>
 
-        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
-          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1e9a80,#10b981);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
-          <div style="display:flex;align-items:flex-start;gap:16px;">
-            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <span style="font-size:16px;font-weight:800;color:#1e9a80;">05</span>
-            </div>
-            <div>
-              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Sign the rent-to-rent agreement</h4>
-              <p style="font-size:13px;color:#6b7280;line-height:1.6;">Templates, checklists and reminders. Never miss a step.</p>
-              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">Deal Closing</span>
-            </div>
+        <div class="step-card" data-step="4">
+          <div class="sc-collapsed"><span class="sc-pill">05</span><span class="sc-title">Sign the rent-to-rent agreement</span><span class="sc-tag-mini">Deal Closing</span><span class="sc-chev">&rsaquo;</span></div>
+          <div class="sc-body">
+            <div class="accent-bar"></div>
+            <div class="shimmer-layer"></div>
+            <p class="card-body-row">Templates, checklists and reminders. Never miss a step.</p>
+            <span class="card-body-row sc-tag">Deal Closing</span>
+            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
           </div>
         </div>
+        <div class="sc-connector"></div>
 
-        <div class="jf-card sr-child" style="background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s ease;">
-          <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#10b981,#1e9a80);transform:scaleX(0);transform-origin:left;transition:transform 0.6s ease;" class="jf-bar"></div>
-          <div style="display:flex;align-items:flex-start;gap:16px;">
-            <div style="width:44px;height:44px;border-radius:12px;background:rgba(30,154,128,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <span style="font-size:16px;font-weight:800;color:#1e9a80;">06</span>
-            </div>
-            <div>
-              <h4 style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Go live on Airbnb and earn</h4>
-              <p style="font-size:13px;color:#6b7280;line-height:1.6;">Your first profit usually arrives within 30 days of going live.</p>
-              <span style="display:inline-block;margin-top:10px;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.15);color:#1e9a80;border-radius:100px;font-size:11px;font-weight:600;padding:3px 12px;">Live &amp; Earning</span>
-            </div>
+        <div class="step-card" data-step="5">
+          <div class="sc-collapsed"><span class="sc-pill">06</span><span class="sc-title">Go live on Airbnb and earn</span><span class="sc-tag-mini">Live &amp; Earning</span><span class="sc-chev">&rsaquo;</span></div>
+          <div class="sc-body">
+            <div class="accent-bar"></div>
+            <div class="shimmer-layer"></div>
+            <p class="card-body-row">Your first profit usually arrives within 30 days of going live.</p>
+            <span class="card-body-row sc-tag">Live &amp; Earning</span>
+            <div class="card-body-row sc-progress"><div class="progress-fill"></div></div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
   <style>
-  .jf-card:hover { transform:translateY(-4px);box-shadow:0 12px 40px rgba(30,154,128,0.12);border-color:rgba(30,154,128,0.3); }
-  .jf-card:hover .jf-bar { transform:scaleX(1) !important; }
-  @media (max-width:768px) { .journey-grid-fancy { grid-template-columns:1fr !important; } }
+  /* Step card styles */
+  .step-card {
+    background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;
+    height:72px;overflow:hidden;opacity:0.5;position:relative;
+    transition:height 0.55s cubic-bezier(0.22,1,0.36,1),opacity 0.4s ease,box-shadow 0.4s ease,border-color 0.4s ease;
+  }
+  .sc-collapsed {
+    height:72px;padding:0 32px;display:flex;align-items:center;gap:14px;
+  }
+  .sc-pill {
+    background:rgba(30,154,128,0.08);color:#1e9a80;border-radius:100px;
+    font-size:0.72rem;font-weight:700;padding:4px 10px;flex-shrink:0;
+  }
+  .sc-title { font-size:1rem;font-weight:600;color:#1a1a1a;flex:1; }
+  .sc-tag-mini { font-size:0.7rem;color:rgba(30,154,128,0.5);flex-shrink:0; }
+  .sc-chev { font-size:1.2rem;color:#6b7280;flex-shrink:0;transition:transform 0.35s cubic-bezier(0.22,1,0.36,1); }
+  .sc-body { padding:0 32px 32px; }
+  .sc-body p { font-size:0.95rem;color:#6b7280;line-height:1.7;margin-bottom:12px; }
+  .sc-tag {
+    display:inline-block;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.2);
+    color:#1e9a80;border-radius:100px;font-size:0.75rem;font-weight:600;padding:4px 14px;
+  }
+  .sc-progress { height:3px;background:#e8e5df;border-radius:2px;overflow:hidden;margin-top:20px; }
+  .progress-fill { height:100%;background:#1e9a80;border-radius:2px;width:100%;transform:scaleX(0);transform-origin:left; }
+  .accent-bar {
+    position:absolute;left:0;top:16px;bottom:16px;width:3px;
+    background:linear-gradient(to bottom,#1e9a80,rgba(30,154,128,0.2));
+    border-radius:0 2px 2px 0;transform:scaleY(0);transform-origin:top;
+  }
+  .shimmer-layer {
+    position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.55) 50%,transparent 65%);
+    transform:translateX(-100%);
+  }
+  .sc-connector { width:2px;height:16px;margin:0 0 0 35px;border-left:2px dashed rgba(30,154,128,0.2); }
+
+  /* Active state */
+  .step-card.active {
+    opacity:1;
+    border-color:rgba(30,154,128,0.25);
+    animation:glowBreathe 3s ease-in-out infinite;
+  }
+  .step-card.active .sc-chev { transform:rotate(90deg); }
+  @keyframes glowBreathe {
+    0%,100% { box-shadow:0 0 0 1px rgba(30,154,128,0.1),0 8px 48px rgba(30,154,128,0.08); }
+    50% { box-shadow:0 0 0 1px rgba(30,154,128,0.2),0 8px 48px rgba(30,154,128,0.18),0 0 32px rgba(30,154,128,0.08); }
+  }
+
+  /* Mobile */
+  @media(max-width:768px){
+    .step-card { height:64px; }
+    .sc-collapsed { height:64px;padding:0 20px;gap:10px; }
+    .sc-title { font-size:0.85rem; }
+    .sc-tag-mini { display:none; }
+    .sc-body { padding:0 20px 24px; }
+    .sc-connector { display:none; }
+    #stepCounter { display:none; }
+    #journey { padding:80px 0; }
+    .journey-heading h2 { font-size:28px; }
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .step-card,.accent-bar,.shimmer-layer,.progress-fill,.sc-chev{transition-duration:0.01ms!important;}
+    .step-card.active{animation:none!important;}
+  }
   </style>
+
+  <script>
+  // GSAP Journey Animation
+  (function(){
+    if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Lenis smooth scroll
+    try {
+      var lenis = new Lenis({ duration: 1.2, easing: function(t){return Math.min(1,1.001-Math.pow(2,-10*t));}, smooth: true });
+      lenis.on('scroll', ScrollTrigger.update);
+      gsap.ticker.add(function(time){ lenis.raf(time*1000); });
+      gsap.ticker.lagSmoothing(0);
+    } catch(e) {}
+
+    // Heading word entrance
+    gsap.from('.jword', {
+      y: 60, opacity: 0, duration: 0.9, stagger: 0.07, ease: 'power4.out',
+      scrollTrigger: { trigger: '.journey-heading', start: 'top 80%' }
+    });
+    gsap.from('.profit-underline', {
+      scaleX: 0, duration: 0.8, ease: 'power3.out', delay: 0.6,
+      scrollTrigger: { trigger: '.journey-heading', start: 'top 80%' }
+    });
+
+    // Cards
+    var cards = document.querySelectorAll('.step-card');
+    var currentCard = null;
+
+    function expandCard(card) {
+      card.classList.add('active');
+      card.style.height = card.scrollHeight + 'px';
+      card.addEventListener('transitionend', function handler() {
+        card.style.height = 'auto';
+        card.removeEventListener('transitionend', handler);
+      });
+
+      // Accent bar
+      var bar = card.querySelector('.accent-bar');
+      if (bar) gsap.fromTo(bar, {scaleY:0}, {scaleY:1, duration:0.5, ease:'power3.out', delay:0.1});
+
+      // Body rows stagger
+      var rows = card.querySelectorAll('.card-body-row');
+      gsap.fromTo(rows, {y:16, opacity:0}, {y:0, opacity:1, duration:0.45, stagger:0.08, ease:'power3.out', delay:0.15});
+
+      // Progress bar
+      var fill = card.querySelector('.progress-fill');
+      if (fill) gsap.fromTo(fill, {scaleX:0}, {scaleX:1, duration:1.2, ease:'power3.out', delay:0.3});
+
+      // Shimmer sweep
+      var shimmer = card.querySelector('.shimmer-layer');
+      if (shimmer) gsap.fromTo(shimmer, {x:'-100%'}, {x:'200%', duration:0.7, ease:'power2.inOut', delay:0.5});
+
+      // Sonar ripple
+      for (var r = 0; r < 2; r++) {
+        var ripple = document.createElement('span');
+        ripple.style.cssText = 'position:absolute;left:-20px;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:rgba(30,154,128,0.15);pointer-events:none;';
+        card.appendChild(ripple);
+        gsap.to(ripple, {scale:4, opacity:0, duration:0.9, delay:r*0.2, ease:'power2.out', onComplete:function(){this.targets()[0].remove();}});
+      }
+    }
+
+    function collapseCard(card) {
+      card.classList.remove('active');
+      card.style.height = card.scrollHeight + 'px';
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          card.style.height = (window.innerWidth <= 768 ? '64px' : '72px');
+        });
+      });
+    }
+
+    function updateCounter(n) {
+      var el = document.getElementById('counterNum');
+      if (!el) return;
+      gsap.to(el, {y:-24, opacity:0, duration:0.25, onComplete:function(){
+        el.textContent = (n < 10 ? '0' : '') + n;
+        gsap.fromTo(el, {y:24, opacity:0}, {y:0, opacity:1, duration:0.25});
+      }});
+    }
+
+    cards.forEach(function(card, i) {
+      ScrollTrigger.create({
+        trigger: card,
+        start: 'top 55%',
+        end: 'bottom 20%',
+        onEnter: function(){ activate(card, i); },
+        onEnterBack: function(){ activate(card, i); }
+      });
+    });
+
+    function activate(card, i) {
+      if (currentCard && currentCard !== card) collapseCard(currentCard);
+      expandCard(card);
+      currentCard = card;
+      updateCounter(i + 1);
+    }
+
+    // Floating dots
+    var dotsContainer = document.getElementById('journeyDots');
+    if (dotsContainer) {
+      var durations = [7,9,11,8,10,6];
+      for (var d = 0; d < 6; d++) {
+        var dot = document.createElement('div');
+        var sz = 5 + Math.random() * 5;
+        dot.style.cssText = 'position:absolute;width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:rgba(30,154,128,'+(0.05+Math.random()*0.05)+');left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;animation:floatDot'+d+' '+durations[d]+'s ease-in-out infinite;';
+        dotsContainer.appendChild(dot);
+      }
+      // Add keyframes dynamically
+      var style = document.createElement('style');
+      var kf = '';
+      for (var k = 0; k < 6; k++) {
+        var dx = -10 + Math.random()*20, dy = -15 - Math.random()*15;
+        kf += '@keyframes floatDot'+k+'{0%,100%{transform:translate(0,0);}33%{transform:translate('+Math.round(dx)+'px,'+Math.round(dy)+'px);}66%{transform:translate('+Math.round(-dx*0.6)+'px,'+Math.round(-dy*0.4)+'px);}}';
+      }
+      style.textContent = kf;
+      document.head.appendChild(style);
+    }
+  })();
+  </script>
 
   <!-- ACADEMY (with emojis, progress bars, gamification) -->
   <div class="s bg-cream sr"><div class="wrap">
