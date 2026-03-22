@@ -7,7 +7,9 @@
   position: relative;
   overflow: hidden;
   padding-bottom: 0;
-  margin-top: 5.5rem; /* clearance for fixed navbar */
+  margin-top: 0;
+  padding-top: 5.5rem; /* clearance for fixed navbar — padding keeps bg visible under nav */
+  border-radius: 0 0 28px 28px;
 }
 
 /* Cloud background */

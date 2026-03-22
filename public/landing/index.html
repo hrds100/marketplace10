@@ -117,7 +117,7 @@
       <div class="container-large">
         <!-- Hero heading -->
         <div class="hero-text-block">
-          <h1 class="hero-heading" data-i18n="hero_h1a">Landlord-Approved Airbnb Properties<br><span class="italic-accent" data-i18n="hero_h1b">Find, negotiate and grow your portfolio</span></h1>
+          <h1 class="hero-heading"><span data-i18n="hero_h1a">Landlord-Approved Airbnb Properties</span><br><span class="italic-accent" data-i18n="hero_h1b">Find, negotiate and grow your portfolio</span></h1>
           <div class="hero-buttons">
             <a href="/signup" class="hero-cta" data-i18n="hero_cta">Get Started</a>
             <a href="/signin" class="hero-login" data-i18n="hero_login">Login</a>
@@ -147,6 +147,10 @@
               <button class="chat-tab" data-tab="inbox">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                 Unified Inbox
+              </button>
+              <button class="chat-tab" data-tab="booking">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                Booking Site
               </button>
             </div>
 
@@ -337,6 +341,62 @@
               </div>
             </div>
 
+            <!-- 4b. BOOKING SITE PREVIEW -->
+            <div class="preview-content" id="previewBooking">
+              <div class="nfs-mock-page" style="padding:0;">
+                <div style="border:1px solid rgba(0,0,0,0.06);border-radius:12px;overflow:hidden;background:#fff;">
+                  <!-- Browser chrome -->
+                  <div style="background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,0.06);padding:8px 12px;display:flex;align-items:center;gap:6px;">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#ff5f57;"></span>
+                    <span style="width:8px;height:8px;border-radius:50%;background:#ffbd2e;"></span>
+                    <span style="width:8px;height:8px;border-radius:50%;background:#28c840;"></span>
+                    <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:6px;padding:4px 10px;font-size:10px;color:#6b7280;margin-left:8px;" id="demoBookingUrl">yourbrand.nfstay.app</div>
+                  </div>
+                  <!-- Header -->
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #f3f4f6;">
+                    <span style="font-size:14px;font-weight:700;" id="demoBookingLogo">Your Brand</span>
+                    <div style="display:flex;gap:14px;font-size:10px;color:#6b7280;">
+                      <span>Properties</span><span>About</span><span>Contact</span>
+                    </div>
+                  </div>
+                  <!-- Hero image -->
+                  <div style="position:relative;height:140px;overflow:hidden;" id="demoBookingHero">
+                    <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=80" style="width:100%;height:100%;object-fit:cover;" alt="">
+                    <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.6),transparent);"></div>
+                    <div style="position:absolute;bottom:0;padding:14px 16px;">
+                      <h3 style="font-size:16px;font-weight:700;color:#fff;margin:0;">Find Your Perfect Stay</h3>
+                      <p style="font-size:11px;color:rgba(255,255,255,0.8);margin:4px 0 0;">Book directly for the best rates</p>
+                    </div>
+                  </div>
+                  <!-- Search -->
+                  <div style="padding:10px 16px;">
+                    <div style="background:#fff;border:1px solid #f3f4f6;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;">
+                      <span style="font-size:10px;color:#6b7280;flex:1;">Where are you going?</span>
+                      <button id="demoBookingBtn" style="padding:6px 14px;border-radius:8px;color:#fff;font-size:10px;font-weight:600;border:none;background:#10b981;">Search</button>
+                    </div>
+                  </div>
+                  <!-- Properties -->
+                  <div style="padding:8px 16px 12px;">
+                    <span style="font-size:11px;font-weight:600;color:#1a1a1a;display:block;margin-bottom:8px;">Featured Properties</span>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                      <div style="border:1px solid #f3f4f6;border-radius:8px;overflow:hidden;">
+                        <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=200&q=80" style="width:100%;height:50px;object-fit:cover;" alt="">
+                        <div style="padding:6px;"><span style="font-size:9px;font-weight:600;color:#1a1a1a;display:block;">City Apartment</span><span class="demo-booking-price" style="font-size:9px;font-weight:700;color:#10b981;">&pound;120/night</span></div>
+                      </div>
+                      <div style="border:1px solid #f3f4f6;border-radius:8px;overflow:hidden;">
+                        <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=200&q=80" style="width:100%;height:50px;object-fit:cover;" alt="">
+                        <div style="padding:6px;"><span style="font-size:9px;font-weight:600;color:#1a1a1a;display:block;">Penthouse Suite</span><span class="demo-booking-price" style="font-size:9px;font-weight:700;color:#10b981;">&pound;185/night</span></div>
+                      </div>
+                      <div style="border:1px solid #f3f4f6;border-radius:8px;overflow:hidden;">
+                        <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=200&q=80" style="width:100%;height:50px;object-fit:cover;" alt="">
+                        <div style="padding:6px;"><span style="font-size:9px;font-weight:600;color:#1a1a1a;display:block;">Studio Retreat</span><span class="demo-booking-price" style="font-size:9px;font-weight:700;color:#10b981;">&pound;85/night</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 5. FINALE -->
             <div class="preview-content" id="previewFinale">
               <div class="nfs-finale">
@@ -360,11 +420,10 @@
 
   
 <div class="s bg-white sm sr"><div class="wrap"><div class="trust-stripe">
-  <div class="ts-item"><div class="ts-val" data-count="4200" data-suffix="+">0</div><div class="ts-lbl" data-i18n="ts_operators">UK operators</div></div>
-  <div class="ts-item"><div class="ts-val" data-count="1800" data-suffix="+">0</div><div class="ts-lbl" data-i18n="ts_deals">Verified deals</div></div>
+  <div class="ts-item"><div class="ts-val" data-count="300" data-suffix="+">0</div><div class="ts-lbl" data-i18n="ts_operators">UK operators</div></div>
+  <div class="ts-item"><div class="ts-val" data-count="20" data-suffix=" daily">0</div><div class="ts-lbl" data-i18n="ts_deals">Verified deals</div></div>
   <div class="ts-item"><div class="ts-val" data-count="680" data-prefix="&pound;">0</div><div class="ts-lbl" data-i18n="ts_profit">Avg. monthly profit</div></div>
   <div class="ts-item"><div class="ts-val" data-count="10">0</div><div class="ts-lbl" data-i18n="ts_cities">UK cities</div></div>
-  <div class="ts-item"><div class="ts-val" data-count="4.8" data-decimals="1">0</div><div class="ts-lbl" data-i18n="ts_rating">Operator rating</div></div>
 </div></div></div>
 
   <!-- PERSONA SELECTOR -->
@@ -374,7 +433,7 @@
       <div class="persona-bar"><div class="persona-pill active" data-persona="new" data-i18n="persona_new">New operator</div><div class="persona-pill" data-persona="scaling" data-i18n="persona_scaling">Scaling operator</div><div class="persona-pill" data-persona="landlord" data-i18n="persona_landlord">Landlord</div></div>
       <div class="persona-content active" data-persona-content="new"><div class="sh left"><h2 style="font-size:24px;">Starting from scratch? We have got you.</h2><p style="margin-left:0;">Learn the model, find your first deal, and close it in one platform.</p></div><div class="g3"><div class="card" style="border-top:3px solid #1e9a80;"><h3>Academy first</h3><p>Start with structured courses. Learn sourcing, analysis and landlord pitching.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Browse real deals</h3><p>Apply what you learn on 1,800+ verified properties.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Message landlords</h3><p>Use the inbox to send your first inquiry with confidence.</p></div></div></div>
       <div class="persona-content" data-persona-content="scaling"><div class="sh left"><h2 style="font-size:24px;">Ready to scale? Organise and accelerate.</h2><p style="margin-left:0;">Manage multiple deals, track your pipeline and never miss a follow-up.</p></div><div class="g3"><div class="card" style="border-top:3px solid #1e9a80;"><h3>CRM pipeline</h3><p>Visual deal stages from inquiry to signed contract.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Unified inbox</h3><p>All landlord conversations in one searchable feed.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Earnings estimator</h3><p>Model returns on every property before you commit.</p></div></div></div>
-      <div class="persona-content" data-persona-content="landlord"><div class="sh left"><h2 style="font-size:24px;">List your property. Get qualified operators.</h2><p style="margin-left:0;">Reach serious rent-to-rent operators who guarantee rent.</p></div><div class="g3"><div class="card" style="border-top:3px solid #1e9a80;"><h3>List your deal</h3><p>Submit your property and reach 4,200+ verified operators.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Inbox messages</h3><p>Receive and respond to inquiries from qualified operators.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Guaranteed rent</h3><p>Operators pay monthly, regardless of occupancy.</p></div></div></div>
+      <div class="persona-content" data-persona-content="landlord"><div class="sh left"><h2 style="font-size:24px;">List your property. Get qualified operators.</h2><p style="margin-left:0;">Reach serious rent-to-rent operators who guarantee rent.</p></div><div class="g3"><div class="card" style="border-top:3px solid #1e9a80;"><h3>List your deal</h3><p>Submit your property and reach 300+ verified operators.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Inbox messages</h3><p>Receive and respond to inquiries from qualified operators.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Guaranteed rent</h3><p>Operators pay monthly, regardless of occupancy.</p></div></div></div>
     </div>
   </div></div>
 
@@ -694,20 +753,16 @@
 
     <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:32px;">
       <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
-        <span style="font-size:18px;">&#127942;</span>
-        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">Level 3</div><div style="font-size:10px;color:#6b7280;">Cashflow Builder</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
-        <span style="font-size:18px;">&#9889;</span>
-        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">560 XP</div><div style="font-size:10px;color:#6b7280;">Total earned</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
-        <span style="font-size:18px;">&#128293;</span>
-        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">7-day streak</div><div style="font-size:10px;color:#6b7280;">Keep it going</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
-        <span style="font-size:18px;">&#128202;</span>
+        <span style="font-size:18px;">&#128218;</span>
         <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">44 lessons</div><div style="font-size:10px;color:#6b7280;">6 modules</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
+        <span style="font-size:18px;">&#127891;</span>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">Beginner to Pro</div><div style="font-size:10px;color:#6b7280;">Step-by-step path</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
+        <span style="font-size:18px;">&#9989;</span>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">Track progress</div><div style="font-size:10px;color:#6b7280;">Pick up where you left off</div></div>
       </div>
     </div>
 
@@ -726,7 +781,7 @@
   <div class="s bg-cream sr" style="overflow:hidden;">
     <div class="wrap"><div class="sh"><h2 data-i18n="testi_h">Trusted by thousands of operators</h2><div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:8px;"><span style="font-size:18px;color:#1e9a80;">&#9733;&#9733;&#9733;&#9733;&#9733;</span><span style="font-size:14px;color:#6b7280;margin-left:6px;">4.8 out of 5</span></div></div></div>
     <div style="overflow:hidden;padding:0 0 20px;">
-      <div class="review-track" style="display:flex;gap:16px;animation:reviewSlide 20s linear infinite;">
+      <div class="review-track" style="display:flex;gap:16px;animation:reviewSlide 12s linear infinite;">
         <div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;NFsTay helped me close my first three deals in under a month. The CRM is the reason I stay organised.&rdquo;</p>
@@ -892,7 +947,7 @@
   </div></div>
 
   <!-- CTA BAND -->
-  <div class="s bg-gradient sr"><div class="wrap cta-band"><h2 style="font-size:48px;line-height:1.1;letter-spacing:-1px;" data-i18n="cta_h">Ready to find your first deal?</h2><p style="font-size:18px;margin-top:12px;">Join 4,200+ operators building their portfolio with NFsTay.</p><div class="cta-btns" style="margin-top:28px;"><a href="/signup" class="btn btn-white" style="padding:18px 48px;font-size:17px;border-radius:14px;" data-i18n="cta_btn">Get Started</a></div></div></div>
+  <div class="s bg-gradient sr"><div class="wrap cta-band"><h2 style="font-size:48px;line-height:1.1;letter-spacing:-1px;" data-i18n="cta_h">Ready to find your first deal?</h2><p style="font-size:18px;margin-top:12px;">Join 300+ operators building their portfolio with NFsTay.</p><div class="cta-btns" style="margin-top:28px;"><a href="/signup" class="btn btn-white" style="padding:18px 48px;font-size:17px;border-radius:14px;" data-i18n="cta_btn">Get Started</a></div></div></div>
 
 <footer class="footer">
     <div class="wrap">

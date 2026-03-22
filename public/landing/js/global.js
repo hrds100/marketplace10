@@ -202,17 +202,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 4. PERSONA SWITCHING (for variant 08)
+  // 4. PERSONA SWITCHING (cascade animation)
   document.querySelectorAll('[data-persona-group]').forEach(function (group) {
     var pills = group.querySelectorAll('[data-persona]');
     var contents = group.querySelectorAll('[data-persona-content]');
+
+    // Initial cascade for active content
+    var initialActive = group.querySelector('[data-persona-content].active');
+    if (initialActive) {
+      var initCards = initialActive.querySelectorAll('.card');
+      initCards.forEach(function (card, i) {
+        setTimeout(function () { card.classList.add('cascade-in'); }, 100 * i);
+      });
+    }
+
     pills.forEach(function (pill) {
       pill.addEventListener('click', function () {
         pills.forEach(function (p) { p.classList.remove('active'); });
-        contents.forEach(function (c) { c.classList.remove('active'); });
+        // Remove cascade from all cards
+        contents.forEach(function (c) {
+          c.classList.remove('active');
+          c.querySelectorAll('.card').forEach(function (card) { card.classList.remove('cascade-in'); });
+        });
         pill.classList.add('active');
         var target = group.querySelector('[data-persona-content="' + pill.getAttribute('data-persona') + '"]');
-        if (target) target.classList.add('active');
+        if (target) {
+          target.classList.add('active');
+          // Cascade cards in with stagger
+          var cards = target.querySelectorAll('.card');
+          cards.forEach(function (card, i) {
+            setTimeout(function () { card.classList.add('cascade-in'); }, 100 * i);
+          });
+        }
       });
     });
   });

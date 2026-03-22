@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     deals:      document.getElementById('previewDeals'),
     crm:        document.getElementById('previewCrm'),
     inbox:      document.getElementById('previewInbox'),
+    booking:    document.getElementById('previewBooking'),
     finale:     document.getElementById('previewFinale'),
   };
   const typewriterEl   = document.getElementById('chatTypewriter');
@@ -101,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========================================
   // 4. AUTO-CYCLE TABS (5s)
   // ========================================
-  const cycleOrder = ['deals', 'crm', 'inbox'];
+  const cycleOrder = ['deals', 'crm', 'inbox', 'booking'];
   let cycleIdx = 0;
 
   function startAutoCycle() {
@@ -448,10 +449,45 @@ document.addEventListener('DOMContentLoaded', () => {
         hideCursor();
       }
     }
-    setProgress(92);
-    await delay(2000);
+    setProgress(88);
+    await delay(1500);
 
-    // --- STEP 5: THE PAYOFF (22-27s) ---
+    // --- STEP 5: BOOKING SITE CUSTOMISATION ---
+    switchPreview('booking');
+    setProgress(92);
+    await delay(600);
+
+    // Animate: change brand name, then colour, then show result
+    var bookingLogo = document.getElementById('demoBookingLogo');
+    var bookingUrl = document.getElementById('demoBookingUrl');
+    var bookingBtn = document.getElementById('demoBookingBtn');
+    var bookingPrices = document.querySelectorAll('.demo-booking-price');
+
+    if (bookingLogo) {
+      // Step A: Type a brand name
+      var brandName = 'Luxe Stays Manchester';
+      bookingLogo.textContent = '';
+      for (var ci = 0; ci < brandName.length; ci++) {
+        bookingLogo.textContent += brandName[ci];
+        await delay(40);
+      }
+      if (bookingUrl) bookingUrl.textContent = 'luxestaysmanchester.nfstay.app';
+      await delay(800);
+
+      // Step B: Change accent colour (green → blue → purple → back to green)
+      var demoColors = ['#3b82f6', '#8b5cf6', '#10b981'];
+      for (var di = 0; di < demoColors.length; di++) {
+        var col = demoColors[di];
+        if (bookingBtn) bookingBtn.style.background = col;
+        bookingPrices.forEach(function(p) { p.style.color = col; });
+        await delay(600);
+      }
+      await delay(800);
+    }
+    setProgress(96);
+    await delay(1000);
+
+    // --- STEP 6: THE PAYOFF ---
     setProgress(100);
     switchPreview('finale');
     await delay(4500);
@@ -691,10 +727,70 @@ document.addEventListener('DOMContentLoaded', () => {
         newCard.style.transform = 'translateY(0)';
       }
     }
-    setProgress(92);
-    await delay(2500);
+    setProgress(88);
+    await delay(1500);
 
-    // SCREEN 4: Finale
+    // SCREEN 4: Booking site customisation
+    hideMobileScreens();
+    await delay(500);
+    await showMobileScreen(`
+      <div style="width:100%;max-width:320px;">
+        <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Your Booking Site</div>
+        <div style="border:1px solid #e8e5df;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+          <div style="background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,0.06);padding:6px 10px;display:flex;align-items:center;gap:5px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#ff5f57;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#ffbd2e;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#28c840;"></span>
+            <div id="mobileBookingUrl" style="flex:1;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:5px;padding:3px 8px;font-size:9px;color:#6b7280;margin-left:6px;">yourbrand.nfstay.app</div>
+          </div>
+          <div style="padding:10px 14px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
+            <span id="mobileBookingLogo" style="font-size:13px;font-weight:700;">Your Brand</span>
+            <div style="display:flex;gap:10px;font-size:9px;color:#6b7280;"><span>Properties</span><span>Contact</span></div>
+          </div>
+          <div style="height:100px;background:url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80') center/cover;position:relative;">
+            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.5),transparent);"></div>
+            <div style="position:absolute;bottom:8px;left:10px;"><div style="font-size:13px;font-weight:700;color:#fff;">Find Your Perfect Stay</div></div>
+          </div>
+          <div style="padding:10px 14px;">
+            <div style="background:#fff;border:1px solid #f3f4f6;border-radius:6px;padding:6px 10px;display:flex;align-items:center;">
+              <span style="font-size:9px;color:#6b7280;flex:1;">Where are you going?</span>
+              <button id="mobileBookingSearchBtn" style="padding:4px 12px;border-radius:6px;color:#fff;font-size:9px;font-weight:600;border:none;background:#10b981;">Search</button>
+            </div>
+          </div>
+          <div style="padding:4px 14px 10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+            <div style="border:1px solid #f3f4f6;border-radius:6px;overflow:hidden;"><img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=150&q=80" style="width:100%;height:36px;object-fit:cover;" alt=""><div style="padding:4px;"><span style="font-size:8px;font-weight:600;display:block;">City Apt</span><span class="m-booking-price" style="font-size:8px;font-weight:700;color:#10b981;">&pound;120</span></div></div>
+            <div style="border:1px solid #f3f4f6;border-radius:6px;overflow:hidden;"><img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=150&q=80" style="width:100%;height:36px;object-fit:cover;" alt=""><div style="padding:4px;"><span style="font-size:8px;font-weight:600;display:block;">Penthouse</span><span class="m-booking-price" style="font-size:8px;font-weight:700;color:#10b981;">&pound;185</span></div></div>
+            <div style="border:1px solid #f3f4f6;border-radius:6px;overflow:hidden;"><img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=150&q=80" style="width:100%;height:36px;object-fit:cover;" alt=""><div style="padding:4px;"><span style="font-size:8px;font-weight:600;display:block;">Studio</span><span class="m-booking-price" style="font-size:8px;font-weight:700;color:#10b981;">&pound;85</span></div></div>
+          </div>
+        </div>
+      </div>
+    `);
+    setProgress(92);
+
+    // Animate: type brand name + cycle colours
+    var mbLogo = document.getElementById('mobileBookingLogo');
+    var mbUrl = document.getElementById('mobileBookingUrl');
+    var mbBtn = document.getElementById('mobileBookingSearchBtn');
+    var mbPrices = document.querySelectorAll('.m-booking-price');
+    if (mbLogo) {
+      mbLogo.textContent = '';
+      var mbName = 'Luxe Stays';
+      for (var mi = 0; mi < mbName.length; mi++) {
+        mbLogo.textContent += mbName[mi];
+        await delay(50);
+      }
+      if (mbUrl) mbUrl.textContent = 'luxestays.nfstay.app';
+      await delay(600);
+      var mbColors = ['#3b82f6', '#8b5cf6', '#10b981'];
+      for (var mc = 0; mc < mbColors.length; mc++) {
+        if (mbBtn) mbBtn.style.background = mbColors[mc];
+        mbPrices.forEach(function(p) { p.style.color = mbColors[mc]; });
+        await delay(500);
+      }
+    }
+    await delay(1500);
+
+    // SCREEN 5: Finale
     hideMobileScreens();
     await delay(500);
     await showMobileScreen(`

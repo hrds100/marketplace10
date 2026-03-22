@@ -508,6 +508,16 @@
 .persona-pill.active { border-color: var(--green); background: var(--green-light); color: var(--green); font-weight: 600; }
 .persona-content { display: none; }
 .persona-content.active { display: block; }
+/* Cascade animation for persona cards */
+.persona-content .card {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 350ms var(--ease), transform 350ms var(--ease);
+}
+.persona-content.active .card.cascade-in {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 /* 09: KPI tiles */
 .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
