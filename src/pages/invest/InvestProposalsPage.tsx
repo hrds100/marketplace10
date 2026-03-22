@@ -217,8 +217,8 @@ export default function InvestProposalsPage() {
 
   // Vote success celebration state
   const [showVoteSuccess, setShowVoteSuccess] = useState(false);
-  // Expand/collapse for past proposals (active always expanded)
-  const [expandedProposalId, setExpandedProposalId] = useState<string | null>(null);
+  // Expand/collapse — all proposals can be toggled. Active start expanded.
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   // Dialog state
   const [voteDialog, setVoteDialog] = useState<VoteDialogState>({
@@ -677,7 +677,8 @@ export default function InvestProposalsPage() {
               {timeline.map((item) => {
                 const isActive = item.kind === 'active';
                 const p = item.data;
-                const isExpanded = isActive || expandedProposalId === p.id;
+                // Active proposals default expanded, past default collapsed. User can toggle any.
+                const isExpanded = isActive ? !collapsedIds.has(p.id) : collapsedIds.has(p.id);
 
                 return (
                   <div key={p.id} className="relative">
@@ -694,12 +695,13 @@ export default function InvestProposalsPage() {
                     <Card
                       className={cn(
                         'transition-all',
+                        'cursor-pointer',
                         isActive
-                          ? 'border-emerald-500/30 bg-emerald-500/[0.03]'
-                          : 'border-muted cursor-pointer hover:border-muted-foreground/30',
+                          ? 'border-emerald-500/30 bg-emerald-500/[0.03] hover:border-emerald-500/50'
+                          : 'border-muted hover:border-muted-foreground/30',
                         !isActive && !isExpanded && 'opacity-75'
                       )}
-                      onClick={!isActive ? () => setExpandedProposalId(isExpanded ? null : p.id) : undefined}
+                      onClick={() => setCollapsedIds((prev) => { const next = new Set(prev); if (next.has(p.id)) next.delete(p.id); else next.add(p.id); return next; })}
                     >
                       <CardContent className="pt-5 space-y-3">
                         {/* Header — always visible */}

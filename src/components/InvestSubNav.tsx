@@ -36,11 +36,28 @@ export default function InvestSubNav() {
         {/* Wallet button — opens Particle embedded wallet (same as legacy top-right button) */}
         <div className="ml-auto">
           <button
-            onClick={() => embeddedWallet?.openWallet()}
+            onClick={async () => {
+              try {
+                if (embeddedWallet?.openWallet) {
+                  embeddedWallet.openWallet();
+                } else {
+                  // Fallback: try restoring Particle session then opening
+                  const { particleAuth } = await import('@particle-network/auth-core');
+                  const pa = particleAuth as any;
+                  if (pa?.ethereum) {
+                    // Session exists — try opening wallet via auth-core
+                    window.open('https://wallet.particle.network', '_blank');
+                  } else {
+                    window.location.href = '/dashboard/settings';
+                  }
+                }
+              } catch {
+                window.location.href = '/dashboard/settings';
+              }
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] transition-all duration-200 whitespace-nowrap text-primary font-semibold bg-primary/10 hover:bg-primary/20"
           >
             <CreditCard className="w-[13px] h-[13px]" strokeWidth={1.8} />
-            <span>Wallet</span>
           </button>
         </div>
       </nav>
