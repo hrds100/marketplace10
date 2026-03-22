@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useOutletContext, Link, useNavigate } from 'react-router-dom';
 import { PlusCircle, Gem, Wallet } from 'lucide-react';
+import { useEmbeddedWallet } from '@particle-network/connectkit';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import NotificationBell from '@/components/NotificationBell';
 import BurgerMenu from '@/components/BurgerMenu';
@@ -29,6 +30,8 @@ export function useDashboardContext() {
 function TopBar() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  let embeddedWallet: any = null;
+  try { embeddedWallet = useEmbeddedWallet(); } catch { /* hook not available outside ConnectKitProvider */ }
   return (
     <header className="h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
       <Link
@@ -59,19 +62,10 @@ function TopBar() {
           Submit a Deal
         </button>
         <button
-          onClick={async () => {
-            try {
-              const { particleAuth } = await import('@particle-network/auth-core');
-              const pa = particleAuth as any;
-              if (pa?.openWallet) {
-                pa.openWallet();
-              } else if (pa?.ethereum) {
-                // Fallback: navigate to settings if wallet UI not available
-                navigate('/dashboard/settings');
-              } else {
-                navigate('/dashboard/settings');
-              }
-            } catch {
+          onClick={() => {
+            if (embeddedWallet?.openWallet) {
+              embeddedWallet.openWallet();
+            } else {
               navigate('/dashboard/settings');
             }
           }}

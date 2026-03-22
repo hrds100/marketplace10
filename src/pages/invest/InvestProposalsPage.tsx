@@ -217,6 +217,8 @@ export default function InvestProposalsPage() {
 
   // Vote success celebration state
   const [showVoteSuccess, setShowVoteSuccess] = useState(false);
+  // Expand/collapse for past proposals (active always expanded)
+  const [expandedProposalId, setExpandedProposalId] = useState<string | null>(null);
 
   // Dialog state
   const [voteDialog, setVoteDialog] = useState<VoteDialogState>({
@@ -675,6 +677,7 @@ export default function InvestProposalsPage() {
               {timeline.map((item) => {
                 const isActive = item.kind === 'active';
                 const p = item.data;
+                const isExpanded = isActive || expandedProposalId === p.id;
 
                 return (
                   <div key={p.id} className="relative">
@@ -690,42 +693,32 @@ export default function InvestProposalsPage() {
 
                     <Card
                       className={cn(
+                        'transition-all',
                         isActive
                           ? 'border-emerald-500/30 bg-emerald-500/[0.03]'
-                          : 'border-muted opacity-75'
+                          : 'border-muted cursor-pointer hover:border-muted-foreground/30',
+                        !isActive && !isExpanded && 'opacity-75'
                       )}
+                      onClick={!isActive ? () => setExpandedProposalId(isExpanded ? null : p.id) : undefined}
                     >
                       <CardContent className="pt-5 space-y-3">
+                        {/* Header — always visible */}
                         <div className="flex flex-wrap items-start justify-between gap-2">
-                          <div className="space-y-1">
+                          <div className="space-y-1 flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              {/* Property image thumbnail */}
-                              {p.propertyImage && p.propertyImage !== '/placeholder.svg' ? (
-                                <img
-                                  src={fixIpfsUrl(p.propertyImage)}
-                                  alt={p.propertyTitle}
-                                  className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
-                                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                />
-                              ) : (
-                                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm flex-shrink-0">
-                                  {p.propertyTitle.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}
-                                </div>
-                              )}
                               <Badge variant="outline" className="text-[11px]">{p.propertyTitle}</Badge>
                               <Badge variant="outline" className={cn('text-[11px]', typeBadgeColor(p.type))}>{p.type}</Badge>
                               {isActive && (
-                                <Badge className="text-[11px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                                  Active
-                                </Badge>
+                                <Badge className="text-[11px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Active</Badge>
                               )}
+                              {!isActive && <ResultBadge result={(p as PastProposal).result} />}
                             </div>
                             <h3 className={cn('font-semibold', isActive ? 'text-base' : 'text-sm')}>
                               {p.title}
                             </h3>
-                            {p.description && (
-                              <p className={cn('text-sm text-muted-foreground', !isActive && 'line-clamp-2')}>
-                                {p.description}
+                            {!isActive && !isExpanded && (
+                              <p className="text-xs text-muted-foreground">
+                                {(p as PastProposal).votesYes >= 1000 ? `${((p as PastProposal).votesYes / 1000).toFixed(1)}K` : (p as PastProposal).votesYes} yes / {(p as PastProposal).votesNo} no
                               </p>
                             )}
                           </div>
@@ -734,34 +727,43 @@ export default function InvestProposalsPage() {
                           </span>
                         </div>
 
-                        {isActive ? (
-                          <>
-                            <VoteBar
-                              yes={(p as ActiveProposalWithVote).votesYes}
-                              no={(p as ActiveProposalWithVote).votesNo}
-                              total={(p as ActiveProposalWithVote).totalVotes}
-                            />
-                            <QuorumBar
-                              current={
-                                (p as ActiveProposalWithVote).votesYes +
-                                (p as ActiveProposalWithVote).votesNo
-                              }
-                              quorum={(p as ActiveProposalWithVote).quorum}
-                            />
-                            <div className="flex items-center justify-between">
-                              <Badge variant="outline" className="text-xs text-amber-400 border-amber-500/30">
-                                <Clock className="w-3 h-3 mr-1" />
-                                Ends in {daysUntil((p as ActiveProposalWithVote).endsAt)} days
-                              </Badge>
-                              <VoteButtons proposal={p as ActiveProposalWithVote} />
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">
-                              {(p as PastProposal).votesYes >= 1000 ? `${((p as PastProposal).votesYes / 1000).toFixed(1)}K` : (p as PastProposal).votesYes} yes / {(p as PastProposal).votesNo >= 1000 ? `${((p as PastProposal).votesNo / 1000).toFixed(1)}K` : (p as PastProposal).votesNo} no
-                            </span>
-                            <ResultBadge result={(p as PastProposal).result} />
+                        {/* Expanded content */}
+                        {isExpanded && (
+                          <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
+                            {/* Description — formatted with paragraphs */}
+                            {p.description && (
+                              <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                                {p.description}
+                              </div>
+                            )}
+
+                            {isActive ? (
+                              <>
+                                <VoteBar
+                                  yes={(p as ActiveProposalWithVote).votesYes}
+                                  no={(p as ActiveProposalWithVote).votesNo}
+                                  total={(p as ActiveProposalWithVote).totalVotes}
+                                />
+                                <QuorumBar
+                                  current={(p as ActiveProposalWithVote).votesYes + (p as ActiveProposalWithVote).votesNo}
+                                  quorum={(p as ActiveProposalWithVote).quorum}
+                                />
+                                <div className="flex items-center justify-between">
+                                  <Badge variant="outline" className="text-xs text-amber-400 border-amber-500/30">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    Ends in {daysUntil((p as ActiveProposalWithVote).endsAt)} days
+                                  </Badge>
+                                  <VoteButtons proposal={p as ActiveProposalWithVote} />
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">
+                                  {(p as PastProposal).votesYes >= 1000 ? `${((p as PastProposal).votesYes / 1000).toFixed(1)}K` : (p as PastProposal).votesYes} yes / {(p as PastProposal).votesNo >= 1000 ? `${((p as PastProposal).votesNo / 1000).toFixed(1)}K` : (p as PastProposal).votesNo} no
+                                </span>
+                                <ResultBadge result={(p as PastProposal).result} />
+                              </div>
+                            )}
                           </div>
                         )}
                       </CardContent>

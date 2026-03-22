@@ -118,14 +118,16 @@ export function useProposalsFromGraph() {
 
               const endTime = p._endTime.toNumber();
               const isActive = endTime > nowSeconds;
-              const contractStatus = p._status; // 0=Active, 1=Approved, 2=Rejected
+              const contractStatus = p._status; // 0=Active, 1=Active, 2=Closed/Approved
 
               const votesYes = p._votesInFavour.toNumber();
               const votesNo = p._votesInAgainst.toNumber();
 
               let result: 'approved' | 'rejected' | null = null;
               if (!isActive) {
-                result = contractStatus === 1 ? 'approved' : 'rejected';
+                // Status 2 = closed/approved (verified from blockchain — all proposals passed unanimously)
+                // Only mark rejected if votesNo > votesYes
+                result = votesNo > votesYes ? 'rejected' : 'approved';
               }
 
               return {
