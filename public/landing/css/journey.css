@@ -230,15 +230,19 @@
   background: linear-gradient(135deg, rgba(30,154,128,0.03) 0%, transparent 50%, rgba(30,154,128,0.02) 100%);
   border-radius: 20px;
 }
-.tl-glass-content { position: relative; padding: 28px 32px; }
-.tl-glass-icon {
-  width: 44px; height: 44px; border-radius: 12px;
-  background: rgba(30,154,128,0.08); border: 1px solid rgba(30,154,128,0.12);
-  display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+.tl-glass-content {
+  position: relative; padding: 24px 28px;
+  display: flex; gap: 16px; align-items: flex-start;
 }
+.tl-glass-icon {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  background: rgba(30,154,128,0.08); border: 1px solid rgba(30,154,128,0.12);
+  display: flex; align-items: center; justify-content: center;
+}
+.tl-glass-icon svg { width: 18px; height: 18px; }
 .tl-glass-label {
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
-  color: #1e9a80; margin-bottom: 10px;
+  color: #1e9a80; margin-bottom: 6px;
 }
 .tl-v-glass:hover {
   background: rgba(255,255,255,0.7);
