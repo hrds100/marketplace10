@@ -211,7 +211,7 @@ export default function AdminInvestPayouts() {
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
-      toast.success(`$${data.usd_amount} → £${data.gbp_amount} paid via Revolut (rate: ${data.exchange_rate?.toFixed(4)})`);
+      toast.success(`$${data.usd_amount} → £${data.gbp_amount} draft created — approve in Revolut app`);
       qc.invalidateQueries({ queryKey: ['payout_claims'] });
     } catch (err: any) {
       toast.error(err.message || 'Payment failed');
@@ -432,7 +432,7 @@ export default function AdminInvestPayouts() {
                           onClick={() => handleApprove(p.id)}
                         >
                           {payingId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-                          {payingId === p.id ? 'Paying...' : `Pay £${(Number(p.amount) * gbpRate).toFixed(2)}`}
+                          {payingId === p.id ? 'Sending...' : `Send £${(Number(p.amount) * gbpRate).toFixed(2)}`}
                         </Button>
                       )}
                       {(p.status === 'pending' || p.status === 'processing') && (

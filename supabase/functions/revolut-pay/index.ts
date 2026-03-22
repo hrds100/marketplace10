@@ -95,49 +95,52 @@ serve(async (req) => {
       exchangeRate = 0.75
     }
 
-    // 5. Send payment in GBP
-    const payRes = await fetch('https://b2b.revolut.com/api/1.0/pay', {
+    // 5. Create payment DRAFT (requires approval in Revolut app)
+    const draftRes = await fetch('https://b2b.revolut.com/api/1.0/payment-drafts', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        request_id: `nfs-${claim_id.slice(0, 8)}-${Date.now()}`,
-        account_id: '9e512c4e-ebe5-4389-a20f-5e3be3a912a6', // nfstay shares GBP
-        receiver: { counterparty_id: cpData.id, account_id: cpData.accounts[0].id },
-        amount: gbpAmount,
-        currency: 'GBP',
-        reference: 'NFsTay payout',
+        title: `NFsTay Payout — $${usdAmount} → £${gbpAmount}`,
+        schedule_for: new Date().toISOString().slice(0, 10),
+        payments: [{
+          account_id: '9e512c4e-ebe5-4389-a20f-5e3be3a912a6', // nfstay shares GBP
+          receiver: { counterparty_id: cpData.id, account_id: cpData.accounts[0].id },
+          amount: gbpAmount,
+          currency: 'GBP',
+          reference: 'NFsTay payout',
+        }],
       }),
     })
-    const payData = await payRes.json()
+    const draftData = await draftRes.json()
 
-    if (!payData.id) {
-      return new Response(JSON.stringify({ error: `Payment failed: ${payData.message || JSON.stringify(payData)}` }), { status: 400, headers: corsHeaders })
+    if (!draftData.id) {
+      return new Response(JSON.stringify({ error: `Draft failed: ${draftData.message || JSON.stringify(draftData)}` }), { status: 400, headers: corsHeaders })
     }
 
-    // 6. Update claim to paid
+    // 6. Update claim to processing (not paid — waiting for Revolut approval)
     await supabase
       .from('payout_claims')
-      .update({ status: 'paid', paid_at: new Date().toISOString(), revolut_transaction_id: payData.id })
+      .update({ status: 'processing', revolut_payment_draft_id: draftData.id })
       .eq('id', claim_id)
 
     // 7. Audit log
     await supabase.from('payout_audit_log').insert({
       claim_id,
       user_id: claim.user_id,
-      event_type: 'payment_completed',
+      event_type: 'draft_created',
       old_status: claim.status,
-      new_status: 'paid',
+      new_status: 'processing',
       performed_by: 'admin',
-      metadata: { revolut_tx_id: payData.id, usd_amount: usdAmount, gbp_amount: gbpAmount, exchange_rate: exchangeRate },
+      metadata: { revolut_draft_id: draftData.id, usd_amount: usdAmount, gbp_amount: gbpAmount, exchange_rate: exchangeRate },
     })
 
     return new Response(JSON.stringify({
       success: true,
-      tx_id: payData.id,
+      draft_id: draftData.id,
       usd_amount: usdAmount,
       gbp_amount: gbpAmount,
       exchange_rate: exchangeRate,
-      state: payData.state,
+      state: 'awaiting_approval',
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
