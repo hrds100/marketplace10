@@ -45,15 +45,23 @@
   /* Show cursor on mobile too during story */
   .animated-cursor { display: none; }
   .chat-tabs {
-    padding: 8px 12px;
-    gap: 4px;
+    padding: 4px 6px;
+    gap: 2px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    justify-content: flex-start;
   }
+  .chat-tabs::-webkit-scrollbar { display: none; }
   .chat-tab {
-    padding: 8px 10px;
-    font-size: 11px;
-    gap: 4px;
+    padding: 6px 8px;
+    font-size: 10px;
+    gap: 3px;
+    flex-shrink: 0;
+    margin: 3px 1px;
+    border-radius: 6px;
   }
-  .chat-tab svg { width: 12px; height: 12px; }
+  .chat-tab svg { width: 10px; height: 10px; }
   .chat-earnings-banner {
     padding: 16px 12px;
   }
