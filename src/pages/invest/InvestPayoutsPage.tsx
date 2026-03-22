@@ -1,3 +1,4 @@
+import { playCelebrationSound } from '@/lib/celebration';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -198,7 +199,7 @@ function ClaimModal({
         });
         if (error) throw new Error(error.message);
         if (data?.error) throw new Error(data.error);
-        setClaimStep('success');
+        setClaimStep('success'); playCelebrationSound();
         onClaimSuccess?.();
         sendInvestNotification({
           type: 'rent_claimed',
@@ -215,7 +216,7 @@ function ClaimModal({
       try {
         const result = await onClaimRent(payout.propertyId);
         setClaimTxHash(result.txHash || null);
-        setClaimStep('success');
+        setClaimStep('success'); playCelebrationSound();
         onClaimSuccess?.();
       } catch (err) {
         setClaimError(err instanceof Error ? err.message : 'Claim failed. Check your wallet and try again.');
@@ -225,7 +226,7 @@ function ClaimModal({
       try {
         const result = await onBuyStayTokens(payout.propertyId, (step) => setTxStep(step));
         setClaimTxHash(result.txHash || null);
-        setClaimStep('success');
+        setClaimStep('success'); playCelebrationSound();
         onClaimSuccess?.();
       } catch (err) {
         setClaimError(err instanceof Error ? err.message : 'STAY token claim failed. Check your wallet and try again.');
@@ -235,7 +236,7 @@ function ClaimModal({
       try {
         const result = await onBuyLpTokens(payout.propertyId, (step) => setTxStep(step));
         setClaimTxHash(result.txHash || null);
-        setClaimStep('success');
+        setClaimStep('success'); playCelebrationSound();
         onClaimSuccess?.();
       } catch (err) {
         setClaimError(err instanceof Error ? err.message : 'LP token claim failed. Check your wallet and try again.');
@@ -373,7 +374,7 @@ function ClaimModal({
                   .then(({ data, error }) => {
                     if (error) throw new Error(error.message);
                     if (data?.error) throw new Error(data.error);
-                    setClaimStep('success');
+                    setClaimStep('success'); playCelebrationSound();
                     sendInvestNotification({
                       type: 'rent_claimed',
                       user_id: user?.id,

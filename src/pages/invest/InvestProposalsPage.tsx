@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
+import { playCelebrationSound } from '@/lib/celebration';
 import { useProposals, useCreateProposal, useCastVote } from '@/hooks/useInvestData';
 import { useProposalsFromGraph } from '@/hooks/useProposalsFromGraph';
 import { useBlockchain } from '@/hooks/useBlockchain';
@@ -421,11 +422,11 @@ export default function InvestProposalsPage() {
         user_id: user?.id || '',
         choice: savedChoice,
       });
-      setShowVoteSuccess(true);
+      setShowVoteSuccess(true); playCelebrationSound();
     } catch {
       // Blockchain vote succeeded but Supabase save failed — still show success
       // The vote is recorded on-chain which is the source of truth
-      setShowVoteSuccess(true);
+      setShowVoteSuccess(true); playCelebrationSound();
     }
   }
 

@@ -357,7 +357,7 @@ function InvestModal({
                     await buyShares(property.blockchain_property_id || property.id, shares, total);
                     // Close invest dialog, then show congratulations overlay
                     onOpenChange(false);
-                    setConfirmed(true);
+                    setConfirmed(true); import('@/lib/celebration').then(m => m.playCelebrationSound());
                     // Refetch activity + blockchain stats — fire at 3s, 8s, 15s for Graph indexing
                     [3000, 8000, 15000].forEach(delay => {
                       setTimeout(() => {
