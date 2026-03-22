@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAllPayoutClaims } from '@/hooks/useInvestData';
 import { supabase } from '@/integrations/supabase/client';
+import { SUBGRAPHS } from '@/lib/particle';
 import { DollarSign, Clock, CheckCircle2, AlertTriangle, Zap, Download, Loader2, FlaskConical } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { exportToCSV } from '@/lib/csvExport';
@@ -97,8 +98,53 @@ export default function AdminInvestPayouts() {
     finally { setCreditLoading(false); }
   };
 
-  // Map real data
-  const payouts: PayoutClaim[] = realClaims.map((c: any) => ({
+  // Fetch blockchain rent withdrawals from The Graph
+  const [graphPayouts, setGraphPayouts] = useState<PayoutClaim[]>([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(SUBGRAPHS.RENT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `{ rentWithdrawns(first: 1000, orderBy: blockTimestamp, orderDirection: desc) { id _by _propertyId _rent blockTimestamp transactionHash } }`,
+          }),
+          signal: AbortSignal.timeout(15000),
+        });
+        const data = await res.json();
+        const ws = data.data?.rentWithdrawns || [];
+
+        // Match wallets to profiles
+        const { data: profiles } = await (supabase.from('profiles') as any).select('wallet_address, name, whatsapp');
+        const profileMap: Record<string, { name: string; whatsapp: string }> = {};
+        for (const p of profiles || []) {
+          if (p.wallet_address) profileMap[p.wallet_address.toLowerCase()] = { name: p.name || '', whatsapp: p.whatsapp || '' };
+        }
+
+        setGraphPayouts(ws.map((w: any) => {
+          const profile = profileMap[w._by.toLowerCase()];
+          const date = new Date(parseInt(w.blockTimestamp) * 1000);
+          return {
+            id: `graph-${w.id}`,
+            user_id: w._by,
+            user_name: profile?.name || w._by.slice(0, 6) + '...' + w._by.slice(-4),
+            user_whatsapp: profile?.whatsapp || '',
+            type: 'investor',
+            amount: parseInt(w._rent) / 1e18,
+            currency: 'USDC',
+            method: 'usdc',
+            status: 'paid',
+            week_ref: '',
+            created_at: date.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            paid_at: date.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          };
+        }));
+      } catch { /* Graph unavailable — show bank claims only */ }
+    })();
+  }, []);
+
+  // Map bank claims from Supabase
+  const bankPayouts: PayoutClaim[] = realClaims.map((c: any) => ({
     id: c.id?.toString() || '',
     user_id: c.user_id || '',
     user_name: c.profiles?.name || '—',
@@ -112,6 +158,9 @@ export default function AdminInvestPayouts() {
     created_at: c.created_at ? new Date(c.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
     paid_at: c.paid_at ? new Date(c.paid_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
   }));
+
+  // Merge: bank claims + blockchain withdrawals
+  const payouts: PayoutClaim[] = [...bankPayouts, ...graphPayouts];
 
   // Derive stats from real data
   const stats = useMemo(() => {
