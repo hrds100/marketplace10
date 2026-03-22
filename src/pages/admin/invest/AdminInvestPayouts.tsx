@@ -142,30 +142,45 @@ export default function AdminInvestPayouts() {
     return true;
   });
 
+  // Approve = Pay instantly via Revolut
+  const [payingId, setPayingId] = useState<string | null>(null);
+
   const handleApprove = async (id: string) => {
+    setPayingId(id);
     try {
-      const { error } = await (supabase.from('payout_claims') as any)
-        .update({ status: 'processing' })
-        .eq('id', id);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('revolut-pay', {
+        body: { claim_id: id },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      toast.success(`£${data.amount} paid via Revolut (tx: ${data.tx_id?.slice(0, 8)}...)`);
       qc.invalidateQueries({ queryKey: ['payout_claims'] });
-      toast.success('Claim approved');
-    } catch {
-      toast.error('Failed to approve claim');
+    } catch (err: any) {
+      toast.error(err.message || 'Payment failed');
+    } finally {
+      setPayingId(null);
     }
   };
 
-  const handleMarkPaid = async (id: string) => {
-    try {
-      const { error } = await (supabase.from('payout_claims') as any)
-        .update({ status: 'paid', paid_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
-      qc.invalidateQueries({ queryKey: ['payout_claims'] });
-      toast.success('Claim marked as paid');
-    } catch {
-      toast.error('Failed to update claim');
+  // Approve All = Pay all pending claims
+  const handleApproveAll = async () => {
+    const pending = payouts.filter((p) => p.status === 'pending');
+    if (pending.length === 0) { toast.error('No pending claims'); return; }
+    setBatchTriggered(true);
+    let success = 0;
+    let failed = 0;
+    for (const p of pending) {
+      try {
+        const { data, error } = await supabase.functions.invoke('revolut-pay', {
+          body: { claim_id: p.id },
+        });
+        if (error || data?.error) { failed++; continue; }
+        success++;
+      } catch { failed++; }
     }
+    toast.success(`${success} paid, ${failed} failed`);
+    qc.invalidateQueries({ queryKey: ['payout_claims'] });
+    setBatchTriggered(false);
   };
 
   const handleReject = async (id: string) => {
@@ -181,25 +196,7 @@ export default function AdminInvestPayouts() {
     }
   };
 
-  const handleBatch = async () => {
-    setBatchTriggered(true);
-    try {
-      const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_INVEST_BATCH as string | undefined;
-      if (!webhookUrl) throw new Error('N8N webhook URL not configured (VITE_N8N_WEBHOOK_INVEST_BATCH)');
-      const res = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trigger: 'manual_admin', triggered_at: new Date().toISOString() }),
-      });
-      if (!res.ok) throw new Error(`Webhook returned ${res.status}`);
-      toast.success('Tuesday batch triggered — Revolut will process pending bank claims');
-      qc.invalidateQueries({ queryKey: ['payout_claims'] });
-    } catch (err) {
-      toast.error((err as Error).message || 'Failed to trigger batch');
-    } finally {
-      setBatchTriggered(false);
-    }
-  };
+  // handleBatch removed — replaced by handleApproveAll above
 
   if (isLoading) {
     return (
@@ -218,15 +215,15 @@ export default function AdminInvestPayouts() {
             <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
           </Button>
           <Button
-            onClick={handleBatch}
+            onClick={handleApproveAll}
             disabled={batchTriggered}
             className="gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white"
           >
             <Zap className="w-4 h-4" />
-            {batchTriggered ? 'Batch Triggered...' : 'Trigger Tuesday Batch'}
+            {batchTriggered ? 'Paying...' : 'Approve All & Pay'}
           </Button>
           <p className="text-xs text-muted-foreground mt-1.5 max-w-xs text-right">
-            Process all pending bank claims via Revolut
+            Send all pending claims via Revolut
           </p>
         </div>
       </div>
@@ -364,14 +361,16 @@ export default function AdminInvestPayouts() {
                   <TableCell className="text-xs text-muted-foreground">{p.paid_at || '\u2014'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {p.status === 'pending' && (
-                        <Button variant="outline" size="sm" className="text-xs" onClick={() => handleApprove(p.id)}>
-                          Approve
-                        </Button>
-                      )}
-                      {p.status === 'processing' && (
-                        <Button variant="outline" size="sm" className="text-xs" onClick={() => handleMarkPaid(p.id)}>
-                          Mark Paid
+                      {(p.status === 'pending' || p.status === 'processing') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs gap-1"
+                          disabled={payingId === p.id}
+                          onClick={() => handleApprove(p.id)}
+                        >
+                          {payingId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                          {payingId === p.id ? 'Paying...' : 'Approve & Pay'}
                         </Button>
                       )}
                       {(p.status === 'pending' || p.status === 'processing') && (

@@ -49,26 +49,33 @@ export default function AdminInvestShareholders() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editLabel, setEditLabel] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     loadShareholders(cancelled).then((data) => {
       if (!cancelled) { setShareholders(data); setLoading(false); }
-    }).catch(() => { if (!cancelled) setLoading(false); });
+    }).catch((err) => { if (!cancelled) { setLoading(false); setError(err.message || 'Failed to load — The Graph may be temporarily down. Refresh to retry.'); } });
     return () => { cancelled = true; };
   }, []);
 
   async function loadShareholders(cancelled: boolean): Promise<Shareholder[]> {
     // 1. Fetch share purchases with amounts and timestamps from The Graph
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     const sharesRes = await fetch(SUBGRAPHS.MARKETPLACE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         query: `{ primarySharesBoughts(first: 1000, orderBy: blockTimestamp, orderDirection: asc) { _buyer _sharesBought _amount blockTimestamp } }`,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     const sharesData = await sharesRes.json();
+    if (sharesData.errors) throw new Error(sharesData.errors[0]?.message || 'Graph query failed');
     const buys = sharesData.data?.primarySharesBoughts || [];
+    if (buys.length === 0) throw new Error('The Graph returned 0 results — it may be temporarily unavailable. Refresh to retry.');
 
     const walletMap: Record<string, { shares: number; invested: number; firstPurchase: string }> = {};
     for (const b of buys) {
@@ -202,6 +209,17 @@ export default function AdminInvestShareholders() {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <p className="text-sm text-red-500">{error}</p>
+        <Button variant="outline" size="sm" onClick={() => { setError(''); setLoading(true); loadShareholders(false).then(setShareholders).catch((e) => setError(e.message)).finally(() => setLoading(false)); }}>
+          Retry
+        </Button>
       </div>
     );
   }

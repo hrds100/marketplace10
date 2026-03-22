@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/hooks/useWallet';
-import { useMyPayouts, useInvestProperties } from '@/hooks/useInvestData';
+import { useMyPayouts, useMyPayoutClaims, useInvestProperties } from '@/hooks/useInvestData';
 import { CONTRACTS, SUBGRAPHS } from '@/lib/particle';
 import { RWA_TOKEN_ABI, RENT_ABI } from '@/lib/contractAbis';
 
@@ -44,6 +44,7 @@ export interface MergedPayoutItem {
 export function usePayoutsWithBlockchain() {
   const { address, connected } = useWallet();
   const { data: supabasePayouts = [], isLoading: payoutsLoading } = useMyPayouts();
+  const { data: payoutClaims = [] } = useMyPayoutClaims();
   const { data: allProperties = [] } = useInvestProperties();
 
   const [blockchainPayouts, setBlockchainPayouts] = useState<BlockchainPayout[]>([]);
@@ -291,6 +292,24 @@ export function usePayoutsWithBlockchain() {
     // 3. Add Graph rent withdrawal history
     for (const gh of graphHistory) {
       items.push(gh);
+    }
+
+    // 4. Add bank transfer claims (payout_claims) — paid, processing, pending
+    for (const c of payoutClaims as any[]) {
+      if (c.status === 'cancelled') continue;
+      items.push({
+        id: `claim-${c.id}`,
+        propertyTitle: 'Bank Transfer',
+        propertyImage: '',
+        propertyId: 0,
+        date: c.paid_at || c.created_at,
+        sharesOwned: 0,
+        amount: Number(c.amount_entitled || 0),
+        currency: c.currency || 'GBP',
+        status: c.status as 'claimable' | 'claimed' | 'paid' | 'processing',
+        method: 'bank_transfer',
+        fromBlockchain: false,
+      });
     }
 
     return items;
