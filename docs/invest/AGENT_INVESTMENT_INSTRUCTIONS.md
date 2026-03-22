@@ -113,6 +113,7 @@ All rules from `docs/AGENT_INSTRUCTIONS.md` apply. These are ADDITIONAL rules fo
 10. **Mock data files stay until real data is wired.** Don't delete `investMockData.ts` — components fall back to it during development.
 11. **Bank payouts go through Revolut.** Weekly batch every Tuesday at 05:00 AM UK time. Hugo approves via Revolut Face ID. Never bypass the approval step.
 12. **Payout amounts are always server-side calculated.** Never accept claim amounts from the frontend. Edge Function calculates from source tables.
+13. **Playwright e2e test is mandatory before marking DONE.** After every fix or feature, write a Playwright test that verifies the change works, run it with `npx playwright test`, and include the pass/fail result in the report. No exceptions. Do not claim something is "working" or "fixed" without a passing Playwright test.
 13. **One bank claim per user per week.** Enforced by UNIQUE(user_id, week_ref) constraint.
 14. **Bank details are locked after first successful payout.** Users cannot change bank details after is_verified = true without admin intervention.
 15. **Always update `docs/COMMUNICATIONS.md`** when adding, removing, or changing any email, WhatsApp, or in-app notification. Same commit. No exceptions.

@@ -320,6 +320,7 @@ jobs:
 | `npm run clean` | Removes `dist/`, `.vite/`, and Vite cache | When the dev server behaves strangely or builds fail for no reason. |
 | `npm run dev` | Starts local dev server (port 8080) | Development. |
 | `npm run build` | Production build | Verify build works before pushing. |
+| `npx playwright test` | Playwright e2e tests | **After every fix or feature — non-negotiable.** Write a test, run it, paste the result. |
 
 **`npm run check` is mandatory before every push.** If it fails locally, CI will also fail. Fix it before pushing — don't push and hope.
 
@@ -525,6 +526,7 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 22. **Bugs: diagnose before fix.** Report must include ROOT CAUSE. No guess-and-fix. See Section 3e.
 23. **Always try to access tools before asking Hugo.** GitHub API, Vercel API, Supabase API, n8n API, GHL API — attempt access first. If credentials are missing, ask Hugo for them with a single clear sentence, then save them to memory.
 24. **Always update `docs/COMMUNICATIONS.md`** when adding, removing, or changing any email, WhatsApp, or in-app notification. Same commit. No exceptions.
+25. **Playwright e2e test is mandatory before marking DONE.** After every fix or feature, write a Playwright test that verifies the change works, run it with `npx playwright test`, and include the pass/fail result in the report. No exceptions. Do not claim something is "working" or "fixed" without a passing Playwright test. Use the existing `playwright-fixture.ts` for imports (`test`, `expect`). Config is in `playwright.config.ts`.
 
 ---
 
