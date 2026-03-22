@@ -79,7 +79,7 @@ serve(async (req) => {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        request_id: `nfstay-${claim_id}-${Date.now()}`,
+        request_id: `nfs-${claim_id.slice(0, 8)}-${Date.now()}`,
         account_id: '9e512c4e-ebe5-4389-a20f-5e3be3a912a6', // nfstay shares GBP
         receiver: { counterparty_id: cpData.id, account_id: cpData.accounts[0].id },
         amount: Number(claim.amount_entitled),
