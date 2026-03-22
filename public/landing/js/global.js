@@ -1,3 +1,53 @@
+/* ============================================
+   Global JS — nav, scroll, FAQ, counters,
+   persona switching, reviews, booking demo
+   ============================================ */
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  // 13. SCROLL REVEAL
+  // ========================================
+  document.querySelectorAll('.scroll-reveal').forEach(el => {
+    new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); }
+    }, { threshold: 0.1 }).observe(el);
+  });
+
+  // ========================================
+  // 14. CLOUD PARALLAX
+  // ========================================
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    const c1 = document.querySelector('.cloud-1');
+    const c2 = document.querySelector('.cloud-2');
+    if (c1) c1.style.transform = `translateY(${y * 0.05}px)`;
+    if (c2) c2.style.transform = `translateY(${y * 0.08}px)`;
+  });
+
+  // 15. MOBILE MENU
+  // ========================================
+  const navBtn = document.querySelector('.nav_button');
+  const mobileMenu = document.getElementById('mobileMenu');
+  if (navBtn && mobileMenu) {
+    navBtn.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+  }
+
+  // 16. SMOOTH SCROLL + FAQ
+  // ========================================
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const t = a.getAttribute('href');
+      if (t === '#') return;
+      const el = document.querySelector(t);
+      if (el) { e.preventDefault(); el.scrollIntoView({ behavior: 'smooth' }); }
+    });
+  });
+  document.querySelectorAll('.faq-wrapper-3-2').forEach(faq => {
+    faq.addEventListener('click', () => faq.classList.toggle('open'));
+  });
+
+});
+
 /* ═══════════════════════════════════════════
    NFsTay Motion System
    Scroll reveals, counters, hover interactions
@@ -176,3 +226,70 @@
   });
 
 })();
+
+// Clone review slides for seamless infinite loop
+document.addEventListener('DOMContentLoaded', function() {
+  var track = document.querySelector('.review-track');
+  if (track) { track.innerHTML = track.innerHTML + track.innerHTML; }
+});
+
+/* ── Booking Demo Interactivity ── */
+  // Booking demo interactivity
+  var demoNameInput = document.getElementById('demoName');
+  var demoSubInput = document.getElementById('demoSubdomain');
+  var demoLogo = document.getElementById('demoLogo');
+  var demoLogoImg = document.getElementById('demoLogoImg');
+  var demoFooterLogo = document.getElementById('demoFooterLogo');
+  var demoFooter = document.getElementById('demoFooterName');
+  var demoUrl = document.getElementById('demoUrlBar');
+  var demoSearch = document.getElementById('demoSearchBtn');
+  var demoHeroImg = document.getElementById('demoHeroImg');
+  var currentColor = '#10b981';
+
+  if (demoNameInput) {
+    demoNameInput.addEventListener('input', function() {
+      var v = this.value || 'Your Brand';
+      demoLogo.textContent = v;
+      demoFooter.textContent = v;
+      demoLogo.style.color = currentColor;
+      demoFooter.style.color = currentColor;
+      var sub = v.toLowerCase().replace(/[^a-z0-9]/g, '') || 'yourbrand';
+      demoSubInput.value = sub;
+      demoUrl.textContent = sub + '.nfstay.app';
+    });
+  }
+
+  function pickColor(btn) {
+    currentColor = btn.dataset.color;
+    document.querySelectorAll('.demo-color').forEach(function(b) { b.style.borderColor = 'transparent'; });
+    btn.style.borderColor = currentColor;
+    demoSearch.style.backgroundColor = currentColor;
+    demoLogo.style.color = currentColor;
+    demoFooter.style.color = currentColor;
+    document.querySelectorAll('.demo-price').forEach(function(p) { p.style.color = currentColor; });
+  }
+
+  function handleLogoUpload(input) {
+    if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        demoLogoImg.src = e.target.result;
+        demoLogoImg.style.display = 'block';
+        demoFooterLogo.src = e.target.result;
+        demoFooterLogo.style.display = 'block';
+        document.getElementById('logoLabel').textContent = 'Logo uploaded';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  function handleBgUpload(input) {
+    if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        demoHeroImg.src = e.target.result;
+        document.getElementById('bgLabel').textContent = 'Background changed';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }

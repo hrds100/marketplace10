@@ -722,47 +722,5 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========================================
   function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  // ========================================
-  // 13. SCROLL REVEAL
-  // ========================================
-  document.querySelectorAll('.scroll-reveal').forEach(el => {
-    new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { e.target.classList.add('visible'); }
-    }, { threshold: 0.1 }).observe(el);
-  });
 
-  // ========================================
-  // 14. CLOUD PARALLAX
-  // ========================================
-  window.addEventListener('scroll', () => {
-    const y = window.scrollY;
-    const c1 = document.querySelector('.cloud-1');
-    const c2 = document.querySelector('.cloud-2');
-    if (c1) c1.style.transform = `translateY(${y * 0.05}px)`;
-    if (c2) c2.style.transform = `translateY(${y * 0.08}px)`;
-  });
-
-  // ========================================
-  // 15. MOBILE MENU
-  // ========================================
-  const navBtn = document.querySelector('.nav_button');
-  const mobileMenu = document.getElementById('mobileMenu');
-  if (navBtn && mobileMenu) {
-    navBtn.addEventListener('click', () => mobileMenu.classList.toggle('open'));
-  }
-
-  // ========================================
-  // 16. SMOOTH SCROLL + FAQ
-  // ========================================
-  document.querySelectorAll('a[href^="#"]').forEach(a => {
-    a.addEventListener('click', e => {
-      const t = a.getAttribute('href');
-      if (t === '#') return;
-      const el = document.querySelector(t);
-      if (el) { e.preventDefault(); el.scrollIntoView({ behavior: 'smooth' }); }
-    });
-  });
-  document.querySelectorAll('.faq-wrapper-3-2').forEach(faq => {
-    faq.addEventListener('click', () => faq.classList.toggle('open'));
-  });
 });

@@ -73,6 +73,7 @@ export default {
           black: "hsl(var(--btn-black))",
           "black-foreground": "hsl(var(--btn-black-foreground))",
         },
+        nav: "hsl(var(--nav, 0 0% 100%))",
         warning: "hsl(var(--warning))",
         info: "hsl(var(--info))",
       },

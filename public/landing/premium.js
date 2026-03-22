@@ -66,10 +66,11 @@
     }
   }
 
-  // ── LINE DRAW (scroll-driven) ──
+  // ── LINE DRAW (scroll-driven, rAF-throttled) ──
   var journeySection = document.querySelector('.prem-journey-grid');
   var journeyLine = document.querySelector('.journey-line');
   if (journeySection && journeyLine) {
+    var lineRafPending = false;
     function updateLine() {
       var rect = journeySection.getBoundingClientRect();
       var viewH = window.innerHeight;
@@ -78,8 +79,14 @@
       var scrollDist = sectionH + viewH * 0.5;
       var progress = Math.max(0, Math.min(1, (viewH * 0.4 - sectionTop) / scrollDist));
       journeyLine.style.transform = 'translateX(-50%) scaleY(' + progress + ')';
+      lineRafPending = false;
     }
-    window.addEventListener('scroll', updateLine, { passive: true });
+    window.addEventListener('scroll', function() {
+      if (!lineRafPending) {
+        lineRafPending = true;
+        requestAnimationFrame(updateLine);
+      }
+    }, { passive: true });
     updateLine();
   }
 
