@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Building2, Loader2 } from 'lucide-react';
+import { CheckCircle2, Building2, Loader2, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useMyBankAccount } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
 
 export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
   const { user } = useAuth();
+  const { data: existingBank, isLoading: bankLoading } = useMyBankAccount();
   const [currency, setCurrency] = useState<'GBP' | 'EUR'>('GBP');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     accountName: '',
     accountNumber: '',
@@ -19,6 +22,22 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
     bic: '',
     country: 'GB',
   });
+
+  // Load existing bank details on mount
+  useEffect(() => {
+    if (existingBank) {
+      const bank = existingBank as any;
+      setCurrency(bank.currency === 'EUR' ? 'EUR' : 'GBP');
+      setForm({
+        accountName: bank.account_name || '',
+        accountNumber: bank.account_number || '',
+        sortCode: bank.sort_code || '',
+        iban: bank.iban || '',
+        bic: bank.bic || '',
+        country: bank.bank_country || 'GB',
+      });
+    }
+  }, [existingBank]);
 
   const handleSave = async () => {
     if (!user?.id || !form.accountName) return;
@@ -39,6 +58,7 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
       setSaved(true);
+      setEditing(false);
       toast.success('Bank details saved successfully');
       onSave?.();
     } catch (err) {
@@ -48,14 +68,69 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
     }
   };
 
-  if (saved) {
+  if (bankLoading) {
     return (
-      <div className="flex flex-col items-center gap-3 py-6">
-        <CheckCircle2 className="h-10 w-10 text-primary" />
-        <p className="font-semibold">Bank details saved</p>
-        <p className="text-sm text-muted-foreground text-center">
-          You'll receive a WhatsApp confirmation. Details are locked after your first payout.
-        </p>
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Show saved details (after save or existing from DB) — with edit option
+  if (saved || (existingBank && !editing)) {
+    const bank = existingBank as any;
+    const isLocked = bank?.is_verified;
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <CheckCircle2 className="h-8 w-8 text-primary flex-shrink-0" />
+          <div>
+            <p className="font-semibold">Bank details saved</p>
+            <p className="text-sm text-muted-foreground">
+              {isLocked ? 'Locked after first successful payout.' : 'You can update these before your first payout.'}
+            </p>
+          </div>
+        </div>
+        {bank && (
+          <div className="rounded-lg border p-4 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Name</span>
+              <span className="font-medium">{bank.account_name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Currency</span>
+              <span className="font-medium">{bank.currency}</span>
+            </div>
+            {bank.sort_code && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Sort Code</span>
+                <span className="font-medium">{bank.sort_code.replace(/(\d{2})(\d{2})(\d{2})/, '$1-$2-$3')}</span>
+              </div>
+            )}
+            {bank.account_number && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Account</span>
+                <span className="font-medium">••••{bank.account_number.slice(-4)}</span>
+              </div>
+            )}
+            {bank.iban && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">IBAN</span>
+                <span className="font-medium">••••{bank.iban.slice(-4)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Country</span>
+              <span className="font-medium">{bank.bank_country}</span>
+            </div>
+          </div>
+        )}
+        {!isLocked && (
+          <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => setEditing(true)}>
+            <Pencil className="h-3.5 w-3.5" />
+            Edit Bank Details
+          </Button>
+        )}
       </div>
     );
   }
