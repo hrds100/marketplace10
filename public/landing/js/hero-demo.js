@@ -454,35 +454,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- STEP 5: BOOKING SITE CUSTOMISATION ---
     switchPreview('booking');
-    setProgress(92);
+    setProgress(90);
     await delay(600);
 
-    // Animate: change brand name, then colour, then show result
+    // Elements: controls (left) + preview (right)
+    var bkNameField = document.getElementById('bkDemoNameField');
+    var bkSubdomain = document.getElementById('bkDemoSubdomain');
+    var bkCTA = document.getElementById('bkDemoCTA');
+    var bkColorDots = document.querySelectorAll('.bk-color-dot');
     var bookingLogo = document.getElementById('demoBookingLogo');
+    var bookingFooter = document.getElementById('demoBookingFooter');
     var bookingUrl = document.getElementById('demoBookingUrl');
     var bookingBtn = document.getElementById('demoBookingBtn');
     var bookingPrices = document.querySelectorAll('.demo-booking-price');
 
-    if (bookingLogo) {
-      // Step A: Type a brand name
-      var brandName = 'Luxe Stays Manchester';
+    if (bkNameField && bookingLogo) {
+      // Step A: Type brand name in the controls — mirror on preview
+      var brandName = 'Luxe Stays MCR';
+      bkNameField.textContent = '';
       bookingLogo.textContent = '';
       for (var ci = 0; ci < brandName.length; ci++) {
+        bkNameField.textContent += brandName[ci];
         bookingLogo.textContent += brandName[ci];
-        await delay(40);
+        await delay(50);
       }
-      if (bookingUrl) bookingUrl.textContent = 'luxestaysmanchester.nfstay.app';
+      var subName = 'luxestaysmcr';
+      if (bkSubdomain) bkSubdomain.textContent = subName;
+      if (bookingUrl) bookingUrl.textContent = subName + '.nfstay.app';
+      if (bookingFooter) bookingFooter.textContent = brandName;
       await delay(800);
 
-      // Step B: Change accent colour (green → blue → purple → back to green)
-      var demoColors = ['#3b82f6', '#8b5cf6', '#10b981'];
-      for (var di = 0; di < demoColors.length; di++) {
-        var col = demoColors[di];
+      // Step B: Cycle accent colours — highlight dot + update preview
+      var colorOrder = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981'];
+      for (var di = 0; di < colorOrder.length; di++) {
+        var col = colorOrder[di];
+        // Highlight the matching dot
+        bkColorDots.forEach(function(d) {
+          d.style.borderColor = d.getAttribute('data-color') === col ? col : 'transparent';
+        });
+        // Update preview elements
         if (bookingBtn) bookingBtn.style.background = col;
+        if (bkCTA) bkCTA.style.background = col;
         bookingPrices.forEach(function(p) { p.style.color = col; });
-        await delay(600);
+        await delay(700);
       }
-      await delay(800);
+      await delay(600);
     }
     setProgress(96);
     await delay(1000);
