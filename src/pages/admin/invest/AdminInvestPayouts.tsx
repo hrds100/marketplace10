@@ -64,6 +64,15 @@ export default function AdminInvestPayouts() {
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditUserId, setCreditUserId] = useState('');
   const [allUsers, setAllUsers] = useState<{ id: string; name: string }[]>([]);
+  const [gbpRate, setGbpRate] = useState(0.75);
+
+  // Fetch live USD→GBP rate
+  useEffect(() => {
+    fetch('https://open.er-api.com/v6/latest/USD')
+      .then(r => r.json())
+      .then(d => { if (d.rates?.GBP) setGbpRate(d.rates.GBP); })
+      .catch(() => {});
+  }, []);
 
   // Load all users for credit dropdown
   useState(() => {
@@ -314,6 +323,7 @@ export default function AdminInvestPayouts() {
               </select>
               <span className="text-sm text-muted-foreground">$</span>
               <input type="number" min="0.01" max="100" step="0.01" value={testAmount} onChange={(e) => setTestAmount(e.target.value)} className="w-20 h-9 px-2 rounded-md border border-input bg-background text-sm text-center" />
+              <span className="text-xs text-muted-foreground">=£{(parseFloat(testAmount || '0') * gbpRate).toFixed(2)}</span>
               <Button size="sm" onClick={handleCreditTestRent} disabled={creditLoading} className="gap-1.5">
                 {creditLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FlaskConical className="h-3.5 w-3.5" />}
                 Credit
@@ -393,7 +403,10 @@ export default function AdminInvestPayouts() {
                       {p.type}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right font-medium">{p.amount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    <span className="font-medium">${Number(p.amount).toFixed(2)}</span>
+                    <span className="text-xs text-muted-foreground ml-1">£{(Number(p.amount) * gbpRate).toFixed(2)}</span>
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{p.currency}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={cn('text-xs', methodColors[p.method] || '')}>
@@ -419,7 +432,7 @@ export default function AdminInvestPayouts() {
                           onClick={() => handleApprove(p.id)}
                         >
                           {payingId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-                          {payingId === p.id ? 'Paying...' : 'Approve & Pay'}
+                          {payingId === p.id ? 'Paying...' : `Pay £${(Number(p.amount) * gbpRate).toFixed(2)}`}
                         </Button>
                       )}
                       {(p.status === 'pending' || p.status === 'processing') && (

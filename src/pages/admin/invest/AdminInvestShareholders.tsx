@@ -77,16 +77,35 @@ export default function AdminInvestShareholders() {
     const buys = sharesData.data?.primarySharesBoughts || [];
     if (buys.length === 0) throw new Error('The Graph returned 0 results — it may be temporarily unavailable. Refresh to retry.');
 
-    const walletMap: Record<string, { shares: number; invested: number; firstPurchase: string }> = {};
+    const walletMap: Record<string, { graphShares: number; invested: number; firstPurchase: string }> = {};
     for (const b of buys) {
       const w = b._buyer.toLowerCase();
       const shares = parseInt(b._sharesBought);
       const amount = b._amount ? parseInt(b._amount) / 1e18 : shares;
       const date = new Date(parseInt(b.blockTimestamp) * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-      if (!walletMap[w]) walletMap[w] = { shares: 0, invested: 0, firstPurchase: date };
-      walletMap[w].shares += shares;
+      if (!walletMap[w]) walletMap[w] = { graphShares: 0, invested: 0, firstPurchase: date };
+      walletMap[w].graphShares += shares;
       walletMap[w].invested += amount;
     }
+
+    // 1b. Get REAL balances from RWA contract (Graph may miss admin transfers)
+    const onChainBalances: Record<string, number> = {};
+    try {
+      const ethers = await import('ethers');
+      const provider = new ethers.providers.JsonRpcProvider('https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T');
+      const { RWA_TOKEN_ABI } = await import('@/lib/contractAbis');
+      const rwa = new ethers.Contract(CONTRACTS.RWA_TOKEN, RWA_TOKEN_ABI, provider);
+      const wallets = Object.keys(walletMap);
+      const balChecks = await Promise.allSettled(
+        wallets.map(async (w) => {
+          const bal = await rwa.balanceOf(w, 1);
+          return { wallet: w, balance: bal.toNumber() };
+        })
+      );
+      for (const r of balChecks) {
+        if (r.status === 'fulfilled') onChainBalances[r.value.wallet] = r.value.balance;
+      }
+    } catch { /* non-critical — fall back to Graph shares */ }
 
     // 2. Fetch rent withdrawals (total claimed)
     const rentRes = await fetch(SUBGRAPHS.RENT, {
@@ -144,19 +163,21 @@ export default function AdminInvestShareholders() {
       }
     }
 
-    // 5. Build list
+    // 5. Build list — use on-chain balance if available (more accurate than Graph)
     return Object.entries(walletMap)
       .map(([wallet, data]) => {
         const profile = profileMap[wallet];
-        const unclaimed = eligibleMap[wallet] ? rentPerShare * data.shares : 0;
+        const realShares = onChainBalances[wallet] ?? data.graphShares;
+        const realInvested = realShares; // $1 per share — on-chain balance × $1
+        const unclaimed = eligibleMap[wallet] ? rentPerShare * realShares : 0;
         return {
           id: profile?.id || wallet,
           wallet,
           name: profile?.name || '',
           whatsapp: profile?.whatsapp || '',
           adminLabel: profile?.adminLabel || '',
-          totalShares: data.shares,
-          totalInvested: data.invested,
+          totalShares: realShares,
+          totalInvested: realInvested,
           totalClaimed: claimedMap[wallet] || 0,
           unclaimed,
           firstPurchase: data.firstPurchase,
