@@ -399,7 +399,22 @@ export default function InvestProposalsPage() {
 
     setVoteDialog({ open: false, proposalId: null, proposalTitle: '', choice: null });
 
-    // Persist to Supabase
+    // Try blockchain vote FIRST (must succeed before saving to Supabase)
+    const proposal = activeProposals.find((p) => p.id === savedProposalId) as any;
+    const bcId = proposal?.blockchainProposalId ?? proposal?.blockchain_proposal_id;
+    if (bcId) {
+      try {
+        await castBlockchainVote(bcId, savedChoice === 'yes');
+      } catch (err: any) {
+        // Revert optimistic update — blockchain rejected the vote
+        setActiveProposals(snapshot);
+        const msg = err?.message || 'Vote failed on blockchain';
+        toast.error(msg.includes('already voted') ? 'You have already voted on this proposal.' : `Vote failed: ${msg}`);
+        return;
+      }
+    }
+
+    // Persist to Supabase (only after blockchain succeeds)
     try {
       await castVoteMutation.mutateAsync({
         proposal_id: savedProposalId,
@@ -408,19 +423,9 @@ export default function InvestProposalsPage() {
       });
       setShowVoteSuccess(true);
     } catch {
-      // Revert optimistic update
-      setActiveProposals(snapshot);
-      toast.error('Failed to save vote. Please try again.');
-      return;
-    }
-
-    // Try blockchain vote (non-blocking, fire-and-forget)
-    const proposal = activeProposals.find((p) => p.id === savedProposalId) as any;
-    const bcId = proposal?.blockchainProposalId ?? proposal?.blockchain_proposal_id;
-    if (bcId) {
-      castBlockchainVote(bcId, savedChoice === 'yes').catch(
-        () => console.log('On-chain vote skipped'),
-      );
+      // Blockchain vote succeeded but Supabase save failed — still show success
+      // The vote is recorded on-chain which is the source of truth
+      setShowVoteSuccess(true);
     }
   }
 

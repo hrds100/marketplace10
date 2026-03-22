@@ -104,14 +104,12 @@ export function usePayoutsWithBlockchain() {
               const startTime = rentDetailsTuple[0].toNumber();
               const endTime = rentDetailsTuple[1].toNumber();
 
-              let claimableAmount = 0;
-              try {
-                claimableAmount = (Number(rentPerShare) / 1e18) * sharesOwned;
-              } catch {
-                claimableAmount = 0;
-              }
+              // Only calculate claimable amount if user is actually eligible
+              const claimableAmount = eligible
+                ? (Number(rentPerShare) / 1e18) * sharesOwned
+                : 0;
 
-              if (claimableAmount > 0 || eligible) {
+              if (eligible && claimableAmount > 0) {
                 payouts.push({
                   propertyId: blockchainPropertyId, // Must be blockchain ID, not Supabase row ID
                   propertyTitle: prop.title || 'Property',

@@ -133,7 +133,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
             ) : (
               <>
                 <button
-                  onClick={() => setInvestOpen(!investOpen)}
+                  onClick={() => { setInvestOpen(!investOpen); navigate('/dashboard/invest/marketplace'); }}
                   className={`flex items-center gap-2 h-10 w-full rounded-lg transition-all duration-200 px-3 ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                 >
                   <TrendingUp className="w-[15px] h-[15px] flex-shrink-0" strokeWidth={1.8} />

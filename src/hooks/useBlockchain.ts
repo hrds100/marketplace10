@@ -416,6 +416,8 @@ export function useBlockchain() {
         await ensureConnected();
         const contract = await getContract(CONTRACTS.VOTING, VOTING_ABI, true);
         if (!contract) throw new Error('Could not connect to voting contract');
+        // Dry-run first (same as legacy vote.js line 56)
+        await contract.callStatic.vote(proposalId, inFavor);
         const tx = await contract.vote(proposalId, inFavor);
         const receipt = await tx.wait();
         setLoading(false);
