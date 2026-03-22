@@ -122,6 +122,24 @@ if (typeof window !== 'undefined') {
 import { FavouritesProvider } from '@/hooks/useFavourites';
 import ParticleProvider from './components/ParticleProvider';
 
+// Debug wrapper: catches crashes on /signin and shows the error on screen
+import { Component, type ErrorInfo, type ReactNode } from 'react';
+class SignInErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  state = { error: null as string | null };
+  static getDerivedStateFromError(error: Error) { return { error: error.message + '\n' + error.stack }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('[SignIn crash]', error, info); }
+  render() {
+    if (this.state.error) return (
+      <div style={{ padding: 32, fontFamily: 'monospace', whiteSpace: 'pre-wrap', background: '#fee', color: '#900', minHeight: '100vh' }}>
+        <h1>SignIn Crash</h1><p>{this.state.error}</p>
+        <button onClick={() => window.location.reload()} style={{ marginTop: 16, padding: '8px 16px' }}>Reload</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+function SignInWithBoundary() { return <SignInErrorBoundary><SignIn /></SignInErrorBoundary>; }
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ParticleProvider>
@@ -136,7 +154,7 @@ const App = () => (
           <Route path="/" element={<LandingPageV8 />} />
           <Route path="/nickel" element={<NickelLandingPage />} />
           <Route path="/retired" element={<LandingPage />} />
-          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signin" element={<SignInWithBoundary />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
