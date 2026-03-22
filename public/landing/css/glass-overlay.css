@@ -1,0 +1,939 @@
+/* ============================================================
+   GLASS-OVERLAY.CSS — Glassmorphism override layer
+   Load AFTER all other CSS files. Does NOT modify originals.
+   ============================================================ */
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-blur: blur(16px) saturate(180%);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  --glass-radius: 16px;
+  --glass-text: #fff;
+  --glass-text-muted: rgba(255, 255, 255, 0.7);
+  --glass-text-dim: rgba(255, 255, 255, 0.5);
+}
+
+/* ── ANIMATED GRADIENT BACKGROUND ── */
+body {
+  background: linear-gradient(135deg, #0e1726, #1a2a3a, #0e2a1e, #1a1a2e, #0e1726) !important;
+  background-size: 400% 400% !important;
+  animation: glassGradient 12s ease infinite !important;
+  color: var(--glass-text) !important;
+}
+
+@keyframes glassGradient {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── DARK MODE (deeper gradient, less glass opacity) ── */
+body[data-theme-dark] {
+  background: linear-gradient(135deg, #050a10, #0d1520, #051510, #0d0d1a, #050a10) !important;
+}
+
+body[data-theme-dark] .nav_fixed,
+body[data-theme-dark] .hero-demo-component,
+body[data-theme-dark] .trust-stripe,
+body[data-theme-dark] .card,
+body[data-theme-dark] .deal-card,
+body[data-theme-dark] .step-card,
+body[data-theme-dark] .price-card,
+body[data-theme-dark] .review-slide,
+body[data-theme-dark] .course,
+body[data-theme-dark] .pipe-col,
+body[data-theme-dark] .inbox-mock,
+body[data-theme-dark] .booking-controls-card,
+body[data-theme-dark] .booking-demo-preview > div {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* ── STRIP ALL SECTION BACKGROUNDS ── */
+.s,
+.section,
+.section_hero,
+.bg-white,
+.bg-cream,
+.bg-gradient,
+#journey,
+.booking-demo-section,
+footer.footer {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* ── NAVBAR GLASS ── */
+.nav_fixed {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.nav_fixed .nav_menu_link,
+.nav_fixed .logo-61-text,
+.nav_fixed .nav-btn {
+  color: var(--glass-text) !important;
+}
+
+.nav_fixed .logo-61-box {
+  background: rgba(30, 154, 128, 0.9) !important;
+  color: #fff !important;
+}
+
+.nav_fixed .nav-btn {
+  background: rgba(30, 154, 128, 0.8) !important;
+  border-color: transparent !important;
+}
+
+.nav_fixed .vertical-divider-navbar {
+  background: var(--glass-border) !important;
+}
+
+.lang-dropdown button {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--glass-text) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.lang-menu {
+  background: rgba(20, 30, 40, 0.9) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.lang-menu a {
+  color: var(--glass-text) !important;
+}
+
+/* Mobile menu */
+.nav_menu-mobile {
+  background: rgba(15, 20, 30, 0.95) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+}
+
+.nav_menu-mobile .nav_menu_link {
+  color: var(--glass-text) !important;
+}
+
+.hamburger-icon span {
+  background: var(--glass-text) !important;
+}
+
+/* ── HERO SECTION ── */
+.section_hero {
+  background: transparent !important;
+}
+
+.hero-heading,
+.hero-heading .italic-accent {
+  color: var(--glass-text) !important;
+}
+
+.hero-cta {
+  background: rgba(30, 154, 128, 0.85) !important;
+  color: #fff !important;
+  border: 1px solid rgba(30, 154, 128, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.hero-login {
+  color: var(--glass-text) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.hero-bg-clouds {
+  opacity: 0.15 !important;
+}
+
+/* ── HERO DEMO COMPONENT GLASS ── */
+.hero-demo-component {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.chat-panel {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.chat-tabs {
+  border-color: var(--glass-border) !important;
+}
+
+.chat-tab {
+  color: var(--glass-text-muted) !important;
+}
+
+.chat-tab.active {
+  color: var(--glass-text) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.chat-progress-bar {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.chat-earnings-banner {
+  color: var(--glass-text) !important;
+}
+
+.earnings-headline {
+  color: var(--glass-text) !important;
+}
+
+.earnings-sub {
+  color: var(--glass-text-muted) !important;
+}
+
+.chat-input-area {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.chat-input-container {
+  color: var(--glass-text-muted) !important;
+}
+
+.preview-panel {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.nfs-mock-page {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.nfs-mock-search {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--glass-border) !important;
+  color: var(--glass-text-muted) !important;
+}
+
+.nfs-pcard {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.nfs-pcard-body {
+  color: var(--glass-text) !important;
+}
+
+.nfs-pcard-name,
+.nfs-pcard-val {
+  color: var(--glass-text) !important;
+}
+
+.nfs-pcard-loc,
+.nfs-pcard-label,
+.nfs-pcard-footer {
+  color: var(--glass-text-muted) !important;
+}
+
+.nfs-pcard-btn.primary {
+  background: rgba(30, 154, 128, 0.8) !important;
+}
+
+.nfs-pcard-btn.outline {
+  color: var(--glass-text) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* CRM Pipeline preview */
+.nfs-pipe-header {
+  color: var(--glass-text) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.nfs-pipe-header strong {
+  color: var(--glass-text) !important;
+}
+
+.nfs-pipe-col {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.nfs-pipe-col-head {
+  color: var(--glass-text) !important;
+}
+
+.nfs-pipe-card {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--glass-border) !important;
+  color: var(--glass-text) !important;
+}
+
+.nfs-pipe-card strong {
+  color: var(--glass-text) !important;
+}
+
+.nfs-pipe-card span {
+  color: var(--glass-text-muted) !important;
+}
+
+/* Inbox preview */
+.nfs-inbox-mock {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.nfs-inbox-threads {
+  border-color: var(--glass-border) !important;
+}
+
+.nfs-inbox-header {
+  color: var(--glass-text) !important;
+}
+
+.nfs-thread {
+  color: var(--glass-text) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.nfs-thread.active {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.nfs-thread-info strong {
+  color: var(--glass-text) !important;
+}
+
+.nfs-thread-info span,
+.nfs-thread-time {
+  color: var(--glass-text-muted) !important;
+}
+
+.nfs-inbox-chat {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.nfs-chat-header {
+  border-color: var(--glass-border) !important;
+  color: var(--glass-text) !important;
+}
+
+.nfs-chat-header strong {
+  color: var(--glass-text) !important;
+}
+
+.nfs-msg.them p {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--glass-text) !important;
+}
+
+.nfs-msg.me p {
+  background: rgba(30, 154, 128, 0.5) !important;
+  color: #fff !important;
+}
+
+.nfs-chat-input {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--glass-border) !important;
+  color: var(--glass-text-muted) !important;
+}
+
+/* Finale */
+.nfs-finale {
+  color: var(--glass-text) !important;
+}
+
+.nfs-finale h3 {
+  color: var(--glass-text) !important;
+}
+
+.nfs-finale p {
+  color: var(--glass-text-muted) !important;
+}
+
+/* ── TRUST STRIPE GLASS ── */
+.trust-stripe {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.ts-val {
+  color: var(--glass-text) !important;
+}
+
+.ts-lbl {
+  color: var(--glass-text-muted) !important;
+}
+
+/* ── SECTION HEADINGS & TEXT ── */
+.sh h2,
+h2,
+.wrap h2 {
+  color: var(--glass-text) !important;
+}
+
+.sh p,
+.wrap > p,
+.s p {
+  color: var(--glass-text-muted) !important;
+}
+
+/* ── PERSONA CARDS GLASS ── */
+.persona-bar {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.persona-pill {
+  color: var(--glass-text-muted) !important;
+}
+
+.persona-pill.active {
+  background: rgba(30, 154, 128, 0.6) !important;
+  color: #fff !important;
+}
+
+.persona-content .card {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.persona-content .card h3 {
+  color: var(--glass-text) !important;
+}
+
+.persona-content .card p {
+  color: var(--glass-text-muted) !important;
+}
+
+.persona-content .sh h2 {
+  color: var(--glass-text) !important;
+}
+
+.persona-content .sh p {
+  color: var(--glass-text-muted) !important;
+}
+
+/* ── DEAL CARDS GLASS ── */
+.deal-card {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+  overflow: hidden;
+}
+
+.deal-body {
+  color: var(--glass-text) !important;
+}
+
+.deal-body h4 {
+  color: var(--glass-text) !important;
+}
+
+.deal-meta {
+  color: var(--glass-text-muted) !important;
+}
+
+.deal-row .label {
+  color: var(--glass-text-muted) !important;
+}
+
+.deal-row .val {
+  color: var(--glass-text) !important;
+}
+
+.deal-btns .btn.btn-green {
+  background: rgba(30, 154, 128, 0.8) !important;
+}
+
+.deal-btns .btn.btn-outline {
+  color: var(--glass-text) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* ── PIPELINE SECTION ── */
+.pipeline {
+  background: transparent !important;
+}
+
+.pipe-col {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.pipe-head {
+  color: var(--glass-text) !important;
+}
+
+.pipe-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--glass-border) !important;
+  color: var(--glass-text) !important;
+}
+
+.pipe-card strong {
+  color: var(--glass-text) !important;
+}
+
+.pipe-card span {
+  color: var(--glass-text-muted) !important;
+}
+
+/* Pipeline wrapper */
+.s .pipeline {
+  border-color: var(--glass-border) !important;
+}
+
+.s [style*="background:#fafafa"] {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* Benefits list */
+.benefits li {
+  color: var(--glass-text) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* ── INBOX SECTION ── */
+.inbox-mock {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.inbox-list {
+  border-color: var(--glass-border) !important;
+}
+
+.inbox-list-head {
+  color: var(--glass-text) !important;
+}
+
+.inbox-thread {
+  border-color: var(--glass-border) !important;
+}
+
+.inbox-thread.active {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.inbox-thread-name {
+  color: var(--glass-text) !important;
+}
+
+.inbox-thread-preview {
+  color: var(--glass-text-muted) !important;
+}
+
+.inbox-chat {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.inbox-chat-head {
+  color: var(--glass-text) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.deal-tag {
+  background: rgba(30, 154, 128, 0.3) !important;
+  color: #7ee8c7 !important;
+}
+
+.msg.them {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--glass-text) !important;
+}
+
+.msg.me {
+  background: rgba(30, 154, 128, 0.4) !important;
+  color: #fff !important;
+}
+
+.inbox-features {
+  color: var(--glass-text-muted) !important;
+}
+
+.inbox-feat {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--glass-border) !important;
+  color: var(--glass-text) !important;
+}
+
+/* ── BOOKING DEMO SECTION ── */
+.booking-controls-card {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+  color: var(--glass-text) !important;
+}
+
+.booking-controls-heading {
+  color: var(--glass-text) !important;
+}
+
+.booking-form-label {
+  color: var(--glass-text-muted) !important;
+}
+
+.booking-form-input {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--glass-border) !important;
+  color: var(--glass-text) !important;
+}
+
+.booking-upload-zone {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--glass-border) !important;
+  color: var(--glass-text-muted) !important;
+}
+
+.booking-url-group {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.booking-url-group input {
+  color: var(--glass-text) !important;
+  background: transparent !important;
+}
+
+.booking-url-suffix {
+  color: var(--glass-text-muted) !important;
+}
+
+.booking-cta-btn {
+  background: rgba(30, 154, 128, 0.8) !important;
+}
+
+.booking-cta-sub {
+  color: var(--glass-text-dim) !important;
+}
+
+.nfs-section-badge {
+  background: rgba(30, 154, 128, 0.15) !important;
+  color: #7ee8c7 !important;
+}
+
+.demo-color {
+  border-color: var(--glass-border) !important;
+}
+
+/* ── JOURNEY SECTION (step-card accordion) ── */
+#journey {
+  background: transparent !important;
+}
+
+.journey-heading h2,
+.journey-heading p,
+.journey-heading .jword {
+  color: var(--glass-text) !important;
+}
+
+#stepCounter {
+  color: var(--glass-text-muted) !important;
+}
+
+.step-card {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.step-card.active {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.sc-collapsed {
+  color: var(--glass-text) !important;
+}
+
+.sc-pill {
+  background: rgba(30, 154, 128, 0.3) !important;
+  color: #7ee8c7 !important;
+}
+
+.sc-title {
+  color: var(--glass-text) !important;
+}
+
+.sc-tag-mini {
+  color: var(--glass-text-muted) !important;
+}
+
+.sc-chev {
+  color: var(--glass-text-muted) !important;
+}
+
+.sc-body {
+  color: var(--glass-text) !important;
+}
+
+.sc-body p,
+.card-body-row {
+  color: var(--glass-text-muted) !important;
+}
+
+.sc-tag {
+  background: rgba(30, 154, 128, 0.2) !important;
+  color: #7ee8c7 !important;
+}
+
+.sc-connector {
+  border-color: var(--glass-border) !important;
+  background: var(--glass-border) !important;
+}
+
+.accent-bar {
+  background: rgba(30, 154, 128, 0.6) !important;
+}
+
+/* ── ACADEMY SECTION ── */
+.course {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.course h3 {
+  color: var(--glass-text) !important;
+}
+
+.course p {
+  color: var(--glass-text-muted) !important;
+}
+
+/* Academy stat pills */
+.s [style*="background:#fff"][style*="border:1px solid rgba(0,0,0,0.06)"] {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* ── REVIEW SLIDES GLASS ── */
+.review-slide {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.review-slide p {
+  color: var(--glass-text) !important;
+}
+
+.review-slide [style*="font-weight:600"] {
+  color: var(--glass-text) !important;
+}
+
+.review-slide [style*="color:#6b7280"] {
+  color: var(--glass-text-muted) !important;
+}
+
+.review-slide [style*="border-top:1px solid #f3f4f6"] {
+  border-color: var(--glass-border) !important;
+}
+
+/* ── PRICING CARD GLASS ── */
+.price-card {
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.price-title {
+  color: var(--glass-text) !important;
+}
+
+.price-cancel,
+.price-micro {
+  color: var(--glass-text-dim) !important;
+}
+
+.price-list li {
+  color: var(--glass-text) !important;
+}
+
+.price-card .btn.btn-green {
+  background: rgba(30, 154, 128, 0.85) !important;
+}
+
+/* ── CTA BAND GLASS ── */
+.cta-band {
+  color: var(--glass-text) !important;
+}
+
+.cta-band h2 {
+  color: var(--glass-text) !important;
+}
+
+.cta-band p {
+  color: var(--glass-text-muted) !important;
+}
+
+.cta-band .btn.btn-white {
+  backdrop-filter: blur(8px) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid var(--glass-border) !important;
+  color: var(--glass-text) !important;
+}
+
+.cta-band .btn.btn-white:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* ── FOOTER ── */
+footer.footer {
+  background: rgba(10, 15, 25, 0.6) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-top: 1px solid var(--glass-border) !important;
+}
+
+.footer-brand .box {
+  background: rgba(30, 154, 128, 0.9) !important;
+}
+
+.footer-brand .text {
+  color: var(--glass-text) !important;
+}
+
+.footer-desc {
+  color: var(--glass-text-muted) !important;
+}
+
+.footer-col h4 {
+  color: var(--glass-text) !important;
+}
+
+.footer-col a {
+  color: var(--glass-text-muted) !important;
+}
+
+.footer-bottom {
+  color: var(--glass-text-dim) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* ── SCROLL REVEAL ANIMATION ── */
+.glass-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.glass-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── SCROLL INDICATOR ── */
+.hero-scroll-indicator {
+  border-color: var(--glass-border) !important;
+}
+
+.scroll-pill {
+  background: var(--glass-text) !important;
+}
+
+/* ── CHAT WIDGET ── */
+.chat-widget-btn {
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  background: rgba(30, 154, 128, 0.7) !important;
+  border: 1px solid rgba(30, 154, 128, 0.3) !important;
+}
+
+/* ── INLINE STYLE OVERRIDES (elements with inline bg colors) ── */
+/* Pipeline wrapper with inline #fafafa background */
+[style*="background:#fafafa"] {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* Pipeline columns with inline #fff background */
+.pipe-col[style*="background:#fff"] {
+  background: var(--glass-bg) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* Academy gamification pills with inline white bg */
+[style*="display:flex"][style*="background:#fff"][style*="border-radius:10px"] {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* Inline text colors in Academy/sections */
+[style*="color:#1a1a1a"] {
+  color: var(--glass-text) !important;
+}
+
+[style*="color:#6b7280"] {
+  color: var(--glass-text-muted) !important;
+}
+
+/* Progress bars in academy */
+[style*="background:#e5e7eb"] {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ── BOOKING SITE PREVIEW (keep it light for contrast) ── */
+.booking-demo-preview [style*="border:1px solid rgba(0,0,0,0.06)"] {
+  border-color: var(--glass-border) !important;
+}
+
+.booking-demo-preview [style*="background:#fff"] {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.booking-demo-preview [style*="background:#fafafa"] {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.booking-demo-preview [style*="background:linear-gradient(180deg,#f8f9fa,#f3f4f6)"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.booking-demo-preview [style*="border:1px solid #f3f4f6"] {
+  border-color: var(--glass-border) !important;
+}
+
+.booking-demo-preview [style*="border-bottom:1px solid #f3f4f6"],
+.booking-demo-preview [style*="border-top:1px solid #f3f4f6"] {
+  border-color: var(--glass-border) !important;
+}
