@@ -10,7 +10,7 @@ export default function LandingNav() {
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener('scroll', onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
@@ -31,12 +31,12 @@ export default function LandingNav() {
 
           <div className="hidden md:flex items-center gap-3">
             <Link to="/signin" className={`text-sm font-medium transition-colors px-3 py-2 ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Sign In</Link>
-            <Link to="/signup" className="bg-primary text-primary-foreground text-sm font-semibold h-10 px-5 rounded-lg inline-flex items-center hover:opacity-90 transition-opacity">
+            <Link to="/signup" className="bg-primary text-primary-foreground text-sm font-semibold h-10 px-5 rounded-lg inline-flex items-center transition-all duration-200 hover:opacity-90 active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">
               Get Started →
             </Link>
           </div>
 
-          <button className="md:hidden p-2" onClick={() => setMobileOpen(true)}>
+          <button className="md:hidden p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" onClick={() => setMobileOpen(true)}>
             <Menu className={`w-6 h-6 ${scrolled ? 'text-foreground' : 'text-white'}`} />
           </button>
         </div>
@@ -51,13 +51,13 @@ export default function LandingNav() {
             transition={{ duration: 0.28, ease: 'easeOut' }}
             className="fixed inset-0 z-[200] bg-card flex flex-col items-center justify-center gap-8"
           >
-            <button className="absolute top-5 right-5 p-2" onClick={() => setMobileOpen(false)}>
+            <button className="absolute top-5 right-5 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" onClick={() => setMobileOpen(false)}>
               <X className="w-6 h-6" />
             </button>
             {['Deals', 'How it Works', 'Pricing', 'University'].map(t => (
               <a key={t} href={`#${t.toLowerCase().replace(/ /g, '-')}`} onClick={() => setMobileOpen(false)} className="text-[22px] font-medium text-foreground">{t}</a>
             ))}
-            <Link to="/signup" className="bg-primary text-primary-foreground text-base font-semibold h-12 px-8 rounded-lg inline-flex items-center" onClick={() => setMobileOpen(false)}>
+            <Link to="/signup" className="bg-primary text-primary-foreground text-base font-semibold h-12 px-8 rounded-lg inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]" onClick={() => setMobileOpen(false)}>
               Get Started →
             </Link>
           </motion.div>

@@ -11,7 +11,7 @@ function Counter({ target, prefix = '', suffix = '', decimals = 0 }: { target: n
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
         let start = 0;
-        const step = (ts: number) => { if (!start) start = ts; const p = Math.min((ts - start) / 1200, 1); setVal((1 - Math.pow(1 - p, 3)) * target); if (p < 1) requestAnimationFrame(step); };
+        const step = (ts: number) => { if (!start) start = ts; const p = Math.min((ts - start) / 800, 1); setVal((1 - Math.pow(1 - p, 3)) * target); if (p < 1) requestAnimationFrame(step); };
         requestAnimationFrame(step);
         obs.disconnect();
       }
@@ -95,18 +95,18 @@ export default function LandingPageV8() {
             </h1>
             <p className="mt-6 text-lg leading-relaxed max-w-[480px]" style={{ color: 'hsl(215 20% 65%)' }}>The unified workspace for finding, analysing and closing landlord-approved rent-to-rent deals across the UK.</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/signup" className="h-[48px] px-7 rounded-lg bg-primary text-primary-foreground font-semibold text-[15px] inline-flex items-center hover:opacity-90 transition-opacity">Start 3-day trial for &pound;5 <ArrowRight className="ml-2 w-4 h-4" /></Link>
-              <Link to="/signin" className="h-[48px] px-7 rounded-lg font-medium text-[15px] inline-flex items-center transition-colors" style={{ border: '1.5px solid hsl(215 22% 28%)', color: 'white' }}>Explore the platform first</Link>
+              <Link to="/signup" className="h-[48px] px-7 rounded-lg bg-primary text-primary-foreground font-semibold text-[15px] inline-flex items-center transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Start 3-day trial for &pound;5 <ArrowRight className="ml-2 w-4 h-4" /></Link>
+              <Link to="/signin" className="h-[48px] px-7 rounded-lg font-medium text-[15px] inline-flex items-center transition-all duration-200 border-[1.5px] border-hero-border text-white hover:scale-[1.02] hover:shadow-lg active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Explore the platform first</Link>
             </div>
           </motion.div>
         </div>
       </section>
 
       {/* BLOCK 1: TRUST STRIPE */}
-      <motion.section {...fade} className="py-10" style={{ background: '#f3f3ee' }}>
-        <div className="max-w-[1100px] mx-auto px-6 flex flex-wrap justify-center gap-0">
+      <motion.section {...fade} className="py-14" style={{ background: '#f3f3ee' }}>
+        <div className="max-w-[1100px] mx-auto px-6 flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-0">
           {[{ v: 4200, s: '+', l: 'UK operators' },{ v: 1800, s: '+', l: 'Verified deals' },{ v: 680, p: '\u00a3', l: 'Avg. monthly profit' },{ v: 10, l: 'UK cities' },{ v: 4.8, l: 'Operator rating', d: 1 }].map((s, i) => (
-            <div key={i} className="px-7 py-3 text-center border-r border-gray-200 last:border-r-0">
+            <div key={i} className="px-4 sm:px-7 py-3 text-center border-b sm:border-b-0 sm:border-r border-gray-200 last:border-b-0 sm:last:border-r-0">
               <div className="text-[28px] font-extrabold text-gray-900 tracking-tight"><Counter target={s.v} prefix={s.p||''} suffix={s.s||''} decimals={s.d||0} /></div>
               <div className="text-xs text-gray-500 mt-1">{s.l}</div>
             </div>
@@ -123,15 +123,15 @@ export default function LandingPageV8() {
           </div>
           <div className="flex gap-2 justify-center flex-wrap mb-10">
             {([['new','New operator'],['scaling','Scaling operator'],['landlord','Landlord']] as const).map(([key, label]) => (
-              <button key={key} onClick={() => setPersona(key)} className={`px-6 py-3 rounded-full text-sm font-medium border transition-all ${persona === key ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-gray-200 text-gray-500 hover:border-primary hover:text-primary'}`}>{label}</button>
+              <button key={key} onClick={() => setPersona(key)} className={`px-6 py-3 rounded-full text-sm font-medium border transition-all duration-200 active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px] ${persona === key ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-gray-200 text-gray-500 hover:border-primary hover:text-primary'}`}>{label}</button>
             ))}
           </div>
           <motion.div key={persona} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">{p.heading}</h3>
-            <p className="text-gray-500 mb-8">{p.sub}</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">{p.heading}</h3>
+            <p className="text-gray-500 mb-8 text-center">{p.sub}</p>
             <div className="grid sm:grid-cols-3 gap-5">
               {p.cards.map((c, i) => (
-                <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all">
+                <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out">
                   <h4 className="text-[15px] font-semibold text-gray-900 mb-2">{c.title}</h4>
                   <p className="text-sm text-gray-500 leading-relaxed">{c.desc}</p>
                 </div>
@@ -147,19 +147,19 @@ export default function LandingPageV8() {
           <div className="text-center mb-12"><h2 className="text-[32px] font-bold text-gray-900 tracking-tight">Browse landlord-approved deals</h2><p className="text-gray-500 mt-3 max-w-lg mx-auto">Every listing is verified, compliance-checked and ready to operate.</p></div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {DEALS.map((d, i) => (
-              <motion.div key={i} {...fade} transition={{ ...fade.transition, delay: i * 0.08 }} className="bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all">
+              <motion.div key={i} {...fade} transition={{ ...fade.transition, delay: i * 0.08 }} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out">
                 <div className="h-40 bg-cover bg-center relative" style={{ backgroundImage: `url('${d.img}')` }}><span className="absolute top-2.5 left-2.5 bg-white text-[11px] font-semibold px-2.5 py-1 rounded-md shadow-sm">{d.badge}</span></div>
-                <div className="p-4">
+                <div className="p-5">
                   <h4 className="text-[15px] font-semibold text-gray-900">{d.name}</h4>
                   <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1"><MapPin className="w-3 h-3" />{d.city} &middot; {d.pc}</p>
                   <div className="mt-3 space-y-0">
-                    <div className="flex justify-between py-1.5 border-t border-gray-50 text-sm"><span className="text-gray-500">Monthly rent</span><span className="font-medium">&pound;{d.rent.toLocaleString()}</span></div>
-                    <div className="flex justify-between py-1.5 border-t border-gray-50 text-sm"><span className="text-gray-500">Est. profit</span><span className="font-bold text-primary">&pound;{d.profit.toLocaleString()}</span></div>
-                    <div className="flex justify-between py-1.5 border-t border-gray-50 text-sm"><span className="text-gray-500">Type</span><span className="font-medium">{d.type}</span></div>
+                    <div className="flex justify-between py-1.5 border-t border-gray-100 text-sm"><span className="text-gray-500">Monthly rent</span><span className="font-medium">&pound;{d.rent.toLocaleString()}</span></div>
+                    <div className="flex justify-between py-1.5 border-t border-gray-100 text-sm"><span className="text-gray-500">Est. profit</span><span className="font-bold text-primary">&pound;{d.profit.toLocaleString()}</span></div>
+                    <div className="flex justify-between py-1.5 border-t border-gray-100 text-sm"><span className="text-gray-500">Type</span><span className="font-medium">{d.type}</span></div>
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <Link to="/signup" className="flex-1 h-9 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-semibold flex items-center justify-center">Visit listing</Link>
-                    <Link to="/signup" className="flex-1 h-9 rounded-lg border border-gray-200 text-xs font-medium flex items-center justify-center hover:bg-gray-50">Inquire now</Link>
+                    <Link to="/signup" className="flex-1 h-11 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-semibold flex items-center justify-center transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Visit listing</Link>
+                    <Link to="/signup" className="flex-1 h-11 rounded-lg border border-gray-200 text-xs font-medium flex items-center justify-center transition-all duration-200 hover:bg-gray-100 active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Inquire now</Link>
                   </div>
                 </div>
               </motion.div>
@@ -249,7 +249,7 @@ export default function LandingPageV8() {
           <div className="text-center mb-12"><h2 className="text-[32px] font-bold text-gray-900 tracking-tight">Learn rent-to-rent. Then do it. In the same place.</h2><p className="text-gray-500 mt-3 max-w-lg mx-auto">15 years of operator knowledge, structured into step-by-step modules.</p></div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {COURSES.map((c, i) => (
-              <motion.div key={i} {...fade} transition={{ ...fade.transition, delay: i * 0.08 }} className="bg-white border border-gray-100 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all">
+              <motion.div key={i} {...fade} transition={{ ...fade.transition, delay: i * 0.08 }} className="bg-white border border-gray-100 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out">
                 <h3 className="text-base font-semibold text-gray-900 mb-1.5">{c.name}</h3>
                 <div className="text-xs text-gray-500">{c.lessons} lessons &middot; <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${c.level === 'Beginner' ? 'bg-emerald-50 text-primary' : 'bg-amber-50 text-amber-700'}`}>{c.level}</span></div>
               </motion.div>
@@ -265,7 +265,7 @@ export default function LandingPageV8() {
           <div className="text-center mb-12"><h2 className="text-[32px] font-bold text-gray-900 tracking-tight">Trusted by UK operators</h2></div>
           <div className="grid sm:grid-cols-3 gap-5">
             {TESTIMONIALS.map((t, i) => (
-              <motion.div key={i} {...fade} transition={{ ...fade.transition, delay: i * 0.1 }} className="bg-white border border-gray-100 rounded-2xl p-6">
+              <motion.div key={i} {...fade} transition={{ ...fade.transition, delay: i * 0.1 }} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
                 <p className="text-[15px] text-gray-900 leading-relaxed mb-4">&ldquo;{t.q}&rdquo;</p>
                 <div className="flex items-center gap-3 pt-4 border-t border-gray-50">
                   <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">{t.name.split(' ').map(n => n[0]).join('')}</div>
@@ -294,7 +294,7 @@ export default function LandingPageV8() {
             <ul className="text-left space-y-0 mb-6">
               {PRICING.map((f, i) => (<li key={i} className="flex items-center gap-3 py-2 border-b border-gray-50 text-sm text-gray-600"><CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />{f}</li>))}
             </ul>
-            <Link to="/signup" className="block w-full h-12 rounded-xl bg-primary text-white font-semibold text-[15px] flex items-center justify-center hover:opacity-90 transition-opacity">Start 3-day trial for &pound;5</Link>
+            <Link to="/signup" className="block w-full h-12 rounded-xl bg-primary text-white font-semibold text-[15px] flex items-center justify-center transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Start 3-day trial for &pound;5</Link>
             <p className="text-xs text-gray-400 mt-3">Cancel online at any time. No contracts.</p>
           </div>
         </div>
@@ -306,8 +306,8 @@ export default function LandingPageV8() {
           <h2 className="text-[28px] font-bold text-white mb-2">Ready to find your next deal?</h2>
           <p className="text-white/70 mb-6">Join 4,200+ operators building their portfolio with NFsTay.</p>
           <div className="flex gap-3 justify-center flex-wrap">
-            <Link to="/signup" className="h-12 px-8 rounded-xl bg-white text-gray-900 font-semibold text-[15px] inline-flex items-center hover:bg-gray-100 transition-colors">Start 3-day trial for &pound;5</Link>
-            <Link to="/signin" className="h-12 px-8 rounded-xl font-medium text-[15px] inline-flex items-center text-white/70 hover:text-white transition-colors">Sign in</Link>
+            <Link to="/signup" className="h-12 px-8 rounded-xl bg-white text-gray-900 font-semibold text-[15px] inline-flex items-center transition-all duration-200 hover:bg-gray-100 hover:scale-[1.02] active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Start 3-day trial for &pound;5</Link>
+            <Link to="/signin" className="h-12 px-8 rounded-xl font-medium text-[15px] inline-flex items-center text-white/70 border border-white/20 hover:text-white hover:border-white/40 transition-all duration-200 active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Sign in</Link>
           </div>
         </div>
       </section>

@@ -110,6 +110,20 @@
   }
 }
 
+/* Global focus-visible outline for interactive elements */
+button:focus-visible, a:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 3px;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Add to CRM celebration - global so it works in production build */
 @keyframes crm-glow {
   0% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.5); opacity: 1; }
