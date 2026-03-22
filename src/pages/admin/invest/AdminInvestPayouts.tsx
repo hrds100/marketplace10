@@ -133,7 +133,7 @@ export default function AdminInvestPayouts() {
   const handleApprove = async (id: string) => {
     try {
       const { error } = await (supabase.from('payout_claims') as any)
-        .update({ status: 'processing', updated_at: new Date().toISOString() })
+        .update({ status: 'processing' })
         .eq('id', id);
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ['payout_claims'] });
@@ -146,7 +146,7 @@ export default function AdminInvestPayouts() {
   const handleMarkPaid = async (id: string) => {
     try {
       const { error } = await (supabase.from('payout_claims') as any)
-        .update({ status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .update({ status: 'paid', paid_at: new Date().toISOString() })
         .eq('id', id);
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ['payout_claims'] });
@@ -159,7 +159,7 @@ export default function AdminInvestPayouts() {
   const handleReject = async (id: string) => {
     try {
       const { error } = await (supabase.from('payout_claims') as any)
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .update({ status: 'cancelled' })
         .eq('id', id);
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ['payout_claims'] });
