@@ -34,12 +34,12 @@
 .nfs-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .nfs-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
 .nfs-card { background: #fff; border: 1px solid #e8e5df; border-radius: 16px; padding: 28px; transition: box-shadow 0.2s, transform 0.2s; }
-.nfs-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.06); transform: translateY(-2px); }
+.nfs-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.1); transform: translateY(-4px); }
 .nfs-section.dark .nfs-card { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); }
 .nfs-card-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(30,154,128,0.08); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; color: #1e9a80; }
 .nfs-card h3 { font-size: 15px; font-weight: 600; color: #0a0a0a; margin-bottom: 6px; }
 .nfs-section.dark .nfs-card h3 { color: #fff; }
-.nfs-card p { font-size: 13px; color: #737373; line-height: 1.55; }
+.nfs-card p { font-size: 13px; color: #737373; line-height: 1.6; }
 
 /* ---------- STATS ---------- */
 .nfs-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; text-align: center; padding: 40px 0; }
@@ -79,6 +79,8 @@
 .nfs-cta-btn.white:hover { background: #f3f3ee; }
 .nfs-cta-btn.outline { background: transparent; color: #1e9a80; border: 1.5px solid #1e9a80; }
 .nfs-cta-btn.outline:hover { background: rgba(30,154,128,0.04); }
+.nfs-cta-btn:active { transform: scale(0.97); transition: transform 120ms ease; }
+.nfs-cta-btn:focus-visible { outline: 2px solid #1c1c1c; outline-offset: 3px; }
 .nfs-cta-btn.full { display: block; width: 100%; text-align: center; }
 
 /* ---------- CTA BAND ---------- */
@@ -252,6 +254,6 @@
 @media (max-width: 480px) {
   .nfs-steps { grid-template-columns: 1fr; }
   .nfs-footer-grid { grid-template-columns: 1fr; }
-  .nfs-inner { padding: 0 16px; }
+  .nfs-inner { padding: 0 20px; }
   .nfs-gallery-grid { grid-template-columns: 1fr; }
 }

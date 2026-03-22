@@ -294,6 +294,13 @@
   transform: scale(1.03);
   box-shadow: 0 8px 24px rgba(30,154,128,0.35);
 }
+.prem-academy-btn:active {
+  transform: scale(0.97);
+}
+.prem-academy-btn:focus-visible {
+  outline: 2px solid #1c1c1c;
+  outline-offset: 3px;
+}
 
 /* Responsive */
 @media (max-width: 1024px) {

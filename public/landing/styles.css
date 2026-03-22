@@ -29,9 +29,19 @@ body {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 400;
-  line-height: 19.6px;
+  line-height: 1.6;
   color: rgb(102, 109, 128);
   background-color: #F9F9F9;
+}
+
+/* ── GLOBAL: Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }
 a { text-decoration: none; color: inherit; }
 img { max-width: 100%; height: auto; }
@@ -252,7 +262,15 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 }
 
 .nav-btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(30,154,128,0.25);
+}
+.nav-btn:active {
+  transform: scale(0.97);
+}
+.nav-btn:focus-visible {
+  outline: 2px solid #1c1c1c;
+  outline-offset: 3px;
 }
 
 /* Shine sweep on hover */
@@ -412,7 +430,9 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   transition: transform 0.2s ease;
   cursor: pointer;
 }
-.hero-cta:hover { transform: translateY(-1px); }
+.hero-cta:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.hero-cta:active { transform: scale(0.97); }
+.hero-cta:focus-visible { outline: 2px solid #1c1c1c; outline-offset: 3px; }
 .hero-cta::after {
   content: '';
   position: absolute;
@@ -437,7 +457,9 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   transition: transform 0.2s ease;
   cursor: pointer;
 }
-.hero-login:hover { transform: translateY(-1px); }
+.hero-login:hover { transform: translateY(-1px) scale(1.02); }
+.hero-login:active { transform: scale(0.97); }
+.hero-login:focus-visible { outline: 2px solid #1c1c1c; outline-offset: 3px; }
 
 /* ====================================================
    HERO DEMO COMPONENT — the main interactive piece
@@ -1804,4 +1826,283 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   .footer-grid { grid-template-columns: 1fr; }
   .ab-listings { grid-template-columns: repeat(2, 1fr); }
   .chat-panel { min-width: auto; }
+}
+
+/* ════════════════════════════════════════════
+   LANDING PAGE AUDIT FIXES — All Phases
+   ════════════════════════════════════════════ */
+
+/* ── PHASE 2: SPACING & RHYTHM ── */
+/* Body copy line-height already fixed to 1.6 above */
+
+/* Ensure hero buttons have adequate tap targets */
+.hero-cta,
+.hero-login {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Booking site section: consistent padding on mobile */
+@media (max-width: 768px) {
+  .s.bg-white[style*="padding:80px"] { padding: 56px 0 !important; }
+}
+
+/* Booking site demo: two-column to single column on mobile */
+@media (max-width: 991px) {
+  #hero ~ .s.bg-white div[style*="display:flex;gap:28px"] {
+    flex-direction: column !important;
+  }
+  #hero ~ .s.bg-white div[style*="width:300px"] {
+    width: 100% !important;
+  }
+}
+
+/* ── PHASE 3: BUTTON AUDIT ── */
+/* Focus-visible on all interactive buttons */
+.btn:focus-visible,
+.nfs-cta-btn:focus-visible,
+.persona-pill:focus-visible,
+.pricing-btn:focus-visible,
+.chat-tab:focus-visible,
+.nfs-finale-btn:focus-visible,
+.prem-academy-btn:focus-visible,
+.chat-send-btn:focus-visible,
+a[href]:focus-visible {
+  outline: 2px solid #1c1c1c;
+  outline-offset: 3px;
+}
+
+/* Active/pressed states for all buttons */
+.btn:active { transform: scale(0.97); }
+.btn-green:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 4px 12px rgba(30,154,128,0.25); }
+.btn-outline:hover { transform: translateY(-1px); }
+.btn-white:hover { transform: translateY(-1px); }
+
+/* Minimum tap targets */
+.btn { min-height: 44px; }
+.btn-sm { min-height: 36px; }
+.persona-pill { min-height: 44px; }
+
+/* Pricing CTA full-width: ensure centred text */
+.btn-full { justify-content: center; text-align: center; }
+
+/* ── PHASE 4: EFFECTS & ANIMATION AUDIT ── */
+/* Cap max-height transition to 600ms (was 800ms on tl-step) */
+.tl-step {
+  transition: opacity 600ms cubic-bezier(0.22,1,0.36,1),
+              transform 600ms cubic-bezier(0.22,1,0.36,1),
+              max-height 600ms cubic-bezier(0.22,1,0.36,1);
+}
+
+/* Review carousel: respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .review-track { animation: none !important; }
+  .step-card { transition: none !important; }
+  .step-card.active { animation: none !important; }
+}
+
+/* Card hover states: consistent translateY(-4px) + box-shadow lift */
+.deal-card:hover,
+.course:hover,
+.card:hover,
+.hub-card:hover,
+.review-slide:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  transform: translateY(-4px);
+}
+.review-slide {
+  transition: box-shadow 200ms ease-out, transform 200ms ease-out;
+}
+
+/* Transition on persona pills */
+.persona-pill {
+  transition: all 200ms cubic-bezier(0.22,1,0.36,1);
+}
+
+/* ── PHASE 5: MOBILE AUDIT (320px-767px) ── */
+@media (max-width: 767px) {
+  /* Hero heading scale down */
+  .hero-heading,
+  .hero-heading .italic-accent {
+    font-size: 32px !important;
+    line-height: 38px !important;
+  }
+
+  /* Prevent horizontal overflow */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Section headings: max 2.5rem */
+  .sh h2 {
+    font-size: 24px;
+  }
+
+  /* Trust stripe: proper spacing when stacked */
+  .trust-stripe .ts-item {
+    padding: 16px 0;
+  }
+
+  /* Form inputs: 16px font to prevent iOS zoom */
+  input[type="text"],
+  input[type="email"],
+  select,
+  textarea,
+  .play-input,
+  .play-select {
+    font-size: 16px !important;
+  }
+
+  /* Price card: scale price text down */
+  .price-amt {
+    font-size: 42px;
+  }
+
+  /* CTA band: scale heading down */
+  .cta-band h2 {
+    font-size: 28px !important;
+    line-height: 1.15 !important;
+  }
+
+  /* Pipeline overflow: force horizontal scroll */
+  .pipeline {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Inbox mock: stack vertically */
+  .inbox-mock {
+    flex-direction: column;
+  }
+  .inbox-list {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  /* Footer: reduce padding */
+  .footer {
+    padding: 32px 0 16px;
+  }
+
+  /* Journey section: reduce padding */
+  #journey {
+    padding: 64px 0 !important;
+  }
+  .journey-heading h2 {
+    font-size: 28px !important;
+  }
+  .journey-heading {
+    margin-bottom: 40px !important;
+  }
+}
+
+@media (max-width: 479px) {
+  /* Ensure minimum side padding */
+  .padding-global {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Hero heading final scale */
+  .hero-heading,
+  .hero-heading .italic-accent {
+    font-size: 28px !important;
+    line-height: 34px !important;
+  }
+}
+
+/* ── PHASE 6: DESKTOP AUDIT (1280px-1920px) ── */
+@media (min-width: 1280px) {
+  /* Hero headline: at least 3.5rem */
+  .hero-heading {
+    font-size: 56px;
+    line-height: 62px;
+  }
+  .hero-heading .italic-accent {
+    font-size: 56px;
+  }
+
+  /* Content max-width guard */
+  .wrap { max-width: 1200px; }
+  .wrap.wide { max-width: 1280px; }
+  .sh p { max-width: 640px; }
+}
+
+/* ── PHASE 7: VISUAL HIERARCHY ── */
+/* Ensure section headings are consistent */
+.sh h2,
+.nfs-section-title {
+  letter-spacing: -0.02em;
+}
+
+/* Primary CTA prominence */
+.btn-green {
+  box-shadow: 0 2px 8px rgba(30,154,128,0.15);
+}
+
+/* ── PHASE 8: CONSISTENCY AUDIT ── */
+/* Border radius system: small=8px, card=16px, pill=100px */
+/* Already consistent via CSS vars in nfs-system.css */
+
+/* Shadows: unify card hover shadow */
+.card:hover,
+.deal-card:hover,
+.course:hover,
+.nfs-card:hover,
+.hub-card:hover,
+.nfs-hub-card:hover,
+.testimonial:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+/* Links: consistent hover colour */
+a:hover {
+  transition: color 150ms ease;
+}
+
+/* ── PHASE 9: PERFORMANCE ── */
+/* Use will-change sparingly for animated elements */
+.sr {
+  will-change: opacity, transform;
+}
+.sr.visible {
+  will-change: auto;
+}
+
+/* Images: prevent CLS */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Review track: promote to GPU layer */
+.review-track {
+  will-change: transform;
+}
+
+/* Chat widget: promote to GPU */
+.chat-widget-btn {
+  will-change: transform;
+}
+
+/* ── Booking demo responsive ── */
+@media (max-width: 991px) {
+  .booking-demo-layout {
+    flex-direction: column !important;
+  }
+  .booking-demo-controls {
+    width: 100% !important;
+  }
+}
+
+/* ── Booking demo property grid: single column on mobile ── */
+@media (max-width: 479px) {
+  .booking-demo-layout div[style*="grid-template-columns:repeat(3,1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
 }

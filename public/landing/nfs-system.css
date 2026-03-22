@@ -87,7 +87,7 @@
 
 /* ── BUTTONS ── */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 32px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 150ms ease-out; letter-spacing: 0.01em; }
-.btn:active { transform: scale(0.98); }
+.btn:active { transform: scale(0.97); transition: transform 120ms ease; }
 .btn-green { background: var(--green); color: #fff; }
 .btn-green:hover { background: #178f72; }
 .btn-white { background: #fff; color: var(--text); }
@@ -349,6 +349,6 @@
 }
 @media (max-width:480px) {
   .footer-grid { grid-template-columns: 1fr; }
-  .wrap { padding: 0 16px; }
+  .wrap { padding: 0 20px; }
   .cta-btns { flex-direction: column; align-items: center; }
 }
