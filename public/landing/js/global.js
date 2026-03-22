@@ -24,12 +24,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if (c2) c2.style.transform = `translateY(${y * 0.08}px)`;
   });
 
-  // 15. MOBILE MENU
+  // 15. MOBILE MENU (full-screen overlay)
   // ========================================
   const navBtn = document.querySelector('.nav_button');
   const mobileMenu = document.getElementById('mobileMenu');
-  if (navBtn && mobileMenu) {
-    navBtn.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+  const mobileMenuClose = document.getElementById('mobileMenuClose');
+
+  function openMobileMenu() { if (mobileMenu) mobileMenu.classList.add('open'); }
+  function closeMobileMenu() { if (mobileMenu) mobileMenu.classList.remove('open'); }
+
+  if (navBtn) navBtn.addEventListener('click', () => {
+    if (mobileMenu && mobileMenu.classList.contains('open')) closeMobileMenu();
+    else openMobileMenu();
+  });
+  if (mobileMenuClose) mobileMenuClose.addEventListener('click', closeMobileMenu);
+
+  // Auto-close on link click
+  if (mobileMenu) {
+    mobileMenu.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', () => closeMobileMenu());
+    });
+  }
+
+  // Mobile language switcher (inside overlay menu)
+  const mobileLangSwitcher = document.getElementById('mobileLangSwitcher');
+  const mobileLangBtn = document.getElementById('mobileLangBtn');
+  if (mobileLangBtn && mobileLangSwitcher) {
+    mobileLangBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      mobileLangSwitcher.classList.toggle('open');
+    });
+  }
+  // Mobile lang options: call switchLang and close
+  document.querySelectorAll('#mobileLangOptions a[data-lang]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      var lang = a.getAttribute('data-lang');
+      if (window.switchLang) window.switchLang(lang);
+      var labels = { en:'English', pt:'Português', es:'Español', fr:'Français', ar:'العربية' };
+      var labelEl = document.getElementById('mobileLangLabel');
+      if (labelEl) labelEl.textContent = labels[lang] || lang;
+      if (mobileLangSwitcher) mobileLangSwitcher.classList.remove('open');
+    });
+  });
+
+  // Mobile globe icon (navbar) opens the mobile menu with lang switcher visible
+  const mobileGlobe = document.querySelector('.language-switcher-wrapper.mobile-only');
+  if (mobileGlobe) {
+    mobileGlobe.addEventListener('click', () => {
+      openMobileMenu();
+      if (mobileLangSwitcher) mobileLangSwitcher.classList.add('open');
+    });
   }
 
   // 16. SMOOTH SCROLL + FAQ
@@ -56,19 +102,25 @@ document.addEventListener('DOMContentLoaded', () => {
 (function () {
   'use strict';
 
-  // 1. SCROLL-TRIGGERED ENTRANCES
+  // 1. SCROLL-TRIGGERED ENTRANCES (cascade + re-trigger on scroll up/down)
   var srObserver = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
       if (entry.isIntersecting) {
         entry.target.classList.add('visible');
-        // Stagger children
+        // Stagger children with 90ms cascade
         var children = entry.target.querySelectorAll('.sr-child');
         children.forEach(function (child, i) {
           setTimeout(function () {
             child.classList.add('visible');
-          }, 80 * i);
+          }, 90 * i);
         });
-        srObserver.unobserve(entry.target);
+      } else {
+        // Re-trigger: remove visible when leaving viewport
+        entry.target.classList.remove('visible');
+        var children = entry.target.querySelectorAll('.sr-child');
+        children.forEach(function (child) {
+          child.classList.remove('visible');
+        });
       }
     });
   }, { threshold: 0.15 });

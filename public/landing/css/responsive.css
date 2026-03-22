@@ -185,3 +185,89 @@
   .prem-academy { padding: 64px 0; }
   .prem-course { padding: 24px; }
 }
+
+/* ============================================
+   MOBILE POLISH — Tasks 1, 4, 5, 6, 9
+   ============================================ */
+
+/* ---- Task 1: Hero breathing room on mobile ---- */
+@media (max-width: 991px) {
+  .section_hero { padding-top: 32px; }
+  .hero-text-block { padding: 120px 0 32px; }
+  .hero-heading { margin-bottom: 20px; }
+  .hero-buttons { margin-top: 24px; margin-bottom: 32px; }
+  .hero-demo-component { margin-top: 16px; }
+}
+@media (max-width: 479px) {
+  .section_hero { padding-top: 24px; }
+  .hero-text-block { padding: 110px 0 28px; }
+  .hero-heading { margin-bottom: 16px; }
+  .hero-buttons { margin-top: 20px; margin-bottom: 28px; }
+}
+
+/* ---- Task 4: Deal cards horizontal scroll on mobile ---- */
+@media (max-width: 768px) {
+  .g3.deal-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 16px;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .g3.deal-grid::-webkit-scrollbar { display: none; }
+  .g3.deal-grid { scrollbar-width: none; }
+  .g3.deal-grid > .deal-card {
+    min-width: 280px;
+    max-width: 300px;
+    flex-shrink: 0;
+    scroll-snap-align: center;
+  }
+  .deal-swipe-hint {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 12px;
+  }
+}
+@media (min-width: 769px) {
+  .deal-swipe-hint { display: none; }
+}
+
+/* ---- Task 5: Stats row side by side on mobile ---- */
+@media (max-width: 768px) {
+  .trust-stripe {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 !important;
+  }
+  .trust-stripe .ts-item {
+    border-bottom: none !important;
+    border-right: 1px solid var(--border-light);
+    padding: 10px 14px !important;
+  }
+  .trust-stripe .ts-item:last-child { border-right: none; }
+  .trust-stripe .ts-val { font-size: 18px; }
+  .trust-stripe .ts-lbl { font-size: 10px; }
+}
+
+/* ---- Task 6: Footer two-column grid on mobile ---- */
+@media (max-width: 480px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px;
+  }
+  .footer-grid > div:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---- Task 9: scroll-margin for anchored sections ---- */
+[id="deals"],
+[id="how-it-works"],
+[id="pricing"],
+[id="university"] {
+  scroll-margin-top: 80px;
+}
