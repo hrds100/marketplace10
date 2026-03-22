@@ -280,9 +280,24 @@ export default function AdminInvestPayouts() {
             <Zap className="w-4 h-4" />
             {batchTriggered ? 'Paying...' : 'Approve All & Pay'}
           </Button>
-          <p className="text-xs text-muted-foreground mt-1.5 max-w-xs text-right">
-            Send all pending claims via Revolut
-          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              try {
+                const { data, error } = await supabase.functions.invoke('revolut-check-status', { body: {} });
+                if (error) throw new Error(error.message);
+                if (data?.updated > 0) {
+                  toast.success(`${data.updated} claim(s) updated to paid`);
+                } else {
+                  toast.info('No status changes — all still processing');
+                }
+                qc.invalidateQueries({ queryKey: ['payout_claims'] });
+              } catch (err: any) { toast.error(err.message || 'Failed'); }
+            }}
+          >
+            Check All Status
+          </Button>
         </div>
       </div>
 
