@@ -90,7 +90,7 @@ export default function AdminInvestPayouts() {
     user_id: c.user_id || '',
     user_email: c.user_email || c.email || '',
     type: c.type || 'investor',
-    amount: c.amount || 0,
+    amount: c.amount_entitled || c.amount || 0,
     currency: c.currency || 'GBP',
     method: c.method || 'bank_transfer',
     status: c.status || 'pending',
