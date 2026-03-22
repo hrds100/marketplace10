@@ -324,9 +324,9 @@ export default function InvestProposalsPage() {
               const votingContract = new ethers.Contract(CONTRACTS.VOTING, VOTING_ABI, signer);
               const startTimestamp = Math.floor(Date.now() / 1000);
               const endTimestamp = Math.floor(new Date(endsAt).getTime() / 1000);
-              // VOTING_ABI: addProposal(propertyId, encodedDescription) — check contractAbis.ts
-              // Using available addProposal signature from VOTING_ABI
-              const tx = await votingContract.addProposal(blockchainPropertyId, description);
+              // Encode description to bytes first (contract expects bytes, not string)
+              const encodedDescription = await votingContract.encodeString(description);
+              const tx = await votingContract.addProposal(blockchainPropertyId, encodedDescription);
               const receipt = await tx.wait();
               setProposalTxHash(receipt.transactionHash);
 
