@@ -81,7 +81,7 @@ export default function LandingPageV8() {
       {/* HERO */}
       <section className="relative overflow-hidden flex items-center" style={{ background: 'hsl(215 50% 11%)', minHeight: '70vh' }}>
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 80% 20%, hsla(145,63%,42%,0.08) 0%, transparent 60%)' }} />
-        <div className="relative max-w-[1100px] mx-auto px-6 w-full pt-28 pb-16 md:py-24">
+        <div className="relative max-w-[1100px] mx-auto px-6 w-full pt-36 pb-16 md:pt-32 md:pb-24">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6" style={{ background: 'hsla(145,63%,42%,0.12)' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
