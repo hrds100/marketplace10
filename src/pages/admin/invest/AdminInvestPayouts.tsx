@@ -423,7 +423,7 @@ export default function AdminInvestPayouts() {
                   <TableCell className="text-xs text-muted-foreground">{p.paid_at || '\u2014'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {(p.status === 'pending' || p.status === 'processing') && (
+                      {p.status === 'pending' && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -433,6 +433,31 @@ export default function AdminInvestPayouts() {
                         >
                           {payingId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                           {payingId === p.id ? 'Sending...' : `Send £${(Number(p.amount) * gbpRate).toFixed(2)}`}
+                        </Button>
+                      )}
+                      {p.status === 'processing' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs gap-1"
+                          onClick={async () => {
+                            try {
+                              const { data, error } = await supabase.functions.invoke('revolut-check-status', {
+                                body: { claim_id: p.id },
+                              });
+                              if (error) throw new Error(error.message);
+                              if (data?.results?.[0]?.status === 'paid') {
+                                toast.success('Payment confirmed — marked as paid');
+                              } else {
+                                toast.info(`Status: ${data?.results?.[0]?.revolut_state || 'still processing'}`);
+                              }
+                              qc.invalidateQueries({ queryKey: ['payout_claims'] });
+                            } catch (err: any) {
+                              toast.error(err.message || 'Failed to check status');
+                            }
+                          }}
+                        >
+                          Check Status
                         </Button>
                       )}
                       {(p.status === 'pending' || p.status === 'processing') && (
