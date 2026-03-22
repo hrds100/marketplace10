@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/landing/premium.css">
   <link rel="stylesheet" href="/landing/sections.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <!-- ScrollTrigger removed — journey section uses IntersectionObserver -->
 <style>
 .lang-dropdown .lang-menu { display: none !important; }
 .lang-dropdown.open .lang-menu { display: block !important; }
@@ -298,14 +298,14 @@
               <div class="nfs-inbox-mock">
                 <div class="nfs-inbox-threads">
                   <div class="nfs-inbox-header">Messages <span class="nfs-inbox-count">5</span></div>
-                  <div class="nfs-thread active"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=12" alt=""></div><div class="nfs-thread-info"><strong>James Thornton</strong><span>Manchester flat inquiry</span></div><span class="nfs-thread-time">2m</span></div>
-                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=5" alt=""></div><div class="nfs-thread-info"><strong>Sarah Chen</strong><span>Viewing confirmed Thu</span></div><span class="nfs-thread-time">1h</span></div>
-                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=33" alt=""></div><div class="nfs-thread-info"><strong>David Walsh</strong><span>Contract signed ✓</span></div><span class="nfs-thread-time">3h</span></div>
-                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=15" alt=""></div><div class="nfs-thread-info"><strong>Mark Peters</strong><span>Keys handover Monday</span></div><span class="nfs-thread-time">1d</span></div>
-                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=9" alt=""></div><div class="nfs-thread-info"><strong>Rachel Adams</strong><span>Offer accepted 🎉</span></div><span class="nfs-thread-time">2d</span></div>
+                  <div class="nfs-thread active"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=12" width="32" height="32" alt=""></div><div class="nfs-thread-info"><strong>James Thornton</strong><span>Manchester flat inquiry</span></div><span class="nfs-thread-time">2m</span></div>
+                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=5" width="32" height="32" alt=""></div><div class="nfs-thread-info"><strong>Sarah Chen</strong><span>Viewing confirmed Thu</span></div><span class="nfs-thread-time">1h</span></div>
+                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=33" width="32" height="32" alt=""></div><div class="nfs-thread-info"><strong>David Walsh</strong><span>Contract signed ✓</span></div><span class="nfs-thread-time">3h</span></div>
+                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=15" width="32" height="32" alt=""></div><div class="nfs-thread-info"><strong>Mark Peters</strong><span>Keys handover Monday</span></div><span class="nfs-thread-time">1d</span></div>
+                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=9" width="32" height="32" alt=""></div><div class="nfs-thread-info"><strong>Rachel Adams</strong><span>Offer accepted 🎉</span></div><span class="nfs-thread-time">2d</span></div>
                 </div>
                 <div class="nfs-inbox-chat">
-                  <div class="nfs-chat-header"><div class="nfs-avatar small"><img src="https://i.pravatar.cc/64?img=12" alt=""></div><strong>James Thornton</strong><span class="nfs-online">● Online</span></div>
+                  <div class="nfs-chat-header"><div class="nfs-avatar small"><img src="https://i.pravatar.cc/64?img=12" width="24" height="24" alt=""></div><strong>James Thornton</strong><span class="nfs-online">● Online</span></div>
                   <div class="nfs-chat-messages">
                     <div class="nfs-msg them"><p>Hi! I saw the 2-bed in Ancoats. Is it available for Airbnb?</p></div>
                     <div class="nfs-msg me"><p>Yes! Landlord approved. Rent £850, est. profit £1,200/mo.</p></div>
@@ -403,43 +403,43 @@
   <!-- UNIFIED INBOX -->
   <div class="s bg-cream sr"><div class="wrap"><div class="sh"><h2 data-i18n="inbox_h">Landlords, Agents, Airbnb Operators &mdash; One Unified Inbox</h2><p>WhatsApp, email and portal messages in a single thread &mdash; linked to your deals.</p></div>
     <div class="inbox-mock">
-      <div class="inbox-list"><div class="inbox-list-head">Conversations</div><div class="inbox-thread active"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=12" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">James Thornton</div><div class="inbox-thread-preview">Is the Manchester flat available?</div></div></div></div><div class="inbox-thread"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=5" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">Sarah Chen</div><div class="inbox-thread-preview">Viewing confirmed for Thursday</div></div></div></div><div class="inbox-thread"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=33" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">David Walsh</div><div class="inbox-thread-preview">Contract sent for review</div></div></div></div></div>
+      <div class="inbox-list"><div class="inbox-list-head">Conversations</div><div class="inbox-thread active"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=12" width="28" height="28" loading="lazy" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">James Thornton</div><div class="inbox-thread-preview">Is the Manchester flat available?</div></div></div></div><div class="inbox-thread"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=5" width="28" height="28" loading="lazy" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">Sarah Chen</div><div class="inbox-thread-preview">Viewing confirmed for Thursday</div></div></div></div><div class="inbox-thread"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=33" width="28" height="28" loading="lazy" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">David Walsh</div><div class="inbox-thread-preview">Contract sent for review</div></div></div></div></div>
       <div class="inbox-chat"><div class="inbox-chat-head">James Thornton <span class="deal-tag">2-Bed, Ancoats</span></div><div class="inbox-msgs"><div class="msg them">Is the 2-bed in Ancoats still available for serviced accommodation?</div><div class="msg me">Yes, the landlord has approved it. Monthly rent is &pound;850 with an estimated profit of &pound;1,200.</div><div class="msg them">That sounds ideal. When can I arrange a viewing?</div><div class="msg me">Thursday at 5pm works. I will send the address now.</div></div></div>
     </div>
     <div class="inbox-features sr"><div class="inbox-feat sr-child">Auto-link messages to deals</div><div class="inbox-feat sr-child">Reminders before viewings and renewals</div><div class="inbox-feat sr-child">See deal stage inside every thread</div></div>
   </div></div>
 
   <!-- BOOKING SITE BUILDER DEMO -->
-  <div class="s bg-white" style="padding:80px 0;overflow:hidden;">
-    <div style="max-width:1100px;margin:0 auto;padding:0 24px;">
-      <div style="text-align:center;margin-bottom:48px;">
-        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(30,154,128,0.06);padding:5px 14px;border-radius:100px;margin-bottom:14px;font-size:11px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">
+  <div class="s bg-white booking-demo-section">
+    <div class="booking-demo-wrap">
+      <div class="sh">
+        <div class="nfs-section-badge">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           White-Label Booking Site
         </div>
-        <h2 style="font-size:34px;font-weight:700;color:#1a1a1a;" data-i18n="booking_h">Build your direct booking channel</h2>
-        <p style="font-size:15px;color:#6b7280;margin-top:10px;max-width:480px;margin-left:auto;margin-right:auto;">Stop paying 15-20% OTA commissions. Launch your branded booking site in minutes.</p>
+        <h2 data-i18n="booking_h">Build your direct booking channel</h2>
+        <p>Stop paying 15-20% OTA commissions. Launch your branded booking site in minutes.</p>
       </div>
 
-      <div class="booking-demo-layout" style="display:flex;gap:28px;align-items:flex-start;">
+      <div class="booking-demo-layout">
         <!-- Controls -->
-        <div class="booking-demo-controls" style="width:300px;flex-shrink:0;">
-          <div style="background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:20px;padding:28px;box-shadow:0 4px 24px rgba(0,0,0,0.04);">
-            <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+        <div class="booking-demo-controls">
+          <div class="booking-controls-card">
+            <div class="booking-controls-heading">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M12 2L2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
               Customise Your Site
             </div>
 
             <!-- Brand Name -->
-            <div style="margin-bottom:16px;">
-              <label style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Brand Name</label>
-              <input type="text" id="demoName" value="Luxe Stays" style="width:100%;height:44px;border:1px solid #e8e5df;border-radius:10px;padding:0 14px;font-size:16px;color:#1a1a1a;outline:none;transition:all 0.2s;" onfocus="this.style.borderColor='#1e9a80';this.style.boxShadow='0 0 0 3px rgba(30,154,128,0.08)'" onblur="this.style.borderColor='#e8e5df';this.style.boxShadow='none'">
+            <div class="booking-form-group">
+              <label class="booking-form-label">Brand Name</label>
+              <input type="text" id="demoName" value="Luxe Stays" class="booking-form-input">
             </div>
 
             <!-- Logo Upload -->
-            <div style="margin-bottom:16px;">
-              <label style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Logo</label>
-              <label id="logoUploadZone" style="display:flex;align-items:center;justify-content:center;gap:8px;height:64px;border:2px dashed #e8e5df;border-radius:10px;cursor:pointer;transition:all 0.2s;background:#fafafa;font-size:12px;color:#6b7280;" onmouseover="this.style.borderColor='#1e9a80';this.style.background='rgba(30,154,128,0.02)'" onmouseout="this.style.borderColor='#e8e5df';this.style.background='#fafafa'">
+            <div class="booking-form-group">
+              <label class="booking-form-label">Logo</label>
+              <label id="logoUploadZone" class="booking-upload-zone booking-upload-logo">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span id="logoLabel">Upload your logo</span>
                 <input type="file" id="logoInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
@@ -447,9 +447,9 @@
             </div>
 
             <!-- Hero Background -->
-            <div style="margin-bottom:16px;">
-              <label style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Hero Background</label>
-              <label style="display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border:2px dashed #e8e5df;border-radius:10px;cursor:pointer;transition:all 0.2s;background:#fafafa;font-size:12px;color:#6b7280;" onmouseover="this.style.borderColor='#1e9a80'" onmouseout="this.style.borderColor='#e8e5df'">
+            <div class="booking-form-group">
+              <label class="booking-form-label">Hero Background</label>
+              <label class="booking-upload-zone">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <span id="bgLabel">Change background</span>
                 <input type="file" id="bgInput" accept="image/*" style="display:none;" onchange="handleBgUpload(this)">
@@ -457,34 +457,34 @@
             </div>
 
             <!-- Accent Colour -->
-            <div style="margin-bottom:20px;">
-              <label style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Accent Colour</label>
-              <div style="display:flex;gap:8px;">
-                <button class="demo-color active" data-color="#10b981" style="width:36px;height:36px;border-radius:10px;background:#10b981;border:2.5px solid #10b981;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
-                <button class="demo-color" data-color="#3b82f6" style="width:36px;height:36px;border-radius:10px;background:#3b82f6;border:2.5px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
-                <button class="demo-color" data-color="#8b5cf6" style="width:36px;height:36px;border-radius:10px;background:#8b5cf6;border:2.5px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
-                <button class="demo-color" data-color="#f59e0b" style="width:36px;height:36px;border-radius:10px;background:#f59e0b;border:2.5px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
-                <button class="demo-color" data-color="#ef4444" style="width:36px;height:36px;border-radius:10px;background:#ef4444;border:2.5px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
-                <button class="demo-color" data-color="#1a1a1a" style="width:36px;height:36px;border-radius:10px;background:#1a1a1a;border:2.5px solid transparent;cursor:pointer;transition:all 0.15s;" onclick="pickColor(this)"></button>
+            <div class="booking-form-group">
+              <label class="booking-form-label">Accent Colour</label>
+              <div class="booking-color-row">
+                <button class="demo-color active" data-color="#10b981" style="background:#10b981;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#3b82f6" style="background:#3b82f6;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#8b5cf6" style="background:#8b5cf6;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#f59e0b" style="background:#f59e0b;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#ef4444" style="background:#ef4444;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#1a1a1a" style="background:#1a1a1a;" onclick="pickColor(this)"></button>
               </div>
             </div>
 
             <!-- URL -->
-            <div style="margin-bottom:20px;">
-              <label style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Site URL</label>
-              <div style="display:flex;align-items:center;border:1px solid #e8e5df;border-radius:10px;overflow:hidden;">
-                <input type="text" id="demoSubdomain" value="luxestays" style="flex:1;height:40px;border:none;padding:0 12px;font-size:16px;color:#1a1a1a;outline:none;" readonly>
-                <span style="font-size:11px;color:#6b7280;padding:0 12px;white-space:nowrap;border-left:1px solid #e8e5df;background:#fafafa;">.nfstay.app</span>
+            <div class="booking-form-group">
+              <label class="booking-form-label">Site URL</label>
+              <div class="booking-url-group">
+                <input type="text" id="demoSubdomain" value="luxestays" style="flex:1;height:38px;border:none;padding:0 12px;font-size:13px;color:#1a1a1a;outline:none;" readonly>
+                <span class="booking-url-suffix">.nfstay.app</span>
               </div>
             </div>
 
-            <a href="/signup" style="display:flex;align-items:center;justify-content:center;width:100%;height:44px;border-radius:12px;background:linear-gradient(135deg,#1e9a80,#10b981);color:#fff;font-size:14px;font-weight:600;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(30,154,128,0.2);">Build Your Site Free</a>
-            <p style="text-align:center;font-size:11px;color:#6b7280;margin-top:8px;">No credit card needed</p>
+            <a href="/signup" class="booking-cta-btn">Build Your Site Free</a>
+            <p class="booking-cta-sub">No credit card needed</p>
           </div>
         </div>
 
         <!-- Live Preview -->
-        <div style="flex:1;">
+        <div class="booking-demo-preview">
           <div style="border:1px solid rgba(0,0,0,0.06);border-radius:16px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,0.08);background:#fff;">
             <!-- Browser chrome -->
             <div style="background:linear-gradient(180deg,#f8f9fa,#f3f4f6);border-bottom:1px solid rgba(0,0,0,0.06);padding:12px 16px;display:flex;align-items:center;gap:8px;">
@@ -510,7 +510,7 @@
 
             <!-- Hero -->
             <div style="position:relative;height:220px;overflow:hidden;">
-              <img id="demoHeroImg" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" style="width:100%;height:100%;object-fit:cover;" alt="">
+              <img id="demoHeroImg" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" width="800" height="400" loading="lazy" style="width:100%;height:100%;object-fit:cover;" alt="">
               <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7),rgba(0,0,0,0.15),transparent);"></div>
               <div style="position:absolute;bottom:0;left:0;right:0;padding:24px;">
                 <h3 style="font-size:22px;font-weight:700;color:#fff;margin-bottom:6px;">Find Your Perfect Stay</h3>
@@ -535,15 +535,15 @@
               <span style="font-size:13px;font-weight:600;color:#1a1a1a;display:block;margin-bottom:12px;">Featured Properties</span>
               <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
                 <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
-                  <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=300&q=80" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
                   <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Modern City Apartment</span><span style="font-size:10px;color:#6b7280;">London, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;120 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
                 </div>
                 <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
-                  <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=300&q=80" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
                   <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Luxury Penthouse Suite</span><span style="font-size:10px;color:#6b7280;">Manchester, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;185 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
                 </div>
                 <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
-                  <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=300&q=80" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
                   <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Cosy Studio Retreat</span><span style="font-size:10px;color:#6b7280;">Birmingham, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;85 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
                 </div>
               </div>
@@ -626,27 +626,27 @@
   </script>
 
   <!-- JOURNEY — GSAP EXPANDING CARDS -->
-  <section id="journey" style="background:#f3f3ee;padding:140px 0;position:relative;overflow:hidden;">
+  <section id="journey" class="journey-section">
     <!-- Floating dots -->
-    <div id="journeyDots" style="position:absolute;inset:0;pointer-events:none;"></div>
+    <div id="journeyDots" class="journey-dots"></div>
 
-    <div style="max-width:900px;margin:0 auto;padding:0 24px;position:relative;">
+    <div class="journey-container">
       <!-- Step counter -->
-      <div id="stepCounter" style="position:absolute;top:0;right:24px;font-size:0.8rem;color:#6b7280;letter-spacing:0.08em;font-weight:500;">
-        <span id="counterNum" style="display:inline-block;">01</span> / 06
+      <div id="stepCounter" class="journey-counter">
+        <span id="counterNum">01</span> / 06
       </div>
 
       <!-- Heading -->
-      <div class="journey-heading" style="margin-bottom:64px;">
-        <h2 style="font-size:40px;font-weight:700;color:#1a1a1a;line-height:1.15;letter-spacing:0.01em;">
+      <div class="journey-heading">
+        <h2>
           <span class="jword">From</span> <span class="jword">first</span> <span class="jword">search</span><br>
-          <span class="jword">to</span> <span class="jword">first</span> <span class="jword" style="position:relative;display:inline-block;">profit<span class="profit-underline" style="position:absolute;bottom:-4px;left:0;width:100%;height:3px;background:#1e9a80;border-radius:2px;transform:scaleX(0);transform-origin:left;"></span></span>
+          <span class="jword">to</span> <span class="jword">first</span> <span class="jword jword-profit">profit<span class="profit-underline"></span></span>
         </h2>
-        <p style="font-size:15px;color:#6b7280;margin-top:12px;">Six steps. One platform. Everything you need.</p>
+        <p>Six steps. One platform. Everything you need.</p>
       </div>
 
       <!-- Card stack -->
-      <div id="journeyStack" style="display:flex;flex-direction:column;gap:0;">
+      <div id="journeyStack" class="journey-stack">
         <div class="step-card" data-step="0">
           <div class="sc-collapsed"><span class="sc-pill">01</span><span class="sc-title">Browse 1,800+ verified deals</span><span class="sc-tag-mini">Deal Marketplace</span><span class="sc-chev">&rsaquo;</span></div>
           <div class="sc-body">
@@ -721,109 +721,39 @@
     </div>
   </section>
 
-  <style>
-  /* Step card styles */
-  .step-card {
-    background:#fff;border:1px solid rgba(30,154,128,0.1);border-radius:20px;
-    height:72px;overflow:hidden;opacity:0.5;position:relative;
-    transition:height 0.55s cubic-bezier(0.22,1,0.36,1),opacity 0.4s ease,box-shadow 0.4s ease,border-color 0.4s ease;
-    cursor:pointer;
-  }
-  .sc-collapsed {
-    height:72px;padding:0 32px;display:flex;align-items:center;gap:14px;
-  }
-  .sc-pill {
-    background:rgba(30,154,128,0.08);color:#1e9a80;border-radius:100px;
-    font-size:0.72rem;font-weight:700;padding:4px 10px;flex-shrink:0;
-  }
-  .sc-title { font-size:1rem;font-weight:600;color:#1a1a1a;flex:1; }
-  .sc-tag-mini { font-size:0.7rem;color:rgba(30,154,128,0.5);flex-shrink:0; }
-  .sc-chev { font-size:1.2rem;color:#6b7280;flex-shrink:0;transition:transform 0.35s cubic-bezier(0.22,1,0.36,1); }
-  .sc-body { padding:0 32px 32px; }
-  .sc-body p { font-size:0.95rem;color:#6b7280;line-height:1.7;margin-bottom:12px; }
-  .sc-tag {
-    display:inline-block;background:rgba(30,154,128,0.08);border:1px solid rgba(30,154,128,0.2);
-    color:#1e9a80;border-radius:100px;font-size:0.75rem;font-weight:600;padding:4px 14px;
-  }
-  .sc-progress { height:3px;background:#e8e5df;border-radius:2px;overflow:hidden;margin-top:20px; }
-  .progress-fill { height:100%;background:#1e9a80;border-radius:2px;width:100%;transform:scaleX(0);transform-origin:left; }
-  .accent-bar {
-    position:absolute;left:0;top:16px;bottom:16px;width:3px;
-    background:linear-gradient(to bottom,#1e9a80,rgba(30,154,128,0.2));
-    border-radius:0 2px 2px 0;transform:scaleY(0);transform-origin:top;
-  }
-  .shimmer-layer {
-    position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.55) 50%,transparent 65%);
-    transform:translateX(-100%);
-  }
-  .sc-connector { width:2px;height:16px;margin:0 0 0 35px;border-left:2px dashed rgba(30,154,128,0.2); }
-
-  /* Active state */
-  .step-card.active {
-    opacity:1;
-    border-color:rgba(30,154,128,0.25);
-    animation:glowBreathe 3s ease-in-out infinite;
-  }
-  .step-card.active .sc-chev { transform:rotate(90deg); }
-  @keyframes glowBreathe {
-    0%,100% { box-shadow:0 0 0 1px rgba(30,154,128,0.1),0 8px 48px rgba(30,154,128,0.08); }
-    50% { box-shadow:0 0 0 1px rgba(30,154,128,0.2),0 8px 48px rgba(30,154,128,0.18),0 0 32px rgba(30,154,128,0.08); }
-  }
-
-  /* Mobile */
-  @media(max-width:768px){
-    .step-card { height:64px; }
-    .sc-collapsed { height:64px;padding:0 20px;gap:10px; }
-    .sc-title { font-size:0.85rem; }
-    .sc-tag-mini { display:none; }
-    .sc-body { padding:0 20px 24px; }
-    .sc-connector { display:none; }
-    #stepCounter { display:none; }
-    #journey { padding:80px 0; }
-    .journey-heading h2 { font-size:28px; }
-  }
-
-  @media(prefers-reduced-motion:reduce){
-    .step-card,.accent-bar,.shimmer-layer,.progress-fill,.sc-chev{transition-duration:0.01ms!important;}
-    .step-card.active{animation:none!important;}
-  }
-  </style>
 
   <script>
-  // GSAP Journey Animation
+  // Journey Animation — IntersectionObserver (no ScrollTrigger)
   (function(){
-    if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
-    gsap.registerPlugin(ScrollTrigger);
-
-    // Smooth scroll: native (Lenis removed — was causing navbar/tooltip conflicts)
-
-    // Heading word entrance
-    gsap.from('.jword', {
-      y: 60, opacity: 0, duration: 0.9, stagger: 0.07, ease: 'power4.out',
-      scrollTrigger: { trigger: '.journey-heading', start: 'top 80%' }
-    });
-    gsap.from('.profit-underline', {
-      scaleX: 0, duration: 0.8, ease: 'power3.out', delay: 0.6,
-      scrollTrigger: { trigger: '.journey-heading', start: 'top 80%' }
-    });
+    // Heading word entrance via IntersectionObserver
+    var headingObs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          var words = document.querySelectorAll('.jword');
+          words.forEach(function(w,i){
+            setTimeout(function(){ w.classList.add('jword-visible'); }, i * 70);
+          });
+          var underline = document.querySelector('.profit-underline');
+          if(underline) setTimeout(function(){ underline.classList.add('underline-visible'); }, 600);
+          headingObs.unobserve(e.target);
+        }
+      });
+    }, {threshold:0.2});
+    var jh = document.querySelector('.journey-heading');
+    if(jh) headingObs.observe(jh);
 
     // Cards
     var cards = document.querySelectorAll('.step-card');
     var currentCard = null;
 
     function expandCard(card) {
-      // Measure full height first
       card.style.height = 'auto';
       card.style.overflow = 'hidden';
       var fullHeight = card.scrollHeight;
       card.style.height = (window.innerWidth <= 768 ? '64px' : '72px');
-      
-      // Force reflow then animate
       card.offsetHeight;
       card.classList.add('active');
       card.style.height = fullHeight + 'px';
-      
       card.addEventListener('transitionend', function handler(e) {
         if (e.propertyName === 'height') {
           card.style.height = 'auto';
@@ -831,28 +761,28 @@
         }
       });
 
-      // Accent bar
       var bar = card.querySelector('.accent-bar');
-      if (bar) gsap.fromTo(bar, {scaleY:0}, {scaleY:1, duration:0.5, ease:'power3.out', delay:0.1});
+      if (bar) setTimeout(function(){ bar.classList.add('bar-visible'); }, 100);
 
-      // Body rows stagger
       var rows = card.querySelectorAll('.card-body-row');
-      gsap.fromTo(rows, {y:16, opacity:0}, {y:0, opacity:1, duration:0.45, stagger:0.08, ease:'power3.out', delay:0.15});
+      rows.forEach(function(row, i){
+        setTimeout(function(){ row.classList.add('row-visible'); }, 150 + i * 80);
+      });
 
-      // Progress bar
       var fill = card.querySelector('.progress-fill');
-      if (fill) gsap.fromTo(fill, {scaleX:0}, {scaleX:1, duration:1.2, ease:'power3.out', delay:0.3});
+      if (fill) setTimeout(function(){ fill.classList.add('fill-visible'); }, 300);
 
-      // Shimmer sweep
       var shimmer = card.querySelector('.shimmer-layer');
-      if (shimmer) gsap.fromTo(shimmer, {x:'-100%'}, {x:'200%', duration:0.7, ease:'power2.inOut', delay:0.5});
+      if (shimmer) setTimeout(function(){ shimmer.classList.add('shimmer-go'); }, 500);
 
-      // Sonar ripple
       for (var r = 0; r < 2; r++) {
-        var ripple = document.createElement('span');
-        ripple.style.cssText = 'position:absolute;left:-20px;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:rgba(30,154,128,0.15);pointer-events:none;';
-        card.appendChild(ripple);
-        gsap.to(ripple, {scale:4, opacity:0, duration:0.9, delay:r*0.2, ease:'power2.out', onComplete:function(){this.targets()[0].remove();}});
+        (function(delay){
+          var ripple = document.createElement('span');
+          ripple.className = 'journey-sonar';
+          card.appendChild(ripple);
+          setTimeout(function(){ ripple.classList.add('sonar-go'); }, delay);
+          setTimeout(function(){ ripple.remove(); }, delay + 1000);
+        })(r * 200);
       }
     }
 
@@ -864,35 +794,61 @@
           card.style.height = (window.innerWidth <= 768 ? '64px' : '72px');
         });
       });
+      var bar = card.querySelector('.accent-bar');
+      if(bar) bar.classList.remove('bar-visible');
+      card.querySelectorAll('.card-body-row').forEach(function(r){ r.classList.remove('row-visible'); });
+      var fill = card.querySelector('.progress-fill');
+      if(fill) fill.classList.remove('fill-visible');
+      var shimmer = card.querySelector('.shimmer-layer');
+      if(shimmer) shimmer.classList.remove('shimmer-go');
     }
 
     function updateCounter(n) {
       var el = document.getElementById('counterNum');
       if (!el) return;
-      gsap.to(el, {y:-24, opacity:0, duration:0.25, onComplete:function(){
+      el.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+      el.style.transform = 'translateY(-24px)';
+      el.style.opacity = '0';
+      setTimeout(function(){
         el.textContent = (n < 10 ? '0' : '') + n;
-        gsap.fromTo(el, {y:24, opacity:0}, {y:0, opacity:1, duration:0.25});
-      }});
+        el.style.transform = 'translateY(24px)';
+        requestAnimationFrame(function(){
+          el.style.transform = 'translateY(0)';
+          el.style.opacity = '1';
+        });
+      }, 250);
     }
 
-    cards.forEach(function(card, i) {
-      ScrollTrigger.create({
-        trigger: card,
-        start: 'top 55%',
-        end: 'bottom 20%',
-        onEnter: function(){ activate(card, i); },
-        onEnterBack: function(){ activate(card, i); }
+    var cardObs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          var card = e.target;
+          var i = Array.prototype.indexOf.call(cards, card);
+          if (currentCard && currentCard !== card) collapseCard(currentCard);
+          expandCard(card);
+          currentCard = card;
+          updateCounter(i + 1);
+        }
+      });
+    }, {threshold:0.3, rootMargin:'0px 0px -20% 0px'});
+
+    cards.forEach(function(card){ cardObs.observe(card); });
+
+    cards.forEach(function(card, i){
+      card.addEventListener('click', function(){
+        if(card.classList.contains('active')){
+          collapseCard(card);
+          currentCard = null;
+        } else {
+          if(currentCard && currentCard !== card) collapseCard(currentCard);
+          expandCard(card);
+          currentCard = card;
+          updateCounter(i + 1);
+        }
       });
     });
 
-    function activate(card, i) {
-      if (currentCard && currentCard !== card) collapseCard(currentCard);
-      expandCard(card);
-      currentCard = card;
-      updateCounter(i + 1);
-    }
-
-    // Floating dots
+    // Floating dots (CSS animations)
     var dotsContainer = document.getElementById('journeyDots');
     if (dotsContainer) {
       var durations = [7,9,11,8,10,6];
@@ -902,7 +858,6 @@
         dot.style.cssText = 'position:absolute;width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:rgba(30,154,128,'+(0.05+Math.random()*0.05)+');left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;animation:floatDot'+d+' '+durations[d]+'s ease-in-out infinite;';
         dotsContainer.appendChild(dot);
       }
-      // Add keyframes dynamically
       var style = document.createElement('style');
       var kf = '';
       for (var k = 0; k < 6; k++) {
@@ -965,7 +920,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;NFsTay helped me close my first three deals in under a month. The CRM is the reason I stay organised.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=12" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=12" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sarah K.</div><div style="font-size:11px;color:#6b7280;">Manchester</div></div>
           </div>
         </div>
@@ -973,7 +928,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The Academy alone paid for itself. I went from zero to signing my first property in six weeks.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=15" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=15" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Tom P.</div><div style="font-size:11px;color:#6b7280;">London</div></div>
           </div>
         </div>
@@ -981,7 +936,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Every deal is verified. The earnings estimator is accurate. I use it before every viewing.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=5" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=5" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Priya S.</div><div style="font-size:11px;color:#6b7280;">Birmingham</div></div>
           </div>
         </div>
@@ -989,7 +944,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The inbox saved me hours of back-and-forth emails. Everything in one place.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=33" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=33" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">James H.</div><div style="font-size:11px;color:#6b7280;">Liverpool</div></div>
           </div>
         </div>
@@ -997,7 +952,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I closed two deals in my first month. The pipeline keeps me on track.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=9" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=9" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Rachel L.</div><div style="font-size:11px;color:#6b7280;">Bristol</div></div>
           </div>
         </div>
@@ -1005,7 +960,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Best investment I have made. The university content is world-class.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=25" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=25" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">David W.</div><div style="font-size:11px;color:#6b7280;">Leeds</div></div>
           </div>
         </div>
@@ -1013,7 +968,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The direct booking site builder paid for the subscription in week one.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=44" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=44" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Amara O.</div><div style="font-size:11px;color:#6b7280;">Nottingham</div></div>
           </div>
         </div>
@@ -1021,7 +976,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;From zero properties to five in eight months. NFsTay made it possible.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=11" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=11" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Callum M.</div><div style="font-size:11px;color:#6b7280;">Sheffield</div></div>
           </div>
         </div>
@@ -1029,7 +984,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The earnings estimator is scary accurate. I trust it more than my spreadsheets.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=23" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=23" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Fatima R.</div><div style="font-size:11px;color:#6b7280;">Cardiff</div></div>
           </div>
         </div>
@@ -1037,7 +992,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I love that every deal is landlord-approved. No wasted viewings.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=8" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=8" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Michael T.</div><div style="font-size:11px;color:#6b7280;">Newcastle</div></div>
           </div>
         </div>
@@ -1045,7 +1000,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The CRM pipeline is exactly what I needed. Visual, simple, effective.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=36" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=36" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sophie B.</div><div style="font-size:11px;color:#6b7280;">Edinburgh</div></div>
           </div>
         </div>
@@ -1053,7 +1008,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;NFsTay University took me from knowing nothing to running two properties.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=17" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=17" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Daniel F.</div><div style="font-size:11px;color:#6b7280;">Glasgow</div></div>
           </div>
         </div>
@@ -1061,7 +1016,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The agent programme earns me passive income just by sharing my link.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=41" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=41" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Hannah G.</div><div style="font-size:11px;color:#6b7280;">Manchester</div></div>
           </div>
         </div>
@@ -1069,7 +1024,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Finally a platform built specifically for UK rent-to-rent operators.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=7" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=7" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Oliver P.</div><div style="font-size:11px;color:#6b7280;">London</div></div>
           </div>
         </div>
@@ -1077,7 +1032,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The unified inbox is a game-changer. No more lost messages.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=29" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=29" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Emma C.</div><div style="font-size:11px;color:#6b7280;">Birmingham</div></div>
           </div>
         </div>
@@ -1085,7 +1040,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I have referred eight people. The commissions are genuinely good.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=13" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=13" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Jack S.</div><div style="font-size:11px;color:#6b7280;">Leeds</div></div>
           </div>
         </div>
@@ -1093,7 +1048,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Compliance-checked deals save me so much due diligence time.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=38" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=38" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Lucy W.</div><div style="font-size:11px;color:#6b7280;">Bristol</div></div>
           </div>
         </div>
@@ -1101,151 +1056,7 @@
           <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The booking site builder is incredibly easy. Live in under an hour.&rdquo;</p>
           <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=19" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Nathan D.</div><div style="font-size:11px;color:#6b7280;">Liverpool</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;NFsTay helped me close my first three deals in under a month. The CRM is the reason I stay organised.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=12" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sarah K.</div><div style="font-size:11px;color:#6b7280;">Manchester</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The Academy alone paid for itself. I went from zero to signing my first property in six weeks.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=15" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Tom P.</div><div style="font-size:11px;color:#6b7280;">London</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Every deal is verified. The earnings estimator is accurate. I use it before every viewing.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=5" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Priya S.</div><div style="font-size:11px;color:#6b7280;">Birmingham</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The inbox saved me hours of back-and-forth emails. Everything in one place.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=33" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">James H.</div><div style="font-size:11px;color:#6b7280;">Liverpool</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I closed two deals in my first month. The pipeline keeps me on track.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=9" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Rachel L.</div><div style="font-size:11px;color:#6b7280;">Bristol</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Best investment I have made. The university content is world-class.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=25" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">David W.</div><div style="font-size:11px;color:#6b7280;">Leeds</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The direct booking site builder paid for the subscription in week one.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=44" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Amara O.</div><div style="font-size:11px;color:#6b7280;">Nottingham</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;From zero properties to five in eight months. NFsTay made it possible.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=11" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Callum M.</div><div style="font-size:11px;color:#6b7280;">Sheffield</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The earnings estimator is scary accurate. I trust it more than my spreadsheets.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=23" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Fatima R.</div><div style="font-size:11px;color:#6b7280;">Cardiff</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I love that every deal is landlord-approved. No wasted viewings.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=8" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Michael T.</div><div style="font-size:11px;color:#6b7280;">Newcastle</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The CRM pipeline is exactly what I needed. Visual, simple, effective.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=36" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sophie B.</div><div style="font-size:11px;color:#6b7280;">Edinburgh</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;NFsTay University took me from knowing nothing to running two properties.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=17" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Daniel F.</div><div style="font-size:11px;color:#6b7280;">Glasgow</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The agent programme earns me passive income just by sharing my link.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=41" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Hannah G.</div><div style="font-size:11px;color:#6b7280;">Manchester</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Finally a platform built specifically for UK rent-to-rent operators.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=7" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Oliver P.</div><div style="font-size:11px;color:#6b7280;">London</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The unified inbox is a game-changer. No more lost messages.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=29" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Emma C.</div><div style="font-size:11px;color:#6b7280;">Birmingham</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I have referred eight people. The commissions are genuinely good.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=13" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Jack S.</div><div style="font-size:11px;color:#6b7280;">Leeds</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Compliance-checked deals save me so much due diligence time.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=38" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
-            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Lucy W.</div><div style="font-size:11px;color:#6b7280;">Bristol</div></div>
-          </div>
-        </div>
-<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
-          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The booking site builder is incredibly easy. Live in under an hour.&rdquo;</p>
-          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
-            <img src="https://i.pravatar.cc/36?img=19" width="32" height="32" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <img src="https://i.pravatar.cc/36?img=19" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
             <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Nathan D.</div><div style="font-size:11px;color:#6b7280;">Liverpool</div></div>
           </div>
         </div>
@@ -1260,9 +1071,16 @@
     }
     .review-track:hover { animation-play-state: paused; }
   </style>
+  <script>
+  // Clone review slides for seamless infinite loop
+  document.addEventListener('DOMContentLoaded', function() {
+    var track = document.querySelector('.review-track');
+    if (track) { track.innerHTML = track.innerHTML + track.innerHTML; }
+  });
+  </script>
 
   <!-- PRICING (£67 crossed out, £5 big) -->
-  <div class="s bg-white sr" id="pricing"><div class="wrap narrow"><div class="sh"><h2 data-i18n="price_h">Simple pricing for serious operators</h2><p>One plan. Everything included. Cancel any time.</p></div>
+  <div class="s bg-white sr"><div class="wrap narrow"><div class="sh"><h2 data-i18n="price_h">Simple pricing for serious operators</h2><p>One plan. Everything included. Cancel any time.</p></div>
     <div class="price-card">
       <div class="price-title">Full Access</div>
       <div style="display:flex;align-items:baseline;justify-content:center;gap:12px;margin:8px 0;">
@@ -1324,12 +1142,6 @@
       a.style.background = a.getAttribute('data-lang') === lang ? 'rgba(30,154,128,0.06)' : '';
     });
   };
-
-  // Close language dropdown on outside click
-  document.addEventListener('click', function(e) {
-    var dd = document.querySelector('.lang-dropdown');
-    if (dd && !dd.contains(e.target)) dd.classList.remove('open');
-  });
 
   // Use onclick directly on language links for maximum reliability
   document.querySelectorAll('[data-lang]').forEach(function(a) {

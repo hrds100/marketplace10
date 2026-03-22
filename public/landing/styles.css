@@ -29,19 +29,9 @@ body {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 400;
-  line-height: 1.6;
+  line-height: 19.6px;
   color: rgb(102, 109, 128);
   background-color: #F9F9F9;
-}
-
-/* ── GLOBAL: Reduced motion ── */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-  }
 }
 a { text-decoration: none; color: inherit; }
 img { max-width: 100%; height: auto; }
@@ -262,15 +252,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 }
 
 .nav-btn:hover {
-  transform: translateY(-1px) scale(1.02);
-  box-shadow: 0 4px 12px rgba(30,154,128,0.25);
-}
-.nav-btn:active {
-  transform: scale(0.97);
-}
-.nav-btn:focus-visible {
-  outline: 2px solid #1c1c1c;
-  outline-offset: 3px;
+  transform: translateY(-1px);
 }
 
 /* Shine sweep on hover */
@@ -415,7 +397,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 }
 
 .hero-cta {
-  background-color: #1c1c1c;
+  background-color: #1e9a80;
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -430,9 +412,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   transition: transform 0.2s ease;
   cursor: pointer;
 }
-.hero-cta:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-.hero-cta:active { transform: scale(0.97); }
-.hero-cta:focus-visible { outline: 2px solid #1c1c1c; outline-offset: 3px; }
+.hero-cta:hover { transform: translateY(-1px); }
 .hero-cta::after {
   content: '';
   position: absolute;
@@ -457,9 +437,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   transition: transform 0.2s ease;
   cursor: pointer;
 }
-.hero-login:hover { transform: translateY(-1px) scale(1.02); }
-.hero-login:active { transform: scale(0.97); }
-.hero-login:focus-visible { outline: 2px solid #1c1c1c; outline-offset: 3px; }
+.hero-login:hover { transform: translateY(-1px); }
 
 /* ====================================================
    HERO DEMO COMPONENT — the main interactive piece
@@ -1723,7 +1701,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 
 /* ---- Responsive: Tablet (≤991px / medium breakpoint) ---- */
 @media (max-width: 991px) {
-  h1, .hero-heading { font-size: 46px; line-height: 52px; }
+  h1, .hero-heading { font-size: 36px; line-height: 40px; }
   h2 { font-size: 32px; line-height: 38px; }
   .padding-global { padding-left: 1.5rem; padding-right: 1.5rem; }
   .padding-section-large { padding-top: 80px; padding-bottom: 80px; }
@@ -1779,11 +1757,11 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
   .chat-send-btn { width: 28px; height: 28px; }
   .click-here-tooltip { font-size: 10px; padding: 4px 10px; right: 12px; bottom: 52px; }
   .chat-input-glow { left: 8px; right: 8px; top: 6px; bottom: 10px; border-radius: 16px; }
-  .hero-text-block { padding: 100px 0 20px; }
-  .hero-heading { font-size: 46px; line-height: 52px; }
-  .hero-heading .italic-accent { font-size: 46px; }
-  .hero-buttons { gap: 10px; flex-direction: row; }
-  .hero-cta, .hero-login { padding: 10px 24px; font-size: 14px; }
+  .hero-text-block { padding: 32px 0 20px; }
+  .hero-heading { font-size: 26px; line-height: 32px; }
+  .hero-heading .italic-accent { font-size: 26px; }
+  .hero-buttons { gap: 8px; }
+  .hero-cta, .hero-login { padding: 8px 20px; font-size: 13px; }
   .animated-cursor { display: none !important; }
   .hero-scroll-indicator { display: none; }
 
@@ -1811,15 +1789,14 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 
 /* ---- Responsive: Small mobile (≤479px) ---- */
 @media (max-width: 479px) {
-  h1, .hero-heading { font-size: 40px; line-height: 46px; }
-  .hero-heading .italic-accent { font-size: 40px; }
+  h1, .hero-heading { font-size: 28px; line-height: 32px; }
   .section { margin: 8px; border-radius: 20px; }
   .nav_fixed { margin: 0.5rem 0.5rem 0; }
   .padding-global { padding-left: 1.25rem; padding-right: 1.25rem; }
   .padding-section-large { padding-top: 48px; padding-bottom: 48px; }
-  .hero-buttons { flex-direction: row; }
+  .hero-buttons { flex-direction: column; width: 100%; }
   .hero-buttons .hero-cta,
-  .hero-buttons .hero-login { width: auto; text-align: center; }
+  .hero-buttons .hero-login { width: 100%; text-align: center; }
   .templates-grid { grid-template-columns: 1fr; }
   .why-choose-container { padding: 24px; }
   .cta-inner { margin: 16px; padding: 48px 24px; }
@@ -1829,280 +1806,474 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 }
 
 /* ════════════════════════════════════════════
-   LANDING PAGE AUDIT FIXES — All Phases
+   TASK 2: Journey section — IntersectionObserver CSS
    ════════════════════════════════════════════ */
 
-/* ── PHASE 2: SPACING & RHYTHM ── */
-/* Body copy line-height already fixed to 1.6 above */
+/* Word entrance (replaces gsap.from .jword) */
+.jword {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(60px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.jword.jword-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-/* Ensure hero buttons have adequate tap targets */
-.hero-cta,
-.hero-login {
-  min-height: 44px;
-  display: inline-flex;
+/* Profit underline (replaces gsap.from .profit-underline) */
+.profit-underline {
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #1e9a80;
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.profit-underline.underline-visible {
+  transform: scaleX(1);
+}
+
+/* jword-profit: needs position:relative for underline */
+.jword-profit {
+  position: relative;
+  display: inline-block;
+}
+
+/* Accent bar animation (replaces gsap) */
+.accent-bar {
+  transform: scaleY(0);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.accent-bar.bar-visible {
+  transform: scaleY(1);
+}
+
+/* Body row stagger (replaces gsap) */
+.card-body-row {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-body-row.row-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Progress fill (replaces gsap) */
+.progress-fill {
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.progress-fill.fill-visible {
+  transform: scaleX(1) !important;
+}
+
+/* Shimmer sweep (replaces gsap) */
+.shimmer-layer {
+  transition: transform 0.7s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.shimmer-layer.shimmer-go {
+  transform: translateX(200%) !important;
+}
+
+/* Sonar ripple (replaces gsap sonar) */
+.journey-sonar {
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  border-radius: 50%;
+  background: rgba(30,154,128,0.15);
+  pointer-events: none;
+  transform: scale(1);
+  opacity: 1;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.9s ease-out;
+}
+.journey-sonar.sonar-go {
+  transform: scale(4);
+  opacity: 0;
+}
+
+/* ════════════════════════════════════════════
+   TASK 4: Booking demo — refactored CSS classes
+   ════════════════════════════════════════════ */
+.booking-demo-section {
+  padding: 80px 0;
+  overflow: hidden;
+}
+.booking-demo-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.booking-demo-layout {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+}
+.booking-demo-controls {
+  width: 300px;
+  flex-shrink: 0;
+}
+.booking-demo-preview {
+  flex: 1;
+}
+.booking-controls-card {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+}
+.booking-controls-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.booking-form-group {
+  margin-bottom: 16px;
+}
+.booking-form-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 5px;
+}
+.booking-form-input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #e8e5df;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 16px;
+  color: #1a1a1a;
+  outline: none;
+  transition: all 0.2s;
+}
+.booking-form-input:focus {
+  border-color: #1e9a80;
+  box-shadow: 0 0 0 3px rgba(30,154,128,0.08);
+}
+.booking-upload-zone {
+  display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border: 2px dashed #e8e5df;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fafafa;
+  font-size: 12px;
+  color: #6b7280;
+}
+.booking-upload-zone:hover {
+  border-color: #1e9a80;
+  background: rgba(30,154,128,0.02);
+}
+.booking-upload-logo {
+  height: 64px;
+}
+.booking-color-row {
+  display: flex;
+  gap: 8px;
+}
+.demo-color {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.demo-color.active {
+  border-color: inherit;
+}
+.booking-url-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e8e5df;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.booking-url-input {
+  flex: 1;
+  height: 40px;
+  border: none;
+  padding: 0 12px;
+  font-size: 16px;
+  color: #1a1a1a;
+  outline: none;
+}
+.booking-url-suffix {
+  font-size: 11px;
+  color: #6b7280;
+  padding: 0 12px;
+  white-space: nowrap;
+  border-left: 1px solid #e8e5df;
+  background: #fafafa;
+}
+.booking-cta-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1e9a80, #10b981);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(30,154,128,0.2);
+}
+.booking-cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(30,154,128,0.3);
+}
+.booking-cta-sub {
+  text-align: center;
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 8px;
 }
 
-/* Booking site section: consistent padding on mobile */
-@media (max-width: 768px) {
-  .s.bg-white[style*="padding:80px"] { padding: 56px 0 !important; }
-}
-
-/* Booking site demo: two-column to single column on mobile */
-@media (max-width: 991px) {
-  #hero ~ .s.bg-white div[style*="display:flex;gap:28px"] {
-    flex-direction: column !important;
-  }
-  #hero ~ .s.bg-white div[style*="width:300px"] {
-    width: 100% !important;
-  }
-}
-
-/* ── PHASE 3: BUTTON AUDIT ── */
-/* Focus-visible on all interactive buttons */
-.btn:focus-visible,
-.nfs-cta-btn:focus-visible,
-.persona-pill:focus-visible,
-.pricing-btn:focus-visible,
-.chat-tab:focus-visible,
-.nfs-finale-btn:focus-visible,
-.prem-academy-btn:focus-visible,
-.chat-send-btn:focus-visible,
-a[href]:focus-visible {
-  outline: 2px solid #1c1c1c;
-  outline-offset: 3px;
-}
-
-/* Active/pressed states for all buttons */
-.btn:active { transform: scale(0.97); }
-.btn-green:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 4px 12px rgba(30,154,128,0.25); }
-.btn-outline:hover { transform: translateY(-1px); }
-.btn-white:hover { transform: translateY(-1px); }
-
-/* Minimum tap targets */
-.btn { min-height: 44px; }
-.btn-sm { min-height: 36px; }
-.persona-pill { min-height: 44px; }
-
-/* Pricing CTA full-width: ensure centred text */
-.btn-full { justify-content: center; text-align: center; }
-
-/* ── PHASE 4: EFFECTS & ANIMATION AUDIT ── */
-/* Cap max-height transition to 600ms (was 800ms on tl-step) */
-.tl-step {
-  transition: opacity 600ms cubic-bezier(0.22,1,0.36,1),
-              transform 600ms cubic-bezier(0.22,1,0.36,1),
-              max-height 600ms cubic-bezier(0.22,1,0.36,1);
-}
-
-/* Review carousel: respect reduced-motion */
-@media (prefers-reduced-motion: reduce) {
-  .review-track { animation: none !important; }
-  .step-card { transition: none !important; }
-  .step-card.active { animation: none !important; }
-}
-
-/* Card hover states: consistent translateY(-4px) + box-shadow lift */
-.deal-card:hover,
-.course:hover,
-.card:hover,
-.hub-card:hover,
-.review-slide:hover {
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-  transform: translateY(-4px);
-}
-.review-slide {
-  transition: box-shadow 200ms ease-out, transform 200ms ease-out;
-}
-
-/* Transition on persona pills */
-.persona-pill {
-  transition: all 200ms cubic-bezier(0.22,1,0.36,1);
-}
-
-/* ── PHASE 5: MOBILE AUDIT (320px-767px) ── */
-@media (max-width: 767px) {
-  /* Hero heading scale down */
-  .hero-heading,
-  .hero-heading .italic-accent {
-    font-size: 32px !important;
-    line-height: 38px !important;
-  }
-
-  /* Prevent horizontal overflow */
-  body {
-    overflow-x: hidden;
-  }
-
-  /* Section headings: max 2.5rem */
-  .sh h2 {
-    font-size: 24px;
-  }
-
-  /* Trust stripe: proper spacing when stacked */
-  .trust-stripe .ts-item {
-    padding: 16px 0;
-  }
-
-  /* Form inputs: 16px font to prevent iOS zoom */
-  input[type="text"],
-  input[type="email"],
-  select,
-  textarea,
-  .play-input,
-  .play-select {
-    font-size: 16px !important;
-  }
-
-  /* Price card: scale price text down */
-  .price-amt {
-    font-size: 42px;
-  }
-
-  /* CTA band: scale heading down */
-  .cta-band h2 {
-    font-size: 28px !important;
-    line-height: 1.15 !important;
-  }
-
-  /* Pipeline overflow: force horizontal scroll */
-  .pipeline {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Inbox mock: stack vertically */
-  .inbox-mock {
-    flex-direction: column;
-  }
-  .inbox-list {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-    max-height: 200px;
-    overflow-y: auto;
-  }
-
-  /* Footer: reduce padding */
-  .footer {
-    padding: 32px 0 16px;
-  }
-
-  /* Journey section: reduce padding */
-  #journey {
-    padding: 64px 0 !important;
-  }
-  .journey-heading h2 {
-    font-size: 28px !important;
-  }
-  .journey-heading {
-    margin-bottom: 40px !important;
-  }
-}
-
-@media (max-width: 479px) {
-  /* Ensure minimum side padding */
-  .padding-global {
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-  }
-
-  /* Hero heading final scale */
-  .hero-heading,
-  .hero-heading .italic-accent {
-    font-size: 28px !important;
-    line-height: 34px !important;
-  }
-}
-
-/* ── PHASE 6: DESKTOP AUDIT (1280px-1920px) ── */
-@media (min-width: 1280px) {
-  /* Hero headline: at least 3.5rem */
-  .hero-heading {
-    font-size: 56px;
-    line-height: 62px;
-  }
-  .hero-heading .italic-accent {
-    font-size: 56px;
-  }
-
-  /* Content max-width guard */
-  .wrap { max-width: 1200px; }
-  .wrap.wide { max-width: 1280px; }
-  .sh p { max-width: 640px; }
-}
-
-/* ── PHASE 7: VISUAL HIERARCHY ── */
-/* Ensure section headings are consistent */
-.sh h2,
-.nfs-section-title {
-  letter-spacing: -0.02em;
-}
-
-/* Primary CTA prominence */
-.btn-green {
-  box-shadow: 0 2px 8px rgba(30,154,128,0.15);
-}
-
-/* ── PHASE 8: CONSISTENCY AUDIT ── */
-/* Border radius system: small=8px, card=16px, pill=100px */
-/* Already consistent via CSS vars in nfs-system.css */
-
-/* Shadows: unify card hover shadow */
-.card:hover,
-.deal-card:hover,
-.course:hover,
-.nfs-card:hover,
-.hub-card:hover,
-.nfs-hub-card:hover,
-.testimonial:hover {
-  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-}
-
-/* Links: consistent hover colour */
-a:hover {
-  transition: color 150ms ease;
-}
-
-/* ── PHASE 9: PERFORMANCE ── */
-/* Use will-change sparingly for animated elements */
-.sr {
-  will-change: opacity, transform;
-}
-.sr.visible {
-  will-change: auto;
-}
-
-/* Images: prevent CLS */
-img {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Review track: promote to GPU layer */
-.review-track {
-  will-change: transform;
-}
-
-/* Chat widget: promote to GPU */
-.chat-widget-btn {
-  will-change: transform;
-}
-
-/* ── Booking demo responsive ── */
 @media (max-width: 991px) {
   .booking-demo-layout {
-    flex-direction: column !important;
+    flex-direction: column;
   }
   .booking-demo-controls {
-    width: 100% !important;
+    width: 100%;
   }
 }
 
-/* ── Booking demo property grid: single column on mobile ── */
-@media (max-width: 479px) {
-  .booking-demo-layout div[style*="grid-template-columns:repeat(3,1fr)"] {
-    grid-template-columns: 1fr !important;
+/* ════════════════════════════════════════════
+   TASK 7: Journey section — refactored CSS classes
+   ════════════════════════════════════════════ */
+.journey-section {
+  background: #f3f3ee;
+  padding: 140px 0;
+  position: relative;
+  overflow: hidden;
+}
+.journey-dots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.journey-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+}
+.journey-counter {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  font-size: 0.8rem;
+  color: #6b7280;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+.journey-counter span {
+  display: inline-block;
+}
+.journey-heading {
+  margin-bottom: 64px;
+}
+.journey-heading h2 {
+  font-size: 40px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+.journey-heading p {
+  font-size: 15px;
+  color: #6b7280;
+  margin-top: 12px;
+}
+.journey-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+@media (max-width: 768px) {
+  .journey-section {
+    padding: 80px 0;
   }
+  .journey-heading {
+    margin-bottom: 40px;
+  }
+  .journey-heading h2 {
+    font-size: 28px;
+  }
+  .journey-counter {
+    display: none;
+  }
+}
+
+/* ════════════════════════════════════════════
+   TASK 6: Tooltip visibility fix
+   ════════════════════════════════════════════ */
+/* Ensure click-here-tooltip is above the input area and visible */
+.chat-input-area {
+  position: relative;
+  z-index: 2;
+}
+.click-here-tooltip {
+  z-index: 30;
+  pointer-events: auto;
+}
+
+/* ════════════════════════════════════════════
+   TASK 7: Step card styles (moved from inline <style>)
+   ════════════════════════════════════════════ */
+.step-card {
+  background: #fff;
+  border: 1px solid rgba(30,154,128,0.1);
+  border-radius: 20px;
+  height: 72px;
+  overflow: hidden;
+  opacity: 0.5;
+  position: relative;
+  transition: height 0.55s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
+  cursor: pointer;
+}
+.sc-collapsed {
+  height: 72px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.sc-pill {
+  background: rgba(30,154,128,0.08);
+  color: #1e9a80;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  flex-shrink: 0;
+}
+.sc-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  flex: 1;
+}
+.sc-tag-mini {
+  font-size: 0.7rem;
+  color: rgba(30,154,128,0.5);
+  flex-shrink: 0;
+}
+.sc-chev {
+  font-size: 1.2rem;
+  color: #6b7280;
+  flex-shrink: 0;
+  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
+}
+.sc-body {
+  padding: 0 32px 32px;
+}
+.sc-body p {
+  font-size: 0.95rem;
+  color: #6b7280;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.sc-tag {
+  display: inline-block;
+  background: rgba(30,154,128,0.08);
+  border: 1px solid rgba(30,154,128,0.2);
+  color: #1e9a80;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 14px;
+}
+.sc-progress {
+  height: 3px;
+  background: #e8e5df;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+.progress-fill {
+  height: 100%;
+  background: #1e9a80;
+  border-radius: 2px;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.accent-bar {
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 3px;
+  background: linear-gradient(to bottom, #1e9a80, rgba(30,154,128,0.2));
+  border-radius: 0 2px 2px 0;
+  transform: scaleY(0);
+  transform-origin: top;
+}
+.shimmer-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.55) 50%, transparent 65%);
+  transform: translateX(-100%);
+}
+.sc-connector {
+  width: 2px;
+  height: 16px;
+  margin: 0 0 0 35px;
+  border-left: 2px dashed rgba(30,154,128,0.2);
+}
+
+/* Active state */
+.step-card.active {
+  opacity: 1;
+  border-color: rgba(30,154,128,0.25);
+  animation: stepGlowBreathe 3s ease-in-out infinite;
+}
+.step-card.active .sc-chev {
+  transform: rotate(90deg);
+}
+@keyframes stepGlowBreathe {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(30,154,128,0.1), 0 8px 48px rgba(30,154,128,0.08); }
+  50% { box-shadow: 0 0 0 1px rgba(30,154,128,0.2), 0 8px 48px rgba(30,154,128,0.18), 0 0 32px rgba(30,154,128,0.08); }
+}
+
+/* Step card mobile */
+@media (max-width: 768px) {
+  .step-card { height: 64px; }
+  .sc-collapsed { height: 64px; padding: 0 20px; gap: 10px; }
+  .sc-title { font-size: 0.85rem; }
+  .sc-tag-mini { display: none; }
+  .sc-body { padding: 0 20px 24px; }
+  .sc-connector { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-card, .accent-bar, .shimmer-layer, .progress-fill, .sc-chev { transition-duration: 0.01ms !important; }
+  .step-card.active { animation: none !important; }
 }
