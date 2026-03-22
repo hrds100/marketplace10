@@ -609,6 +609,25 @@ export default function InvestPayoutsPage() {
     };
   });
 
+  // Add bank transfer claims from payout_claims (not in blockchain merge)
+  for (const c of dbPayoutClaims) {
+    if (c.status === 'cancelled') continue;
+    // Skip if already in payouts (avoid duplicates)
+    if (payouts.some((p) => p.id === `claim-${c.id}`)) continue;
+    payouts.push({
+      id: `claim-${c.id}`,
+      propertyTitle: 'Bank Transfer',
+      propertyImage: '',
+      propertyId: 0,
+      date: c.paid_at || c.created_at,
+      sharesOwned: 0,
+      amount: Number(c.amount_entitled || 0),
+      currency: c.currency || 'GBP',
+      status: c.status as PayoutStatus,
+      method: 'bank_transfer',
+    });
+  }
+
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState<PayoutItem | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<ClaimMethod | null>(null);
