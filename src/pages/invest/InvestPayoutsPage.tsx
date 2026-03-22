@@ -464,7 +464,7 @@ function ClaimModal({
         {claimStep === 'success' && (
           <div className="flex flex-col items-center justify-center py-8 space-y-4 relative">
             {/* Confetti */}
-            <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+            <div className="fixed inset-0 pointer-events-none z-[200] overflow-hidden">
               {Array.from({ length: 30 }).map((_, i) => (
                 <div key={i} className="absolute animate-confetti-particle" style={{
                   left: `${Math.random() * 100}%`, top: '-10px',

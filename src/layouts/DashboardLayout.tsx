@@ -59,12 +59,26 @@ function TopBar() {
           Submit a Deal
         </button>
         <button
-          onClick={() => navigate('/dashboard/settings')}
-          className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-secondary"
+          onClick={async () => {
+            try {
+              const { particleAuth } = await import('@particle-network/auth-core');
+              const pa = particleAuth as any;
+              if (pa?.openWallet) {
+                pa.openWallet();
+              } else if (pa?.ethereum) {
+                // Fallback: navigate to settings if wallet UI not available
+                navigate('/dashboard/settings');
+              } else {
+                navigate('/dashboard/settings');
+              }
+            } catch {
+              navigate('/dashboard/settings');
+            }
+          }}
+          className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-secondary"
           title="Wallet"
         >
-          <Wallet className="w-[14px] h-[14px]" strokeWidth={1.8} />
-          <span className="hidden md:inline">Wallet</span>
+          <Wallet className="w-[15px] h-[15px]" strokeWidth={1.8} />
         </button>
         <FavouritesDropdown />
         <NotificationBell />

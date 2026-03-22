@@ -213,7 +213,7 @@ function InvestModal({
     {confirmed && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
         {/* Confetti */}
-        <div className="fixed inset-0 pointer-events-none z-[101] overflow-hidden">
+        <div className="fixed inset-0 pointer-events-none z-[200] overflow-hidden">
           {Array.from({ length: 40 }).map((_, i) => (
             <div key={i} className="absolute animate-confetti-particle" style={{
               left: `${Math.random() * 100}%`, top: '-10px',
