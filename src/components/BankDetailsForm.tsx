@@ -59,8 +59,8 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
-      // Refetch bank account data so saved view shows real details
-      await queryClient.invalidateQueries({ queryKey: ['user_bank_accounts', user.id] });
+      // Refetch and WAIT for fresh data before rendering saved view
+      await queryClient.refetchQueries({ queryKey: ['user_bank_accounts', user.id] });
       setSaved(true);
       setEditing(false);
       toast.success('Bank details saved successfully');
