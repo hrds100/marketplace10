@@ -284,3 +284,197 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ════════════════════════════════════════════
+   DESIGN A — Clean minimal
+   Green left border accent, clean white card
+   ════════════════════════════════════════════ */
+.tl-style-a {
+  border-left: 4px solid #1e9a80;
+  border-radius: 4px 16px 16px 4px;
+}
+.tl-style-a h3 { font-size: 18px; }
+.tl-style-a p { font-size: 14px; }
+.tl-style-a:hover {
+  border-left-color: #14856e;
+}
+
+/* ════════════════════════════════════════════
+   DESIGN B — Icon header
+   Large emoji on soft green bg, rounded, warm
+   ════════════════════════════════════════════ */
+.tl-style-b {
+  background: linear-gradient(135deg, #f0fdf8 0%, #ffffff 100%);
+  border: 1px solid rgba(30,154,128,0.12);
+  padding-top: 20px;
+}
+.tl-card-icon {
+  font-size: 36px;
+  margin-bottom: 14px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30,154,128,0.08);
+  border-radius: 14px;
+}
+.tl-style-b h3 { font-size: 17px; }
+.tl-style-b:hover {
+  background: linear-gradient(135deg, #e6faf3 0%, #ffffff 100%);
+}
+
+/* ════════════════════════════════════════════
+   DESIGN C — Glassmorphism
+   Frosted glass, blur backdrop, thin bright border
+   ════════════════════════════════════════════ */
+.tl-style-c {
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.8);
+  box-shadow: 0 8px 32px rgba(30,154,128,0.06), inset 0 0 0 1px rgba(255,255,255,0.4);
+}
+.tl-style-c .tl-tag {
+  background: rgba(30,154,128,0.15);
+  color: #0e7a64;
+}
+.tl-style-c h3 { font-size: 18px; }
+.tl-style-c:hover {
+  background: rgba(255,255,255,0.75);
+  box-shadow: 0 12px 40px rgba(30,154,128,0.1), inset 0 0 0 1px rgba(255,255,255,0.6);
+}
+
+/* ════════════════════════════════════════════
+   DESIGN D — Dark card
+   Dark background, white text, green accents
+   ════════════════════════════════════════════ */
+.tl-style-d {
+  background: #0e1726;
+  border: 1px solid rgba(30,154,128,0.2);
+}
+.tl-style-d .tl-tag {
+  background: rgba(30,154,128,0.2);
+  color: #34d399;
+}
+.tl-style-d h3 {
+  color: #ffffff;
+  font-size: 18px;
+}
+.tl-style-d p {
+  color: rgba(255,255,255,0.6);
+}
+.tl-style-d::before {
+  border-right-color: #0e1726 !important;
+}
+.tl-item:nth-child(even) .tl-style-d::before {
+  border-left-color: #0e1726 !important;
+  border-right-color: transparent !important;
+}
+.tl-style-d:hover {
+  background: #131f30;
+  border-color: rgba(30,154,128,0.4);
+  box-shadow: 0 8px 32px rgba(30,154,128,0.15);
+}
+
+/* ════════════════════════════════════════════
+   DESIGN E — Gradient border
+   Animated rainbow gradient border, white inside
+   ════════════════════════════════════════════ */
+.tl-style-e {
+  padding: 3px;
+  background: conic-gradient(from var(--tl-angle, 0deg), #1e9a80, #38bdf8, #818cf8, #c084fc, #f9a8d4, #fbbf24, #1e9a80);
+  border-radius: 18px;
+  border: none;
+  box-shadow: 0 4px 20px rgba(30,154,128,0.1);
+  animation: tlGradientSpin 4s linear infinite;
+}
+.tl-style-e::before { display: none; }
+@property --tl-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes tlGradientSpin {
+  to { --tl-angle: 360deg; }
+}
+.tl-card-inner {
+  background: #fff;
+  border-radius: 15px;
+  padding: 28px 32px;
+}
+.tl-card-inner .tl-tag {
+  background: rgba(30,154,128,0.08);
+  color: #1e9a80;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 100px;
+  padding: 4px 12px;
+  margin-bottom: 12px;
+}
+.tl-card-inner h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+.tl-card-inner p {
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+.tl-style-e:hover {
+  box-shadow: 0 8px 32px rgba(30,154,128,0.18);
+}
+
+/* ════════════════════════════════════════════
+   DESIGN F — Feature card with banner + metric
+   Top green banner, bold metric highlight
+   ════════════════════════════════════════════ */
+.tl-style-f {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(30,154,128,0.15);
+}
+.tl-card-banner {
+  background: linear-gradient(135deg, #1e9a80, #14856e);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 32px;
+}
+.tl-style-f h3 {
+  padding: 20px 32px 0;
+  font-size: 18px;
+}
+.tl-style-f p {
+  padding: 8px 32px 0;
+  font-size: 14px;
+}
+.tl-style-f .tl-tag { display: none; }
+.tl-card-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 16px 32px 24px;
+  margin-top: 12px;
+  border-top: 1px solid rgba(30,154,128,0.1);
+}
+.tl-metric-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1e9a80;
+  letter-spacing: -0.02em;
+}
+.tl-metric-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+.tl-style-f:hover {
+  border-color: rgba(30,154,128,0.3);
+}
+.tl-style-f::before { display: none; }
