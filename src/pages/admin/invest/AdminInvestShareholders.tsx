@@ -53,7 +53,7 @@ export default function AdminInvestShareholders() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            query: `{ primarySharesBoughts(first: 1000) { _buyer _sharesBought _amount } }`,
+            query: `{ primarySharesBoughts(first: 1000) { _buyer _sharesBought } }`,
           }),
         });
         const sharesData = await sharesRes.json();
@@ -64,8 +64,9 @@ export default function AdminInvestShareholders() {
         for (const b of buys) {
           const w = b._buyer.toLowerCase();
           if (!walletMap[w]) walletMap[w] = { shares: 0, invested: 0 };
-          walletMap[w].shares += parseInt(b._sharesBought);
-          walletMap[w].invested += parseInt(b._amount) / 1e18;
+          const shares = parseInt(b._sharesBought);
+          walletMap[w].shares += shares;
+          walletMap[w].invested += shares; // $1 per allocation
         }
 
         // 2. Fetch rent withdrawals from The Graph
