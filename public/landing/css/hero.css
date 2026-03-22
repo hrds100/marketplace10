@@ -3,7 +3,7 @@
    ==================================================== */
 .section_hero {
   background: var(--hero-bg);
-  background: linear-gradient(180deg, #E8EEF8 0%, #EDF2FA 40%, #F0F4FF 100%);
+  background: linear-gradient(180deg, #f3f3ee 0%, #eae9e4 40%, #f3f3ee 100%);
   position: relative;
   overflow: hidden;
   padding-bottom: 0;
