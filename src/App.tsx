@@ -48,6 +48,7 @@ import AdminInvestPayouts from "./pages/admin/invest/AdminInvestPayouts";
 import AdminInvestProposals from "./pages/admin/invest/AdminInvestProposals";
 import AdminInvestBoost from "./pages/admin/invest/AdminInvestBoost";
 import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
+import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
 import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
 import AdminArchitecture from "./pages/admin/AdminArchitecture";
 import AdminGuard from "./components/AdminGuard";
@@ -205,6 +206,7 @@ const App = () => (
             <Route path="invest/proposals" element={<AdminInvestProposals />} />
             <Route path="invest/boost" element={<AdminInvestBoost />} />
             <Route path="invest/endpoints" element={<AdminEndpoints />} />
+            <Route path="invest/test-console" element={<AdminTestConsole />} />
 
             {/* Booking Site (NFStay) workspace */}
             <Route path="nfstay" element={<AdminNfsReservations />} />
