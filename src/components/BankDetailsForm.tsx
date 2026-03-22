@@ -5,11 +5,13 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyBankAccount } from '@/hooks/useInvestData';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
   const { user } = useAuth();
   const { data: existingBank, isLoading: bankLoading } = useMyBankAccount();
+  const queryClient = useQueryClient();
   const [currency, setCurrency] = useState<'GBP' | 'EUR'>('GBP');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -57,6 +59,8 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
+      // Refetch bank account data so saved view shows real details
+      await queryClient.invalidateQueries({ queryKey: ['user_bank_accounts', user.id] });
       setSaved(true);
       setEditing(false);
       toast.success('Bank details saved successfully');
