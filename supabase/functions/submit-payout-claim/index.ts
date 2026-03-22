@@ -75,7 +75,7 @@ serve(async (req) => {
 
     const week_ref = getISOWeek()
 
-    // Create claim (UNIQUE constraint prevents duplicates)
+    // Create claim — multiple claims per week allowed (all batched on Tuesday)
     const { data: claim, error } = await supabase
       .from('payout_claims')
       .insert({
@@ -84,15 +84,12 @@ serve(async (req) => {
         amount_entitled: amount,
         currency,
         bank_account_id: bank.id,
-        week_ref,
+        week_ref: `${week_ref}-${Date.now()}`,
       })
       .select()
       .single()
 
     if (error) {
-      if (error.code === '23505') {
-        return new Response(JSON.stringify({ error: 'Already claimed this week' }), { status: 409, headers: corsHeaders })
-      }
       throw error
     }
 
