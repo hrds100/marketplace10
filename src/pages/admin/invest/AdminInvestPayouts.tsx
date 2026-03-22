@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useAllPayoutClaims } from '@/hooks/useInvestData';
 import { supabase } from '@/integrations/supabase/client';
-import { DollarSign, Clock, CheckCircle2, AlertTriangle, Zap, Download, Loader2 } from 'lucide-react';
+import { DollarSign, Clock, CheckCircle2, AlertTriangle, Zap, Download, Loader2, FlaskConical } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { exportToCSV } from '@/lib/csvExport';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,7 +56,28 @@ const statusColors: Record<string, string> = {
 
 export default function AdminInvestPayouts() {
   const qc = useQueryClient();
-  const { data: realClaims = [], isLoading } = useAllPayoutClaims();
+  const { user } = useAuth();
+  const [testAmount, setTestAmount] = useState('5.00');
+  const [creditLoading, setCreditLoading] = useState(false);
+
+  const handleCreditTestRent = async () => {
+    if (!user?.id) return;
+    const amount = parseFloat(testAmount);
+    if (!amount || amount <= 0 || amount > 100) { toast.error('Enter $0.01–$100'); return; }
+    setCreditLoading(true);
+    try {
+      const { data: prop } = await (supabase.from('inv_properties') as any).select('id').limit(1).single();
+      if (!prop) throw new Error('No property found');
+      const { error } = await (supabase.from('inv_payouts') as any).insert({
+        user_id: user.id, property_id: prop.id, period_date: new Date().toISOString().slice(0, 10),
+        shares_owned: 1, amount, status: 'claimable',
+      });
+      if (error) throw error;
+      toast.success(`$${amount.toFixed(2)} test rent credited — go to Payouts page to claim`);
+      qc.invalidateQueries({ queryKey: ['inv_payouts'] });
+    } catch (err: any) { toast.error(err.message || 'Failed'); }
+    finally { setCreditLoading(false); }
+  };  const { data: realClaims = [], isLoading } = useAllPayoutClaims();
 
   const [statusFilter, setStatusFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
