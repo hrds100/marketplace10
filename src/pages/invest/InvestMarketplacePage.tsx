@@ -744,25 +744,25 @@ function ProfitCalculator({
   setInitialCalcAmount: (v: number) => void;
 }) {
   const [chartVersion, setChartVersion] = useState(1);
-  const appreciationRate = property.appreciationRate || 5.2;
-  const monthlyYield = property.annualYield; // DB field stores monthly yield %
-  const annualizedYield = monthlyYield * 12;
+  const monthlyYield = property.annualYield; // DB field stores monthly yield % (e.g. 9.63)
+  const annualizedYield = monthlyYield * 12; // e.g. 115.56%
   const holdingYears = 6;
-  const totalAnnualRate = appreciationRate + annualizedYield;
 
-  const projections = Array.from({ length: holdingYears }, (_, i) => {
-    const year = i + 1;
-    const value = initialCalcAmount * Math.pow(1 + totalAnnualRate / 100, year);
-    return { year, value: Math.round(value) };
-  });
-
-  const maxValue = projections[projections.length - 1]?.value ?? initialCalcAmount;
-  const totalROI = maxValue > 0 ? (((maxValue - initialCalcAmount) / initialCalcAmount) * 100).toFixed(1) : '0';
+  // Legacy-style linear projection (not compound)
   const sharesCalc = Math.floor(initialCalcAmount / property.pricePerShare);
   const calcInvestTotal = sharesCalc * property.pricePerShare;
   const monthlyIncome = (calcInvestTotal * (monthlyYield / 100)).toFixed(2);
   const yearlyIncome = (parseFloat(monthlyIncome) * 12).toFixed(2);
-  const totalGain = maxValue - initialCalcAmount;
+
+  const projections = Array.from({ length: holdingYears }, (_, i) => {
+    const year = i + 1;
+    const value = calcInvestTotal + (parseFloat(yearlyIncome) * year);
+    return { year, value: Math.round(value) };
+  });
+
+  const maxValue = projections[projections.length - 1]?.value ?? calcInvestTotal;
+  const totalROI = calcInvestTotal > 0 ? ((annualizedYield * holdingYears)).toFixed(1) : '0';
+  const totalGain = maxValue - calcInvestTotal;
 
   const quickAmounts = [500, 1000, 2500, 5000];
 
@@ -961,7 +961,7 @@ function ProfitCalculator({
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  {appreciationRate}% appreciation + {annualizedYield.toFixed(1)}% yield
+                  {monthlyYield}%/mo &middot; {annualizedYield.toFixed(1)}%/yr
                 </span>
               </div>
             </div>
@@ -1013,7 +1013,7 @@ function ProfitCalculator({
             <div className="rounded-xl bg-muted/50 dark:bg-muted/30 p-3.5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] text-muted-foreground mb-0.5">Year 5 Value</p>
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Year 6 Value</p>
                   <p className="text-lg font-bold text-primary">${maxValue.toLocaleString()}</p>
                 </div>
                 <div className="text-right">
@@ -1023,7 +1023,7 @@ function ProfitCalculator({
               </div>
             </div>
             <p className="text-[10px] text-muted-foreground leading-relaxed">
-              Based on {appreciationRate}% appreciation + {annualizedYield.toFixed(1)}% annual yield ({monthlyYield}%/mo). Past performance does not guarantee future results.
+              Based on {monthlyYield}% monthly yield ({annualizedYield.toFixed(1)}% annual). Past performance does not guarantee future results.
             </p>
           </div>
         </div>
