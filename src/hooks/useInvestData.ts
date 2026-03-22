@@ -360,11 +360,23 @@ export function useAllPayoutClaims() {
   return useQuery({
     queryKey: ['payout_claims', 'all'],
     queryFn: async () => {
-      const { data, error } = await (supabase.from('payout_claims') as any)
-        .select('*, profiles:user_id(name, whatsapp)')
+      const { data: claims, error } = await (supabase.from('payout_claims') as any)
+        .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data || [];
+      if (!claims?.length) return [];
+
+      // Fetch profile details for each unique user
+      const userIds = [...new Set(claims.map((c: any) => c.user_id))];
+      const { data: profiles } = await (supabase.from('profiles') as any)
+        .select('id, name, whatsapp')
+        .in('id', userIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      return claims.map((c: any) => ({
+        ...c,
+        profiles: profileMap.get(c.user_id) || null,
+      }));
     },
   });
 }
