@@ -22,7 +22,7 @@ function Counter({ target, prefix = '', suffix = '', decimals = 0 }: { target: n
   return <span ref={ref}>{prefix}{decimals > 0 ? val.toFixed(decimals) : Math.round(val).toLocaleString()}{suffix}</span>;
 }
 
-const fade = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-40px' }, transition: { duration: 0.5 } };
+const fade = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: false, amount: 0.2 }, transition: { duration: 0.5 } };
 
 const DEALS = [
   { name: '2-Bed Flat, Ancoats', city: 'Manchester', pc: 'M4 6BF', rent: 850, profit: 1200, type: '2-bed flat', badge: 'Featured', img: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=220&fit=crop' },
@@ -81,7 +81,7 @@ export default function LandingPageV8() {
       {/* HERO */}
       <section className="relative overflow-hidden flex items-center" style={{ background: 'hsl(215 50% 11%)', minHeight: '70vh' }}>
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 80% 20%, hsla(145,63%,42%,0.08) 0%, transparent 60%)' }} />
-        <div className="relative max-w-[1100px] mx-auto px-6 w-full pt-36 pb-16 md:pt-32 md:pb-24">
+        <div className="relative max-w-[1100px] mx-auto px-6 w-full pt-40 pb-20 md:pt-32 md:pb-24">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6" style={{ background: 'hsla(145,63%,42%,0.12)' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
@@ -93,8 +93,8 @@ export default function LandingPageV8() {
                 <svg className="absolute -bottom-1 left-0 w-full" viewBox="0 0 320 8" fill="none" style={{ opacity: 0.6 }}><path d="M0 6C60 2 100 2 160 4C220 6 260 2 320 4" stroke="hsl(145 63% 42%)" strokeWidth="2.5" strokeLinecap="round" /></svg>
               </span>
             </h1>
-            <p className="mt-6 text-lg leading-relaxed max-w-[480px]" style={{ color: 'hsl(215 20% 65%)' }}>The unified workspace for finding, analysing and closing landlord-approved rent-to-rent deals across the UK.</p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <p className="mt-8 md:mt-6 text-lg leading-relaxed max-w-[480px]" style={{ color: 'hsl(215 20% 65%)' }}>The unified workspace for finding, analysing and closing landlord-approved rent-to-rent deals across the UK.</p>
+            <div className="mt-10 md:mt-8 flex flex-wrap gap-3">
               <Link to="/signup" className="h-[48px] px-7 rounded-lg bg-primary text-primary-foreground font-semibold text-[15px] inline-flex items-center transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Start 3-day trial for &pound;5 <ArrowRight className="ml-2 w-4 h-4" /></Link>
               <Link to="/signin" className="h-[48px] px-7 rounded-lg font-medium text-[15px] inline-flex items-center transition-all duration-200 border-[1.5px] border-hero-border text-white hover:scale-[1.02] hover:shadow-lg active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Explore the platform first</Link>
             </div>
@@ -104,11 +104,11 @@ export default function LandingPageV8() {
 
       {/* BLOCK 1: TRUST STRIPE */}
       <motion.section {...fade} className="py-14" style={{ background: '#f3f3ee' }}>
-        <div className="max-w-[1100px] mx-auto px-6 flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-0">
+        <div className="max-w-[1100px] mx-auto px-6 flex flex-row flex-wrap justify-center gap-0">
           {[{ v: 4200, s: '+', l: 'UK operators' },{ v: 1800, s: '+', l: 'Verified deals' },{ v: 680, p: '\u00a3', l: 'Avg. monthly profit' },{ v: 10, l: 'UK cities' },{ v: 4.8, l: 'Operator rating', d: 1 }].map((s, i) => (
-            <div key={i} className="px-4 sm:px-7 py-3 text-center border-b sm:border-b-0 sm:border-r border-gray-200 last:border-b-0 sm:last:border-r-0">
-              <div className="text-[28px] font-extrabold text-gray-900 tracking-tight"><Counter target={s.v} prefix={s.p||''} suffix={s.s||''} decimals={s.d||0} /></div>
-              <div className="text-xs text-gray-500 mt-1">{s.l}</div>
+            <div key={i} className="px-3 sm:px-7 py-3 text-center border-r border-gray-200 last:border-r-0">
+              <div className="text-lg sm:text-[28px] font-extrabold text-gray-900 tracking-tight"><Counter target={s.v} prefix={s.p||''} suffix={s.s||''} decimals={s.d||0} /></div>
+              <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">{s.l}</div>
             </div>
           ))}
         </div>
@@ -131,10 +131,10 @@ export default function LandingPageV8() {
             <p className="text-gray-500 mb-8 text-center">{p.sub}</p>
             <div className="grid sm:grid-cols-3 gap-5">
               {p.cards.map((c, i) => (
-                <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out">
+                <motion.div key={i} {...fade} transition={{ ...fade.transition, delay: i * 0.1 }} className="bg-white border border-gray-100 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out">
                   <h4 className="text-[15px] font-semibold text-gray-900 mb-2">{c.title}</h4>
                   <p className="text-sm text-gray-500 leading-relaxed">{c.desc}</p>
-                </div>
+                </motion.div>
               ))}
             </div>
           </motion.div>
@@ -142,12 +142,12 @@ export default function LandingPageV8() {
       </motion.section>
 
       {/* BLOCK 2: DEAL GRID */}
-      <motion.section {...fade} className="py-20" style={{ background: '#f3f3ee' }}>
+      <motion.section {...fade} id="deals-strip" className="py-20 scroll-mt-20" style={{ background: '#f3f3ee' }}>
         <div className="max-w-[1100px] mx-auto px-6">
           <div className="text-center mb-12"><h2 className="text-[32px] font-bold text-gray-900 tracking-tight">Browse landlord-approved deals</h2><p className="text-gray-500 mt-3 max-w-lg mx-auto">Every listing is verified, compliance-checked and ready to operate.</p></div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-5 sm:overflow-visible sm:pb-0">
             {DEALS.map((d, i) => (
-              <motion.div key={i} {...fade} transition={{ ...fade.transition, delay: i * 0.08 }} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out">
+              <motion.div key={i} {...fade} transition={{ ...fade.transition, delay: i * 0.08 }} className="min-w-[280px] sm:min-w-0 snap-center bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out">
                 <div className="h-40 bg-cover bg-center relative" style={{ backgroundImage: `url('${d.img}')` }}><span className="absolute top-2.5 left-2.5 bg-white text-[11px] font-semibold px-2.5 py-1 rounded-md shadow-sm">{d.badge}</span></div>
                 <div className="p-5">
                   <h4 className="text-[15px] font-semibold text-gray-900">{d.name}</h4>
@@ -165,6 +165,7 @@ export default function LandingPageV8() {
               </motion.div>
             ))}
           </div>
+          <p className="text-xs text-gray-400 mt-2 text-center sm:hidden">&larr; Swipe to see more deals &rarr;</p>
           <p className="text-center text-sm text-gray-400 mt-6">Updated daily &mdash; 1,800+ verified listings across the UK</p>
         </div>
       </motion.section>
@@ -223,7 +224,7 @@ export default function LandingPageV8() {
       </motion.section>
 
       {/* BLOCK 5: JOURNEY */}
-      <motion.section {...fade} className="py-20 bg-white">
+      <motion.section {...fade} id="how-it-works" className="py-20 bg-white scroll-mt-20">
         <div className="max-w-[1100px] mx-auto px-6">
           <div className="text-center mb-12"><h2 className="text-[32px] font-bold text-gray-900 tracking-tight">From first search to first profit</h2></div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -244,7 +245,7 @@ export default function LandingPageV8() {
       </motion.section>
 
       {/* BLOCK 6: ACADEMY */}
-      <motion.section {...fade} className="py-20" style={{ background: '#f3f3ee' }}>
+      <motion.section {...fade} id="university" className="py-20 scroll-mt-20" style={{ background: '#f3f3ee' }}>
         <div className="max-w-[1100px] mx-auto px-6">
           <div className="text-center mb-12"><h2 className="text-[32px] font-bold text-gray-900 tracking-tight">Learn rent-to-rent. Then do it. In the same place.</h2><p className="text-gray-500 mt-3 max-w-lg mx-auto">15 years of operator knowledge, structured into step-by-step modules.</p></div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -283,7 +284,7 @@ export default function LandingPageV8() {
       </motion.section>
 
       {/* BLOCK 8: PRICING */}
-      <motion.section {...fade} className="py-20" style={{ background: '#f3f3ee' }}>
+      <motion.section {...fade} id="pricing" className="py-20 scroll-mt-20" style={{ background: '#f3f3ee' }}>
         <div className="max-w-[480px] mx-auto px-6">
           <div className="text-center mb-12"><h2 className="text-[32px] font-bold text-gray-900 tracking-tight">Simple pricing for serious operators</h2><p className="text-gray-500 mt-3">One plan. Everything included. Cancel any time.</p></div>
           <div className="border-2 border-primary rounded-[20px] p-8 text-center bg-white shadow-[0_0_0_1px_#1e9a80,0_12px_40px_rgba(30,154,128,0.08)]">
