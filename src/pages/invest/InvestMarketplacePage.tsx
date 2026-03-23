@@ -1766,8 +1766,9 @@ export default function InvestMarketplacePage() {
     return () => clearInterval(interval);
   }, [property]);
 
-  // SamCart products exist at these fixed tiers only (stay.samcart.com)
-  const SAMCART_TIERS = [1000, 2000, 3000, 4000, 5000];
+  // SamCart product slug — single product for all investment amounts
+  // Product ID 1003039 on stay.samcart.com
+  const SAMCART_PRODUCT_SLUG = 'rent-2-rent-1000shares';
 
   const handleInvest = () => {
     if (!property) return;
@@ -1775,30 +1776,29 @@ export default function InvestMarketplacePage() {
     if (shares < 1) return;
 
     if (paymentMethod === 'card') {
-      // Find the nearest valid SamCart product tier
-      const tier = SAMCART_TIERS.reduce((best, t) =>
-        Math.abs(t - investAmount) < Math.abs(best - investAmount) ? t : best
-      );
-      if (investAmount !== tier) {
-        toast.info(`Card payment adjusted to $${tier.toLocaleString()} (nearest available tier)`);
-      }
-
-      // Build SamCart iframe URL (same pattern as legacy app.nfstay.com)
       const firstName = encodeURIComponent(
         user?.user_metadata?.full_name || user?.user_metadata?.name || ''
       );
       const userEmail = encodeURIComponent(user?.email || '');
-      // Wallet address in last_name (legacy convention)
+
+      // Wallet address goes in last_name ("DON'T EDIT - Wallet ID" on SamCart)
       let walletAddr = '';
       try { walletAddr = (window as any).__particle_wallet_address || ''; } catch { /* no wallet */ }
-      const lastName = encodeURIComponent(walletAddr);
-      // Property + agent data encoded in phone field (parsed by inv-samcart-webhook)
-      const phonePayload = encodeURIComponent(JSON.stringify({
+
+      // Encode propertyId + agent + wallet in last_name so webhook can parse it
+      // Format: {propertyId:N,agentWallet:0x...,recipient:0x...}
+      const walletPayload = encodeURIComponent(JSON.stringify({
         propertyId: property.id,
         agentWallet: '0x0000000000000000000000000000000000000000',
         recipient: walletAddr,
       }));
-      const url = `https://stay.samcart.com/products/rent-2-rent-${tier}shares/?first_name=${firstName}&last_name=${lastName}&email=${userEmail}&phone_number=${phonePayload}`;
+
+      // Phone number stays clean (user's real phone from profile, or empty)
+      const userPhone = encodeURIComponent(
+        user?.user_metadata?.whatsapp || user?.user_metadata?.phone || ''
+      );
+
+      const url = `https://stay.samcart.com/products/${SAMCART_PRODUCT_SLUG}/?first_name=${firstName}&last_name=${walletPayload}&email=${userEmail}&phone_number=${userPhone}`;
       setSamcartUrl(url);
       setSamcartOpen(true);
       return;

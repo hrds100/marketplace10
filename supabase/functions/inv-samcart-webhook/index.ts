@@ -127,19 +127,40 @@ serve(async (req) => {
       )
       const customerData = customerRes.ok ? await customerRes.json() : null
 
-      // 3. Parse the phone field for propertyId / agentWallet / recipient
+      // 3. Parse propertyId / agentWallet / recipient from last_name or phone field
+      //    hub.nfstay.com encodes JSON in last_name ("DON'T EDIT - Wallet ID")
+      //    legacy app.nfstay.com encoded JSON in the phone field
       let propertyId: number | null = null
       let agentWallet: string | null = null
       let recipientWallet: string | null = null
       const customerEmail: string | null = customerData?.email || null
       const customerFirstName: string | null = customerData?.first_name || null
 
-      if (customerData?.phone) {
+      // Try last_name first (hub.nfstay.com sends JSON here)
+      const lastNameRaw = customerData?.last_name || ''
+      if (lastNameRaw && lastNameRaw.includes('{')) {
         try {
-          const parsed = parsePhoneData(customerData.phone)
+          const parsed = parsePhoneData(lastNameRaw)
           propertyId = parsed.propertyId ? Number(parsed.propertyId) : null
           agentWallet = extractWalletAddress(parsed.agentWallet)
           recipientWallet = extractWalletAddress(parsed.recipient)
+        } catch (e) {
+          console.log('Could not parse last_name field:', lastNameRaw, e)
+          // Still try to extract a bare wallet address
+          recipientWallet = extractWalletAddress(lastNameRaw)
+        }
+      } else if (lastNameRaw) {
+        // Plain wallet address in last_name (legacy format)
+        recipientWallet = extractWalletAddress(lastNameRaw)
+      }
+
+      // Fallback: try phone field (legacy app.nfstay.com format)
+      if (!propertyId && customerData?.phone) {
+        try {
+          const parsed = parsePhoneData(customerData.phone)
+          propertyId = propertyId || (parsed.propertyId ? Number(parsed.propertyId) : null)
+          agentWallet = agentWallet || extractWalletAddress(parsed.agentWallet)
+          recipientWallet = recipientWallet || extractWalletAddress(parsed.recipient)
         } catch (e) {
           console.log('Could not parse phone field:', customerData.phone, e)
         }
