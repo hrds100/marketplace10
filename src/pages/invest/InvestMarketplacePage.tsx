@@ -547,9 +547,8 @@ function InvestCardContent({
   onInvest,
   compact = false,
   totalOwners = 0,
-  walletAddress,
-  walletConnecting,
-  onConnectWallet,
+  /** True when card checkout cannot proceed yet (wallet still loading or missing from profile). */
+  cardCheckoutBlocked,
 }: {
   property: PropertyData;
   fundedPercent: number;
@@ -563,9 +562,7 @@ function InvestCardContent({
   onInvest: () => void;
   compact?: boolean;
   totalOwners?: number;
-  walletAddress: string | null;
-  walletConnecting: boolean;
-  onConnectWallet: () => void | Promise<void>;
+  cardCheckoutBlocked: boolean;
 }) {
   const shares = Math.floor(investAmount / property.pricePerShare);
   const investTotal = shares * property.pricePerShare;
@@ -638,43 +635,6 @@ function InvestCardContent({
         </div>
       </div>
 
-      {/* Card checkout needs a wallet on file (same as legacy SamCart last_name) */}
-      {paymentMethod === 'card' && (
-        <div className="rounded-lg border border-border/80 bg-muted/30 px-3 py-2.5">
-          <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
-            Receiving wallet (BNB Chain)
-          </p>
-          {walletConnecting ? (
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" aria-hidden />
-              Loading wallet from your profile…
-            </p>
-          ) : walletAddress ? (
-            <p
-              className="font-mono text-[11px] sm:text-xs break-all text-foreground"
-              data-testid="invest-receiving-wallet"
-            >
-              {walletAddress}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-destructive">
-                No wallet on your profile yet. Connect your wallet to pay by card.
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full sm:w-auto"
-                onClick={() => void onConnectWallet()}
-              >
-                Connect wallet
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Payment method */}
       <div>
         <label className="mb-1.5 block text-sm font-medium">Payment method</label>
@@ -746,11 +706,7 @@ function InvestCardContent({
       <Button
         className="w-full gap-2"
         size="lg"
-        disabled={
-          !tsaAgreed ||
-          shares < 1 ||
-          (paymentMethod === 'card' && (!walletAddress || walletConnecting))
-        }
+        disabled={!tsaAgreed || shares < 1 || cardCheckoutBlocked}
         onClick={onInvest}
       >
         <Shield className="h-4 w-4" />
@@ -1317,9 +1273,7 @@ function Version1({
   initialCalcAmount,
   setInitialCalcAmount,
   totalOwners,
-  walletAddress,
-  walletConnecting,
-  onConnectWallet,
+  cardCheckoutBlocked,
 }: {
   property: PropertyData;
   fundedPercent: number;
@@ -1338,9 +1292,7 @@ function Version1({
   initialCalcAmount: number;
   setInitialCalcAmount: (v: number) => void;
   totalOwners: number;
-  walletAddress: string | null;
-  walletConnecting: boolean;
-  onConnectWallet: () => void | Promise<void>;
+  cardCheckoutBlocked: boolean;
 }) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -1536,9 +1488,7 @@ function Version1({
                   onInvest={onInvest}
                   compact
                   totalOwners={totalOwners}
-                  walletAddress={walletAddress}
-                  walletConnecting={walletConnecting}
-                  onConnectWallet={onConnectWallet}
+                  cardCheckoutBlocked={cardCheckoutBlocked}
                 />
               </CardContent>
             </Card>
@@ -1582,9 +1532,7 @@ function Version2({
   initialCalcAmount,
   setInitialCalcAmount,
   totalOwners,
-  walletAddress,
-  walletConnecting,
-  onConnectWallet,
+  cardCheckoutBlocked,
 }: {
   property: PropertyData;
   fundedPercent: number;
@@ -1601,9 +1549,7 @@ function Version2({
   initialCalcAmount: number;
   setInitialCalcAmount: (v: number) => void;
   totalOwners: number;
-  walletAddress: string | null;
-  walletConnecting: boolean;
-  onConnectWallet: () => void | Promise<void>;
+  cardCheckoutBlocked: boolean;
 }) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
@@ -1703,9 +1649,7 @@ function Version2({
               setTsaAgreed={setTsaAgreed}
               onInvest={onInvest}
               totalOwners={totalOwners}
-              walletAddress={walletAddress}
-              walletConnecting={walletConnecting}
-              onConnectWallet={onConnectWallet}
+              cardCheckoutBlocked={cardCheckoutBlocked}
             />
           </CardContent>
         </Card>
@@ -1733,14 +1677,7 @@ function Version2({
 
 export default function InvestMarketplacePage() {
   const { user } = useAuth();
-  const { address: walletAddress, connecting: walletConnecting, connect } = useWallet();
-  const handleConnectWallet = useCallback(async () => {
-    try {
-      await connect();
-    } catch {
-      toast.error('Could not connect wallet. Try again or use the wallet icon in the header.');
-    }
-  }, [connect]);
+  const { address: walletAddress, connecting: walletConnecting } = useWallet();
   const { data: allProperties, isLoading } = useInvestProperties();
   const dbProperty = allProperties?.[0] || null;
 
@@ -1858,8 +1795,23 @@ export default function InvestMarketplacePage() {
       }
       const wallet = walletAddress;
 
+      const meta = user?.user_metadata as Record<string, unknown> | undefined;
+      const given = typeof meta?.given_name === 'string' ? meta.given_name.trim() : '';
+      const family = typeof meta?.family_name === 'string' ? meta.family_name.trim() : '';
+      const rawFull = String(
+        user?.user_metadata?.full_name || user?.user_metadata?.name || ''
+      ).replace(/\+/g, ' ');
+      let firstName = given;
+      let lastName = family;
+      if (!firstName && !lastName) {
+        const parts = rawFull.trim().split(/\s+/).filter(Boolean);
+        firstName = parts[0] || '';
+        lastName = parts.length > 1 ? parts.slice(1).join(' ') : '';
+      }
+
       const prefill = buildSamcartPrefillParams({
-        firstName: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+        firstName,
+        lastName,
         email: user?.email || '',
         wallet,
         propertyId: property.blockchain_property_id ?? property.id,
@@ -1918,9 +1870,7 @@ export default function InvestMarketplacePage() {
         initialCalcAmount={initialCalcAmount}
         setInitialCalcAmount={setInitialCalcAmount}
         totalOwners={totalOwners}
-        walletAddress={walletAddress}
-        walletConnecting={walletConnecting}
-        onConnectWallet={handleConnectWallet}
+        cardCheckoutBlocked={paymentMethod === 'card' && (!walletAddress || walletConnecting)}
       />
 
       <InvestModal open={investOpen} onOpenChange={setInvestOpen} property={property} />

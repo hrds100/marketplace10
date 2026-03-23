@@ -1,6 +1,5 @@
 /**
- * E2E: SamCart prefill uses legacy-style last_name (plain wallet) + phone_number JSON for webhook.
- * Requires test user to have wallet_address on profiles (see playwright-test@nfstay.com).
+ * E2E: SamCart prefill — human last_name, phone_number JSON (propertyId + recipient only), wallet in custom field.
  * Run: npx playwright test e2e/invest-wallet-checkout.spec.ts --config=e2e/playwright.config.ts --reporter=list
  */
 import { test, expect, type Page } from '@playwright/test';
@@ -11,7 +10,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const TEST_EMAIL = 'playwright-test@nfstay.com';
 const TEST_PASSWORD = 'TestPass123!';
 
-/** Stable test wallet — injected into GET /profiles so useWallet hydrates without DB setup */
+/** Stub profile wallet so card checkout can open */
 const MOCK_PROFILE_WALLET = '0x1111111111111111111111111111111111111111';
 
 async function injectAuth(page: Page) {
@@ -37,9 +36,8 @@ async function injectAuth(page: Page) {
   await page.evaluate(([key, data]) => { localStorage.setItem(key, data); }, [storageKey, sessionData]);
 }
 
-test.describe('Invest Wallet + SamCart prefill', () => {
+test.describe('Invest SamCart prefill', () => {
   test.beforeEach(async ({ page }) => {
-    // Stub only useWallet's profile read (avoid route.fetch() deadlock / long waits)
     await page.route('**/rest/v1/profiles**', async (route) => {
       if (route.request().method() !== 'GET') {
         await route.continue();
@@ -59,19 +57,13 @@ test.describe('Invest Wallet + SamCart prefill', () => {
     await injectAuth(page);
   });
 
-  test('SamCart URL: last_name is plain wallet; phone_number has property JSON', async ({ page }) => {
+  test('SamCart URL: last_name is not wallet; phone JSON has recipient + propertyId only', async ({ page }) => {
     await page.goto(`${BASE}/dashboard/invest/marketplace`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     expect(page.url()).toContain('invest/marketplace');
 
-    // Wallet row must hydrate before checkout (matches hub UX)
-    const walletEl = page.getByTestId('invest-receiving-wallet');
-    await expect(walletEl).toBeVisible({ timeout: 25000 });
-    const walletText = (await walletEl.textContent())?.trim() ?? '';
-    expect(walletText.toLowerCase()).toBe(MOCK_PROFILE_WALLET.toLowerCase());
+    await expect(page.locator('text=Receiving wallet')).toHaveCount(0);
 
     await expect(page.locator('button:has-text("Credit / Debit Card")')).toBeVisible({ timeout: 5000 });
-
-    // Ensure at least one allocation (amount must be >= price per share from DB)
     await page.getByPlaceholder('500').fill('10000');
 
     await page.getByTestId('invest-tsa-checkbox').evaluate((el) => (el as HTMLButtonElement).click());
@@ -91,23 +83,18 @@ test.describe('Invest Wallet + SamCart prefill', () => {
     const url = new URL(iframeSrc!);
     const params = url.searchParams;
 
-    const lastName = params.get('last_name');
-    expect(lastName).toBeTruthy();
-    const decodedLast = decodeURIComponent(lastName!);
-    expect(decodedLast).toMatch(/^0x[a-fA-F0-9]{40}$/);
-    expect(decodedLast.toLowerCase()).toBe(walletText.toLowerCase());
+    const lastName = decodeURIComponent(params.get('last_name') || '');
+    expect(lastName).not.toMatch(/^0x[a-fA-F0-9]{40}$/);
 
-    const phoneRaw = params.get('phone_number');
-    expect(phoneRaw).toBeTruthy();
-    const phoneDecoded = decodeURIComponent(phoneRaw!);
+    const phoneDecoded = decodeURIComponent(params.get('phone_number') || '');
     const parsed = JSON.parse(phoneDecoded) as { propertyId: number; recipient: string; agentWallet?: string };
     expect(parsed.recipient).toMatch(/^0x[a-fA-F0-9]{40}$/);
+    expect(parsed.recipient.toLowerCase()).toBe(MOCK_PROFILE_WALLET.toLowerCase());
     expect(parsed.propertyId).toBeGreaterThan(0);
+    expect(parsed.agentWallet).toBeUndefined();
 
-    const customWallet = params.get('custom_0zdAJJKy');
-    expect(customWallet).toBeTruthy();
-    expect(decodeURIComponent(customWallet!)).toMatch(/^0x[a-fA-F0-9]{40}$/);
-
+    const customWallet = decodeURIComponent(params.get('custom_0zdAJJKy') || '');
+    expect(customWallet).toMatch(/^0x[a-fA-F0-9]{40}$/);
     expect(params.get('email')).toBeTruthy();
     expect(params.get('amount')).toBeTruthy();
   });

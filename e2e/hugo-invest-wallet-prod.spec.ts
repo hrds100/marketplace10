@@ -1,11 +1,8 @@
 /**
- * Production check: hugodesouzax@gmail.com sees real wallet on Invest Marketplace (no mocks).
+ * Production: Invest marketplace has no on-page wallet banner; SamCart URL uses human last_name.
  *
- * Requires:
  *   export HUGO_E2E_PASSWORD='your Supabase email password'
- *
- * Run:
- *   HUGO_E2E_PASSWORD=... npx playwright test e2e/hugo-invest-wallet-prod.spec.ts --config=e2e/hub-playwright.config.ts
+ *   npx playwright test e2e/hugo-invest-wallet-prod.spec.ts --config=e2e/hub-playwright.config.ts
  */
 import { test, expect, type Page } from '@playwright/test';
 
@@ -44,8 +41,8 @@ async function injectSession(page: Page, email: string, password: string) {
   );
 }
 
-test.describe('Production — Hugo wallet on Invest Marketplace', () => {
-  test('Receiving wallet shows a valid 0x address (real profile, no stub)', async ({ page }) => {
+test.describe('Production — Hugo invest + SamCart', () => {
+  test('No receiving-wallet banner; checkout URL has human last_name + clean phone JSON', async ({ page }) => {
     const password = process.env.HUGO_E2E_PASSWORD;
     test.skip(!password, 'Set HUGO_E2E_PASSWORD to run this test against hub.nfstay.com');
 
@@ -57,12 +54,28 @@ test.describe('Production — Hugo wallet on Invest Marketplace', () => {
     });
 
     expect(page.url()).toContain('invest/marketplace');
+    await expect(page.locator('text=Receiving wallet')).toHaveCount(0);
 
-    const walletEl = page.getByTestId('invest-receiving-wallet');
-    await expect(walletEl).toBeVisible({ timeout: 35000 });
+    await page.getByPlaceholder('500').fill('10000');
+    await page.getByTestId('invest-tsa-checkbox').evaluate((el) => (el as HTMLButtonElement).click());
+    const secureBtn = page.locator('button:has-text("Secure Your Allocations")');
+    await expect(secureBtn).toBeEnabled({ timeout: 15000 });
+    await secureBtn.evaluate((el) => (el as HTMLButtonElement).click());
 
-    const text = ((await walletEl.textContent()) ?? '').trim();
-    expect(text).toMatch(/^0x[a-fA-F0-9]{40}$/);
-    expect(text.toLowerCase()).not.toBe('0x0000000000000000000000000000000000000000');
+    await expect(page.getByRole('heading', { name: 'Complete Payment' })).toBeVisible({ timeout: 15000 });
+    const iframe = page.locator('iframe[title="SamCart Checkout"]');
+    await expect(iframe).toBeVisible({ timeout: 20000 });
+
+    const iframeSrc = await iframe.getAttribute('src');
+    expect(iframeSrc).toBeTruthy();
+    const u = new URL(iframeSrc!);
+    const lastName = decodeURIComponent(u.searchParams.get('last_name') || '');
+    expect(lastName).not.toMatch(/^0x[a-fA-F0-9]{40}$/);
+
+    const phoneDecoded = decodeURIComponent(u.searchParams.get('phone_number') || '');
+    const parsed = JSON.parse(phoneDecoded) as { propertyId: number; recipient: string; agentWallet?: string };
+    expect(parsed.recipient).toMatch(/^0x[a-fA-F0-9]{40}$/);
+    expect(parsed.propertyId).toBeGreaterThan(0);
+    expect(parsed.agentWallet).toBeUndefined();
   });
 });
