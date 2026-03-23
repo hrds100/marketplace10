@@ -98,7 +98,7 @@ export default function AdminQuickList() {
     setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
-  // Generate listing via n8n AI webhook
+  // Parse raw text into structured fields + get AI description
   const handleGenerate = async () => {
     if (!rawText.trim()) {
       toast.error('Paste some listing text first');
@@ -106,27 +106,123 @@ export default function AdminQuickList() {
     }
     setParsing(true);
     try {
-      const res = await fetch(`${N8N_BASE}/webhook/ai-parse-listing`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rawText,
-          systemPrompt: systemPrompt || undefined,
-        }),
-      });
-      if (!res.ok) throw new Error('AI request failed');
-      const data = await res.json();
-      if (data?.error) throw new Error(data.error);
+      const text = rawText;
 
-      // The n8n response may return the listing directly or nested
-      let parsed: ParsedListing;
-      if (data?.listing) {
-        parsed = data.listing;
-      } else if (data?.name || data?.city) {
-        parsed = data;
-      } else {
-        parsed = EMPTY_LISTING;
+      // Step 1: Extract fields from raw text with regex
+      const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
+      const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : null;
+
+      const bedsMatch = text.match(/(\d+)\s*(?:bed(?:room)?s?|double\s+bed)/i);
+      const bedrooms = bedsMatch ? parseInt(bedsMatch[1]) : null;
+
+      const bathsMatch = text.match(/(\d+)\s*bath(?:room)?s?/i);
+      const bathrooms = bathsMatch ? parseInt(bathsMatch[1]) : null;
+
+      const rentMatch = text.match(/[£]?\s*(\d[\d,]*)\s*(?:pcm|pm|per\s*month)/i);
+      const rent_monthly = rentMatch ? parseInt(rentMatch[1].replace(/,/g, '')) : null;
+
+      // Derive city from postcode prefix
+      const postcodeCity: Record<string, string> = {
+        'IG': 'Ilford', 'BN': 'Worthing', 'M': 'Manchester', 'B': 'Birmingham',
+        'L': 'Liverpool', 'LS': 'Leeds', 'S': 'Sheffield', 'BS': 'Bristol',
+        'NG': 'Nottingham', 'LE': 'Leicester', 'CF': 'Cardiff', 'EH': 'Edinburgh',
+        'G': 'Glasgow', 'NE': 'Newcastle', 'SR': 'Sunderland', 'CV': 'Coventry',
+        'SW': 'London', 'SE': 'London', 'E': 'London', 'N': 'London', 'W': 'London',
+        'EC': 'London', 'WC': 'London', 'NW': 'London', 'EN': 'London',
+        'CR': 'Croydon', 'BR': 'Bromley', 'DA': 'Dartford', 'KT': 'Kingston',
+        'TW': 'Twickenham', 'HA': 'Harrow', 'UB': 'Uxbridge', 'SM': 'Sutton',
+        'RG': 'Reading', 'OX': 'Oxford', 'CB': 'Cambridge', 'PE': 'Peterborough',
+        'MK': 'Milton Keynes', 'LU': 'Luton', 'AL': 'St Albans', 'WD': 'Watford',
+        'HP': 'Hemel Hempstead', 'SL': 'Slough', 'GU': 'Guildford', 'PO': 'Portsmouth',
+        'SO': 'Southampton', 'BH': 'Bournemouth', 'DT': 'Dorchester', 'EX': 'Exeter',
+        'PL': 'Plymouth', 'TQ': 'Torquay', 'BA': 'Bath', 'GL': 'Gloucester',
+        'WR': 'Worcester', 'HR': 'Hereford', 'SY': 'Shrewsbury', 'ST': 'Stoke',
+        'DE': 'Derby', 'DN': 'Doncaster', 'HU': 'Hull', 'YO': 'York',
+        'HG': 'Harrogate', 'BD': 'Bradford', 'HX': 'Halifax', 'WF': 'Wakefield',
+        'HD': 'Huddersfield', 'OL': 'Oldham', 'BL': 'Bolton', 'WN': 'Wigan',
+        'PR': 'Preston', 'BB': 'Blackburn', 'FY': 'Blackpool', 'LA': 'Lancaster',
+        'CA': 'Carlisle', 'DL': 'Darlington', 'TS': 'Middlesbrough', 'DH': 'Durham',
+        'CT': 'Canterbury', 'ME': 'Rochester', 'TN': 'Tunbridge Wells', 'SS': 'Southend',
+        'CM': 'Chelmsford', 'CO': 'Colchester', 'IP': 'Ipswich', 'NR': 'Norwich',
+        'LN': 'Lincoln', 'WS': 'Walsall', 'WV': 'Wolverhampton', 'DY': 'Dudley',
+        'RM': 'Romford',
+      };
+      const prefix = postcode ? postcode.replace(/\d.*/, '') : null;
+      const cityFromPostcode = prefix ? postcodeCity[prefix] || null : null;
+
+      // Check for city name in text
+      const cityNames = Object.values(postcodeCity);
+      const cityInText = cityNames.find(c => text.toLowerCase().includes(c.toLowerCase()));
+      const city = cityInText || cityFromPostcode;
+
+      // Detect type
+      const typeMap: [RegExp, string, string][] = [
+        [/\bbungalow\b/i, 'Bungalow', 'house'],
+        [/\bhmo\b/i, 'HMO', 'hmo'],
+        [/\bstudio\b/i, 'Studio', 'flat'],
+        [/\bflat\b/i, 'Flat', 'flat'],
+        [/\bhouse\b/i, 'House', 'house'],
+        [/\broom\b/i, 'Room', 'flat'],
+        [/\bapartment\b/i, 'Flat', 'flat'],
+      ];
+      let type: string | null = null;
+      let property_category: string | null = null;
+      for (const [re, t, cat] of typeMap) {
+        if (re.test(text)) { type = t; property_category = cat; break; }
       }
+
+      // Check SA approved
+      const saMatch = text.match(/sa\s*(?:approved|compliant|complaint)/i);
+      const hmoMatch = text.match(/hmo\s*(?:compliant|complaint|licensed)/i);
+
+      // Generate name
+      const name = [
+        bedrooms ? `${bedrooms}-Bed` : null,
+        type || 'Property',
+        city,
+      ].filter(Boolean).join(', ');
+
+      // Build parsed listing
+      const parsed: ParsedListing = {
+        name,
+        city,
+        postcode,
+        bedrooms,
+        bathrooms,
+        rent_monthly,
+        property_category,
+        type,
+        furnished: /\bfurnished\b/i.test(text) ? true : null,
+        garage: /\bgarage\b/i.test(text) || /\bparking\b/i.test(text) ? true : null,
+        description: null,
+        features: [],
+        sa_approved: saMatch ? 'yes' : hmoMatch ? 'yes' : null,
+        notes: null,
+      };
+
+      // Step 2: Call existing AI webhook for description
+      try {
+        const descRes = await fetch(`${N8N_BASE}/webhook/ai-generate-listing`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            city: parsed.city || '',
+            postcode: parsed.postcode || '',
+            bedrooms: parsed.bedrooms || 0,
+            bathrooms: parsed.bathrooms || 0,
+            type: parsed.type || parsed.property_category || '',
+            rent: parsed.rent_monthly || 0,
+            notes: text,
+          }),
+        });
+        if (descRes.ok) {
+          const descData = await descRes.json();
+          if (descData?.description) parsed.description = descData.description;
+        }
+      } catch {
+        // Description generation failed - not critical
+      }
+
       setListing(parsed);
 
       // Auto-fetch Pexels photos if no photos uploaded
