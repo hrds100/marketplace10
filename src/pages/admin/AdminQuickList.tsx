@@ -200,21 +200,24 @@ export default function AdminQuickList() {
         notes: null,
       };
 
-      // Step 2: Clean text before sending to AI (strip contact info, fees, emojis)
+      // Step 2: Clean text - strip ALL contact info, fees, availability, emojis
       const cleanedText = text
-        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}]/gu, '') // emojis
-        .replace(/\b0\d{10,11}\b/g, '') // UK phone numbers
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{200D}\u{2328}\u{23CF}\u{23E9}-\u{23F3}\u{23F8}-\u{23FA}\u{2702}-\u{27B0}]/gu, '') // emojis
+        .replace(/\b0\d{9,11}\b/g, '') // UK phone numbers (07xxx, 0208xxx)
         .replace(/\+\d{10,13}/g, '') // intl phone numbers
-        .replace(/whatsapp\s*[:📲]?\s*/gi, '')
-        .replace(/\bDM\b.*$/gim, '') // DM lines
-        .replace(/\b(call|text|contact|message|ring)\b.*\d{5,}/gi, '') // contact lines with numbers
-        .replace(/procurement\s*fee.*$/gim, '') // procurement fee lines
-        .replace(/deposit.*£?\d+.*$/gim, '') // deposit lines
-        .replace(/agent\s*fee.*$/gim, '') // agent fee lines
-        .replace(/available\s*now/gi, '')
-        .replace(/\n{3,}/g, '\n\n') // collapse blank lines
+        .replace(/.*whatsapp.*$/gim, '') // entire WhatsApp lines
+        .replace(/.*\bDM\b.*$/gim, '') // entire DM lines
+        .replace(/.*\b(call|text|contact|message|ring|enquire|enquiry)\b.*$/gim, '') // entire contact lines
+        .replace(/.*\barrange\s*(a\s*)?viewing\b.*$/gim, '') // viewing lines
+        .replace(/.*procurement\s*fee.*$/gim, '') // procurement fee lines
+        .replace(/.*\bdeposit\b.*£?\d+.*$/gim, '') // deposit lines
+        .replace(/.*agent\s*fee.*$/gim, '') // agent fee lines
+        .replace(/.*available\s*(now|immediately).*$/gim, '') // availability lines
+        .replace(/.*\bfor\s*more\s*(details|info).*$/gim, '') // "for more details" lines
+        .replace(/\n{3,}/g, '\n\n')
         .trim();
 
+      // Only send structured data to AI - no raw text notes
       try {
         const descRes = await fetch(`${N8N_BASE}/webhook/ai-generate-listing`, {
           method: 'POST',
@@ -227,6 +230,7 @@ export default function AdminQuickList() {
             type: parsed.type || parsed.property_category || '',
             rent: parsed.rent_monthly || 0,
             notes: cleanedText,
+            instructions: 'Write a professional property listing for a website. Do not include any phone numbers, contact details, WhatsApp references, DM requests, email addresses, or company names. Do not mention deposits, procurement fees, or agent fees. Do not say available now. Write as if this is a live listing on a property marketplace website.',
           }),
         });
         if (descRes.ok) {
@@ -426,26 +430,28 @@ export default function AdminQuickList() {
 
           {/* Photo previews */}
           {photoPreviews.length > 0 && (
-            <div>
-              {pexelsUrls.length > 0 && photos.length === 0 && (
-                <p className="text-[10px] text-muted-foreground mb-1.5 italic">Images for illustrative purposes only</p>
-              )}
-              <div className="flex gap-2 flex-wrap">
-                {photoPreviews.map((src, i) => (
+            <div className="flex gap-2 flex-wrap">
+              {photoPreviews.map((src, i) => {
+                const isPexels = pexelsUrls.includes(src);
+                return (
                   <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-                    <img src={src} alt="" className="w-full h-full object-cover" />
-                    <button
-                      onClick={() => removePhoto(i)}
-                      className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
-                    >
-                      <X className="w-3 h-3 text-white" />
-                    </button>
-                    {pexelsUrls.includes(src) && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[7px] text-center py-0.5">Illustrative</div>
+                    <img src={src} alt="" className={`w-full h-full object-cover ${isPexels ? 'blur-[6px] scale-110' : ''}`} />
+                    {isPexels && (
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <span className="text-white text-[7px] font-medium text-center leading-tight px-1">Photos on<br/>request</span>
+                      </div>
+                    )}
+                    {!isPexels && (
+                      <button
+                        onClick={() => removePhoto(i)}
+                        className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
                     )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           )}
 
@@ -482,20 +488,20 @@ export default function AdminQuickList() {
 
               {/* Photo strip */}
               {photoPreviews.length > 0 && (
-                <div>
-                  {pexelsUrls.length > 0 && photos.length === 0 && (
-                    <p className="text-[10px] text-muted-foreground mb-1.5 italic">Images for illustrative purposes only</p>
-                  )}
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {photoPreviews.map((src, i) => (
-                      <div key={i} className="relative flex-shrink-0">
-                        <img src={src} alt="" className="w-28 h-20 rounded-lg object-cover border border-border" />
-                        {pexelsUrls.includes(src) && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[7px] text-center py-0.5 rounded-b-lg">Illustrative only</div>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {photoPreviews.map((src, i) => {
+                    const isPexels = pexelsUrls.includes(src);
+                    return (
+                      <div key={i} className="relative flex-shrink-0 w-28 h-20 rounded-lg overflow-hidden border border-border">
+                        <img src={src} alt="" className={`w-full h-full object-cover ${isPexels ? 'blur-[6px] scale-110' : ''}`} />
+                        {isPexels && (
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                            <span className="text-white text-[8px] font-medium text-center leading-tight">Photos available<br/>upon enquiry</span>
+                          </div>
                         )}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
 
