@@ -113,11 +113,12 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       >
         <div className="relative h-[200px] overflow-hidden">
           <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy"
-            className={`w-full h-full object-cover ${isPexelsPhoto ? 'blur-[8px] scale-110' : ''}`}
+            className="w-full h-full object-cover"
+            style={isPexelsPhoto ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined}
             onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
           {isPexelsPhoto && (
-            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1.5 z-[1]">
-              <Lock className="w-6 h-6 text-white/90" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 z-[1]" style={{ background: 'rgba(0,0,0,0.4)' }}>
+              <Lock className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.9)' }} />
               <span className="text-white text-xs font-medium">Photos on request</span>
             </div>
           )}
@@ -190,11 +191,12 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover flex flex-col">
       <div className="relative h-[200px] overflow-hidden">
         <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy"
-          className={`w-full h-full object-cover ${isPexelsPhoto ? 'blur-[8px] scale-110' : ''}`}
+          className="w-full h-full object-cover"
+          style={isPexelsPhoto ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined}
           onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
         {isPexelsPhoto && (
-          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1.5 z-[1]">
-            <Lock className="w-6 h-6 text-white/90" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 z-[1]" style={{ background: 'rgba(0,0,0,0.4)' }}>
+            <Lock className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.9)' }} />
             <span className="text-white text-xs font-medium">Photos on request</span>
           </div>
         )}
