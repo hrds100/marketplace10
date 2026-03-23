@@ -26,7 +26,7 @@ export default function StepUsageIntent({ operator, onSave, saving }: Props) {
   return (
     <form id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">How do you plan to use NFStay?</h2>
+        <h2 className="text-xl font-semibold">How do you plan to use nfstay?</h2>
         <p className="text-sm text-muted-foreground mt-1">You can change this later.</p>
       </div>
       <div className="grid gap-3">

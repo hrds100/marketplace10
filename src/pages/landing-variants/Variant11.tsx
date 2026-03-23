@@ -64,8 +64,8 @@ export default function Variant11() {
 
   const faqs = [
     { q: 'What is rent-to-rent?', a: 'Rent-to-rent is a strategy where you lease a property from a landlord on a long-term basis, then sub-let it on a short-term or serviced accommodation basis. You pay the landlord a guaranteed rent and keep the difference as profit.' },
-    { q: 'How does NFsTay verify deals?', a: 'Every deal on NFsTay is compliance-checked and landlord-approved. We verify financials using Airdna data, confirm landlord consent, and check that the property meets local authority requirements for short-let use.' },
-    { q: 'Do I need experience?', a: 'No. NFsTay Academy provides 9 modules and 36 lessons covering everything from finding your first deal to scaling a portfolio. Many of our operators started with zero experience.' },
+    { q: 'How does nfstay verify deals?', a: 'Every deal on nfstay is compliance-checked and landlord-approved. We verify financials using Airdna data, confirm landlord consent, and check that the property meets local authority requirements for short-let use.' },
+    { q: 'Do I need experience?', a: 'No. nfstay Academy provides 9 modules and 36 lessons covering everything from finding your first deal to scaling a portfolio. Many of our operators started with zero experience.' },
     { q: 'What\u2019s included in the free plan?', a: 'The free plan lets you browse all live deals, view listing details, and access limited academy content. To unlock the CRM, inbox, booking site builder, and full academy, you\u2019ll need a Pro or Lifetime plan.' },
     { q: 'How do JV partnerships work?', a: 'JV Partners lets you buy fractional shares in high-performing Airbnb properties from just $1 per share. You earn monthly rental income proportional to your stake and can vote on property management decisions.' },
     { q: 'Can I build a booking site?', a: 'Yes. Pro and Lifetime members can launch a fully branded direct booking site at yourbrand.nfstay.app. List your properties, accept bookings, and avoid platform commissions entirely.' },
@@ -121,7 +121,7 @@ export default function Variant11() {
 
         {/* ───────────────────── 1. NAVBAR ───────────────────── */}
         <nav className="sticky top-0 z-50 h-[72px] flex items-center justify-between px-6 lg:px-12 bg-white/80 backdrop-blur-md border-b border-[#e8eaed]">
-          <span className="text-xl font-bold tracking-tight" style={{ color: DARK }}>NFsTay</span>
+          <span className="text-xl font-bold tracking-tight" style={{ color: DARK }}>nfstay</span>
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8">
@@ -178,7 +178,7 @@ export default function Variant11() {
               Find landlord-approved Airbnb deals and start earning
             </motion.h1>
             <motion.p variants={fadeUp} className="text-base leading-relaxed max-w-2xl mx-auto mb-8" style={{ color: '#262c37cc', fontSize: 16, lineHeight: '160%' }}>
-              NFsTay is the all-in-one platform for rent-to-rent operators. Browse verified deals, manage your pipeline, build your booking site, and grow your portfolio — all from one dashboard.
+              nfstay is the all-in-one platform for rent-to-rent operators. Browse verified deals, manage your pipeline, build your booking site, and grow your portfolio — all from one dashboard.
             </motion.p>
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
               <button className="px-8 py-3.5 text-sm font-semibold text-white rounded-lg transition-all duration-200 hover:opacity-90 hover:shadow-lg" style={{ backgroundColor: GREEN }}>
@@ -192,7 +192,7 @@ export default function Variant11() {
               Free to browse. 120+ live deals. 15 UK cities.
             </motion.p>
             <motion.div variants={fadeUp} className="mt-12 w-full aspect-video bg-white rounded-2xl shadow-lg border border-[#e8eaed] flex items-center justify-center">
-              <span className="text-sm font-medium" style={{ color: '#262c37aa' }}>NFsTay Dashboard Preview</span>
+              <span className="text-sm font-medium" style={{ color: '#262c37aa' }}>nfstay Dashboard Preview</span>
             </motion.div>
           </motion.div>
         </section>
@@ -264,7 +264,7 @@ export default function Variant11() {
         <section className="py-20 px-6 bg-white">
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-6xl mx-auto">
             <motion.h2 variants={fadeUp} className="text-2xl md:text-4xl font-bold text-center mb-16" style={{ fontSize: 'clamp(24px, 4vw, 36px)', lineHeight: '120%', color: DARK }}>
-              How NFsTay Works
+              How nfstay Works
             </motion.h2>
             <div className="grid md:grid-cols-4 gap-8 relative">
               {/* Connecting line — desktop only */}
@@ -365,7 +365,7 @@ export default function Variant11() {
             <motion.div variants={fadeUp} className="text-center mb-12">
               <h2 className="text-2xl md:text-4xl font-bold mb-4" style={{ color: DARK }}>Manage Your Pipeline</h2>
               <p className="text-base max-w-2xl mx-auto" style={{ color: '#262c37cc', lineHeight: '160%' }}>
-                Track every deal from first contact to signed contract. Message landlords, manage stages, and close deals without leaving NFsTay.
+                Track every deal from first contact to signed contract. Message landlords, manage stages, and close deals without leaving nfstay.
               </p>
             </motion.div>
             <div className="grid md:grid-cols-2 gap-8 mb-10">
@@ -483,7 +483,7 @@ export default function Variant11() {
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-6xl mx-auto">
             <motion.div variants={fadeUp} className="text-center mb-12">
               <div className="flex items-center justify-center gap-3 mb-4">
-                <h2 className="text-2xl md:text-4xl font-bold" style={{ color: DARK }}>NFsTay Academy</h2>
+                <h2 className="text-2xl md:text-4xl font-bold" style={{ color: DARK }}>nfstay Academy</h2>
                 <span className="text-[10px] font-semibold uppercase tracking-wide px-3 py-1 rounded-full" style={{ backgroundColor: `${GREEN}18`, color: GREEN }}>
                   UK-Focused Training
                 </span>
@@ -542,7 +542,7 @@ export default function Variant11() {
         <section id="agents" className="py-20 px-6" style={{ backgroundColor: LIGHT_BG }}>
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-5xl mx-auto">
             <motion.div variants={fadeUp} className="text-center mb-12">
-              <h2 className="text-2xl md:text-4xl font-bold mb-4" style={{ color: DARK }}>Earn as an NFsTay Agent</h2>
+              <h2 className="text-2xl md:text-4xl font-bold mb-4" style={{ color: DARK }}>Earn as an nfstay Agent</h2>
               <p className="text-base max-w-2xl mx-auto" style={{ color: '#262c37cc', lineHeight: '160%' }}>
                 Share your link. Earn 40% recurring commission on subscriptions and 10% on JV deals.
               </p>
@@ -701,7 +701,7 @@ export default function Variant11() {
               Ready to find your first rent-to-rent deal?
             </motion.h2>
             <motion.p variants={fadeUp} className="text-base mb-8" style={{ color: 'rgba(255,255,255,0.7)', lineHeight: '160%' }}>
-              Join 200+ UK operators building their portfolios with NFsTay.
+              Join 200+ UK operators building their portfolios with nfstay.
             </motion.p>
             <motion.div variants={fadeUp}>
               <button className="px-10 py-4 text-sm font-semibold text-white rounded-lg transition-all duration-200 hover:opacity-90 hover:shadow-xl" style={{ backgroundColor: GREEN }}>
@@ -717,7 +717,7 @@ export default function Variant11() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
               {/* Logo column */}
               <div className="col-span-2 md:col-span-1">
-                <span className="text-xl font-bold text-white">NFsTay</span>
+                <span className="text-xl font-bold text-white">nfstay</span>
                 <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.5)', lineHeight: '160%' }}>
                   The UK's rent-to-rent marketplace for operators and investors.
                 </p>
@@ -747,7 +747,7 @@ export default function Variant11() {
             </div>
             <div className="border-t pt-8" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
               <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                Copyright 2025 NFsTay. All rights reserved.
+                Copyright 2025 nfstay. All rights reserved.
               </p>
             </div>
           </div>

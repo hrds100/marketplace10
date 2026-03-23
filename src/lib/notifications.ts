@@ -39,7 +39,7 @@ export async function sendInvestNotification(event: {
     if (event.user_id) {
       await (supabase.from('notifications') as any).insert({
         user_id: event.user_id,
-        title: 'NFsTay Investment',
+        title: 'nfstay Investment',
         body: getNotificationMessage(event.type, event),
         read: false,
       });
@@ -66,5 +66,5 @@ function getNotificationMessage(type: string, event: Record<string, unknown>): s
     boost_activated: `Your APR has been boosted for ${property}.`,
   };
 
-  return messages[type] || `NFsTay notification: ${type}`;
+  return messages[type] || `nfstay notification: ${type}`;
 }

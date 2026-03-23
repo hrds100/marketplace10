@@ -4,7 +4,7 @@ import { useNfsOperator } from '@/hooks/nfstay/use-nfs-operator';
 import { NFS_ROUTES } from '@/lib/nfstay/constants';
 
 /**
- * Auth guard for NFStay operator routes.
+ * Auth guard for nfstay operator routes.
  * 1. Not authenticated → redirect to shared /signup
  * 2. Authenticated but no nfs_operators row → redirect to /nfstay/onboarding
  * 3. Both OK → render children

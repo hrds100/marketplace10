@@ -63,12 +63,12 @@ const COURSES = [
 ];
 
 const TESTIMONIALS = [
-  { q: 'NFsTay helped me close my first three deals in under a month. The CRM is the reason I stay organised.', name: 'Sarah K.', city: 'Manchester' },
+  { q: 'nfstay helped me close my first three deals in under a month. The CRM is the reason I stay organised.', name: 'Sarah K.', city: 'Manchester' },
   { q: 'The Academy alone paid for itself. I went from zero to signing my first property in six weeks.', name: 'Tom P.', city: 'London' },
   { q: 'Every deal is verified. The earnings estimator is accurate. I use it before every viewing.', name: 'Priya S.', city: 'Birmingham' },
 ];
 
-const PRICING = ['1,800+ verified deals','CRM pipeline','Unified inbox','Earnings estimator','NFsTay Academy','Direct landlord contact','Priority deal alerts','Affiliate programme'];
+const PRICING = ['1,800+ verified deals','CRM pipeline','Unified inbox','Earnings estimator','nfstay Academy','Direct landlord contact','Priority deal alerts','Affiliate programme'];
 
 export default function LandingPageV8() {
   const [persona, setPersona] = useState<PersonaKey>('new');
@@ -119,7 +119,7 @@ export default function LandingPageV8() {
         <div className="max-w-[1100px] mx-auto px-6">
           <div className="text-center mb-8">
             <h2 className="text-[32px] font-bold text-gray-900 tracking-tight">What describes you?</h2>
-            <p className="text-gray-500 mt-3 max-w-lg mx-auto">Select your stage to see how NFsTay fits.</p>
+            <p className="text-gray-500 mt-3 max-w-lg mx-auto">Select your stage to see how nfstay fits.</p>
           </div>
           <div className="flex gap-2 justify-center flex-wrap mb-10">
             {([['new','New operator'],['scaling','Scaling operator'],['landlord','Landlord']] as const).map(([key, label]) => (
@@ -304,7 +304,7 @@ export default function LandingPageV8() {
       <section className="py-16 text-center" style={{ background: 'linear-gradient(135deg, #1e9a80, #0e1726)' }}>
         <div className="max-w-[1100px] mx-auto px-6">
           <h2 className="text-[28px] font-bold text-white mb-2">Ready to find your next deal?</h2>
-          <p className="text-white/70 mb-6">Join 4,200+ operators building their portfolio with NFsTay.</p>
+          <p className="text-white/70 mb-6">Join 4,200+ operators building their portfolio with nfstay.</p>
           <div className="flex gap-3 justify-center flex-wrap">
             <Link to="/signup" className="h-12 px-8 rounded-xl bg-white text-gray-900 font-semibold text-[15px] inline-flex items-center transition-all duration-200 hover:bg-gray-100 hover:scale-[1.02] active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Start 3-day trial for &pound;5</Link>
             <Link to="/signin" className="h-12 px-8 rounded-xl font-medium text-[15px] inline-flex items-center text-white/70 border border-white/20 hover:text-white hover:border-white/40 transition-all duration-200 active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">Sign in</Link>
@@ -321,7 +321,7 @@ export default function LandingPageV8() {
             <div><h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Learn</h4><div className="space-y-1"><a href="#" className="block text-sm text-gray-500 hover:text-primary">Academy</a><a href="#" className="block text-sm text-gray-500 hover:text-primary">How It Works</a></div></div>
             <div><h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Company</h4><div className="space-y-1"><a href="#" className="block text-sm text-gray-500 hover:text-primary">Pricing</a><a href="#" className="block text-sm text-gray-500 hover:text-primary">Agent Programme</a><a href="#" className="block text-sm text-gray-500 hover:text-primary">Contact</a></div></div>
           </div>
-          <div className="border-t border-gray-50 pt-4 text-center text-xs text-gray-400">&copy; 2026 NFsTay. All rights reserved.</div>
+          <div className="border-t border-gray-50 pt-4 text-center text-xs text-gray-400">&copy; 2026 nfstay. All rights reserved.</div>
         </div>
       </footer>
     </div>

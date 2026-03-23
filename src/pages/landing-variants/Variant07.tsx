@@ -33,7 +33,7 @@ const stagger = {
 };
 
 const threads = [
-  { name: "NFsTay Support", pinned: true, preview: "Welcome to NFsTay! Here's how to...", time: "Pinned" },
+  { name: "nfstay Support", pinned: true, preview: "Welcome to nfstay! Here's how to...", time: "Pinned" },
   { name: "Chris Germano", detail: "Manchester · 5-bed house", preview: "Hi, I saw your listing and...", time: "20 Mar" },
   { name: "Sarah Patel", detail: "Leeds · 3-bed flat", preview: "Can we discuss the rent terms?", time: "19 Mar" },
   { name: "James O'Brien", detail: "Liverpool · 4-bed terrace", preview: "I'd be happy to arrange a viewing", time: "18 Mar" },
@@ -117,7 +117,7 @@ export default function Variant07() {
             <span className="text-emerald-600">All in one inbox.</span>
           </motion.h1>
           <motion.p variants={fadeIn} className="mt-5 text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
-            NFsTay's built-in messaging connects you directly to landlords and agents. See property details, estimated earnings, and close your deal without leaving the conversation.
+            nfstay's built-in messaging connects you directly to landlords and agents. See property details, estimated earnings, and close your deal without leaving the conversation.
           </motion.p>
           <motion.div variants={fadeIn} className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button className="w-full sm:w-auto bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2">
@@ -360,7 +360,7 @@ export default function Variant07() {
         >
           <p className="text-5xl md:text-6xl font-extrabold text-emerald-600">3x</p>
           <p className="mt-3 text-xl md:text-2xl font-bold text-gray-900">
-            Operators who use NFsTay inbox close 3x faster than email
+            Operators who use nfstay inbox close 3x faster than email
           </p>
           <p className="mt-3 text-gray-500 text-sm max-w-lg mx-auto">
             Built-in property context, earnings data, and CRM integration mean fewer messages, faster decisions, and more signed contracts.
@@ -381,7 +381,7 @@ export default function Variant07() {
             Your next deal is one message away
           </motion.h2>
           <motion.p variants={fadeIn} className="mt-4 text-emerald-100 leading-relaxed">
-            Join operators across the UK who are closing rent-to-rent deals faster with NFsTay's messaging-first platform.
+            Join operators across the UK who are closing rent-to-rent deals faster with nfstay's messaging-first platform.
           </motion.p>
           <motion.div variants={fadeIn} className="mt-8">
             <button className="bg-white text-emerald-700 px-8 py-3 rounded-lg font-semibold hover:bg-emerald-50 transition inline-flex items-center gap-2">
@@ -395,7 +395,7 @@ export default function Variant07() {
       <footer className="bg-gray-900 text-gray-400 py-12 px-4 lg:px-8">
         <div className="max-w-6xl mx-auto grid sm:grid-cols-2 md:grid-cols-4 gap-8 text-sm">
           <div>
-            <span className="text-white font-bold text-lg">NFsTay</span>
+            <span className="text-white font-bold text-lg">nfstay</span>
             <p className="mt-3 leading-relaxed">The UK's rent-to-rent marketplace. Find deals, message landlords, close contracts.</p>
           </div>
           <div>
@@ -424,7 +424,7 @@ export default function Variant07() {
           </div>
         </div>
         <div className="max-w-6xl mx-auto mt-10 pt-6 border-t border-gray-800 text-xs text-center">
-          NFsTay Ltd. All rights reserved.
+          nfstay Ltd. All rights reserved.
         </div>
       </footer>
     </div>

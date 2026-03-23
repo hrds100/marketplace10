@@ -63,7 +63,7 @@ const benefits = [
   {
     icon: ShieldCheck,
     title: "Real Product",
-    desc: "NFsTay is a live platform with paying customers and active deal flow across the UK.",
+    desc: "nfstay is a live platform with paying customers and active deal flow across the UK.",
   },
   {
     icon: TrendingUp,
@@ -83,7 +83,7 @@ const faqs = [
   },
   {
     q: "Can I be an agent and an operator?",
-    a: "Yes. Many NFsTay agents also use the platform for their own rent-to-rent deals. The two roles are completely independent.",
+    a: "Yes. Many nfstay agents also use the platform for their own rent-to-rent deals. The two roles are completely independent.",
   },
 ];
 
@@ -150,11 +150,11 @@ export default function Variant06() {
           variants={stagger}
         >
           <motion.h1 variants={fadeIn} className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
-            Earn by sharing <span className="text-emerald-600">NFsTay</span>
+            Earn by sharing <span className="text-emerald-600">nfstay</span>
           </motion.h1>
 
           <motion.p variants={fadeIn} className="mt-5 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Become an NFsTay agent. Share your referral link. Earn up to 40% recurring commission
+            Become an nfstay agent. Share your referral link. Earn up to 40% recurring commission
             on every subscription — and 10% on JV deals.
           </motion.p>
 
@@ -424,7 +424,7 @@ export default function Variant06() {
             <a href="#" className="hover:text-gray-900 transition">Privacy</a>
             <a href="#" className="hover:text-gray-900 transition">Contact</a>
           </div>
-          <p>{"\u00a9"} 2026 NFsTay Ltd. All rights reserved.</p>
+          <p>{"\u00a9"} 2026 nfstay Ltd. All rights reserved.</p>
         </div>
       </footer>
     </div>

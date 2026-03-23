@@ -3,12 +3,12 @@ import { NavBar, SR, PillButton, Section, StatsBar, DealsSection, JVSection, Boo
 // V10: Gamified journey — dark premium, vertical timeline hero
 export default function Variant10() {
   const milestones = [
-    { level: 'Beginner', title: 'Learn the fundamentals', desc: 'Complete NFsTay University courses. Earn XP and unlock marketplace access.', feature: 'University' },
+    { level: 'Beginner', title: 'Learn the fundamentals', desc: 'Complete nfstay University courses. Earn XP and unlock marketplace access.', feature: 'University' },
     { level: 'Explorer', title: 'Browse live deals', desc: 'Filter 1,800+ verified rent-to-rent opportunities across 10 UK cities.', feature: 'Deals' },
     { level: 'Investor', title: 'Buy JV shares', desc: 'Invest from £500 in managed short-lets. Earn monthly income passively.', feature: 'JV Partners' },
     { level: 'Operator', title: 'Close your first deal', desc: 'Use the CRM to message landlords, negotiate terms, and sign contracts.', feature: 'Inbox & CRM' },
     { level: 'Builder', title: 'Launch your booking site', desc: 'Go direct with yourbrand.nfstay.app. Take bookings without OTA fees.', feature: 'Booking Site' },
-    { level: 'Titan', title: 'Earn as an Agent', desc: 'Share NFsTay with others. Earn 20% recurring commission and grow your network.', feature: 'Affiliate' },
+    { level: 'Titan', title: 'Earn as an Agent', desc: 'Share nfstay with others. Earn 20% recurring commission and grow your network.', feature: 'Affiliate' },
   ];
 
   return (
@@ -20,7 +20,7 @@ export default function Variant10() {
             <h1 className="font-inter text-4xl font-bold tracking-tight text-white md:text-6xl md:leading-[1.1]">
               Your path to{' '}<span className="font-playfair italic">property income</span>
             </h1>
-            <p className="mt-5 text-lg text-[#9CA3AF] max-w-xl mx-auto">From complete beginner to property business owner. NFsTay guides you through every step — learning, investing, operating, and scaling.</p>
+            <p className="mt-5 text-lg text-[#9CA3AF] max-w-xl mx-auto">From complete beginner to property business owner. nfstay guides you through every step — learning, investing, operating, and scaling.</p>
             <div className="mt-8">
               <PillButton variant="primary" className="px-8 py-3.5 text-base">Start Your Journey</PillButton>
             </div>

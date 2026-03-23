@@ -51,7 +51,7 @@ export function NfsMainFooter() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-border text-center">
-          <p className="text-xs text-muted-foreground">&copy; 2026 NFStay. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground">&copy; 2026 nfstay. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -12,7 +12,7 @@ export default function Variant09() {
               Rent-to-rent,<br />simplified.
             </h1>
             <p className="mt-8 text-xl text-[#9CA3AF] max-w-2xl leading-relaxed">
-              NFsTay is the marketplace where UK property operators find verified deals, invest in short-lets, manage their pipeline, and build direct booking sites — all from one account.
+              nfstay is the marketplace where UK property operators find verified deals, invest in short-lets, manage their pipeline, and build direct booking sites — all from one account.
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
               <PillButton variant="primary" className="px-10 py-4 text-base">Browse Deals</PillButton>

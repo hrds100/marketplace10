@@ -47,7 +47,7 @@ const steps = [
   {
     num: 3,
     title: "Secure Your Deal",
-    desc: "Message the landlord, negotiate terms, and close directly through NFsTay.",
+    desc: "Message the landlord, negotiate terms, and close directly through nfstay.",
   },
 ];
 
@@ -92,7 +92,7 @@ const features = [
   {
     icon: MessageSquare,
     title: "Inbox Messaging",
-    desc: "Communicate with landlords and agents directly inside NFsTay. No more lost emails.",
+    desc: "Communicate with landlords and agents directly inside nfstay. No more lost emails.",
   },
   {
     icon: Globe,
@@ -101,13 +101,13 @@ const features = [
   },
   {
     icon: GraduationCap,
-    title: "NFsTay University",
+    title: "nfstay University",
     desc: "Step-by-step courses on sourcing, compliance, furnishing, and scaling your SA business.",
   },
   {
     icon: Users,
     title: "Agent Programme",
-    desc: "Source deals for other operators and earn referral fees through the NFsTay agent network.",
+    desc: "Source deals for other operators and earn referral fees through the nfstay agent network.",
   },
 ];
 
@@ -128,7 +128,7 @@ const testimonials = [
   },
   {
     quote:
-      "NFsTay University taught me more in a month than six months of YouTube. The deal marketplace then let me put it into practice straight away.",
+      "nfstay University taught me more in a month than six months of YouTube. The deal marketplace then let me put it into practice straight away.",
     name: "Daniel Hughes",
     role: "New Operator",
     location: "Leeds",
@@ -141,7 +141,7 @@ const pricingTiers = [
     price: "\u00a30",
     period: "/month",
     desc: "Browse deals and explore the marketplace",
-    features: ["Browse all live deals", "View full listing details", "Basic search and filters", "NFsTay University preview"],
+    features: ["Browse all live deals", "View full listing details", "Basic search and filters", "nfstay University preview"],
     cta: "Get Started Free",
     highlighted: false,
   },
@@ -185,16 +185,16 @@ const faqs = [
     a: "Rent-to-rent is a strategy where you lease a property from a landlord at a fixed monthly rent, then sublease it as a serviced accommodation or short-term rental on platforms like Airbnb and Booking.com. The difference between what you pay the landlord and what guests pay you is your profit.",
   },
   {
-    q: "How does NFsTay verify deals?",
+    q: "How does nfstay verify deals?",
     a: "Every listing goes through a multi-step verification process. We confirm landlord consent, check the property's compliance status (including planning, insurance, and licensing), and review the financial projections against market data from Airdna and comparable listings.",
   },
   {
     q: "Do I need experience?",
-    a: "No. NFsTay is designed for both new and experienced operators. If you are just starting out, NFsTay University walks you through every step from sourcing your first deal to managing live guests. The marketplace also shows verified deals so you can learn by analysing real opportunities.",
+    a: "No. nfstay is designed for both new and experienced operators. If you are just starting out, nfstay University walks you through every step from sourcing your first deal to managing live guests. The marketplace also shows verified deals so you can learn by analysing real opportunities.",
   },
   {
     q: "What's included in the free plan?",
-    a: "The free plan lets you browse every live deal on the marketplace, view full listing details including financials, and access the introductory modules of NFsTay University. You can upgrade to Pro when you are ready to use the CRM, messaging, and booking site tools.",
+    a: "The free plan lets you browse every live deal on the marketplace, view full listing details including financials, and access the introductory modules of nfstay University. You can upgrade to Pro when you are ready to use the CRM, messaging, and booking site tools.",
   },
 ];
 
@@ -280,7 +280,7 @@ export default function Variant01() {
               </h1>
 
               <p className="text-lg text-gray-500 max-w-lg leading-relaxed">
-                NFsTay connects short-term rental operators with verified rent-to-rent opportunities. Browse deals,
+                nfstay connects short-term rental operators with verified rent-to-rent opportunities. Browse deals,
                 analyse returns, and start hosting — all in one platform.
               </p>
 
@@ -363,7 +363,7 @@ export default function Variant01() {
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.h2 variants={fadeIn} className="text-3xl sm:text-4xl font-bold text-center mb-14">
-              Latest Deals on NFsTay
+              Latest Deals on nfstay
             </motion.h2>
 
             <div className="grid md:grid-cols-3 gap-6">
@@ -428,7 +428,7 @@ export default function Variant01() {
             Everything you need to build your portfolio
           </motion.h2>
           <motion.p variants={fadeIn} className="text-gray-500 text-center mb-14 max-w-lg mx-auto">
-            From sourcing your first deal to managing a portfolio of short-term rentals, NFsTay has you covered.
+            From sourcing your first deal to managing a portfolio of short-term rentals, nfstay has you covered.
           </motion.p>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -596,7 +596,7 @@ export default function Variant01() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
             <h2 className="text-3xl sm:text-4xl font-bold">Ready to find your first deal?</h2>
             <p className="text-gray-400 max-w-md mx-auto">
-              Join hundreds of UK operators already using NFsTay to source, manage, and scale their rental portfolios.
+              Join hundreds of UK operators already using nfstay to source, manage, and scale their rental portfolios.
             </p>
             <a
               href="#"
@@ -614,7 +614,7 @@ export default function Variant01() {
           <span className="text-sm font-bold tracking-tight">
             NFs<span className="text-green-500">Tay</span>
           </span>
-          <p className="text-xs text-gray-400">&copy; 2025 NFsTay. All rights reserved.</p>
+          <p className="text-xs text-gray-400">&copy; 2025 nfstay. All rights reserved.</p>
           <div className="flex gap-6">
             <a href="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
               Privacy

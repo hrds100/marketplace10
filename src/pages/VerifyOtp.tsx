@@ -97,7 +97,7 @@ export default function VerifyOtp() {
     setVerified(true);
     if (!toastFiredRef.current) {
       toastFiredRef.current = true;
-      toast.success('WhatsApp verified! Welcome to NFsTay!');
+      toast.success('WhatsApp verified! Welcome to nfstay!');
     }
 
     // ── Social login: create Supabase account now (wallet already known) ──
@@ -210,7 +210,7 @@ export default function VerifyOtp() {
       <div className="flex-1 flex items-center justify-center p-6 md:p-8 relative z-10">
         <div className="w-full max-w-[400px]">
           <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">
-            NFsTay
+            nfstay
           </Link>
 
           <button
@@ -331,7 +331,7 @@ export default function VerifyOtp() {
         <div className="relative z-10 max-w-[400px]">
           <h2 className="text-[28px] font-bold text-white">Almost there!</h2>
           <p className="text-base mt-4 text-white/70">
-            Verify your WhatsApp to unlock deal alerts, agent support, and your full NFsTay dashboard.
+            Verify your WhatsApp to unlock deal alerts, agent support, and your full nfstay dashboard.
           </p>
           <div className="mt-8 space-y-3">
             {[

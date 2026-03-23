@@ -103,7 +103,7 @@ function getReachedMilestones(count: number) {
 function getAchievements(holdingsCount: number, totalClaimed: number, hasVoted: boolean) {
   return [
     { id: 'first-property', name: 'First Property', description: 'Contributed in your first property', icon: Home, unlocked: holdingsCount >= 1 },
-    { id: 'active-partner', name: 'Active Partner', description: 'Participated in the NFStay JV program', icon: Users, unlocked: holdingsCount > 0 },
+    { id: 'active-partner', name: 'Active Partner', description: 'Participated in the nfstay JV program', icon: Users, unlocked: holdingsCount > 0 },
     { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Contributed in 3+ properties', icon: Building2, unlocked: holdingsCount >= 3 },
     { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Contributed in 5+ properties', icon: Award, unlocked: holdingsCount >= 5 },
     { id: 'property-titan', name: 'Property Titan', description: 'Contributed in 10+ properties', icon: Crown, unlocked: holdingsCount >= 10 },

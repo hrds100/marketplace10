@@ -157,7 +157,7 @@ export default function SignIn() {
             {/* Heading */}
             <div className="text-center w-full" style={{ marginBottom: 'clamp(16px, 2.5vh, 32px)' }}>
               <h2 className="font-semibold text-[#0a0a0a] leading-tight tracking-tight" style={{ fontSize: 'clamp(20px, 2.7vh, 30px)' }}>Welcome back</h2>
-              <p className="text-base text-[#737373] text-center mt-1.5 leading-relaxed">Sign in to your NFsTay account</p>
+              <p className="text-base text-[#737373] text-center mt-1.5 leading-relaxed">Sign in to your nfstay account</p>
             </div>
 
             {/* Tab switcher */}

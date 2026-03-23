@@ -1425,7 +1425,7 @@ function Version1({
                 ))}
               </div>
               <p className="mt-3 text-[11px] text-muted-foreground border-t border-border/50 pt-2.5">
-                Management starts with NFsTay. If the majority votes to change it, it changes.
+                Management starts with nfstay. If the majority votes to change it, it changes.
               </p>
             </div>
           </div>
@@ -1598,7 +1598,7 @@ function Version2({
             ))}
           </div>
           <p className="mt-3 text-[11px] text-muted-foreground border-t border-border/50 pt-2.5">
-            Management starts with NFsTay. If the majority votes to change it, it changes.
+            Management starts with nfstay. If the majority votes to change it, it changes.
           </p>
         </div>
       </div>

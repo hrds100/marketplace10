@@ -55,6 +55,7 @@ import AdminGuard from "./components/AdminGuard";
 import NickelLandingPage from "./pages/NickelLandingPage";
 import NotFound from "./pages/NotFound";
 import LogosPage from "./pages/LogosPage";
+import BrandPage from "./pages/BrandPage";
 import TestingDesign from "./pages/TestingDesign";
 import LandingTestPage from "./pages/LandingTestPage";
 import TestAuthRedesign from "./pages/TestAuthRedesign";
@@ -224,6 +225,7 @@ const App = () => (
             <Route path="architecture" element={<AdminArchitecture />} />
           </Route>
           <Route path="/logos" element={<LogosPage />} />
+          <Route path="/brand" element={<BrandPage />} />
           <Route path="/landingtest" element={<LandingTestPage />} />
           <Route path="/testing/design" element={<TestingDesign />} />
           <Route path="/testing/auth-redesign" element={<TestAuthRedesign />} />

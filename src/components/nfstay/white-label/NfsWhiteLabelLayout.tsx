@@ -113,7 +113,7 @@ export default function NfsWhiteLabelLayout() {
           </div>
           <div className="mt-6 pt-4 border-t border-border/30 text-center">
             <p className="text-xs text-muted-foreground">
-              Powered by <a href="https://nfstay.app" className="hover:underline" target="_blank" rel="noopener noreferrer">NFStay</a>
+              Powered by <a href="https://nfstay.app" className="hover:underline" target="_blank" rel="noopener noreferrer">nfstay</a>
             </p>
           </div>
         </div>

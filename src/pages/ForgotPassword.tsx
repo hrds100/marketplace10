@@ -37,7 +37,7 @@ export default function ForgotPassword() {
     <div className="min-h-screen flex">
       <div className="flex-1 flex items-center justify-center p-6 md:p-8">
         <div className="w-full max-w-[400px]">
-          <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">NFsTay</Link>
+          <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">nfstay</Link>
 
           <Link
             to="/signin"

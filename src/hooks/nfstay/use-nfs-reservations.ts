@@ -44,7 +44,7 @@ export function useNfsReservations(filters?: {
 
       if (dbError) {
         if (dbError.code === '42P01') {
-          setError('NFStay tables not yet created. Run the Phase 3 migration first.');
+          setError('nfstay tables not yet created. Run the Phase 3 migration first.');
         } else {
           setError(dbError.message);
         }

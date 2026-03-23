@@ -564,7 +564,7 @@ export default function Variant02() {
             custom={1}
             className="mt-4 text-slate-400 text-lg"
           >
-            Join NFsTay partners already earning monthly rental income from
+            Join nfstay partners already earning monthly rental income from
             UK short-lets.
           </motion.p>
           <motion.div
@@ -587,7 +587,7 @@ export default function Variant02() {
           <span className="font-semibold text-white">
             NFs<span className="text-emerald-400">Tay</span>
           </span>
-          <p>&copy; {new Date().getFullYear()} NFsTay. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} nfstay. All rights reserved.</p>
           <div className="flex gap-6">
             <a href="#" className="hover:text-white transition">
               Privacy

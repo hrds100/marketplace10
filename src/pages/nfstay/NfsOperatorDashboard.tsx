@@ -30,7 +30,7 @@ export default function NfsOperatorDashboard() {
   if (!operator) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">Welcome to NFStay</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Welcome to nfstay</h1>
         <p className="text-muted-foreground">
           Your operator account is being set up. If this persists, try signing out and back in.
         </p>

@@ -4,7 +4,7 @@ const SLIDES = [
   {
     image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=1200&fit=crop',
     headline: 'From landlord listing to first booking',
-    body: 'NFsTay connects you with verified rent-to-rent deals across the UK. Find, negotiate, and launch your Airbnb in days.',
+    body: 'nfstay connects you with verified rent-to-rent deals across the UK. Find, negotiate, and launch your Airbnb in days.',
     type: 'stats' as const,
     stats: [
       { number: '1,800+', label: 'Verified deals' },
@@ -34,7 +34,7 @@ const SLIDES = [
       'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=face',
       'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=face',
     ],
-    avatarLabel: '4,200+ operators trust NFsTay',
+    avatarLabel: '4,200+ operators trust nfstay',
   },
 ];
 

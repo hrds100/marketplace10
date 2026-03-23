@@ -9,7 +9,7 @@ const ITEMS = [
   { label: 'Manage quick replies', icon: Zap },
   { label: 'Suggested replies', icon: Sparkles },
   { label: 'Archived messages', icon: Archive },
-  { label: 'Contact NFsTay Support', icon: LifeBuoy },
+  { label: 'Contact nfstay Support', icon: LifeBuoy },
 ];
 
 export default function MessagingSettingsModal({ open, onClose }: Props) {

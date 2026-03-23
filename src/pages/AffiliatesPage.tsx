@@ -9,9 +9,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 const BASE_URL = 'https://hub.nfstay.com';
 
 const SHARING_MESSAGES = [
-  { platform: 'WhatsApp', icon: MessageCircle, color: '#25D366', template: (link: string) => `Hey! I've been using NFsTay to find rent-to-rent deals across the UK. You should check it out 👇\n\n${link}` },
-  { platform: 'Email', icon: Mail, color: '#EA4335', template: (link: string) => `Hi,\n\nI wanted to share NFsTay with you — it's a property marketplace for rent-to-rent deals in the UK. I've been using it and finding great opportunities.\n\nSign up here: ${link}\n\nBest regards` },
-  { platform: 'Copy Message', icon: Copy, color: '#6B7280', template: (link: string) => `🏠 Check out NFsTay — the UK's rent-to-rent property marketplace. Browse landlord-approved deals and start your portfolio.\n\nSign up free: ${link}` },
+  { platform: 'WhatsApp', icon: MessageCircle, color: '#25D366', template: (link: string) => `Hey! I've been using nfstay to find rent-to-rent deals across the UK. You should check it out 👇\n\n${link}` },
+  { platform: 'Email', icon: Mail, color: '#EA4335', template: (link: string) => `Hi,\n\nI wanted to share nfstay with you — it's a property marketplace for rent-to-rent deals in the UK. I've been using it and finding great opportunities.\n\nSign up here: ${link}\n\nBest regards` },
+  { platform: 'Copy Message', icon: Copy, color: '#6B7280', template: (link: string) => `🏠 Check out nfstay — the UK's rent-to-rent property marketplace. Browse landlord-approved deals and start your portfolio.\n\nSign up free: ${link}` },
 ];
 
 function generateCode(name: string): string {
@@ -234,7 +234,7 @@ export default function AffiliatesPage() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {profile?.referral_code ? `Your code: ${profile.referral_code}` : 'Earn commission by referring people to NFsTay.'}
+            {profile?.referral_code ? `Your code: ${profile.referral_code}` : 'Earn commission by referring people to nfstay.'}
           </p>
         </div>
       </div>

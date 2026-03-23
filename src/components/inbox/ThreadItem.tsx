@@ -62,7 +62,7 @@ export default function ThreadItem({ thread, isSelected, onSelect, searchQuery =
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-foreground truncate">
-            {thread.isSupport ? 'NFsTay Support' : highlightMatch(thread.propertyTitle, searchQuery)}
+            {thread.isSupport ? 'nfstay Support' : highlightMatch(thread.propertyTitle, searchQuery)}
           </span>
           <span className="text-[11px] text-muted-foreground shrink-0">{thread.lastMessageAt}</span>
         </div>

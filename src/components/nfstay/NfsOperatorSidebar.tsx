@@ -26,7 +26,7 @@ export default function NfsOperatorSidebar({ collapsed, onCollapse }: NfsOperato
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
         {!collapsed && (
-          <span className="text-sm font-semibold text-foreground tracking-tight">NFStay</span>
+          <span className="text-sm font-semibold text-foreground tracking-tight">nfstay</span>
         )}
         <button
           onClick={() => onCollapse(!collapsed)}

@@ -10,14 +10,14 @@ import { AlertTriangle } from "lucide-react";
 
 export default function AdminNfsSettings() {
   const [saving, setSaving] = useState(false);
-  const [platformName, setPlatformName] = useState('NFStay');
+  const [platformName, setPlatformName] = useState('nfstay');
   const [supportEmail, setSupportEmail] = useState('support@nfstay.app');
   const [commissionRate, setCommissionRate] = useState('3');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [autoApprove, setAutoApprove] = useState(false);
   const [emailNewBooking, setEmailNewBooking] = useState(true);
   const [emailCancellation, setEmailCancellation] = useState(true);
-  const [welcomeTemplate, setWelcomeTemplate] = useState('Welcome to NFStay, {{name}}!\n\nYour account has been created successfully. Start exploring amazing vacation rentals from verified hosts.\n\nBest regards,\nThe NFStay Team');
+  const [welcomeTemplate, setWelcomeTemplate] = useState('Welcome to nfstay, {{name}}!\n\nYour account has been created successfully. Start exploring amazing vacation rentals from verified hosts.\n\nBest regards,\nThe nfstay Team');
 
   const handleSave = () => {
     setSaving(true);

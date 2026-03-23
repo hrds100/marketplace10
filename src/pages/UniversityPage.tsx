@@ -33,7 +33,7 @@ export default function UniversityPage() {
       {/* Header */}
       <div className="mb-2">
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-[28px] font-bold" style={{ color: '#111827' }}>NFsTay Academy</h1>
+          <h1 className="text-[28px] font-bold" style={{ color: '#111827' }}>nfstay Academy</h1>
           <span className="inline-flex items-center text-xs font-semibold px-3 py-1 rounded-full" style={{ background: '#ECFDF5', color: '#065F46' }}>
             UK-Focused Training
           </span>

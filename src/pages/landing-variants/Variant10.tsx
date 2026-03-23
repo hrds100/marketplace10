@@ -21,7 +21,7 @@ const journeyLevels = [
     title: 'Noobie',
     properties: '0 properties',
     description: 'Sign up and explore. Browse deals, start learning.',
-    features: ['NFsTay Academy', 'Deal Marketplace'],
+    features: ['nfstay Academy', 'Deal Marketplace'],
     status: 'complete' as const,
   },
   {
@@ -60,7 +60,7 @@ const journeyLevels = [
     level: 6,
     title: 'Property Titan',
     properties: '15+ properties',
-    description: "You're running an empire. NFsTay grows with you.",
+    description: "You're running an empire. nfstay grows with you.",
     features: ['Full platform access', 'Priority support'],
     status: 'locked' as const,
     star: true,
@@ -83,7 +83,7 @@ const tools = [
   {
     icon: MessageSquare,
     title: 'Inbox Messaging',
-    description: 'Message landlords, agents, and partners directly inside NFsTay.',
+    description: 'Message landlords, agents, and partners directly inside nfstay.',
     unlocksAt: 'Level 2',
   },
   {
@@ -237,7 +237,7 @@ export default function Variant10() {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="mx-auto mt-6 max-w-xl text-lg text-gray-400"
           >
-            NFsTay takes you from complete beginner to seasoned operator. Learn, deal, grow — with
+            nfstay takes you from complete beginner to seasoned operator. Learn, deal, grow — with
             the tools, training, and marketplace to back every step.
           </motion.p>
           <motion.div
@@ -535,7 +535,7 @@ export default function Variant10() {
         >
           <h2 className="text-3xl font-bold md:text-4xl">Every empire started with a single deal.</h2>
           <p className="mt-4 text-gray-400">
-            Join hundreds of operators building their property portfolios with NFsTay.
+            Join hundreds of operators building their property portfolios with nfstay.
           </p>
           <button className="mt-8 inline-flex items-center gap-2 rounded-lg bg-green-500 px-8 py-3 font-semibold text-white transition hover:bg-green-600">
             Start Your Journey <ArrowRight className="h-4 w-4" />
@@ -554,7 +554,7 @@ export default function Variant10() {
             <a href="#" className="transition hover:text-gray-300">Terms</a>
             <a href="#" className="transition hover:text-gray-300">Contact</a>
           </div>
-          <p className="text-sm text-gray-600">&copy; 2026 NFsTay. All rights reserved.</p>
+          <p className="text-sm text-gray-600">&copy; 2026 nfstay. All rights reserved.</p>
         </div>
       </footer>
     </div>

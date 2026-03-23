@@ -30,7 +30,7 @@ export default function Variant09() {
     'CRM pipeline with drag-and-drop stages',
     'Built-in messaging with property context',
     'Direct booking site (yourbrand.nfstay.app)',
-    'NFsTay Academy — 36 lessons, 9 modules',
+    'nfstay Academy — 36 lessons, 9 modules',
     'Agent programme — 40% recurring commission',
     'JV Partners — invest from £500',
   ];
@@ -39,7 +39,7 @@ export default function Variant09() {
     <div className="min-h-screen bg-white text-neutral-900 font-sans antialiased">
       {/* NAV */}
       <nav className="w-full px-6 md:px-12 py-5 flex items-center justify-between bg-white">
-        <span className="text-lg font-semibold tracking-tight">NFsTay</span>
+        <span className="text-lg font-semibold tracking-tight">nfstay</span>
         <div className="flex items-center gap-6">
           <a href="#" className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors">
             Sign In
@@ -98,7 +98,7 @@ export default function Variant09() {
           </FadeIn>
           <FadeIn className="my-12" delay={0.1}>
             <p className="text-lg md:text-xl leading-relaxed text-neutral-700">
-              NFsTay is a marketplace built exclusively for serviced accommodation. Every
+              nfstay is a marketplace built exclusively for serviced accommodation. Every
               property listed has landlord consent. Every deal includes verified financials —
               projected revenue, running costs, net profit. Every listing is compliance-checked
               before it goes live.
@@ -113,7 +113,7 @@ export default function Variant09() {
           </FadeIn>
           <FadeIn className="my-12" delay={0.1}>
             <p className="text-lg md:text-xl leading-relaxed text-neutral-700">
-              NFsTay is also a community. JV partnerships let investors deploy capital from
+              nfstay is also a community. JV partnerships let investors deploy capital from
               £500. The Academy teaches the full rent-to-rent playbook across 36 structured
               lessons. The agent programme pays 40% recurring commission for every referral.
             </p>
@@ -183,7 +183,7 @@ export default function Variant09() {
         <FadeIn>
           <blockquote className="max-w-3xl mx-auto">
             <p className="text-2xl md:text-4xl italic leading-snug text-neutral-800">
-              "I signed my first deal within two weeks of joining NFsTay."
+              "I signed my first deal within two weeks of joining nfstay."
             </p>
             <footer className="mt-8 text-sm text-neutral-400">
               — Tom H., Manchester
@@ -209,7 +209,7 @@ export default function Variant09() {
 
       {/* FOOTER */}
       <footer className="px-6 md:px-12 py-10 text-center border-t border-neutral-100">
-        <p className="text-sm font-semibold tracking-tight">NFsTay</p>
+        <p className="text-sm font-semibold tracking-tight">nfstay</p>
         <p className="mt-2 text-xs text-neutral-400">
           <a href="#" className="hover:text-neutral-600 transition-colors">Privacy</a>
           {' · '}

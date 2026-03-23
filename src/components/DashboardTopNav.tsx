@@ -70,7 +70,7 @@ export default function DashboardTopNav() {
           to="/dashboard/deals"
           className="text-[17px] font-extrabold text-foreground tracking-tight hover:opacity-70 transition-opacity mr-14 flex-shrink-0"
         >
-          NFsTay
+          nfstay
         </Link>
 
         {/* Desktop nav — green active state matching sidebar */}

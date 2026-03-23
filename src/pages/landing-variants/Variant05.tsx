@@ -41,7 +41,7 @@ export default function Variant05() {
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-stone-200">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight">NFsTay</span>
+            <span className="text-xl font-bold tracking-tight">nfstay</span>
             <span className="text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
               Academy
             </span>
@@ -94,7 +94,7 @@ export default function Variant05() {
             variants={fade} initial="hidden" animate="visible" transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-5 text-stone-600 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed"
           >
-            NFsTay Academy teaches you everything from finding your first deal to scaling a portfolio.
+            nfstay Academy teaches you everything from finding your first deal to scaling a portfolio.
             9 modules, 36 lessons, 36 checklists — built by operators with 15+ years of experience.
           </motion.p>
 
@@ -227,7 +227,7 @@ export default function Variant05() {
               </div>
               <h3 className="font-bold text-lg">Keep Your Streak</h3>
               <p className="text-sm text-stone-500 mt-2">
-                1-day streak and counting. Consistency compounds — your progress carries over to real deals on NFsTay.
+                1-day streak and counting. Consistency compounds — your progress carries over to real deals on nfstay.
               </p>
             </motion.div>
           </div>
@@ -240,7 +240,7 @@ export default function Variant05() {
           <motion.div variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-14">
             <h2 className="text-2xl sm:text-3xl font-bold">Turn knowledge into live deals</h2>
             <p className="mt-3 text-stone-500 max-w-lg mx-auto">
-              Every lesson connects to a real workflow inside NFsTay.
+              Every lesson connects to a real workflow inside nfstay.
             </p>
           </motion.div>
 
@@ -342,7 +342,7 @@ export default function Variant05() {
         <motion.div variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-2xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold">Your first deal starts with your first lesson</h2>
           <p className="mt-4 text-emerald-100 max-w-lg mx-auto">
-            Join operators across the UK who are building rent-to-rent portfolios with NFsTay Academy.
+            Join operators across the UK who are building rent-to-rent portfolios with nfstay Academy.
           </p>
           <button className="mt-8 bg-white text-emerald-700 font-semibold px-8 py-3 rounded-lg hover:bg-emerald-50 transition-colors inline-flex items-center gap-2">
             Start Learning Free <ArrowRight className="w-4 h-4" />
@@ -354,7 +354,7 @@ export default function Variant05() {
       <footer className="bg-stone-900 text-stone-400 py-12 px-4">
         <div className="max-w-6xl mx-auto grid sm:grid-cols-3 gap-8 text-sm">
           <div>
-            <span className="text-white font-bold text-lg">NFsTay</span>
+            <span className="text-white font-bold text-lg">nfstay</span>
             <p className="mt-2 leading-relaxed">Rent-to-rent training and deal marketplace. Built by operators, for operators.</p>
           </div>
           <div>
@@ -375,7 +375,7 @@ export default function Variant05() {
           </div>
         </div>
         <div className="max-w-6xl mx-auto mt-10 pt-6 border-t border-stone-800 text-xs text-stone-500">
-          2026 NFsTay Ltd. All rights reserved.
+          2026 nfstay Ltd. All rights reserved.
         </div>
       </footer>
     </div>

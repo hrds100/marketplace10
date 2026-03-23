@@ -97,7 +97,7 @@ export default function TestAuthRedesign() {
   const activeTab = view === 'signin' ? 'signin' : 'register';
 
   const heading = {
-    'signin': { title: 'Welcome back', sub: 'Sign in to your NFsTay account' },
+    'signin': { title: 'Welcome back', sub: 'Sign in to your nfstay account' },
     'register-social': { title: 'Create your account', sub: 'Join thousands of operators building Airbnb portfolios' },
     'register-whatsapp': { title: 'Add your WhatsApp', sub: 'One last step to verify your account' },
     'register-email': { title: 'Sign up with Email', sub: 'Fill in your details to create an account' },
@@ -115,7 +115,7 @@ export default function TestAuthRedesign() {
           {/* Logo */}
           <div className="flex items-center justify-center w-full">
             <Link to="/" className="font-extrabold text-[#0a0a0a] tracking-tight" style={{ fontSize: 'clamp(18px, 2.5vh, 24px)' }}>
-              NFsTay
+              nfstay
             </Link>
           </div>
 
