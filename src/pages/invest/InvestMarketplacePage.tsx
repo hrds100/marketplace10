@@ -21,6 +21,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Progress } from '@/components/ui/progress';
+import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import {
   MapPin,
@@ -564,10 +565,14 @@ function InvestCardContent({
   totalOwners?: number;
   cardCheckoutBlocked: boolean;
 }) {
-  const shares = Math.floor(investAmount / property.pricePerShare);
-  const investTotal = shares * property.pricePerShare;
+  const pps = property.pricePerShare;
+  const minInvest = Math.max(pps, 1);
+  const maxInvest = Math.max(minInvest, sharesRemaining * pps);
+  const shares = Math.floor(investAmount / pps);
+  const investTotal = shares * pps;
   const monthlyIncome = (investTotal * (property.annualYield / 100)).toFixed(2);
   const annualReturn = (parseFloat(monthlyIncome) * 12).toFixed(2);
+  const sliderDisabled = maxInvest <= minInvest;
 
   return (
     <div className="space-y-4">
@@ -601,37 +606,54 @@ function InvestCardContent({
         </div>
       </div>
 
-      {/* Dollar input */}
-      <div>
-        <label className="mb-1.5 block text-sm font-medium">Contribution amount</label>
-        <div className="flex items-center gap-2 rounded-lg border px-3 py-2 focus-within:ring-2 focus-within:ring-primary">
-          <span className="text-sm font-semibold text-muted-foreground">$</span>
-          <input
-            type="number"
-            min={0}
-            value={investAmount || ''}
-            onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
-              setInvestAmount(isNaN(v) ? 0 : Math.max(0, v));
+      {/* Earnings preview — slider only (card checkout amount is entered once in SamCart) */}
+      <div className="rounded-2xl border border-[#1E9A80]/20 bg-[#ECFDF5]/60 p-4 space-y-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">See how much you can earn</p>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+            Slide to explore estimated returns. You will enter your investment amount once in the secure checkout.
+          </p>
+        </div>
+        <div
+          className="space-y-3"
+          data-testid="invest-earn-slider"
+          data-slider-min={minInvest}
+          data-slider-max={maxInvest}
+        >
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-2xl font-bold tabular-nums text-[#1E9A80]">${investTotal.toLocaleString()}</span>
+            <span className="text-xs text-muted-foreground">
+              {shares} allocation{shares !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <Slider
+            min={minInvest}
+            max={maxInvest}
+            step={pps}
+            value={[Math.min(maxInvest, Math.max(minInvest, investAmount))]}
+            onValueChange={(v) => {
+              const next = v[0] ?? minInvest;
+              const aligned = Math.floor(next / pps) * pps;
+              setInvestAmount(Math.max(minInvest, Math.min(maxInvest, aligned)));
             }}
-            placeholder="500"
-            className="flex-1 bg-transparent text-lg font-semibold outline-none"
+            disabled={sliderDisabled}
+            className="w-full py-2 [&_[class*=bg-primary]]:bg-[#1E9A80]"
+            aria-label="Explore estimated investment amount"
           />
-          <span className="whitespace-nowrap text-sm text-muted-foreground">
-            = {shares} allocation{shares !== 1 ? 's' : ''}
-          </span>
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>${minInvest.toLocaleString()}</span>
+            <span>${maxInvest.toLocaleString()}</span>
+          </div>
         </div>
-      </div>
-
-      {/* Live preview */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-primary/5 p-3">
-          <p className="text-[11px] text-muted-foreground">Est. monthly income</p>
-          <p className="text-sm font-bold text-primary">${monthlyIncome}</p>
-        </div>
-        <div className="rounded-lg bg-primary/5 p-3">
-          <p className="text-[11px] text-muted-foreground">Est. annual return</p>
-          <p className="text-sm font-bold text-primary">${annualReturn}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-white/80 border border-[#1E9A80]/10 p-3 shadow-sm">
+            <p className="text-[11px] text-muted-foreground">Est. monthly income</p>
+            <p className="text-sm font-bold text-[#1E9A80]">${monthlyIncome}</p>
+          </div>
+          <div className="rounded-xl bg-white/80 border border-[#1E9A80]/10 p-3 shadow-sm">
+            <p className="text-[11px] text-muted-foreground">Est. annual return</p>
+            <p className="text-sm font-bold text-[#1E9A80]">${annualReturn}</p>
+          </div>
         </div>
       </div>
 
@@ -706,7 +728,11 @@ function InvestCardContent({
       <Button
         className="w-full gap-2"
         size="lg"
-        disabled={!tsaAgreed || shares < 1 || cardCheckoutBlocked}
+        disabled={
+          !tsaAgreed ||
+          cardCheckoutBlocked ||
+          (paymentMethod === 'crypto' && shares < 1)
+        }
         onClick={onInvest}
       >
         <Shield className="h-4 w-4" />
@@ -1770,6 +1796,36 @@ export default function InvestMarketplacePage() {
   const [samcartUrl, setSamcartUrl] = useState('');
   const [initialCalcAmount, setInitialCalcAmount] = useState(1000);
 
+  // Keep slider value within one-allocation steps and remaining supply
+  useEffect(() => {
+    if (!property || property.pricePerShare <= 0) return;
+    const pps = property.pricePerShare;
+    const minInv = Math.max(pps, 1);
+    const maxInv = Math.max(minInv, sharesRemaining * pps);
+    setInvestAmount((prev) => {
+      const clamped = Math.min(maxInv, Math.max(minInv, prev));
+      const aligned = Math.floor(clamped / pps) * pps;
+      return Math.min(maxInv, Math.max(minInv, aligned));
+    });
+  }, [property, sharesRemaining]);
+
+  useEffect(() => {
+    setInitialCalcAmount(investAmount);
+  }, [investAmount]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('invest-checkout-focus', { detail: { open: samcartOpen } }));
+    if (samcartOpen) {
+      document.documentElement.setAttribute('data-invest-sheet', 'open');
+    } else {
+      document.documentElement.removeAttribute('data-invest-sheet');
+    }
+    return () => {
+      document.documentElement.removeAttribute('data-invest-sheet');
+      window.dispatchEvent(new CustomEvent('invest-checkout-focus', { detail: { open: false } }));
+    };
+  }, [samcartOpen]);
+
   // Auto-rotate carousel
   useEffect(() => {
     if (!property) return;
@@ -1784,11 +1840,9 @@ export default function InvestMarketplacePage() {
 
   const handleInvest = () => {
     if (!property) return;
-    const shares = Math.floor(investAmount / property.pricePerShare);
-    if (shares < 1) return;
 
     if (paymentMethod === 'card') {
-      // Guard: wallet must be loaded before opening SamCart
+      // Guard: wallet must be loaded before opening SamCart (amount is entered once in SamCart PWYW)
       if (!walletAddress) {
         toast.error('Wallet not loaded yet. Please wait a moment and try again.');
         return;
@@ -1825,6 +1879,8 @@ export default function InvestMarketplacePage() {
       return;
     }
 
+    const shares = Math.floor(investAmount / property.pricePerShare);
+    if (shares < 1) return;
     setInvestOpen(true);
   };
 
@@ -1877,7 +1933,10 @@ export default function InvestMarketplacePage() {
 
       {/* SamCart card-payment iframe (same drawer approach as legacy app.nfstay.com) */}
       <Sheet open={samcartOpen} onOpenChange={(open) => { setSamcartOpen(open); if (!open) setSamcartUrl(''); }}>
-        <SheetContent side="right" className="w-full sm:max-w-lg p-0 [&>button]:z-50">
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-[42rem] p-0 z-[200] border-l shadow-2xl [&>button]:z-[210]"
+        >
           <SheetHeader className="px-4 py-3 border-b">
             <SheetTitle className="text-base">Complete Payment</SheetTitle>
           </SheetHeader>

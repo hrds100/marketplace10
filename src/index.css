@@ -329,3 +329,11 @@ input[type='range']::-moz-range-thumb {
   cursor: pointer;
   transform: translateY(0);
 }
+
+/* Invest SamCart sheet above blurred dashboard (Radix Dialog portal) */
+html[data-invest-sheet='open'] [data-radix-dialog-overlay] {
+  z-index: 199 !important;
+}
+html[data-invest-sheet='open'] [data-radix-dialog-content] {
+  z-index: 200 !important;
+}

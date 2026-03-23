@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Outlet, useLocation, useOutletContext, Link, useNavigate } from 'react-router-dom';
 import { PlusCircle, Gem, Wallet } from 'lucide-react';
 import { useEmbeddedWallet } from '@particle-network/connectkit';
@@ -34,7 +35,7 @@ function TopBar() {
   let embeddedWallet: any = null;
   try { embeddedWallet = useEmbeddedWallet(); } catch { /* hook not available outside ConnectKitProvider */ }
   return (
-    <header className="h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
+    <header className="dashboard-topbar h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
       <NfsLogo size="sm" />
 
       <div className="ml-auto flex items-center gap-3">
@@ -84,9 +85,20 @@ export default function DashboardLayout() {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [landlordPhone, setLandlordPhone] = useState<string | null>(null);
+  /** Invest marketplace SamCart checkout: hide chrome and blur page content behind the sheet */
+  const [investCheckoutFocus, setInvestCheckoutFocus] = useState(false);
   const isFullBleed = FULL_BLEED_ROUTES.some(r => location.pathname.startsWith(r));
   const isInvest = location.pathname.startsWith(INVEST_ROUTES_PREFIX);
   const marginClass = sidebarCollapsed ? 'md:ml-16' : 'md:ml-56';
+
+  useEffect(() => {
+    const onFocus = (e: Event) => {
+      const open = Boolean((e as CustomEvent<{ open?: boolean }>).detail?.open);
+      setInvestCheckoutFocus(open);
+    };
+    window.addEventListener('invest-checkout-focus', onFocus);
+    return () => window.removeEventListener('invest-checkout-focus', onFocus);
+  }, []);
 
   // Detect unclaimed landlord accounts
   useEffect(() => {
@@ -103,7 +115,7 @@ export default function DashboardLayout() {
       });
   }, [user?.id, user?.email]);
 
-  const claimBanner = landlordPhone !== null ? (
+  const claimBanner = landlordPhone !== null && !investCheckoutFocus ? (
     <ClaimAccountBanner phone={landlordPhone} onClaimed={() => setLandlordPhone(null)} />
   ) : null;
 
@@ -114,20 +126,33 @@ export default function DashboardLayout() {
         <WalletProvisioner />
 
         {/* ── Top bar — always present ──────────────────────── */}
-        <TopBar />
+        <div className={cn(investCheckoutFocus && 'hidden')}>
+          <TopBar />
+        </div>
         {claimBanner}
 
         {/* ── Content area — sidebar + main ─────────────────── */}
         <div className="flex-1 flex overflow-hidden relative">
 
           {/* ── Left sidebar — always present, collapsed by default ── */}
-          <DashboardSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
+          <div className={cn('dashboard-sidebar-wrap', investCheckoutFocus && 'hidden')}>
+            <DashboardSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
+          </div>
 
           {/* ── Main content ────────────────────────────────── */}
-          <div className={`${marginClass} flex-1 flex flex-col transition-all duration-300 ease-out overflow-hidden`}>
+          <div
+            className={cn(
+              `${marginClass} flex-1 flex flex-col transition-all duration-300 ease-out overflow-hidden`,
+              investCheckoutFocus && 'blur-md pointer-events-none select-none md:ml-0',
+            )}
+          >
 
             {/* JV Partners sub-nav */}
-            {isInvest && <InvestSubNav />}
+            {isInvest && (
+              <div className={cn(investCheckoutFocus && 'hidden')}>
+                <InvestSubNav />
+              </div>
+            )}
 
             {isFullBleed ? (
               <main className="flex-1 flex flex-col overflow-hidden">

@@ -56,7 +56,16 @@ test.describe('Production — Hugo invest + SamCart', () => {
     expect(page.url()).toContain('invest/marketplace');
     await expect(page.locator('text=Receiving wallet')).toHaveCount(0);
 
-    await page.getByPlaceholder('500').fill('10000');
+    await expect(page.getByText('See how much you can earn')).toBeVisible({ timeout: 10000 });
+    const sliderWrap = page.getByTestId('invest-earn-slider');
+    await expect(sliderWrap).toBeVisible();
+    const min = Number(await sliderWrap.getAttribute('data-slider-min'));
+    const max = Number(await sliderWrap.getAttribute('data-slider-max'));
+    const box = await sliderWrap.boundingBox();
+    if (box && max > min) {
+      const pct = 0.85;
+      await page.mouse.click(box.x + box.width * pct, box.y + box.height / 2);
+    }
     await page.getByTestId('invest-tsa-checkbox').evaluate((el) => (el as HTMLButtonElement).click());
     const secureBtn = page.locator('button:has-text("Secure Your Allocations")');
     await expect(secureBtn).toBeEnabled({ timeout: 15000 });
