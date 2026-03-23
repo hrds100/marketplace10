@@ -85,6 +85,22 @@ export default function AffiliatesPage() {
     enabled: !!user?.id,
   });
 
+  // Auto-provision affiliate profile if none exists
+  const [provisioning, setProvisioning] = useState(false);
+  useEffect(() => {
+    if (!user?.id || isLoading || profile || provisioning) return;
+    setProvisioning(true);
+    const code = generateCode(userName || '');
+    (supabase.from('affiliate_profiles') as any)
+      .insert({ user_id: user.id, referral_code: code })
+      .then(({ error }: { error: { message: string } | null }) => {
+        if (!error) {
+          queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] });
+        }
+        setProvisioning(false);
+      });
+  }, [user?.id, isLoading, profile, provisioning, userName, queryClient]);
+
   // Fetch recent events
   const { data: events = [] } = useQuery({
     queryKey: ['affiliate-events', profile?.id],
@@ -123,23 +139,6 @@ export default function AffiliatesPage() {
       return data?.name || '';
     },
     enabled: !!user?.id,
-  });
-
-  // Become an agent
-  const becomeMutation = useMutation({
-    mutationFn: async () => {
-      if (!user?.id) throw new Error('Not logged in');
-      const code = generateCode(userName || '');
-      const { error } = await (supabase.from('affiliate_profiles') as any).insert({
-        user_id: user.id, referral_code: code,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] });
-      toast.success("You're now an agent!");
-    },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   // Request payout
@@ -205,7 +204,7 @@ export default function AffiliatesPage() {
   }, [events]);
   const maxEarning = Math.max(...monthlyEarnings.map(m => m.amount), 1);
 
-  if (isLoading) {
+  if (isLoading || provisioning) {
     return (
       <div className="p-6 md:p-8">
         <div className="animate-pulse space-y-6">
