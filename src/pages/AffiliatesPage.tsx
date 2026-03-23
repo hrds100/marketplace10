@@ -73,30 +73,33 @@ export default function AffiliatesPage() {
     localStorage.setItem('nfstay_aff_last_check', new Date().toISOString());
   }, [user?.id]);
 
-  // Fetch affiliate profile - auto-creates one if missing
+  // Fetch affiliate profile
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['affiliate-profile', user?.id, userName],
+    queryKey: ['affiliate-profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data } = await (supabase.from('affiliate_profiles') as any)
         .select('*').eq('user_id', user.id).maybeSingle();
-      if (data) return data;
-      // Auto-provision: create affiliate profile
-      const code = generateCode(userName || '');
-      const { data: created, error } = await (supabase.from('affiliate_profiles') as any)
-        .insert({ user_id: user.id, referral_code: code })
-        .select('*')
-        .single();
-      if (error) {
-        // Might be a race condition / duplicate - try fetching again
-        const { data: retry } = await (supabase.from('affiliate_profiles') as any)
-          .select('*').eq('user_id', user.id).maybeSingle();
-        return retry;
-      }
-      return created;
+      return data;
     },
     enabled: !!user?.id,
   });
+
+  // Auto-provision affiliate profile if none exists
+  const [provisioning, setProvisioning] = useState(false);
+  useEffect(() => {
+    if (!user?.id || isLoading || profile || provisioning) return;
+    setProvisioning(true);
+    const code = generateCode(userName || '');
+    (supabase.from('affiliate_profiles') as any)
+      .insert({ user_id: user.id, referral_code: code })
+      .then(({ error }: { error: { message: string } | null }) => {
+        if (!error) {
+          queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] });
+        }
+        setProvisioning(false);
+      });
+  }, [user?.id, isLoading, profile, provisioning, userName, queryClient]);
 
   // Fetch recent events
   const { data: events = [] } = useQuery({
@@ -201,7 +204,7 @@ export default function AffiliatesPage() {
   }, [events]);
   const maxEarning = Math.max(...monthlyEarnings.map(m => m.amount), 1);
 
-  if (isLoading) {
+  if (isLoading || provisioning) {
     return (
       <div className="p-6 md:p-8">
         <div className="animate-pulse space-y-6">
