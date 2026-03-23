@@ -3,6 +3,7 @@ import { Sparkles, Upload, Image as ImageIcon, X, Settings2, Check, Save, Loader
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { fetchPexelsPhotos } from '@/lib/pexels';
 
 interface ParsedListing {
   name: string | null;
@@ -35,6 +36,9 @@ export default function AdminQuickList() {
   const [rawText, setRawText] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+
+  // Pexels fallback photos (URLs, not Files)
+  const [pexelsUrls, setPexelsUrls] = useState<string[]>([]);
 
   // AI state
   const [parsing, setParsing] = useState(false);
@@ -105,7 +109,19 @@ export default function AdminQuickList() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setListing(data.listing || EMPTY_LISTING);
+      const parsed = data.listing || EMPTY_LISTING;
+      setListing(parsed);
+
+      // Auto-fetch Pexels photos if no photos uploaded
+      if (photos.length === 0 && parsed.city) {
+        const pType = parsed.type || parsed.property_category || 'apartment';
+        const urls = await fetchPexelsPhotos(parsed.city, pType, 4);
+        if (urls.length > 0) {
+          setPexelsUrls(urls);
+          setPhotoPreviews(urls);
+        }
+      }
+
       toast.success('Listing generated');
     } catch (err: any) {
       toast.error(err?.message || 'Failed to parse listing');
@@ -163,9 +179,14 @@ export default function AdminQuickList() {
 
       if (insertErr) throw insertErr;
 
-      // Upload photos and update
-      if (photos.length > 0 && prop?.id) {
-        const urls = await uploadPhotos(prop.id);
+      // Upload photos or use Pexels URLs
+      if (prop?.id) {
+        let urls: string[] = [];
+        if (photos.length > 0) {
+          urls = await uploadPhotos(prop.id);
+        } else if (pexelsUrls.length > 0) {
+          urls = pexelsUrls;
+        }
         if (urls.length > 0) {
           await (supabase.from('properties') as any)
             .update({ photos: urls })
@@ -178,6 +199,7 @@ export default function AdminQuickList() {
       setRawText('');
       setPhotos([]);
       setPhotoPreviews([]);
+      setPexelsUrls([]);
       setListing(null);
     } catch (err: any) {
       toast.error(err?.message || 'Failed to publish');
