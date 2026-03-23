@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useInvestProperties, useMyAffiliateProfile } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
+import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -1665,6 +1666,7 @@ function Version2({
 
 export default function InvestMarketplacePage() {
   const { user } = useAuth();
+  const { address: walletAddress } = useWallet();
   const { data: allProperties, isLoading } = useInvestProperties();
   const dbProperty = allProperties?.[0] || null;
 
@@ -1775,34 +1777,24 @@ export default function InvestMarketplacePage() {
     if (shares < 1) return;
 
     if (paymentMethod === 'card') {
-      const firstName = encodeURIComponent(
-        user?.user_metadata?.full_name || user?.user_metadata?.name || ''
-      );
-      const userEmail = encodeURIComponent(user?.email || '');
+      // Wallet address from useWallet() hook (reads profiles.wallet_address)
+      const wallet = walletAddress || '';
 
-      // Get wallet address from Particle provider
-      let walletAddr = '';
-      try { walletAddr = (window as any).__particle_wallet_address || ''; } catch { /* no wallet */ }
-
-      // Property + agent + wallet encoded in phone_number field (same as legacy)
-      // The webhook (inv-samcart-webhook) parses this JSON from the customer phone field
-      const phonePayload = encodeURIComponent(JSON.stringify({
-        propertyId: property.id,
-        agentWallet: '0x0000000000000000000000000000000000000000',
-        recipient: walletAddr,
-      }));
-
-      // Wallet address also goes in SamCart custom field (slug: custom_0zdAJJKy)
+      // SamCart field mapping:
+      // - phone_number → shows as "Property ID" on checkout (SamCart renamed it)
+      //   Send JSON with propertyId + wallet so webhook can parse it (same as legacy)
+      // - custom_0zdAJJKy → wallet_address custom field
+      // - amount → prefill PWYW investment amount
       const params = new URLSearchParams({
         first_name: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
         email: user?.email || '',
         phone_number: JSON.stringify({
           propertyId: property.id,
           agentWallet: '0x0000000000000000000000000000000000000000',
-          recipient: walletAddr,
+          recipient: wallet,
         }),
-        custom_0zdAJJKy: walletAddr, // wallet_address custom field
-        amount: String(investAmount), // prefill PWYW amount
+        custom_0zdAJJKy: wallet,
+        amount: String(investAmount),
       });
 
       const url = `https://stay.samcart.com/products/${SAMCART_PRODUCT_SLUG}/?${params.toString()}`;
