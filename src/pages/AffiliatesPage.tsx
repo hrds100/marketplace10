@@ -73,14 +73,27 @@ export default function AffiliatesPage() {
     localStorage.setItem('nfstay_aff_last_check', new Date().toISOString());
   }, [user?.id]);
 
-  // Fetch affiliate profile
+  // Fetch affiliate profile - auto-creates one if missing
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['affiliate-profile', user?.id],
+    queryKey: ['affiliate-profile', user?.id, userName],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data } = await (supabase.from('affiliate_profiles') as any)
         .select('*').eq('user_id', user.id).maybeSingle();
-      return data;
+      if (data) return data;
+      // Auto-provision: create affiliate profile on first visit
+      const code = generateCode(userName || '');
+      const { data: created, error } = await (supabase.from('affiliate_profiles') as any)
+        .insert({ user_id: user.id, referral_code: code })
+        .select('*')
+        .single();
+      if (error) {
+        // Race condition / duplicate key - re-fetch
+        const { data: retry } = await (supabase.from('affiliate_profiles') as any)
+          .select('*').eq('user_id', user.id).maybeSingle();
+        return retry;
+      }
+      return created;
     },
     enabled: !!user?.id,
   });
