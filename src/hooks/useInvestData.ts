@@ -111,8 +111,8 @@ export function useInvestOrders() {
       if (list.length === 0) return [];
       const ids = [...new Set(list.map((o: { user_id: string }) => o.user_id).filter(Boolean))];
       const { data: profs, error: pe } = await (supabase.from('profiles') as any)
-        .select('user_id, email')
-        .in('user_id', ids);
+        .select('id, email')
+        .in('id', ids);
       if (pe) throw pe;
       return mergeBuyerEmailsIntoOrders(list, profs || []);
     },

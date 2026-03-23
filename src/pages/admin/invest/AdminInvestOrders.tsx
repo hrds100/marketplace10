@@ -48,7 +48,12 @@ const paymentLabels: Record<string, string> = {
 
 export default function AdminInvestOrders() {
   const qc = useQueryClient();
-  const { data: realOrders = [], isLoading: ordersLoading } = useInvestOrders();
+  const {
+    data: realOrders = [],
+    isLoading: ordersLoading,
+    isError: ordersError,
+    error: ordersQueryError,
+  } = useInvestOrders();
 
   const [statusFilter, setStatusFilter] = useState('All');
   const [propertyFilter, setPropertyFilter] = useState('All');
@@ -138,6 +143,14 @@ export default function AdminInvestOrders() {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (ordersError) {
+    return (
+      <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        Failed to load orders: {(ordersQueryError as Error)?.message ?? 'Unknown error'}
       </div>
     );
   }
