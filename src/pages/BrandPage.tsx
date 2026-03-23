@@ -107,7 +107,7 @@ function LogoPreview() {
 
 /* ── favicon: the "nf" box from the logo ── */
 function FaviconPreview({ size }: { size: number }) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 128 128"><rect width="128" height="128" rx="20" fill="white" stroke="#0a0a0a" stroke-width="10"/><text x="64" y="88" text-anchor="middle" font-family="Sora,sans-serif" font-weight="700" font-size="70" fill="#0a0a0a">nf</text></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" ry="6" fill="white" stroke="#0a0a0a" stroke-width="2"/><text x="16" y="21.5" text-anchor="middle" font-family="Sora,sans-serif" font-weight="700" font-size="15" fill="#0a0a0a">nf</text></svg>`;
   return <div dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
