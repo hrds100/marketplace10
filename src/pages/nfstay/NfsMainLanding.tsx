@@ -17,7 +17,7 @@ const faqs = [
   { q: 'Are payments secure?', a: 'All payments are processed through Stripe, a PCI-compliant payment processor. Your card details are never stored on our servers.' },
   { q: 'Can I contact the host before booking?', a: 'Yes! Each listing includes a message option to contact the host with any questions before you book.' },
   { q: 'What if something goes wrong during my stay?', a: 'Our support team is available to help resolve any issues. Contact us through the booking details page or email support@nfstay.app.' },
-  { q: 'How does the white-label feature work?', a: 'Operators can create a branded booking website on their own subdomain (yourname.nfstay.app) or custom domain. Guests book directly with no NFStay branding visible.' },
+  { q: 'How does the white-label feature work?', a: 'Operators can create a branded booking website on their own subdomain (yourname.nfstay.app) or custom domain. Guests book directly with no nfstay branding visible.' },
   { q: 'What is Hospitable integration?', a: 'Hospitable integration allows property managers to sync their listings and calendars across multiple platforms, avoiding double bookings and manual updates.' },
 ];
 
@@ -149,10 +149,10 @@ export default function NfsMainLanding() {
         </div>
       </section>
 
-      {/* Why NFStay */}
+      {/* Why nfstay */}
       <section className="bg-card border-y border-border">
         <div className="max-w-7xl mx-auto px-4 py-16">
-          <h2 className="text-2xl font-bold tracking-tight text-center mb-10">Why book direct with NFStay?</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-center mb-10">Why book direct with nfstay?</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               { icon: Shield, title: 'Verified hosts', desc: 'Every operator is verified before their properties go live.' },
@@ -225,7 +225,7 @@ export default function NfsMainLanding() {
       <section className="max-w-7xl mx-auto px-4 py-16">
         <div className="bg-primary rounded-3xl p-10 md:p-16 text-center">
           <h2 className="text-3xl font-bold text-primary-foreground mb-3">Ready to list your property?</h2>
-          <p className="text-primary-foreground/80 mb-6 max-w-md mx-auto">Join hundreds of operators already using NFStay to accept direct bookings.</p>
+          <p className="text-primary-foreground/80 mb-6 max-w-md mx-auto">Join hundreds of operators already using nfstay to accept direct bookings.</p>
           <Button size="lg" variant="secondary" className="rounded-xl font-semibold" onClick={() => navigate('/signup')}>
             Get started free
           </Button>

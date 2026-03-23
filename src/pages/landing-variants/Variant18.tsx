@@ -15,7 +15,7 @@ export default function Variant05() {
               <span className="font-playfair italic">before you spend a penny</span>
             </h1>
             <p className="mt-5 text-lg text-[#9CA3AF] max-w-lg">
-              NFsTay University: structured courses, XP-based progression, and daily streaks. Learn the UK rent-to-rent model from scratch — then apply it with live deals.
+              nfstay University: structured courses, XP-based progression, and daily streaks. Learn the UK rent-to-rent model from scratch — then apply it with live deals.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <PillButton variant="primary" className="px-8 py-3.5 text-base">Start Learning Free</PillButton>
@@ -72,7 +72,7 @@ export default function Variant05() {
       <StatsBar theme="dark" />
       <PricingSection theme="dark" />
       <FAQSection theme="dark" />
-      <CTABand headline="Learn first. Earn forever." sub="Start with NFsTay University — it's free." />
+      <CTABand headline="Learn first. Earn forever." sub="Start with nfstay University — it's free." />
       <FooterSection theme="dark" />
     </div>
   );

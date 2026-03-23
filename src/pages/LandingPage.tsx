@@ -66,7 +66,7 @@ export default function LandingPage() {
                 </span>
               </h1>
 
-              <p className="mt-6 text-lg leading-relaxed max-w-[480px]" style={{ color: 'hsl(215 20% 65%)' }}>NFsTay connects short-term rental operators with verified, landlord-approved rent-to-rent opportunities. Browse, analyse, and close deals, all in one place.
+              <p className="mt-6 text-lg leading-relaxed max-w-[480px]" style={{ color: 'hsl(215 20% 65%)' }}>nfstay connects short-term rental operators with verified, landlord-approved rent-to-rent opportunities. Browse, analyse, and close deals, all in one place.
 
               </p>
 
@@ -202,7 +202,7 @@ export default function LandingPage() {
       {/* HOW IT WORKS */}
       <section id="how-it-works" className="py-20 bg-secondary">
         <div className="max-w-[1280px] mx-auto px-6 md:px-10 text-center">
-          <h2 className="text-[36px] md:text-[42px] font-bold tracking-[-0.025em] text-foreground">How NFsTay works</h2>
+          <h2 className="text-[36px] md:text-[42px] font-bold tracking-[-0.025em] text-foreground">How nfstay works</h2>
           <p className="text-lg text-muted-foreground mt-4 max-w-[560px] mx-auto leading-relaxed">Three steps to your first rent-to-rent deal. No experience needed.</p>
 
           <div className="grid md:grid-cols-3 gap-8 mt-14">
@@ -292,7 +292,7 @@ export default function LandingPage() {
           <h2 className="text-[36px] md:text-[42px] font-bold tracking-[-0.025em] text-foreground">Trusted by operators</h2>
           <div className="grid md:grid-cols-3 gap-6 mt-14">
             {[
-            { name: 'Sarah K.', role: 'Manchester', quote: 'NFsTay helped me find my first three deals in under a month. The CRM is a game-changer for staying organised.' },
+            { name: 'Sarah K.', role: 'Manchester', quote: 'nfstay helped me find my first three deals in under a month. The CRM is a game-changer for staying organised.' },
             { name: 'Tom P.', role: 'London', quote: 'The university modules alone are worth the subscription. I went from zero knowledge to closing my first property in 6 weeks.' },
             { name: 'Priya S.', role: 'Birmingham', quote: 'Finally a platform that takes rent-to-rent seriously. Every deal is verified and the earnings estimator is spot-on.' }].
             map((t, i) =>
@@ -338,7 +338,7 @@ export default function LandingPage() {
       <section className="py-20" style={{ background: 'hsl(215 50% 11%)' }}>
         <div className="max-w-[640px] mx-auto px-6 md:px-10 text-center">
           <h2 className="text-[36px] md:text-[42px] font-bold tracking-[-0.025em]" style={{ color: 'white' }}>Ready to find your next deal?</h2>
-          <p className="text-lg mt-4" style={{ color: 'hsl(215 20% 65%)' }}>Join 4,200+ operators already using NFsTay to build their rent-to-rent portfolio.</p>
+          <p className="text-lg mt-4" style={{ color: 'hsl(215 20% 65%)' }}>Join 4,200+ operators already using nfstay to build their rent-to-rent portfolio.</p>
           <div className="mt-8 flex flex-wrap gap-3 justify-center">
             <Link to="/signup" className="h-[52px] px-8 rounded-lg bg-primary text-primary-foreground font-semibold text-[15px] inline-flex items-center hover:opacity-90 transition-opacity">
               Get Started — No Credit Card Needed <ArrowRight className="ml-2 w-4 h-4" />
@@ -355,7 +355,7 @@ export default function LandingPage() {
         <div className="max-w-[1280px] mx-auto px-6 md:px-10">
           <div className="flex flex-col md:flex-row justify-between gap-8">
             <div>
-              <span className="text-lg font-extrabold text-foreground">NFsTay</span>
+              <span className="text-lg font-extrabold text-foreground">nfstay</span>
               <p className="text-sm text-muted-foreground mt-2 max-w-[300px]">The UK's leading rent-to-rent deal platform. Find, analyse, and close landlord-approved opportunities.</p>
             </div>
             <div className="flex gap-12">
@@ -378,7 +378,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-border flex flex-col md:flex-row justify-between gap-4">
-            <p className="text-xs text-muted-foreground">© 2026 NFsTay Ltd. All rights reserved. Registered in England & Wales.</p>
+            <p className="text-xs text-muted-foreground">© 2026 nfstay Ltd. All rights reserved. Registered in England & Wales.</p>
             <div className="flex gap-6">
               <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">About</a>
               <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>

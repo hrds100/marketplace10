@@ -49,7 +49,7 @@ const testimonials = [
     detail: '5 properties',
   },
   {
-    quote: 'I earn \u00a3400/month as an NFsTay agent just by sharing my link.',
+    quote: 'I earn \u00a3400/month as an nfstay agent just by sharing my link.',
     name: 'Rachel L.',
     location: 'Bristol',
     detail: 'Agent',
@@ -124,7 +124,7 @@ export default function Variant08() {
               href="#join"
               className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition"
             >
-              Join NFsTay
+              Join nfstay
             </a>
           </div>
           <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)}>
@@ -138,7 +138,7 @@ export default function Variant08() {
             <a href="#pricing" className="py-2">Pricing</a>
             <a href="#signin" className="py-2 text-gray-500">Sign In</a>
             <a href="#join" className="bg-green-600 text-white text-center py-2 rounded-lg">
-              Join NFsTay
+              Join nfstay
             </a>
           </div>
         )}
@@ -160,7 +160,7 @@ export default function Variant08() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mt-4 text-lg text-gray-600 max-w-xl mx-auto"
         >
-          Real deals. Real returns. Real operators building their short-let portfolios with NFsTay.
+          Real deals. Real returns. Real operators building their short-let portfolios with nfstay.
         </motion.p>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -354,7 +354,7 @@ export default function Variant08() {
       {/* CTA */}
       <section className="bg-green-600 py-20 px-4 text-center" id="join">
         <h2 className="text-3xl md:text-4xl font-bold text-white max-w-lg mx-auto">
-          Join 200+ UK operators on NFsTay
+          Join 200+ UK operators on nfstay
         </h2>
         <a
           href="#join"
@@ -377,7 +377,7 @@ export default function Variant08() {
             <a href="#" className="hover:text-white transition">Privacy</a>
             <a href="#" className="hover:text-white transition">Terms</a>
           </div>
-          <span className="text-gray-500">&copy; 2026 NFsTay. All rights reserved.</span>
+          <span className="text-gray-500">&copy; 2026 nfstay. All rights reserved.</span>
         </div>
       </footer>
     </div>

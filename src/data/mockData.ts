@@ -118,9 +118,9 @@ export const submissions = [
 
 export const faqItems = [
   { id: 'faq-1', question: 'What is rent-to-rent?', answer: 'Rent-to-rent is a strategy where you rent a property from a landlord on a long-term basis and sublet it on a short-term basis (e.g., on Airbnb) for a higher return. The difference between what you pay the landlord and what you earn from guests is your profit.', published: true },
-  { id: 'faq-2', question: 'Are all deals landlord-approved?', answer: 'Yes. Every listing on NFsTay has been verified as landlord-approved for short-term rental use. We check documentation before any deal goes live.', published: true },
+  { id: 'faq-2', question: 'Are all deals landlord-approved?', answer: 'Yes. Every listing on nfstay has been verified as landlord-approved for short-term rental use. We check documentation before any deal goes live.', published: true },
   { id: 'faq-3', question: 'How much can I earn per month?', answer: 'Earnings vary by location, property type, and occupancy. Our operators typically earn between £300 and £900 per property per month after all costs.', published: true },
-  { id: 'faq-4', question: 'Do I need experience?', answer: 'Not at all. NFsTay University walks you through everything from finding your first deal to managing bookings. Many of our most successful operators started with zero experience.', published: true },
+  { id: 'faq-4', question: 'Do I need experience?', answer: 'Not at all. nfstay University walks you through everything from finding your first deal to managing bookings. Many of our most successful operators started with zero experience.', published: true },
   { id: 'faq-5', question: 'What does the membership include?', answer: 'Full access to 1,800+ verified deals, CRM pipeline tools, Airbnb University, deal alerts, and our affiliate programme. Everything you need to build a rent-to-rent portfolio.', published: true },
   { id: 'faq-6', question: 'Can I cancel any time?', answer: 'Absolutely. Cancel your membership at any time from your settings. Your access continues until the end of your billing period.', published: true },
   { id: 'faq-7', question: 'How are deals sourced?', answer: 'Our team sources deals through direct landlord relationships, property agents, and community submissions. Every deal is vetted before going live.', published: true },

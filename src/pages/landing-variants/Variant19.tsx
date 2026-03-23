@@ -9,9 +9,9 @@ export default function Variant06() {
         <div className="grid gap-12 lg:grid-cols-2 items-center">
           <SR>
             <h1 className="font-inter text-4xl font-bold tracking-tight text-[#1C1C1C] md:text-5xl md:leading-[1.1]">
-              Share NFsTay.{' '}<span className="font-playfair italic">Earn commission.</span>
+              Share nfstay.{' '}<span className="font-playfair italic">Earn commission.</span>
             </h1>
-            <p className="mt-5 text-lg text-[#6B7280] max-w-lg">Become an NFsTay Agent. Earn 20% recurring on subscriptions, 5% on JV investments, and £50 per closed deal. No cap on earnings.</p>
+            <p className="mt-5 text-lg text-[#6B7280] max-w-lg">Become an nfstay Agent. Earn 20% recurring on subscriptions, 5% on JV investments, and £50 per closed deal. No cap on earnings.</p>
             <div className="mt-8 flex flex-wrap gap-4">
               <PillButton variant="primary" className="px-8 py-3.5 text-base">Become an Agent</PillButton>
               <PillButton variant="outline" className="px-8 py-3.5 text-base">See Commission Tiers</PillButton>
@@ -44,7 +44,7 @@ export default function Variant06() {
       <TestimonialsSection theme="light" />
       <PricingSection theme="light" />
       <FAQSection theme="light" />
-      <CTABand headline="Start earning as an NFsTay Agent" sub="Share your link. Earn commission. No limits." />
+      <CTABand headline="Start earning as an nfstay Agent" sub="Share your link. Earn commission. No limits." />
       <FooterSection theme="light" />
     </div>
   );

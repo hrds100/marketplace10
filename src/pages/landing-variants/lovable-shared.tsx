@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 
 /* ════════════════════════════════════════════════════════════════
-   SHIPPER / NFsTay Brand System
+   SHIPPER / nfstay Brand System
    ════════════════════════════════════════════════════════════════ */
 
 export type Theme = 'light' | 'dark' | 'investment';
@@ -85,7 +85,7 @@ export function NavBar({ theme = 'light' }: { theme?: Theme }) {
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? `${th.nav} shadow-sm` : 'bg-transparent'}`}>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <span className={`font-inter text-xl font-bold tracking-tight ${th.text}`}>NFsTay</span>
+        <span className={`font-inter text-xl font-bold tracking-tight ${th.text}`}>nfstay</span>
         <div className={`hidden items-center gap-8 lg:flex`}>
           {['Deals', 'JV Partners', 'University', 'Agents', 'Pricing'].map(l => (
             <a key={l} href="#" className={`text-sm font-medium transition-colors hover:text-[#22C55E] ${th.textMuted}`}>{l}</a>
@@ -297,7 +297,7 @@ export function UniversitySection({ theme = 'light', headline, sub }: { theme?: 
   const th = t[theme];
   return (
     <Section className={th.bg}>
-      <SR><SH theme={theme} title={headline || 'Learn rent-to-rent from the ground up'} sub={sub || 'NFsTay University: UK-focused training with XP, levels, and streaks. Go from complete beginner to confident operator.'} /></SR>
+      <SR><SH theme={theme} title={headline || 'Learn rent-to-rent from the ground up'} sub={sub || 'nfstay University: UK-focused training with XP, levels, and streaks. Go from complete beginner to confident operator.'} /></SR>
       <div className="grid gap-5 md:grid-cols-3">
         {courses.map((c, i) => (
           <SR key={c.title} delay={i * 100}>
@@ -334,7 +334,7 @@ export function AffiliateSection({ theme = 'light', headline, sub }: { theme?: T
   const th = t[theme];
   return (
     <Section className={th.bgAlt}>
-      <SR><SH theme={theme} title={headline || 'Earn as an NFsTay Agent'} sub={sub || 'Share your unique link. Earn commission on subscriptions, JV investments, and deal closings. No cap, no catch.'} /></SR>
+      <SR><SH theme={theme} title={headline || 'Earn as an nfstay Agent'} sub={sub || 'Share your unique link. Earn commission on subscriptions, JV investments, and deal closings. No cap, no catch.'} /></SR>
       <div className="grid gap-5 md:grid-cols-3">
         {commissions.map((c, i) => (
           <SR key={c.tier} delay={i * 100}>
@@ -395,10 +395,10 @@ export function PricingSection({ theme = 'light', headline, sub }: { theme?: The
 /* ════════ FAQ ════════ */
 const defaultFaqs = [
   { q: 'What is rent-to-rent?', a: 'Rent-to-rent is a strategy where you rent a property from a landlord and then sublet it — typically as a short-let on Airbnb. The difference between what you pay the landlord and what guests pay is your profit.' },
-  { q: 'Are the deals really landlord-approved?', a: 'Yes. Every deal on NFsTay has been verified for landlord consent, insurance compliance, and planning permission where applicable. We do not list unverified opportunities.' },
+  { q: 'Are the deals really landlord-approved?', a: 'Yes. Every deal on nfstay has been verified for landlord consent, insurance compliance, and planning permission where applicable. We do not list unverified opportunities.' },
   { q: 'How does JV investing work?', a: 'You can buy shares in a specific short-let property managed by experienced operators. You receive a share of the monthly rental income proportional to your stake. You can also vote on key decisions about the property.' },
   { q: 'Can I cancel my subscription?', a: 'Absolutely. Monthly plans can be cancelled at any time. Yearly and lifetime plans are non-refundable but give you long-term access at a lower cost.' },
-  { q: 'Do I need experience to get started?', a: 'No. NFsTay University covers everything from beginner fundamentals to advanced operations. Many of our operators started with zero experience.' },
+  { q: 'Do I need experience to get started?', a: 'No. nfstay University covers everything from beginner fundamentals to advanced operations. Many of our operators started with zero experience.' },
   { q: 'How does the booking site builder work?', a: 'You can create a fully branded booking website at yourbrand.nfstay.app in minutes. Add your logo, colours, listings, and content. Guests book directly with you — no OTA commissions.' },
 ];
 
@@ -436,7 +436,7 @@ const testimonials = [
   { name: 'Amara Osei', role: 'Operator', loc: 'Manchester', quote: 'I closed my first deal within two weeks of joining. The pipeline CRM made follow-ups effortless.' },
   { name: 'Daniel Whitfield', role: 'JV Investor', loc: 'London', quote: 'The JV portfolio gives me exposure to short-lets without managing anything myself. Payouts arrive like clockwork.' },
   { name: 'Fatima Al-Rashid', role: 'Agent', loc: 'Birmingham', quote: 'I have earned over £3,200 in referral commissions in six months. The affiliate programme practically sells itself.' },
-  { name: 'Callum Murray', role: 'Beginner', loc: 'Leeds', quote: 'NFsTay University took me from knowing nothing to running two properties. The XP system kept me engaged.' },
+  { name: 'Callum Murray', role: 'Beginner', loc: 'Leeds', quote: 'nfstay University took me from knowing nothing to running two properties. The XP system kept me engaged.' },
 ];
 
 export function TestimonialsSection({ theme = 'light', headline, sub }: { theme?: Theme; headline?: string; sub?: string }) {
@@ -543,7 +543,7 @@ export function FooterSection({ theme = 'light' }: { theme?: Theme }) {
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
-            <span className={`font-inter text-lg font-bold ${th.text}`}>NFsTay</span>
+            <span className={`font-inter text-lg font-bold ${th.text}`}>nfstay</span>
             <p className={`text-sm mt-3 max-w-[200px] ${th.textMuted}`}>The UK's rent-to-rent deals marketplace. Browse, invest, and grow.</p>
           </div>
           {[
@@ -560,7 +560,7 @@ export function FooterSection({ theme = 'light' }: { theme?: Theme }) {
           ))}
         </div>
         <div className={`mt-12 border-t pt-6 text-sm ${th.textMuted} ${th.sectionBorder}`}>
-          © {new Date().getFullYear()} NFsTay. Part of the SHIPPER family. All rights reserved.
+          © {new Date().getFullYear()} nfstay. Part of the SHIPPER family. All rights reserved.
         </div>
       </div>
     </footer>

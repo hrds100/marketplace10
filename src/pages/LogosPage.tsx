@@ -1,5 +1,5 @@
 /**
- * LogosPage — 60 black logo concepts for NFStay brand exploration.
+ * LogosPage — 60 black logo concepts for nfstay brand exploration.
  * Public route at /logos. Hugo picks favourites by number.
  */
 export default function LogosPage() {
@@ -80,7 +80,7 @@ export default function LogosPage() {
 
       {/* Header */}
       <div style={{ maxWidth: 800, margin: '0 auto 48px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8, letterSpacing: -0.5 }}>NFStay — Logo Picker</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8, letterSpacing: -0.5 }}>nfstay — Logo Picker</h1>
         <p style={{ fontSize: 15, color: '#666', lineHeight: 1.5 }}>60 options, all black, clean &amp; minimal. Just say the number you like (e.g. "I like #14").</p>
       </div>
 

@@ -28,7 +28,7 @@ const workspaces = [
   {
     id: 'booking',
     title: 'Booking Site',
-    description: 'NFStay reservations, properties, operators',
+    description: 'nfstay reservations, properties, operators',
     icon: Globe,
     to: '/admin/nfstay',
     color: 'text-blue-500',

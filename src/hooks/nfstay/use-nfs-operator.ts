@@ -34,7 +34,7 @@ export function useNfsOperator(): UseNfsOperatorReturn {
       if (dbError) {
         // Table may not exist yet during development
         if (dbError.code === '42P01') {
-          setError('NFStay tables not yet created. Run the Phase 1 migration first.');
+          setError('nfstay tables not yet created. Run the Phase 1 migration first.');
         } else {
           setError(dbError.message);
         }

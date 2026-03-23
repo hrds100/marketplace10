@@ -63,14 +63,14 @@ const COURSES = [
 ];
 
 const TESTIMONIALS = [
-  { quote: 'NFsTay helped me close my first three deals in under a month. The CRM is the reason I stay organised.', name: 'Sarah K.', city: 'Manchester' },
+  { quote: 'nfstay helped me close my first three deals in under a month. The CRM is the reason I stay organised.', name: 'Sarah K.', city: 'Manchester' },
   { quote: 'The Academy alone paid for itself. I went from zero to signing my first property in six weeks.', name: 'Tom P.', city: 'London' },
   { quote: 'Every deal is verified. The earnings estimator is accurate. I use it before every viewing.', name: 'Priya S.', city: 'Birmingham' },
 ];
 
 const PRICING_FEATURES = [
   '1,800+ verified deals', 'CRM pipeline', 'Unified inbox', 'Earnings estimator',
-  'NFsTay Academy', 'Direct landlord contact', 'Priority deal alerts', 'Affiliate programme',
+  'nfstay Academy', 'Direct landlord contact', 'Priority deal alerts', 'Affiliate programme',
 ];
 
 export default function LandingPageV10() {
@@ -136,7 +136,7 @@ export default function LandingPageV10() {
         <div className="max-w-[1100px] mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-[32px] font-bold text-gray-900 tracking-tight">Your path to <span className="text-primary italic" style={{ fontFamily: "'Playfair Display', serif" }}>property income</span></h2>
-            <p className="text-gray-500 mt-3 max-w-lg mx-auto">From complete beginner to portfolio owner. NFsTay supports every step.</p>
+            <p className="text-gray-500 mt-3 max-w-lg mx-auto">From complete beginner to portfolio owner. nfstay supports every step.</p>
           </div>
           <div className="relative max-w-[640px] mx-auto">
             <div className="absolute left-5 top-0 bottom-0 w-0.5" style={{ background: 'linear-gradient(180deg, #1e9a80, #e8e5df)' }} />
@@ -332,7 +332,7 @@ export default function LandingPageV10() {
       <section className="py-16 text-center" style={{ background: 'linear-gradient(135deg, #1e9a80, #0e1726)' }}>
         <div className="max-w-[1100px] mx-auto px-6">
           <h2 className="text-[28px] font-bold text-white mb-2">Ready to find your next deal?</h2>
-          <p className="text-white/70 mb-6">Join 4,200+ operators building their portfolio with NFsTay.</p>
+          <p className="text-white/70 mb-6">Join 4,200+ operators building their portfolio with nfstay.</p>
           <div className="flex gap-3 justify-center flex-wrap">
             <Link to="/signup" className="h-12 px-8 rounded-xl bg-white text-gray-900 font-semibold text-[15px] inline-flex items-center hover:bg-gray-100 transition-colors">Start 3-day trial for &pound;5</Link>
             <Link to="/signin" className="h-12 px-8 rounded-xl font-medium text-[15px] inline-flex items-center text-white/70 hover:text-white transition-colors">Sign in</Link>
@@ -355,7 +355,7 @@ export default function LandingPageV10() {
             <div><h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Learn</h4><div className="space-y-1"><a href="#" className="block text-sm text-gray-500 hover:text-primary">Academy</a><a href="#" className="block text-sm text-gray-500 hover:text-primary">How It Works</a><a href="#" className="block text-sm text-gray-500 hover:text-primary">Blog</a></div></div>
             <div><h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Company</h4><div className="space-y-1"><a href="#" className="block text-sm text-gray-500 hover:text-primary">Pricing</a><a href="#" className="block text-sm text-gray-500 hover:text-primary">Agent Programme</a><a href="#" className="block text-sm text-gray-500 hover:text-primary">Contact</a></div></div>
           </div>
-          <div className="border-t border-gray-50 pt-4 text-center text-xs text-gray-400">&copy; 2026 NFsTay. All rights reserved.</div>
+          <div className="border-t border-gray-50 pt-4 text-center text-xs text-gray-400">&copy; 2026 nfstay. All rights reserved.</div>
         </div>
       </footer>
     </div>

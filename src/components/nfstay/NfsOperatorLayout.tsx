@@ -23,7 +23,7 @@ export default function NfsOperatorLayout() {
             to="/nfstay"
             className="text-[17px] font-extrabold text-foreground tracking-tight hover:opacity-70 transition-opacity"
           >
-            NFStay
+            nfstay
           </Link>
           <div className="ml-auto">
             <button

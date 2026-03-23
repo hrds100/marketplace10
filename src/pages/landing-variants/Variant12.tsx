@@ -595,7 +595,7 @@ function Academy() {
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} style={{ textAlign: 'center', marginBottom: 48 }}>
           <motion.div variants={fadeUp}><SectionCaption>LEARN</SectionCaption></motion.div>
-          <motion.div variants={fadeUp}><SectionHeading>NFsTay Academy</SectionHeading></motion.div>
+          <motion.div variants={fadeUp}><SectionHeading>nfstay Academy</SectionHeading></motion.div>
           <motion.div variants={fadeUp}><Body>Level up with structured courses, XP rewards, and streaks that keep you consistent.</Body></motion.div>
         </motion.div>
 
@@ -653,7 +653,7 @@ function AgentProgramme() {
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} style={{ textAlign: 'center', marginBottom: 48 }}>
           <motion.div variants={fadeUp}><SectionCaption>REFERRAL PROGRAMME</SectionCaption></motion.div>
           <motion.div variants={fadeUp}><SectionHeading>Earn as an Agent</SectionHeading></motion.div>
-          <motion.div variants={fadeUp}><Body>Recommend NFsTay and earn recurring commissions on every subscription and investment.</Body></motion.div>
+          <motion.div variants={fadeUp}><Body>Recommend nfstay and earn recurring commissions on every subscription and investment.</Body></motion.div>
         </motion.div>
 
         <motion.div
@@ -808,11 +808,11 @@ function FAQ() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const faqs = [
     { q: 'What is rent-to-rent?', a: 'Rent-to-rent is a strategy where you lease a property from a landlord at a fixed monthly rent and then sub-let it on platforms like Airbnb for a higher nightly rate, keeping the profit difference.' },
-    { q: 'Are the deals actually verified?', a: 'Every deal on NFsTay includes Airdna revenue projections, landlord approval status, and detailed financial breakdowns so you can make informed decisions before committing.' },
-    { q: 'How does the JV partnership work?', a: 'You invest from as little as £500 into a rent-to-rent property. NFsTay manages the operation and you receive monthly payouts proportional to your share ownership.' },
+    { q: 'Are the deals actually verified?', a: 'Every deal on nfstay includes Airdna revenue projections, landlord approval status, and detailed financial breakdowns so you can make informed decisions before committing.' },
+    { q: 'How does the JV partnership work?', a: 'You invest from as little as £500 into a rent-to-rent property. nfstay manages the operation and you receive monthly payouts proportional to your share ownership.' },
     { q: 'Can I cancel my Pro subscription?', a: 'Yes. You can cancel anytime from your dashboard. Your access continues until the end of your current billing period with no penalties or lock-ins.' },
     { q: 'What cities do you cover?', a: 'We currently have deals across 15 UK cities including Manchester, London, Liverpool, Leeds, Birmingham, Bristol, Edinburgh, Glasgow, and more — with new cities added regularly.' },
-    { q: 'Do I need experience to get started?', a: 'Not at all. The NFsTay Academy walks you through everything from finding your first deal to pitching landlords. Many of our most successful operators started with zero experience.' },
+    { q: 'Do I need experience to get started?', a: 'Not at all. The nfstay Academy walks you through everything from finding your first deal to pitching landlords. Many of our most successful operators started with zero experience.' },
   ];
   return (
     <section style={{ background: C.darkest, padding: '80px 24px' }}>
@@ -882,7 +882,7 @@ function FinalCta() {
             Ready to find your first deal?
           </h2>
         </motion.div>
-        <motion.div variants={fadeUp}><Body style={{ marginBottom: 32 }}>Join hundreds of rent-to-rent operators already using NFsTay to build their property portfolios.</Body></motion.div>
+        <motion.div variants={fadeUp}><Body style={{ marginBottom: 32 }}>Join hundreds of rent-to-rent operators already using nfstay to build their property portfolios.</Body></motion.div>
         <motion.div variants={fadeUp}>
           <Btn variant="primary" style={{ padding: '16px 32px', fontSize: 16 }}>
             Browse Live Deals <ArrowRight size={18} />
@@ -932,7 +932,7 @@ function Footer() {
           borderTop: `1px solid ${C.border}`, paddingTop: 24,
           display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
         }}>
-          <span style={{ fontSize: 13, color: C.muted }}>2026 NFsTay. All rights reserved.</span>
+          <span style={{ fontSize: 13, color: C.muted }}>2026 nfstay. All rights reserved.</span>
           <span style={{ fontSize: 13, color: C.muted }}>London, United Kingdom</span>
         </div>
       </div>

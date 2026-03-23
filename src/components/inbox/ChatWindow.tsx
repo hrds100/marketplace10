@@ -111,7 +111,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
     if (thread.isSupport) {
       setMessages([{
         id: 'support-welcome', threadId: 'support', senderId: 'system',
-        body: 'Welcome to NFsTay! How can we help you today?',
+        body: 'Welcome to nfstay! How can we help you today?',
         bodyReceiver: null, isMasked: false, maskType: null,
         messageType: 'system', createdAt: new Date().toISOString(),
       }]);
@@ -244,7 +244,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           thread_id: thread.id,
           property_title: thread.propertyTitle,
           property_city: thread.propertyCity,
-          sender_name: user.user_metadata?.name || 'NFsTay User',
+          sender_name: user.user_metadata?.name || 'nfstay User',
           sender_role: isLandlord ? 'landlord' : 'operator',
           is_masked: isMasked,
           mask_type: maskType,
@@ -324,7 +324,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-foreground truncate">{thread.isSupport ? 'NFsTay Support' : thread.contactName}</span>
+            <span className="text-sm font-bold text-foreground truncate">{thread.isSupport ? 'nfstay Support' : thread.contactName}</span>
             {!thread.isSupport && (
               <span className={`flex items-center gap-1 text-[10px] ${thread.isOnline ? 'text-emerald-600' : 'text-gray-400'}`}>
                 <span className={`w-2 h-2 rounded-full ${thread.isOnline ? 'bg-emerald-500' : 'bg-gray-300'}`} />

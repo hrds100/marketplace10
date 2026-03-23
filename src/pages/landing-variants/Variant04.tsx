@@ -380,7 +380,7 @@ export default function Variant04() {
                 <tr className="border-b border-gray-200 text-left">
                   <th className="py-3 pr-4 font-medium text-gray-500" />
                   <th className="py-3 px-4 font-semibold text-green-700">
-                    Direct (NFsTay)
+                    Direct (nfstay)
                   </th>
                   <th className="py-3 px-4 font-semibold text-gray-400">
                     Airbnb
@@ -417,7 +417,7 @@ export default function Variant04() {
         >
           <p className="text-xl md:text-2xl font-medium leading-relaxed text-gray-800 mb-6">
             "We moved 30% of our bookings direct within 3 months. The savings
-            on commission alone paid for the entire NFsTay membership."
+            on commission alone paid for the entire nfstay membership."
           </p>
           <footer className="text-sm text-gray-500">
             — Sarah K., Manchester
@@ -486,7 +486,7 @@ export default function Variant04() {
             <a href="#" className="hover:text-gray-600">Privacy</a>
             <a href="#" className="hover:text-gray-600">Terms</a>
           </div>
-          <span>&copy; {new Date().getFullYear()} NFsTay. All rights reserved.</span>
+          <span>&copy; {new Date().getFullYear()} nfstay. All rights reserved.</span>
         </div>
       </footer>
     </div>

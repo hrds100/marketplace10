@@ -375,12 +375,12 @@ export default function LessonPage() {
           <div className="flex items-start gap-3">
             <Sparkles className="w-[22px] h-[22px] mt-0.5 flex-shrink-0" style={{ color: '#1DB954' }} />
             <div>
-              <h3 className="text-lg font-bold" style={{ color: '#111827' }}>NFsTay AI Consultant</h3>
+              <h3 className="text-lg font-bold" style={{ color: '#111827' }}>nfstay AI Consultant</h3>
               <p className="text-sm" style={{ color: '#6B7280' }}>Every insight and framework we have built — one question away.</p>
             </div>
           </div>
           <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: '#ECFDF5', color: '#065F46' }}>
-            Powered by NFsTay
+            Powered by nfstay
           </span>
         </div>
 

@@ -109,7 +109,7 @@ export default function AdminSettings() {
           <div className="space-y-3">
             <div>
               <label className="text-xs font-semibold text-foreground block mb-1.5">Site name</label>
-              <input defaultValue="NFsTay" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
+              <input defaultValue="nfstay" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
             </div>
             <div>
               <label className="text-xs font-semibold text-foreground block mb-1.5">Support email</label>
@@ -182,7 +182,7 @@ export default function AdminSettings() {
                   rows={10}
                   value={aiForm.system_prompt_pricing}
                   onChange={e => setAiForm(p => ({ ...p, system_prompt_pricing: e.target.value }))}
-                  placeholder="You are NFsTay's Airbnb Revenue Estimation Engine..."
+                  placeholder="You are nfstay's Airbnb Revenue Estimation Engine..."
                   className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">This is the instruction set sent to the AI before every pricing request. Edit carefully — changes apply immediately.</p>
@@ -195,7 +195,7 @@ export default function AdminSettings() {
                   rows={10}
                   value={aiForm.system_prompt_university}
                   onChange={e => setAiForm(p => ({ ...p, system_prompt_university: e.target.value }))}
-                  placeholder="You are NFsTay's AI Consultant for rent-to-rent education..."
+                  placeholder="You are nfstay's AI Consultant for rent-to-rent education..."
                   className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">This is the instruction set for the lesson chat assistant. Keep it focused on UK rent-to-rent.</p>
@@ -222,7 +222,7 @@ export default function AdminSettings() {
                   rows={10}
                   value={aiForm.system_prompt_description}
                   onChange={e => setAiForm(p => ({ ...p, system_prompt_description: e.target.value }))}
-                  placeholder="You are NFsTay's property listing writer..."
+                  placeholder="You are nfstay's property listing writer..."
                   className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">This prompt generates listing descriptions when users click "Generate description with AI". Keep it UK-focused and partner-oriented.</p>

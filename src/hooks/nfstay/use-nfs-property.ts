@@ -30,7 +30,7 @@ export function useNfsProperty(propertyId: string | undefined): UseNfsPropertyRe
 
       if (dbError) {
         if (dbError.code === '42P01') {
-          setError('NFStay tables not yet created. Run the Phase 2 migration first.');
+          setError('nfstay tables not yet created. Run the Phase 2 migration first.');
         } else {
           setError(dbError.message);
         }

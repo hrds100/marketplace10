@@ -30,9 +30,9 @@ const config = createConfig({
     authWalletConnectors(),
     evmWalletConnectors({
       metadata: {
-        name: 'NFsTay',
+        name: 'nfstay',
         icon: typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : '',
-        description: 'NFsTay Investment Platform',
+        description: 'nfstay Investment Platform',
         url: typeof window !== 'undefined' ? window.location.origin : '',
       },
       walletConnectProjectId: PARTICLE_CONFIG.walletConnectProjectId,

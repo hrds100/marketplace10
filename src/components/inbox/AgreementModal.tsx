@@ -13,7 +13,7 @@ interface Props {
 const NDA_TEXT = `
 1. DEFINITIONS AND INTERPRETATION
 
-This Non-Disclosure Agreement ("Agreement") is entered into between the property owner/agent ("Landlord") and the serviced accommodation operator ("Operator") introduced via the NFsTay platform ("Platform").
+This Non-Disclosure Agreement ("Agreement") is entered into between the property owner/agent ("Landlord") and the serviced accommodation operator ("Operator") introduced via the nfstay platform ("Platform").
 
 "Confidential Information" means all information disclosed by either party relating to property addresses, rental terms, financial projections, occupancy data, guest information, pricing strategies, and any other commercially sensitive information shared during or after the introduction.
 
@@ -23,7 +23,7 @@ Both parties agree to keep all Confidential Information strictly confidential an
 
 3. COMMISSION AND INTRODUCTION TERMS
 
-The Landlord acknowledges that this introduction was facilitated by NFsTay. If the Landlord and Operator proceed to sign a lease, management agreement, or any other arrangement for this property within 12 months of this introduction, an introduction fee of £250 is payable to NFsTay by the Landlord.
+The Landlord acknowledges that this introduction was facilitated by nfstay. If the Landlord and Operator proceed to sign a lease, management agreement, or any other arrangement for this property within 12 months of this introduction, an introduction fee of £250 is payable to nfstay by the Landlord.
 
 4. PERMITTED USE
 
@@ -78,7 +78,7 @@ export default function AgreementModal({ thread, isOperator, onClose, onSign }: 
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">NDA Agreement</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Non-Disclosure Agreement between NFsTay and the Landlord/Agent</p>
+            <p className="text-xs text-gray-500 mt-0.5">Non-Disclosure Agreement between nfstay and the Landlord/Agent</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-50"><X className="w-5 h-5 text-gray-400" /></button>
         </div>

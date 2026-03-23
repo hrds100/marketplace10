@@ -1,7 +1,7 @@
 export default function AdminArchitecture() {
   return (
     <div>
-      <h1 className="text-[28px] font-bold text-foreground mb-1">NFsTay Platform Architecture</h1>
+      <h1 className="text-[28px] font-bold text-foreground mb-1">nfstay Platform Architecture</h1>
       <p className="text-sm text-muted-foreground mb-8">One repo, one database, one signup — three products</p>
 
       {/* Three Apps */}

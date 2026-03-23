@@ -79,7 +79,7 @@ export default function Variant03() {
       <TestimonialsSection theme="light" />
       <PricingSection theme="light" />
       <FAQSection theme="light" />
-      <CTABand headline="See why 4,200+ operators choose NFsTay" />
+      <CTABand headline="See why 4,200+ operators choose nfstay" />
       <FooterSection theme="light" />
     </div>
   );

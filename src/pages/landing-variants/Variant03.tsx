@@ -141,7 +141,7 @@ export default function Variant03() {
 
   const faqs = [
     { q: 'Can I import my existing deals?', a: 'Yes. Upload a CSV or add deals manually. Your pipeline is ready in minutes, with all deal stages preserved.' },
-    { q: 'Is the inbox connected to WhatsApp?', a: 'The inbox consolidates messages from the NFsTay platform. WhatsApp integration is on the roadmap for Q3.' },
+    { q: 'Is the inbox connected to WhatsApp?', a: 'The inbox consolidates messages from the nfstay platform. WhatsApp integration is on the roadmap for Q3.' },
     { q: 'How many deals can I track?', a: 'Free accounts can browse deals. Pro accounts get unlimited CRM pipeline slots, messaging threads, and deal tracking.' },
   ];
 
@@ -150,7 +150,7 @@ export default function Variant03() {
       {/* ─── NAV ─── */}
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <span className="text-lg font-bold tracking-tight">NFsTay</span>
+          <span className="text-lg font-bold tracking-tight">nfstay</span>
           <div className="hidden md:flex items-center gap-6 text-sm text-gray-600">
             <a href="#deals" className="hover:text-gray-900 transition">Deals</a>
             <a href="#crm" className="hover:text-gray-900 transition">CRM</a>
@@ -185,7 +185,7 @@ export default function Variant03() {
               Your rent-to-rent pipeline, organised
             </h1>
             <p className="mt-5 text-gray-600 text-base md:text-lg leading-relaxed max-w-lg">
-              Track every deal from first contact to signed contract. NFsTay gives operators a purpose-built CRM, messaging inbox, and deal flow — no spreadsheets required.
+              Track every deal from first contact to signed contract. nfstay gives operators a purpose-built CRM, messaging inbox, and deal flow — no spreadsheets required.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-md text-sm font-medium transition flex items-center gap-2">
@@ -461,14 +461,14 @@ export default function Variant03() {
       <footer className="border-t border-gray-200 bg-white">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
-            <span className="text-lg font-bold tracking-tight">NFsTay</span>
+            <span className="text-lg font-bold tracking-tight">nfstay</span>
             <p className="text-xs text-gray-500 mt-1">The operator platform for rent-to-rent.</p>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">
             <a href="#" className="hover:text-gray-700 transition">Terms</a>
             <a href="#" className="hover:text-gray-700 transition">Privacy</a>
             <a href="#" className="hover:text-gray-700 transition">Support</a>
-            <span>© {new Date().getFullYear()} NFsTay Ltd</span>
+            <span>© {new Date().getFullYear()} nfstay Ltd</span>
           </div>
         </div>
       </footer>

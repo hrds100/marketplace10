@@ -117,7 +117,7 @@ export default function AdminNfsReservations() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">NFStay Reservations</h1>
+          <h1 className="text-2xl font-bold">nfstay Reservations</h1>
           <p className="text-sm text-muted-foreground mt-0.5">All bookings across all operators</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchReservations} disabled={loading}>

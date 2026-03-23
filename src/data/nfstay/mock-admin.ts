@@ -21,7 +21,7 @@ export const mockUsers: MockUser[] = [
   { id: 'usr-008', email: 'info@coastalretreats.com', full_name: 'Coastal Retreats', role: 'operator', status: 'active', created_at: '2025-09-20', last_sign_in: '2026-03-19', avatar_url: '', bookings_count: 0 },
   { id: 'usr-009', email: 'contact@urbanstays.com', full_name: 'Urban Stays Co', role: 'operator', status: 'pending', created_at: '2026-03-10', last_sign_in: '', avatar_url: '', bookings_count: 0 },
   { id: 'usr-010', email: 'hello@alpinelodges.com', full_name: 'Alpine Lodges GmbH', role: 'operator', status: 'pending', created_at: '2026-03-15', last_sign_in: '', avatar_url: '', bookings_count: 0 },
-  { id: 'usr-011', email: 'admin@nfstay.app', full_name: 'NFStay Admin', role: 'admin', status: 'active', created_at: '2025-06-01', last_sign_in: '2026-03-20', avatar_url: '', bookings_count: 0 },
+  { id: 'usr-011', email: 'admin@nfstay.app', full_name: 'nfstay Admin', role: 'admin', status: 'active', created_at: '2025-06-01', last_sign_in: '2026-03-20', avatar_url: '', bookings_count: 0 },
 ];
 
 export interface MockOperatorApplication {

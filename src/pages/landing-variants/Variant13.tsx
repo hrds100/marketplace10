@@ -60,7 +60,7 @@ export default function Variant13() {
       >
         <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
           <span className="text-xl font-extrabold tracking-tight" style={{ color: colors.primary }}>
-            NFsTay
+            nfstay
           </span>
 
           <div className="hidden md:flex items-center gap-8">
@@ -158,7 +158,7 @@ export default function Variant13() {
               className="mt-6 text-lg md:text-xl leading-relaxed max-w-2xl"
               style={{ color: 'rgba(246,247,249,0.7)' }}
             >
-              NFsTay puts landlord-approved Airbnb deals, a full CRM pipeline, direct booking site,
+              nfstay puts landlord-approved Airbnb deals, a full CRM pipeline, direct booking site,
               investor partnerships, and operator training in one platform. The UK's fastest-growing
               rent-to-rent marketplace.
             </motion.p>
@@ -304,7 +304,7 @@ export default function Variant13() {
               { icon: LayoutGrid, title: 'CRM Pipeline', desc: 'Track deals from first contact to signed contract with drag-and-drop stages. Never lose a lead again.' },
               { icon: MessageSquare, title: 'Inbox Messaging', desc: 'Message landlords directly with property context, earnings estimates, and professional templates built in.' },
               { icon: Globe, title: 'Direct Booking Site', desc: 'Launch yourbrand.nfstay.app with custom branding and zero commission. Own your guests, own your revenue.' },
-              { icon: GraduationCap, title: 'NFsTay Academy', desc: '9 modules, 36 lessons, XP system. Learn rent-to-rent from experienced operators who run real portfolios.' },
+              { icon: GraduationCap, title: 'nfstay Academy', desc: '9 modules, 36 lessons, XP system. Learn rent-to-rent from experienced operators who run real portfolios.' },
               { icon: Users, title: 'Agent Programme', desc: 'Earn 40% recurring commission by referring new members. Share your link, build passive income.' },
             ].map((f) => (
               <motion.div
@@ -664,7 +664,7 @@ export default function Variant13() {
               Learn Rent-to-Rent from the Ground Up
             </motion.h2>
             <motion.p variants={fadeUp} className="mt-4 text-base md:text-lg max-w-xl mx-auto" style={{ color: '#6b7280' }}>
-              NFsTay Academy: 9 modules, 36 lessons, 36 checklists. Beginner to intermediate.
+              nfstay Academy: 9 modules, 36 lessons, 36 checklists. Beginner to intermediate.
             </motion.p>
           </motion.div>
 
@@ -737,7 +737,7 @@ export default function Variant13() {
         <div className="max-w-7xl mx-auto px-6">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} className="text-center mb-14">
             <motion.h2 variants={fadeUp} className="text-3xl md:text-[36px] font-bold leading-[1.2] tracking-[-0.02em]" style={{ color: colors.primary }}>
-              Earn by Sharing NFsTay
+              Earn by Sharing nfstay
             </motion.h2>
             <motion.p variants={fadeUp} className="mt-4 text-base md:text-lg max-w-xl mx-auto" style={{ color: '#6b7280' }}>
               40% commission on every referral. No cap. No limits.
@@ -1017,11 +1017,11 @@ export default function Variant13() {
               },
               {
                 q: 'How are deals verified?',
-                a: 'Every deal on NFsTay goes through a compliance check including landlord consent verification, Airdna revenue estimates, local regulation review, and financial modelling. Only deals that meet our criteria are listed as "Live".',
+                a: 'Every deal on nfstay goes through a compliance check including landlord consent verification, Airdna revenue estimates, local regulation review, and financial modelling. Only deals that meet our criteria are listed as "Live".',
               },
               {
                 q: 'Do I need experience?',
-                a: 'No. NFsTay Academy takes you from complete beginner to confident operator. The 9 modules cover everything from property hunting to landlord pitching to guest management.',
+                a: 'No. nfstay Academy takes you from complete beginner to confident operator. The 9 modules cover everything from property hunting to landlord pitching to guest management.',
               },
               {
                 q: 'What\'s in the free plan?',
@@ -1086,7 +1086,7 @@ export default function Variant13() {
               Your first deal is waiting.
             </motion.h2>
             <motion.p variants={fadeUp} className="mt-5 text-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              Join 200+ UK operators on NFsTay.
+              Join 200+ UK operators on nfstay.
             </motion.p>
             <motion.div variants={fadeUp} className="mt-10">
               <a
@@ -1109,7 +1109,7 @@ export default function Variant13() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
             <div className="col-span-2 md:col-span-1">
-              <span className="text-xl font-extrabold text-white">NFsTay</span>
+              <span className="text-xl font-extrabold text-white">nfstay</span>
               <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.35)' }}>
                 The UK's rent-to-rent marketplace for operators and investors.
               </p>
@@ -1155,7 +1155,7 @@ export default function Variant13() {
           </div>
 
           <div className="mt-12 pt-8 border-t border-white/10 text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
-            &copy; 2025 NFsTay. All rights reserved.
+            &copy; 2025 nfstay. All rights reserved.
           </div>
         </div>
       </footer>
