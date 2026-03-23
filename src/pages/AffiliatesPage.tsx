@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe } from 'lucide-react';
+import { useMyAffiliateProfile } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +43,8 @@ function getNextTuesday() {
 export default function AffiliatesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { data: realAffProfile } = useMyAffiliateProfile();
+  // TODO: Wire realAffProfile to replace mock affiliate data when available
   const [copied, setCopied] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
   const [calcMode, setCalcMode] = useState<'subscriptions' | 'jv'>('subscriptions');
@@ -70,27 +73,14 @@ export default function AffiliatesPage() {
     localStorage.setItem('nfstay_aff_last_check', new Date().toISOString());
   }, [user?.id]);
 
-  // Fetch affiliate profile - auto-creates one if missing
+  // Fetch affiliate profile
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['affiliate-profile', user?.id, userName],
+    queryKey: ['affiliate-profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data } = await (supabase.from('affiliate_profiles') as any)
         .select('*').eq('user_id', user.id).maybeSingle();
-      if (data) return data;
-      // Auto-provision: create affiliate profile on first visit
-      const code = generateCode(userName || '');
-      const { data: created, error } = await (supabase.from('affiliate_profiles') as any)
-        .insert({ user_id: user.id, referral_code: code })
-        .select('*')
-        .single();
-      if (error) {
-        // Race condition / duplicate key - re-fetch
-        const { data: retry } = await (supabase.from('affiliate_profiles') as any)
-          .select('*').eq('user_id', user.id).maybeSingle();
-        return retry;
-      }
-      return created;
+      return data;
     },
     enabled: !!user?.id,
   });
