@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe } from 'lucide-react';
 import { useMyAffiliateProfile } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
@@ -86,10 +86,10 @@ export default function AffiliatesPage() {
   });
 
   // Auto-provision affiliate profile if none exists
-  const [provisioning, setProvisioning] = useState(false);
+  const provisionedRef = useRef(false);
   useEffect(() => {
-    if (!user?.id || isLoading || profile || provisioning) return;
-    setProvisioning(true);
+    if (!user?.id || isLoading || profile || provisionedRef.current) return;
+    provisionedRef.current = true;
     const code = generateCode(userName || '');
     (supabase.from('affiliate_profiles') as any)
       .insert({ user_id: user.id, referral_code: code })
@@ -97,9 +97,8 @@ export default function AffiliatesPage() {
         if (!error) {
           queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] });
         }
-        setProvisioning(false);
       });
-  }, [user?.id, isLoading, profile, provisioning, userName, queryClient]);
+  }, [user?.id, isLoading, profile, userName, queryClient]);
 
   // Fetch recent events
   const { data: events = [] } = useQuery({
@@ -204,7 +203,7 @@ export default function AffiliatesPage() {
   }, [events]);
   const maxEarning = Math.max(...monthlyEarnings.map(m => m.amount), 1);
 
-  if (isLoading || provisioning) {
+  if (isLoading) {
     return (
       <div className="p-6 md:p-8">
         <div className="animate-pulse space-y-6">
