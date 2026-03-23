@@ -112,83 +112,73 @@ export default function AdminQuickList() {
       const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
       const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : null;
 
+      // Extract bedrooms - check for "X bedroom" pattern, also "total: X flats/units"
       const bedsMatch = text.match(/(\d+)\s*(?:bed(?:room)?s?|double\s+bed)/i);
-      const bedrooms = bedsMatch ? parseInt(bedsMatch[1]) : null;
+      const totalUnitsMatch = text.match(/total:?\s*(\d+)\s*(?:flat|unit|room)/i);
+      const unitCountMatch = text.match(/(\d+)[\s-]*unit/i);
+      const bedrooms = totalUnitsMatch ? parseInt(totalUnitsMatch[1])
+        : unitCountMatch ? parseInt(unitCountMatch[1])
+        : bedsMatch ? parseInt(bedsMatch[1])
+        : null;
 
-      const bathsMatch = text.match(/(\d+)\s*bath(?:room)?s?/i);
-      const bathrooms = bathsMatch ? parseInt(bathsMatch[1]) : null;
+      // Extract bathrooms - but avoid matching "1 Bath Each" as 1 bathroom for the whole block
+      const allBathMatches = [...text.matchAll(/(\d+)\s*bath(?:room)?s?/gi)];
+      let bathrooms: number | null = null;
+      if (allBathMatches.length > 0) {
+        // Sum if multiple bathroom references, or take highest number
+        const nums = allBathMatches.map(m => parseInt(m[1]));
+        bathrooms = Math.max(...nums);
+      }
 
       const rentMatch = text.match(/[£]?\s*(\d[\d,]*)\s*(?:pcm|pm|per\s*month)/i);
       const rent_monthly = rentMatch ? parseInt(rentMatch[1].replace(/,/g, '')) : null;
 
-      // Derive city from postcode prefix - all UK postcode areas
-      const postcodeCity: Record<string, string> = {
-        // London
-        'E': 'London', 'EC': 'London', 'N': 'London', 'NW': 'London',
-        'SE': 'London', 'SW': 'London', 'W': 'London', 'WC': 'London',
-        // Greater London & surrounds
-        'BR': 'Bromley', 'CR': 'Croydon', 'DA': 'Dartford', 'EN': 'Enfield',
-        'HA': 'Harrow', 'IG': 'Ilford', 'KT': 'Kingston upon Thames',
-        'RM': 'Romford', 'SM': 'Sutton', 'TW': 'Twickenham', 'UB': 'Southall',
-        'WD': 'Watford',
-        // South East
-        'BN': 'Brighton', 'CT': 'Canterbury', 'GU': 'Guildford', 'HP': 'Hemel Hempstead',
-        'ME': 'Medway', 'MK': 'Milton Keynes', 'OX': 'Oxford', 'PO': 'Portsmouth',
-        'RG': 'Reading', 'RH': 'Redhill', 'SL': 'Slough', 'SO': 'Southampton',
-        'SS': 'Southend-on-Sea', 'TN': 'Tunbridge Wells',
-        // South West
-        'BA': 'Bath', 'BH': 'Bournemouth', 'BS': 'Bristol', 'DT': 'Dorchester',
-        'EX': 'Exeter', 'GL': 'Gloucester', 'PL': 'Plymouth', 'SN': 'Swindon',
-        'SP': 'Salisbury', 'TA': 'Taunton', 'TQ': 'Torquay', 'TR': 'Truro',
-        // East
-        'AL': 'St Albans', 'CB': 'Cambridge', 'CM': 'Chelmsford', 'CO': 'Colchester',
-        'IP': 'Ipswich', 'LU': 'Luton', 'NR': 'Norwich', 'PE': 'Peterborough',
-        'SG': 'Stevenage',
-        // East Midlands
-        'DE': 'Derby', 'DN': 'Doncaster', 'LE': 'Leicester', 'LN': 'Lincoln',
-        'NG': 'Nottingham', 'NN': 'Northampton',
-        // West Midlands
-        'B': 'Birmingham', 'CV': 'Coventry', 'DY': 'Dudley', 'HR': 'Hereford',
-        'ST': 'Stoke-on-Trent', 'SY': 'Shrewsbury', 'TF': 'Telford',
-        'WR': 'Worcester', 'WS': 'Walsall', 'WV': 'Wolverhampton',
-        // North West
-        'BB': 'Blackburn', 'BL': 'Bolton', 'CA': 'Carlisle', 'CH': 'Chester',
-        'CW': 'Crewe', 'FY': 'Blackpool', 'L': 'Liverpool', 'LA': 'Lancaster',
-        'M': 'Manchester', 'OL': 'Oldham', 'PR': 'Preston', 'SK': 'Stockport',
-        'WA': 'Warrington', 'WN': 'Wigan',
-        // Yorkshire
-        'BD': 'Bradford', 'HD': 'Huddersfield', 'HG': 'Harrogate', 'HU': 'Hull',
-        'HX': 'Halifax', 'LS': 'Leeds', 'S': 'Sheffield', 'WF': 'Wakefield',
-        'YO': 'York',
-        // North East
-        'DH': 'Durham', 'DL': 'Darlington', 'NE': 'Newcastle upon Tyne',
-        'SR': 'Sunderland', 'TS': 'Middlesbrough',
-        // Wales
-        'CF': 'Cardiff', 'LD': 'Llandrindod Wells', 'LL': 'Llandudno',
-        'NP': 'Newport', 'SA': 'Swansea', 'SY': 'Shrewsbury',
-        // Scotland
-        'AB': 'Aberdeen', 'DD': 'Dundee', 'DG': 'Dumfries', 'EH': 'Edinburgh',
-        'FK': 'Falkirk', 'G': 'Glasgow', 'HS': 'Outer Hebrides',
-        'IV': 'Inverness', 'KA': 'Kilmarnock', 'KW': 'Kirkwall', 'KY': 'Kirkcaldy',
-        'ML': 'Motherwell', 'PA': 'Paisley', 'PH': 'Perth', 'TD': 'Galashiels',
-        'ZE': 'Lerwick',
-        // Northern Ireland
-        'BT': 'Belfast',
-        // Channel Islands / Isle of Man
-        'GY': 'Guernsey', 'JE': 'Jersey', 'IM': 'Isle of Man',
-      };
-      // Match longest prefix first (e.g. "NW" before "N")
-      const prefix = postcode ? postcode.replace(/\d.*/, '').toUpperCase() : null;
-      let cityFromPostcode: string | null = null;
-      if (prefix) {
-        // Try full prefix first, then first letter
-        cityFromPostcode = postcodeCity[prefix] || postcodeCity[prefix.charAt(0)] || null;
+      // Resolve city from postcode using Google Maps Geocoding API
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      let city: string | null = null;
+
+      if (postcode && apiKey) {
+        try {
+          const geoRes = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(postcode + ', UK')}&key=${apiKey}`
+          );
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            const result = geoData.results?.[0];
+            if (result) {
+              const components = result.address_components || [];
+              // Try postal_town first (most accurate for UK), then locality, then admin_area_level_2
+              const postalTown = components.find((c: any) => c.types.includes('postal_town'));
+              const locality = components.find((c: any) => c.types.includes('locality'));
+              const admin2 = components.find((c: any) => c.types.includes('administrative_area_level_2'));
+              city = postalTown?.long_name || locality?.long_name || admin2?.long_name || null;
+            }
+          }
+        } catch {
+          // Geocoding failed - fall through to text search
+        }
       }
 
-      // Check for city name in text
-      const cityNames = Object.values(postcodeCity);
-      const cityInText = cityNames.find(c => text.toLowerCase().includes(c.toLowerCase()));
-      const city = cityInText || cityFromPostcode;
+      // Fallback: search for known city names in the text (word boundary match to avoid "Bath" in "Bathroom")
+      if (!city) {
+        const knownCities = [
+          'London', 'Manchester', 'Birmingham', 'Leeds', 'Liverpool', 'Sheffield',
+          'Bristol', 'Newcastle', 'Nottingham', 'Leicester', 'Coventry', 'Bradford',
+          'Cardiff', 'Edinburgh', 'Glasgow', 'Belfast', 'Wolverhampton', 'Walsall',
+          'Sunderland', 'Derby', 'Southampton', 'Portsmouth', 'Plymouth', 'Brighton',
+          'Hull', 'Stoke', 'Blackpool', 'Bolton', 'Oldham', 'Luton', 'Milton Keynes',
+          'Reading', 'Oxford', 'Cambridge', 'Ipswich', 'Norwich', 'Exeter', 'Gloucester',
+          'Bath', 'Bournemouth', 'Ilford', 'Croydon', 'Harrow', 'Romford', 'Bromley',
+          'Slough', 'Watford', 'Guildford', 'Canterbury', 'York', 'Lancaster', 'Preston',
+          'Blackburn', 'Carlisle', 'Darlington', 'Middlesbrough', 'Durham', 'Aberdeen',
+          'Dundee', 'Inverness', 'Perth', 'Swansea', 'Newport', 'Northampton', 'Lincoln',
+          'Peterborough', 'Chelmsford', 'Colchester', 'Swindon', 'Salisbury', 'Taunton',
+          'Worcester', 'Hereford', 'Shrewsbury', 'Telford', 'Chester', 'Crewe', 'Warrington',
+          'Stockport', 'Halifax', 'Huddersfield', 'Wakefield', 'Harrogate', 'Doncaster',
+        ];
+        // Use word boundaries to avoid matching "Bath" inside "Bathroom"
+        city = knownCities.find(c => new RegExp(`\\b${c}\\b`, 'i').test(text)) || null;
+      }
 
       // Detect type
       const typeMap: [RegExp, string, string][] = [
@@ -210,10 +200,16 @@ export default function AdminQuickList() {
       const saMatch = text.match(/sa\s*(?:approved|compliant|complaint)/i);
       const hmoMatch = text.match(/hmo\s*(?:compliant|complaint|licensed)/i);
 
-      // Generate name
+      // Generate name - detect multi-unit blocks
+      const isBlock = /\b(block|whole block|entire block)\b/i.test(text) || (unitCountMatch !== null);
+      const bedLabel = isBlock && unitCountMatch
+        ? `${unitCountMatch[1]}-Unit Block`
+        : bedrooms
+          ? `${bedrooms}-Bed`
+          : null;
       const name = [
-        bedrooms ? `${bedrooms}-Bed` : null,
-        type || 'Property',
+        bedLabel,
+        isBlock ? null : (type || 'Property'),
         city,
       ].filter(Boolean).join(', ');
 
