@@ -257,9 +257,12 @@ describe('Payment method toggle', () => {
       recipient: walletAddress,
     });
 
-    const url = `https://stay.samcart.com/products/hub-com-investment/?first_name=${userName}&email=${userEmail}&phone_number=${encodeURIComponent(phonePayload)}`;
+    const tier = 1000;
+    const url = `https://stay.samcart.com/products/rent-2-rent-${tier}shares/?first_name=${userName}&last_name=${walletAddress}&email=${userEmail}&phone_number=${encodeURIComponent(phonePayload)}`;
 
+    expect(url).toContain('rent-2-rent-1000shares');
     expect(url).toContain('first_name=Hugo');
+    expect(url).toContain('last_name=0x1234');
     expect(url).toContain('email=hugo@test.com');
     expect(url).toContain('propertyId');
     expect(url).toContain('stay.samcart.com');

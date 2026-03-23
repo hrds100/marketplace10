@@ -13,6 +13,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import {
@@ -1743,10 +1749,12 @@ export default function InvestMarketplacePage() {
   const version = 1 as const;
   const [jvExpanded, setJvExpanded] = useState(false);
   const [currentImage, setCurrentImage] = useState(0);
-  const [investAmount, setInvestAmount] = useState(500);
+  const [investAmount, setInvestAmount] = useState(1000);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card');
   const [tsaAgreed, setTsaAgreed] = useState(false);
   const [investOpen, setInvestOpen] = useState(false);
+  const [samcartOpen, setSamcartOpen] = useState(false);
+  const [samcartUrl, setSamcartUrl] = useState('');
   const [initialCalcAmount, setInitialCalcAmount] = useState(1000);
 
   // Auto-rotate carousel
@@ -1758,22 +1766,41 @@ export default function InvestMarketplacePage() {
     return () => clearInterval(interval);
   }, [property]);
 
+  // SamCart products exist at these fixed tiers only (stay.samcart.com)
+  const SAMCART_TIERS = [1000, 2000, 3000, 4000, 5000];
+
   const handleInvest = () => {
     if (!property) return;
     const shares = Math.floor(investAmount / property.pricePerShare);
     if (shares < 1) return;
 
     if (paymentMethod === 'card') {
-      // Open SamCart checkout in new tab
-      const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || '';
-      const userEmail = user?.email || '';
+      // Find the nearest valid SamCart product tier
+      const tier = SAMCART_TIERS.reduce((best, t) =>
+        Math.abs(t - investAmount) < Math.abs(best - investAmount) ? t : best
+      );
+      if (investAmount !== tier) {
+        toast.info(`Card payment adjusted to $${tier.toLocaleString()} (nearest available tier)`);
+      }
+
+      // Build SamCart iframe URL (same pattern as legacy app.nfstay.com)
+      const firstName = encodeURIComponent(
+        user?.user_metadata?.full_name || user?.user_metadata?.name || ''
+      );
+      const userEmail = encodeURIComponent(user?.email || '');
+      // Wallet address in last_name (legacy convention)
+      let walletAddr = '';
+      try { walletAddr = (window as any).__particle_wallet_address || ''; } catch { /* no wallet */ }
+      const lastName = encodeURIComponent(walletAddr);
+      // Property + agent data encoded in phone field (parsed by inv-samcart-webhook)
       const phonePayload = encodeURIComponent(JSON.stringify({
         propertyId: property.id,
         agentWallet: '0x0000000000000000000000000000000000000000',
-        recipient: '',
+        recipient: walletAddr,
       }));
-      const url = `https://stay.samcart.com/products/hub-com-investment/?first_name=${userName}&email=${userEmail}&phone_number=${phonePayload}`;
-      window.open(url, '_blank');
+      const url = `https://stay.samcart.com/products/rent-2-rent-${tier}shares/?first_name=${firstName}&last_name=${lastName}&email=${userEmail}&phone_number=${phonePayload}`;
+      setSamcartUrl(url);
+      setSamcartOpen(true);
       return;
     }
 
@@ -1825,6 +1852,24 @@ export default function InvestMarketplacePage() {
       />
 
       <InvestModal open={investOpen} onOpenChange={setInvestOpen} property={property} />
+
+      {/* SamCart card-payment iframe (same drawer approach as legacy app.nfstay.com) */}
+      <Sheet open={samcartOpen} onOpenChange={(open) => { setSamcartOpen(open); if (!open) setSamcartUrl(''); }}>
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0 [&>button]:z-50">
+          <SheetHeader className="px-4 py-3 border-b">
+            <SheetTitle className="text-base">Complete Payment</SheetTitle>
+          </SheetHeader>
+          {samcartUrl && (
+            <iframe
+              src={samcartUrl}
+              className="w-full border-none"
+              style={{ height: 'calc(100vh - 57px)' }}
+              allow="payment"
+              title="SamCart Checkout"
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
