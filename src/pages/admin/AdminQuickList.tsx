@@ -43,9 +43,11 @@ export default function AdminQuickList() {
   // Pexels fallback photos (URLs, not Files)
   const [pexelsUrls, setPexelsUrls] = useState<string[]>([]);
 
-  // AI state
+  // AI state - supports multiple listings from one paste
   const [parsing, setParsing] = useState(false);
-  const [listing, setListing] = useState<ParsedListing | null>(null);
+  const [listings, setListings] = useState<ParsedListing[]>([]);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const listing = listings[activeIdx] || null;
 
   // System prompt
   const [showPrompt, setShowPrompt] = useState(false);
@@ -56,6 +58,18 @@ export default function AdminQuickList() {
 
   // Publishing
   const [publishing, setPublishing] = useState(false);
+
+  // Get next sequential property number from DB
+  const getNextPropertyNumber = async (): Promise<number> => {
+    const { count } = await (supabase.from('properties') as any)
+      .select('id', { count: 'exact', head: true });
+    return 1001 + (count || 0);
+  };
+
+  // Update a field on the active listing
+  const updateField = (key: keyof ParsedListing, value: any) => {
+    setListings(prev => prev.map((l, i) => i === activeIdx ? { ...l, [key]: value } : l));
+  };
 
   // Load system prompt from ai_settings
   useEffect(() => {
@@ -99,15 +113,21 @@ export default function AdminQuickList() {
     setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
-  // Parse raw text into structured fields + get AI description
-  const handleGenerate = async () => {
-    if (!rawText.trim()) {
-      toast.error('Paste some listing text first');
-      return;
+  // Split text into individual listings if numbered (1. xxx 2. xxx)
+  const splitMultiListings = (text: string): string[] => {
+    // Check for numbered pattern: "1." or "1)" at start of line
+    const numbered = text.split(/\n(?=\d+[.)]\s*)/);
+    if (numbered.length > 1 && numbered.filter(s => s.trim()).length > 1) {
+      return numbered.map(s => s.replace(/^\d+[.)]\s*/, '').trim()).filter(s => s.length > 5);
     }
-    setParsing(true);
-    try {
-      const text = rawText;
+    return [text];
+  };
+
+  // Parse a single listing text into structured fields
+  const parseSingleListing = async (text: string): Promise<ParsedListing> => {
+    // Extract postcode
+    const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
+    const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : null;
 
       // Step 1: Extract fields from raw text with regex
       const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
@@ -234,63 +254,40 @@ export default function AdminQuickList() {
 
       // Extract profit if mentioned in text
       const profitMatch = text.match(/(?:monthly\s*)?profit[:\s]*[£]?\s*(\d[\d,]*)/i);
-      if (profitMatch) {
-        (parsed as any).profit_est = parseInt(profitMatch[1].replace(/,/g, ''));
+      parsed.profit_est = profitMatch ? parseInt(profitMatch[1].replace(/,/g, '')) : null;
+
+      return parsed;
+  };
+
+  // Main generate handler - supports multi-listing text
+  const handleGenerate = async () => {
+    if (!rawText.trim()) {
+      toast.error('Paste some listing text first');
+      return;
+    }
+    setParsing(true);
+    try {
+      const chunks = splitMultiListings(rawText);
+      const parsed: ParsedListing[] = [];
+
+      for (const chunk of chunks) {
+        const listing = await parseSingleListing(chunk);
+        parsed.push(listing);
       }
 
-      // Step 2: Clean text - strip ALL contact info, fees, availability, emojis
-      const cleanedText = text
-        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{200D}\u{2328}\u{23CF}\u{23E9}-\u{23F3}\u{23F8}-\u{23FA}\u{2702}-\u{27B0}]/gu, '') // emojis
-        .replace(/\b0\d{9,11}\b/g, '') // UK phone numbers (07xxx, 0208xxx)
-        .replace(/\+\d{10,13}/g, '') // intl phone numbers
-        .replace(/.*whatsapp.*$/gim, '') // entire WhatsApp lines
-        .replace(/.*\bDM\b.*$/gim, '') // entire DM lines
-        .replace(/.*\b(call|text|contact|message|ring|enquire|enquiry)\b.*$/gim, '') // entire contact lines
-        .replace(/.*\barrange\s*(a\s*)?viewing\b.*$/gim, '') // viewing lines
-        .replace(/.*procurement\s*fee.*$/gim, '') // procurement fee lines
-        .replace(/.*\bdeposit\b.*£?\d+.*$/gim, '') // deposit lines
-        .replace(/.*agent\s*fee.*$/gim, '') // agent fee lines
-        .replace(/.*available\s*(now|immediately).*$/gim, '') // availability lines
-        .replace(/.*\bfor\s*more\s*(details|info).*$/gim, '') // "for more details" lines
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
+      setListings(parsed);
+      setActiveIdx(0);
 
-      // Only send structured data to AI - no raw text notes
-      try {
-        const descRes = await fetch(`${N8N_BASE}/webhook/ai-generate-listing`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            city: parsed.city || '',
-            postcode: parsed.postcode || '',
-            bedrooms: parsed.bedrooms || 0,
-            bathrooms: parsed.bathrooms || 0,
-            type: parsed.type || parsed.property_category || '',
-            rent: parsed.rent_monthly || 0,
-            notes: cleanedText,
-            instructions: 'Write a professional property listing for a website. Do not include any phone numbers, contact details, WhatsApp references, DM requests, email addresses, or company names. Do not mention deposits, procurement fees, or agent fees. Do not say available now. Write as if this is a live listing on a property marketplace website.',
-          }),
-        });
-        if (descRes.ok) {
-          const descData = await descRes.json();
-          if (descData?.description) parsed.description = descData.description;
-        }
-      } catch {
-        // Description generation failed - not critical
-      }
-
-      setListing(parsed);
-
-      // Auto-fetch Pexels city photos if no photos uploaded
-      if (photos.length === 0 && parsed.city) {
-        const urls = await fetchPexelsPhotos(parsed.city, 'city skyline street', 4);
+      // Fetch Pexels city photos for the first listing if no photos uploaded
+      if (photos.length === 0 && parsed[0]?.city) {
+        const urls = await fetchPexelsPhotos(parsed[0].city, 'city skyline street', 4);
         if (urls.length > 0) {
           setPexelsUrls(urls);
           setPhotoPreviews(urls);
         }
       }
 
-      toast.success('Listing generated');
+      toast.success(parsed.length > 1 ? `${parsed.length} listings detected` : 'Listing generated');
     } catch (err: any) {
       toast.error(err?.message || 'Failed to parse listing');
     } finally {
@@ -315,28 +312,35 @@ export default function AdminQuickList() {
     return urls;
   };
 
-  // Publish or save draft
-  const handlePublish = async (status: 'live' | 'pending') => {
-    if (!listing?.name) {
+  // Publish one or all listings
+  const handlePublish = async (status: 'live' | 'pending', publishAll = false) => {
+    const toPublish = publishAll ? listings : listing ? [listing] : [];
+    if (toPublish.length === 0) {
       toast.error('Generate a listing first');
       return;
     }
     setPublishing(true);
     try {
+      let nextNum = await getNextPropertyNumber();
+
+      for (const item of toPublish) {
+        const propName = `Property #${nextNum} - ${item.name || 'Untitled'}`;
+        nextNum++;
+
       // Insert property with all required fields
       const { data: prop, error: insertErr } = await (supabase.from('properties') as any)
         .insert({
-          name: listing.name,
-          city: listing.city,
-          postcode: listing.postcode,
-          bedrooms: listing.bedrooms,
-          bathrooms: listing.bathrooms,
-          rent_monthly: listing.rent_monthly,
-          profit_est: listing.profit_est || 0,
-          property_category: listing.property_category,
-          type: listing.type || 'Flat',
-          description: listing.description,
-          notes: listing.notes,
+          name: propName,
+          city: item.city,
+          postcode: item.postcode,
+          bedrooms: item.bedrooms,
+          bathrooms: item.bathrooms,
+          rent_monthly: item.rent_monthly,
+          profit_est: item.profit_est || 0,
+          property_category: item.property_category,
+          type: item.type || 'Flat',
+          description: item.description,
+          notes: item.notes,
           sa_approved: 'yes',
           garage: listing.garage || false,
           status,
@@ -368,12 +372,12 @@ export default function AdminQuickList() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              city: listing.city || '',
-              postcode: listing.postcode || '',
-              bedrooms: listing.bedrooms || 0,
-              bathrooms: listing.bathrooms || 0,
-              type: listing.type || listing.property_category || 'Flat',
-              rent: listing.rent_monthly || 0,
+              city: item.city || '',
+              postcode: item.postcode || '',
+              bedrooms: item.bedrooms || 0,
+              bathrooms: item.bathrooms || 0,
+              type: item.type || item.property_category || 'Flat',
+              rent: item.rent_monthly || 0,
               propertyId: prop.id,
             }),
           });
@@ -400,13 +404,19 @@ export default function AdminQuickList() {
         }
       }
 
-      toast.success(status === 'live' ? 'Published!' : 'Saved as draft');
+      } // end for loop
+
+      const count = toPublish.length;
+      toast.success(status === 'live'
+        ? `${count} listing${count > 1 ? 's' : ''} published!`
+        : `${count} listing${count > 1 ? 's' : ''} saved as draft`);
       // Reset form
       setRawText('');
       setPhotos([]);
       setPhotoPreviews([]);
       setPexelsUrls([]);
-      setListing(null);
+      setListings([]);
+      setActiveIdx(0);
     } catch (err: any) {
       toast.error(err?.message || 'Failed to publish');
     } finally {
@@ -437,10 +447,7 @@ export default function AdminQuickList() {
     }
   };
 
-  // Field updater
-  const updateField = (key: keyof ParsedListing, value: any) => {
-    setListing(prev => prev ? { ...prev, [key]: value } : null);
-  };
+  // (updateField defined above with listings array support)
 
   return (
     <div className="max-w-[1200px]">
@@ -561,7 +568,36 @@ export default function AdminQuickList() {
             </div>
           ) : (
             <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-              <h2 className="text-lg font-bold text-foreground">Preview</h2>
+              {/* Multi-listing tabs */}
+              {listings.length > 1 && (
+                <div className="flex gap-1 flex-wrap mb-2">
+                  {listings.map((l, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveIdx(i)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        i === activeIdx ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {i + 1}. {l.city || l.postcode || `Listing ${i + 1}`}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-foreground">
+                  Preview {listings.length > 1 ? `(${activeIdx + 1}/${listings.length})` : ''}
+                </h2>
+                {listings.length > 1 && (
+                  <button
+                    onClick={() => handlePublish('live', true)}
+                    disabled={publishing}
+                    className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 disabled:opacity-50"
+                  >
+                    Publish All ({listings.length})
+                  </button>
+                )}
+              </div>
 
               {/* Photo strip */}
               {photoPreviews.length > 0 && (
