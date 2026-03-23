@@ -16,13 +16,19 @@ describe('buildSamcartPrefillParams', () => {
     expect(p.last_name).toBe('de Souza');
     expect(p.last_name).not.toMatch(/^0x/);
 
-    const parsed = JSON.parse(p.phone_number) as { propertyId: number; recipient: string; agentWallet?: string };
+    const parsed = JSON.parse(p.phone_number) as {
+      propertyId: number;
+      recipient: string;
+      investAmountUsd?: number;
+      agentWallet?: string;
+    };
     expect(parsed.propertyId).toBe(1);
     expect(parsed.recipient).toBe(wallet);
+    expect(parsed.investAmountUsd).toBe(500);
     expect(parsed.agentWallet).toBeUndefined();
 
     expect(p.custom_0zdAJJKy).toBe(wallet);
-    expect(p.amount).toBe('500.00');
+    expect(p.amount).toBeUndefined();
     expect(p.email).toBe('h@example.com');
   });
 });

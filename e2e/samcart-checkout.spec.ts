@@ -86,7 +86,7 @@ test.describe('SamCart Card Payment Checkout', () => {
         expect(iframeSrc).toContain('last_name=');
         expect(iframeSrc).toContain('propertyId');
         expect(iframeSrc).toContain('email=');
-        expect(iframeSrc).toContain('amount=');
+        expect(iframeSrc).toContain('investAmountUsd');
         expect(iframeSrc).toContain('custom_0zdAJJKy=');
       }
 

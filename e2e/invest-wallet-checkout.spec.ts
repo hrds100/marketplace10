@@ -75,6 +75,8 @@ test.describe('Invest SamCart prefill', () => {
     await secureBtn.evaluate((el) => (el as HTMLButtonElement).click());
     await expect(page.getByRole('heading', { name: 'Complete Payment' })).toBeVisible({ timeout: 10000 });
 
+    await expect(page.getByTestId('samcart-contribution-banner')).toContainText('$750.00');
+
     const iframe = page.locator('iframe[title="SamCart Checkout"]');
     await expect(iframe).toBeVisible({ timeout: 15000 });
 
@@ -87,15 +89,21 @@ test.describe('Invest SamCart prefill', () => {
     expect(lastName).not.toMatch(/^0x[a-fA-F0-9]{40}$/);
 
     const phoneDecoded = decodeURIComponent(params.get('phone_number') || '');
-    const parsed = JSON.parse(phoneDecoded) as { propertyId: number; recipient: string; agentWallet?: string };
+    const parsed = JSON.parse(phoneDecoded) as {
+      propertyId: number;
+      recipient: string;
+      investAmountUsd?: number;
+      agentWallet?: string;
+    };
     expect(parsed.recipient).toMatch(/^0x[a-fA-F0-9]{40}$/);
     expect(parsed.recipient.toLowerCase()).toBe(MOCK_PROFILE_WALLET.toLowerCase());
     expect(parsed.propertyId).toBeGreaterThan(0);
+    expect(parsed.investAmountUsd).toBe(750);
     expect(parsed.agentWallet).toBeUndefined();
 
     const customWallet = decodeURIComponent(params.get('custom_0zdAJJKy') || '');
     expect(customWallet).toMatch(/^0x[a-fA-F0-9]{40}$/);
     expect(params.get('email')).toBeTruthy();
-    expect(params.get('amount')).toBe('750.00');
+    expect(params.get('amount')).toBeNull();
   });
 });
