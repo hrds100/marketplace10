@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Upload, Image as ImageIcon, X, Settings2, Check, Save, Loader2 } from 'lucide-react';
+import { Sparkles, Upload, Image as ImageIcon, X, Settings2, Check, Save, Loader2, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -121,34 +121,69 @@ export default function AdminQuickList() {
       const rentMatch = text.match(/[£]?\s*(\d[\d,]*)\s*(?:pcm|pm|per\s*month)/i);
       const rent_monthly = rentMatch ? parseInt(rentMatch[1].replace(/,/g, '')) : null;
 
-      // Derive city from postcode prefix
+      // Derive city from postcode prefix - all UK postcode areas
       const postcodeCity: Record<string, string> = {
-        'IG': 'Ilford', 'BN': 'Worthing', 'M': 'Manchester', 'B': 'Birmingham',
-        'L': 'Liverpool', 'LS': 'Leeds', 'S': 'Sheffield', 'BS': 'Bristol',
-        'NG': 'Nottingham', 'LE': 'Leicester', 'CF': 'Cardiff', 'EH': 'Edinburgh',
-        'G': 'Glasgow', 'NE': 'Newcastle', 'SR': 'Sunderland', 'CV': 'Coventry',
-        'SW': 'London', 'SE': 'London', 'E': 'London', 'N': 'London', 'W': 'London',
-        'EC': 'London', 'WC': 'London', 'NW': 'London', 'EN': 'London',
-        'CR': 'Croydon', 'BR': 'Bromley', 'DA': 'Dartford', 'KT': 'Kingston',
-        'TW': 'Twickenham', 'HA': 'Harrow', 'UB': 'Uxbridge', 'SM': 'Sutton',
-        'RG': 'Reading', 'OX': 'Oxford', 'CB': 'Cambridge', 'PE': 'Peterborough',
-        'MK': 'Milton Keynes', 'LU': 'Luton', 'AL': 'St Albans', 'WD': 'Watford',
-        'HP': 'Hemel Hempstead', 'SL': 'Slough', 'GU': 'Guildford', 'PO': 'Portsmouth',
-        'SO': 'Southampton', 'BH': 'Bournemouth', 'DT': 'Dorchester', 'EX': 'Exeter',
-        'PL': 'Plymouth', 'TQ': 'Torquay', 'BA': 'Bath', 'GL': 'Gloucester',
-        'WR': 'Worcester', 'HR': 'Hereford', 'SY': 'Shrewsbury', 'ST': 'Stoke',
-        'DE': 'Derby', 'DN': 'Doncaster', 'HU': 'Hull', 'YO': 'York',
-        'HG': 'Harrogate', 'BD': 'Bradford', 'HX': 'Halifax', 'WF': 'Wakefield',
-        'HD': 'Huddersfield', 'OL': 'Oldham', 'BL': 'Bolton', 'WN': 'Wigan',
-        'PR': 'Preston', 'BB': 'Blackburn', 'FY': 'Blackpool', 'LA': 'Lancaster',
-        'CA': 'Carlisle', 'DL': 'Darlington', 'TS': 'Middlesbrough', 'DH': 'Durham',
-        'CT': 'Canterbury', 'ME': 'Rochester', 'TN': 'Tunbridge Wells', 'SS': 'Southend',
-        'CM': 'Chelmsford', 'CO': 'Colchester', 'IP': 'Ipswich', 'NR': 'Norwich',
-        'LN': 'Lincoln', 'WS': 'Walsall', 'WV': 'Wolverhampton', 'DY': 'Dudley',
-        'RM': 'Romford',
+        // London
+        'E': 'London', 'EC': 'London', 'N': 'London', 'NW': 'London',
+        'SE': 'London', 'SW': 'London', 'W': 'London', 'WC': 'London',
+        // Greater London & surrounds
+        'BR': 'Bromley', 'CR': 'Croydon', 'DA': 'Dartford', 'EN': 'Enfield',
+        'HA': 'Harrow', 'IG': 'Ilford', 'KT': 'Kingston upon Thames',
+        'RM': 'Romford', 'SM': 'Sutton', 'TW': 'Twickenham', 'UB': 'Southall',
+        'WD': 'Watford',
+        // South East
+        'BN': 'Brighton', 'CT': 'Canterbury', 'GU': 'Guildford', 'HP': 'Hemel Hempstead',
+        'ME': 'Medway', 'MK': 'Milton Keynes', 'OX': 'Oxford', 'PO': 'Portsmouth',
+        'RG': 'Reading', 'RH': 'Redhill', 'SL': 'Slough', 'SO': 'Southampton',
+        'SS': 'Southend-on-Sea', 'TN': 'Tunbridge Wells',
+        // South West
+        'BA': 'Bath', 'BH': 'Bournemouth', 'BS': 'Bristol', 'DT': 'Dorchester',
+        'EX': 'Exeter', 'GL': 'Gloucester', 'PL': 'Plymouth', 'SN': 'Swindon',
+        'SP': 'Salisbury', 'TA': 'Taunton', 'TQ': 'Torquay', 'TR': 'Truro',
+        // East
+        'AL': 'St Albans', 'CB': 'Cambridge', 'CM': 'Chelmsford', 'CO': 'Colchester',
+        'IP': 'Ipswich', 'LU': 'Luton', 'NR': 'Norwich', 'PE': 'Peterborough',
+        'SG': 'Stevenage',
+        // East Midlands
+        'DE': 'Derby', 'DN': 'Doncaster', 'LE': 'Leicester', 'LN': 'Lincoln',
+        'NG': 'Nottingham', 'NN': 'Northampton',
+        // West Midlands
+        'B': 'Birmingham', 'CV': 'Coventry', 'DY': 'Dudley', 'HR': 'Hereford',
+        'ST': 'Stoke-on-Trent', 'SY': 'Shrewsbury', 'TF': 'Telford',
+        'WR': 'Worcester', 'WS': 'Walsall', 'WV': 'Wolverhampton',
+        // North West
+        'BB': 'Blackburn', 'BL': 'Bolton', 'CA': 'Carlisle', 'CH': 'Chester',
+        'CW': 'Crewe', 'FY': 'Blackpool', 'L': 'Liverpool', 'LA': 'Lancaster',
+        'M': 'Manchester', 'OL': 'Oldham', 'PR': 'Preston', 'SK': 'Stockport',
+        'WA': 'Warrington', 'WN': 'Wigan',
+        // Yorkshire
+        'BD': 'Bradford', 'HD': 'Huddersfield', 'HG': 'Harrogate', 'HU': 'Hull',
+        'HX': 'Halifax', 'LS': 'Leeds', 'S': 'Sheffield', 'WF': 'Wakefield',
+        'YO': 'York',
+        // North East
+        'DH': 'Durham', 'DL': 'Darlington', 'NE': 'Newcastle upon Tyne',
+        'SR': 'Sunderland', 'TS': 'Middlesbrough',
+        // Wales
+        'CF': 'Cardiff', 'LD': 'Llandrindod Wells', 'LL': 'Llandudno',
+        'NP': 'Newport', 'SA': 'Swansea', 'SY': 'Shrewsbury',
+        // Scotland
+        'AB': 'Aberdeen', 'DD': 'Dundee', 'DG': 'Dumfries', 'EH': 'Edinburgh',
+        'FK': 'Falkirk', 'G': 'Glasgow', 'HS': 'Outer Hebrides',
+        'IV': 'Inverness', 'KA': 'Kilmarnock', 'KW': 'Kirkwall', 'KY': 'Kirkcaldy',
+        'ML': 'Motherwell', 'PA': 'Paisley', 'PH': 'Perth', 'TD': 'Galashiels',
+        'ZE': 'Lerwick',
+        // Northern Ireland
+        'BT': 'Belfast',
+        // Channel Islands / Isle of Man
+        'GY': 'Guernsey', 'JE': 'Jersey', 'IM': 'Isle of Man',
       };
-      const prefix = postcode ? postcode.replace(/\d.*/, '') : null;
-      const cityFromPostcode = prefix ? postcodeCity[prefix] || null : null;
+      // Match longest prefix first (e.g. "NW" before "N")
+      const prefix = postcode ? postcode.replace(/\d.*/, '').toUpperCase() : null;
+      let cityFromPostcode: string | null = null;
+      if (prefix) {
+        // Try full prefix first, then first letter
+        cityFromPostcode = postcodeCity[prefix] || postcodeCity[prefix.charAt(0)] || null;
+      }
 
       // Check for city name in text
       const cityNames = Object.values(postcodeCity);
@@ -435,10 +470,11 @@ export default function AdminQuickList() {
                 const isPexels = pexelsUrls.includes(src);
                 return (
                   <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-                    <img src={src} alt="" className={`w-full h-full object-cover ${isPexels ? 'blur-[6px] scale-110' : ''}`} />
+                    <img src={src} alt="" className={`w-full h-full object-cover ${isPexels ? 'blur-[8px] scale-110' : ''}`} />
                     {isPexels && (
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <span className="text-white text-[7px] font-medium text-center leading-tight px-1">Photos on<br/>request</span>
+                      <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-0.5">
+                        <Lock className="w-3.5 h-3.5 text-white/90" />
+                        <span className="text-white text-[6px] font-medium">On request</span>
                       </div>
                     )}
                     {!isPexels && (
@@ -493,10 +529,11 @@ export default function AdminQuickList() {
                     const isPexels = pexelsUrls.includes(src);
                     return (
                       <div key={i} className="relative flex-shrink-0 w-28 h-20 rounded-lg overflow-hidden border border-border">
-                        <img src={src} alt="" className={`w-full h-full object-cover ${isPexels ? 'blur-[6px] scale-110' : ''}`} />
+                        <img src={src} alt="" className={`w-full h-full object-cover ${isPexels ? 'blur-[8px] scale-110' : ''}`} />
                         {isPexels && (
-                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                            <span className="text-white text-[8px] font-medium text-center leading-tight">Photos available<br/>upon enquiry</span>
+                          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1">
+                            <Lock className="w-4 h-4 text-white/90" />
+                            <span className="text-white text-[8px] font-medium">Photos on request</span>
                           </div>
                         )}
                       </div>
