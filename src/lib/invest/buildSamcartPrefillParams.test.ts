@@ -22,7 +22,7 @@ describe('buildSamcartPrefillParams', () => {
     expect(parsed.agentWallet).toBeUndefined();
 
     expect(p.custom_0zdAJJKy).toBe(wallet);
-    expect(p.amount).toBe('500');
+    expect(p.amount).toBe('500.00');
     expect(p.email).toBe('h@example.com');
   });
 });

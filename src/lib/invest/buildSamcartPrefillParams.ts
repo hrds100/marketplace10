@@ -15,15 +15,20 @@ export function buildSamcartPrefillParams(input: {
   investAmount: number;
 }): Record<string, string> {
   const { firstName, lastName, email, wallet, propertyId, investAmount } = input;
+  const n = Number(investAmount);
+  const amountStr =
+    Number.isFinite(n) && n >= 0 ? n.toFixed(2) : '0.00';
+
+  // Put `amount` first so SamCart always sees PWYW prefill even if URL length is tight.
   return {
+    amount: amountStr,
     first_name: firstName,
     last_name: lastName,
+    email,
     phone_number: JSON.stringify({
       propertyId,
       recipient: wallet,
     }),
-    email,
     custom_0zdAJJKy: wallet,
-    amount: String(investAmount),
   };
 }

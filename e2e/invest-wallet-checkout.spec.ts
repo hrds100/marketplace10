@@ -64,7 +64,7 @@ test.describe('Invest SamCart prefill', () => {
     await expect(page.locator('text=Receiving wallet')).toHaveCount(0);
 
     await expect(page.locator('button:has-text("Credit / Debit Card")')).toBeVisible({ timeout: 5000 });
-    await page.getByPlaceholder('500').fill('10000');
+    await page.getByPlaceholder('500').fill('750');
 
     await page.getByTestId('invest-tsa-checkbox').evaluate((el) => (el as HTMLButtonElement).click());
     await expect(page.getByTestId('invest-tsa-checkbox')).toHaveAttribute('aria-checked', 'true');
@@ -96,6 +96,6 @@ test.describe('Invest SamCart prefill', () => {
     const customWallet = decodeURIComponent(params.get('custom_0zdAJJKy') || '');
     expect(customWallet).toMatch(/^0x[a-fA-F0-9]{40}$/);
     expect(params.get('email')).toBeTruthy();
-    expect(params.get('amount')).toBeTruthy();
+    expect(params.get('amount')).toBe('750.00');
   });
 });

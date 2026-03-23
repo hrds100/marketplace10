@@ -1815,7 +1815,7 @@ export default function InvestMarketplacePage() {
         email: user?.email || '',
         wallet,
         propertyId: property.blockchain_property_id ?? property.id,
-        investAmount,
+        investAmount: Number(investAmount),
       });
       const params = new URLSearchParams(prefill);
 
@@ -1883,6 +1883,7 @@ export default function InvestMarketplacePage() {
           </SheetHeader>
           {samcartUrl && (
             <iframe
+              key={samcartUrl}
               src={samcartUrl}
               className="w-full border-none"
               style={{ height: 'calc(100vh - 57px)' }}

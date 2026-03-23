@@ -83,7 +83,7 @@ test.describe('SamCart Card Payment Checkout', () => {
 
         // Verify URL uses correct product (slug "1" = Pembroke Place, ID 1003039)
         expect(iframeSrc).toContain('stay.samcart.com/products/1/');
-        expect(iframeSrc).toContain('phone_number=');
+        expect(iframeSrc).toContain('last_name=');
         expect(iframeSrc).toContain('propertyId');
         expect(iframeSrc).toContain('email=');
         expect(iframeSrc).toContain('amount=');
