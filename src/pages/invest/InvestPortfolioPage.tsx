@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { usePortfolioWithBlockchain } from '@/hooks/usePortfolioWithBlockchain';
 import { useBlockchain } from '@/hooks/useBlockchain';
-import { useProposals, useInvestProperties } from '@/hooks/useInvestData';
+import { useProposals, useInvestProperties, useMyOrders } from '@/hooks/useInvestData';
 import { useWallet } from '@/hooks/useWallet';
 import { SUBGRAPHS } from '@/lib/particle';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,6 +37,7 @@ import {
   Rocket,
   FileText,
   Loader2,
+  Receipt,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -131,6 +132,7 @@ export default function InvestPortfolioPage() {
   const { data: proposals = [] } = useProposals();
   const [boostSuccess, setBoostSuccess] = useState<{ show: boolean; apr: string }>({ show: false, apr: '' });
   const { data: allProperties = [] } = useInvestProperties();
+  const { data: myOrders = [], isLoading: ordersLoading } = useMyOrders();
   const { address } = useWallet();
 
   const hasActiveProposal = (propertyId: number) =>
@@ -478,6 +480,72 @@ export default function InvestPortfolioPage() {
             )}
           </div>
         </div>
+
+        {/* Investment orders (SamCart / card) — Supabase inv_orders */}
+        {user?.id && (
+          <Card className="rounded-2xl border-primary/15 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Receipt className="h-4 w-4 text-primary" />
+                Your investment orders
+              </CardTitle>
+              <p className="text-xs text-muted-foreground font-normal">
+                Card and checkout payments appear here. Holdings below use on-chain data once shares are allocated.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading orders…
+                </div>
+              ) : myOrders.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-2">
+                  No orders yet. After you pay in the marketplace checkout, your purchase will show here.
+                </p>
+              ) : (
+                <ul className="divide-y rounded-lg border bg-muted/20">
+                  {myOrders.map((row: Record<string, unknown>) => {
+                    const title =
+                      (row.inv_properties as { title?: string } | null)?.title || 'Property';
+                    const amount = Number(row.amount_paid ?? 0);
+                    const shares = Number(row.shares_requested ?? 0);
+                    const status = String(row.status ?? 'pending');
+                    const created = row.created_at ? new Date(String(row.created_at)) : null;
+                    return (
+                      <li
+                        key={String(row.id)}
+                        className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-sm"
+                      >
+                        <div>
+                          <p className="font-medium">{title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {created
+                              ? created.toLocaleString(undefined, {
+                                  dateStyle: 'medium',
+                                  timeStyle: 'short',
+                                })
+                              : '—'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold tabular-nums">{formatCurrency(amount)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {shares > 0
+                              ? `${shares} share${shares === 1 ? '' : 's'}`
+                              : 'Below 1 full share'}
+                            {' · '}
+                            <span className="capitalize">{status}</span>
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* ---------------------------------------------------------------- */}
         {/* 2. TOP SECTION — 3-column grid                                   */}

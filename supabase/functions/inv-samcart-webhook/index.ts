@@ -325,14 +325,8 @@ serve(async (req) => {
 
       // Recalculate shares using property price_per_share if available
       const finalShares = property.price_per_share
-        ? Math.floor(amountPaid / property.price_per_share)
+        ? Math.floor(amountPaid / Number(property.price_per_share))
         : sharesRequested
-
-      if (finalShares <= 0) {
-        return new Response(JSON.stringify({ error: 'Amount too low for 1 share' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
 
       // Resolve user — try email, then wallet address
       let userId: string | null = null
@@ -375,6 +369,59 @@ serve(async (req) => {
           .ilike('wallet_address', agentWallet)
           .maybeSingle()
         agentUserId = agentProfile?.id || null
+      }
+
+      // Payment below one full share (e.g. $5 test when price/share > $5) — still record inv_orders so the user sees it
+      if (finalShares <= 0) {
+        if (amountPaid <= 0) {
+          return new Response(JSON.stringify({ error: 'Invalid amount' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+        const productLabel =
+          orderData.cart_items?.[0]?.product_name || 'Investment'
+        const { data: smallOrder, error: smallErr } = await supabase
+          .from('inv_orders')
+          .insert({
+            user_id: userId,
+            property_id: propertyId,
+            shares_requested: 0,
+            amount_paid: amountPaid,
+            payment_method: 'card',
+            agent_id: agentUserId,
+            status: 'pending',
+            external_order_id: orderId,
+          })
+          .select()
+          .single()
+        if (smallErr) throw smallErr
+        await supabase.from('payout_audit_log').insert({
+          user_id: userId,
+          event_type: 'samcart_below_min_share',
+          performed_by: 'system',
+          metadata: {
+            order_id: smallOrder.id,
+            amount: amountPaid,
+            property_id: propertyId,
+            flow: 'legacy_api',
+          },
+        })
+        await sendNotification(
+          customerFirstName || 'Investor',
+          amountPaid,
+          productLabel,
+          customerEmail,
+          null,
+          userId,
+        )
+        return new Response(
+          JSON.stringify({
+            status: 'pending',
+            order_id: smallOrder.id,
+            message: 'Payment recorded; amount below one full share',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
       }
 
       // Create order as PENDING first (same as legacy samcartRoute.js)
@@ -702,12 +749,8 @@ serve(async (req) => {
       })
     }
 
-    const sharesRequested = Math.floor(amount / property.price_per_share)
-    if (sharesRequested <= 0) {
-      return new Response(JSON.stringify({ error: 'Amount too low for 1 share' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    const pps = Number(property.price_per_share) || 0
+    const sharesRequested = pps > 0 ? Math.floor(amount / pps) : 0
 
     // Look up agent by referral code or wallet
     let agentUserId: string | null = null
@@ -743,17 +786,20 @@ serve(async (req) => {
       }
     }
 
-    // Create order
+    const sharesStored = sharesRequested > 0 ? sharesRequested : 0
+    const orderStatus = sharesRequested > 0 ? 'completed' : 'pending'
+
+    // Create order (0 shares when payment is below one full share — user still sees amount on dashboard)
     const { data: order, error: orderErr } = await supabase
       .from('inv_orders')
       .insert({
         user_id: userId,
         property_id: propertyId,
-        shares_requested: sharesRequested,
+        shares_requested: sharesStored,
         amount_paid: amount,
         payment_method: 'card',
         agent_id: agentUserId,
-        status: 'completed',
+        status: orderStatus,
         external_order_id: transactionId ? String(transactionId) : null,
       })
       .select()
@@ -761,38 +807,40 @@ serve(async (req) => {
 
     if (orderErr) throw orderErr
 
-    // Update shareholdings (upsert)
-    const { data: existing } = await supabase
-      .from('inv_shareholdings')
-      .select('id, shares_owned, invested_amount')
-      .eq('user_id', userId)
-      .eq('property_id', propertyId)
-      .maybeSingle()
+    if (sharesRequested > 0) {
+      // Update shareholdings (upsert)
+      const { data: existing } = await supabase
+        .from('inv_shareholdings')
+        .select('id, shares_owned, invested_amount')
+        .eq('user_id', userId)
+        .eq('property_id', propertyId)
+        .maybeSingle()
 
-    if (existing) {
-      await supabase.from('inv_shareholdings').update({
-        shares_owned: existing.shares_owned + sharesRequested,
-        invested_amount: existing.invested_amount + amount,
-        updated_at: new Date().toISOString(),
-      }).eq('id', existing.id)
-    } else {
-      await supabase.from('inv_shareholdings').insert({
-        user_id: userId,
-        property_id: propertyId,
-        shares_owned: sharesRequested,
-        invested_amount: amount,
-        current_value: amount,
-      })
-    }
+      if (existing) {
+        await supabase.from('inv_shareholdings').update({
+          shares_owned: existing.shares_owned + sharesRequested,
+          invested_amount: existing.invested_amount + amount,
+          updated_at: new Date().toISOString(),
+        }).eq('id', existing.id)
+      } else {
+        await supabase.from('inv_shareholdings').insert({
+          user_id: userId,
+          property_id: propertyId,
+          shares_owned: sharesRequested,
+          invested_amount: amount,
+          current_value: amount,
+        })
+      }
 
-    // Update property shares_sold
-    await supabase.from('inv_properties').update({
-      shares_sold: (property.shares_sold || 0) + sharesRequested,
-    }).eq('id', propertyId)
+      // Update property shares_sold
+      await supabase.from('inv_properties').update({
+        shares_sold: (property.shares_sold || 0) + sharesRequested,
+      }).eq('id', propertyId)
 
-    // Create agent commission if applicable
-    if (agentUserId) {
-      await createCommission(supabase, agentUserId, userId, propertyId, amount, order.id)
+      // Create agent commission if applicable
+      if (agentUserId) {
+        await createCommission(supabase, agentUserId, userId, propertyId, amount, order.id)
+      }
     }
 
     // Send notification via n8n
@@ -808,7 +856,7 @@ serve(async (req) => {
     // Audit log
     await supabase.from('payout_audit_log').insert({
       user_id: userId,
-      event_type: 'samcart_order_completed',
+      event_type: sharesRequested > 0 ? 'samcart_order_completed' : 'samcart_below_min_share',
       performed_by: 'system',
       metadata: {
         order_id: order.id,
@@ -820,12 +868,17 @@ serve(async (req) => {
       },
     })
 
-    return new Response(JSON.stringify({
-      status: 'completed',
-      order_id: order.id,
-      shares: sharesRequested,
-      property_id: propertyId,
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(
+      JSON.stringify({
+        status: orderStatus,
+        order_id: order.id,
+        shares: sharesRequested,
+        property_id: propertyId,
+        message:
+          sharesRequested > 0 ? undefined : 'Payment recorded; amount below one full share',
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
 
   } catch (err) {
     console.error('SamCart webhook error:', err)
