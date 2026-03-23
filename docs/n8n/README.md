@@ -3,18 +3,18 @@
 ## Files
 | File | Workflow | Webhook Path | Notifies |
 |------|----------|-------------|----------|
-| workflow-1-new-inquiry.json | NFsTay — New Inquiry | /webhook/inbox-new-inquiry | Landlord |
-| workflow-2-new-message.json | NFsTay — New Message | /webhook/inbox-new-message | Landlord |
-| workflow-3-landlord-replied.json | NFsTay — Landlord Replied | /webhook/inbox-landlord-replied | Tenant |
-| workflow-4-tenant-message.json | NFsTay — Tenant New Message | /webhook/inbox-tenant-message | Tenant |
+| workflow-1-new-inquiry.json | nfstay — New Inquiry | /webhook/inbox-new-inquiry | Landlord |
+| workflow-2-new-message.json | nfstay — New Message | /webhook/inbox-new-message | Landlord |
+| workflow-3-landlord-replied.json | nfstay — Landlord Replied | /webhook/inbox-landlord-replied | Tenant |
+| workflow-4-tenant-message.json | nfstay — Tenant New Message | /webhook/inbox-tenant-message | Tenant |
 | **workflow-test-echo.json** | **Test Echo (all 4)** | All 4 paths | Logs only |
 
 ## Quick Start — Test First
 1. Import `workflow-test-echo.json` into n8n
 2. Activate it
-3. Send a message in the NFsTay inbox
+3. Send a message in the nfstay inbox
 4. Check n8n execution log — you should see the payload logged with `status: ok`
-5. Check browser console — you should see `[NFsTay webhook] ✅ fired successfully`
+5. Check browser console — you should see `[nfstay webhook] ✅ fired successfully`
 6. Once confirmed working, deactivate test workflow and import the real 4 workflows
 
 ## How to Import
@@ -25,7 +25,7 @@
 4. Paste the contents of each JSON file
 5. The GHL API key (`pit-ad222803-150e-48db-b907-4508ac46f2e5`) is already embedded in the HTTP Request headers
 6. **Activate** each workflow (toggle at the top)
-7. Test by sending a message in the NFsTay inbox and watching the n8n execution log
+7. Test by sending a message in the nfstay inbox and watching the n8n execution log
 
 ## GHL WhatsApp Templates Required
 These templates must exist in GHL before the workflows will send messages:

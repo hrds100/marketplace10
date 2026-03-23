@@ -1,4 +1,4 @@
-// NFStay Booking Widget — sticky sidebar on property detail
+// nfstay Booking Widget — sticky sidebar on property detail
 // Checks availability, shows pricing, then navigates to /checkout for contact info + payment
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';

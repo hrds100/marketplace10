@@ -1,5 +1,5 @@
 -- ============================================================================
--- NFStay Phase 6 — Analytics table
+-- nfstay Phase 6 — Analytics table
 -- REQUIRES HUGO TO REVIEW SQL BEFORE EXECUTION
 -- ============================================================================
 

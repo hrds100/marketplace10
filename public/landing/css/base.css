@@ -68,7 +68,7 @@ h3 { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 700; line-h
 .section-header p { margin-top: 16px; }
 
 
-/* ── NFsTay System Tokens ── */
+/* ── nfstay System Tokens ── */
 :root {
   --green: #1e9a80;
   --green-light: rgba(30,154,128,0.08);

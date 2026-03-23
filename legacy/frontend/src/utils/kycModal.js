@@ -1,12 +1,12 @@
 "use client";
 
 import { useKYCContext } from "@/context/KYCModalContext";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import SumsubWebSdk from "@sumsub/websdk-react";
 const KycModal = ({ children }) => {
   const { showModal, showClose, closeModal, startVerification } =
     useKYCContext();
-  const { connectedAddress } = useNfstayContext();
+  const { connectedAddress } = usenfstayContext();
 
   if (showModal) {
     startVerification(connectedAddress?.toLowerCase());
@@ -34,7 +34,7 @@ const KycModal = ({ children }) => {
         )}
 
         <h2 className="text-xl font-semibold mb-4">KYC Verification</h2>
-        <p className="mb-6">Complete the KYC in order to keep using NFsTay.</p>
+        <p className="mb-6">Complete the KYC in order to keep using nfstay.</p>
         <div id="veriff-root"></div>
       </div>
     </div>

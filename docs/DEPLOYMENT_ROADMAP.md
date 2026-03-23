@@ -1,4 +1,4 @@
-# NFsTay Marketplace — Deployment Roadmap
+# nfstay Marketplace — Deployment Roadmap
 
 > **Last updated**: 2026-03-13
 > **Rule**: Update this file after every change. Commit with `roadmap: [feature] live`.
@@ -25,7 +25,7 @@
 - [x] Professional footer (Company / Privacy / Terms)
 - [x] All CTAs → signup
 - [x] Hero section with gradient
-- [x] Social proof avatars + "4,200+ UK operators trust NFsTay"
+- [x] Social proof avatars + "4,200+ UK operators trust nfstay"
 - [x] Side panel on signup (dark, testimonial-style)
 
 ### Deals Dashboard (/dashboard/deals)
@@ -97,7 +97,7 @@
 - [x] nfstay-black button style
 
 ### n8n Workflows (Backend)
-- [x] Send OTP (#kRuEBEDHEHokExtp) — WhatsApp via Twilio (+15559459048 NFsTay Properties)
+- [x] Send OTP (#kRuEBEDHEHokExtp) — WhatsApp via Twilio (+15559459048 nfstay Properties)
 - [x] Verify OTP (#Coowne7rD2uOij8w) — checks otps table, deletes used OTP, saves signup to inquiries table, triggers welcome email
 - [x] Estimate Profit (#3EDIQKRea9nGzxve)
 - [x] New Inquiry Notifications (#dC24ZjEE7F3OhxLg)
@@ -127,7 +127,7 @@
 
 ### n8n Workflows
 - [ ] Resend welcome emails (workflow #bI0vzTqncMjCs5jO — structure ready, needs Resend API key in Code node)
-- [x] Production Twilio WhatsApp (+15559459048 NFsTay Properties — LIVE)
+- [x] Production Twilio WhatsApp (+15559459048 nfstay Properties — LIVE)
 - [ ] Daily deals WhatsApp summary
 - [ ] Deal expiry cron job
 

@@ -75,7 +75,7 @@ If the button still fails:
 
 ## After running
 
-- Every user's inbox is empty (only NFsTay Support thread remains — hardcoded)
+- Every user's inbox is empty (only nfstay Support thread remains — hardcoded)
 - Every user is on free tier
 - Inquire Now on any deal → creates fresh thread → payment gate appears for operators
 - Properties and accounts are untouched

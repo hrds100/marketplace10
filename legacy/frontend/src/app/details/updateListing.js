@@ -4,7 +4,7 @@ import {
   NotifyError,
   NotifySuccess,
 } from "@/context/helper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { acceptWholeNumbers } from "@/utils/acceptWholeNumbers";
 import Modal from "@/utils/modal";
 import ModalHeader from "@/utils/modalHeader";
@@ -22,7 +22,7 @@ const UpdateListing = ({
   isUpdateLoading,
 }) => {
   const { getMarketplaceContract, connectedAddress, handleNetwork } =
-    useNfstayContext();
+    usenfstayContext();
   const [numberOfShares, setNumberOfShares] = useState(
     secondaryDetails?.sharesRemaining || 0
   );

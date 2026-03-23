@@ -1,4 +1,4 @@
-# NFsTay — Messaging & Inbox Feature Spec
+# nfstay — Messaging & Inbox Feature Spec
 _Last updated: 2026-03-16_
 
 > **Claude must read this before touching anything in `src/pages/InboxPage.tsx`, `src/components/inbox/`, or any `chat_*` Supabase table.**
@@ -7,7 +7,7 @@ _Last updated: 2026-03-16_
 
 ## 1. VISION
 
-A clean, bright, Airbnb-style inbox where operators (rent-to-rent operators / serviced accommodation managers) and landlords/agents communicate inside NFsTay. Every conversation is anchored to a specific property deal. NFsTay is the source of truth — WhatsApp is notifications only.
+A clean, bright, Airbnb-style inbox where operators (rent-to-rent operators / serviced accommodation managers) and landlords/agents communicate inside nfstay. Every conversation is anchored to a specific property deal. nfstay is the source of truth — WhatsApp is notifications only.
 
 **UX reference:** Airbnb Messages (airbnb.co.uk/hosting/messages) — clone the layout as closely as possible.
 
@@ -38,8 +38,8 @@ Acceptance scenarios for inbox are in **`docs/ACCEPTANCE.md`** (Inbox & messagin
 │ Last message...     │                       │  City · Postcode     │
 │ Yesterday           │  [msg bubble right]   │  Est. profit: £XXX   │
 │                     │                       │                      │
-│ 💬 NFsTay Support   │  [system notice]      │  Operator info       │
-│ Do you need help?   │                       │  Joined NFsTay: date │
+│ 💬 nfstay Support   │  [system notice]      │  Operator info       │
+│ Do you need help?   │                       │  Joined nfstay: date │
 │ Ongoing             │  Write a message...   │                      │
 │                     │  [+] [⊡]        [→]  │  [Sign Agreement]    │
 └─────────────────────┴───────────────────────┴──────────────────────┘
@@ -56,7 +56,7 @@ Acceptance scenarios for inbox are in **`docs/ACCEPTANCE.md`** (Inbox & messagin
   - Property subtitle (city · listing ref)
   - Unread dot indicator
   - Hover: `•••` context menu → Mark as unread / Star / Archive
-- NFsTay Support thread always pinned at top with Airbnb-style logo avatar
+- nfstay Support thread always pinned at top with Airbnb-style logo avatar
 - Settings gear dropdown: Manage quick replies / Suggested replies / Archived / Give feedback
 
 ### Centre Panel
@@ -80,7 +80,7 @@ Acceptance scenarios for inbox are in **`docs/ACCEPTANCE.md`** (Inbox & messagin
 - Property title bold
 - City, postcode, estimated profit
 - Operator info section
-- Joined NFsTay date
+- Joined nfstay date
 - **Before agreement signed:** `[Sign Agreement]` CTA button prominent
 - **After agreement signed:** phone + email revealed, agreement timestamp shown
 - Phase 2: profit calculator, CRM pipeline stage, viewing info
@@ -228,7 +228,7 @@ Every outbound message goes through an AI filter **before** being saved to DB.
 
 1. Button in right sidebar or blocked-message prompt: "Sign Agreement"
 2. Modal opens with text:
-   > "If you proceed to sign a lease with this operator for this property within 12 months of this introduction, you agree to pay NFsTay an introduction fee of £250."
+   > "If you proceed to sign a lease with this operator for this property within 12 months of this introduction, you agree to pay nfstay an introduction fee of £250."
 3. Checkbox: "I agree to the above terms"
 4. On accept:
    - `agreement_acceptances` row inserted (with timestamp + thread metadata)
@@ -281,8 +281,8 @@ Every outbound message goes through an AI filter **before** being saved to DB.
 
 - Always pinned as first thread in left panel
 - Thread type = `support` (not linked to a property)
-- Avatar: NFsTay logo
-- Label: "NFsTay Support" + "Ongoing"
+- Avatar: nfstay logo
+- Label: "nfstay Support" + "Ongoing"
 - Phase 1: messages go to admin notification system (existing `notifications` table)
 - Phase 2: dedicated support agent dashboard
 

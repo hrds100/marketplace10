@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fetchPrimarySalesEvents } from "@/context/subgraphHelper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import axios from "axios";
 import { getEthFrom } from "@/context/helper";
 import PropertySkelton from "@/utils/propertySkelton";
@@ -16,7 +16,7 @@ const PropertyOfTheDay = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const { getPropertyDetails, getPrimaryPropertyRemainingShares } =
-    useNfstayContext();
+    usenfstayContext();
 
   const fetchPropertyDetails = async (propertyId) => {
     try {

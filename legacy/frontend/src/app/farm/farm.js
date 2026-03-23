@@ -8,7 +8,7 @@ import Analytics from "./analytics";
 import BuyStayWithCard from "../overview/buyStayWithCard";
 import BuyStayWithCrypto from "../overview/buyStayWithCrypto";
 import Incinerator from "./incinerator";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { CONTRACT_CONFIG } from "@/config";
 import { formatNumber, getEthFrom } from "@/context/helper";
 
@@ -19,7 +19,7 @@ const Farm = () => {
     connectedAddress,
     userDetails,
     assetPrices,
-  } = useNfstayContext();
+  } = usenfstayContext();
 
   const [userDetailsLoading, setUserDetailsLoading] = useState(true);
 

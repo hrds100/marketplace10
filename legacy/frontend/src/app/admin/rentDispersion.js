@@ -17,12 +17,12 @@ import {
 } from "@/context/helper";
 import { BACKEND_BASEURL, BASEURL, CONTRACT_CONFIG } from "@/config";
 import axios from "axios";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { getStatusColor } from "./ordersTable";
 
 const RentDispersion = ({}) => {
   const { getRentContract, balanceChecker, connectedAddress } =
-    useNfstayContext();
+    usenfstayContext();
 
   const [isLoadingAdd, setIsLoadingAdd] = useState(false);
   const [isFetching, setIsFetching] = useState(false);

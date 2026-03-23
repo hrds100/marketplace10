@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 function derivedPassword(uuid: string): string {
-  return uuid.slice(0, 10) + '_NFsTay2!' + uuid.slice(-6);
+  return uuid.slice(0, 10) + '_nfstay2!' + uuid.slice(-6);
 }
 
 export default function ParticleAuthCallback() {

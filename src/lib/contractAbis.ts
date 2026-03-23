@@ -1,4 +1,4 @@
-// Minimal ABIs for NFsTay smart contract interactions
+// Minimal ABIs for nfstay smart contract interactions
 // Extracted from legacy app — only functions we actually call
 
 export const MARKETPLACE_ABI = [

@@ -10,12 +10,12 @@ import property from "../images/house.jpg";
 import img1 from "../images/shares.png";
 import listProperty from "../images/listProperty.webp";
 import { fetchPrimarySalesEvents } from "@/context/subgraphHelper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 
 const PageB = () => {
 
   const { getPropertyDetails, getPrimaryPropertyRemainingShares } =
-    useNfstayContext();
+    usenfstayContext();
 
   const [loading, setLoading] = useState(true);
 
@@ -245,7 +245,7 @@ const PageB = () => {
                   stroke-linejoin="round"
                 />
               </svg>
-              Security at NFsTay.com
+              Security at nfstay.com
             </div> */}
           </div>
           {/* <div className="flex flex-col gap-5">

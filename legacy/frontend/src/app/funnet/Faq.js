@@ -12,7 +12,7 @@ const Faq = () => {
                 "We prioritize the security of your insurance information. We use advanced encryption and strict data protection measures to ensure your data is safe and confidential.",
         },
         {
-            question: "Does Nfstay Work With Coin Gecko?",
+            question: "Does nfstay Work With Coin Gecko?",
             answer:
                 "Our insurance plans are customizable. You can tailor your coverage to meet your specific needs and budget.",
         },

@@ -18,7 +18,7 @@ The investment module includes:
 - Boost APR system
 - Governance voting
 
-**This module is NOT isolated like NFStay booking.** It lives in the existing `src/pages/invest/` directory, uses the existing sidebar/layout, and extends the existing admin panel. However, it has its own Supabase tables (prefixed `inv_` and `aff_`) and its own n8n workflows (prefixed `inv-` and `aff-`).
+**This module is NOT isolated like nfstay booking.** It lives in the existing `src/pages/invest/` directory, uses the existing sidebar/layout, and extends the existing admin panel. However, it has its own Supabase tables (prefixed `inv_` and `aff_`) and its own n8n workflows (prefixed `inv-` and `aff-`).
 
 ---
 
@@ -68,10 +68,10 @@ All documentation lives in `docs/invest/`. Before any task, read this file PLUS 
 
 ## 2b. LEGACY REFERENCE CODEBASE
 
-The original NFStay blockchain app (the working version on app.nfstay.com) lives at:
+The original nfstay blockchain app (the working version on app.nfstay.com) lives at:
 
 **Local path:** `/Users/hugo/Downloads/AI Folder/openclaw/nfstay-org/`
-**GitHub:** `https://github.com/NFsTay-Organization/nfstay`
+**GitHub:** `https://github.com/nfstay-Organization/nfstay`
 
 This is the **reference implementation** — all smart contract interactions, ABIs, subgraph queries, wallet connection, boost/farm logic, agent commission tracking, and rent claiming are working in this codebase. When building the investment module, **always check how the legacy app does it first** before writing new code.
 
@@ -80,7 +80,7 @@ This is the **reference implementation** — all smart contract interactions, AB
 | File | What it contains |
 |------|-----------------|
 | `frontend/src/config.js` | All contract addresses, Graph endpoints, Particle credentials, API URLs |
-| `frontend/src/context/NfstayContext.jsx` | ALL contract interaction functions (buy, sell, boost, vote, claim, withdraw, balances) |
+| `frontend/src/context/nfstayContext.jsx` | ALL contract interaction functions (buy, sell, boost, vote, claim, withdraw, balances) |
 | `frontend/src/context/subgraphHelper.js` | ALL Graph queries (sales, commissions, rent, proposals, agents, leaderboard) |
 | `frontend/src/utils/abis.js` | ALL contract ABIs (marketplace, RWA, voting, rent, booster, farm, router, ERC20) |
 | `frontend/src/context/helper.js` | Utility functions (encoding, formatting, validation) |

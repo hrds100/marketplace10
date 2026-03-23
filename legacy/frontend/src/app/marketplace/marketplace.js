@@ -11,11 +11,11 @@ import { FaCartShopping } from "react-icons/fa6";
 import { FaTimes } from "react-icons/fa";
 import BulkCheckout from "./bulk-checkout";
 import Congratulations from "../details/congratulations";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 
 const Marketplace = () => {
   const router = useRouter();
-  const { getMarketplaceFee } = useNfstayContext();
+  const { getMarketplaceFee } = usenfstayContext();
   const [primaryProperties, setPrimaryProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBulkCheckoutOpen, setIsBulkCheckoutOpen] = useState(false);

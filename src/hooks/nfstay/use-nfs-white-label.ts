@@ -1,4 +1,4 @@
-// NFStay White-Label context — provides operator branding to all white-label pages
+// nfstay White-Label context — provides operator branding to all white-label pages
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { NfsOperator } from '@/lib/nfstay/types';
 import { detectWhiteLabelMode, resolveWhiteLabelOperator, type WhiteLabelMode } from '@/lib/nfstay/white-label';

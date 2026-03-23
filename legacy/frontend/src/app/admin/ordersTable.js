@@ -14,7 +14,7 @@ import {
 import { BACKEND_BASEURL } from "@/config";
 import axios from "axios";
 import { ethers } from "ethers";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { TxHash } from "./subscriptionTable";
 const SkeletonLoader = () => {
   return (
@@ -177,7 +177,7 @@ export const getStatusColor = (status) => {
 };
 
 const PayoutRow = ({ getOrderData, order, loading }) => {
-  const { signMessage } = useNfstayContext();
+  const { signMessage } = usenfstayContext();
   const [info, setInfo] = useState({
     id: 0,
     orderId: 0,

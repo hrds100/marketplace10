@@ -9,7 +9,7 @@ import {
   shortenWalletAddress,
 } from "@/context/helper";
 import { ADMIN_WALLET } from "@/config";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 
 const CommissionsTable = ({
   data,
@@ -24,7 +24,7 @@ const CommissionsTable = ({
   const [filterMonth, setFilterMonth] = useState();
   const [filterYear, setFilterYear] = useState();
   const [distributionAmount, setDistributionAmount] = useState();
-  const { distributeFeesToAgents } = useNfstayContext();
+  const { distributeFeesToAgents } = usenfstayContext();
   const [isDistributeLoading, setIsDistributeLoading] = useState(false);
   const currentMonth = new Date().getMonth(); // 0-based: Jan = 0, Dec = 11
   const currentYear = new Date().getFullYear();

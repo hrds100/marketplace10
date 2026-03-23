@@ -165,22 +165,22 @@ Key commits: `021b9bf` (wire to real data PR), `835c114` (8 UI fixes), `048c838`
 - MPC wallet: private key split into 2 shares (Particle server + user browser), neither can sign alone
 - Recovery: user logs back in → same UUID → same JWT `sub` → Particle restores wallet
 
-## [2026-03-17] — NFStay Module + Google Maps + n8n Cleanup
+## [2026-03-17] — nfstay Module + Google Maps + n8n Cleanup
 
 ### Added
 - **Booking Site page** (#14): Split-panel editor at `/dashboard/booking-site` — operators customize brand name, colors, logo, hero content with live preview. Desktop/mobile toggle. Mockup only, no backend.
 - **Google Maps on Deals page** (#15): Replaced Leaflet/CARTO map with Google Maps. Smooth animated zoom on card hover, green circle markers, info popup with deal details.
-- **NFStay documentation infrastructure** (#12): 18 documentation files in `docs/nfstay/` — agent instructions, architecture, database schema (11 tables), domain model, features, integrations, webhooks, white-label, routes, acceptance scenarios, boundaries, shared infrastructure, environment vars, decisions, handoff, changelog, diagnosis runbook.
-- **NFStay execution plan** (#13): 6-phase build roadmap from zero to production. Tajul authority model — Tajul approves everything, Hugo only for final production merge.
+- **nfstay documentation infrastructure** (#12): 18 documentation files in `docs/nfstay/` — agent instructions, architecture, database schema (11 tables), domain model, features, integrations, webhooks, white-label, routes, acceptance scenarios, boundaries, shared infrastructure, environment vars, decisions, handoff, changelog, diagnosis runbook.
+- **nfstay execution plan** (#13): 6-phase build roadmap from zero to production. Tajul authority model — Tajul approves everything, Hugo only for final production merge.
 - **Dev commands**: `npm run check` (typecheck + lint + test), `npm run clean` (clear build cache).
-- **n8n workflow protection protocol** (#16): Full inventory of 16 protected workflows with IDs and webhook paths. 6 protection rules for NFStay agents.
+- **n8n workflow protection protocol** (#16): Full inventory of 16 protected workflows with IDs and webhook paths. 6 protection rules for nfstay agents.
 
 ### Fixed
 - **n8n webhook collisions**: Deactivated "Test Echo" workflow that was stealing production webhook calls from 3 live workflows. Deactivated duplicate "Landlord Replied" and "New Message" workflows (kept newer copies).
 
 ### Docs
 - Added `VITE_GOOGLE_MAPS_API_KEY` to Vercel env vars and `docs/STACK.md`
-- Updated `docs/AGENT_INSTRUCTIONS.md` — added NFStay module scoping, dev commands, clickable test URL requirement
+- Updated `docs/AGENT_INSTRUCTIONS.md` — added nfstay module scoping, dev commands, clickable test URL requirement
 - Updated `docs/nfstay/BOUNDARIES.md` — full n8n workflow inventory and protection rules
 - Updated `docs/nfstay/SHARED_INFRASTRUCTURE.md` — credential protection, cleanup log
 - Closed stale PR #10

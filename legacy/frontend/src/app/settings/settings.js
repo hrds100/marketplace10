@@ -4,7 +4,7 @@ import Avatar from "../images/profile2.svg";
 import { useEffect, useState } from "react";
 import { NotifyError, NotifySuccess } from "@/context/helper";
 import axios from "axios";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { BACKEND_BASEURL } from "@/config";
 import { uploadFileToIPFS } from "@/context/pinataTools";
 import { useKYCContext } from "@/context/KYCModalContext";
@@ -15,7 +15,7 @@ const Settings = () => {
     userProfileDetails,
     profileLoading,
     fetchUserProfileDetails,
-  } = useNfstayContext();
+  } = usenfstayContext();
   const { kycStatus, openModal } = useKYCContext();
   const [loading, setLoading] = useState(false);
   const [image, setImage] = useState("");

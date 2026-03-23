@@ -7,7 +7,7 @@ import usdt from "../images/usdc.svg";
 import bnb from "../images/bnb.webp";
 import { useState } from "react";
 import Congratulations from "./congrats";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import {
   getErrorMessage,
   getEthFrom,
@@ -33,7 +33,7 @@ const BoostedCheckout = ({
     checkForApproval,
     handleNetwork,
     balanceChecker,
-  } = useNfstayContext();
+  } = usenfstayContext();
   const [currentMethod, setCurrentMethod] = useState("USDC");
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

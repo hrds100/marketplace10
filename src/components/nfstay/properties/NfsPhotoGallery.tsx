@@ -1,4 +1,4 @@
-// NFStay Photo Gallery
+// nfstay Photo Gallery
 // - readOnly (traveler view): VPS-style hero layout (cover + 2×2 grid) + fullscreen lightbox
 // - edit mode (operator): reorderable grid with caption/delete controls
 import { useState, useEffect, useCallback } from 'react';

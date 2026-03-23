@@ -3,7 +3,7 @@ import lp from "../images/lpToken.svg";
 import Share from "/public/Shares.png";
 import usdt from "../images/usdc.jpg";
 import stay from "../images/stay.png";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { formatNumber, getEthFrom } from "@/context/helper";
 import { useEffect, useState } from "react";
 import AssetSkeleton from "@/utils/assetSkeleton";
@@ -15,7 +15,7 @@ const Assets = ({
   propertyData,
   lpData,
 }) => {
-  const { assetPrices, globalLoader, isBalanceLoading } = useNfstayContext();
+  const { assetPrices, globalLoader, isBalanceLoading } = usenfstayContext();
 
   const data = [
     {

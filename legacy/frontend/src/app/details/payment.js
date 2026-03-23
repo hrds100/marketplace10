@@ -22,7 +22,7 @@ import Modal from "@/utils/modal";
 import ModalHeader from "@/utils/modalHeader";
 import Congratulations from "./congratulations";
 import RockMigration from "../components/rockMigration";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { CONTRACT_CONFIG } from "@/config";
 import {
   NotifyError,
@@ -92,7 +92,7 @@ const Payment = forwardRef(
       checkForApproval,
       fetchActivityData,
       balanceChecker,
-    } = useNfstayContext();
+    } = usenfstayContext();
     const { checkUserRegistration } = useKYCContext();
     const searchParams = useSearchParams();
 

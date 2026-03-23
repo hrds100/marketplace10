@@ -1,4 +1,4 @@
-// NFStay Stripe hooks
+// nfstay Stripe hooks
 // Manages Stripe Connect account state and checkout flow
 
 import { useState, useEffect, useCallback } from 'react';

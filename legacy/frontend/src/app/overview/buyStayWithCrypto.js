@@ -6,7 +6,7 @@ import usd from "../images/usdc.svg";
 import bnb from "../images/bnb.webp";
 import stay from "../images/stay.png";
 import Tooltip from "@/utils/tooltip";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import {
   getErrorMessage,
   getEthFrom,
@@ -25,7 +25,7 @@ const BuyStayWithCrypto = () => {
     checkForApproval,
     handleNetwork,
     balanceChecker,
-  } = useNfstayContext();
+  } = usenfstayContext();
   const [amount, setAmount] = useState("");
   const [estimation, setEstimation] = useState("");
   const [isLoading, setIsloading] = useState(false);

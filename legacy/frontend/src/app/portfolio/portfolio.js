@@ -2,12 +2,12 @@
 import Properties from "./properties";
 import Revenue from "./revenue";
 import { useEffect, useState } from "react";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { fetchRewardAndRentEvents } from "@/context/subgraphHelper";
 // import StayEarned from "../portfolio/stayEarned";
 
 const Portfolio = () => {
-  const { connectedAddress, assetPrices } = useNfstayContext();
+  const { connectedAddress, assetPrices } = usenfstayContext();
   const [loading, setLoading] = useState(true);
   const [portfolioData, setPortfolioData] = useState([]);
   const [totalRewards, setTotalRewards] = useState(0);
@@ -54,7 +54,7 @@ const Portfolio = () => {
               </h4>
             </div>
             <p className="opacity-80 text-[#0C0839] 2xl:text-lg">
-              Stay updated with the latest news from NFsTay!
+              Stay updated with the latest news from nfstay!
             </p>
           </div>
         </div>

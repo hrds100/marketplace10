@@ -1,4 +1,4 @@
-# NFsTay — Database Schema
+# nfstay — Database Schema
 
 All tables are in the `public` schema on Supabase project `asazddtvjvmckouxcmmo`.
 

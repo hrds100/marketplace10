@@ -1,4 +1,4 @@
-// NFStay constants
+// nfstay constants
 
 export const NFS_ROUTES = {
   SIGNUP: '/signup',

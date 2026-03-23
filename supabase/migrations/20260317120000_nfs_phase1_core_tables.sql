@@ -1,5 +1,5 @@
 -- ============================================================================
--- NFStay Phase 1 — Core Foundation Tables
+-- nfstay Phase 1 — Core Foundation Tables
 -- Migration: 20260317120000_nfs_phase1_core_tables.sql
 --
 -- Tables: nfs_operators, nfs_operator_users, nfs_auth_tokens

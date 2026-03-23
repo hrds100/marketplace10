@@ -6,13 +6,13 @@ import icon from "../images/logoIcon.png";
 import { useEffect, useState } from "react";
 import LoginButton from "@/utils/loginButton";
 import Link from "next/link";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 
 // import { useRouter } from "next/navigation";
 export default function Navbar() {
   // const router = useRouter();
   const [openNav, setOpenNav] = useState(false);
-  const { connectedAddress,loginModelOpen,setLoginModelOpen,isWalletLoading } = useNfstayContext();
+  const { connectedAddress,loginModelOpen,setLoginModelOpen,isWalletLoading } = usenfstayContext();
  
 
   useEffect(() => {

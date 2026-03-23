@@ -109,11 +109,11 @@ Admin workspace selector at `/admin` — 3 workspaces: Marketplace / Investments
 
 | Workflow | Status | Purpose |
 |----------|--------|---------|
-| NFsTay -- Revolut Token Refresh | ✅ ACTIVE | 30-min cron refreshes Revolut access token |
-| NFsTay -- Investment Notifications | ✅ ACTIVE | Receives notification events |
-| NFsTay -- Investment WhatsApp Notifications | ✅ ACTIVE | Triggers GHL workflow for WhatsApp |
-| NFsTay -- Tuesday Payout Batch | ⏸️ INACTIVE | Weekly Revolut batch (activate when first payout needed) |
-| NFsTay -- Subscription Commission | ⏸️ INACTIVE | GHL subscription → commission (activate when ready) |
+| nfstay -- Revolut Token Refresh | ✅ ACTIVE | 30-min cron refreshes Revolut access token |
+| nfstay -- Investment Notifications | ✅ ACTIVE | Receives notification events |
+| nfstay -- Investment WhatsApp Notifications | ✅ ACTIVE | Triggers GHL workflow for WhatsApp |
+| nfstay -- Tuesday Payout Batch | ⏸️ INACTIVE | Weekly Revolut batch (activate when first payout needed) |
+| nfstay -- Subscription Commission | ⏸️ INACTIVE | GHL subscription → commission (activate when ready) |
 
 ---
 
@@ -137,14 +137,14 @@ Admin workspace selector at `/admin` — 3 workspaces: Marketplace / Investments
 - Edge Function handles both legacy flow (API validation) and direct payload flow
 
 ### GHL (GoHighLevel) ✅ CONNECTED
-- Location: `eFBsWXY3BmWDGIRez13x` (NFsTay)
+- Location: `eFBsWXY3BmWDGIRez13x` (nfstay)
 - PIT token: `pit-28d63a20-4d9f-46bc-aaa3-26556d8b518f`
 - Investment workflow: `75b14201-f492-44e9-a6e8-4423842fa07e`
 - WhatsApp notifications working (tested with Hugo's contact)
 - Hugo's GHL contact ID: `bXRhraG8yIBwrmCtzfyB`
 
 ### Particle Network ✅ FULLY LIVE
-- **Project:** NFsTay Investment (new, separate from legacy)
+- **Project:** nfstay Investment (new, separate from legacy)
 - Project ID: `470629ca-91af-45fa-a52b-62ed2adf9ef0`
 - Client Key: `cTHFOA18eAs4iRrkgn8lG1QARC8HFkkv5jeYQPc1`
 - Server Key: `su4XYbQ46MNcuVDBYJn5dBhxqA5zXCXRRfyZrbF0`
@@ -174,7 +174,7 @@ Admin workspace selector at `/admin` — 3 workspaces: Marketplace / Investments
 | Voting | `0xfD0F8de0e0eCd1BFb35143C8F0698Ec48E4a90Ac` | ✅ Verified |
 | Booster | `0xF19c06f5C5627BEBe98Ac6C1BB19B9C12cE0B328` | ✅ Verified |
 | USDC | `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` | ✅ Standard BEP-20 |
-| STAY | `0x52b3E7c59e4Ccb66cdE3a3a42414263BBaf0f2d0` | ✅ NFsTay token |
+| STAY | `0x52b3E7c59e4Ccb66cdE3a3a42414263BBaf0f2d0` | ✅ nfstay token |
 | ROCK | `0xa2AC3e8f4F1b6e7C7f7bCe3F5bA9C1FdF0aE6E2a` | ✅ Governance token |
 | Admin Treasury | `0xE1F532A57Fd6a1d3af3Ec8E268249d6B6cEe3df6` | ✅ Multisig |
 

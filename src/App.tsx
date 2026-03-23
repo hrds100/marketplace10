@@ -55,7 +55,7 @@ import InvestMarketplacePage from "./pages/invest/InvestMarketplacePage";
 import InvestPortfolioPage from "./pages/invest/InvestPortfolioPage";
 import InvestPayoutsPage from "./pages/invest/InvestPayoutsPage";
 import InvestProposalsPage from "./pages/invest/InvestProposalsPage";
-// NFStay — operator module (isolated, see docs/nfstay/BOUNDARIES.md)
+// nfstay — operator module (isolated, see docs/nfstay/BOUNDARIES.md)
 import NfsOperatorLayout from "./components/nfstay/NfsOperatorLayout";
 import NfsOperatorDashboard from "./pages/nfstay/NfsOperatorDashboard";
 import NfsOnboarding from "./pages/nfstay/NfsOnboarding";
@@ -201,7 +201,7 @@ const App = () => (
             <Route path="invest/endpoints" element={<AdminEndpoints />} />
             <Route path="invest/test-console" element={<AdminTestConsole />} />
 
-            {/* Booking Site (NFStay) workspace */}
+            {/* Booking Site (nfstay) workspace */}
             <Route path="nfstay" element={<AdminNfsReservations />} />
             <Route path="nfstay/reservations" element={<AdminNfsReservations />} />
             <Route path="nfstay/properties" element={<AdminNfsProperties />} />
@@ -215,7 +215,7 @@ const App = () => (
             <Route path="architecture" element={<AdminArchitecture />} />
           </Route>
           <Route path="/brand" element={<BrandPage />} />
-          {/* NFStay operator routes — isolated module */}
+          {/* nfstay operator routes — isolated module */}
           <Route path="/nfstay" element={<NfsOperatorLayout />}>
             <Route index element={<NfsOperatorDashboard />} />
             <Route path="onboarding" element={<NfsOnboarding />} />
@@ -228,17 +228,17 @@ const App = () => (
             <Route path="settings" element={<NfsOperatorSettings />} />
             <Route path="analytics" element={<NfsAnalytics />} />
           </Route>
-          {/* NFStay traveler-facing routes — standalone (no operator layout) */}
+          {/* nfstay traveler-facing routes — standalone (no operator layout) */}
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
           <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />
           <Route path="/nfstay/payment/cancel" element={<NfsPaymentCancel />} />
-          {/* NFStay booking flow — available on hub too */}
+          {/* nfstay booking flow — available on hub too */}
           <Route path="/checkout" element={<NfsCheckoutPage />} />
           <Route path="/booking" element={<NfsGuestBookingLookup />} />
-          {/* NFStay traveler reservation portal */}
+          {/* nfstay traveler reservation portal */}
           <Route path="/nfstay/traveler/reservations" element={<NfsTravelerReservations />} />
           <Route path="/nfstay/traveler/reservation/:id" element={<NfsTravelerReservationDetail />} />
-          {/* NFStay auth callbacks */}
+          {/* nfstay auth callbacks */}
           <Route path="/nfstay/oauth-callback" element={<NfsOAuthCallbackPage />} />
           <Route path="/nfstay/verify-email" element={<NfsVerifyEmailPage />} />
           <Route path="/auth/callback" element={<NfsAuthCallbackPage />} />

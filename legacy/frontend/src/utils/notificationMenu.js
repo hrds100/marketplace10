@@ -1,4 +1,4 @@
-// import { useNfstayContext } from "@/context/NfstayContext";
+// import { usenfstayContext } from "@/context/nfstayContext";
 // import Link from "next/link";
 // import { useState, useEffect, useRef } from "react";
 
@@ -6,7 +6,7 @@
 //   // State to handle visibility of both dropdowns
 //   const [isDropdown1Open, setDropdown1Open] = useState(false);
 //   const dropdownRef = useRef(null);
-//   const { addFCMToken, connectedAddress } = useNfstayContext();
+//   const { addFCMToken, connectedAddress } = usenfstayContext();
 
 //   // Close dropdown when clicking outside
 //   useEffect(() => {

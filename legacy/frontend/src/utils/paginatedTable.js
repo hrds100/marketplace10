@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import ShowPagination from "./showPagination";
 import Claim from "./claim";
 import { formatNumber, getErrorMessage, NotifyError } from "@/context/helper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import Modal from "./modal";
 import Congratulation from "@/app/payouts/congratulation";
 import RentalYieldModal from "@/app/payouts/rentalYieldModal";
@@ -18,7 +18,7 @@ const PaginatedTable = ({
   showNumbers = true,
   itemsPerPage = 5,
 }) => {
-  const { withdrawRent, handleNetwork, connectedAddress } = useNfstayContext();
+  const { withdrawRent, handleNetwork, connectedAddress } = usenfstayContext();
   const [currentPage, setCurrentPage] = useState(1);
   const [open, setOpen] = useState(false);
 

@@ -1,4 +1,4 @@
-// NFStay Stripe Webhook Edge Function
+// nfstay Stripe Webhook Edge Function
 // Handles payment events from Stripe (platform + Connect account events)
 //
 // Flow:

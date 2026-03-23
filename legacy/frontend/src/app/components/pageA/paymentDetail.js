@@ -1,4 +1,4 @@
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import SharesSold from "../sharesSold";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
@@ -14,7 +14,7 @@ const PaymentDetail = ({
   showButton = false,
   totalSharesInMarket = 0,
 }) => {
-  const { connectedAddress } = useNfstayContext();
+  const { connectedAddress } = usenfstayContext();
   const [open, setOpen] = useState(false);
 
   const handleOpen = () => {

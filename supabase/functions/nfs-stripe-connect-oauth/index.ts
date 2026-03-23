@@ -1,4 +1,4 @@
-// NFStay Stripe Connect OAuth Edge Function
+// nfstay Stripe Connect OAuth Edge Function
 // Handles the Connect OAuth flow for operators to connect their Stripe accounts
 //
 // Endpoints:

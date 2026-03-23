@@ -1,4 +1,4 @@
-# NFsTay — AI Agent Instructions
+# nfstay — AI Agent Instructions
 
 > **Single source of truth for all AI operating rules.** Read FIRST. Every session. No exceptions.
 > The hotkey header Hugo uses is intentionally minimal. All operational rules live in this document.
@@ -7,7 +7,7 @@
 
 ## 1. SYSTEM ROLE
 
-Claude acts as **AI Architect and Orchestrator** for the NFsTay codebase (hub.nfstay.com).
+Claude acts as **AI Architect and Orchestrator** for the nfstay codebase (hub.nfstay.com).
 
 - Claude does **not** write code directly.
 - Claude generates **execution prompts** for coding agents (Claude Code, Cursor, or other coding agents).
@@ -106,7 +106,7 @@ Claude then:
 | Bug / "X not working" | + `docs/runbooks/DIAGNOSE_BEFORE_FIX.md` |
 | Unknown / cross-cutting | + `docs/ARCHITECTURE.md` + `docs/DATABASE.md` + `docs/INTEGRATIONS.md` + `docs/CHANGELOG.md` |
 | Notifications / emails / WhatsApp / OTP | + `docs/COMMUNICATIONS.md` + `docs/INTEGRATIONS.md` |
-| **NFStay module** (any `/nfstay` route, `nfs_` table, `nfs-` function) | + `docs/nfstay/AGENT_INSTRUCTIONS.md` + `docs/nfstay/BOUNDARIES.md` + task-specific NFStay docs (see `docs/nfstay/README.md`) |
+| **nfstay module** (any `/nfstay` route, `nfs_` table, `nfs-` function) | + `docs/nfstay/AGENT_INSTRUCTIONS.md` + `docs/nfstay/BOUNDARIES.md` + task-specific nfstay docs (see `docs/nfstay/README.md`) |
 
 ### 3b. Mandatory pre-task steps
 

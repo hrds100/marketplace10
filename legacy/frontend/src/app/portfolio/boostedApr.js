@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import BoostedCheckout from "./boostedCheckout";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import {
   formatNumber,
   getErrorMessage,
@@ -62,7 +62,7 @@ const BoostedApr = ({
   fetchBoost,
 }) => {
   const [isClaimLoading, setIsClaimLoading] = useState(false);
-  const { getBoosterContract, assetPrices, handleNetwork } = useNfstayContext();
+  const { getBoosterContract, assetPrices, handleNetwork } = usenfstayContext();
 
   const claimRewards = async (propertyId) => {
     try {

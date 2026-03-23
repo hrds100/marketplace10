@@ -4,18 +4,18 @@ import Image from "next/image";
 import mobile from "../images/hero_mobile.png";
 import dividend from "../images/dividend.svg";
 import portfolio from "../images/portfolio.svg";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { useState } from "react";
 import Link from "next/link";
 const NewsLetter = () => {
-  const { connectedAddress,setLoginModelOpen } = useNfstayContext();
+  const { connectedAddress,setLoginModelOpen } = usenfstayContext();
  
   return (
     <div className="flex flex-col p-4 gap-8 py-8 w-full">
       <div className="flex items-center flex-col md:flex-row gap-5 self-center justify-between w-full max-w-6xl 2xl:max-w-[90rem] bg-[#954AFC] rounded-3xl px-8 pt-8">
         <div className="flex flex-col w-full gap-8">
           <h1 className="text-4xl text-white font-bold ">
-            Invest With NFsTay Today And Start Building Your Real Estate Empire
+            Invest With nfstay Today And Start Building Your Real Estate Empire
           </h1>
 
           {!connectedAddress ? (

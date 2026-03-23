@@ -1,4 +1,4 @@
-// NFStay pricing calculation utility
+// nfstay pricing calculation utility
 // Calculates: (base rate × nights) + cleaning fee + extra guest fee + custom fees − discounts
 
 import type { NfsProperty } from './types';

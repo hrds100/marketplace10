@@ -1,4 +1,4 @@
-// NFStay Search Map — Google Maps with price-label markers
+// nfstay Search Map — Google Maps with price-label markers
 // Falls back to classic Marker if AdvancedMarkerElement isn't available
 import { useEffect, useRef, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';

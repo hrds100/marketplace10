@@ -3,10 +3,10 @@ import Modal from "@/utils/modal";
 import Image from "next/image";
 import celebrate from "../images/celebrate.webp";
 import round from "../images/round.webp";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 
 const Congratulations = ({ open, handleClose }) => {
-  const { assetPrices } = useNfstayContext();
+  const { assetPrices } = usenfstayContext();
   const title = "Congratulations";
   const paragraph = `Your returns are now boosted by ${assetPrices.boostApr}% for the next 12 months. Enjoy the ride! 🚀 `;
   const buttonText = "Okay";

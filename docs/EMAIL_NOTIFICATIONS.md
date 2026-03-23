@@ -8,14 +8,14 @@
 ## 1. EMAIL SERVICE
 
 **Provider:** Resend (https://resend.com)
-**API Key:** `RESEND_API_KEY` — set as Supabase Edge Function secret (shared by marketplace10 + NFStay)
+**API Key:** `RESEND_API_KEY` — set as Supabase Edge Function secret (shared by marketplace10 + nfstay)
 
 ### Domains
 
 | Domain | Module | From address | Status |
 |--------|--------|-------------|--------|
 | `hub.nfstay.com` | marketplace10 | `notifications@hub.nfstay.com` | **Not verified** — needs DNS records in Resend |
-| `nfstay.app` | NFStay booking module | `bookings@nfstay.app` | **Not verified** — needs DNS records in Resend |
+| `nfstay.app` | nfstay booking module | `bookings@nfstay.app` | **Not verified** — needs DNS records in Resend |
 | `nfstay.com` | **NEVER USE** | — | Separate business |
 | `resend.dev` | Sandbox (current) | `onboarding@resend.dev` | Active but emails may land in spam |
 
@@ -120,7 +120,7 @@ Edge Function `nfs-email-send` (does not exist yet — Phase 3):
 | Payout notification | Operator receives payout | `bookings@nfstay.app` |
 | Invitation email | Operator invites team member | `bookings@nfstay.app` |
 
-All planned. None built yet. Tajul handles this in Phase 3 of the NFStay execution plan.
+All planned. None built yet. Tajul handles this in Phase 3 of the nfstay execution plan.
 
 ---
 
@@ -143,5 +143,5 @@ All planned. None built yet. Tajul handles this in Phase 3 of the NFStay executi
 
 - **Same Resend account and API key** for both modules
 - **Same Supabase secret** (`RESEND_API_KEY`)
-- **Different from domains:** `hub.nfstay.com` (marketplace10) vs `nfstay.app` (NFStay booking)
-- **Different Edge Functions:** `send-email` (marketplace10) vs `nfs-email-send` (NFStay)
+- **Different from domains:** `hub.nfstay.com` (marketplace10) vs `nfstay.app` (nfstay booking)
+- **Different Edge Functions:** `send-email` (marketplace10) vs `nfs-email-send` (nfstay)

@@ -1,4 +1,4 @@
-// NFStay TypeScript types
+// nfstay TypeScript types
 // Mirrors the nfs_operators schema from docs/nfstay/DATABASE.md
 // These types are manually maintained because nfs_* tables are not in
 // the auto-generated Supabase types.ts (yet).

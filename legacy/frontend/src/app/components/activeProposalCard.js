@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Avatar from "../images/profile2.svg";
 
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import Vote from "../activeProposal/vote";
 import RemainingTime from "../activeProposal/remainingTime";
 import { formatNumber } from "@/context/helper";
@@ -12,7 +12,7 @@ import { SkeletonLoader } from "../activeProposal/proposal";
 
 const ActiveProposalCard = ({ proposal }) => {
   const { getPropertyDetails, getVotingContract, connectedAddress } =
-    useNfstayContext();
+    usenfstayContext();
   const [info, setInfo] = useState({
     name: "",
     image: "",

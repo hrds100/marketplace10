@@ -16,7 +16,7 @@ import Notifications from "./notifications";
 import BoostAnyone from "./boostAnyone";
 import RentDispersion from "./rentDispersion";
 import { ethers } from "ethers";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { getEthFrom } from "@/context/helper";
 import CommissionsTable from "./commissionsTable";
 import { ConsoleSqlOutlined } from "@ant-design/icons";
@@ -28,7 +28,7 @@ import CommissionsHistoryTable from "./commissionsHistoryTable";
 
 const Admin = () => {
   const ITEMS_PER_PAGE = 5;
-  const { getERC20Contract } = useNfstayContext();
+  const { getERC20Contract } = usenfstayContext();
   const [orderData, setOrderData] = useState([]);
   const [totalPagesRewards, setTotalPagesRewards] = useState(0);
   const [totalPagesSubs, setTotalPagesSubs] = useState(0);

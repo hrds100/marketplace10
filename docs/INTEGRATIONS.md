@@ -1,4 +1,4 @@
-# NFsTay — Integrations
+# nfstay — Integrations
 
 ## n8n (Workflow Automation)
 **Server**: https://n8n.srv886554.hstgr.cloud
@@ -70,13 +70,13 @@ All payments are processed through GoHighLevel only; tier updates are performed 
 4. **Thank you page** — `https://pay.nfstay.com/thank-You` → redirects to `hub.nfstay.com/dashboard/inbox?payment=success`
 
 ### Tier Update Webhook
-**n8n Workflow**: `wsDjAdpWnjqnO7ML` — NFsTay — GHL Payment → Tier Update
+**n8n Workflow**: `wsDjAdpWnjqnO7ML` — nfstay — GHL Payment → Tier Update
 **Webhook URL**: `https://n8n.srv886554.hstgr.cloud/webhook/ghl-payment-success`
 
 Flow: GHL Order Submitted → n8n webhook → maps product_id to tier → PATCH profiles.tier in Supabase → tags GHL contact
 
 **GHL Automation Workflow Setup** (must be done in GHL dashboard — API does not support action editing):
-- Workflow: "Webhook NFsTay Chat" (`7d1bac63-4e8a-491d-9d56-4058d76e8872`) — or create new
+- Workflow: "Webhook nfstay Chat" (`7d1bac63-4e8a-491d-9d56-4058d76e8872`) — or create new
 - Trigger: Order Submitted
 - Action: Custom Webhook → POST `https://n8n.srv886554.hstgr.cloud/webhook/ghl-payment-success`
 - Body:
@@ -152,7 +152,7 @@ Then polls Supabase every 1s for tier update (up to 10s) → shows success scree
 | Magic Link URL | `contact.magic_link_url` | `gWb4evAKLWCK0y8RHp32` |
 
 ### WhatsApp Number
-- Phone: `07676 368123` | Name: NFsTay | Quality: Green
+- Phone: `07676 368123` | Name: nfstay | Quality: Green
 
 ## Pexels (Stock Photos)
 **API**: https://api.pexels.com/v1
@@ -171,7 +171,7 @@ Then polls Supabase every 1s for tier update (up to 10s) → shows success scree
 ## Resend (Email)
 **API**: https://api.resend.com/emails
 **Deployed as**: Supabase Edge Function `send-email`
-**Sender**: `NFsTay <onboarding@resend.dev>`
+**Sender**: `nfstay <onboarding@resend.dev>`
 
 ### Email Types
 - `new-deal-admin`: Sent to admin when a deal is submitted

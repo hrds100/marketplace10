@@ -3,7 +3,7 @@ import Layout from "@/app/components/layout";
 import Overview from "@/app/details/overview";
 import { properties } from "./data";
 import { useSearchParams } from "next/navigation";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { useEffect, useState } from "react";
 
 const MarketplacePage = ({ setIsRestricted }) => {
@@ -11,7 +11,7 @@ const MarketplacePage = ({ setIsRestricted }) => {
   const id = searchParams.get("id");
   // const propertyDetails = properties.find(property => property.id == id)
   const { getPropertyDetails, getPrimaryPropertyRemainingShares, connectedAddress, getUserProperties } =
-    useNfstayContext();
+    usenfstayContext();
 
   const [propertyDetails, setPropertyDetails] = useState({
     id: 0,

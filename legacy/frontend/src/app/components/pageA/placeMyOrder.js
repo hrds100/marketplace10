@@ -1,6 +1,6 @@
 "use client";
 
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { Drawer } from "antd";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -14,7 +14,7 @@ const PlaceMyOrder = forwardRef((props, ref) => {
     height,
   } = props;
   const searchParams = useSearchParams();
-  const { connectedAddress } = useNfstayContext();
+  const { connectedAddress } = usenfstayContext();
   const [open, setOpen] = useState(false);
   const [checkoutParams, setCheckoutParams] = useState({
     first_name: "",

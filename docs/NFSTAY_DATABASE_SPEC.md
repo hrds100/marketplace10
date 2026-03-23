@@ -1,25 +1,25 @@
-# NFStay — Database Spec
+# nfstay — Database Spec
 *Exact Supabase table/column names the frontend touches. Backend wires to these.*
 
 ---
 
 ## Rules
 
-- All NFStay tables use the `nfs_` prefix
+- All nfstay tables use the `nfs_` prefix
 - They live in the `public` schema alongside existing tables
 - Do NOT add columns to `profiles` or any existing table
-- NFStay inserts into the existing `notifications` table (no schema change needed)
+- nfstay inserts into the existing `notifications` table (no schema change needed)
 - All tables have `created_at` and `updated_at` (auto-set by triggers)
 
 ---
 
-## Shared Tables (Already Exist — Read Only for NFStay)
+## Shared Tables (Already Exist — Read Only for nfstay)
 
-| Table | How NFStay uses it |
+| Table | How nfstay uses it |
 |-------|-------------------|
 | `profiles` | `nfs_operators.profile_id` references `profiles.id`. No new columns. |
 | `auth.users` | Supabase Auth — same login system. Not touched directly. |
-| `notifications` | NFStay INSERTS into this when bookings are confirmed, cancelled, etc. |
+| `notifications` | nfstay INSERTS into this when bookings are confirmed, cancelled, etc. |
 
 ---
 
@@ -782,7 +782,7 @@ Upload path convention:
 ### `nfs_reservations.payment_fee_breakdown`
 ```json
 [
-  { "type": "platform_fee", "label": "NFStay service fee", "amount": 22 },
+  { "type": "platform_fee", "label": "nfstay service fee", "amount": 22 },
   { "type": "stripe_fee", "label": "Payment processing", "amount": 20.36 }
 ]
 ```

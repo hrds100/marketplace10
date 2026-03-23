@@ -10,7 +10,7 @@ import listProperty from "../images/listProperty.webp";
 import { acceptWholeNumbers } from "@/utils/acceptWholeNumbers";
 import celebrate from "../images/house.jpg";
 import round from "../images/round.webp";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import {
   getErrorMessage,
   getWeiFrom,
@@ -31,7 +31,7 @@ const ListPropertyShares = ({
     checkForApproval,
     getMarketplaceFee,
     handleNetwork,
-  } = useNfstayContext();
+  } = usenfstayContext();
   const [type, setType] = useState("fixed");
   const [quantity, setQuantity] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");

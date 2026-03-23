@@ -42,8 +42,8 @@ Read the ones relevant to your task. AGENT_INVESTMENT_INSTRUCTIONS.md tells you 
 
 LEGACY REFERENCE CODEBASE
 The original blockchain app (working on app.nfstay.com) is at:
-https://github.com/NFsTay-Organization/nfstay
-Key files: frontend/src/context/NfstayContext.jsx (all contract functions),
+https://github.com/nfstay-Organization/nfstay
+Key files: frontend/src/context/nfstayContext.jsx (all contract functions),
 frontend/src/utils/abis.js (all ABIs), frontend/src/config.js (all addresses).
 Always check how the legacy app does it before writing new code.
 

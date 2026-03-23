@@ -271,13 +271,13 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           signal: ac.signal,
         }).then(res => {
           if (res.ok) {
-            console.log(`[NFsTay webhook] ✅ ${endpoint} fired successfully`);
+            console.log(`[nfstay webhook] ✅ ${endpoint} fired successfully`);
           } else {
-            console.warn(`[NFsTay webhook] ⚠️ ${endpoint} returned ${res.status}`);
+            console.warn(`[nfstay webhook] ⚠️ ${endpoint} returned ${res.status}`);
           }
         }).catch(err => {
           if (err.name !== 'AbortError') {
-            console.warn(`[NFsTay webhook] ❌ ${endpoint} failed:`, err.message);
+            console.warn(`[nfstay webhook] ❌ ${endpoint} failed:`, err.message);
           }
         }).finally(() => clearTimeout(timeout));
       }

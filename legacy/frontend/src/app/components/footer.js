@@ -189,7 +189,7 @@ const Footer = () => {
         </div>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-4 w-full">
           <p className="text-white/60 text-xs  col-span-2">
-            Made with ❤️ in the 🇬🇧 | Copyright NFsTay.com | All Rights Reserved.
+            Made with ❤️ in the 🇬🇧 | Copyright nfstay.com | All Rights Reserved.
           </p>
           <div className="flex items-center gap-2">
             <LockOutlined className="w-4 h-4 text-lg text-white/70" />
@@ -201,7 +201,7 @@ const Footer = () => {
         {/* Legal Text */}
         <div className=" pt-12">
           <p className="text-white/60 text-sm mb-6 leading-relaxed">
-            NFsTay operates as a general partnership and not as a passive
+            nfstay operates as a general partnership and not as a passive
             investment vehicle. This means that every co-owner is an active
             partner, with a direct and ongoing role in managing the property.
             Through our platform, all major decisions—whether related to tenant
@@ -209,15 +209,15 @@ const Footer = () => {
             renovations—are made collectively by the co-owners through a
             democratic voting system. Each partner has an equal voice, ensuring
             transparency and control over the property’s future. Unlike passive
-            investments where investors relinquish control, NFsTay empowers
+            investments where investors relinquish control, nfstay empowers
             co-owners to take part in the daily operations and strategic
             direction of their assets. Our easy-to-use technology enables
             seamless participation, allowing every partner to engage in key
             decision-making processes. This ensures that co-ownership is
-            collaborative and active, making NFsTay a true general partnership
+            collaborative and active, making nfstay a true general partnership
             where all partners share equal responsibility for the property’s
-            success. While NFsTay facilitates co-ownership, it is important to
-            note that NFsTay is not a registered investment advisor,
+            success. While nfstay facilitates co-ownership, it is important to
+            note that nfstay is not a registered investment advisor,
             broker-dealer, or financial planner. The content and materials
             available on this platform, including property details and
             investment projections, should not be interpreted as offers to sell,
@@ -226,23 +226,23 @@ const Footer = () => {
             whether an investment aligns with their individual financial goals,
             risk tolerance, and portfolio strategy. Given the risks associated
             with real estate investments—such as market volatility, liquidity
-            challenges, and potential loss of capital—NFsTay strongly encourages
+            challenges, and potential loss of capital—nfstay strongly encourages
             users to consult with licensed financial planners, legal counsel, or
             tax professionals before making any decisions based on the
-            opportunities presented on the platform. NFsTay does not guarantee
+            opportunities presented on the platform. nfstay does not guarantee
             the performance, appreciation, or capital returns of any real estate
             investment offered. By participating in co-ownership or fractional
             ownership opportunities, users acknowledge the inherent risks,
             including fluctuations in property values, tenant risks, regulatory
             changes, and broader economic factors that may influence investment
             performance. Additionally, all co-ownership agreements and
-            investment products facilitated by NFsTay are designed to comply
+            investment products facilitated by nfstay are designed to comply
             with relevant UK regulations, including the Financial Services and
             Markets Act (FSMA), and adhere to robust anti-money laundering (AML)
             and know-your-customer (KYC) standards. Independent legal and
-            regulatory oversight, provided by Frederik Lund, ensures NFsTay
+            regulatory oversight, provided by Frederik Lund, ensures nfstay
             operates in full compliance with industry best practices. By
-            accessing or using the platform, users agree to NFsTay’s Terms of
+            accessing or using the platform, users agree to nfstay’s Terms of
             Service, Privacy Policy, and all applicable disclosures related to
             the specific investment products being considered.
           </p>

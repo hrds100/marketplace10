@@ -11,7 +11,7 @@ The investment module is a **feature set inside marketplace10**, not a separate 
 It uses the existing layout, sidebar, admin panel, and auth system.
 It has its OWN database tables and n8n workflows, but shares everything else.
 
-Unlike NFStay booking (completely isolated), the invest module:
+Unlike nfstay booking (completely isolated), the invest module:
 - Lives in `src/pages/invest/` (existing directory)
 - Uses the existing `DashboardLayout`, `DashboardSidebar`, `InvestSubNav`
 - Extends the existing admin panel (new admin pages in `src/pages/admin/`)
@@ -58,8 +58,8 @@ Unlike NFStay booking (completely isolated), the invest module:
 | `src/pages/InboxPage.tsx` | Inbox — separate feature |
 | `src/pages/CRMPage.tsx` | CRM — separate feature |
 | `src/pages/UniversityPage.tsx` | University — separate feature |
-| Any `nfs_*` table | NFStay booking module — Tajul's territory |
-| Any existing n8n workflow without `inv-` or `aff-` prefix | marketplace10 or NFStay workflows |
+| Any `nfs_*` table | nfstay booking module — Tajul's territory |
+| Any existing n8n workflow without `inv-` or `aff-` prefix | marketplace10 or nfstay workflows |
 | `middleware.ts` | Routing for all modules — requires Hugo approval |
 | `supabase/functions/` (existing) | Edge functions for other features |
 
@@ -88,4 +88,4 @@ All admin mutations log to `admin_audit_log`.
 ---
 
 *For the full project boundaries, see `docs/AGENT_INSTRUCTIONS.md`.*
-*For NFStay booking boundaries, see `docs/nfstay/BOUNDARIES.md`.*
+*For nfstay booking boundaries, see `docs/nfstay/BOUNDARIES.md`.*

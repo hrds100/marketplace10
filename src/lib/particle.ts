@@ -1,4 +1,4 @@
-// Particle Network configuration for NFsTay Investment module
+// Particle Network configuration for nfstay Investment module
 //
 // TWO PROJECTS:
 //   LEGACY — social login (Google/Apple/Twitter/Facebook). Same project as app.nfstay.com.

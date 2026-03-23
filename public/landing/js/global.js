@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ═══════════════════════════════════════════
-   NFsTay Motion System
+   nfstay Motion System
    Scroll reveals, counters, hover interactions
    ═══════════════════════════════════════════ */
 

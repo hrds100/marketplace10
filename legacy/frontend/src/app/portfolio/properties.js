@@ -10,7 +10,7 @@ import ListPropertyShares from "../components/listPropertyShares";
 import Link from "next/link";
 import ProposalModel from "./proposalModel";
 import BoostedCheckout from "./boostedCheckout";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import UserPropertiesSkeleton from "@/utils/UserPropertiesSkeleton";
 import ProposalCongrats from "./ProposalCongrats";
 import { formatNumber, getEthFrom } from "@/context/helper";
@@ -32,7 +32,7 @@ const Properties = () => {
     isBalanceLoading,
     globalLoader,
     isWalletLoading,
-  } = useNfstayContext();
+  } = usenfstayContext();
   const [open, setOpen] = useState(false);
   const [currentPropertyIndex, setCurrentPropertyIndex] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);

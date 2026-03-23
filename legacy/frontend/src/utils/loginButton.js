@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useModal } from "@particle-network/connectkit";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 
 
 const LoginButton = ({ css, isHome = false }) => {
@@ -10,7 +10,7 @@ const LoginButton = ({ css, isHome = false }) => {
 
 
   const { connectedAddress,  setLoginModelOpen, isWrongNetwork, handleNetwork, isWalletLoading } =
-    useNfstayContext();
+    usenfstayContext();
   // Memoized address display for performance
   const displayAddress = useMemo(() => {
     if (!connectedAddress) return null;

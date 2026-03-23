@@ -2,7 +2,7 @@
 
 ## WORKFLOW 1: inbox-new-inquiry
 **Webhook path:** `/webhook/inbox-new-inquiry`
-**Trigger:** POST from NFsTay when operator sends FIRST message in a thread
+**Trigger:** POST from nfstay when operator sends FIRST message in a thread
 
 ### Payload received:
 ```json
@@ -27,7 +27,7 @@
 
 ## WORKFLOW 2: inbox-new-message
 **Webhook path:** `/webhook/inbox-new-message`
-**Trigger:** POST from NFsTay on every SUBSEQUENT message (not the first)
+**Trigger:** POST from nfstay on every SUBSEQUENT message (not the first)
 
 ### Payload received:
 ```json
@@ -52,7 +52,7 @@
 
 ## WORKFLOW 3: inbox-landlord-replied
 **Webhook path:** `/webhook/inbox-landlord-replied`
-**Trigger:** POST from NFsTay when the LANDLORD sends a reply
+**Trigger:** POST from nfstay when the LANDLORD sends a reply
 **Sends to:** Tenant (operator) — they already have an account, no magic link needed
 
 ### Payload received:
@@ -80,7 +80,7 @@
 
 ## WORKFLOW 4: inbox-tenant-message
 **Webhook path:** `/webhook/inbox-tenant-message`
-**Trigger:** POST from NFsTay for any general new message to tenant
+**Trigger:** POST from nfstay for any general new message to tenant
 **Template:** `nfstay_tenant_new_message`
 
 ### Nodes:
@@ -121,5 +121,5 @@ Clone the existing OTP verification workflow in n8n. Replace the OTP send node w
 
 ## GHL WhatsApp Number
 - Phone: `07676 368123`
-- Name: NFsTay
+- Name: nfstay
 - Quality: Green

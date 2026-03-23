@@ -11,7 +11,7 @@
 | **Investor** | A user who buys shares in a property | `profiles` (shared) + `inv_shareholdings` |
 | **Agent / Affiliate** | A user who refers others and earns commission | `aff_profiles` |
 | **Admin** | Hugo or authorized admin who manages the platform | `profiles.role = 'admin'` |
-| **Property Manager** | The entity managing the physical property (initially NFStay) | Stored in `inv_properties.manager` |
+| **Property Manager** | The entity managing the physical property (initially nfstay) | Stored in `inv_properties.manager` |
 
 ## Investment Concepts
 
@@ -40,7 +40,7 @@
 |------|-----------|
 | **Boost APR** | A paid upgrade that increases a user's yield on a specific property. |
 | **Boosted APR** | The enhanced yield rate after boosting. Typically 1.5× base APR. |
-| **STAY Token** | NFStay's platform token (ERC20). Used for boosting and farm rewards. |
+| **STAY Token** | nfstay's platform token (ERC20). Used for boosting and farm rewards. |
 | **Cost of Booster** | USDC amount required to activate a boost. |
 | **Stay Earned** | STAY tokens earned from having an active boost. Claimable. |
 

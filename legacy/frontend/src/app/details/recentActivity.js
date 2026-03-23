@@ -1,4 +1,4 @@
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import {
   fetchPrimarySharesBoughtEvents,
   fetchSecondarySharesBoughtEvents,
@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 // Function to format the date
 
 const RecentActivity = ({ propertyId, source }) => {
-  const { fetchActivityData, activityData } = useNfstayContext();
+  const { fetchActivityData, activityData } = usenfstayContext();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

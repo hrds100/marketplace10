@@ -5,7 +5,7 @@ import usd from "../images/usd.png";
 import stay from "../images/stay.png";
 import cards from "../images/cards.png";
 import Tooltip from "@/utils/tooltip";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import {
   getEthFrom,
   getWeiFrom,
@@ -31,7 +31,7 @@ const BuyStayWithCard = () => {
     getValueFromRouter,
     getStayEstimation,
     handleNetwork,
-  } = useNfstayContext();
+  } = usenfstayContext();
   const options = [
     {
       label: "USD",
@@ -103,7 +103,7 @@ const BuyStayWithCard = () => {
       );
       const icoOptions = {
         item_info: {
-          author: "NFsTay.com",
+          author: "nfstay.com",
           author_image_url: AUTHOR_IMAGE_URL,
           image_url: IMAGE_URL,
           name: "STAY",

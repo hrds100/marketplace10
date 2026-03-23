@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import LoginButton from "@/utils/loginButton";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import profile from "../../images/profile2.svg";
 import Image from "next/image";
 import { usePathname } from "next/navigation"; // Add this import
@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { useKYCContext } from "@/context/KYCModalContext";
 
 const Header = ({ sidebarOpen, setSidebarOpen, isRestricted }) => {
-  const { connectedAddress, userProfileDetails } = useNfstayContext();
+  const { connectedAddress, userProfileDetails } = usenfstayContext();
   const pathname = usePathname(); // Get pathname using Next.js hook
   const [isClient, setIsClient] = useState(false);
   const { isRegistered } = useKYCContext();

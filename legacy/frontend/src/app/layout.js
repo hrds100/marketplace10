@@ -2,7 +2,7 @@ import localFont from 'next/font/local'
 import { Toaster } from 'react-hot-toast'
 import './globals.css'
 import { ParticleConnectkit } from '@/context/ParticleConnectkit'
-import { NfstayContextProvider } from '@/context/NfstayContext'
+import { nfstayContextProvider } from '@/context/nfstayContext'
 import { KYCModalProvider } from '@/context/KYCModalContext'
 import { BulkBuyProvider } from '@/context/BulkBuyContext'
 import NextTopLoader from 'nextjs-toploader'
@@ -23,8 +23,8 @@ const geistMono = localFont({
 })
 
 export const metadata = {
-  title: 'NFsTay',
-  description: `NFsTay is a platform that allows you to invest in real estate using NFTs. Invest in income-generating real estate, easily. Create your profile in 3 minutes, choose property and invest, withdraw or reinvest your monthly earnings.`
+  title: 'nfstay',
+  description: `nfstay is a platform that allows you to invest in real estate using NFTs. Invest in income-generating real estate, easily. Create your profile in 3 minutes, choose property and invest, withdraw or reinvest your monthly earnings.`
 }
 
 export default function RootLayout({ children }) {
@@ -40,7 +40,7 @@ export default function RootLayout({ children }) {
 
         <Toaster position='top-center' />
         <ParticleConnectkit>
-          <NfstayContextProvider>
+          <nfstayContextProvider>
             <KYCModalProvider>
               <BulkBuyProvider>
                 <KycModal>
@@ -50,7 +50,7 @@ export default function RootLayout({ children }) {
                 </KycModal>
               </BulkBuyProvider>
             </KYCModalProvider>
-          </NfstayContextProvider>
+          </nfstayContextProvider>
         </ParticleConnectkit>
       </body>
     </html>

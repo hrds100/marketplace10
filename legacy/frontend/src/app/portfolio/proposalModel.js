@@ -8,7 +8,7 @@ import {
   NotifySuccess
 } from '@/context/helper'
 import Image from 'next/image'
-import { useNfstayContext } from '@/context/NfstayContext'
+import { usenfstayContext } from '@/context/nfstayContext'
 import Modal from '@/utils/modal'
 import ModalHeader from '@/utils/modalHeader'
 import { useEffect, useState } from 'react'
@@ -24,7 +24,7 @@ const ProposalModel = ({ open, handleClose, property, handleSubmit }) => {
     getRouterContract,
     handleNetwork,
     balanceChecker
-  } = useNfstayContext()
+  } = usenfstayContext()
 
   const [proposal, setProposal] = useState('')
   const [isCreatingProposal, setIsCreatingProposal] = useState(false)

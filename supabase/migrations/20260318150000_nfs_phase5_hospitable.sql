@@ -1,5 +1,5 @@
 -- ============================================================================
--- NFStay Phase 5 — Hospitable Connections Table
+-- nfstay Phase 5 — Hospitable Connections Table
 -- Migration: 20260318150000_nfs_phase5_hospitable.sql
 --
 -- Tables: nfs_hospitable_connections

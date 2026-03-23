@@ -1,4 +1,4 @@
-# Contributing to NFsTay
+# Contributing to nfstay
 
 ## Local Setup
 1. Clone: `git clone https://github.com/hrds100/marketplace10`

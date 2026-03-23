@@ -7,7 +7,7 @@ import PropertyDetail from "../details/propertyDetail";
 import property from "../images/house.jpg";
 import img1 from "../images/shares.png";
 import { fetchPrimarySalesEvents } from "@/context/subgraphHelper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import ShowVideo from "../components/showVideo";
 import Connect from "../components/connect";
 import PlaceMyOrder from "../components/pageA/placeMyOrder";
@@ -21,7 +21,7 @@ import { useSearchParams } from "next/navigation";
 
 const Checkout = () => {
   const { getPropertyDetails, getPrimaryPropertyRemainingShares } =
-    useNfstayContext();
+    usenfstayContext();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState(1000);
@@ -183,7 +183,7 @@ const Checkout = () => {
                     stroke-linejoin="round"
                   />
                 </svg>
-                Security at NFsTay.com
+                Security at nfstay.com
               </div>
               <div className="flex flex-col gap-4 relative">
                 {smartLandlordsList?.map((item, i) => {

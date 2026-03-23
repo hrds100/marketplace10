@@ -71,7 +71,7 @@ type ViewState = 'social' | 'phone' | 'email';
 
 // Derive a deterministic Supabase password from Particle UUID
 function derivedPassword(uuid: string): string {
-  return uuid.slice(0, 10) + '_NFsTay2!' + uuid.slice(-6);
+  return uuid.slice(0, 10) + '_nfstay2!' + uuid.slice(-6);
 }
 
 // ── Shared shell for all views ──────────────────────────────────────────────

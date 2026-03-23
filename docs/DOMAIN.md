@@ -1,4 +1,4 @@
-# NFsTay — Domain & Terms
+# nfstay — Domain & Terms
 
 _Last updated: 2026-03-16_
 

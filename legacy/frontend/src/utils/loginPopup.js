@@ -12,7 +12,7 @@ import x from "../app/images/x.png";
 import f from "../app/images/f.png";
 import { useConnect as useParticleConnect } from "@particle-network/authkit";
 import { useModal } from "@particle-network/connectkit";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 // import { usePathname } from "next/navigation";
 const LoginPopup = () => {
   // const pathname = usePathname(); // Get the current path
@@ -27,7 +27,7 @@ const LoginPopup = () => {
     connectedAddress,
     setLoginModelOpen,
     isWalletLoading,
-  } = useNfstayContext();
+  } = usenfstayContext();
 
   useEffect(() => {
     if (!isWalletLoading && !connectedAddress) {
@@ -213,8 +213,8 @@ const LoginPopup = () => {
               className="w-5 h-5 border  accent-[#954AFC] rounded-md  "
             />
             <label for="policy" className={` transition-all`}>
-              By signing up for NFsTay, you confirm that you have read,
-              understood, and agree to the NFsTay Protocol Docs,{" "}
+              By signing up for nfstay, you confirm that you have read,
+              understood, and agree to the nfstay Protocol Docs,{" "}
               {/* <a
                 href="https://docs.nfstay.com/legal/disclaimer"
                 className="underline underline-offset-1"

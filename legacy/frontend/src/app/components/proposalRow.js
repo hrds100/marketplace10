@@ -1,6 +1,6 @@
 "use client";
 import { formatNumber } from "@/context/helper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { useEffect, useState } from "react";
 
 const Skeleton = ({ w = "w-24", h = "h-6", className = "" }) => {
@@ -12,7 +12,7 @@ const Skeleton = ({ w = "w-24", h = "h-6", className = "" }) => {
 };
 
 const ProposalRow = ({ proposal }) => {
-  const { getPropertyDetails, getVotingContract } = useNfstayContext();
+  const { getPropertyDetails, getVotingContract } = usenfstayContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [info, setInfo] = useState({

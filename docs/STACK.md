@@ -1,4 +1,4 @@
-# NFsTay — Full Stack Reference
+# nfstay — Full Stack Reference
 _Last updated: 2026-03-15_
 
 > **Rule:** Any time a new service, tool, or integration is added to the project, this file MUST be updated in the same commit. No exceptions.
@@ -42,10 +42,10 @@ _Last updated: 2026-03-15_
 | ai_settings | AI model + prompt config | model_pricing, model_university, model_description, system_prompt_* |
 | admin_audit_log | Persistent admin action log | user_id, action, target_table, target_id, metadata, created_at |
 
-## n8n Webhooks (marketplace10 — DO NOT TOUCH for NFStay work)
+## n8n Webhooks (marketplace10 — DO NOT TOUCH for nfstay work)
 
-> **WARNING:** The n8n instance is shared with the NFStay booking module.
-> NFStay booking workflows use the `nfs-` prefix. Never create workflows without that prefix.
+> **WARNING:** The n8n instance is shared with the nfstay booking module.
+> nfstay booking workflows use the `nfs-` prefix. Never create workflows without that prefix.
 > Never modify the workflows below — they power the live site.
 > Full protection rules: `docs/nfstay/BOUNDARIES.md`
 

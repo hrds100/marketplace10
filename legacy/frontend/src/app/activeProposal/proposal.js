@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import ActiveProposal from "./activeProposal";
 import PastProposal from "./pastProposal";
 import { fetchProposalStatusEvents } from "@/context/subgraphHelper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 
 export const SkeletonLoader = () => {
   return (
@@ -17,7 +17,7 @@ export const SkeletonLoader = () => {
 };
 
 const Proposal = () => {
-  const {connectedAddress} = useNfstayContext()
+  const {connectedAddress} = usenfstayContext()
   const [activeProposals, setActiveProposals] = useState([]);
   const [pastProposals, setPastProposals] = useState([]);
   const [loading, setLoading] = useState(true);

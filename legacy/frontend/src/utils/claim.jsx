@@ -6,7 +6,7 @@ import round from "../app/images/round.webp";
 import usdc from "../app/images/usdc.svg";
 import stay from "../app/images/stay.png";
 import lp from "../app/images/lpToken.svg";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { CONTRACT_CONFIG } from "@/config";
 import {
   getErrorMessage,
@@ -29,7 +29,7 @@ const Claim = ({ propertyId, source, steps, open, setOpen, setIsSuccess }) => {
     getbuyLpContract,
     handleClaimRewards,
     handleNetwork,
-  } = useNfstayContext();
+  } = usenfstayContext();
   const [isAck, setIsAck] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
   const [loading, setLoading] = useState(false);

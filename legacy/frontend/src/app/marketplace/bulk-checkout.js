@@ -5,7 +5,7 @@ import Image from "next/image";
 import usdt from "../images/usdc.svg";
 import bnb from "../images/bnb.webp";
 import { useState } from "react";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import {
   getErrorMessage,
   getEthFrom,
@@ -39,7 +39,7 @@ const BulkCheckout = ({
     handleNetwork,
     balanceChecker,
     getValueFromRouter,
-  } = useNfstayContext();
+  } = usenfstayContext();
 
   const { checkUserRegistration } = useKYCContext();
 

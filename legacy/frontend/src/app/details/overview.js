@@ -7,7 +7,7 @@ import Profit from "./profit";
 import PropertyDetail from "./propertyDetail";
 import RecentActivity from "./recentActivity";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { usePathname } from "next/navigation";
 import Skeleton from "./skeleton";
 import PropertyNotFound from "../components/propertyNotFound";
@@ -30,7 +30,7 @@ const Overview = ({
   fetchSecondarySaleProperties,
 }) => {
   const pathname = usePathname();
-  const { connectedAddress, getMarketplaceFee } = useNfstayContext();
+  const { connectedAddress, getMarketplaceFee } = usenfstayContext();
   const [isCopied, setIsCopied] = useState(false);
   const [isPropertyAvailable, setIsPropertyAvailable] = useState(false);
   const [amount, setAmount] = useState();

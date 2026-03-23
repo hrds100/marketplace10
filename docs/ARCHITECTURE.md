@@ -1,4 +1,4 @@
-# NFsTay — Architecture
+# nfstay — Architecture
 
 ## Folder Structure
 ```

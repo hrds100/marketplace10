@@ -9,7 +9,7 @@ const Agent = () => {
                 <div className="mb-6 flex justify-between">
                     <div>
                         <h4 className="text-title-lg font-bold text-black 2xl:text-5xl">
-                            Become an NFsTay Agent
+                            Become an nfstay Agent
                         </h4>
                     </div>
                 </div>

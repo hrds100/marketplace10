@@ -14,7 +14,7 @@ import {
 } from "@/context/helper";
 import { BACKEND_BASEURL } from "@/config";
 import axios from "axios";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { getStatusColor } from "./ordersTable";
 
 const SubscriptionsTable = ({
@@ -112,7 +112,7 @@ export const TxHash = ({ txHash }) => {
 };
 
 const SubscriptionRow = ({ getSubscriptions, subscription, loading }) => {
-  const { signMessage } = useNfstayContext();
+  const { signMessage } = usenfstayContext();
   const [isSubLoading, setSubLoading] = useState(false);
   const [info, setInfo] = useState({
     id: 0,

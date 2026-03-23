@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════
-   NFsTay Premium Animations — JS
+   nfstay Premium Animations — JS
    Line draw, ripples, morph cards, word stagger
    ═══════════════════════════════════════════ */
 (function () {

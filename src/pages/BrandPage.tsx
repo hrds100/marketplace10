@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Check, Copy } from 'lucide-react';
+import { Download, Check, Copy, Lock } from 'lucide-react';
 
 /* ─── DATA ─── */
 
@@ -8,7 +8,7 @@ const COLOR_GROUPS = [
   {
     label: 'Primary',
     colors: [
-      { name: 'NFStay Green', value: '#1E9A80', desc: 'Buttons, links, active states, checkmarks' },
+      { name: 'nfstay Green', value: '#1E9A80', desc: 'Buttons, links, active states, checkmarks' },
       { name: 'Green Tint', value: 'rgba(30,154,128,0.08)', desc: 'Active tabs, hover fills, badges' },
     ],
   },
@@ -78,7 +78,7 @@ const SHADOW_SPECS = [
   { name: 'Input', value: 'rgba(0,0,0,0.05) 0 4px 8px -1px' },
 ];
 
-const DESIGN_PROMPT = `You are building a page for NFStay (hub.nfstay.com). Follow this design system exactly.
+const DESIGN_PROMPT = `You are building a page for nfstay (hub.nfstay.com). Follow this design system exactly.
 
 PHILOSOPHY: Clean, editorial, trust-first. Premium property magazine — not SaaS dashboard. Generous whitespace, minimal colour, typographic hierarchy.
 
@@ -138,8 +138,17 @@ RULES:
 
 /* ─── COMPONENT ─── */
 
+const BRAND_PW = '5891';
+
 export default function BrandPage() {
   const [copied, setCopied] = useState(false);
+  const [pw, setPw] = useState('');
+  const [unlocked, setUnlocked] = useState(false);
+
+  const handlePw = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pw === BRAND_PW) setUnlocked(true);
+  };
 
   const downloadLogo = useCallback(() => {
     const canvas = document.createElement('canvas');
@@ -241,6 +250,40 @@ export default function BrandPage() {
     cell: { color: '#1A1A1A' } as React.CSSProperties,
     cellSub: { color: '#6B7280' } as React.CSSProperties,
   };
+
+  if (!unlocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={S.page}>
+        <form onSubmit={handlePw} className="bg-white rounded-xl p-8 w-full max-w-[340px]" style={S.card}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'rgba(30,154,128,0.08)' }}>
+              <Lock className="w-5 h-5" style={{ color: '#1E9A80' }} />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold" style={S.heading}>Brand Assets</h1>
+              <p className="text-xs" style={S.sub}>Enter password to access</p>
+            </div>
+          </div>
+          <input
+            type="password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            placeholder="Password"
+            className="w-full rounded-[10px] px-3 py-2.5 text-sm mb-3 outline-none"
+            style={{ border: '1px solid #E5E5E5', fontFamily: 'Inter, sans-serif' }}
+            autoFocus
+          />
+          <Button
+            type="submit"
+            className="w-full text-sm font-medium"
+            style={{ background: '#1E9A80', color: '#fff', borderRadius: 10 }}
+          >
+            Access
+          </Button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={S.page}>
@@ -483,7 +526,7 @@ export default function BrandPage() {
                 </Button>
               </div>
               <p className="text-[10px] mb-3" style={S.cellSub}>
-                Paste this into any AI coding tool (Claude, Cursor, Lovable) to replicate the NFStay design system on any new page.
+                Paste this into any AI coding tool (Claude, Cursor, Lovable) to replicate the nfstay design system on any new page.
               </p>
               <pre
                 className="text-[9px] leading-relaxed p-4 rounded-lg overflow-auto max-h-[70vh]"

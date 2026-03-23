@@ -5,7 +5,7 @@ import {
   fetchRentWithdrawnEvents,
 } from "@/context/subgraphHelper";
 import { useEffect, useState } from "react";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { getEthFrom } from "@/context/helper";
 import PastPayouts from "./pastPayouts";
 import OffRamp from "./offRamp";
@@ -16,7 +16,7 @@ const Payout = () => {
     getRentContract,
     getPropertyDetails,
     getRwaContract,
-  } = useNfstayContext();
+  } = usenfstayContext();
   const [activeRents, setActiveRents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPastPayoutLoading, setPastPayoutLoading] = useState(true);

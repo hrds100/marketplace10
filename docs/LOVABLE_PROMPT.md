@@ -1,11 +1,11 @@
-# NFStay — Complete Lovable Build Prompt
+# nfstay — Complete Lovable Build Prompt
 # Paste EVERYTHING below this line into Lovable
 
 ---
 
 ## What You Are Building
 
-**NFStay** — a vacation rental platform. Three portals, one codebase:
+**nfstay** — a vacation rental platform. Three portals, one codebase:
 
 1. **Traveler portal** (`nfstay.app`) — guests search, view, and book properties
 2. **Operator portal** (`hub.nfstay.com/nfstay/*`) — property owners manage listings, reservations, get paid
@@ -263,7 +263,7 @@ If `isWhiteLabel`:
 - Call Supabase: `nfs_operators WHERE subdomain = [subdomain] OR custom_domain = [hostname]` AND `status = 'active'`
 - If operator found: store operator in context, render white-label route tree
 - If NOT found: render `NfsWlError` page with "We couldn't find this property site"
-- While loading: full-screen spinner (NFStay logo centred, animate-pulse)
+- While loading: full-screen spinner (nfstay logo centred, animate-pulse)
 
 If NOT white-label (`nfstay.app` or `hub.nfstay.com` or `localhost`):
 - Render main route tree (traveler + operator + admin routes)
@@ -296,7 +296,7 @@ If NOT white-label (`nfstay.app` or `hub.nfstay.com` or `localhost`):
   operator: NfsOperator | null,
   isWhiteLabel: boolean,
   accentColor: string,      // operator.accent_color or '#2da44e'
-  brandName: string,        // operator.brand_name or 'NFStay'
+  brandName: string,        // operator.brand_name or 'nfstay'
   logoUrl: string | null,   // operator.logo_url
 }
 ```
@@ -368,7 +368,7 @@ Both integrations redirect back to this page after OAuth consent.
 **Visual:**
 - Centered on page (no sidebar, no navbar — clean focus)
 - Card: max-w-md, mx-auto, mt-32
-- Uses NFStay logo at top
+- Uses nfstay logo at top
 - Three states: Loading spinner | Success (green) | Error (red)
 
 ---
@@ -382,11 +382,11 @@ Used on all main site traveler pages.
 - Desktop: Logo (left) | empty center | "Sign in" link + "List your property" green button (right)
 - Mobile: Logo (left) | hamburger icon (right) → drawer with all nav links + auth buttons
 - Sticky top, white bg, border-b, z-50
-- Logo: "NFStay" in bold with green primary color for "NFS" part
+- Logo: "nfstay" in bold with green primary color for "NFS" part
 
 **`NfsMainFooter`:**
 - 4 columns: About (logo + tagline + socials row) / For Operators (links) / For Travelers (links) / Legal (links)
-- Bottom bar: "© 2026 NFStay. All rights reserved."
+- Bottom bar: "© 2026 nfstay. All rights reserved."
 - Social icons: Instagram, Twitter, Facebook, TikTok (gray, hover → foreground)
 - Links for Operators: List your property / Sign up / How it works / Pricing
 - Links for Travelers: Search properties / How to book / Guest protection / Contact
@@ -396,7 +396,7 @@ Used on all main site traveler pages.
 Used on all `/nfstay/*` pages.
 
 **Topbar (h-16, bg-card, border-b):**
-- Left: NFStay logo icon + "NFStay" wordmark
+- Left: nfstay logo icon + "nfstay" wordmark
 - Center: nothing
 - Right: Notifications bell icon (with unread count badge in red) + avatar circle (initials from name) → dropdown menu: "Your profile", "Settings", "Sign out"
 - Operator brand name shown as small tag next to logo on desktop
@@ -429,7 +429,7 @@ Used on white-label domains.
 **Footer:**
 - Operator contact info (email, phone, WhatsApp link)
 - Social links from operator social fields
-- "Powered by NFStay" subtle link
+- "Powered by nfstay" subtle link
 
 ---
 
@@ -473,8 +473,8 @@ Used on white-label domains.
   2. CreditCard icon | "Book" | "Secure checkout with instant confirmation"
   3. Home icon | "Stay" | "Check in and enjoy — no hidden fees"
 
-**Section 5: Why NFStay**
-- Heading: "Why book direct with NFStay?"
+**Section 5: Why nfstay**
+- Heading: "Why book direct with nfstay?"
 - 3×2 grid of feature items (icon + title + description):
   - 💰 Save up to 15% — No OTA commission fees passed to guests
   - ✓ Verified properties — Every listing reviewed by our team
@@ -931,7 +931,7 @@ Results list:
 ### `SignInPage` — `/signin`
 
 Centered card (max-w-sm, mt-16).
-- NFStay logo above card
+- nfstay logo above card
 - "Sign in to your account" heading
 - Email input
 - Password input (with show/hide toggle)
@@ -1101,11 +1101,11 @@ Two large radio cards (border-2, rounded-2xl, p-6, cursor-pointer):
 - Card A: 🏠 icon | "Property Owner" (bold) | "I own the properties I list"
 - Card B: 🏢 icon | "Property Manager" (bold) | "I manage properties for owners"
 
-**Step 3 — How Will You Use NFStay?**
+**Step 3 — How Will You Use nfstay?**
 Heading: "What's your main goal?"
 Four radio cards (2×2 grid):
 - "Direct Booking" — Take bookings from my own audience
-- "Vacation Rental" — List on the NFStay marketplace
+- "Vacation Rental" — List on the nfstay marketplace
 - "Booking Widget" — Embed booking on my existing site
 - "Not sure yet" — I need some guidance
 
@@ -1143,7 +1143,7 @@ Heading: "How can guests reach you?"
 **Step 8 — Get Paid (Optional)**
 Heading: "Set up payments to receive bookings"
 - Info card (bg-muted, rounded-xl, p-4):
-  - Bank icon + "Connect Stripe to accept payments directly from guests. NFStay takes a small platform fee."
+  - Bank icon + "Connect Stripe to accept payments directly from guests. nfstay takes a small platform fee."
   - Platform fee: 3% per booking
 - "Connect with Stripe" button (full-width, primary) → calls `nfs-stripe-connect-oauth` → redirects to Stripe
 - If already connected: green "✓ Stripe connected" card + "Disconnect" link
@@ -1421,7 +1421,7 @@ All property fields editable inline. Organized in sections matching wizard steps
 
 **Tab: Calendar Sync**
 - **Outbound (share your calendar):**
-  - Label: "Your NFStay calendar URL"
+  - Label: "Your nfstay calendar URL"
   - Text input with URL (read-only) + "Copy" button (copies to clipboard + toast)
   - Instructions card: "Add to Airbnb: Settings → Availability → Export calendar"
 
@@ -1757,7 +1757,7 @@ Full-screen page (no sidebar layout — clean focus mode).
 **Tab: Stripe**
 - If not connected:
   - Large card: Stripe logo + "Accept payments from guests directly"
-  - Fee info: "NFStay charges 3% platform fee per booking"
+  - Fee info: "nfstay charges 3% platform fee per booking"
   - "Connect with Stripe" button (primary, full-width)
 - If connected:
   - Connection status: green "Connected" badge
@@ -1771,7 +1771,7 @@ Full-screen page (no sidebar layout — clean focus mode).
   - "Open Stripe Dashboard" button (ExternalLink icon)
   - "Disconnect Stripe" link (danger) → **Disconnect Confirmation Modal:**
     - "Disconnect Stripe?"
-    - "You will no longer be able to receive payments through NFStay until you reconnect."
+    - "You will no longer be able to receive payments through nfstay until you reconnect."
     - "Cancel" | "Disconnect" (danger)
 
 **Tab: Hospitable**
@@ -1794,7 +1794,7 @@ Full-screen page (no sidebar layout — clean focus mode).
   - Email input (required)
   - Role select: Admin (full access) / Editor (can edit properties + reservations) / Affiliate (view only + referral)
   - "Send invitation" primary button
-  - Note: "They'll receive an email to join your NFStay team"
+  - Note: "They'll receive an email to join your nfstay team"
   - Shows invited (pending) members with "Resend invite" link
 
 ---
@@ -1837,13 +1837,13 @@ Cards:
 ## ADMIN PAGES
 
 Admin guard: only accessible if `user.email` in admin list (`admin@hub.nfstay.com`, `hugo@nfstay.com`).
-Uses existing `AdminLayout` from the hub app (shared layout with NFStay workspace tab active).
+Uses existing `AdminLayout` from the hub app (shared layout with nfstay workspace tab active).
 
 ---
 
 ### `AdminNfsReservations` — `/admin/nfstay`
 
-**Header:** "NFStay — Reservations" h1 | Export CSV button
+**Header:** "nfstay — Reservations" h1 | Export CSV button
 
 **Filter bar:**
 - Search (guest name, email, property name, reservation ID)
@@ -1884,7 +1884,7 @@ Each row:
 
 ### `AdminNfsProperties` — `/admin/nfstay/properties`
 
-**Header:** "NFStay — Properties" h1 | "[N] total" badge
+**Header:** "nfstay — Properties" h1 | "[N] total" badge
 
 **Filters:**
 - Search (title, city, country, operator name)
@@ -1897,7 +1897,7 @@ Columns: Thumbnail | Property | Operator | Location | Status | Rate | Reservatio
 
 Each row:
 - 48×48 thumbnail
-- `public_title` + source badge (NFStay / Airbnb)
+- `public_title` + source badge (nfstay / Airbnb)
 - Operator brand_name
 - city, country
 - listing_status badge
@@ -1915,7 +1915,7 @@ Each row:
 
 ### `AdminNfsOperators` — `/admin/nfstay/operators`
 
-**Header:** "NFStay — Operators" h1 | "[N] operators" badge | "Invite operator" button
+**Header:** "nfstay — Operators" h1 | "[N] operators" badge | "Invite operator" button
 
 **Table (paginated):**
 Columns: Operator | Brand | Domain | Properties | Reservations | Stripe | Joined | Actions
@@ -2137,7 +2137,7 @@ When `/property/:id` returns no listed property:
 ### White-Label Not Found
 When white-label domain not recognized:
 - "We couldn't find this property site"
-- "Visit NFStay.app to explore properties" button
+- "Visit nfstay.app to explore properties" button
 
 ---
 
@@ -2212,10 +2212,10 @@ await supabase.functions.invoke('nfs-email-send', {
 ### Email Design System
 Every email uses the same base layout:
 - White card on light-grey background (`#f5f7f5`)
-- Header: NFStay logo (left) + green bar (#2da44e ≈ primary)
+- Header: nfstay logo (left) + green bar (#2da44e ≈ primary)
 - Body: 16px Inter, `#1a1a1a` text, 24px line-height
 - CTA button: green background, white text, 8px radius, 48px height
-- Footer: "© NFStay · Unsubscribe · Privacy Policy" in `#888` 12px
+- Footer: "© nfstay · Unsubscribe · Privacy Policy" in `#888` 12px
 - Responsive — single column, max-width 600px, mobile-safe padding
 
 ### Guest Emails
@@ -2226,10 +2226,10 @@ Every email uses the same base layout:
 | `guest-payment-receipt` | Stripe payment captured | "Payment receipt — [property]" | Amount charged, last 4 digits, booking ref, itemised breakdown (nightly rate × nights + cleaning fee − discount), download PDF link |
 | `guest-booking-cancelled` | Reservation `status` changes to `cancelled` | "Your booking has been cancelled — [property]" | Cancellation reason, refund amount + expected days, support email, "Find another property" CTA |
 | `guest-booking-reminder` | 24h before `check_in` (n8n scheduled) | "Check-in tomorrow — [property]" | Property address, check-in time, door code (if stored), host phone, Google Maps link |
-| `guest-magic-link` | Traveler requests login link | "Sign in to NFStay" | One-use sign-in button, expires 15 min, "Didn't request this? Ignore" footer |
+| `guest-magic-link` | Traveler requests login link | "Sign in to nfstay" | One-use sign-in button, expires 15 min, "Didn't request this? Ignore" footer |
 | `guest-status-change` | Any reservation status change except confirm/cancel | "Update on your booking — [property]" | Old status → new status, short explanation, "View Booking" CTA |
 | `guest-review-request` | 24h after `check_out` (n8n scheduled) | "How was your stay at [property]?" | Star picker (1–5 links in email), "Leave a full review" CTA, property photo |
-| `guest-welcome` | First booking ever for this email | "Welcome to NFStay" | Short intro, what to expect, support link, app download teaser |
+| `guest-welcome` | First booking ever for this email | "Welcome to nfstay" | Short intro, what to expect, support link, app download teaser |
 
 ### Operator Emails
 
@@ -2237,7 +2237,7 @@ Every email uses the same base layout:
 |---|---|---|---|
 | `operator-new-reservation` | New reservation created for their property | "New booking — [property] · [dates]" | Guest name, dates, payout amount, "View Reservation" CTA, quick action buttons (Confirm / Message Guest) |
 | `operator-reservation-cancelled` | Guest cancels reservation | "Booking cancelled — [property]" | Guest name, dates, reason, whether penalty applies, refund status |
-| `operator-payment-received` | Stripe payment captured | "Payment received — £[amount]" | Booking ref, gross amount, NFStay fee (%), net payout, expected payout date |
+| `operator-payment-received` | Stripe payment captured | "Payment received — £[amount]" | Booking ref, gross amount, nfstay fee (%), net payout, expected payout date |
 | `operator-payout-processed` | Stripe payout landed in bank | "Payout of £[amount] is on its way" | Amount, bank last 4, expected arrival, "View Analytics" CTA |
 | `operator-team-invite` | Operator invites team member | "You've been invited to manage [operator name]" | Invited by name, role assigned, "Accept Invitation" CTA (magic link), expires 48h |
 | `operator-team-member-joined` | Invitee accepts invite | "[Name] has joined your team" | Name + role, "Manage Team" CTA |

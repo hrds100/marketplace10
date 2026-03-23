@@ -29,7 +29,7 @@ DELETE FROM chat_threads;
 
 ## After running
 
-Every user's inbox is now empty. The only thread visible is **NFsTay Support** (hardcoded in the app, not from the database).
+Every user's inbox is now empty. The only thread visible is **nfstay Support** (hardcoded in the app, not from the database).
 
 **For you (Hugo):**
 

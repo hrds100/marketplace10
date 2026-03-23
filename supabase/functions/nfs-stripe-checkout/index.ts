@@ -1,4 +1,4 @@
-// NFStay Stripe Checkout Edge Function
+// nfstay Stripe Checkout Edge Function
 // Creates a Stripe Checkout Session for traveler bookings
 //
 // Flow:

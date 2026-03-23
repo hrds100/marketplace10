@@ -71,13 +71,13 @@ No admin involvement. No batch. Instant.
     - POST /payment-drafts
     - All claims in one batch
     - Groups payments by currency (GBP, EUR, USD, etc.)
-    - Each payment references: "NFsTay Payout 2026-W12"
+    - Each payment references: "nfstay Payout 2026-W12"
     - Revolut auto-selects fastest rail: local (UK/EU/US) or SWIFT (international)
 11. Updates all claims: status → 'processing', saves draft_id
 12. Logs to `payout_audit_log` (event: batch_sent)
 13. Sends WhatsApp to Hugo:
     ```
-    NFsTay Payout Batch Submitted ✅
+    nfstay Payout Batch Submitted ✅
     Week: 2026-W12
     Payees: 15
     GBP: £4,230 (8 payees)
@@ -109,7 +109,7 @@ No admin involvement. No batch. Instant.
     - On TRANSACTION_COMPLETED:
       - Updates `payout_claims`: status → 'paid', paid_at = now()
       - Logs to `payout_audit_log` (event: payment_completed)
-      - Sends WhatsApp to user: "Your NFsTay payout of £420 has arrived ✅"
+      - Sends WhatsApp to user: "Your nfstay payout of £420 has arrived ✅"
     - On TRANSACTION_FAILED:
       - Updates `payout_claims`: status → 'failed'
       - Logs to `payout_audit_log` (event: payment_failed)

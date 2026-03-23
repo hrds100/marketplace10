@@ -1,11 +1,11 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
-import { useNfstayContext } from "./NfstayContext";
+import { usenfstayContext } from "./nfstayContext";
 
 const HandleReferral = () => {
   const searchParams = useSearchParams();
-  const { connectedAddress } = useNfstayContext();
+  const { connectedAddress } = usenfstayContext();
 
   useEffect(() => {
     const referral = searchParams.get("referral")?.toLowerCase();

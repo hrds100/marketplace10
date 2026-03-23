@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 // Derive a deterministic Supabase password from Particle UUID (must match SignUp.tsx)
 function derivedPassword(uuid: string): string {
-  return uuid.slice(0, 10) + '_NFsTay2!' + uuid.slice(-6);
+  return uuid.slice(0, 10) + '_nfstay2!' + uuid.slice(-6);
 }
 
 export default function VerifyOtp() {

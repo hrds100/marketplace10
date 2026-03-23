@@ -8,7 +8,7 @@ const CopyRight = () => {
                     <p className="text-base opacity-60 2xl:text-lg">© {
                         new Date().getFullYear()
 
-                    } NFsTay. All rights reserved</p>
+                    } nfstay. All rights reserved</p>
                 </div>
                 <div className="flex gap-5 ">
                     <svg xmlns="http://www.w3.org/2000/svg" className="hover:opacity-100 opacity-30 cursor-pointer transition-all size-6 2xl:size-8" width="15" height="15" viewBox="0 0 24 24" fill="none">

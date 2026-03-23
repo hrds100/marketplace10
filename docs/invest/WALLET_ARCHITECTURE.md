@@ -1,8 +1,8 @@
-# NFsTay Wallet & Auth Architecture
+# nfstay Wallet & Auth Architecture
 
 ## Overview
 
-This document describes the complete wallet creation flow, security model, recovery procedures, and backup strategy for the NFsTay investment platform.
+This document describes the complete wallet creation flow, security model, recovery procedures, and backup strategy for the nfstay investment platform.
 
 ---
 

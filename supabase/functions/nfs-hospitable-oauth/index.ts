@@ -1,4 +1,4 @@
-// NFStay Hospitable OAuth Edge Function
+// nfstay Hospitable OAuth Edge Function
 // Handles Hospitable Partner Connect OAuth flow for operators
 //
 // Endpoints:

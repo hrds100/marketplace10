@@ -6,7 +6,7 @@ import { ADMIN_WALLET, CONTRACT_CONFIG } from "@/config";
 import { ethers } from "ethers";
 import stay from "../images/stay.png";
 import usdc from "../images/usdc.svg";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 
 const AdminPanel = ({ fetchBalances, isLoading, stayBalance, bnbBalance ,usdcBalance}) => {
 

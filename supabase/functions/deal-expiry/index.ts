@@ -53,10 +53,10 @@ serve(async (req) => {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  from: "NFsTay <notifications@hub.nfstay.com>",
+                  from: "nfstay <notifications@hub.nfstay.com>",
                   to: p.contact_email,
                   subject: `Your deal has expired — ${p.city}`,
-                  html: `<h2>Deal expired</h2><p>Your property "${p.name}" in ${p.city} has been moved to <strong>${newStatus}</strong> after ${days} days.</p><p><a href="https://hub.nfstay.com/dashboard/deals">View on NFsTay →</a></p>`,
+                  html: `<h2>Deal expired</h2><p>Your property "${p.name}" in ${p.city} has been moved to <strong>${newStatus}</strong> after ${days} days.</p><p><a href="https://hub.nfstay.com/dashboard/deals">View on nfstay →</a></p>`,
                 }),
               });
             }

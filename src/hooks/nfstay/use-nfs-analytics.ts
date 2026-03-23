@@ -1,4 +1,4 @@
-// NFStay Analytics — tracking and querying hooks
+// nfstay Analytics — tracking and querying hooks
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 

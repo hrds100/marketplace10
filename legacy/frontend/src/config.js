@@ -119,7 +119,7 @@ export const PARTICLE_OPTIONS = {
   customStyle: {
     zIndex: 2147483650, // must be greater than 2147483646
     logo: "https://photos.pinksale.finance/file/pinksale-logo-upload/1721288952175-35ed0ed869e731b5d32a13ffb3a36d5a.png",
-    projectName: "NFsTay_RWA Auth",
+    projectName: "nfstay_RWA Auth",
     subtitle: "Login to App to continue",
     modalWidth: 400,
     modalHeight: 650,
@@ -130,6 +130,6 @@ export const PARTICLE_OPTIONS = {
 };
 
 export const APP_CONFIG = {
-  APP_NAME: "NFsTay_RWA",
+  APP_NAME: "nfstay_RWA",
   WALLET_CONNECT_PROJECT_ID: "28e91881cee345ca645f8ad85e4db6fe", //WALLET_CONNECT_PROJECT_ID
 };

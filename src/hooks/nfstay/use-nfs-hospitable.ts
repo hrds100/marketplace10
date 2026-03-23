@@ -1,4 +1,4 @@
-// NFStay Hospitable hooks
+// nfstay Hospitable hooks
 // Manages Hospitable connection state, OAuth flow, and sync triggers
 
 import { useState, useEffect, useCallback } from 'react';

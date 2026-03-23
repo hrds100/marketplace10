@@ -9,7 +9,7 @@ import {
   NotifySuccess,
   shortenWalletAddress,
 } from "@/context/helper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import axios from "axios";
 import { BACKEND_BASEURL } from "@/config";
 import { ethers } from "ethers";
@@ -169,7 +169,7 @@ const RewardTable = ({
 export default RewardTable;
 
 const TableRow = ({ fetchBalances, data, loading, getRewardData }) => {
-  const { signMessage } = useNfstayContext();
+  const { signMessage } = usenfstayContext();
   const [isRewardLoading, setRewardLoading] = useState(false);
   const [info, setInfo] = useState({
     id: 0,

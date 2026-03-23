@@ -8,7 +8,7 @@ import Tooltip from "@/utils/tooltip";
 import usdt from "../images/usdc.svg";
 import img from "../images/room.png";
 import { acceptWholeNumbers } from "@/utils/acceptWholeNumbers";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { CONTRACT_CONFIG } from "@/config";
 import { getErrorMessage, getWeiFrom, NotifyError } from "@/context/helper";
 import { useDebouncedCallback } from "use-debounce";
@@ -34,7 +34,7 @@ const RockMigration = ({
     getPrimaryQuote,
     handleNetwork,
     balanceChecker,
-  } = useNfstayContext();
+  } = usenfstayContext();
   const { checkUserRegistration } = useKYCContext();
   const [type, setType] = useState("fixed");
   const [quantity, setQuantity] = useState("");

@@ -2,12 +2,12 @@
 import React from "react";
 import Layout from "../components/layout";
 import Admin from "./admin";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import Loading from "../loading";
 import AccessDenied from "./accessDenied";
 
 const Page = () => {
-  const { isAdminWallet, isWalletLoading } = useNfstayContext();
+  const { isAdminWallet, isWalletLoading } = usenfstayContext();
 
   if (isWalletLoading) {
     return <Loading />;

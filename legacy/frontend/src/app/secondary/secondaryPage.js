@@ -2,7 +2,7 @@
 import Layout from "@/app/components/layout";
 import Overview from "@/app/details/overview";
 import { useParams, useSearchParams } from "next/navigation"; // Import useSearchParams
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { useEffect, useState } from "react";
 import NotFound from "@/app/not-found";
 
@@ -12,7 +12,7 @@ const Page = () => {
   // const searchParams = useSearchParams(); // Get query parameters
   // const listingId = searchParams.get("listingId"); // Extract `listingId` from the query
 
-  // const { getPropertyDetails, getSecondaryListingDetails } = useNfstayContext();
+  // const { getPropertyDetails, getSecondaryListingDetails } = usenfstayContext();
 
   // const [propertyDetails, setPropertyDetails] = useState({
   //   id: 0,

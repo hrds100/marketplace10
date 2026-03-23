@@ -1,4 +1,4 @@
-// NFStay Checkout Page — sits between booking widget and Stripe
+// nfstay Checkout Page — sits between booking widget and Stripe
 // Reads booking intent from sessionStorage, collects contact info, confirms price, then redirects to Stripe
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';

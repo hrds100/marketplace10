@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import stay from "../images/stay.png";
 import Image from "next/image";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import {
   formatNumber,
   getErrorMessage,
@@ -11,7 +11,7 @@ import {
 
 const StayEarned = ({ setRewards, rewards, fetchBoost, property }) => {
   const [isClaimLoading, setIsClaimLoading] = useState(false);
-  const { getBoosterContract, assetPrices, handleNetwork } = useNfstayContext();
+  const { getBoosterContract, assetPrices, handleNetwork } = usenfstayContext();
 
   const claimRewards = async (propertyId) => {
     try {

@@ -1,4 +1,4 @@
-// Admin: All NFStay properties across all operators
+// Admin: All nfstay properties across all operators
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, RefreshCw, Loader2, AlertCircle, ExternalLink, MapPin, Users } from 'lucide-react';

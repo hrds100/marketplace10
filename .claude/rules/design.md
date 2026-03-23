@@ -1,4 +1,4 @@
-# NFStay Design Cheatsheet — hub.nfstay.com
+# nfstay Design Cheatsheet — hub.nfstay.com
 
 > This file auto-loads in every Claude session for marketplace10.
 > Follow these tokens exactly. Never introduce new hex values or random colours.
@@ -8,7 +8,7 @@
 
 ## Design Philosophy
 
-NFStay uses a **clean, editorial, trust-first** aesthetic. Think premium property magazine, not SaaS dashboard. The style is characterised by:
+nfstay uses a **clean, editorial, trust-first** aesthetic. Think premium property magazine, not SaaS dashboard. The style is characterised by:
 
 - **Generous whitespace** — large section padding (88–140px vertical), wide margins
 - **Minimal colour** — one accent colour (green), everything else is greyscale
@@ -24,7 +24,7 @@ NFStay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 ### Primary
 | Name | Hex | RGB | Use |
 |------|-----|-----|-----|
-| **NFStay Green** | `#1E9A80` | `rgb(30, 154, 128)` | Buttons, checkmarks, active tabs, card top-borders, links, focus rings, progress bars |
+| **nfstay Green** | `#1E9A80` | `rgb(30, 154, 128)` | Buttons, checkmarks, active tabs, card top-borders, links, focus rings, progress bars |
 | **Green Tint** | `#ECFDF5` | `rgb(236, 253, 245)` | Badge backgrounds, hover tints, very light green fills |
 
 ### Text
@@ -85,7 +85,7 @@ NFStay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 | Form labels | 14px | 500 | Label Grey `#525252` |
 | Form inputs | 14px | 400 | Logo Black `#0A0A0A` |
 | Small helper text | 14px | 400 | Hint Grey `#737373` |
-| Badge text | 11–12px | 600–700 | NFStay Green or Heading |
+| Badge text | 11–12px | 600–700 | nfstay Green or Heading |
 
 ---
 
@@ -129,7 +129,7 @@ NFStay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 | Secondary (outline) | White | Heading | 10–12px | 10px 20px | Inter 500, 15px |
 | Secondary (outline) | Transparent | `#0A0A0A` | 9999px (pill) | 8px 12px | Inter 500, 15px |
 | Dark CTA | `#111111` | White | 16px | 13px 16px | Inter 500, 14px |
-| Tab (active) | White | NFStay Green | 8–10px | 8px 10px | Inter 500, 12px |
+| Tab (active) | White | nfstay Green | 8–10px | 8px 10px | Inter 500, 12px |
 | Tab (inactive) | Transparent | Body Grey | 8–10px | 8px 10px | Inter 500, 12px |
 | Green shadow CTA | `#1E9A80` | White | 14px | 14px 40px | Inter 600, 16px, with `box-shadow: rgba(30,154,128,0.35) 0 4px 16px` |
 
@@ -152,7 +152,7 @@ NFStay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 | Border radius | 10px |
 | Padding | 4px 12px (with icon indent ~40px left) |
 | Font | Inter 400, 14px |
-| Focus ring | NFStay Green |
+| Focus ring | nfstay Green |
 
 ### Checkmarks (pricing)
 - Colour: `#1E9A80`
@@ -162,9 +162,9 @@ NFStay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 ### Badges / Pills
 | Type | Background | Text | Border Radius | Padding |
 |------|-----------|------|---------------|---------|
-| Section badge | Green Tint `#ECFDF5` | NFStay Green `#1E9A80` | 100px (pill) | 5px 14px |
+| Section badge | Green Tint `#ECFDF5` | nfstay Green `#1E9A80` | 100px (pill) | 5px 14px |
 | Step label | White or transparent | Heading, uppercase, 11px 700 | — | — |
-| Featured badge | NFStay Green | White, 7px 600 | 4px | 2px 5px |
+| Featured badge | nfstay Green | White, 7px 600 | 4px | 2px 5px |
 
 ---
 
@@ -215,10 +215,10 @@ The sign-in page is a **split layout**:
 4. Divider: "or sign in with email" — Hint Grey `#737373`
 5. Form labels: Label Grey `#525252`, 14px 500
 6. Inputs: white bg, `border: 1px solid #E5E5E5`, `border-radius: 10px`
-7. Checkbox: NFStay Green bg when checked
-8. "Forgot Password?" link: NFStay Green `#1E9A80`, 14px 500
-9. Submit button: NFStay Green bg, white text, `border-radius: 10px`, subtle shadow
-10. Footer: "Don't have an account? **Sign up**" — Hint Grey + NFStay Green link
+7. Checkbox: nfstay Green bg when checked
+8. "Forgot Password?" link: nfstay Green `#1E9A80`, 14px 500
+9. Submit button: nfstay Green bg, white text, `border-radius: 10px`, subtle shadow
+10. Footer: "Don't have an account? **Sign up**" — Hint Grey + nfstay Green link
 
 ---
 

@@ -1,6 +1,6 @@
 "use client";
 import { formatNumber, getEthFrom } from "@/context/helper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { Chart } from "chart.js/auto";
 import { useRef, useEffect, useState } from "react";
 
@@ -13,7 +13,7 @@ const Holidays = ({
   totalPortfolioValue,
 }) => {
   const chartRef = useRef(null);
-  const { isBalanceLoading, globalLoading } = useNfstayContext();
+  const { isBalanceLoading, globalLoading } = usenfstayContext();
 
   const [data, setData] = useState([]);
 

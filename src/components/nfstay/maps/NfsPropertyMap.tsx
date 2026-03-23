@@ -1,4 +1,4 @@
-// NFStay Property Map — Google Maps with graceful marker fallback
+// nfstay Property Map — Google Maps with graceful marker fallback
 // Uses AdvancedMarkerElement when available, falls back to classic Marker
 import { useEffect, useRef, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';

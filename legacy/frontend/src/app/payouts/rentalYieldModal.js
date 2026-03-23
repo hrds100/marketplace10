@@ -7,7 +7,7 @@ import Modal from "@/utils/modal";
 import ModalHeader from "@/utils/modalHeader";
 import Claim from "@/utils/claim";
 import Congratulation from "./congratulation";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { getErrorMessage, NotifyError } from "@/context/helper";
 
 const RentalYieldModal = ({
@@ -16,7 +16,7 @@ const RentalYieldModal = ({
   fetchPayouts,
   data,
 }) => {
-  const { connectedAddress, handleNetwork, withdrawRent } = useNfstayContext();
+  const { connectedAddress, handleNetwork, withdrawRent } = usenfstayContext();
 
   const [open, setOpen] = useState(false);
   const [openClaim, setOpenClaim] = useState(false);

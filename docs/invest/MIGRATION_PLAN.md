@@ -28,7 +28,7 @@ Every contract call, every subgraph query, every wallet interaction comes from l
 
 | From Legacy | File | What It Does |
 |---|---|---|
-| Contract interactions | `NfstayContext.jsx` | All contract functions: buy, sell, claim, vote, boost, farm |
+| Contract interactions | `nfstayContext.jsx` | All contract functions: buy, sell, claim, vote, boost, farm |
 | Graph queries | `subgraphHelper.js` | All 17 subgraph queries: sales, rent, commissions, proposals, leaderboards |
 | Claim flow | `claim.jsx` | Multi-step: USDC → approve → STAY or LP → farm |
 | Config | `config.js` | Contract addresses, Graph endpoints, Particle credentials |
@@ -153,7 +153,7 @@ Agent shares referral link
 
 ### Phase 2 — Portfolio
 - Port share balances, boost APR, STAY rewards, LP staking
-- From `NfstayContext.jsx` boost/farm functions
+- From `nfstayContext.jsx` boost/farm functions
 - **Gate:** See real share balance, boost APR, claim rewards
 
 ### Phase 3 — Proposals (Voting)

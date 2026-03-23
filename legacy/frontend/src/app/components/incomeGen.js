@@ -2,10 +2,10 @@
 import Image from "next/image";
 import incomeGen from "../images/incomeGen.svg";
 import { useState } from "react";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import Link from "next/link";
 const IncomeGen = () => {
-  const { connectedAddress, setLoginModelOpen } = useNfstayContext();
+  const { connectedAddress, setLoginModelOpen } = usenfstayContext();
 
   return (
     <>

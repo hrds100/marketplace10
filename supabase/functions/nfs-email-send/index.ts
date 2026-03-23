@@ -1,4 +1,4 @@
-// NFStay Email Edge Function
+// nfstay Email Edge Function
 // Sends transactional emails via Resend API
 // Uses NFS_RESEND_API_KEY (separate from marketplace10's RESEND_API_KEY)
 //
@@ -10,7 +10,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const NFS_RESEND_API_KEY = Deno.env.get('NFS_RESEND_API_KEY');
-const FROM_EMAIL = 'NFStay <onboarding@resend.dev>'; // Update to verified domain when available
+const FROM_EMAIL = 'nfstay <onboarding@resend.dev>'; // Update to verified domain when available
 
 interface EmailRequest {
   type: string;
@@ -83,7 +83,7 @@ function buildBookingConfirmation(data: Record<string, unknown>): EmailPayload {
       </p>
     </div>
     <p style="font-size:12px;color:#9ca3af;text-align:center;margin-top:24px;">
-      Powered by NFStay
+      Powered by nfstay
     </p>
   </div>
 </body>
@@ -111,7 +111,7 @@ function buildBookingCancelled(data: Record<string, unknown>): EmailPayload {
       <p style="font-size:15px;color:#6b7280;margin:0 0 16px;">Hi ${guestName}, your reservation for <strong>${propertyTitle}</strong> (${checkIn} — ${checkOut}) has been cancelled.</p>
       <p style="font-size:14px;color:#6b7280;">If you have any questions, please contact your host directly.</p>
     </div>
-    <p style="font-size:12px;color:#9ca3af;text-align:center;margin-top:24px;">Powered by NFStay</p>
+    <p style="font-size:12px;color:#9ca3af;text-align:center;margin-top:24px;">Powered by nfstay</p>
   </div>
 </body>
 </html>`,
@@ -144,7 +144,7 @@ function buildOperatorNewBooking(data: Record<string, unknown>): EmailPayload {
         <p style="margin:0;"><strong>Total:</strong> ${currency} ${totalAmount}</p>
       </div>
     </div>
-    <p style="font-size:12px;color:#9ca3af;text-align:center;margin-top:24px;">Powered by NFStay</p>
+    <p style="font-size:12px;color:#9ca3af;text-align:center;margin-top:24px;">Powered by nfstay</p>
   </div>
 </body>
 </html>`,

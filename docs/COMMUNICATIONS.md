@@ -1,4 +1,4 @@
-# NFsTay — Complete Communication Map
+# nfstay — Complete Communication Map
 
 > **MANDATORY: Any agent that adds, removes, or changes ANY email, WhatsApp, or in-app notification MUST update this document in the same commit. No exceptions.**
 
@@ -13,7 +13,7 @@ There are **3 channels** the platform uses to contact people:
 | Channel | How it works | Sender |
 |---------|-------------|--------|
 | **Email** | Supabase Edge Function `send-email` calls Resend API | `notifications@hub.nfstay.com` |
-| **WhatsApp** | n8n tells GoHighLevel (GHL) to send a WhatsApp template | NFsTay number `07676 368123` |
+| **WhatsApp** | n8n tells GoHighLevel (GHL) to send a WhatsApp template | nfstay number `07676 368123` |
 | **In-App** | Row inserted into `notifications` table → bell icon in dashboard | — |
 
 ---
@@ -25,11 +25,11 @@ There are **3 channels** the platform uses to contact people:
 | What happens | Channel | Who receives | Message |
 |-------------|---------|-------------|---------|
 | OTP verification code | WhatsApp | New user | "Verify with the code **1234**" |
-| Welcome email | Email | New user | "Welcome to NFsTay!" with feature list |
+| Welcome email | Email | New user | "Welcome to nfstay!" with feature list |
 | New signup alert | Email | Hugo (admin) | "New User — James Walker" with name/email/phone |
 | New signup alert | In-App | Hugo (admin) | Bell notification in dashboard |
 
-**How it flows:** User fills signup form → frontend calls n8n `/send-otp` → n8n creates GHL contact → GHL `OTP - NFsTay` workflow sends WhatsApp. Frontend also calls Resend for welcome + admin emails.
+**How it flows:** User fills signup form → frontend calls n8n `/send-otp` → n8n creates GHL contact → GHL `OTP - nfstay` workflow sends WhatsApp. Frontend also calls Resend for welcome + admin emails.
 
 ### 2. Member Submits a Deal
 
@@ -78,7 +78,7 @@ There are **3 channels** the platform uses to contact people:
 
 | What happens | Channel | Who receives | Message |
 |-------------|---------|-------------|---------|
-| Follow-up message | WhatsApp | Landlord | "You have a new message about [property] on NFsTay" |
+| Follow-up message | WhatsApp | Landlord | "You have a new message about [property] on nfstay" |
 
 **How it flows:** Same as above but landlord has replied before → enrolls in GHL `2-Tenant to Landlord` instead.
 
@@ -86,7 +86,7 @@ There are **3 channels** the platform uses to contact people:
 
 | What happens | Channel | Who receives | Message |
 |-------------|---------|-------------|---------|
-| Landlord replied | WhatsApp | Operator | "You have a new message about [property] on NFsTay" |
+| Landlord replied | WhatsApp | Operator | "You have a new message about [property] on nfstay" |
 
 **How it flows:** Landlord sends message → saves to Supabase → n8n `/inbox-landlord-replied` → enrolls in GHL `3-Landlord to Tenant` → GHL sends WhatsApp to operator.
 
@@ -214,7 +214,7 @@ USER ACTION
 
 | # | Type Key | Subject | Recipient |
 |---|----------|---------|-----------|
-| 1 | `welcome-member` | Welcome to NFsTay! 🏠 | New user |
+| 1 | `welcome-member` | Welcome to nfstay! 🏠 | New user |
 | 2 | `new-signup-admin` | New User — {name} | Hugo (admin) |
 | 3 | `new-deal-admin` | New Deal Submitted — {city} {type} | Hugo (admin) |
 | 4 | `deal-approved-member` | Your deal has been approved — {city} | Member |
@@ -229,14 +229,14 @@ USER ACTION
 
 | # | GHL Workflow ID | Name | Triggered By | Sends To |
 |---|----------------|------|-------------|----------|
-| 1 | `baabc69a` | OTP - NFsTay | GHL trigger: OTP Code changed | New user |
+| 1 | `baabc69a` | OTP - nfstay | GHL trigger: OTP Code changed | New user |
 | 2 | `67250bfa` | 1-landlord_enquiry | n8n enrollment only | Landlord |
 | 3 | `0eb4395c` | 2 Tenant to Landlord | n8n enrollment only | Landlord |
 | 4 | `9b826037` | 3- Landlord to Tenant | n8n enrollment only | Operator |
 | 5 | `75b14201` | 4- Investment NFSTAY | n8n enrollment only | Investor |
 | 6 | `1177dc6e` | Investors 1st message | n8n enrollment only | Investor |
 | 7 | `e95b9105` | Investors FB leads Enquiry | n8n enrollment only | FB lead |
-| 8 | `7d1bac63` | Webhook NFsTay Chat | GHL trigger | — |
+| 8 | `7d1bac63` | Webhook nfstay Chat | GHL trigger | — |
 | 9 | `11117c1a` | inbox-new-inquiry | GHL trigger | — |
 | 10 | `39d1650a` | inbox-new-message | GHL trigger | — |
 | 11 | `67f77c19` | landlord replies | GHL trigger | — |

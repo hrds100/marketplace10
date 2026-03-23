@@ -1,4 +1,4 @@
-// Admin: All NFStay reservations across all operators
+// Admin: All nfstay reservations across all operators
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';

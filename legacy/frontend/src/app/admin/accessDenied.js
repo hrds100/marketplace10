@@ -1,10 +1,10 @@
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { shortenWalletAddress } from "@/context/helper";
 import Link from "next/link";
 import { FiAlertCircle } from "react-icons/fi";
 
 export default function AccessDenied() {
-  const { connectedAddress } = useNfstayContext();
+  const { connectedAddress } = usenfstayContext();
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="max-w-md w-full space-y-8 p-8 bg-white shadow-lg rounded-xl">

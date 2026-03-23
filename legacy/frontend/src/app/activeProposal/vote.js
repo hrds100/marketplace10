@@ -3,7 +3,7 @@ import Modal from "@/utils/modal";
 import ModalHeader from "@/utils/modalHeader";
 import React, { useEffect, useState } from "react";
 import Congratulation from "./congratulation";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { getErrorMessage, NotifyError } from "@/context/helper";
 
 const Thumb = ({ color = "#0C0839", rotate = "rotate-0" }) => {
@@ -36,7 +36,7 @@ const Thumb = ({ color = "#0C0839", rotate = "rotate-0" }) => {
 
 const Vote = ({ proposal, info, fetchProposalDetails }) => {
   const { getVotingContract, connectedAddress, handleNetwork } =
-    useNfstayContext();
+    usenfstayContext();
   const [vote, setVote] = useState(0);
   const [isVoted, setIsVoted] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);

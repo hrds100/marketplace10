@@ -1,12 +1,12 @@
 "use client";
 import Image from "next/image";
 import benefits from "../images/benefits.svg";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { useState } from "react";
 import Link from "next/link";
 
 const Benefits = () => {
-  const { connectedAddress, setLoginModelOpen } = useNfstayContext();
+  const { connectedAddress, setLoginModelOpen } = usenfstayContext();
 
   return (
     <div id="benefits" className="flex flex-col p-4 gap-10 py-8 w-full">

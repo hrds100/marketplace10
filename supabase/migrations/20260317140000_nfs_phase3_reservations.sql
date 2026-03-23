@@ -1,5 +1,5 @@
 -- ============================================================================
--- NFStay Phase 3 — Reservations + Pricing Tables
+-- nfstay Phase 3 — Reservations + Pricing Tables
 -- Migration: 20260317140000_nfs_phase3_reservations.sql
 --
 -- Tables: nfs_reservations, nfs_promo_codes, nfs_guest_sessions

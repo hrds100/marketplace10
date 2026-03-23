@@ -4,12 +4,12 @@ import Image from "next/image";
 import b2 from "../images/b-2.png";
 import b11 from "../images/b-11.png";
 import { useState } from "react";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import Link from "next/link";
 
 const Advantages = () => {
 
-  const { connectedAddress,  setLoginModelOpen } = useNfstayContext();
+  const { connectedAddress,  setLoginModelOpen } = usenfstayContext();
 
   const cardImage1 = b2;
   const cardImage2 = b11;
@@ -33,7 +33,7 @@ const Advantages = () => {
               </h2>
               <p className="opacity-60 text-sm 2xl:text-lg ">
                 You invest, and we take care of the rest, from sourcing the best
-                deals to day-to-day management. NFsTay ensures the best return
+                deals to day-to-day management. nfstay ensures the best return
                 on your investment possible.
               </p>
             </div>

@@ -1,4 +1,4 @@
-// NFStay White-Label Router
+// nfstay White-Label Router
 // Renders white-label routes when on a subdomain/custom domain,
 // traveler routes when on nfstay.app,
 // otherwise renders normal app routes (marketplace10 + operator dashboard).
@@ -43,7 +43,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 
 interface Props {
-  /** Normal app routes (marketplace10 + NFStay operator) */
+  /** Normal app routes (marketplace10 + nfstay operator) */
   children: ReactNode;
 }
 

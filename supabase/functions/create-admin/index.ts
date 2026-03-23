@@ -22,7 +22,7 @@ serve(async (req) => {
       email: "admin@nfstay.co.uk",
       password: "adminpass123",
       email_confirm: true,
-      user_metadata: { name: "NFsTay Admin" },
+      user_metadata: { name: "nfstay Admin" },
     });
 
     if (userError) {

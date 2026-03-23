@@ -1,5 +1,5 @@
 -- ============================================================================
--- NFStay Phase 4 — Stripe Payments Tables
+-- nfstay Phase 4 — Stripe Payments Tables
 -- Migration: 20260317150000_nfs_phase4_stripe.sql
 --
 -- Tables: nfs_stripe_accounts, nfs_webhook_events

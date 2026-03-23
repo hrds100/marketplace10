@@ -1,5 +1,5 @@
 import { formatNumber } from "@/context/helper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { ConsoleSqlOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 
@@ -14,7 +14,7 @@ const CurrentApr = ({
   fetchBoost,
   boostAmount,
 }) => {
-  const { assetPrices, getBoostdetails, connectedAddress } = useNfstayContext();
+  const { assetPrices, getBoostdetails, connectedAddress } = usenfstayContext();
 
   const [isBoostEligible, setIsBoostEligible] = useState(false);
   const [totalBoosted, setTotalBoosted] = useState(0);

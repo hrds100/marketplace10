@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchPrimarySalesEvents } from "@/context/subgraphHelper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import ShowVideo from "../components/showVideo";
 import Connect from "../components/connect";
 import TeamSlider from "../components/teams";
@@ -39,7 +39,7 @@ const partners = [
 
 const Checkout = () => {
   const { getPropertyDetails, getPrimaryPropertyRemainingShares } =
-    useNfstayContext();
+    usenfstayContext();
   const [loading, setLoading] = useState(true);
   const [propertyDetails, setPropertyDetails] = useState({
     id: "",

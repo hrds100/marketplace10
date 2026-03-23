@@ -4,7 +4,7 @@ import Properties from "./properties";
 import RecentTransaction from "./recentTransaction";
 import Revenue from "./revenue";
 import { useEffect, useState } from "react";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import {
   fetchCommissionEvents,
   fetchPerformanceFeeDistributionsByAddress,
@@ -13,7 +13,7 @@ import {
 import AgentPerformanceFee from "./agentPerformanceFee";
 
 const Agent = () => {
-  const { getRwaContract, connectedAddress } = useNfstayContext();
+  const { getRwaContract, connectedAddress } = usenfstayContext();
   const [agentData, setAgentData] = useState([]);
   const [agentPerformanceHistory, setAgentPerformanceHistory] = useState([]);
   const [totalProperties, setTotalProperties] = useState(0);

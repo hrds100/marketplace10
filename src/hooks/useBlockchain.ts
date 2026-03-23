@@ -40,7 +40,7 @@ async function getReadProvider() {
 export function useBlockchain() {
   const { address, connected, connect } = useWallet();
   const { user } = useAuth();
-  // ConnectKit hooks — exact same as legacy NfstayContext.jsx lines 64-66
+  // ConnectKit hooks — exact same as legacy nfstayContext.jsx lines 64-66
   const { isConnected: ckConnected, connector } = useAccount();
   const { provider: particleProvider } = useEthereum();
   const connectors = useConnectors();
@@ -64,7 +64,7 @@ export function useBlockchain() {
     }
   }, [ckConnected, address, connectors, connectAsync]);
 
-  // Get signer — exact legacy pattern (NfstayContext.jsx lines 128-141):
+  // Get signer — exact legacy pattern (nfstayContext.jsx lines 128-141):
   //   if connector is particleAuth + social → use particleProvider
   //   else → use window.ethereum
   const getSignerProvider = useCallback(async () => {
@@ -536,7 +536,7 @@ export function useBlockchain() {
         const ethers = await getEthers();
         if (!ethers) throw new Error('Blockchain not available');
 
-        // Step 0: Withdraw rent — legacy NfstayContext.jsx line 967-984
+        // Step 0: Withdraw rent — legacy nfstayContext.jsx line 967-984
         onStep?.(0, 3);
         const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
         if (!rentContract) throw new Error('Could not connect to rent contract');
@@ -632,7 +632,7 @@ export function useBlockchain() {
           await approveTx.wait();
         }
 
-        // Step 2: Buy LP — legacy NfstayContext.jsx line 898-934
+        // Step 2: Buy LP — legacy nfstayContext.jsx line 898-934
         onStep?.(2, 5);
         const buyLpContract = await getContract(CONTRACTS.BUY_LP, BUY_LP_ABI, true);
         if (!buyLpContract) throw new Error('Could not connect to BuyLP');
@@ -657,7 +657,7 @@ export function useBlockchain() {
           await approveLpTx.wait();
         }
 
-        // Step 4: Stake in Farm — legacy NfstayContext.jsx line 884-886
+        // Step 4: Stake in Farm — legacy nfstayContext.jsx line 884-886
         onStep?.(4, 5);
         const farmContract = await getContract(CONTRACTS.FARM, FARM_ABI, true);
         if (!farmContract) throw new Error('Could not connect to farm');

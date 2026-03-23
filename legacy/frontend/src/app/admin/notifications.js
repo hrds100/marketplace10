@@ -14,11 +14,11 @@ import {
 } from "@/context/helper";
 import { BACKEND_BASEURL, BASEURL } from "@/config";
 import axios from "axios";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { getStatusColor } from "./ordersTable";
 
 const Notifications = ({}) => {
-  const { signMessage } = useNfstayContext();
+  const { signMessage } = usenfstayContext();
 
   const [isLoading, setIsLoading] = useState(false);
   const [title, setTitle] = useState("");

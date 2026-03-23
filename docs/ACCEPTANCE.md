@@ -1,4 +1,4 @@
-# NFsTay — Acceptance Scenarios (BDD)
+# nfstay — Acceptance Scenarios (BDD)
 
 _Last updated: 2026-03-16_
 

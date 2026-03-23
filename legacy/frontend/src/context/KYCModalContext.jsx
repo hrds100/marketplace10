@@ -2,7 +2,7 @@
 import axios from "axios";
 import { createContext, useContext, useState, useEffect } from "react";
 import { BACKEND_BASEURL } from "@/config";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 const KYCModalContext = createContext(undefined);
 import { MESSAGES } from "@veriff/incontext-sdk";
 
@@ -13,7 +13,7 @@ export const KYCModalProvider = ({ children }) => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [kycStatus, setKycStatus] = useState(null);
   const [kycAccessToken, setKycAccessToken] = useState("");
-  const { connectedAddress, getRwaContract } = useNfstayContext();
+  const { connectedAddress, getRwaContract } = usenfstayContext();
 
   const openModal = (_showClose = false) => {
     setShowClose(_showClose);

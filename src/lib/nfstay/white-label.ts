@@ -1,4 +1,4 @@
-// NFStay White-Label — hostname detection and operator resolution
+// nfstay White-Label — hostname detection and operator resolution
 // Determines if the current page is being viewed on a white-label domain
 
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +12,7 @@ const RESERVED_SUBDOMAINS = new Set([
 /** Hub domain — marketplace10 routes, NOT white-label */
 const HUB_DOMAIN = 'hub.nfstay.com';
 
-/** Main NFStay domain — traveler-facing (not white-label) */
+/** Main nfstay domain — traveler-facing (not white-label) */
 const MAIN_DOMAIN = 'nfstay.app';
 
 /** Wildcard parent for white-label subdomains */

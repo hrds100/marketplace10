@@ -1,4 +1,4 @@
-/* NFsTay Landing Page Translations */
+/* nfstay Landing Page Translations */
 var TRANSLATIONS = {
   en: {
     // Nav
@@ -34,7 +34,7 @@ var TRANSLATIONS = {
 
     // Persona
     persona_title: "What describes you?",
-    persona_sub: "Select your stage to see how NFsTay fits.",
+    persona_sub: "Select your stage to see how nfstay fits.",
     persona_new: "New operator",
     persona_scaling: "Scaling operator",
     persona_landlord: "Landlord",
@@ -131,7 +131,7 @@ var TRANSLATIONS = {
     j6_tag: "Live & Earning",
 
     // Academy
-    academy_badge: "NFsTay Academy",
+    academy_badge: "nfstay Academy",
     academy_h: "Learn rent-to-rent. Then do it. In the same place.",
     academy_sub: "15 years of operator knowledge, structured into step-by-step modules with progress tracking.",
     academy_included: "All modules included in your membership",
@@ -149,7 +149,7 @@ var TRANSLATIONS = {
 
     // CTA
     cta_h: "Ready to find your first deal?",
-    cta_sub: "Join 300+ operators building their portfolio with NFsTay.",
+    cta_sub: "Join 300+ operators building their portfolio with nfstay.",
     cta_btn: "Get Started",
 
     // Footer
@@ -183,7 +183,7 @@ var TRANSLATIONS = {
     ts_cities: "Cidades no UK",
     ts_rating: "Avalia\u00e7\u00e3o",
     persona_title: "O que descreve voc\u00ea?",
-    persona_sub: "Selecione seu est\u00e1gio para ver como o NFsTay se encaixa.",
+    persona_sub: "Selecione seu est\u00e1gio para ver como o nfstay se encaixa.",
     persona_new: "Novo operador",
     persona_scaling: "Operador em expans\u00e3o",
     persona_landlord: "Propriet\u00e1rio",
@@ -268,7 +268,7 @@ var TRANSLATIONS = {
     j6_h: "Comece no Airbnb e ganhe",
     j6_p: "Seu primeiro lucro geralmente chega em 30 dias ap\u00f3s come\u00e7ar.",
     j6_tag: "Ao Vivo e Lucrando",
-    academy_badge: "NFsTay Academy",
+    academy_badge: "nfstay Academy",
     academy_h: "Aprenda rent-to-rent. Depois fa\u00e7a. No mesmo lugar.",
     academy_sub: "15 anos de conhecimento de operadores, estruturado em m\u00f3dulos passo a passo.",
     academy_included: "Todos os m\u00f3dulos inclu\u00eddos na sua assinatura",
@@ -280,7 +280,7 @@ var TRANSLATIONS = {
     price_cancel: "Cancele online a qualquer momento. Sem contratos.",
     price_cta: "Acesso Gratuito . Sem Cart\u00e3o de Cr\u00e9dito",
     cta_h: "Pronto para encontrar seu primeiro neg\u00f3cio?",
-    cta_sub: "Junte-se a mais de 300+ operadores construindo seu portf\u00f3lio com NFsTay.",
+    cta_sub: "Junte-se a mais de 300+ operadores construindo seu portf\u00f3lio com nfstay.",
     cta_btn: "Comece Agora",
     footer_desc: "O marketplace de rent-to-rent do UK. Encontre, analise e feche neg\u00f3cios aprovados.",
     footer_platform: "Plataforma",
@@ -312,7 +312,7 @@ var TRANSLATIONS = {
     ts_cities: "Ciudades UK",
     ts_rating: "Valoraci\u00f3n",
     persona_title: "\u00bfQu\u00e9 te describe?",
-    persona_sub: "Selecciona tu etapa para ver c\u00f3mo NFsTay se adapta.",
+    persona_sub: "Selecciona tu etapa para ver c\u00f3mo nfstay se adapta.",
     persona_new: "Nuevo operador",
     persona_scaling: "Operador en expansi\u00f3n",
     persona_landlord: "Propietario",
@@ -397,7 +397,7 @@ var TRANSLATIONS = {
     j6_h: "Empieza en Airbnb y gana",
     j6_p: "Tu primer beneficio suele llegar en 30 d\u00edas despu\u00e9s de empezar.",
     j6_tag: "En Vivo y Ganando",
-    academy_badge: "NFsTay Academy",
+    academy_badge: "nfstay Academy",
     academy_h: "Aprende rent-to-rent. Luego hazlo. En el mismo lugar.",
     academy_sub: "15 a\u00f1os de conocimiento de operadores, estructurado en m\u00f3dulos paso a paso.",
     academy_included: "Todos los m\u00f3dulos incluidos en tu suscripci\u00f3n",
@@ -409,7 +409,7 @@ var TRANSLATIONS = {
     price_cancel: "Cancela en l\u00ednea en cualquier momento. Sin contratos.",
     price_cta: "Acceso Gratuito . Sin Tarjeta de Cr\u00e9dito",
     cta_h: "\u00bfListo para encontrar tu primera oferta?",
-    cta_sub: "\u00danete a m\u00e1s de 300+ operadores construyendo su portafolio con NFsTay.",
+    cta_sub: "\u00danete a m\u00e1s de 300+ operadores construyendo su portafolio con nfstay.",
     cta_btn: "Empezar",
     footer_desc: "El marketplace rent-to-rent del UK. Encuentra, analiza y cierra ofertas aprobadas.",
     footer_platform: "Plataforma",
@@ -441,7 +441,7 @@ var TRANSLATIONS = {
     ts_cities: "Villes UK",
     ts_rating: "\u00c9valuation",
     persona_title: "Qu\u2019est-ce qui vous d\u00e9crit ?",
-    persona_sub: "S\u00e9lectionnez votre \u00e9tape pour voir comment NFsTay s\u2019adapte.",
+    persona_sub: "S\u00e9lectionnez votre \u00e9tape pour voir comment nfstay s\u2019adapte.",
     persona_new: "Nouvel op\u00e9rateur",
     persona_scaling: "Op\u00e9rateur en expansion",
     persona_landlord: "Propri\u00e9taire",
@@ -526,7 +526,7 @@ var TRANSLATIONS = {
     j6_h: "Lancez-vous sur Airbnb et gagnez",
     j6_p: "Votre premier profit arrive g\u00e9n\u00e9ralement dans les 30 jours.",
     j6_tag: "En Direct et Rentable",
-    academy_badge: "NFsTay Academy",
+    academy_badge: "nfstay Academy",
     academy_h: "Apprenez le rent-to-rent. Puis pratiquez. Au m\u00eame endroit.",
     academy_sub: "15 ans de savoir-faire structur\u00e9 en modules pas \u00e0 pas.",
     academy_included: "Tous les modules inclus dans votre abonnement",
@@ -538,7 +538,7 @@ var TRANSLATIONS = {
     price_cancel: "Annulez en ligne \u00e0 tout moment. Sans engagement.",
     price_cta: "Acc\u00e8s Gratuit . Sans Carte de Cr\u00e9dit",
     cta_h: "Pr\u00eat \u00e0 trouver votre premi\u00e8re offre ?",
-    cta_sub: "Rejoignez plus de 300+ opérateurs qui construisent leur portefeuille avec NFsTay.",
+    cta_sub: "Rejoignez plus de 300+ opérateurs qui construisent leur portefeuille avec nfstay.",
     cta_btn: "Commencer",
     footer_desc: "Le marketplace rent-to-rent du UK. Trouvez, analysez et concluez des offres approuv\u00e9es.",
     footer_platform: "Plateforme",
@@ -570,7 +570,7 @@ var TRANSLATIONS = {
     ts_cities: "\u0645\u062f\u0646 UK",
     ts_rating: "\u0627\u0644\u062a\u0642\u064a\u064a\u0645",
     persona_title: "\u0645\u0627 \u0627\u0644\u0630\u064a \u064a\u0635\u0641\u0643\u061f",
-    persona_sub: "\u0627\u062e\u062a\u0631 \u0645\u0631\u062d\u0644\u062a\u0643 \u0644\u062a\u0631\u0649 \u0643\u064a\u0641 \u064a\u0646\u0627\u0633\u0628\u0643 NFsTay.",
+    persona_sub: "\u0627\u062e\u062a\u0631 \u0645\u0631\u062d\u0644\u062a\u0643 \u0644\u062a\u0631\u0649 \u0643\u064a\u0641 \u064a\u0646\u0627\u0633\u0628\u0643 nfstay.",
     persona_new: "\u0645\u0634\u063a\u0644 \u062c\u062f\u064a\u062f",
     persona_scaling: "\u0645\u0634\u063a\u0644 \u0641\u064a \u062a\u0648\u0633\u0639",
     persona_landlord: "\u0645\u0627\u0644\u0643",
@@ -604,7 +604,7 @@ var TRANSLATIONS = {
     price_sub: "\u062e\u0637\u0629 \u0648\u0627\u062d\u062f\u0629. \u0643\u0644 \u0634\u064a\u0621 \u0645\u0634\u0645\u0648\u0644. \u0623\u0644\u063a\u0650 \u0641\u064a \u0623\u064a \u0648\u0642\u062a.",
     price_cta: "\u0648\u0635\u0648\u0644 \u0645\u062c\u0627\u0646\u064a . \u0628\u062f\u0648\u0646 \u0628\u0637\u0627\u0642\u0629 \u0627\u0626\u062a\u0645\u0627\u0646",
     cta_h: "\u0647\u0644 \u0623\u0646\u062a \u0645\u0633\u062a\u0639\u062f \u0644\u0644\u0639\u062b\u0648\u0631 \u0639\u0644\u0649 \u0623\u0648\u0644 \u0635\u0641\u0642\u0629\u061f",
-    cta_sub: "\u0627\u0646\u0636\u0645 \u0625\u0644\u0649 \u0623\u0643\u062b\u0631 \u0645\u0646 4,200 \u0645\u0634\u063a\u0644 \u064a\u0628\u0646\u0648\u0646 \u0645\u062d\u0641\u0638\u062a\u0647\u0645 \u0645\u0639 NFsTay.",
+    cta_sub: "\u0627\u0646\u0636\u0645 \u0625\u0644\u0649 \u0623\u0643\u062b\u0631 \u0645\u0646 4,200 \u0645\u0634\u063a\u0644 \u064a\u0628\u0646\u0648\u0646 \u0645\u062d\u0641\u0638\u062a\u0647\u0645 \u0645\u0639 nfstay.",
     cta_btn: "\u0627\u0628\u062f\u0623 \u0627\u0644\u0622\u0646",
     footer_desc: "\u0633\u0648\u0642 rent-to-rent \u0641\u064a UK. \u0627\u0628\u062d\u062b \u0648\u062d\u0644\u0644 \u0648\u0623\u063a\u0644\u0642 \u0635\u0641\u0642\u0627\u062a \u0645\u0639\u062a\u0645\u062f\u0629.",
     footer_platform: "\u0627\u0644\u0645\u0646\u0635\u0629",

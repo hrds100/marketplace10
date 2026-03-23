@@ -1,5 +1,5 @@
 -- ============================================================================
--- NFStay Phase 2 — Properties Table
+-- nfstay Phase 2 — Properties Table
 -- Migration: 20260317130000_nfs_phase2_properties.sql
 --
 -- Table: nfs_properties

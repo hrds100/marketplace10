@@ -163,7 +163,7 @@
    │     🇬🇧 GBP: same day  |  🇪🇺 EUR: same/next day
    │     🇺🇸 USD: same day   |  🌍 SWIFT: 1-5 days
    ├── User gets WhatsApp: "Your payout of £42.50 has arrived ✅"
-   └── Bank statement shows: "NFsTay Payout"
+   └── Bank statement shows: "nfstay Payout"
 
    💲 USDC (Direct to Wallet) — INSTANT
    ├── Rent contract sends USDC straight to user's wallet

@@ -1,5 +1,5 @@
 /* ============================================
-   NFsTay Hero — Complete Animation System v3
+   nfstay Hero — Complete Animation System v3
    Slow, smooth story with animated cursor
    ============================================ */
 
@@ -686,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div style="text-align:center;padding:24px;">
         <div style="font-size:36px;margin-bottom:12px;">🏡</div>
         <h3 style="font-size:18px;font-weight:700;color:#1a1a1a;line-height:1.3;margin-bottom:8px;">This is how easy it is to grow your Airbnb portfolio.</h3>
-        <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">From deal to doorstep — powered by NFsTay</p>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">From deal to doorstep — powered by nfstay</p>
         <a href="/signup" style="display:inline-block;padding:10px 24px;border-radius:10px;background:#1e9a80;color:#fff;font-size:13px;font-weight:600;text-decoration:none;">Get Started</a>
       </div>
     `);

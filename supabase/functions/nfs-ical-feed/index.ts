@@ -1,4 +1,4 @@
-// NFStay iCal Feed Edge Function
+// nfstay iCal Feed Edge Function
 // Generates a public ICS calendar feed for a property
 //
 // Endpoint:
@@ -97,13 +97,13 @@ serve(async (req) => {
 
     const now = new Date();
     const dtstamp = formatIcsDateTime(now);
-    const calName = escapeIcs(property.public_title || 'NFStay Property');
+    const calName = escapeIcs(property.public_title || 'nfstay Property');
 
     // Build ICS content
     const lines: string[] = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//NFStay//Calendar Feed//EN',
+      'PRODID:-//nfstay//Calendar Feed//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       `X-WR-CALNAME:${calName}`,

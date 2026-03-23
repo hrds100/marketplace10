@@ -14,7 +14,7 @@ import {
   NotifySuccess,
   truncateAmount,
 } from "@/context/helper";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import WertWidget from "@wert-io/widget-initializer";
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -48,7 +48,7 @@ const Analytics = () => {
     getBalances,
     assetBalance,
     handleNetwork,
-  } = useNfstayContext();
+  } = usenfstayContext();
 
   const [currentButton, setCurrentButton] = useState("add");
   const [balance, setBalance] = useState(null);
@@ -192,7 +192,7 @@ await handleNetwork();
       );
       const icoOptions = {
         item_info: {
-          author: "NFsTay.com",
+          author: "nfstay.com",
           author_image_url: AUTHOR_IMAGE_URL,
           image_url: IMAGE_URL,
           name: "RWA Shares",

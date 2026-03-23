@@ -1,10 +1,10 @@
 "use client";
 
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import React from "react";
 
 const IOSNotificationModal = () => {
-  const { isIOS, setIsIOS, addFCMToken, connectedAddress } = useNfstayContext();
+  const { isIOS, setIsIOS, addFCMToken, connectedAddress } = usenfstayContext();
   if (!isIOS) return null;
 
   const handleClick = async () => {

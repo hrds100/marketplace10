@@ -15,11 +15,11 @@ import {
 } from "@/context/helper";
 import { BACKEND_BASEURL, BASEURL } from "@/config";
 import axios from "axios";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { getStatusColor } from "./ordersTable";
 
 const BoostAnyone = ({}) => {
-  const { signMessage, getBoosterContract } = useNfstayContext();
+  const { signMessage, getBoosterContract } = usenfstayContext();
 
   const [isLoading, setIsLoading] = useState(false);
   const [address, setAddress] = useState("");

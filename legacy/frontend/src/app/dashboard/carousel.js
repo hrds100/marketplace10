@@ -7,10 +7,10 @@ import hero from "../images/hero_bg.jpg";
 import b4 from "../images/b-4.png";
 import Link from "next/link";
 import { useState } from "react";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 
 const Carousel = () => {
-  const { connectedAddress, setLoginModelOpen } = useNfstayContext();
+  const { connectedAddress, setLoginModelOpen } = usenfstayContext();
 
   return (
     <div className="flex flex-col gap-8 w-full">

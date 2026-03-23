@@ -2,13 +2,13 @@
 import ShowPagination from "@/utils/showPagination";
 import { useEffect, useState } from "react";
 import ProposalRow from "../components/proposalRow";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 
 const PastProposal = ({ proposals }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [paginatedData, setPaginatedData] = useState([]);
 
-  const {connectedAddress} = useNfstayContext()
+  const {connectedAddress} = usenfstayContext()
 
   const ITEMS_PER_PAGE = 5;
   const totalPages = Math.ceil(proposals.length / ITEMS_PER_PAGE);

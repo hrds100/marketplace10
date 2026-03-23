@@ -860,7 +860,7 @@ contract TestnetStay is ERC20, ERC20Burnable, Ownable {
     /// @param initialOwner The address that will receive the initial token supply and be set as the owner
     constructor(
         address initialOwner
-    ) ERC20("NFsTay.com", "STAY") Ownable(initialOwner) {
+    ) ERC20("nfstay.com", "STAY") Ownable(initialOwner) {
         _mint(initialOwner, 10_000_000 * 10 ** 18);
     }
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import PropertySkelton from "@/utils/propertySkelton";
 import AuctionTimer from "./auctionTimer";
 import Strip from "./strip";
@@ -27,7 +27,7 @@ const PropertyCard = ({
     getPropertyDetails,
     getPrimaryPropertyRemainingShares,
     getSecondaryListingDetails,
-  } = useNfstayContext();
+  } = usenfstayContext();
 
   const { isMobile, isMobileBulkMode } = useBulkBuyContext();
 

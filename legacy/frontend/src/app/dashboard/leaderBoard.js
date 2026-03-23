@@ -6,12 +6,12 @@ import { formatNumber } from "@/context/helper";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { BACKEND_BASEURL } from "@/config";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { fetchEarnersLeaderboard } from "@/context/subgraphHelper";
 
 const LeaderBoard = () => {
   const columns = ["User", "Shares Owned", "Properties", "Total Earnings"];
-  const { assetPrices, getLeaderBoardInfo } = useNfstayContext();
+  const { assetPrices, getLeaderBoardInfo } = usenfstayContext();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
 

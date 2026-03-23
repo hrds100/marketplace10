@@ -888,7 +888,7 @@ export const fetchPrimarySharesBoughtEvents = async (propertyId) => {
 
   // Format the results as an array of objects with the required fields
   return allEvents.map((event) => ({
-    _from: "NFsTay",
+    _from: "nfstay",
     _to: event._buyer,
     _sharesBought: parseInt(event._sharesBought, 10),
     _amount: parseFloat(getEthFrom(event._amount)), // Convert to number for easier handling

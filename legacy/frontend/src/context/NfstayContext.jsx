@@ -55,12 +55,12 @@ import {
 } from "./subgraphHelper";
 
 // Create the context
-const NfstayContext = createContext(undefined);
+const nfstayContext = createContext(undefined);
 
 // Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 
-export const NfstayContextProvider = ({ children }) => {
+export const nfstayContextProvider = ({ children }) => {
   const { address, status, chainId, isConnected, connector } = useAccount();
   const { setOpen } = useModal();
   const { provider: particleProvider } = useEthereum();
@@ -1453,21 +1453,21 @@ export const NfstayContextProvider = ({ children }) => {
   };
 
   return (
-    <NfstayContext.Provider value={contextValues}>
+    <nfstayContext.Provider value={contextValues}>
       <Suspense>
         <HandleReferral />
       </Suspense>
       {children}
-    </NfstayContext.Provider>
+    </nfstayContext.Provider>
   );
 };
 
-// Custom hook to use the NfstayContext
-export const useNfstayContext = () => {
-  const context = useContext(NfstayContext);
+// Custom hook to use the nfstayContext
+export const usenfstayContext = () => {
+  const context = useContext(nfstayContext);
   if (!context) {
     throw new Error(
-      "useNfstayContext must be used within a NfstayContextProvider"
+      "usenfstayContext must be used within a nfstayContextProvider"
     );
   }
   return context;

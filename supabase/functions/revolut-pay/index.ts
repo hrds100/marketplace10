@@ -100,14 +100,14 @@ serve(async (req) => {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title: `NFsTay Payout — $${usdAmount} → £${gbpAmount}`,
+        title: `nfstay Payout — $${usdAmount} → £${gbpAmount}`,
         schedule_for: new Date().toISOString().slice(0, 10),
         payments: [{
           account_id: '9e512c4e-ebe5-4389-a20f-5e3be3a912a6', // nfstay shares GBP
           receiver: { counterparty_id: cpData.id, account_id: cpData.accounts[0].id },
           amount: gbpAmount,
           currency: 'GBP',
-          reference: 'NFsTay payout',
+          reference: 'nfstay payout',
         }],
       }),
     })

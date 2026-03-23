@@ -9,7 +9,7 @@ const Safety = () => {
     {
       title: "Transparency",
       description:
-        "Every decision, every partner, and every process is laid out for you. At NFsTay, transparency isn’t just a policy - it’s the foundation of our community-driven approach.",
+        "Every decision, every partner, and every process is laid out for you. At nfstay, transparency isn’t just a policy - it’s the foundation of our community-driven approach.",
       button: "Become an Investor",
       options: [
         {

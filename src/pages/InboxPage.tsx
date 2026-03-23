@@ -77,7 +77,7 @@ export default function InboxPage() {
       setSelectedId(inquiryThreadId);
       setShowDetails(false);
       setLeftPanelCollapsed(true);
-      dashCtx?.setSidebarCollapsed(true); // Collapse NFsTay sidebar rail
+      dashCtx?.setSidebarCollapsed(true); // Collapse nfstay sidebar rail
       loadThreads();
     }
   }, [inquiryThreadId]);

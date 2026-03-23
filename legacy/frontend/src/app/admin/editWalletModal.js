@@ -6,7 +6,7 @@ import edit from "../images/edit.jpg";
 import Image from "next/image";
 import { BACKEND_BASEURL } from "@/config";
 import axios from "axios";
-import { useNfstayContext } from "@/context/NfstayContext";
+import { usenfstayContext } from "@/context/nfstayContext";
 import { NotifyError, NotifySuccess } from "@/context/helper";
 
 const EditWalletModal = ({
@@ -15,7 +15,7 @@ const EditWalletModal = ({
   record,
   isSubLoading,
 }) => {
-  const { signMessage } = useNfstayContext();
+  const { signMessage } = usenfstayContext();
   const [fields, setFields] = useState({
     orderId: 0,
     propertyId: 0,
