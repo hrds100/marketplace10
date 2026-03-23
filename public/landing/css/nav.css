@@ -1,0 +1,374 @@
+/* ====================================================
+   NAVBAR — 100% pixel-perfect from shipper.now source
+   ==================================================== */
+
+/* Fixed outer wrapper — position:fixed, rounded, white card */
+.nav_fixed {
+  z-index: 12;
+  background-color: #fff;
+  border-radius: 1rem;
+  margin: 1rem 1rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.02);
+  overflow: visible;
+}
+
+/* Inner nav component — white bg, rounded, vertical padding */
+.nav_component {
+  background-color: #fff;
+  border-radius: 1rem;
+  width: 100%;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+  position: relative;
+}
+
+/* Container row — flex between, centered, max-width 80rem */
+.nav_container {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+  display: flex;
+  overflow: visible;
+}
+
+/* ---- Left group: logo + divider + links ---- */
+.nav-left-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Logo — Playfair Display serif bold, dark blue-black */
+.logo-link {
+  color: #080330;
+  justify-content: center;
+  align-items: center;
+  padding: 0.1rem 0.2rem 0;
+  display: flex;
+  text-decoration: none;
+}
+
+.logo-61 {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.logo-61-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #0a0a0a;
+  border-radius: 8px;
+  font-family: 'Sora', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0a0a0a;
+  line-height: 1;
+}
+.logo-61-text {
+  font-family: 'Sora', sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: #0a0a0a;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+/* Vertical divider — 1px grey line between logo and links */
+.vertical-divider-navbar {
+  background-color: #ddd;
+  width: 1px;
+  height: 29px;
+  flex-shrink: 0;
+}
+
+/* Nav links container — horizontal, no gap (padding handles spacing) */
+.nav_links {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* Individual nav link — 16px Inter, dark, rounded hover bg */
+.nav_menu_link {
+  color: #1c1c1c;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.nav_menu_link:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.nav_menu_link.secondary {
+  color: #1c1c1c;
+  -webkit-text-stroke-color: #1c1c1c;
+  background-color: #fff;
+  font-weight: 500;
+}
+
+/* ---- Right group: language + Playable Demo + Login + Get Started ---- */
+.nav-end-wrapper {
+  grid-column-gap: 6px;
+  grid-row-gap: 6px;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* Language switcher — globe icon + chevron, grey, rounded */
+.language-switcher-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  color: #808292;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-weight: 500;
+}
+
+.language-switcher-wrapper:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.language-switcher-wrapper svg {
+  flex-shrink: 0;
+}
+
+/* Green CTA "Get Started" button */
+.nav-btn {
+  background-color: #1e9a80;
+  color: #fff;
+  border: none;
+  border-radius: 1rem;
+  min-width: 8rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0.8125rem 1rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.nav-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Shine sweep on hover */
+.nav-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transition: left 0.4s ease;
+}
+.nav-btn:hover::after {
+  left: 150%;
+}
+
+/* ---- Mobile elements (hidden on desktop) ---- */
+.nav-mobile-right {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.language-switcher-wrapper.mobile-only {
+  display: none;
+}
+
+.nav_button {
+  padding: 1rem;
+  color: #1c1c1c;
+  background: none;
+  border: none;
+  display: none;
+}
+
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hamburger-icon span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #1c1c1c;
+  border-radius: 1px;
+  transition: all 0.3s ease;
+}
+
+/* Mobile nav menu — full-screen overlay */
+.nav_menu-mobile {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 300ms ease, transform 300ms ease;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.nav_menu-mobile.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  visibility: visible;
+}
+
+/* Close button (X) */
+.mobile-menu-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: none;
+  border: none;
+  color: #1c1c1c;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 12px;
+  transition: background-color 0.15s ease;
+}
+.mobile-menu-close:hover { background-color: rgba(0,0,0,0.04); }
+
+/* Nav links inside overlay */
+.mobile-menu-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav_menu_link.mobile {
+  text-align: center;
+  padding: 14px 32px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1a1a1a;
+  border-radius: 12px;
+  transition: background-color 0.15s ease;
+}
+.nav_menu_link.mobile:hover { background-color: rgba(0,0,0,0.04); }
+
+/* Language switcher inside mobile menu */
+.mobile-lang-switcher {
+  position: relative;
+  margin: 8px 0;
+}
+.mobile-lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #fff;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a1a;
+  font-family: 'Inter', sans-serif;
+}
+.mobile-lang-options {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  padding: 6px;
+  min-width: 180px;
+  z-index: 200;
+}
+.mobile-lang-switcher.open .mobile-lang-options { display: block; }
+.mobile-lang-options a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a1a1a;
+  text-decoration: none;
+  font-weight: 500;
+}
+.mobile-lang-options a:hover { background: rgba(30,154,128,0.06); }
+
+.nav-end-wrapper.mobile {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  display: flex;
+  margin-top: 8px;
+}
+
+.nav-btn.mobile {
+  background-color: #1e9a80;
+  width: auto;
+  border-radius: 14px;
+  padding: 14px 40px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+
+/* ── Language Dropdown ── */
+.lang-dropdown .lang-menu { display: none !important; }
+.lang-dropdown.open .lang-menu { display: block !important; }
+.lang-dropdown .lang-menu a:hover { background: rgba(30,154,128,0.06); }

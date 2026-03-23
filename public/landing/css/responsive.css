@@ -1,0 +1,281 @@
+/* ============================================
+   Responsive CSS — ALL breakpoints consolidated
+   ============================================ */
+
+/* ---- Responsive: Tablet (<=991px) ---- */
+/* ---- Responsive: Tablet (≤991px / medium breakpoint) ---- */
+@media (max-width: 991px) {
+  h1, .hero-heading { font-size: 46px; line-height: 52px; }
+  h2 { font-size: 32px; line-height: 38px; }
+  .padding-global { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .padding-section-large { padding-top: 80px; padding-bottom: 80px; }
+
+  /* Navbar: hide desktop elements, show mobile */
+  .nav_links { display: none; }
+  .vertical-divider-navbar { display: none; }
+  .nav-end-wrapper { display: none; }
+  .nav-mobile-right { display: flex; }
+  .nav_button { display: block; }
+  .language-switcher-wrapper.mobile-only { display: flex; }
+
+  /* Hero: iPhone-like single panel, stretched vertically */
+  .hero-demo-component {
+    flex-direction: column;
+    min-height: 70vh;
+    max-height: none;
+    border-radius: 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+    border: 2px solid rgba(255,255,255,0.5);
+  }
+  .chat-panel {
+    width: 100%;
+    min-width: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
+  }
+  .chat-messages-area {
+    overflow-y: auto;
+  }
+  .preview-panel {
+    display: none;
+  }
+  /* Show cursor on mobile too during story */
+  .animated-cursor { display: none; }
+  .chat-tabs {
+    padding: 4px 6px;
+    gap: 2px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    justify-content: flex-start;
+  }
+  .chat-tabs::-webkit-scrollbar { display: none; }
+  .chat-tab {
+    padding: 6px 8px;
+    font-size: 10px;
+    gap: 3px;
+    flex-shrink: 0;
+    margin: 3px 1px;
+    border-radius: 6px;
+  }
+  .chat-tab svg { width: 10px; height: 10px; }
+  .chat-earnings-banner {
+    padding: 16px 12px;
+  }
+  .earnings-headline { font-size: 16px; }
+  .earnings-thumb { width: 48px; height: 48px; }
+  .chat-input-container { padding: 14px 16px; padding-right: 80px; min-height: 64px; }
+  .chat-typewriter { font-size: 13px; }
+  .chat-send-btn { width: 28px; height: 28px; }
+  .click-here-tooltip { font-size: 10px; padding: 4px 10px; right: 12px; bottom: 52px; }
+  .chat-input-glow { left: 8px; right: 8px; top: 6px; bottom: 10px; border-radius: 16px; }
+  .hero-text-block { padding: 100px 0 20px; }
+  .hero-heading { font-size: 46px; line-height: 52px; }
+  .hero-heading .italic-accent { font-size: 46px; }
+  .hero-buttons { gap: 10px; flex-direction: row; }
+  .hero-cta, .hero-login { padding: 10px 24px; font-size: 14px; }
+  .animated-cursor { display: none !important; }
+  .hero-scroll-indicator { display: none; }
+
+  /* Persona pills: keep horizontal */
+  .persona-bar { flex-direction: row !important; flex-wrap: wrap; }
+
+  /* Grids */
+  .steps-grid { grid-template-columns: 1fr; }
+  .step-connector { display: none; }
+  .agent-grid, .features-watch-bottom, .metrics-grid, .use-cases-content { grid-template-columns: 1fr; }
+  .pricing-cards { flex-direction: column; align-items: center; }
+  .pricing-card { max-width: 100%; width: 100%; }
+  .templates-grid { grid-template-columns: 1fr 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .ab-listings { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ---- Responsive: Mobile (<=767px) ---- */
+/* ---- Responsive: Mobile (≤767px) ---- */
+@media (max-width: 767px) {
+  .nav_component { padding-top: 0.6rem; padding-bottom: 0.6rem; }
+  .padding-global { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .nav_menu_link.mobile { padding-top: 0.95rem; padding-bottom: 0.95rem; font-size: 1rem; }
+  .nav-btn.mobile { background-color: #1c1c1c; border-radius: 7rem; padding: 0.8rem 1.5rem; }
+}
+
+/* ---- Responsive: Small mobile (<=479px) ---- */
+/* ---- Responsive: Small mobile (≤479px) ---- */
+@media (max-width: 479px) {
+  h1, .hero-heading { font-size: 40px; line-height: 46px; }
+  .hero-heading .italic-accent { font-size: 40px; }
+  .section { margin: 8px; border-radius: 20px; }
+  .nav_fixed { margin: 0.5rem 0.5rem 0; }
+  .padding-global { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .padding-section-large { padding-top: 48px; padding-bottom: 48px; }
+  .hero-buttons { flex-direction: row; }
+  .hero-buttons .hero-cta,
+  .hero-buttons .hero-login { width: auto; text-align: center; }
+  .templates-grid { grid-template-columns: 1fr; }
+  .why-choose-container { padding: 24px; }
+  .cta-inner { margin: 16px; padding: 48px 24px; }
+  .footer-grid { grid-template-columns: 1fr; }
+  .ab-listings { grid-template-columns: repeat(2, 1fr); }
+  .chat-panel { min-width: auto; }
+}
+
+/* ---- nfs-system.css responsive ---- */
+@media (max-width:1024px) {
+  .tab-layout { flex-direction: column; }
+  .tab-rail { width: 100%; flex-direction: row; display: flex; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 0; }
+  .tab-btn { border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .tab-btn.active { border-left-color: transparent; border-bottom-color: var(--green); }
+  .inbox-mock { flex-direction: column; }
+  .inbox-list { width: 100%; border-right: none; border-bottom: 1px solid var(--border-light); }
+}
+@media (max-width:768px) {
+  :root { --section-py: var(--section-py-m); }
+  .sh h2 { font-size: 26px; }
+  .g2, .g3, .g4, .g6, .kpi-grid, .inbox-features { grid-template-columns: 1fr; }
+  .journey { grid-template-columns: 1fr; }
+  .benefits { grid-template-columns: 1fr; }
+  .trust-stripe { flex-direction: column; gap: 16px; }
+  .trust-stripe .ts-item { border-right: none; border-bottom: 1px solid var(--border-light); padding: 12px 0; }
+  .hub-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+  .pipeline { flex-direction: column; }
+  .persona-bar { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  .persona-pill { padding: 10px 16px; font-size: 13px; }
+  .play-row { flex-direction: column; }
+}
+@media (max-width:480px) {
+  .footer-grid { grid-template-columns: 1fr; }
+  .wrap { padding: 0 20px; }
+  .cta-btns { flex-direction: column; align-items: center; }
+}
+
+/* ---- sections.css (nfs) responsive ---- */
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 1024px) {
+  .nfs-tab-layout { flex-direction: column; }
+  .nfs-tab-rail { width: 100%; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid #e8e5df; padding: 0; }
+  .nfs-tab-item { border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .nfs-tab-item.active { border-left-color: transparent; border-bottom-color: #1e9a80; }
+  .nfs-story-layout { flex-direction: column; }
+  .nfs-story-device { width: 100%; position: static; }
+  .nfs-gallery-layout { flex-direction: column; }
+  .nfs-gallery-sidebar { width: 100%; }
+}
+@media (max-width: 768px) {
+  .nfs-grid-2, .nfs-grid-3, .nfs-grid-4, .nfs-stats, .nfs-stats-cards, .nfs-kpi-grid { grid-template-columns: 1fr; }
+  .nfs-steps { grid-template-columns: repeat(2, 1fr); }
+  .nfs-hub-grid { grid-template-columns: 1fr; }
+  .nfs-compare { grid-template-columns: 1fr; }
+  .nfs-footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+  .nfs-section { padding: 48px 0; }
+  .nfs-section-title { font-size: 24px; }
+  .nfs-persona-bar { flex-direction: column; align-items: center; }
+  .nfs-mock-pipeline { flex-direction: column; }
+}
+@media (max-width: 480px) {
+  .nfs-steps { grid-template-columns: 1fr; }
+  .nfs-footer-grid { grid-template-columns: 1fr; }
+  .nfs-inner { padding: 0 20px; }
+  .nfs-gallery-grid { grid-template-columns: 1fr; }
+}
+
+/* ---- premium.css responsive ---- */
+/* Responsive */
+@media (max-width: 1024px) {
+  .prem-academy-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .prem-academy-grid { grid-template-columns: 1fr; }
+  .prem-academy { padding: 64px 0; }
+  .prem-course { padding: 24px; }
+}
+
+/* ============================================
+   MOBILE POLISH — Tasks 1, 4, 5, 6, 9
+   ============================================ */
+
+/* ---- Task 1: Hero breathing room on mobile ---- */
+@media (max-width: 991px) {
+  .section_hero { padding-top: 32px; }
+  .hero-text-block { padding: 120px 0 32px; }
+  .hero-heading { margin-bottom: 20px; }
+  .hero-buttons { margin-top: 24px; margin-bottom: 32px; }
+  .hero-demo-component { margin-top: 16px; }
+}
+@media (max-width: 479px) {
+  .section_hero { padding-top: 24px; }
+  .hero-text-block { padding: 110px 0 28px; }
+  .hero-heading { margin-bottom: 16px; }
+  .hero-buttons { margin-top: 20px; margin-bottom: 28px; }
+}
+
+/* ---- Task 4: Deal cards horizontal scroll on mobile ---- */
+@media (max-width: 768px) {
+  .g3.deal-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 16px;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .g3.deal-grid::-webkit-scrollbar { display: none; }
+  .g3.deal-grid { scrollbar-width: none; }
+  .g3.deal-grid > .deal-card {
+    min-width: 280px;
+    max-width: 300px;
+    flex-shrink: 0;
+    scroll-snap-align: center;
+  }
+  .deal-swipe-hint {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 12px;
+  }
+}
+@media (min-width: 769px) {
+  .deal-swipe-hint { display: none; }
+}
+
+/* ---- Task 5: Stats row side by side on mobile ---- */
+@media (max-width: 768px) {
+  .trust-stripe {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 !important;
+  }
+  .trust-stripe .ts-item {
+    border-bottom: none !important;
+    border-right: 1px solid var(--border-light);
+    padding: 10px 14px !important;
+  }
+  .trust-stripe .ts-item:last-child { border-right: none; }
+  .trust-stripe .ts-val { font-size: 18px; }
+  .trust-stripe .ts-lbl { font-size: 10px; }
+}
+
+/* ---- Task 6: Footer two-column grid on mobile ---- */
+@media (max-width: 480px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px;
+  }
+  .footer-grid > div:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---- Task 9: scroll-margin for anchored sections ---- */
+[id="deals"],
+[id="how-it-works"],
+[id="pricing"],
+[id="university"] {
+  scroll-margin-top: 80px;
+}
