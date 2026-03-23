@@ -56,13 +56,14 @@ export const PRICE_ID_TO_TIER: Record<string, string> = {
  * IMPORTANT: Do NOT use preview URLs (app.leadconnectorhq.com/v2/preview/...) —
  * they cause fingerprint errors. Always use the published pay.nfstay.com domain.
  */
-export function getFunnelUrl(contactInfo?: { email?: string; name?: string; phone?: string }): string {
+export function getFunnelUrl(contactInfo?: { email?: string; name?: string; phone?: string; ref?: string }): string {
   const base = import.meta.env.VITE_GHL_FUNNEL_URL || '';
   if (!base) return '';
   const params = new URLSearchParams();
   if (contactInfo?.email) params.set('email', contactInfo.email);
   if (contactInfo?.name) params.set('name', contactInfo.name);
   if (contactInfo?.phone) params.set('phone', contactInfo.phone);
+  if (contactInfo?.ref) params.set('ref', contactInfo.ref);
   const qs = params.toString();
   return qs ? `${base}?${qs}` : base;
 }
@@ -70,12 +71,13 @@ export function getFunnelUrl(contactInfo?: { email?: string; name?: string; phon
 /**
  * Returns a GHL funnel URL with tier pre-selected for analytics.
  */
-export function getUpgradeUrl(targetTier: string, contactInfo?: { email?: string }): string {
+export function getUpgradeUrl(targetTier: string, contactInfo?: { email?: string; ref?: string }): string {
   const base = import.meta.env.VITE_GHL_FUNNEL_URL || '';
   if (!base) return '';
   const params = new URLSearchParams();
   params.set('tier', targetTier);
   if (contactInfo?.email) params.set('email', contactInfo.email);
+  if (contactInfo?.ref) params.set('ref', contactInfo.ref);
   return `${base}?${params.toString()}`;
 }
 

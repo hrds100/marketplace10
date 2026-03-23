@@ -52,13 +52,15 @@ export default function SettingsPage() {
   // Avatar upload
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  // Referral attribution
+  const [referredBy, setReferredBy] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Load profile + notification prefs + wallet permission + avatar
   useEffect(() => {
     if (!user) return;
     (supabase.from('profiles') as any)
-      .select('name, whatsapp, notif_whatsapp_new_deals, notif_whatsapp_daily, notif_email_daily, notif_whatsapp_status, wallet_change_allowed_until, avatar_url, wallet_address')
+      .select('name, whatsapp, notif_whatsapp_new_deals, notif_whatsapp_daily, notif_email_daily, notif_whatsapp_status, wallet_change_allowed_until, avatar_url, wallet_address, referred_by')
       .eq('id', user.id)
       .single()
       .then(({ data }: { data: Record<string, unknown> | null }) => {
@@ -73,6 +75,7 @@ export default function SettingsPage() {
           setWalletChangeUntil((data.wallet_change_allowed_until as string) || null);
           setAvatarUrl((data.avatar_url as string) || null);
           setProfileWalletAddress((data.wallet_address as string) || null);
+          setReferredBy((data.referred_by as string) || null);
         } else {
           setProfile(p => ({ ...p, email: user.email || '' }));
         }
@@ -322,8 +325,8 @@ export default function SettingsPage() {
                   <button
                     onClick={() => {
                       const url = isPaidTier(tier)
-                        ? getUpgradeUrl(tier, { email: user?.email })
-                        : getFunnelUrl({ email: user?.email });
+                        ? getUpgradeUrl(tier, { email: user?.email, ref: referredBy || undefined })
+                        : getFunnelUrl({ email: user?.email, ref: referredBy || undefined });
                       if (url) window.open(url, '_blank');
                     }}
                     className="px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
@@ -373,7 +376,7 @@ export default function SettingsPage() {
                     {isPaidTier(tier) ? 'Upgrade your plan' : 'Get started'}
                   </h3>
                   {!isPaidTier(tier) && (
-                    <button onClick={() => { const url = getFunnelUrl({ email: user?.email }); if (url) window.open(url, '_blank'); }}
+                    <button onClick={() => { const url = getFunnelUrl({ email: user?.email, ref: referredBy || undefined }); if (url) window.open(url, '_blank'); }}
                       className="block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors">
                       <div className="flex items-baseline gap-1">
                         <span className="text-lg font-bold text-foreground">£67</span>
@@ -382,7 +385,7 @@ export default function SettingsPage() {
                       <p className="text-xs text-muted-foreground mt-1">Unlimited inquiries, full chat access · Cancel any time</p>
                     </button>
                   )}
-                  <button onClick={() => { const url = getUpgradeUrl('yearly', { email: user?.email }); if (url) window.open(url, '_blank'); }}
+                  <button onClick={() => { const url = getUpgradeUrl('yearly', { email: user?.email, ref: referredBy || undefined }); if (url) window.open(url, '_blank'); }}
                     className="block w-full text-left rounded-xl border border-border p-4 hover:bg-secondary/50 transition-colors">
                     <div className="flex items-baseline gap-1">
                       <span className="text-lg font-bold text-foreground">£397</span>
@@ -391,7 +394,7 @@ export default function SettingsPage() {
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">Everything + 2 months free</p>
                   </button>
-                  <button onClick={() => { const url = getUpgradeUrl('lifetime', { email: user?.email }); if (url) window.open(url, '_blank'); }}
+                  <button onClick={() => { const url = getUpgradeUrl('lifetime', { email: user?.email, ref: referredBy || undefined }); if (url) window.open(url, '_blank'); }}
                     className="block w-full text-left rounded-xl border border-border p-4 hover:bg-secondary/50 transition-colors">
                     <div className="flex items-baseline gap-1">
                       <span className="text-lg font-bold text-foreground">£997</span>

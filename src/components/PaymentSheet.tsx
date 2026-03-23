@@ -14,6 +14,12 @@ interface Props {
 
 export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) {
   const { user } = useAuth();
+  const [referredBy, setReferredBy] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user?.id) return;
+    (supabase.from('profiles') as any).select('referred_by').eq('id', user.id).single()
+      .then(({ data }: { data: { referred_by: string | null } | null }) => { if (data?.referred_by) setReferredBy(data.referred_by); });
+  }, [user?.id]);
   const [visible, setVisible] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -60,6 +66,20 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
 
         if (data?.tier && data.tier !== 'free') {
           if (pollRef.current) clearInterval(pollRef.current);
+          // Fire affiliate commission now that we know the tier
+          if (referredBy) {
+            const tierAmounts: Record<string, number> = { monthly: 67, yearly: 397, lifetime: 997 };
+            fetch('https://n8n.srv886554.hstgr.cloud/webhook/aff-commission-subscription', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                referral_code: referredBy,
+                user_id: user!.id,
+                amount: tierAmounts[data.tier] || 67,
+                payment_id: `ghl-${user!.id}-${Date.now()}`,
+              }),
+            }).catch(() => {});
+          }
           setTimeout(() => {
             handleClose();
             onUnlocked();
@@ -141,6 +161,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     email: user?.email,
     name: user?.user_metadata?.name,
     phone: user?.user_metadata?.whatsapp,
+    ref: referredBy || undefined,
   });
 
   const sheet = (

@@ -32,6 +32,12 @@ interface Props {
 export default function InquiryPanel({ open, listing, onClose }: Props) {
   const { user } = useAuth();
   const { tier, refetch: refreshTier } = useUserTier();
+  const [referredBy, setReferredBy] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user?.id) return;
+    (supabase.from('profiles') as any).select('referred_by').eq('id', user.id).single()
+      .then(({ data }: { data: { referred_by: string | null } | null }) => { if (data?.referred_by) setReferredBy(data.referred_by); });
+  }, [user?.id]);
   const paid = isPaidTier(tier);
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState('');
@@ -71,6 +77,20 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
         if (data?.tier && data.tier !== 'free') {
           if (pollRef.current) clearInterval(pollRef.current);
+          // Fire affiliate commission now that we know the tier
+          if (referredBy) {
+            const tierAmounts: Record<string, number> = { monthly: 67, yearly: 397, lifetime: 997 };
+            fetch('https://n8n.srv886554.hstgr.cloud/webhook/aff-commission-subscription', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                referral_code: referredBy,
+                user_id: user!.id,
+                amount: tierAmounts[data.tier] || 67,
+                payment_id: `ghl-${user!.id}-${Date.now()}`,
+              }),
+            }).catch(() => {});
+          }
           setTimeout(() => {
             handleClose();
             window.location.href = '/dashboard/inbox';
@@ -87,7 +107,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
         window.location.href = '/dashboard/inbox';
       }
     }, 1000);
-  }, [handleClose, user, paymentComplete]);
+  }, [handleClose, user, paymentComplete, referredBy]);
 
   // Listen for postMessage from GHL iframe (payment success signal)
   useEffect(() => {
@@ -149,6 +169,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
     email: user?.email,
     name: user?.user_metadata?.name,
     phone: user?.user_metadata?.whatsapp,
+    ref: referredBy || undefined,
   });
 
   const panel = (
