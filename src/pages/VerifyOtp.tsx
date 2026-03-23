@@ -209,9 +209,9 @@ export default function VerifyOtp() {
       {/* Form side */}
       <div className="flex-1 flex items-center justify-center p-6 md:p-8 relative z-10">
         <div className="w-full max-w-[400px]">
-          <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">
+          <a href="/" className="text-xl font-extrabold text-foreground tracking-tight">
             nfstay
-          </Link>
+          </a>
 
           <button
             onClick={() => navigate('/signup')}

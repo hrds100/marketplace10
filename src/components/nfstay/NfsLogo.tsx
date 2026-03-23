@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-
 interface NfsLogoProps {
   className?: string;
   size?: 'default' | 'sm';
@@ -9,7 +7,7 @@ export function NfsLogo({ className = '', size = 'default' }: NfsLogoProps) {
   const isSmall = size === 'sm';
 
   return (
-    <Link to="/" className={`flex items-center ${className}`} style={{ gap: isSmall ? 3 : 3 }}>
+    <a href="/" className={`flex items-center ${className}`} style={{ gap: isSmall ? 3 : 3 }}>
       <div
         style={{
           width: isSmall ? 28 : 36,
@@ -40,6 +38,6 @@ export function NfsLogo({ className = '', size = 'default' }: NfsLogoProps) {
       >
         stay
       </span>
-    </Link>
+    </a>
   );
 }

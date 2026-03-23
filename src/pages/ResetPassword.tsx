@@ -90,7 +90,7 @@ export default function ResetPassword() {
       <div className="min-h-screen flex">
         <div className="flex-1 flex items-center justify-center p-6 md:p-8">
           <div className="w-full max-w-[400px] text-center">
-            <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">nfstay</Link>
+            <a href="/" className="text-xl font-extrabold text-foreground tracking-tight">nfstay</a>
             <div className="mt-12">
               <Lock className="w-16 h-16 mx-auto text-muted-foreground/40" />
               <h1 className="text-[28px] font-bold text-foreground mt-4">Invalid or expired link</h1>
@@ -140,7 +140,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex">
       <div className="flex-1 flex items-center justify-center p-6 md:p-8">
         <div className="w-full max-w-[400px]">
-          <Link to="/" className="text-xl font-extrabold text-foreground tracking-tight">nfstay</Link>
+          <a href="/" className="text-xl font-extrabold text-foreground tracking-tight">nfstay</a>
 
           <Link
             to="/signin"
