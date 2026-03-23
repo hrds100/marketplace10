@@ -73,33 +73,30 @@ export default function AffiliatesPage() {
     localStorage.setItem('nfstay_aff_last_check', new Date().toISOString());
   }, [user?.id]);
 
-  // Fetch affiliate profile
+  // Fetch affiliate profile - auto-creates one if missing
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['affiliate-profile', user?.id],
+    queryKey: ['affiliate-profile', user?.id, userName],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data } = await (supabase.from('affiliate_profiles') as any)
         .select('*').eq('user_id', user.id).maybeSingle();
-      return data;
+      if (data) return data;
+      // Auto-provision: create affiliate profile on first visit
+      const code = generateCode(userName || '');
+      const { data: created, error } = await (supabase.from('affiliate_profiles') as any)
+        .insert({ user_id: user.id, referral_code: code })
+        .select('*')
+        .single();
+      if (error) {
+        // Race condition / duplicate key - re-fetch
+        const { data: retry } = await (supabase.from('affiliate_profiles') as any)
+          .select('*').eq('user_id', user.id).maybeSingle();
+        return retry;
+      }
+      return created;
     },
     enabled: !!user?.id,
   });
-
-  // Auto-provision affiliate profile if none exists
-  const [provisioning, setProvisioning] = useState(false);
-  useEffect(() => {
-    if (!user?.id || isLoading || profile || provisioning) return;
-    setProvisioning(true);
-    const code = generateCode(userName || '');
-    (supabase.from('affiliate_profiles') as any)
-      .insert({ user_id: user.id, referral_code: code })
-      .then(({ error }: { error: { message: string } | null }) => {
-        if (!error) {
-          queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] });
-        }
-        setProvisioning(false);
-      });
-  }, [user?.id, isLoading, profile, provisioning, userName, queryClient]);
 
   // Fetch recent events
   const { data: events = [] } = useQuery({
@@ -139,6 +136,23 @@ export default function AffiliatesPage() {
       return data?.name || '';
     },
     enabled: !!user?.id,
+  });
+
+  // Become an agent
+  const becomeMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) throw new Error('Not logged in');
+      const code = generateCode(userName || '');
+      const { error } = await (supabase.from('affiliate_profiles') as any).insert({
+        user_id: user.id, referral_code: code,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] });
+      toast.success("You're now an agent!");
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   // Request payout
@@ -204,7 +218,7 @@ export default function AffiliatesPage() {
   }, [events]);
   const maxEarning = Math.max(...monthlyEarnings.map(m => m.amount), 1);
 
-  if (isLoading || provisioning) {
+  if (isLoading) {
     return (
       <div className="p-6 md:p-8">
         <div className="animate-pulse space-y-6">

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { mergeBuyerEmailsIntoOrders } from '@/lib/invest/mergeOrderBuyerEmails';
 
 // ── Investment Properties ──────────────────────────────────────────────
 
@@ -102,11 +103,18 @@ export function useInvestOrders() {
   return useQuery({
     queryKey: ['inv_orders'],
     queryFn: async () => {
-      const { data, error } = await (supabase.from('inv_orders') as any)
+      const { data: orders, error } = await (supabase.from('inv_orders') as any)
         .select('*, inv_properties(title)')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data || [];
+      const list = orders || [];
+      if (list.length === 0) return [];
+      const ids = [...new Set(list.map((o: { user_id: string }) => o.user_id).filter(Boolean))];
+      const { data: profs, error: pe } = await (supabase.from('profiles') as any)
+        .select('user_id, email')
+        .in('user_id', ids);
+      if (pe) throw pe;
+      return mergeBuyerEmailsIntoOrders(list, profs || []);
     },
   });
 }
