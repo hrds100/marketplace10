@@ -200,7 +200,21 @@ export default function AdminQuickList() {
         notes: null,
       };
 
-      // Step 2: Call existing AI webhook for description
+      // Step 2: Clean text before sending to AI (strip contact info, fees, emojis)
+      const cleanedText = text
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}]/gu, '') // emojis
+        .replace(/\b0\d{10,11}\b/g, '') // UK phone numbers
+        .replace(/\+\d{10,13}/g, '') // intl phone numbers
+        .replace(/whatsapp\s*[:📲]?\s*/gi, '')
+        .replace(/\bDM\b.*$/gim, '') // DM lines
+        .replace(/\b(call|text|contact|message|ring)\b.*\d{5,}/gi, '') // contact lines with numbers
+        .replace(/procurement\s*fee.*$/gim, '') // procurement fee lines
+        .replace(/deposit.*£?\d+.*$/gim, '') // deposit lines
+        .replace(/agent\s*fee.*$/gim, '') // agent fee lines
+        .replace(/available\s*now/gi, '')
+        .replace(/\n{3,}/g, '\n\n') // collapse blank lines
+        .trim();
+
       try {
         const descRes = await fetch(`${N8N_BASE}/webhook/ai-generate-listing`, {
           method: 'POST',
@@ -212,7 +226,7 @@ export default function AdminQuickList() {
             bathrooms: parsed.bathrooms || 0,
             type: parsed.type || parsed.property_category || '',
             rent: parsed.rent_monthly || 0,
-            notes: text,
+            notes: cleanedText,
           }),
         });
         if (descRes.ok) {
@@ -225,10 +239,9 @@ export default function AdminQuickList() {
 
       setListing(parsed);
 
-      // Auto-fetch Pexels photos if no photos uploaded
+      // Auto-fetch Pexels city photos if no photos uploaded
       if (photos.length === 0 && parsed.city) {
-        const pType = parsed.type || parsed.property_category || 'apartment';
-        const urls = await fetchPexelsPhotos(parsed.city, pType, 4);
+        const urls = await fetchPexelsPhotos(parsed.city, 'city skyline street', 4);
         if (urls.length > 0) {
           setPexelsUrls(urls);
           setPhotoPreviews(urls);
@@ -413,18 +426,26 @@ export default function AdminQuickList() {
 
           {/* Photo previews */}
           {photoPreviews.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {photoPreviews.map((src, i) => (
-                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-                  <img src={src} alt="" className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => removePhoto(i)}
-                    className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
-                  >
-                    <X className="w-3 h-3 text-white" />
-                  </button>
-                </div>
-              ))}
+            <div>
+              {pexelsUrls.length > 0 && photos.length === 0 && (
+                <p className="text-[10px] text-muted-foreground mb-1.5 italic">Images for illustrative purposes only</p>
+              )}
+              <div className="flex gap-2 flex-wrap">
+                {photoPreviews.map((src, i) => (
+                  <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
+                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => removePhoto(i)}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
+                    >
+                      <X className="w-3 h-3 text-white" />
+                    </button>
+                    {pexelsUrls.includes(src) && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[7px] text-center py-0.5">Illustrative</div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -461,10 +482,20 @@ export default function AdminQuickList() {
 
               {/* Photo strip */}
               {photoPreviews.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {photoPreviews.map((src, i) => (
-                    <img key={i} src={src} alt="" className="w-28 h-20 rounded-lg object-cover flex-shrink-0 border border-border" />
-                  ))}
+                <div>
+                  {pexelsUrls.length > 0 && photos.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground mb-1.5 italic">Images for illustrative purposes only</p>
+                  )}
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {photoPreviews.map((src, i) => (
+                      <div key={i} className="relative flex-shrink-0">
+                        <img src={src} alt="" className="w-28 h-20 rounded-lg object-cover border border-border" />
+                        {pexelsUrls.includes(src) && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[7px] text-center py-0.5 rounded-b-lg">Illustrative only</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
