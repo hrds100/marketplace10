@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { NfsLogo } from '@/components/nfstay/NfsLogo';
 
 const marketplaceLinks = [
   { to: '/admin/marketplace', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -77,7 +78,7 @@ export default function AdminLayout() {
     <div className="min-h-screen bg-background">
       {/* Top nav */}
       <nav className="h-[64px] bg-card border-b border-border flex items-center px-6 gap-4">
-        <span className="text-lg font-extrabold text-foreground tracking-tight flex-shrink-0">NFsTay</span>
+        <NfsLogo size="sm" className="flex-shrink-0" />
 
         {workspace !== 'selector' && (
           <>

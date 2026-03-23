@@ -1,34 +1,41 @@
 import { Link } from "react-router-dom";
 
-export function NfsLogo({ className = '' }: { className?: string }) {
+interface NfsLogoProps {
+  className?: string;
+  size?: 'default' | 'sm';
+}
+
+export function NfsLogo({ className = '', size = 'default' }: NfsLogoProps) {
+  const isSmall = size === 'sm';
+
   return (
-    <Link to="/" className={`flex items-center ${className}`} style={{ gap: 6 }}>
+    <Link to="/" className={`flex items-center ${className}`} style={{ gap: isSmall ? 3 : 3 }}>
       <div
         style={{
-          width: 34,
-          height: 34,
-          border: '1.5px solid #111',
-          borderRadius: 7,
+          width: isSmall ? 28 : 36,
+          height: isSmall ? 28 : 36,
+          border: isSmall ? '1.5px solid #0a0a0a' : '2px solid #0a0a0a',
+          borderRadius: isSmall ? 6 : 8,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontWeight: 500,
-          fontSize: 14,
-          color: '#111',
-          letterSpacing: -0.5,
+          fontFamily: "'Sora', sans-serif",
+          fontWeight: 700,
+          fontSize: isSmall ? 12 : 16,
+          color: '#0a0a0a',
+          lineHeight: 1,
         }}
       >
         nf
       </div>
       <span
         style={{
-          fontFamily: "'Playfair Display', serif",
+          fontFamily: "'Sora', sans-serif",
           fontWeight: 400,
-          fontSize: 28,
-          fontStyle: 'italic',
-          color: '#111',
-          letterSpacing: 0,
+          fontSize: isSmall ? 18 : 24,
+          color: '#0a0a0a',
+          letterSpacing: 2,
+          lineHeight: 1,
         }}
       >
         stay

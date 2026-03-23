@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { signupSchema, type SignupFormData, passwordStrength, strengthLabels, strengthColors } from '@/lib/validation';
 import CountryCodeSelect from '@/components/CountryCodeSelect';
 import AuthSlidePanel from '@/components/AuthSlidePanel';
+import { NfsLogo } from '@/components/nfstay/NfsLogo';
 import { toast } from 'sonner';
 
 // ── Social provider definitions ─────────────────────────────────────────────
@@ -81,10 +82,7 @@ function AuthShell({ children, showTabs, heading, subtitle }: { children: React.
       <div className="flex w-full h-screen overflow-hidden p-2 gap-2" style={{ backgroundColor: '#f3f3ee' }}>
         <div className="flex flex-col items-center flex-1 lg:w-1/2 w-full h-full overflow-y-auto bg-white rounded-3xl border" style={{ borderColor: '#e8e5df', padding: 'clamp(24px, 3.5vh, 48px)' }}>
           <div className="flex items-center justify-center w-full mb-4">
-            <a href="/" className="flex items-center" style={{ gap: 3 }}>
-              <span className="flex items-center justify-center" style={{ width: 36, height: 36, border: '2px solid #0a0a0a', borderRadius: 8, fontFamily: "'Sora', sans-serif", fontSize: 16, fontWeight: 700, color: '#0a0a0a', lineHeight: 1 }}>nf</span>
-              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: 24, fontWeight: 400, color: '#0a0a0a', letterSpacing: 2, lineHeight: 1 }}>stay</span>
-            </a>
+            <NfsLogo />
           </div>
 
           <div className="flex flex-col items-center justify-center w-full max-w-[480px] flex-1">

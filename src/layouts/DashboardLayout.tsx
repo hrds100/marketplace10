@@ -13,6 +13,7 @@ import ClaimAccountBanner from '@/components/ClaimAccountBanner';
 import InvestSubNav from '@/components/InvestSubNav';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { NfsLogo } from '@/components/nfstay/NfsLogo';
 
 const FULL_BLEED_ROUTES = ['/dashboard/inbox', '/dashboard/deals'];
 const INVEST_ROUTES_PREFIX = '/dashboard/invest';
@@ -34,12 +35,7 @@ function TopBar() {
   try { embeddedWallet = useEmbeddedWallet(); } catch { /* hook not available outside ConnectKitProvider */ }
   return (
     <header className="h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
-      <Link
-        to="/dashboard/deals"
-        className="text-[17px] font-extrabold text-foreground tracking-tight hover:opacity-70 transition-opacity"
-      >
-        NFsTay
-      </Link>
+      <NfsLogo size="sm" />
 
       <div className="ml-auto flex items-center gap-3">
         {isAdmin && (
