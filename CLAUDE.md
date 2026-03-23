@@ -54,8 +54,10 @@ git push origin main # auto-deploys to Vercel → hub.nfstay.com
 - **`vite.config.ts`** - Do NOT add resolve.alias for React. Do NOT change node polyfills. The Particle SDK + WASM + polyfills are fragile. Adding React 18 aliases caused a site-wide crash on 2026-03-22.
 - **`src/main.tsx`** - Do NOT modify. Import order is critical. ES module imports are hoisted above inline code.
 - **`src/layouts/AdminLayout.tsx`** - All lucide-react icons must be imported. A missing icon = ReferenceError = blank page everywhere.
+- **Password seed `_NFsTay2!`** - This string appears in `derivedPassword()` in SignIn.tsx, SignUp.tsx, ParticleAuthCallback.tsx, and VerifyOtp.tsx. It MUST stay exactly `_NFsTay2!` (mixed case). Renaming it breaks ALL social login users (Google, Apple, X, Facebook). On 2026-03-23 a bulk rename accidentally changed it and locked out all users.
 - **Never use `sed` to edit .tsx/.ts files** - use proper Edit tools. sed creates malformed code (duplicate hooks, merged lines) that crashes React.
 - **After any branch merge**, always check: `git diff <before>..HEAD -- vite.config.ts src/main.tsx src/App.tsx src/layouts/AdminLayout.tsx`
+- **After any bulk rename**, always verify: `grep -rn "_NFsTay2!" src/pages/SignIn.tsx src/pages/SignUp.tsx src/pages/ParticleAuthCallback.tsx src/pages/VerifyOtp.tsx` - all 4 must match
 
 ## Admin
 - Admin emails: `admin@hub.nfstay.com`, `hugo@nfstay.com` (hardcoded in `src/hooks/useAuth.ts`)
