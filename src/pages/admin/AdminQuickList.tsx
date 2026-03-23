@@ -14,6 +14,7 @@ interface ParsedListing {
   bedrooms: number | null;
   bathrooms: number | null;
   rent_monthly: number | null;
+  profit_est: number | null;
   property_category: string | null;
   furnished: boolean | null;
   garage: boolean | null;
@@ -26,8 +27,8 @@ interface ParsedListing {
 
 const EMPTY_LISTING: ParsedListing = {
   name: null, city: null, postcode: null, bedrooms: null, bathrooms: null,
-  rent_monthly: null, property_category: null, furnished: null, garage: null,
-  description: null, features: null, type: null, sa_approved: null, notes: null,
+  rent_monthly: null, profit_est: null, property_category: null, furnished: null,
+  garage: null, description: null, features: null, type: null, sa_approved: null, notes: null,
 };
 
 export default function AdminQuickList() {
@@ -227,9 +228,15 @@ export default function AdminQuickList() {
         garage: /\bgarage\b/i.test(text) || /\bparking\b/i.test(text) ? true : null,
         description: null,
         features: [],
-        sa_approved: saMatch ? 'yes' : hmoMatch ? 'yes' : null,
+        sa_approved: 'yes',
         notes: null,
       };
+
+      // Extract profit if mentioned in text
+      const profitMatch = text.match(/(?:monthly\s*)?profit[:\s]*[£]?\s*(\d[\d,]*)/i);
+      if (profitMatch) {
+        (parsed as any).profit_est = parseInt(profitMatch[1].replace(/,/g, ''));
+      }
 
       // Step 2: Clean text - strip ALL contact info, fees, availability, emojis
       const cleanedText = text
@@ -316,7 +323,7 @@ export default function AdminQuickList() {
     }
     setPublishing(true);
     try {
-      // Insert property
+      // Insert property with all required fields
       const { data: prop, error: insertErr } = await (supabase.from('properties') as any)
         .insert({
           name: listing.name,
@@ -325,11 +332,12 @@ export default function AdminQuickList() {
           bedrooms: listing.bedrooms,
           bathrooms: listing.bathrooms,
           rent_monthly: listing.rent_monthly,
+          profit_est: listing.profit_est || 0,
           property_category: listing.property_category,
-          type: listing.type,
+          type: listing.type || 'Flat',
           description: listing.description,
           notes: listing.notes,
-          sa_approved: listing.sa_approved || 'awaiting',
+          sa_approved: 'yes',
           garage: listing.garage || false,
           status,
           submitted_by: user?.id || null,
@@ -352,6 +360,43 @@ export default function AdminQuickList() {
           await (supabase.from('properties') as any)
             .update({ photos: urls })
             .eq('id', prop.id);
+        }
+
+        // Run Airbnb pricing estimation (same as ListADealPage)
+        try {
+          const pricingRes = await fetch(`${N8N_BASE}/webhook/airbnb-pricing`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              city: listing.city || '',
+              postcode: listing.postcode || '',
+              bedrooms: listing.bedrooms || 0,
+              bathrooms: listing.bathrooms || 0,
+              type: listing.type || listing.property_category || 'Flat',
+              rent: listing.rent_monthly || 0,
+              propertyId: prop.id,
+            }),
+          });
+          if (pricingRes.ok) {
+            const pricing = await pricingRes.json();
+            if (pricing?.estimated_nightly_rate) {
+              await (supabase.from('properties') as any)
+                .update({
+                  estimated_nightly_rate: pricing.estimated_nightly_rate,
+                  estimated_monthly_revenue: pricing.estimated_monthly_revenue,
+                  estimated_profit: pricing.estimated_profit,
+                  estimation_confidence: pricing.confidence,
+                  estimation_notes: pricing.notes,
+                  airbnb_search_url_7d: pricing.airbnb_url_7d || null,
+                  airbnb_search_url_30d: pricing.airbnb_url_30d || null,
+                  airbnb_search_url_90d: pricing.airbnb_url_90d || null,
+                  ai_model_used: 'gpt-4o-mini',
+                })
+                .eq('id', prop.id);
+            }
+          }
+        } catch {
+          // Pricing estimation failed - not critical, listing still publishes
         }
       }
 
@@ -588,6 +633,15 @@ export default function AdminQuickList() {
                     type="number"
                     value={listing.rent_monthly ?? ''}
                     onChange={e => updateField('rent_monthly', e.target.value ? Number(e.target.value) : null)}
+                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Profit (est.)</label>
+                  <input
+                    type="number"
+                    value={listing.profit_est ?? ''}
+                    onChange={e => updateField('profit_est', e.target.value ? Number(e.target.value) : null)}
                     className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
                   />
                 </div>
