@@ -16,8 +16,16 @@ function PropertyInfo({ thread }: { thread: Thread }) {
   const fallbackImage = `https://picsum.photos/seed/${thread.id.slice(0, 8)}/400/240`;
   return (
     <>
-      <div className="w-full h-36 rounded-xl bg-gray-100 overflow-hidden">
-        <img src={thread.propertyImage || fallbackImage} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).src = fallbackImage; }} />
+      <div className="w-full h-36 rounded-xl bg-gray-100 overflow-hidden relative">
+        <img src={thread.propertyImage || fallbackImage} alt=""
+          className="w-full h-full object-cover"
+          style={thread.propertyImageBlurred ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined}
+          onError={e => { (e.target as HTMLImageElement).src = fallbackImage; }} />
+        {thread.propertyImageBlurred && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1" style={{ background: 'rgba(0,0,0,0.35)' }}>
+            <span className="text-white text-xs font-medium">Photos on request</span>
+          </div>
+        )}
       </div>
       <div>
         <h4 className="text-base font-semibold text-gray-900 leading-snug">{thread.propertyTitle}</h4>

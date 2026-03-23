@@ -48,7 +48,11 @@ export default function ThreadItem({ thread, isSelected, onSelect, searchQuery =
           {thread.isSupport ? (
             <div className="w-full h-full bg-primary flex items-center justify-center"><Sparkles className="w-5 h-5 text-primary-foreground" /></div>
           ) : thread.propertyImage ? (
-            <img src={thread.propertyImage} alt="" className="w-full h-full object-cover" />
+            <div className="relative w-full h-full">
+              <img src={thread.propertyImage} alt=""
+                className="w-full h-full object-cover"
+                style={thread.propertyImageBlurred ? { filter: 'blur(6px)', transform: 'scale(1.1)' } : undefined} />
+            </div>
           ) : (
             <div className="w-full h-full bg-gray-100 flex items-center justify-center"><Home className="w-5 h-5 text-gray-400" /></div>
           )}

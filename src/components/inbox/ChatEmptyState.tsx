@@ -70,8 +70,15 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
       {/* Property image with live dot */}
       <div className="relative">
         <div className="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden shadow-sm">
-          <img src={thread.propertyImage || fallbackImage} alt="" className="w-full h-full object-cover"
+          <img src={thread.propertyImage || fallbackImage} alt=""
+            className="w-full h-full object-cover"
+            style={thread.propertyImageBlurred ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined}
             onError={e => { (e.target as HTMLImageElement).src = fallbackImage; }} />
+          {thread.propertyImageBlurred && (
+            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }}>
+              <span className="text-white text-[8px] font-medium">On request</span>
+            </div>
+          )}
         </div>
         <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${thread.isOnline ? 'bg-emerald-500' : 'bg-gray-300'}`} />
       </div>

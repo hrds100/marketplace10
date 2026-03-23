@@ -5,6 +5,7 @@ export interface Thread {
   propertyCity: string;
   propertyPostcode: string;
   propertyImage: string | null;
+  propertyImageBlurred: boolean;
   propertyProfit: number;
   propertyRent: number;
   propertyBedrooms: number | null;

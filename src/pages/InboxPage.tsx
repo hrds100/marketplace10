@@ -159,8 +159,10 @@ export default function InboxPage() {
         const displayTitle = city && type ? `${city} · ${type}` : city || 'Untitled Thread';
 
         // Contact info depends on which role the current user has
+        // Operators see property number (not landlord name) for privacy
+        const propName = (prop?.name as string) || '';
         const contactName = isOperatorView
-          ? (prop?.contact_name as string) || (landlordProfile?.name as string) || 'Unknown'
+          ? propName || `Property #${(prop?.id as string)?.slice(0, 6) || '---'}`
           : (operatorProfile?.name as string) || 'Operator';
         const contactPhone = isOperatorView
           ? (prop?.contact_phone as string) || ''
@@ -176,6 +178,7 @@ export default function InboxPage() {
           propertyCity: city,
           propertyPostcode: (prop?.postcode as string) || '',
           propertyImage: ((prop?.photos as string[]) || [])[0] || null,
+          propertyImageBlurred: (() => { const img = ((prop?.photos as string[]) || [])[0] || ''; return !img || img.includes('pexels.com') || img.includes('placehold.co') || img.includes('picsum.photos'); })(),
           propertyProfit: (prop?.profit_est as number) || 0,
           propertyRent: (prop?.rent_monthly as number) || 0,
           propertyBedrooms: (prop?.bedrooms as number) || null,
