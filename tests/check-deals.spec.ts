@@ -8,52 +8,52 @@ test('Check deals page for blurred photos', async ({ page }) => {
   await page.locator('button[type="submit"], button:has-text("Sign In")').last().click();
   await page.waitForTimeout(5000);
 
-  // Go to deals
   await page.goto('https://hub.nfstay.com/dashboard/deals', { waitUntil: 'networkidle', timeout: 15000 });
   await page.waitForTimeout(5000);
   await page.screenshot({ path: 'tests/ss/01-deals.png' });
 
-  // Check what images are showing
-  const allImages = page.locator('img');
-  const imgCount = await allImages.count();
-  console.log('Total images on page:', imgCount);
+  // Check computed styles on card images
+  const results = await page.evaluate(() => {
+    const cards = document.querySelectorAll('.card-hover, [class*="rounded-2xl"]');
+    const output: any[] = [];
+    cards.forEach((card, i) => {
+      const img = card.querySelector('img');
+      if (!img) return;
+      const src = img.src || '';
+      if (src.includes('maps.') || src.includes('data:')) return;
+      const computed = getComputedStyle(img);
+      const filter = computed.filter;
+      const style = img.getAttribute('style') || '';
+      const isPexels = src.includes('pexels');
+      output.push({
+        idx: i,
+        isPexels,
+        filter,
+        inlineStyle: style,
+        src: src.slice(0, 80),
+      });
+    });
+    return output;
+  });
 
-  for (let i = 0; i < Math.min(imgCount, 15); i++) {
-    const src = await allImages.nth(i).getAttribute('src') || '';
-    const classes = await allImages.nth(i).getAttribute('class') || '';
-    const hasBlur = classes.includes('blur');
-    console.log(`  img[${i}]: blur=${hasBlur} src=${src.slice(0, 80)}`);
-  }
+  console.log('\n=== CARD IMAGE ANALYSIS ===');
+  results.forEach(r => {
+    console.log(`Card ${r.idx}: pexels=${r.isPexels} filter="${r.filter}" style="${r.inlineStyle}" src=${r.src}`);
+  });
 
-  // Check for lock icons
-  const locks = await page.locator('text=/Photos on request/i').count();
-  console.log('Lock labels found:', locks);
+  // Check for lock overlay
+  const lockOverlays = await page.locator('text="Photos on request"').count();
+  console.log('\nLock overlays found:', lockOverlays);
 
-  // Check for blurred class
-  const blurred = await page.locator('.blur-\\[8px\\]').count();
-  console.log('Blurred images:', blurred);
-
-  // Check property card structure
-  const cards = await page.locator('.card-hover').count();
-  console.log('Property cards:', cards);
-
-  // Get all property names visible
-  const bodyText = await page.locator('body').textContent();
-  const propNames = bodyText?.match(/Property #\d+|[\d]+-Bed[^<]*/g) || [];
-  console.log('Property names:', propNames.slice(0, 10));
-
-  // Check what the usePropertyImage hook resolved
-  const cardImages = page.locator('.card-hover img, [class*="rounded-2xl"] img');
-  const cardImgCount = await cardImages.count();
-  console.log('\nCard images specifically:');
-  for (let i = 0; i < cardImgCount; i++) {
-    const src = await cardImages.nth(i).getAttribute('src') || '';
-    const cls = await cardImages.nth(i).getAttribute('class') || '';
-    console.log(`  card-img[${i}]: blur=${cls.includes('blur')} pexels=${src.includes('pexels')} placeholder=${src.includes('placehold')} src=${src.slice(0, 100)}`);
-  }
-
-  // Scroll down
-  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await page.waitForTimeout(2000);
-  await page.screenshot({ path: 'tests/ss/02-deals-scrolled.png' });
+  // Check if the JS bundle has the new code
+  const hasNewCode = await page.evaluate(() => {
+    const scripts = document.querySelectorAll('script[src]');
+    let jsUrl = '';
+    scripts.forEach(s => {
+      const src = s.getAttribute('src') || '';
+      if (src.includes('index-') && src.endsWith('.js')) jsUrl = src;
+    });
+    return jsUrl;
+  });
+  console.log('JS bundle:', hasNewCode);
 });

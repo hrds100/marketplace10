@@ -129,10 +129,6 @@ export default function AdminQuickList() {
     const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
     const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : null;
 
-      // Step 1: Extract fields from raw text with regex
-      const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
-      const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : null;
-
       // Extract bedrooms - check for "X bedroom" pattern, also "total: X flats/units"
       const bedsMatch = text.match(/(\d+)\s*(?:bed(?:room)?s?|double\s+bed)/i);
       const totalUnitsMatch = text.match(/total:?\s*(\d+)\s*(?:flat|unit|room)/i);
