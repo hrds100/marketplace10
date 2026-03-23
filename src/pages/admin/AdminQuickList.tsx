@@ -5,6 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { fetchPexelsPhotos } from '@/lib/pexels';
 
+const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
+
 interface ParsedListing {
   name: string | null;
   city: string | null;
@@ -96,7 +98,7 @@ export default function AdminQuickList() {
     setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
-  // Generate listing via AI
+  // Generate listing via n8n AI webhook
   const handleGenerate = async () => {
     if (!rawText.trim()) {
       toast.error('Paste some listing text first');
@@ -104,12 +106,27 @@ export default function AdminQuickList() {
     }
     setParsing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-parse-listing', {
-        body: { rawText, systemPrompt: systemPrompt || undefined },
+      const res = await fetch(`${N8N_BASE}/webhook/ai-parse-listing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rawText,
+          systemPrompt: systemPrompt || undefined,
+        }),
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error('AI request failed');
+      const data = await res.json();
       if (data?.error) throw new Error(data.error);
-      const parsed = data.listing || EMPTY_LISTING;
+
+      // The n8n response may return the listing directly or nested
+      let parsed: ParsedListing;
+      if (data?.listing) {
+        parsed = data.listing;
+      } else if (data?.name || data?.city) {
+        parsed = data;
+      } else {
+        parsed = EMPTY_LISTING;
+      }
       setListing(parsed);
 
       // Auto-fetch Pexels photos if no photos uploaded
