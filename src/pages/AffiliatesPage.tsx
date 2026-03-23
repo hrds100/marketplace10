@@ -73,30 +73,30 @@ export default function AffiliatesPage() {
     localStorage.setItem('nfstay_aff_last_check', new Date().toISOString());
   }, [user?.id]);
 
-  // Fetch affiliate profile - auto-creates one if missing
+  // Fetch affiliate profile
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['affiliate-profile', user?.id, userName],
+    queryKey: ['affiliate-profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data } = await (supabase.from('affiliate_profiles') as any)
         .select('*').eq('user_id', user.id).maybeSingle();
-      if (data) return data;
-      // Auto-provision: create affiliate profile on first visit
-      const code = generateCode(userName || '');
-      const { data: created, error } = await (supabase.from('affiliate_profiles') as any)
-        .insert({ user_id: user.id, referral_code: code })
-        .select('*')
-        .single();
-      if (error) {
-        // Race condition / duplicate key - re-fetch
-        const { data: retry } = await (supabase.from('affiliate_profiles') as any)
-          .select('*').eq('user_id', user.id).maybeSingle();
-        return retry;
-      }
-      return created;
+      return data;
     },
     enabled: !!user?.id,
   });
+
+  // Auto-provision: if no profile after query loaded, create one
+  useEffect(() => {
+    if (isLoading || profile || !user?.id) return;
+    const key = `nfstay_aff_provisioned_${user.id}`;
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
+    const code = generateCode(userName || '');
+    (supabase.from('affiliate_profiles') as any)
+      .insert({ user_id: user.id, referral_code: code })
+      .then(() => queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] }))
+      .catch(() => {});
+  }, [isLoading, profile, user?.id, userName, queryClient]);
 
   // Fetch recent events
   const { data: events = [] } = useQuery({
