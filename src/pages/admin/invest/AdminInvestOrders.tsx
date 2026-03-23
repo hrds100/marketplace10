@@ -16,6 +16,7 @@ interface Order {
   id: string;
   user_id: string;
   user_email: string;
+  investor_wallet: string;
   property_id: number;
   property_title: string;
   shares: number;
@@ -66,6 +67,7 @@ export default function AdminInvestOrders() {
     id: o.id?.toString() || '',
     user_id: o.user_id || '',
     user_email: o.user_email || o.email || '',
+    investor_wallet: o.investor_wallet || '',
     property_id: o.property_id || 0,
     property_title: o.inv_properties?.title || `Property #${o.property_id}`,
     shares: o.shares_requested ?? o.shares ?? 0,
@@ -75,7 +77,12 @@ export default function AdminInvestOrders() {
     status: o.status || 'pending',
     tx_hash: o.tx_hash || '',
     wallet_address: o.wallet_address || '',
-    created_at: o.created_at ? new Date(o.created_at).toLocaleDateString('en-CA') : '',
+    created_at: o.created_at
+      ? new Date(o.created_at).toLocaleString(undefined, {
+          dateStyle: 'medium',
+          timeStyle: 'medium',
+        })
+      : '',
   }));
 
   // Get unique property names for filter
@@ -115,7 +122,11 @@ export default function AdminInvestOrders() {
   };
 
   const openEdit = (order: Order) => {
-    setEditForm({ property_id: order.property_id, wallet_address: order.wallet_address, agent_wallet: order.agent_wallet });
+    setEditForm({
+      property_id: order.property_id,
+      wallet_address: order.investor_wallet || order.wallet_address,
+      agent_wallet: order.agent_wallet,
+    });
     setEditModal(order);
   };
 
@@ -196,6 +207,12 @@ export default function AdminInvestOrders() {
         </div>
       </div>
 
+      <p className="text-xs text-muted-foreground mb-4 max-w-3xl">
+        Rows are newest first. <strong>Investor wallet</strong> comes from the user&apos;s profile (same wallet used for JV).{' '}
+        On-chain shares are sent by the <strong>SamCart webhook</strong> when payment succeeds (see Tx Hash).{' '}
+        <strong>Mark complete</strong> only updates status in the database — it does not send a blockchain transaction.
+      </p>
+
       <Card className="border-border">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
@@ -203,13 +220,14 @@ export default function AdminInvestOrders() {
               <TableRow>
                 <TableHead>Order ID</TableHead>
                 <TableHead>User</TableHead>
+                <TableHead>Investor wallet</TableHead>
                 <TableHead>Property</TableHead>
                 <TableHead className="text-right">Shares</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Tx Hash</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>Date & time</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -219,6 +237,13 @@ export default function AdminInvestOrders() {
                   <TableCell className="font-mono text-xs">{o.id.slice(0, 8)}</TableCell>
                   <TableCell>
                     <div className="text-xs text-muted-foreground">{o.user_email || o.user_id?.slice(0, 8)}</div>
+                  </TableCell>
+                  <TableCell className="font-mono text-[11px] max-w-[140px] truncate" title={o.investor_wallet || undefined}>
+                    {o.investor_wallet ? (
+                      <span>{o.investor_wallet.slice(0, 6)}…{o.investor_wallet.slice(-4)}</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm">{o.property_title}</TableCell>
                   <TableCell className="text-right">{o.shares}</TableCell>
@@ -247,8 +272,15 @@ export default function AdminInvestOrders() {
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {o.status === 'pending' && (
-                        <Button variant="ghost" size="sm" onClick={() => handleComplete(o.id)} title="Complete">
-                          <Check className="w-4 h-4 text-emerald-600" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs shrink-0"
+                          onClick={() => handleComplete(o.id)}
+                          title="Sets status to completed in the database only (does not send on-chain)"
+                        >
+                          <Check className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                          Mark complete
                         </Button>
                       )}
                       <Button variant="ghost" size="sm" onClick={() => openEdit(o)} title="Edit">
@@ -265,7 +297,7 @@ export default function AdminInvestOrders() {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                     No orders yet
                   </TableCell>
                 </TableRow>
