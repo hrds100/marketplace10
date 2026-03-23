@@ -4,38 +4,20 @@ import { Download } from 'lucide-react';
 
 const COLOR_GROUPS = [
   {
-    label: 'Greens',
+    label: 'Primary',
     colors: [
-      { name: 'Primary Green', hex: '#1E9A80' },
-      { name: 'Hover Green', hex: '#14926E' },
-      { name: 'Hover Green Alt', hex: '#178F72' },
-      { name: 'Success Green', hex: '#059669' },
-      { name: 'Emerald', hex: '#10B981' },
-      { name: 'Light Emerald', hex: '#34D399' },
-      { name: 'Teal', hex: '#0D9488' },
+      { name: 'NFStay Green', hex: '#1E9A80' },
       { name: 'Green Tint', hex: '#ECFDF5' },
     ],
   },
   {
-    label: 'Darks & Text',
+    label: 'Text',
     colors: [
-      { name: 'Black', hex: '#111111' },
-      { name: 'Near Black', hex: '#0A0A0A' },
-      { name: 'Dark Text', hex: '#1C1C1C' },
-      { name: 'Charcoal', hex: '#1A1A1A' },
-      { name: 'Dark Navy', hex: '#080330' },
-      { name: 'Dark 222', hex: '#222222' },
-    ],
-  },
-  {
-    label: 'Greys',
-    colors: [
-      { name: 'Grey 500', hex: '#6B7280' },
-      { name: 'Grey 400', hex: '#9CA3AF' },
-      { name: 'Grey Neutral', hex: '#808292' },
-      { name: 'Grey 700', hex: '#374151' },
-      { name: 'Grey 600', hex: '#4B5563' },
-      { name: 'Grey 737', hex: '#737373' },
+      { name: 'Heading', hex: '#1A1A1A' },
+      { name: 'Logo Black', hex: '#0A0A0A' },
+      { name: 'Button Black', hex: '#111111' },
+      { name: 'Body Grey', hex: '#6B7280' },
+      { name: 'Muted Grey', hex: '#9CA3AF' },
     ],
   },
   {
@@ -43,40 +25,12 @@ const COLOR_GROUPS = [
     colors: [
       { name: 'White', hex: '#FFFFFF' },
       { name: 'Off-White', hex: '#F3F3EE' },
-      { name: 'Warm Beige', hex: '#EAE9E4' },
-      { name: 'Light Grey', hex: '#FAFAFA' },
-      { name: 'Cool Grey', hex: '#F9F9F9' },
-      { name: 'Warm Grey', hex: '#F0F0EC' },
     ],
   },
   {
     label: 'Borders',
     colors: [
-      { name: 'Border Light', hex: '#E5E7EB' },
-      { name: 'Border Warm', hex: '#E8E5DF' },
-      { name: 'Border DDD', hex: '#DDDDDD' },
-      { name: 'Divider', hex: '#ECEFF3' },
-      { name: 'Border D1', hex: '#D1D5DB' },
-    ],
-  },
-  {
-    label: 'Accents',
-    colors: [
-      { name: 'Red', hex: '#EF4444' },
-      { name: 'Amber', hex: '#F59E0B' },
-      { name: 'Blue', hex: '#3B82F6' },
-      { name: 'Purple', hex: '#771EE6' },
-      { name: 'Violet', hex: '#8B5CF6' },
-      { name: 'Airbnb Red', hex: '#FF385C' },
-    ],
-  },
-  {
-    label: 'Dark Mode',
-    colors: [
-      { name: 'Dark Panel', hex: '#1A1B25' },
-      { name: 'Dark Blue', hex: '#0E1726' },
-      { name: 'Dark Surface', hex: '#1E2533' },
-      { name: 'Dark Grey', hex: '#252636' },
+      { name: 'Border', hex: '#E5E7EB' },
     ],
   },
 ];
@@ -123,8 +77,7 @@ export default function BrandPage() {
   }, []);
 
   const needsBorder = (hex: string) =>
-    ['#FFFFFF', '#F3F3EE', '#EAE9E4', '#FAFAFA', '#F9F9F9', '#F0F0EC', '#ECFDF5',
-     '#E5E7EB', '#E8E5DF', '#DDDDDD', '#ECEFF3', '#D1D5DB'].includes(hex);
+    ['#FFFFFF', '#F3F3EE', '#ECFDF5', '#E5E7EB'].includes(hex);
 
   return (
     <div className="min-h-screen" style={{ background: '#F3F3EE' }}>
