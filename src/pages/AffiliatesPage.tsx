@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe } from 'lucide-react';
 import { useMyAffiliateProfile } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
@@ -73,32 +73,30 @@ export default function AffiliatesPage() {
     localStorage.setItem('nfstay_aff_last_check', new Date().toISOString());
   }, [user?.id]);
 
-  // Fetch affiliate profile
+  // Fetch affiliate profile - auto-creates one if missing
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['affiliate-profile', user?.id],
+    queryKey: ['affiliate-profile', user?.id, userName],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data } = await (supabase.from('affiliate_profiles') as any)
         .select('*').eq('user_id', user.id).maybeSingle();
-      return data;
+      if (data) return data;
+      // Auto-provision: create affiliate profile
+      const code = generateCode(userName || '');
+      const { data: created, error } = await (supabase.from('affiliate_profiles') as any)
+        .insert({ user_id: user.id, referral_code: code })
+        .select('*')
+        .single();
+      if (error) {
+        // Might be a race condition / duplicate - try fetching again
+        const { data: retry } = await (supabase.from('affiliate_profiles') as any)
+          .select('*').eq('user_id', user.id).maybeSingle();
+        return retry;
+      }
+      return created;
     },
     enabled: !!user?.id,
   });
-
-  // Auto-provision affiliate profile if none exists
-  const provisionedRef = useRef(false);
-  useEffect(() => {
-    if (!user?.id || isLoading || profile || provisionedRef.current) return;
-    provisionedRef.current = true;
-    const code = generateCode(userName || '');
-    (supabase.from('affiliate_profiles') as any)
-      .insert({ user_id: user.id, referral_code: code })
-      .then(({ error }: { error: { message: string } | null }) => {
-        if (!error) {
-          queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] });
-        }
-      });
-  }, [user?.id, isLoading, profile, userName, queryClient]);
 
   // Fetch recent events
   const { data: events = [] } = useQuery({
