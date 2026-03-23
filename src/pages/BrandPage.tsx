@@ -1,115 +1,6 @@
 import { useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
-
-/* ── colours from hub.nfstay.com static homepage (public/landing/css/base.css) ── */
-const BRAND_COLORS = [
-  { name: 'Green (Primary)', hex: '#1E9A80', use: 'Buttons, links, accents' },
-  { name: 'Green Light', hex: 'rgba(30, 154, 128, 0.08)', use: 'Hover tints, tag backgrounds' },
-  { name: 'Dark Text', hex: '#1C1C1C', use: 'Headings, body text, CTA buttons' },
-  { name: 'Secondary Text', hex: '#6B7280', use: 'Labels, captions, muted text' },
-  { name: 'Hero Background', hex: '#F3F3EE', use: 'Page background (warm off-white)' },
-  { name: 'Hero Gradient End', hex: '#EAE9E4', use: 'Hero gradient middle tone' },
-  { name: 'White', hex: '#FFFFFF', use: 'Cards, nav background, buttons' },
-  { name: 'Border', hex: 'rgba(0, 0, 0, 0.08)', use: 'Subtle borders, dividers' },
-];
-
-const FONTS = [
-  {
-    name: 'Sora',
-    family: "'Sora', sans-serif",
-    use: 'Logo',
-    weights: [
-      { weight: 700, label: 'Bold (box)', italic: false },
-      { weight: 400, label: 'Regular (wordmark)', italic: false },
-    ],
-  },
-  {
-    name: 'Inter',
-    family: 'Inter, system-ui, sans-serif',
-    use: 'Body text, nav links, buttons',
-    weights: [
-      { weight: 400, label: 'Regular' },
-      { weight: 500, label: 'Medium' },
-      { weight: 600, label: 'Semibold' },
-      { weight: 700, label: 'Bold' },
-    ],
-  },
-  {
-    name: 'Playfair Display',
-    family: "'Playfair Display', serif",
-    use: 'Hero italic accent text',
-    weights: [
-      { weight: 400, label: 'Regular Italic', italic: true },
-    ],
-  },
-];
-
-function ColorSwatch({ name, hex, use }: { name: string; hex: string; use: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div
-        className="w-16 h-16 rounded-lg flex-shrink-0"
-        style={{
-          backgroundColor: hex,
-          border: hex === '#FFFFFF' || hex.includes('rgba') ? '1px solid #e5e5e5' : undefined,
-        }}
-      />
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-foreground">{name}</p>
-        <p className="text-xs text-muted-foreground">{hex}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{use}</p>
-      </div>
-    </div>
-  );
-}
-
-/* ── inline logo renderer (matches NfsLogo component — Sora font, bordered box) ── */
-function LogoPreview() {
-  return (
-    <div className="rounded-lg p-10 w-full flex items-center justify-center bg-white border border-border">
-      <div className="flex items-center" style={{ gap: 4 }}>
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            border: '2.5px solid #0a0a0a',
-            borderRadius: 10,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: "'Sora', sans-serif",
-            fontWeight: 700,
-            fontSize: 22,
-            color: '#0a0a0a',
-            lineHeight: 1,
-          }}
-        >
-          nf
-        </div>
-        <span
-          style={{
-            fontFamily: "'Sora', sans-serif",
-            fontWeight: 400,
-            fontSize: 32,
-            color: '#0a0a0a',
-            letterSpacing: 2,
-            lineHeight: 1,
-          }}
-        >
-          stay
-        </span>
-      </div>
-    </div>
-  );
-}
-
-/* ── favicon: the "nf" box from the logo ── */
-function FaviconPreview({ size }: { size: number }) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" ry="6" fill="white" stroke="#0a0a0a" stroke-width="2"/><text x="16" y="21.5" text-anchor="middle" font-family="Sora,sans-serif" font-weight="700" font-size="15" fill="#0a0a0a">nf</text></svg>`;
-  return <div dangerouslySetInnerHTML={{ __html: svg }} />;
-}
 
 export default function BrandPage() {
   const downloadLogo = useCallback(() => {
@@ -154,98 +45,96 @@ export default function BrandPage() {
 
   return (
     <div className="min-h-screen" style={{ background: '#F3F3EE' }}>
-      <div className="max-w-[1280px] mx-auto px-6 md:px-10 py-16">
+      <div className="max-w-[960px] mx-auto px-6 py-12">
+
         {/* Header */}
-        <div className="mb-16">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: '#1C1C1C' }}>Brand Assets</h1>
-          <p className="mt-2 text-lg" style={{ color: '#6B7280' }}>
-            <strong>nfstay</strong> visual identity and guidelines
-          </p>
+        <h1 className="text-2xl font-bold tracking-tight mb-1" style={{ color: '#1C1C1C', fontFamily: "'Inter', sans-serif" }}>Brand Assets</h1>
+        <p className="text-sm mb-10" style={{ color: '#6B7280' }}><strong>nfstay</strong> — visual identity</p>
+
+        {/* ── ROW 1: Logo + Favicon ── */}
+        <div className="grid md:grid-cols-[1fr_auto] gap-6 mb-10">
+
+          {/* Logo */}
+          <div className="bg-white rounded-xl p-8 flex items-center justify-between" style={{ border: '1px solid rgba(0,0,0,0.08)' }}>
+            <div className="flex items-center" style={{ gap: 4 }}>
+              <div style={{ width: 42, height: 42, border: '2px solid #0a0a0a', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 18, color: '#0a0a0a', lineHeight: 1 }}>nf</div>
+              <span style={{ fontFamily: "'Sora', sans-serif", fontWeight: 400, fontSize: 28, color: '#0a0a0a', letterSpacing: 2, lineHeight: 1 }}>stay</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={downloadLogo} className="ml-6 shrink-0">
+              <Download className="w-4 h-4 mr-1.5" />
+              PNG
+            </Button>
+          </div>
+
+          {/* Favicon */}
+          <div className="bg-white rounded-xl p-6 flex items-center gap-5" style={{ border: '1px solid rgba(0,0,0,0.08)' }}>
+            <div className="flex items-center gap-4">
+              {/* 48px preview */}
+              <div style={{ width: 48, height: 48, border: '2px solid #0a0a0a', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 20, color: '#0a0a0a', lineHeight: 1, background: 'white' }}>nf</div>
+              {/* 32px preview */}
+              <div style={{ width: 32, height: 32, border: '1.5px solid #0a0a0a', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 13, color: '#0a0a0a', lineHeight: 1, background: 'white' }}>nf</div>
+              {/* 16px preview */}
+              <div style={{ width: 16, height: 16, border: '1px solid #0a0a0a', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 7, color: '#0a0a0a', lineHeight: 1, background: 'white' }}>nf</div>
+            </div>
+            <span className="text-xs" style={{ color: '#6B7280' }}>Favicon</span>
+          </div>
         </div>
 
-        {/* ── LOGO ── */}
-        <section className="mb-16">
-          <h2 className="text-xl font-bold tracking-tight mb-6" style={{ color: '#1C1C1C' }}>Logo</h2>
-          <Card>
-            <CardContent className="flex flex-col items-center gap-4 pt-6">
-              <LogoPreview />
-              <Button variant="outline" size="sm" onClick={downloadLogo}>
-                <Download className="w-4 h-4 mr-2" />
-                Download PNG
-              </Button>
-            </CardContent>
-          </Card>
-        </section>
+        {/* ── ROW 2: Colours + Fonts ── */}
+        <div className="grid md:grid-cols-2 gap-6 mb-10">
 
-        {/* ── FAVICON ── */}
-        <section className="mb-16">
-          <h2 className="text-xl font-bold tracking-tight mb-6" style={{ color: '#1C1C1C' }}>Favicon</h2>
-          <Card>
-            <CardHeader><CardTitle className="text-sm">The "nf" box from the logo</CardTitle></CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-6">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">128px</p>
-                  <FaviconPreview size={128} />
+          {/* Colours */}
+          <div className="bg-white rounded-xl p-6" style={{ border: '1px solid rgba(0,0,0,0.08)' }}>
+            <h2 className="text-sm font-semibold mb-4" style={{ color: '#1C1C1C' }}>Colours</h2>
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { name: 'Green', hex: '#1E9A80' },
+                { name: 'Dark', hex: '#1C1C1C' },
+                { name: 'Grey', hex: '#6B7280' },
+                { name: 'Background', hex: '#F3F3EE' },
+                { name: 'Warm', hex: '#EAE9E4' },
+                { name: 'White', hex: '#FFFFFF' },
+                { name: 'Green Light', hex: '#E6F5F1' },
+                { name: 'Border', hex: '#E5E5E5' },
+              ].map((c) => (
+                <div key={c.name} className="text-center">
+                  <div
+                    className="w-full aspect-square rounded-lg mb-1.5"
+                    style={{
+                      backgroundColor: c.hex,
+                      border: c.hex === '#FFFFFF' || c.hex === '#F3F3EE' || c.hex === '#EAE9E4' || c.hex === '#E5E5E5' || c.hex === '#E6F5F1' ? '1px solid #ddd' : undefined,
+                    }}
+                  />
+                  <p className="text-[11px] font-medium" style={{ color: '#1C1C1C' }}>{c.name}</p>
+                  <p className="text-[10px]" style={{ color: '#6B7280' }}>{c.hex}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">32px</p>
-                  <FaviconPreview size={32} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">16px</p>
-                  <FaviconPreview size={16} />
-                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Fonts */}
+          <div className="bg-white rounded-xl p-6" style={{ border: '1px solid rgba(0,0,0,0.08)' }}>
+            <h2 className="text-sm font-semibold mb-4" style={{ color: '#1C1C1C' }}>Typography</h2>
+            <div className="space-y-4">
+              <div>
+                <p className="text-[11px] font-medium mb-1" style={{ color: '#6B7280' }}>Sora — Logo</p>
+                <p style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 18, color: '#1C1C1C' }}>nfstay</p>
               </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* ── COLOUR PALETTE ── */}
-        <section className="mb-16">
-          <h2 className="text-xl font-bold tracking-tight mb-6" style={{ color: '#1C1C1C' }}>Colour Palette</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {BRAND_COLORS.map((c) => <ColorSwatch key={c.name} {...c} />)}
+              <div>
+                <p className="text-[11px] font-medium mb-1" style={{ color: '#6B7280' }}>Inter — Body, nav, buttons</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: 15, color: '#1C1C1C' }}>The quick brown fox jumps over the lazy dog</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 15, color: '#1C1C1C' }}>The quick brown fox jumps over the lazy dog</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium mb-1" style={{ color: '#6B7280' }}>Playfair Display — Accent</p>
+                <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 18, color: '#1C1C1C' }}>Find, negotiate and grow your portfolio</p>
+              </div>
+            </div>
           </div>
-        </section>
-
-        {/* ── TYPOGRAPHY ── */}
-        <section className="mb-16">
-          <h2 className="text-xl font-bold tracking-tight mb-6" style={{ color: '#1C1C1C' }}>Typography</h2>
-          <div className="space-y-6">
-            {FONTS.map((font) => (
-              <Card key={font.name}>
-                <CardHeader>
-                  <CardTitle className="text-base">{font.name}</CardTitle>
-                  <p className="text-xs text-muted-foreground">Used for: {font.use}</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {font.weights.map((w) => (
-                    <div key={w.label}>
-                      <p className="text-xs text-muted-foreground mb-1">{w.label} ({w.weight})</p>
-                      <p
-                        className="text-lg"
-                        style={{
-                          fontFamily: font.family,
-                          fontWeight: w.weight,
-                          fontStyle: w.italic ? 'italic' : 'normal',
-                          color: '#1C1C1C',
-                        }}
-                      >
-                        The quick brown fox jumps over the lazy dog
-                      </p>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
+        </div>
 
         {/* Footer */}
-        <div className="border-t pt-6 text-center text-xs" style={{ borderColor: 'rgba(0,0,0,0.08)', color: '#6B7280' }}>
-          &copy; {new Date().getFullYear()} <strong>nfstay</strong>. All rights reserved.
-        </div>
+        <p className="text-center text-[11px]" style={{ color: '#6B7280' }}>&copy; {new Date().getFullYear()} <strong>nfstay</strong></p>
       </div>
     </div>
   );
