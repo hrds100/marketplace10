@@ -1877,53 +1877,19 @@ export default function InvestMarketplacePage() {
 
       {/* SamCart card-payment iframe (same drawer approach as legacy app.nfstay.com) */}
       <Sheet open={samcartOpen} onOpenChange={(open) => { setSamcartOpen(open); if (!open) setSamcartUrl(''); }}>
-        <SheetContent side="right" className="w-full sm:max-w-lg p-0 h-full max-h-screen [&>button]:z-50 flex flex-col">
-          <SheetHeader className="px-4 py-3 border-b shrink-0">
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0 [&>button]:z-50">
+          <SheetHeader className="px-4 py-3 border-b">
             <SheetTitle className="text-base">Complete Payment</SheetTitle>
           </SheetHeader>
           {samcartUrl && (
-            <>
-              <div
-                className="px-4 py-3 border-b bg-muted/50 space-y-2 shrink-0"
-                data-testid="samcart-contribution-banner"
-              >
-                <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                  Your contribution
-                </p>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-2xl font-semibold tabular-nums">
-                    ${Number(investAmount).toFixed(2)}
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 gap-1.5"
-                    data-testid="samcart-copy-amount"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(Number(investAmount).toFixed(2)).then(() => {
-                        toast.success('Amount copied — paste into SamCart “Name your price”');
-                      });
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                    Copy
-                  </Button>
-                </div>
-                <p className="text-muted-foreground text-xs leading-relaxed">
-                  SamCart does not allow apps to pre-fill the price field from a URL. Enter the same
-                  amount in the <span className="font-medium text-foreground">Name your price</span>{' '}
-                  field on the payment form below.
-                </p>
-              </div>
-              <iframe
-                key={samcartUrl}
-                src={samcartUrl}
-                className="w-full flex-1 min-h-0 border-none"
-                allow="payment"
-                title="SamCart Checkout"
-              />
-            </>
+            <iframe
+              key={samcartUrl}
+              src={samcartUrl}
+              className="w-full border-none"
+              style={{ height: 'calc(100vh - 57px)' }}
+              allow="payment"
+              title="SamCart Checkout"
+            />
           )}
         </SheetContent>
       </Sheet>

@@ -75,8 +75,6 @@ test.describe('Invest SamCart prefill', () => {
     await secureBtn.evaluate((el) => (el as HTMLButtonElement).click());
     await expect(page.getByRole('heading', { name: 'Complete Payment' })).toBeVisible({ timeout: 10000 });
 
-    await expect(page.getByTestId('samcart-contribution-banner')).toContainText('$750.00');
-
     const iframe = page.locator('iframe[title="SamCart Checkout"]');
     await expect(iframe).toBeVisible({ timeout: 15000 });
 
