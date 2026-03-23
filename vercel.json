@@ -75,6 +75,10 @@
       "destination": "/app.html"
     },
     {
+      "source": "/brand",
+      "destination": "/app.html"
+    },
+    {
       "source": "/landingtest",
       "destination": "/app.html"
     }
