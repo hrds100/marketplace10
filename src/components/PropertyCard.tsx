@@ -1,4 +1,4 @@
-import { Heart, CheckCircle, X, Gem, Zap } from 'lucide-react';
+import { Heart, CheckCircle, X, Gem, Zap, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { ListingShape } from '@/components/InquiryPanel';
@@ -95,6 +95,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
 
   const airdnaUrl = `https://www.airdna.co`;
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type);
+  const isPexelsPhoto = resolvedImage?.includes('images.pexels.com') || false;
   const isPrime = listing.prime;
 
   // ─── JV CARD (Style 4: Floating + Shimmer + Progress) ───
@@ -111,11 +112,18 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         }}
       >
         <div className="relative h-[200px] overflow-hidden">
-          <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy" className="w-full h-full object-cover"
+          <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy"
+            className={`w-full h-full object-cover ${isPexelsPhoto ? 'blur-[8px] scale-110' : ''}`}
             onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
-          <div className="absolute top-2.5 left-2.5">
+          {isPexelsPhoto && (
+            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1.5 z-[1]">
+              <Lock className="w-6 h-6 text-white/90" />
+              <span className="text-white text-xs font-medium">Photos on request</span>
+            </div>
+          )}
+          <div className="absolute top-2.5 left-2.5 z-[2]">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold" style={{ background: '#1A1A2E', color: '#F0D55E', border: '1px solid #C9A842' }}>
-              💎 Exclusive JV
+              Exclusive JV
             </span>
           </div>
           <div className="absolute bottom-2.5 right-2.5">
@@ -181,9 +189,16 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover flex flex-col">
       <div className="relative h-[200px] overflow-hidden">
-        <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy" className="w-full h-full object-cover"
+        <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy"
+          className={`w-full h-full object-cover ${isPexelsPhoto ? 'blur-[8px] scale-110' : ''}`}
           onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
-        <div className="absolute top-2.5 left-2.5 flex gap-1.5">
+        {isPexelsPhoto && (
+          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1.5 z-[1]">
+            <Lock className="w-6 h-6 text-white/90" />
+            <span className="text-white text-xs font-medium">Photos on request</span>
+          </div>
+        )}
+        <div className="absolute top-2.5 left-2.5 flex gap-1.5 z-[2]">
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
           {listing.featured && <span className="badge-green-fill text-[11px]">Featured</span>}
         </div>
