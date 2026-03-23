@@ -1749,7 +1749,7 @@ export default function InvestMarketplacePage() {
   const version = 1 as const;
   const [jvExpanded, setJvExpanded] = useState(false);
   const [currentImage, setCurrentImage] = useState(0);
-  const [investAmount, setInvestAmount] = useState(1000);
+  const [investAmount, setInvestAmount] = useState(500);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card');
   const [tsaAgreed, setTsaAgreed] = useState(false);
   const [investOpen, setInvestOpen] = useState(false);
@@ -1766,9 +1766,8 @@ export default function InvestMarketplacePage() {
     return () => clearInterval(interval);
   }, [property]);
 
-  // SamCart product slug — single product for all investment amounts
-  // Product ID 1003039 on stay.samcart.com
-  const SAMCART_PRODUCT_SLUG = 'rent-2-rent-1000shares';
+  // SamCart "Pembroke Place" product (ID 1003039, pay-what-you-want, min $500)
+  const SAMCART_PRODUCT_SLUG = '1';
 
   const handleInvest = () => {
     if (!property) return;
@@ -1786,7 +1785,6 @@ export default function InvestMarketplacePage() {
       try { walletAddr = (window as any).__particle_wallet_address || ''; } catch { /* no wallet */ }
 
       // Encode propertyId + agent + wallet in last_name so webhook can parse it
-      // Format: {propertyId:N,agentWallet:0x...,recipient:0x...}
       const walletPayload = encodeURIComponent(JSON.stringify({
         propertyId: property.id,
         agentWallet: '0x0000000000000000000000000000000000000000',

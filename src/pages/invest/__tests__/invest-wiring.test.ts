@@ -257,15 +257,18 @@ describe('Payment method toggle', () => {
       recipient: walletAddress,
     });
 
-    const tier = 1000;
-    const url = `https://stay.samcart.com/products/rent-2-rent-${tier}shares/?first_name=${userName}&last_name=${walletAddress}&email=${userEmail}&phone_number=${encodeURIComponent(phonePayload)}`;
+    const walletPayload = JSON.stringify({
+      propertyId,
+      agentWallet: '0x0000000000000000000000000000000000000000',
+      recipient: walletAddress,
+    });
+    const url = `https://stay.samcart.com/products/1/?first_name=${userName}&last_name=${encodeURIComponent(walletPayload)}&email=${userEmail}&phone_number=`;
 
-    expect(url).toContain('rent-2-rent-1000shares');
+    expect(url).toContain('stay.samcart.com/products/1/');
     expect(url).toContain('first_name=Hugo');
-    expect(url).toContain('last_name=0x1234');
-    expect(url).toContain('email=hugo@test.com');
+    expect(url).toContain('last_name=');
     expect(url).toContain('propertyId');
-    expect(url).toContain('stay.samcart.com');
+    expect(url).toContain('email=hugo@test.com');
   });
 });
 
