@@ -85,19 +85,6 @@ export default function AffiliatesPage() {
     enabled: !!user?.id,
   });
 
-  // Auto-provision: if no profile after query loaded, create one
-  useEffect(() => {
-    if (isLoading || profile || !user?.id) return;
-    const key = `nfstay_aff_provisioned_${user.id}`;
-    if (localStorage.getItem(key)) return;
-    localStorage.setItem(key, '1');
-    const code = generateCode(userName || '');
-    (supabase.from('affiliate_profiles') as any)
-      .insert({ user_id: user.id, referral_code: code })
-      .then(() => queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] }))
-      .catch(() => {});
-  }, [isLoading, profile, user?.id, userName, queryClient]);
-
   // Fetch recent events
   const { data: events = [] } = useQuery({
     queryKey: ['affiliate-events', profile?.id],
