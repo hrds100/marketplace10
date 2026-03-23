@@ -137,7 +137,7 @@ serve(async (req) => {
 
       // 1. Fetch order from SamCart API
       const orderRes = await fetch(
-        `https://api.samcart.com/v1/orders/${orderId}?test_mode=false`,
+        `https://api.samcart.com/v1/orders/${orderId}`,
         { headers: { 'sc-api': samcartApiKey } }
       )
       if (!orderRes.ok) {
@@ -156,7 +156,7 @@ serve(async (req) => {
       // 2. Fetch customer from SamCart API
       const customerId = orderData.customer_id
       const customerRes = await fetch(
-        `https://api.samcart.com/v1/customers/${customerId}?test_mode=false`,
+        `https://api.samcart.com/v1/customers/${customerId}`,
         { headers: { 'sc-api': samcartApiKey } }
       )
       const customerData = customerRes.ok ? await customerRes.json() : null
@@ -296,12 +296,26 @@ serve(async (req) => {
         }
       }
 
-      // Get property details
-      const { data: property } = await supabase
+      // Get property details — try by id first, then by blockchain_property_id
+      let { data: property } = await supabase
         .from('inv_properties')
-        .select('price_per_share, shares_sold, total_shares')
+        .select('id, blockchain_property_id, price_per_share, shares_sold, total_shares')
         .eq('id', propertyId)
         .single()
+
+      if (!property) {
+        // Fallback: the parsed propertyId might be a blockchain_property_id
+        const { data: fallbackProp } = await supabase
+          .from('inv_properties')
+          .select('id, blockchain_property_id, price_per_share, shares_sold, total_shares')
+          .eq('blockchain_property_id', propertyId)
+          .maybeSingle()
+        if (fallbackProp) {
+          property = fallbackProp
+          propertyId = fallbackProp.id // use Supabase id for all DB operations
+          console.log(`Resolved blockchain_property_id=${fallbackProp.blockchain_property_id} → Supabase id=${propertyId}`)
+        }
+      }
 
       if (!property) {
         return new Response(JSON.stringify({ error: 'Property not found' }), {
@@ -389,8 +403,9 @@ serve(async (req) => {
 
       if (recipientWallet && Deno.env.get('BACKEND_PRIVATE_KEY')) {
         try {
-          console.log(`Sending ${finalShares} shares on-chain: property=${propertyId}, recipient=${recipientWallet}`)
-          const result = await sendSharesOnChain(recipientWallet, targetAgent, propertyId, finalShares)
+          const chainPropertyId = property.blockchain_property_id ?? propertyId
+          console.log(`Sending ${finalShares} shares on-chain: chainPropertyId=${chainPropertyId}, dbPropertyId=${propertyId}, recipient=${recipientWallet}`)
+          const result = await sendSharesOnChain(recipientWallet, targetAgent, chainPropertyId, finalShares)
           txHash = result.txHash
           console.log(`On-chain success: txHash=${txHash}`)
         } catch (chainErr: any) {
@@ -660,12 +675,26 @@ serve(async (req) => {
       }
     }
 
-    // Get property details for share calculation
-    const { data: property } = await supabase
+    // Get property details — try by id first, then by blockchain_property_id
+    let { data: property } = await supabase
       .from('inv_properties')
-      .select('price_per_share, shares_sold, total_shares')
+      .select('id, blockchain_property_id, price_per_share, shares_sold, total_shares')
       .eq('id', propertyId)
       .single()
+
+    if (!property) {
+      // Fallback: the parsed propertyId might be a blockchain_property_id
+      const { data: fallbackProp } = await supabase
+        .from('inv_properties')
+        .select('id, blockchain_property_id, price_per_share, shares_sold, total_shares')
+        .eq('blockchain_property_id', propertyId)
+        .maybeSingle()
+      if (fallbackProp) {
+        property = fallbackProp
+        propertyId = fallbackProp.id // use Supabase id for all DB operations
+        console.log(`Resolved blockchain_property_id=${fallbackProp.blockchain_property_id} → Supabase id=${propertyId}`)
+      }
+    }
 
     if (!property) {
       return new Response(JSON.stringify({ error: 'Property not found' }), {

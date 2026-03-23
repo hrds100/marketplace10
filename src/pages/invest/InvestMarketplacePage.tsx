@@ -56,6 +56,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { SUBGRAPHS } from '@/lib/particle';
+import { buildSamcartPrefillParams } from '@/lib/invest/buildSamcartPrefillParams';
 
 // ---------------------------------------------------------------------------
 // Shared property interface used by all sub-components
@@ -546,6 +547,9 @@ function InvestCardContent({
   onInvest,
   compact = false,
   totalOwners = 0,
+  walletAddress,
+  walletConnecting,
+  onConnectWallet,
 }: {
   property: PropertyData;
   fundedPercent: number;
@@ -559,6 +563,9 @@ function InvestCardContent({
   onInvest: () => void;
   compact?: boolean;
   totalOwners?: number;
+  walletAddress: string | null;
+  walletConnecting: boolean;
+  onConnectWallet: () => void | Promise<void>;
 }) {
   const shares = Math.floor(investAmount / property.pricePerShare);
   const investTotal = shares * property.pricePerShare;
@@ -631,6 +638,43 @@ function InvestCardContent({
         </div>
       </div>
 
+      {/* Card checkout needs a wallet on file (same as legacy SamCart last_name) */}
+      {paymentMethod === 'card' && (
+        <div className="rounded-lg border border-border/80 bg-muted/30 px-3 py-2.5">
+          <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
+            Receiving wallet (BNB Chain)
+          </p>
+          {walletConnecting ? (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" aria-hidden />
+              Loading wallet from your profile…
+            </p>
+          ) : walletAddress ? (
+            <p
+              className="font-mono text-[11px] sm:text-xs break-all text-foreground"
+              data-testid="invest-receiving-wallet"
+            >
+              {walletAddress}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-destructive">
+                No wallet on your profile yet. Connect your wallet to pay by card.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto"
+                onClick={() => void onConnectWallet()}
+              >
+                Connect wallet
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Payment method */}
       <div>
         <label className="mb-1.5 block text-sm font-medium">Payment method</label>
@@ -677,6 +721,7 @@ function InvestCardContent({
         <button
           type="button"
           role="checkbox"
+          data-testid="invest-tsa-checkbox"
           aria-checked={tsaAgreed}
           onClick={() => setTsaAgreed(!tsaAgreed)}
           className={cn(
@@ -701,7 +746,11 @@ function InvestCardContent({
       <Button
         className="w-full gap-2"
         size="lg"
-        disabled={!tsaAgreed || shares < 1}
+        disabled={
+          !tsaAgreed ||
+          shares < 1 ||
+          (paymentMethod === 'card' && (!walletAddress || walletConnecting))
+        }
         onClick={onInvest}
       >
         <Shield className="h-4 w-4" />
@@ -1268,6 +1317,9 @@ function Version1({
   initialCalcAmount,
   setInitialCalcAmount,
   totalOwners,
+  walletAddress,
+  walletConnecting,
+  onConnectWallet,
 }: {
   property: PropertyData;
   fundedPercent: number;
@@ -1286,6 +1338,9 @@ function Version1({
   initialCalcAmount: number;
   setInitialCalcAmount: (v: number) => void;
   totalOwners: number;
+  walletAddress: string | null;
+  walletConnecting: boolean;
+  onConnectWallet: () => void | Promise<void>;
 }) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -1481,6 +1536,9 @@ function Version1({
                   onInvest={onInvest}
                   compact
                   totalOwners={totalOwners}
+                  walletAddress={walletAddress}
+                  walletConnecting={walletConnecting}
+                  onConnectWallet={onConnectWallet}
                 />
               </CardContent>
             </Card>
@@ -1524,6 +1582,9 @@ function Version2({
   initialCalcAmount,
   setInitialCalcAmount,
   totalOwners,
+  walletAddress,
+  walletConnecting,
+  onConnectWallet,
 }: {
   property: PropertyData;
   fundedPercent: number;
@@ -1540,6 +1601,9 @@ function Version2({
   initialCalcAmount: number;
   setInitialCalcAmount: (v: number) => void;
   totalOwners: number;
+  walletAddress: string | null;
+  walletConnecting: boolean;
+  onConnectWallet: () => void | Promise<void>;
 }) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
@@ -1639,6 +1703,9 @@ function Version2({
               setTsaAgreed={setTsaAgreed}
               onInvest={onInvest}
               totalOwners={totalOwners}
+              walletAddress={walletAddress}
+              walletConnecting={walletConnecting}
+              onConnectWallet={onConnectWallet}
             />
           </CardContent>
         </Card>
@@ -1666,7 +1733,14 @@ function Version2({
 
 export default function InvestMarketplacePage() {
   const { user } = useAuth();
-  const { address: walletAddress } = useWallet();
+  const { address: walletAddress, connecting: walletConnecting, connect } = useWallet();
+  const handleConnectWallet = useCallback(async () => {
+    try {
+      await connect();
+    } catch {
+      toast.error('Could not connect wallet. Try again or use the wallet icon in the header.');
+    }
+  }, [connect]);
   const { data: allProperties, isLoading } = useInvestProperties();
   const dbProperty = allProperties?.[0] || null;
 
@@ -1777,25 +1851,21 @@ export default function InvestMarketplacePage() {
     if (shares < 1) return;
 
     if (paymentMethod === 'card') {
-      // Wallet address from useWallet() hook (reads profiles.wallet_address)
-      const wallet = walletAddress || '';
+      // Guard: wallet must be loaded before opening SamCart
+      if (!walletAddress) {
+        toast.error('Wallet not loaded yet. Please wait a moment and try again.');
+        return;
+      }
+      const wallet = walletAddress;
 
-      // SamCart field mapping:
-      // - phone_number → shows as "Property ID" on checkout (SamCart renamed it)
-      //   Send JSON with propertyId + wallet so webhook can parse it (same as legacy)
-      // - custom_0zdAJJKy → wallet_address custom field
-      // - amount → prefill PWYW investment amount
-      const params = new URLSearchParams({
-        first_name: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+      const prefill = buildSamcartPrefillParams({
+        firstName: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
         email: user?.email || '',
-        phone_number: JSON.stringify({
-          propertyId: property.id,
-          agentWallet: '0x0000000000000000000000000000000000000000',
-          recipient: wallet,
-        }),
-        custom_0zdAJJKy: wallet,
-        amount: String(investAmount),
+        wallet,
+        propertyId: property.blockchain_property_id ?? property.id,
+        investAmount,
       });
+      const params = new URLSearchParams(prefill);
 
       const url = `https://stay.samcart.com/products/${SAMCART_PRODUCT_SLUG}/?${params.toString()}`;
       setSamcartUrl(url);
@@ -1848,6 +1918,9 @@ export default function InvestMarketplacePage() {
         initialCalcAmount={initialCalcAmount}
         setInitialCalcAmount={setInitialCalcAmount}
         totalOwners={totalOwners}
+        walletAddress={walletAddress}
+        walletConnecting={walletConnecting}
+        onConnectWallet={handleConnectWallet}
       />
 
       <InvestModal open={investOpen} onOpenChange={setInvestOpen} property={property} />
