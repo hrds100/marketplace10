@@ -1,4 +1,4 @@
-# nfstay Design Cheatsheet — hub.nfstay.com
+# nfstay Design Cheatsheet - hub.nfstay.com
 
 > This file auto-loads in every Claude session for marketplace10.
 > Follow these tokens exactly. Never introduce new hex values or random colours.
@@ -10,12 +10,12 @@
 
 nfstay uses a **clean, editorial, trust-first** aesthetic. Think premium property magazine, not SaaS dashboard. The style is characterised by:
 
-- **Generous whitespace** — large section padding (88–140px vertical), wide margins
-- **Minimal colour** — one accent colour (green), everything else is greyscale
-- **Typographic hierarchy** — large bold headings, tight letter-spacing, serif italic for personality
-- **Soft containers** — white cards on off-white backgrounds, thin borders, subtle shadows
-- **Glass/frosted effects** — navbar uses `backdrop-filter: blur(12px)` with `rgba(255,255,255,0.92)`
-- **No dark mode** — light only. The sign-in page has a dark panel but it's a feature panel, not a theme
+- **Generous whitespace** - large section padding (88–140px vertical), wide margins
+- **Minimal colour** - one accent colour (green), everything else is greyscale
+- **Typographic hierarchy** - large bold headings, tight letter-spacing, serif italic for personality
+- **Soft containers** - white cards on off-white backgrounds, thin borders, subtle shadows
+- **Glass/frosted effects** - navbar uses `backdrop-filter: blur(12px)` with `rgba(255,255,255,0.92)`
+- **No dark mode** - light only. The sign-in page has a dark panel but it's a feature panel, not a theme
 
 ---
 
@@ -49,7 +49,7 @@ nfstay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 |------|-----|-----|-----|
 | **Border** | `#E5E7EB` | `rgb(229, 231, 235)` | Card borders, divider lines, pricing list separators |
 | **Border Warm** | `#E8E5DF` | `rgb(232, 229, 223)` | Sign-in card border, tab bar border (slightly warmer tone) |
-| **Border Subtle** | `rgba(0,0,0,0.08)` | — | Homepage card borders, navbar border, very subtle separation |
+| **Border Subtle** | `rgba(0,0,0,0.08)` | - | Homepage card borders, navbar border, very subtle separation |
 | **Input Border** | `#E5E5E5` | `rgb(229, 229, 229)` | Form input borders, social login button borders |
 
 ---
@@ -59,7 +59,7 @@ nfstay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 ### Font Families
 | Font | Use | Weights |
 |------|-----|---------|
-| **Inter** | Everything — body, headings, nav, buttons, labels, form inputs | 400, 500, 600, 700, 800, 900 |
+| **Inter** | Everything - body, headings, nav, buttons, labels, form inputs | 400, 500, 600, 700, 800, 900 |
 | **Sora** | Logo only ("nf" box + "stay" text) | 400 (stay), 700 (nf) |
 | **Playfair Display** | Accent italic text only (hero subheading: *"Find, negotiate and grow your portfolio"*) | 400 italic |
 
@@ -108,7 +108,7 @@ nfstay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 | Section margins | 16px horizontal (with rounded corners) |
 
 ### Grid
-- 4px / 8px increments — never arbitrary margins
+- 4px / 8px increments - never arbitrary margins
 - Gap between cards: 16–24px
 - Gap between UI elements: 6–12px
 
@@ -163,7 +163,7 @@ nfstay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 | Type | Background | Text | Border Radius | Padding |
 |------|-----------|------|---------------|---------|
 | Section badge | Green Tint `#ECFDF5` | nfstay Green `#1E9A80` | 100px (pill) | 5px 14px |
-| Step label | White or transparent | Heading, uppercase, 11px 700 | — | — |
+| Step label | White or transparent | Heading, uppercase, 11px 700 | - | - |
 | Featured badge | nfstay Green | White, 7px 600 | 4px | 2px 5px |
 
 ---
@@ -182,7 +182,7 @@ nfstay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 ---
 
 ## Motion
-- Transitions: 200–300ms only — never decorative or slow
+- Transitions: 200–300ms only - never decorative or slow
 - Accordion: 0.2s ease-out
 - Respect `prefers-reduced-motion`
 - Card hover: `translateY(-1px)` + shadow change
@@ -190,12 +190,12 @@ nfstay uses a **clean, editorial, trust-first** aesthetic. Think premium propert
 ---
 
 ## Patterns
-- **Card hover:** `card-hover` class — subtle shadow + green border tint + translateY(-1px)
-- **Skeleton loading:** `skeleton-shimmer` class — animated shimmer gradient
-- **Scroll reveal:** `scroll-reveal` + `.revealed` — fade-up on scroll
-- **Pulse dot:** `pulse-dot` class — for live indicators
+- **Card hover:** `card-hover` class - subtle shadow + green border tint + translateY(-1px)
+- **Skeleton loading:** `skeleton-shimmer` class - animated shimmer gradient
+- **Scroll reveal:** `scroll-reveal` + `.revealed` - fade-up on scroll
+- **Pulse dot:** `pulse-dot` class - for live indicators
 - **Float animation:** `float-slow` (6s) / `float-fast` (4s)
-- **Input style:** `input-nfstay` class — rounded-[10px], green focus ring
+- **Input style:** `input-nfstay` class - rounded-[10px], green focus ring
 - **Glass navbar:** fixed + white 92% opacity + blur(12px)
 - **Section separation:** off-white bg sections alternate with white bg sections; some sections have 16px horizontal margin with rounded corners
 
@@ -210,15 +210,15 @@ The sign-in page is a **split layout**:
 
 ### Sign-in form structure
 1. Logo (Sora, same as navbar)
-2. Tab bar: "Sign In | Register" — off-white `#F3F3EE` background, `border-radius: 12px`, active tab is white with shadow
+2. Tab bar: "Sign In | Register" - off-white `#F3F3EE` background, `border-radius: 12px`, active tab is white with shadow
 3. Social login buttons: pill-shaped (`border-radius: 9999px`), `border: 1px solid #E5E5E5`, transparent bg
-4. Divider: "or sign in with email" — Hint Grey `#737373`
+4. Divider: "or sign in with email" - Hint Grey `#737373`
 5. Form labels: Label Grey `#525252`, 14px 500
 6. Inputs: white bg, `border: 1px solid #E5E5E5`, `border-radius: 10px`
 7. Checkbox: nfstay Green bg when checked
 8. "Forgot Password?" link: nfstay Green `#1E9A80`, 14px 500
 9. Submit button: nfstay Green bg, white text, `border-radius: 10px`, subtle shadow
-10. Footer: "Don't have an account? **Sign up**" — Hint Grey + nfstay Green link
+10. Footer: "Don't have an account? **Sign up**" - Hint Grey + nfstay Green link
 
 ---
 
@@ -231,18 +231,18 @@ The sign-in page is a **split layout**:
 ---
 
 ## Component Library
-- **Always use shadcn/ui first** — 39+ primitives already installed
-- **Icons:** Lucide React only — no other icon libraries
+- **Always use shadcn/ui first** - 39+ primitives already installed
+- **Icons:** Lucide React only - no other icon libraries
 - **Conditional classes:** use `cn()` from `@/lib/utils`
-- **Never hand-edit** files in `src/components/ui/` — those are shadcn-managed
+- **Never hand-edit** files in `src/components/ui/` - those are shadcn-managed
 
 ---
 
 ## Hard Rules
-1. Never introduce new hex values — use the 10 brand colours above only
-2. Never use inline styles — Tailwind classes only
+1. Never introduce new hex values - use the 10 brand colours above only
+2. Never use inline styles - Tailwind classes only
 3. Never use CSS modules
-4. No Lorem Ipsum — use realistic UK property data
+4. No Lorem Ipsum - use realistic UK property data
 5. Every component must have: normal state, empty state, loading state, error state
 6. Do NOT revert or overwrite existing styles unless the task explicitly requires it
-7. Green is the ONLY accent colour — no purples, blues, ambers, reds (except for semantic error/warning states in app UI)
+7. Green is the ONLY accent colour - no purples, blues, ambers, reds (except for semantic error/warning states in app UI)

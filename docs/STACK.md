@@ -1,4 +1,4 @@
-# nfstay — Full Stack Reference
+# nfstay - Full Stack Reference
 _Last updated: 2026-03-15_
 
 > **Rule:** Any time a new service, tool, or integration is added to the project, this file MUST be updated in the same commit. No exceptions.
@@ -18,16 +18,16 @@ _Last updated: 2026-03-15_
 | Service | Platform | URL | ID/Ref | Env Var | Config File |
 |---------|----------|-----|--------|---------|-------------|
 | Database + Auth | Supabase | asazddtvjvmckouxcmmo.supabase.co | asazddtvjvmckouxcmmo | VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY | src/integrations/supabase/client.ts |
-| Webhooks + AI | n8n | n8n.srv886554.hstgr.cloud | — | VITE_N8N_WEBHOOK_URL | src/lib/n8n.ts |
+| Webhooks + AI | n8n | n8n.srv886554.hstgr.cloud | - | VITE_N8N_WEBHOOK_URL | src/lib/n8n.ts |
 | Payments | GoHighLevel | app.gohighlevel.com | eFBsWXY3BmWDGIRez13x | VITE_GHL_FUNNEL_URL | src/lib/ghl.ts |
-| Hosting | Vercel | hub.nfstay.com | prj_knviieakfA3YpyLA6CW1ADTulRL3 | — | vercel.json |
-| Stock Photos | Pexels | api.pexels.com | — | VITE_PEXELS_API_KEY | src/lib/pexels.ts |
-| Email | Resend | api.resend.com | — | RESEND_API_KEY (Supabase secret) | supabase/functions/send-email/ |
-| Error Monitoring | Sentry | nfstay.sentry.io | — | VITE_SENTRY_DSN | src/main.tsx |
-| Uptime Monitoring | UptimeRobot | uptimerobot.com | — | — | hub.nfstay.com/api/health |
-| CI Pipeline | GitHub Actions | github.com/hrds100/marketplace10/actions | — | — | `.github/workflows/ci.yml` (typecheck + test + lint) |
-| Health Check | Supabase Edge Fn | hub.nfstay.com/api/health | — | — | supabase/functions/health/index.ts |
-| Maps | Google Maps | maps.googleapis.com | — | VITE_GOOGLE_MAPS_API_KEY | src/components/DealsMap.tsx |
+| Hosting | Vercel | hub.nfstay.com | prj_knviieakfA3YpyLA6CW1ADTulRL3 | - | vercel.json |
+| Stock Photos | Pexels | api.pexels.com | - | VITE_PEXELS_API_KEY | src/lib/pexels.ts |
+| Email | Resend | api.resend.com | - | RESEND_API_KEY (Supabase secret) | supabase/functions/send-email/ |
+| Error Monitoring | Sentry | nfstay.sentry.io | - | VITE_SENTRY_DSN | src/main.tsx |
+| Uptime Monitoring | UptimeRobot | uptimerobot.com | - | - | hub.nfstay.com/api/health |
+| CI Pipeline | GitHub Actions | github.com/hrds100/marketplace10/actions | - | - | `.github/workflows/ci.yml` (typecheck + test + lint) |
+| Health Check | Supabase Edge Fn | hub.nfstay.com/api/health | - | - | supabase/functions/health/index.ts |
+| Maps | Google Maps | maps.googleapis.com | - | VITE_GOOGLE_MAPS_API_KEY | src/components/DealsMap.tsx |
 
 ## Supabase Tables
 
@@ -42,11 +42,11 @@ _Last updated: 2026-03-15_
 | ai_settings | AI model + prompt config | model_pricing, model_university, model_description, system_prompt_* |
 | admin_audit_log | Persistent admin action log | user_id, action, target_table, target_id, metadata, created_at |
 
-## n8n Webhooks (marketplace10 — DO NOT TOUCH for nfstay work)
+## n8n Webhooks (marketplace10 - DO NOT TOUCH for nfstay work)
 
 > **WARNING:** The n8n instance is shared with the nfstay booking module.
 > nfstay booking workflows use the `nfs-` prefix. Never create workflows without that prefix.
-> Never modify the workflows below — they power the live site.
+> Never modify the workflows below - they power the live site.
 > Full protection rules: `docs/nfstay/BOUNDARIES.md`
 
 | Endpoint | Trigger | Called From | Workflow ID |
@@ -84,16 +84,16 @@ _Last updated: 2026-03-15_
 | VITE_N8N_WEBHOOK_URL | n8n.ts | Yes (fallback to hardcoded) |
 | VITE_GHL_FUNNEL_URL | ghl.ts | Yes (InquiryPanel needs it) |
 | VITE_PEXELS_API_KEY | pexels.ts | Yes (photo fallbacks) |
-| VITE_SENTRY_DSN | main.tsx | Optional — Sentry silently disabled if absent |
-| VITE_SUPABASE_PROJECT_ID | supabase CLI | Optional — used for local dev |
+| VITE_SENTRY_DSN | main.tsx | Optional - Sentry silently disabled if absent |
+| VITE_SUPABASE_PROJECT_ID | supabase CLI | Optional - used for local dev |
 
 ## Where behavior and domain live
-- **Domain & terms (DDD):** `docs/DOMAIN.md` — actors and concepts used project-wide.
-- **Acceptance scenarios (BDD):** `docs/ACCEPTANCE.md` — Given/When/Then for major flows.
+- **Domain & terms (DDD):** `docs/DOMAIN.md` - actors and concepts used project-wide.
+- **Acceptance scenarios (BDD):** `docs/ACCEPTANCE.md` - Given/When/Then for major flows.
 
 ## Known Issues / Tech Debt
-1. `ai_settings` and `notifications` tables not in generated Supabase types — using `as any` casts
-2. University lessons are static data in `src/data/universityData.ts` — not yet DB-backed
+1. `ai_settings` and `notifications` tables not in generated Supabase types - using `as any` casts
+2. University lessons are static data in `src/data/universityData.ts` - not yet DB-backed
 3. Landing page and auth pages still use picsum.photos for decorative avatars
 4. Affiliates page uses mock payout data
 5. DealDetail CRM state uses localStorage + Supabase (dual-write)

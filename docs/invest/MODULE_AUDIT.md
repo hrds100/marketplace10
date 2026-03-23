@@ -1,4 +1,4 @@
-# Investment Module — Current State Audit
+# Investment Module - Current State Audit
 
 > Single source of truth for what's built, what's live, what's missing.
 > If this doc answers your question, don't ask the team.
@@ -59,11 +59,11 @@
 | Proposals | `/admin/invest/proposals` | ✅ Built | Hook ready |
 | Boost | `/admin/invest/boost` | ✅ Built | Hook ready |
 
-Admin workspace selector at `/admin` — 3 workspaces: Marketplace / Investments / Booking Site.
+Admin workspace selector at `/admin` - 3 workspaces: Marketplace / Investments / Booking Site.
 
 ---
 
-## Supabase Database (16 tables — ALL created with RLS)
+## Supabase Database (16 tables - ALL created with RLS)
 
 | Table | Status | Seed Data |
 |-------|--------|-----------|
@@ -85,12 +85,12 @@ Admin workspace selector at `/admin` — 3 workspaces: Marketplace / Investments
 | `affiliate_events` | ✅ Pre-existing | From marketplace module |
 
 ### Profile Columns Added
-- `wallet_address` — stores user's blockchain wallet
-- `referred_by` — stores referral code from signup
+- `wallet_address` - stores user's blockchain wallet
+- `referred_by` - stores referral code from signup
 
 ---
 
-## Edge Functions (7 deployed — ALL ACTIVE)
+## Edge Functions (7 deployed - ALL ACTIVE)
 
 | Function | Status | Purpose |
 |----------|--------|---------|
@@ -131,7 +131,7 @@ Admin workspace selector at `/admin` — 3 workspaces: Marketplace / Investments
 ### SamCart ✅ FULLY LIVE
 - Webhook URL: `https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/inv-samcart-webhook`
 - 3 rules configured: Checkout Charged + Product Purchased + Product Refunded
-- Legacy webhook ("Notify URL 1") untouched — still serves app.nfstay.com
+- Legacy webhook ("Notify URL 1") untouched - still serves app.nfstay.com
 - `SAMCART_API_KEY` set in Supabase secrets (2026-03-19)
 - 51 products visible via API (share packages from $100 to $5000 + subscriptions)
 - Edge Function handles both legacy flow (API validation) and direct payload flow
@@ -182,7 +182,7 @@ Admin workspace selector at `/admin` — 3 workspaces: Marketplace / Investments
 All contract ABIs in `src/lib/contractAbis.ts`.
 
 ### Blockchain Hook
-`src/hooks/useBlockchain.ts` — all read/write functions:
+`src/hooks/useBlockchain.ts` - all read/write functions:
 - `purchaseShares(propertyId, shares)` → approve USDC + sendPrimaryShares
 - `claimRent(propertyId)` → withdrawRent
 - `vote(proposalId, choice)` → vote on Voting contract
@@ -193,10 +193,10 @@ All contract ABIs in `src/lib/contractAbis.ts`.
 - `getBoostDetails(propertyId)` → read-only boost status
 
 ### Particle Init + Chain Validation (2026-03-20)
-- **Auth-method-first init** — `ensureConnected()` now checks `wallet_auth_method` from the profile BEFORE calling `pa.init()`. Social users (Google/Apple) get `PARTICLE_LEGACY_CONFIG`, JWT users get `PARTICLE_CONFIG`. Prevents SDK from locking to the wrong project.
-- **`initParticle()` helper** — tracks `_particleInitType` (hub/legacy) at module level. Prevents double-init conflicts.
-- **`ensureBscChain()`** — checks `eth_chainId` and switches to BNB Chain (0x38) if needed. Returns `false` if provider is fully disconnected.
-- Fixes "The provider is disconnected from the specified chain" — root cause was `pa.init()` always using hub project, silently swallowing the legacy re-init, leaving social users' providers broken.
+- **Auth-method-first init** - `ensureConnected()` now checks `wallet_auth_method` from the profile BEFORE calling `pa.init()`. Social users (Google/Apple) get `PARTICLE_LEGACY_CONFIG`, JWT users get `PARTICLE_CONFIG`. Prevents SDK from locking to the wrong project.
+- **`initParticle()` helper** - tracks `_particleInitType` (hub/legacy) at module level. Prevents double-init conflicts.
+- **`ensureBscChain()`** - checks `eth_chainId` and switches to BNB Chain (0x38) if needed. Returns `false` if provider is fully disconnected.
+- Fixes "The provider is disconnected from the specified chain" - root cause was `pa.init()` always using hub project, silently swallowing the legacy re-init, leaving social users' providers broken.
 
 ### Blockchain → UI Wiring Status
 - ✅ "Secure Your Shares" button → calls `purchaseShares()`
@@ -260,7 +260,7 @@ All contract ABIs in `src/lib/contractAbis.ts`.
 | First Investment | 5% | SamCart webhook → `aff_commissions` | ✅ Per-user + global |
 | Recurring (Rental Income) | 2% | Rent events → `aff_commissions` | ✅ Per-user + global |
 
-Rates stored in `aff_commission_settings` — never hardcoded. Admin can change global rates and per-user overrides.
+Rates stored in `aff_commission_settings` - never hardcoded. Admin can change global rates and per-user overrides.
 
 ---
 
@@ -295,7 +295,7 @@ Legacy users (app.nfstay.com) who already own shares:
 
 | Doc | Purpose |
 |-----|---------|
-| `AGENT_INVESTMENT_INSTRUCTIONS.md` | Master protocol — references all docs |
+| `AGENT_INVESTMENT_INSTRUCTIONS.md` | Master protocol - references all docs |
 | `HOTKEYS.md` | Agent prompt template |
 | `DOMAIN.md` | Terminology dictionary |
 | `DATABASE.md` | All table schemas + RLS |
@@ -305,7 +305,7 @@ Legacy users (app.nfstay.com) who already own shares:
 | `ACCEPTANCE.md` | BDD scenarios |
 | `STACK.md` | Contract addresses, env vars |
 | `BOUNDARIES.md` | What's untouchable |
-| `MODULE_AUDIT.md` | This file — current state |
+| `MODULE_AUDIT.md` | This file - current state |
 | `EXECUTION_PLAN.md` | Implementation sequence |
 | `PAYOUT_FLOW.md` | Crypto + bank payout details |
 | `USER_JOURNEY.md` | Simple English flows |

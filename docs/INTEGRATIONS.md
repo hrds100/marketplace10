@@ -1,4 +1,4 @@
-# nfstay — Integrations
+# nfstay - Integrations
 
 ## n8n (Workflow Automation)
 **Server**: https://n8n.srv886554.hstgr.cloud
@@ -50,7 +50,7 @@
 - **Purpose**: Notification when CRM deal stage changes (fire-and-forget)
 - **Called from**: `CRMPage.tsx` onDrop
 
-## GoHighLevel (GHL) — Payments
+## GoHighLevel (GHL) - Payments
 All payments are processed through GoHighLevel only; tier updates are performed by n8n. Do not add direct Stripe or other payment integrations.
 
 **Location ID**: `eFBsWXY3BmWDGIRez13x`
@@ -64,19 +64,19 @@ All payments are processed through GoHighLevel only; tier updates are performed 
 | Annual | 69b5b7791fe1a8f21eb651b5 | 69b5d5371fe1a88dbdba1590 | £397/yr recurring |
 
 ### Funnel Flow (Custom Domain: pay.nfstay.com)
-1. **Cart page** (£67/mo) — `https://pay.nfstay.com/order`
-2. **Upsell page** (£997 lifetime) — `https://pay.nfstay.com/upsell`
-3. **Downsell page** (£397/yr) — `https://pay.nfstay.com/Down`
-4. **Thank you page** — `https://pay.nfstay.com/thank-You` → redirects to `hub.nfstay.com/dashboard/inbox?payment=success`
+1. **Cart page** (£67/mo) - `https://pay.nfstay.com/order`
+2. **Upsell page** (£997 lifetime) - `https://pay.nfstay.com/upsell`
+3. **Downsell page** (£397/yr) - `https://pay.nfstay.com/Down`
+4. **Thank you page** - `https://pay.nfstay.com/thank-You` → redirects to `hub.nfstay.com/dashboard/inbox?payment=success`
 
 ### Tier Update Webhook
-**n8n Workflow**: `wsDjAdpWnjqnO7ML` — nfstay — GHL Payment → Tier Update
+**n8n Workflow**: `wsDjAdpWnjqnO7ML` - nfstay - GHL Payment → Tier Update
 **Webhook URL**: `https://n8n.srv886554.hstgr.cloud/webhook/ghl-payment-success`
 
 Flow: GHL Order Submitted → n8n webhook → maps product_id to tier → PATCH profiles.tier in Supabase → tags GHL contact
 
-**GHL Automation Workflow Setup** (must be done in GHL dashboard — API does not support action editing):
-- Workflow: "Webhook nfstay Chat" (`7d1bac63-4e8a-491d-9d56-4058d76e8872`) — or create new
+**GHL Automation Workflow Setup** (must be done in GHL dashboard - API does not support action editing):
+- Workflow: "Webhook nfstay Chat" (`7d1bac63-4e8a-491d-9d56-4058d76e8872`) - or create new
 - Trigger: Order Submitted
 - Action: Custom Webhook → POST `https://n8n.srv886554.hstgr.cloud/webhook/ghl-payment-success`
 - Body:
@@ -96,9 +96,9 @@ Three GHL automation workflows handle WhatsApp notifications for inbox messaging
 
 | Scenario | GHL Workflow ID | Template | When |
 |----------|----------------|----------|------|
-| **First contact** — operator messages landlord for the first time | `67250bfa-e1fc-4201-8bca-08c384a4a31d` | Landlord enquiry + magic link | No prior landlord messages in thread |
-| **Subsequent message** — operator messages landlord who has replied before | `0eb4395c-e493-43dc-be97-6c4455b5c7c4` | Follow-up message | Landlord has ≥1 message in thread |
-| **Landlord replies** — landlord sends message to operator | `9b826037-0562-4e10-9bd8-d9d488b719b6` | Landlord replied notification | Always (every landlord message) |
+| **First contact** - operator messages landlord for the first time | `67250bfa-e1fc-4201-8bca-08c384a4a31d` | Landlord enquiry + magic link | No prior landlord messages in thread |
+| **Subsequent message** - operator messages landlord who has replied before | `0eb4395c-e493-43dc-be97-6c4455b5c7c4` | Follow-up message | Landlord has ≥1 message in thread |
+| **Landlord replies** - landlord sends message to operator | `9b826037-0562-4e10-9bd8-d9d488b719b6` | Landlord replied notification | Always (every landlord message) |
 
 **How n8n routes to the correct workflow:**
 
@@ -139,9 +139,9 @@ Without this remove-then-add pattern, repeat messages to the same landlord will 
 
 ### Post-Payment Detection (Frontend)
 InquiryPanel.tsx detects payment success via 3 methods:
-1. **postMessage** — GHL iframe fires events on thank-you page
-2. **onLoad fallback** — detects iframe URL changing to thank-you page
-3. **Query param** — `?payment=success` from GHL full-page redirect
+1. **postMessage** - GHL iframe fires events on thank-you page
+2. **onLoad fallback** - detects iframe URL changing to thank-you page
+3. **Query param** - `?payment=success` from GHL full-page redirect
 
 Then polls Supabase every 1s for tier update (up to 10s) → shows success screen → redirects to /dashboard/inbox
 
@@ -163,7 +163,7 @@ Then polls Supabase every 1s for tier update (up to 10s) → shows success scree
 2. Calls `fetchPexelsPhotos(city, type, 5)` → searches for city + apartment/house images
 3. Returns array of landscape photo URLs
 4. Caches result to `properties.photos` in Supabase (fire-and-forget)
-5. Subsequent views read from DB — Pexels never called twice for same property
+5. Subsequent views read from DB - Pexels never called twice for same property
 
 ### Fallback Chain
 `photos[0] from DB` → `Pexels API` → `placehold.co` (deterministic placeholder)
@@ -179,6 +179,6 @@ Then polls Supabase every 1s for tier update (up to 10s) → shows success scree
 
 ## Supabase Auth
 - Email/password signup via `supabase.auth.signUp()`
-- Phone OTP via n8n (Twilio) — not Supabase native OTP
+- Phone OTP via n8n (Twilio) - not Supabase native OTP
 - Admin detection: JWT email checked against hardcoded `ADMIN_EMAILS` array in `useAuth.ts`
 - Session persistence: localStorage with auto-refresh

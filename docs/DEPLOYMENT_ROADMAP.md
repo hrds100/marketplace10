@@ -1,4 +1,4 @@
-# nfstay Marketplace — Deployment Roadmap
+# nfstay Marketplace - Deployment Roadmap
 
 > **Last updated**: 2026-03-13
 > **Rule**: Update this file after every change. Commit with `roadmap: [feature] live`.
@@ -14,7 +14,7 @@
 - [x] Protected routes (/dashboard requires login)
 - [x] localStorage auth persistence ({phone, name, email, ts})
 - [x] Sign-in page (/signin)
-- [x] Sign-up page (/signup) — two-step OTP flow
+- [x] Sign-up page (/signup) - two-step OTP flow
 - [x] InputOTP 6-digit component with auto-focus
 - [x] OTP resend button
 - [x] Back button on OTP step
@@ -39,7 +39,7 @@
 - [x] Property type dropdown filter
 - [x] Sort: Newest / Highest profit / Lowest rent
 - [x] Pagination (12 per page)
-- [x] "Add to CRM" button — green → gray + celebration animation (stays on page)
+- [x] "Add to CRM" button - green → gray + celebration animation (stays on page)
 - [x] Heart/favourite toggle
 - [x] PropertyCard component with photo, stats, action buttons
 - [x] Inquiry popup on "Inquire Now"
@@ -97,8 +97,8 @@
 - [x] nfstay-black button style
 
 ### n8n Workflows (Backend)
-- [x] Send OTP (#kRuEBEDHEHokExtp) — WhatsApp via Twilio (+15559459048 nfstay Properties)
-- [x] Verify OTP (#Coowne7rD2uOij8w) — checks otps table, deletes used OTP, saves signup to inquiries table, triggers welcome email
+- [x] Send OTP (#kRuEBEDHEHokExtp) - WhatsApp via Twilio (+15559459048 nfstay Properties)
+- [x] Verify OTP (#Coowne7rD2uOij8w) - checks otps table, deletes used OTP, saves signup to inquiries table, triggers welcome email
 - [x] Estimate Profit (#3EDIQKRea9nGzxve)
 - [x] New Inquiry Notifications (#dC24ZjEE7F3OhxLg)
 - [x] AI Generate Listing (#VfJ1uwFTH1UkZHVg)
@@ -113,7 +113,7 @@
 - [x] TypeScript types generated (Tables<'properties'>)
 
 ### Infrastructure
-- [x] Vercel deployment [hugos-projects-f8cc36a8/marketplace10](https://vercel.com/hugos-projects-f8cc36a8/marketplace10) — hub.nfstay.com + marketplace10.vercel.app
+- [x] Vercel deployment [hugos-projects-f8cc36a8/marketplace10](https://vercel.com/hugos-projects-f8cc36a8/marketplace10) - hub.nfstay.com + marketplace10.vercel.app
 - [x] GitHub [hrds100/marketplace10](https://github.com/hrds100/marketplace10), main
 - [x] Supabase [project asazddtvjvmckouxcmmo](https://supabase.com/dashboard/project/asazddtvjvmckouxcmmo/)
 - [x] VITE_N8N_WEBHOOK_URL env var on Vercel
@@ -126,16 +126,16 @@
 ## 🔄 PENDING (Phase 2)
 
 ### n8n Workflows
-- [ ] Resend welcome emails (workflow #bI0vzTqncMjCs5jO — structure ready, needs Resend API key in Code node)
-- [x] Production Twilio WhatsApp (+15559459048 nfstay Properties — LIVE)
+- [ ] Resend welcome emails (workflow #bI0vzTqncMjCs5jO - structure ready, needs Resend API key in Code node)
+- [x] Production Twilio WhatsApp (+15559459048 nfstay Properties - LIVE)
 - [ ] Daily deals WhatsApp summary
 - [ ] Deal expiry cron job
 
 ### Supabase
-- [x] Signup data stored in inquiries table (property_name='SIGNUP') — works now
+- [x] Signup data stored in inquiries table (property_name='SIGNUP') - works now
 - [ ] Dedicated signups table (needs Supabase DB password for DDL)
 - [ ] Row-Level Security (RLS) policies
-- [ ] profiles table migration (FK to auth.users — future Supabase Auth integration)
+- [ ] profiles table migration (FK to auth.users - future Supabase Auth integration)
 
 ### Auth
 - [ ] Auth context provider (React Context)

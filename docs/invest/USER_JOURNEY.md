@@ -1,4 +1,4 @@
-# Investment Module — The Complete User Journey
+# Investment Module - The Complete User Journey
 
 > Every flow explained in simple English. No technical jargon. Anyone can understand this.
 
@@ -16,7 +16,7 @@
 🔗 If they came from a referral link (?ref=HUGO2026), the agent is tracked automatically
    ↓
 🔐 Particle Network creates a crypto wallet for them in the background
-   (they don't need to know about this — it just happens)
+   (they don't need to know about this - it just happens)
    ↓
 ✅ Account created! They land on the Deals page
 ```
@@ -99,7 +99,7 @@
    - Pending Payouts: $0
    - ROI Progress bar (loading toward their first return)
    ↓
-📈 Monthly Earnings chart (empty now — will fill up month by month)
+📈 Monthly Earnings chart (empty now - will fill up month by month)
    ↓
 🏡 Their Holdings section shows the property:
    - Photo + title + location
@@ -145,7 +145,7 @@
    ↓
 🔄 Modal opens with options:
 
-   🏦 Bank Transfer (Worldwide — 200+ countries)
+   🏦 Bank Transfer (Worldwide - 200+ countries)
    ├── First time? Select your country → form adapts:
    │     🇬🇧 UK: Sort code + Account number
    │     🇪🇺 EU: IBAN + BIC
@@ -157,7 +157,7 @@
    ├── Claim submitted → status: PENDING
    ├── Tuesday 5am: n8n batches all bank claims
    ├── Sends batch to Revolut as a payment draft
-   ├── Hugo gets WhatsApp: "Batch ready — 15 payees, £4,230 GBP + €890 + $1,200"
+   ├── Hugo gets WhatsApp: "Batch ready - 15 payees, £4,230 GBP + €890 + $1,200"
    ├── Hugo opens Revolut app → approves with Face ID
    ├── Revolut sends via fastest rail (local or SWIFT)
    │     🇬🇧 GBP: same day  |  🇪🇺 EUR: same/next day
@@ -165,16 +165,16 @@
    ├── User gets WhatsApp: "Your payout of £42.50 has arrived ✅"
    └── Bank statement shows: "nfstay Payout"
 
-   💲 USDC (Direct to Wallet) — INSTANT
+   💲 USDC (Direct to Wallet) - INSTANT
    ├── Rent contract sends USDC straight to user's wallet
    └── Done in seconds. No admin needed.
 
-   🪙 STAY Token — INSTANT
+   🪙 STAY Token - INSTANT
    ├── System claims USDC first
    ├── Automatically swaps USDC → STAY via PancakeSwap
    └── STAY tokens arrive in user's wallet
 
-   🌱 LP Token (Farm) — INSTANT
+   🌱 LP Token (Farm) - INSTANT
    ├── Claims USDC → creates liquidity pair → stakes in farm
    └── User earns farming rewards on top of rent income
 ```
@@ -187,7 +187,7 @@
 📋 Someone proposes: "Let's renovate the pool to increase nightly rates"
    ↓
 📧 All shareholders get email notification
-📱 WhatsApp: "New proposal for Seseh Villa — tap to vote"
+📱 WhatsApp: "New proposal for Seseh Villa - tap to vote"
    ↓
 🗳️ User opens Proposals page → sees the active proposal
    ↓
@@ -299,7 +299,7 @@
 💵 Agent opens Payouts page → sees commissions available
    ↓
    Same 4 options as investors:
-   🏦 Bank Transfer (Tuesday batch via Revolut — worldwide, 200+ countries)
+   🏦 Bank Transfer (Tuesday batch via Revolut - worldwide, 200+ countries)
    💲 USDC (instant to wallet)
    🪙 STAY Token (instant swap)
    🌱 LP Token (farm for extra yield)
@@ -312,25 +312,25 @@
 ```
 👨‍💼 Admin can:
 
-📊 Dashboard — see total invested, shareholders, revenue, activity at a glance
-🏠 Properties — add/edit investment properties, set share prices, toggle open/funded
-📦 Orders — view all purchases, complete pending ones, process refunds
-👥 Shareholders — see who owns what, filter by property, export CSV
-💰 Commissions — view all commissions across all agents, filter and search
-⚙️ Settings — set global commission rates (40% sub, 5% first, 2% recurring)
+📊 Dashboard - see total invested, shareholders, revenue, activity at a glance
+🏠 Properties - add/edit investment properties, set share prices, toggle open/funded
+📦 Orders - view all purchases, complete pending ones, process refunds
+👥 Shareholders - see who owns what, filter by property, export CSV
+💰 Commissions - view all commissions across all agents, filter and search
+⚙️ Settings - set global commission rates (40% sub, 5% first, 2% recurring)
    └── Override per-user: give one agent 50%, another 30%
-💳 Payouts — approve/reject payout requests, mark as paid
+💳 Payouts - approve/reject payout requests, mark as paid
    └── Bank payouts: approve weekly batch in Revolut app (Face ID)
-🗳️ Proposals — moderate, close early if spam
-🚀 Boosts — view boost status, admin-boost a user's property
-🔍 Search — find any user, order, commission, or payout instantly
-📄 Export — download CSV of anything
-📋 Audit Trail — every admin action is logged permanently
+🗳️ Proposals - moderate, close early if spam
+🚀 Boosts - view boost status, admin-boost a user's property
+🔍 Search - find any user, order, commission, or payout instantly
+📄 Export - download CSV of anything
+📋 Audit Trail - every admin action is logged permanently
 ```
 
 ---
 
-## 12. Notifications — Everything Connected 🔔
+## 12. Notifications - Everything Connected 🔔
 
 ```
 Every important event triggers notifications:
@@ -383,7 +383,7 @@ WHAT PROCESSES PAYMENTS:
     Blockchain (instant crypto payments: USDC, STAY, LP)
 
 WHAT SENDS MESSAGES:
-    Resend (emails — same sender as hub.nfstay.com)
+    Resend (emails - same sender as hub.nfstay.com)
     WhatsApp (same number as hub.nfstay.com, via n8n)
     In-app notifications (bell icon, via Supabase)
 ```

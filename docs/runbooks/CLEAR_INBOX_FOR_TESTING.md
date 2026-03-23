@@ -12,7 +12,7 @@
 
 3️⃣ Copy-paste the SQL below, then click **Run**
 
-4️⃣ ✅ Done — every user's inbox is now empty
+4️⃣ ✅ Done - every user's inbox is now empty
 
 ---
 
@@ -33,8 +33,8 @@ Every user's inbox is now empty. The only thread visible is **nfstay Support** (
 
 **For you (Hugo):**
 
-1. 🔄 Refresh `/dashboard/inbox` — thread list is empty (only Support thread remains)
-2. 🏠 Click **Inquire Now** on any deal — a brand new thread is created
+1. 🔄 Refresh `/dashboard/inbox` - thread list is empty (only Support thread remains)
+2. 🏠 Click **Inquire Now** on any deal - a brand new thread is created
 3. 🔒 To test the payment gate: `UPDATE profiles SET tier = 'free' WHERE email = 'hugo@nfstay.com';`
 4. 💳 Open the new thread → you'll see the **"Unlock Now"** payment banner
 5. ✅ After testing: `UPDATE profiles SET tier = 'monthly' WHERE email = 'hugo@nfstay.com';`

@@ -1,10 +1,10 @@
-# Investment Module — Tech Stack Reference
+# Investment Module - Tech Stack Reference
 
 > All contract addresses, endpoints, tokens, wallets, and technical references for the investment module.
 
 ---
 
-## Blockchain (BNB Chain Mainnet — Chain ID 56)
+## Blockchain (BNB Chain Mainnet - Chain ID 56)
 
 ### Smart Contracts
 
@@ -113,8 +113,8 @@ The original blockchain app lives at:
 `/Users/hugo/Downloads/AI Folder/openclaw/nfstay-org/`
 
 Key reference files:
-- `frontend/src/context/nfstayContext.jsx` — all contract interaction functions
-- `frontend/src/context/subgraphHelper.js` — all Graph queries
-- `frontend/src/config.js` — all addresses + endpoints
-- `frontend/src/utils/abis.js` — all contract ABIs
-- `backend/routes/samcartRoute.js` — webhook + share distribution
+- `frontend/src/context/nfstayContext.jsx` - all contract interaction functions
+- `frontend/src/context/subgraphHelper.js` - all Graph queries
+- `frontend/src/config.js` - all addresses + endpoints
+- `frontend/src/utils/abis.js` - all contract ABIs
+- `backend/routes/samcartRoute.js` - webhook + share distribution

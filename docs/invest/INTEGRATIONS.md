@@ -1,4 +1,4 @@
-# Investment Module — Integrations
+# Investment Module - Integrations
 
 > Every external system, n8n workflow, notification, and webhook for the investment module.
 
@@ -28,21 +28,21 @@
 |-------|:-----:|:--------:|:------:|
 | Share purchased | Buyer + Agent | Buyer | Both |
 | Rent available to claim | Investor | Investor | Investor |
-| Rent claimed | Investor | — | Investor |
+| Rent claimed | Investor | - | Investor |
 | Commission earned | Agent | Agent | Agent |
-| Commission claimable (14d) | Agent | — | Agent |
+| Commission claimable (14d) | Agent | - | Agent |
 | Payout processed | User | User | User |
-| New proposal created | All shareholders | — | All |
-| Proposal ending soon (2d) | All shareholders | — | All |
+| New proposal created | All shareholders | - | All |
+| Proposal ending soon (2d) | All shareholders | - | All |
 | Proposal result | All shareholders | All | All |
-| Boost activated | User | — | User |
+| Boost activated | User | - | User |
 | Agent payout sent | Agent | Agent | Agent |
 | Admin: new order pending | Admin | Admin | Admin |
 | Admin: payout request | Admin | Admin | Admin |
-| Bank details saved | — | User | — |
-| Payout batch ready for approval | — | Admin (Hugo) | — |
-| Bank payout completed | — | User | User |
-| Bank payout failed | — | Admin (Hugo) | — |
+| Bank details saved | - | User | - |
+| Payout batch ready for approval | - | Admin (Hugo) | - |
+| Bank payout completed | - | User | User |
+| Bank payout failed | - | Admin (Hugo) | - |
 
 ---
 
@@ -75,7 +75,7 @@ Supports worldwide payouts to 200+ countries via local rails (UK Faster Payments
 |--------|----------|---------|
 | POST | /counterparty | Register a user's bank account as a Revolut counterparty |
 | POST | /payment-drafts | Create a batch payment draft for Hugo to approve |
-| — | Webhook handler | Receives payment status updates from Revolut |
+| - | Webhook handler | Receives payment status updates from Revolut |
 
 ### Edge Functions
 

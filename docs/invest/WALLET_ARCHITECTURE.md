@@ -280,7 +280,7 @@ Admin goes to Supabase Dashboard -> Auth -> Users
 
 **Diagnosis:**
 1. Open browser console (F12) → look for `[WalletProvisioner]` logs
-2. If `No wallet — starting creation...` appears but no `Wallet created:` → Particle SDK failed
+2. If `No wallet - starting creation...` appears but no `Wallet created:` → Particle SDK failed
 3. If no `[WalletProvisioner]` log at all → component didn't mount (check DashboardLayout)
 
 **Common causes:**
@@ -289,7 +289,7 @@ Admin goes to Supabase Dashboard -> Auth -> Users
 | Particle SDK WASM not loading | Check `dist/assets/thresh_sig_wasm_bg*.wasm` exists. Rebuild if missing |
 | JWT generation failed | Check `PARTICLE_JWT_PRIVATE_KEY` is set in Supabase Edge Function secrets |
 | Particle overlay blocking page | CSS in `index.css` hides overlays. If too aggressive, wallet creation breaks. Only hide `pn-modal`, `pn-auth`, `particle-auth-core-modal` |
-| JWKS endpoint down | Test: `curl https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/particle-jwks` — should return JSON with public key |
+| JWKS endpoint down | Test: `curl https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/particle-jwks` - should return JSON with public key |
 | Particle dashboard misconfigured | Login to Particle dashboard → check JWT JWKS URL is set to our endpoint |
 
 **Manual fix for a specific user:**
@@ -307,7 +307,7 @@ UPDATE profiles SET wallet_address = NULL WHERE id = 'USER_UUID_HERE';
 
 **Fix (already applied):** CSS in `src/index.css` sets `pointer-events: none; opacity: 0; z-index: -1` on Particle modal classes. If the selectors need updating, inspect the DOM for new Particle class names.
 
-**Important:** Do NOT hide elements with `[id*="particle"]` or `iframe[src*="particle"]` — Particle needs its internal iframes for MPC/WASM key operations. Only hide the visible modal overlays.
+**Important:** Do NOT hide elements with `[id*="particle"]` or `iframe[src*="particle"]` - Particle needs its internal iframes for MPC/WASM key operations. Only hide the visible modal overlays.
 
 ### JWT key rotation
 
@@ -317,17 +317,17 @@ UPDATE profiles SET wallet_address = NULL WHERE id = 'USER_UUID_HERE';
 2. Update `PARTICLE_JWT_PRIVATE_KEY` in Supabase Edge Function secrets
 3. Update the public key `n` value in `supabase/functions/particle-jwks/index.ts`
 4. Redeploy both edge functions
-5. **Critical:** Update Particle dashboard JWKS URL or register new key — otherwise Particle can't verify new JWTs and ALL wallet creation stops
-6. Old wallets are unaffected — they're already created
+5. **Critical:** Update Particle dashboard JWKS URL or register new key - otherwise Particle can't verify new JWTs and ALL wallet creation stops
+6. Old wallets are unaffected - they're already created
 
 ### Particle Network outage
 
 **If Particle is down:**
 - Wallet creation silently fails (non-blocking)
-- Users can still use the app — wallet is optional until they do blockchain transactions
+- Users can still use the app - wallet is optional until they do blockchain transactions
 - Existing wallets still work for on-chain reads (via The Graph)
 - On-chain writes (buy shares, claim rent, vote) require Particle to sign transactions
-- Funds are SAFE on-chain — they don't move without a valid signature
+- Funds are SAFE on-chain - they don't move without a valid signature
 
 ### Vercel deployment checklist (wallet-related)
 

@@ -1,4 +1,4 @@
-# nfstay — Architecture
+# nfstay - Architecture
 
 ## Folder Structure
 ```
@@ -46,22 +46,22 @@ Tier is stored in `profiles.tier`. Checked via `useUserTier()` hook + `isPaidTie
 
 ## Route Structure
 ### Public (no auth)
-- `/` — Landing page
+- `/` - Landing page
 - `/signin`, `/signup`, `/verify-otp`, `/forgot-password`
 - `/privacy`, `/terms`
-- `/deals/:id` — Deal detail (public but requires auth for actions)
+- `/deals/:id` - Deal detail (public but requires auth for actions)
 
 ### Protected (auth required, OTP verified)
-- `/dashboard/deals` — Browse live deals
-- `/dashboard/crm` — CRM pipeline
-- `/dashboard/university` — Academy modules
-- `/dashboard/list-a-deal` — Submit + My Listings
-- `/dashboard/favourites` — Saved deals
-- `/dashboard/settings` — Profile, security, membership, notifications
-- `/dashboard/affiliates` — Referral program
+- `/dashboard/deals` - Browse live deals
+- `/dashboard/crm` - CRM pipeline
+- `/dashboard/university` - Academy modules
+- `/dashboard/list-a-deal` - Submit + My Listings
+- `/dashboard/favourites` - Saved deals
+- `/dashboard/settings` - Profile, security, membership, notifications
+- `/dashboard/affiliates` - Referral program
 
 ### Admin (isAdmin required)
-- `/admin/*` — Dashboard, Listings, Users, Submissions, Notifications, University, Pricing, FAQ, Affiliates, Settings
+- `/admin/*` - Dashboard, Listings, Users, Submissions, Notifications, University, Pricing, FAQ, Affiliates, Settings
 
 ## Key Patterns
 - **Single InquiryPanel**: rendered once per page via `createPortal` to `document.body`, never inside cards

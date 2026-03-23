@@ -36,7 +36,7 @@ DELETE FROM chat_threads;
 UPDATE profiles SET tier = 'free';
 ```
 
-3️⃣ ✅ Done — all inboxes empty, all users on free tier
+3️⃣ ✅ Done - all inboxes empty, all users on free tier
 
 ---
 
@@ -48,17 +48,17 @@ Go to **hub.nfstay.com/admin** → Dashboard → scroll to "Testing" section →
 
 The admin button calls a Supabase Edge Function (`reset-for-testing`). If you see "Reset failed: the Edge Function may not be deployed", deploy it once:
 
-**Option A — CLI (recommended):**
+**Option A - CLI (recommended):**
 ```bash
 cd marketplace10
 npx supabase link --project-ref asazddtvjvmckouxcmmo
 npx supabase functions deploy reset-for-testing
 ```
 
-**Option B — Dashboard:**
+**Option B - Dashboard:**
 Go to Supabase → Edge Functions → Deploy a new function → name it `reset-for-testing` → paste the code from `supabase/functions/reset-for-testing/index.ts`.
 
-After deploy, the admin button works immediately. No extra DB wiring needed — the function runs inside Supabase and has direct access to the project database via the service role.
+After deploy, the admin button works immediately. No extra DB wiring needed - the function runs inside Supabase and has direct access to the project database via the service role.
 
 ---
 
@@ -75,7 +75,7 @@ If the button still fails:
 
 ## After running
 
-- Every user's inbox is empty (only nfstay Support thread remains — hardcoded)
+- Every user's inbox is empty (only nfstay Support thread remains - hardcoded)
 - Every user is on free tier
 - Inquire Now on any deal → creates fresh thread → payment gate appears for operators
 - Properties and accounts are untouched

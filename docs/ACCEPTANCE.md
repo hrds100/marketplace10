@@ -1,4 +1,4 @@
-# nfstay — Acceptance Scenarios (BDD)
+# nfstay - Acceptance Scenarios (BDD)
 
 _Last updated: 2026-03-16_
 
@@ -36,11 +36,11 @@ _Last updated: 2026-03-16_
 
 ## Inbox & messaging (canonical flows)
 
-- **Tenant — first message requires payment**
+- **Tenant - first message requires payment**
   - Given I am the tenant (operator) in a thread with no messages yet, When I try to type or send a message, Then the payment gate (PaymentSheet / GHL) is shown and I cannot send until I have a paid tier.
   - Given I am the tenant and I have a paid tier (or the thread already has messages), When I type and send, Then the message is saved and the other party can see it (Realtime).
 
-- **Landlord — first reply requires NDA**
+- **Landlord - first reply requires NDA**
   - Given I am the landlord in a thread where the NDA is not yet signed, When I try to type or send a reply, Then the NDA modal or "Sign NDA to reply" flow is shown and I cannot send until I sign.
   - Given I am the landlord and I have signed the NDA, When I type and send, Then the message is saved and the tenant sees it; contact details (phone/email) are visible in the right panel for me.
 
@@ -58,7 +58,7 @@ _Last updated: 2026-03-16_
 - **Payment unlocks tenant messaging**
   - Given I am a free-tier tenant, When I complete payment in the GHL funnel (or return with ?payment=success), Then my profile.tier is updated (via n8n) and the inbox shows the input as unlocked for my first message.
 
-- **Settings — membership**
+- **Settings - membership**
   - Given I am signed in, When I open Settings → Membership, Then I see my current tier and upgrade options; "Manage Plan" or upgrade cards open the GHL funnel.
 
 ---
@@ -85,4 +85,4 @@ _Last updated: 2026-03-16_
 - **Phase 1 (Prompt Refinement):** When refining a prompt for feature or flow work, copy the relevant Given/When/Then blocks into the execution prompt so they are treated as required behavior.
 - **Phase 2 (Execution):** When the prompt includes acceptance scenarios, implement so the behaviors hold and verify before marking DONE. "Verify" means: run the affected flow once and report what you did and saw, or give Hugo a 2–4 step checklist. Do not mark scenarios as held without one of these. Add or adjust tests if needed.
 - **New flows:** When adding a new feature, add new scenarios here and reference `docs/DOMAIN.md` for terms.
-- **Full protocol:** `docs/AGENT_INSTRUCTIONS.md` — Section 2 (two-phase protocol), Section 3d (acceptance scenarios in execution).
+- **Full protocol:** `docs/AGENT_INSTRUCTIONS.md` - Section 2 (two-phase protocol), Section 3d (acceptance scenarios in execution).

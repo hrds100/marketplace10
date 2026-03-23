@@ -1,4 +1,4 @@
-# University AI Chat — n8n Workflow
+# University AI Chat - n8n Workflow
 
 ## Webhook
 - Path: `/webhook/ai-university-chat`
@@ -8,11 +8,11 @@
 
 ```json
 {
-  "message": "string — the user's question",
-  "lessonTitle": "string — current lesson title",
-  "moduleTitle": "string — current module title",
-  "lessonContext": "string — first 400 chars of lesson content",
-  "userId": "string | undefined — Supabase auth user ID"
+  "message": "string - the user's question",
+  "lessonTitle": "string - current lesson title",
+  "moduleTitle": "string - current module title",
+  "lessonContext": "string - first 400 chars of lesson content",
+  "userId": "string | undefined - Supabase auth user ID"
 }
 ```
 
@@ -22,7 +22,7 @@
 { "response": "string" }
 ```
 
-The client (`useAIChat.ts`) also accepts `reply`, `text`, or `message` keys in the response — any of these will be used as the reply string.
+The client (`useAIChat.ts`) also accepts `reply`, `text`, or `message` keys in the response - any of these will be used as the reply string.
 
 ## Fallback
 

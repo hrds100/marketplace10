@@ -21,19 +21,19 @@
 - Manual testing on https://hub.nfstay.com after deploy
 
 ## Key Files
-- `src/App.tsx` — Router + providers
-- `src/hooks/useAuth.ts` — Auth state + admin detection
-- `src/lib/ghl.ts` — GHL products, tier helpers
-- `src/lib/n8n.ts` — All n8n webhook functions
-- `src/lib/pexels.ts` — Pexels photo API
-- `src/integrations/supabase/client.ts` — Supabase client init
-- `src/integrations/supabase/types.ts` — Generated DB types
+- `src/App.tsx` - Router + providers
+- `src/hooks/useAuth.ts` - Auth state + admin detection
+- `src/lib/ghl.ts` - GHL products, tier helpers
+- `src/lib/n8n.ts` - All n8n webhook functions
+- `src/lib/pexels.ts` - Pexels photo API
+- `src/integrations/supabase/client.ts` - Supabase client init
+- `src/integrations/supabase/types.ts` - Generated DB types
 
 ## AI Handover
 If an AI is taking over this codebase, read in this order:
-1. `docs/STACK.md` — services, URLs, IDs
-2. `docs/ARCHITECTURE.md` — how the app is structured
-3. `docs/DATABASE.md` — Supabase schema
-4. `docs/INTEGRATIONS.md` — n8n, GHL, Pexels
-5. `docs/CHANGELOG.md` — what was recently changed
-6. `docs/ENV.md` — environment variables
+1. `docs/STACK.md` - services, URLs, IDs
+2. `docs/ARCHITECTURE.md` - how the app is structured
+3. `docs/DATABASE.md` - Supabase schema
+4. `docs/INTEGRATIONS.md` - n8n, GHL, Pexels
+5. `docs/CHANGELOG.md` - what was recently changed
+6. `docs/ENV.md` - environment variables

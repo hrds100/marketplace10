@@ -1,15 +1,15 @@
-# nfstay — Complete Lovable Build Prompt
+# nfstay - Complete Lovable Build Prompt
 # Paste EVERYTHING below this line into Lovable
 
 ---
 
 ## What You Are Building
 
-**nfstay** — a vacation rental platform. Three portals, one codebase:
+**nfstay** - a vacation rental platform. Three portals, one codebase:
 
-1. **Traveler portal** (`nfstay.app`) — guests search, view, and book properties
-2. **Operator portal** (`hub.nfstay.com/nfstay/*`) — property owners manage listings, reservations, get paid
-3. **White-label portal** (`brand.nfstay.app` or custom domain) — operator's branded storefront
+1. **Traveler portal** (`nfstay.app`) - guests search, view, and book properties
+2. **Operator portal** (`hub.nfstay.com/nfstay/*`) - property owners manage listings, reservations, get paid
+3. **White-label portal** (`brand.nfstay.app` or custom domain) - operator's branded storefront
 
 ---
 
@@ -19,21 +19,21 @@
 - Tailwind CSS
 - Supabase (auth + database + storage)
 - React Router v6
-- `@googlemaps/js-api-loader` — maps + Places autocomplete
-- `@stripe/react-stripe-js` — Stripe checkout
-- `embla-carousel-react` — photo galleries, carousels
-- `date-fns` — all date work
-- `react-hook-form` + `zod` — all forms and validation
-- `react-hot-toast` — toast notifications
-- `lucide-react` — all icons
-- `recharts` — analytics charts
+- `@googlemaps/js-api-loader` - maps + Places autocomplete
+- `@stripe/react-stripe-js` - Stripe checkout
+- `embla-carousel-react` - photo galleries, carousels
+- `date-fns` - all date work
+- `react-hook-form` + `zod` - all forms and validation
+- `react-hot-toast` - toast notifications
+- `lucide-react` - all icons
+- `recharts` - analytics charts
 
 ---
 
 ## Design System
 
 ### Fonts
-**Inter** — `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap')`
+**Inter** - `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap')`
 Apply to body: `font-family: 'Inter', system-ui, sans-serif`
 
 ### CSS Variables
@@ -85,12 +85,12 @@ Apply to body: `font-family: 'Inter', system-ui, sans-serif`
 | no_show / expired / draft | `hsl(220 14% 96%)` | `hsl(220 9% 26%)` gray |
 
 ### Buttons
-- **Primary** — `bg-primary text-white rounded-lg px-4 py-2 font-semibold hover:bg-primary/90 transition`
-- **Secondary** — `bg-secondary border border-border text-foreground rounded-lg px-4 py-2 font-semibold hover:bg-muted`
-- **Outline** — `border border-border bg-transparent hover:bg-secondary rounded-lg px-4 py-2`
-- **Danger** — `bg-destructive text-white rounded-lg px-4 py-2 font-semibold hover:bg-destructive/90`
-- **Ghost** — `bg-transparent hover:bg-secondary text-foreground rounded-lg px-3 py-2`
-- **Icon button** — `p-2 rounded-lg hover:bg-secondary`
+- **Primary** - `bg-primary text-white rounded-lg px-4 py-2 font-semibold hover:bg-primary/90 transition`
+- **Secondary** - `bg-secondary border border-border text-foreground rounded-lg px-4 py-2 font-semibold hover:bg-muted`
+- **Outline** - `border border-border bg-transparent hover:bg-secondary rounded-lg px-4 py-2`
+- **Danger** - `bg-destructive text-white rounded-lg px-4 py-2 font-semibold hover:bg-destructive/90`
+- **Ghost** - `bg-transparent hover:bg-secondary text-foreground rounded-lg px-3 py-2`
+- **Icon button** - `p-2 rounded-lg hover:bg-secondary`
 
 ### Cards
 `bg-card rounded-[var(--radius)] border border-border shadow-sm`
@@ -136,19 +136,19 @@ Every empty list uses: centered container, icon in muted circle (w-16 h-16 round
 Use **Supabase Auth**. Two flows:
 
 ### Operator Auth
-- Sign up: `/signup` — email + password form. On success: create `nfs_operators` row → redirect to `/nfstay/onboarding`
-- Sign in: `/signin` — email + password. On success → redirect to `/nfstay`
+- Sign up: `/signup` - email + password form. On success: create `nfs_operators` row → redirect to `/nfstay/onboarding`
+- Sign in: `/signin` - email + password. On success → redirect to `/nfstay`
 - Sign out: clears Supabase session
 
 ### Traveler Auth
-- `/traveler/login` — email input only. "Send magic link" button. Supabase sends magic link email. Clicking link → `/auth/callback` → redirect to `/traveler/reservations`
+- `/traveler/login` - email input only. "Send magic link" button. Supabase sends magic link email. Clicking link → `/auth/callback` → redirect to `/traveler/reservations`
 - Traveler can also check out as a guest (no login required)
 
 ### Auth Callback
-- `/auth/callback` — handles Supabase email confirmation and magic links. Reads hash params → exchanges token → redirects to appropriate page
+- `/auth/callback` - handles Supabase email confirmation and magic links. Reads hash params → exchanges token → redirects to appropriate page
 
 ### Email Verification
-- `/verify-email` — shows "Check your inbox" message with resend button after signup
+- `/verify-email` - shows "Check your inbox" message with resend button after signup
 
 ### Operator Guard
 Wrap all `/nfstay/*` routes. Logic:
@@ -239,11 +239,11 @@ WHITE-LABEL ROUTES (operator subdomain/custom domain)
 
 ---
 
-## App Bootstrap — Domain Detection & Routing Logic
+## App Bootstrap - Domain Detection & Routing Logic
 
 ### White-Label Domain Detection
 
-**This is critical — the app must detect at startup whether it's running on a white-label domain.**
+**This is critical - the app must detect at startup whether it's running on a white-label domain.**
 
 Implement a `NfsWhiteLabelProvider` that wraps the entire app at the root `App.tsx` level:
 
@@ -330,7 +330,7 @@ While checking (async Supabase calls): render full-screen spinner.
 
 ---
 
-### OAuth Callback Page — `/nfstay/oauth-callback`
+### OAuth Callback Page - `/nfstay/oauth-callback`
 
 **Used by both Stripe Connect and Hospitable OAuth flows.**
 
@@ -366,7 +366,7 @@ Both integrations redirect back to this page after OAuth consent.
 ```
 
 **Visual:**
-- Centered on page (no sidebar, no navbar — clean focus)
+- Centered on page (no sidebar, no navbar - clean focus)
 - Card: max-w-md, mx-auto, mt-32
 - Uses nfstay logo at top
 - Three states: Loading spinner | Success (green) | Error (red)
@@ -437,7 +437,7 @@ Used on white-label domains.
 
 ---
 
-### `NfsMainLanding` — `/`
+### `NfsMainLanding` - `/`
 
 **Section 1: Hero (full viewport height min, dark overlay)**
 - Background: large property photo. Dark gradient overlay (bottom to top: rgba(0,0,0,0.5) → transparent)
@@ -471,17 +471,17 @@ Used on white-label domains.
 - 3 cards horizontal:
   1. MagnifyingGlass icon (green circle bg) | "Search" | "Browse thousands of verified properties worldwide"
   2. CreditCard icon | "Book" | "Secure checkout with instant confirmation"
-  3. Home icon | "Stay" | "Check in and enjoy — no hidden fees"
+  3. Home icon | "Stay" | "Check in and enjoy - no hidden fees"
 
 **Section 5: Why nfstay**
 - Heading: "Why book direct with nfstay?"
 - 3×2 grid of feature items (icon + title + description):
-  - 💰 Save up to 15% — No OTA commission fees passed to guests
-  - ✓ Verified properties — Every listing reviewed by our team
-  - 🔒 Secure payments — Stripe-protected checkout
-  - 📞 24/7 support — Real people, real help
-  - 🔄 Flexible cancellation — Transparent policies per property
-  - 🌍 Global reach — Properties in 50+ countries
+  - 💰 Save up to 15% - No OTA commission fees passed to guests
+  - ✓ Verified properties - Every listing reviewed by our team
+  - 🔒 Secure payments - Stripe-protected checkout
+  - 📞 24/7 support - Real people, real help
+  - 🔄 Flexible cancellation - Transparent policies per property
+  - 🌍 Global reach - Properties in 50+ countries
 
 **Section 6: Testimonials**
 - Heading: "What our guests say"
@@ -568,15 +568,15 @@ On submit: `navigate('/search?query=...&dates=checkIn,checkOut&adults=N&children
 
 ---
 
-### `NfsSearch` — `/search`
+### `NfsSearch` - `/search`
 
 **Sticky header (bg-card border-b shadow-sm, z-40):**
 
-Row 1 — Compressed search bar (max-w-2xl mx-auto):
+Row 1 - Compressed search bar (max-w-2xl mx-auto):
 - Rounded-full border, flex row
 - Location text input (flex-1) | vertical divider | "Check in" date | vertical divider | "Check out" date | vertical divider | Guests button | Search button (green circle, MagnifyingGlass icon only)
 
-Row 2 — Filter chips (horizontal scroll, no scrollbar):
+Row 2 - Filter chips (horizontal scroll, no scrollbar):
 - Type chips: **All** · **🏠 Entire home** · **🏢 Apartment** · **🏡 Villa** · **🏰 Castle** · **🛖 Cabin** · **🚢 Boat** · **🌲 Treehouse** · **🏖️ Beach house** · **🏔️ Mountain**
 - Active: `bg-foreground text-background`
 - Inactive: `bg-card border border-border hover:border-foreground`
@@ -588,8 +588,8 @@ Row 3 (visible when "Filters" toggled):
 - "Bedrooms:" + stepper (1 2 3 4 5+)
 
 Chips row also has:
-- `Filters` button (SlidersHorizontal icon) — toggles row 3
-- `Clear all` link (X icon) when any filter active — resets everything
+- `Filters` button (SlidersHorizontal icon) - toggles row 3
+- `Clear all` link (X icon) when any filter active - resets everything
 
 **Results area:**
 
@@ -611,7 +611,7 @@ Count + toggle row:
 
 **Map view (`NfsSearchMap`):**
 - Google Map, full width, h-[600px], rounded-2xl
-- Price markers: each visible property shows a pill marker (`£150`) — white bg, dark text, rounded-full, shadow
+- Price markers: each visible property shows a pill marker (`£150`) - white bg, dark text, rounded-full, shadow
 - Hover marker: grows slightly, shadow-lg
 - Click marker:
   - Marker becomes selected (green bg, white text)
@@ -634,25 +634,25 @@ No explicit card border. Floats naturally.
 **Image area:**
 - `aspect-square rounded-2xl overflow-hidden relative`
 - If `images.length > 1`:
-  - Left arrow button (absolute left-2 top-1/2, white circle, shadow) — previous photo
-  - Right arrow button (absolute right-2 top-1/2) — next photo
+  - Left arrow button (absolute left-2 top-1/2, white circle, shadow) - previous photo
+  - Right arrow button (absolute right-2 top-1/2) - next photo
   - Arrows ONLY visible on hover of card
   - Dot indicators bottom-center (max 5 dots)
 - Favourite button (top-right, absolute, m-2): Heart icon, white fill with border → red fill on toggle. State stored in localStorage `nfs_favourites = ['id1','id2',...]`
-- "New" badge (top-left, absolute, m-2): green pill "New" — only if `created_at` within last 7 days
+- "New" badge (top-left, absolute, m-2): green pill "New" - only if `created_at` within last 7 days
 
 **Content:**
 - `pt-3 space-y-1`
 - Row 1: `public_title` (font-semibold text-sm truncate, flex-1) + star rating (text-sm) or ★ "New" text (right)
 - Row 2: MapPin icon (w-3 h-3) + `city`, `country` (text-xs text-muted-foreground)
-- Row 3: bedroom count + bath count (text-xs text-muted-foreground) e.g. "3 beds · 2 baths" — derived from `room_counts`
+- Row 3: bedroom count + bath count (text-xs text-muted-foreground) e.g. "3 beds · 2 baths" - derived from `room_counts`
 - Row 4: **`base_rate_currency` `base_rate_amount`** (font-semibold) + `/night` (text-muted-foreground text-sm)
 
 Clicking card → `/property/:id`
 
 ---
 
-### `NfsPropertyView` — `/property/:id`
+### `NfsPropertyView` - `/property/:id`
 
 Fetch `nfs_properties` WHERE `id = :id AND listing_status = 'listed'`. If not found → 404.
 
@@ -749,11 +749,11 @@ Fetch `nfs_properties` WHERE `id = :id AND listing_status = 'listed'`. If not fo
   - Non-interactive (no clicks needed), zoom level 14
   - Map type: roadmap, minimal UI (no street view, no fullscreen)
 
-*Divider (mobile only — sidebar appears below on mobile)*
+*Divider (mobile only - sidebar appears below on mobile)*
 
 **Right column (sticky top-4 on desktop):**
 
-`NfsBookingWidget` — see component spec below.
+`NfsBookingWidget` - see component spec below.
 
 ---
 
@@ -805,7 +805,7 @@ White card, border, rounded-2xl, p-5, shadow-md.
 
 ---
 
-### `NfsCheckoutPage` — `/checkout`
+### `NfsCheckoutPage` - `/checkout`
 
 On mount: read `nfs_booking_intent` from sessionStorage.
 If missing or `expiresAt < Date.now()` → show expired screen:
@@ -816,12 +816,12 @@ If missing or `expiresAt < Date.now()` → show expired screen:
 
 **Layout:** max-w-5xl, grid lg:grid-cols-[1fr_380px] gap-8
 
-**Left — Guest form:**
+**Left - Guest form:**
 
 "Your contact details" section:
-- First name (required) + Last name (required) — side by side grid-cols-2
+- First name (required) + Last name (required) - side by side grid-cols-2
 - Email address (required, type="email")
-- Phone number (required — input with country flag + dial code selector dropdown)
+- Phone number (required - input with country flag + dial code selector dropdown)
 - All validated: red border + error text below if invalid on blur
 
 "Special requests" section:
@@ -846,7 +846,7 @@ If missing or `expiresAt < Date.now()` → show expired screen:
 1. Save `nfs_last_reservation` to sessionStorage (full booking details)
 2. Redirect to Stripe checkout URL from `nfs-stripe-checkout` edge function
 
-**Right — Booking summary card:**
+**Right - Booking summary card:**
 - Property thumbnail (h-24, object-cover, rounded-xl) + title + location (small, MapPin icon)
 - Divider
 - Dates: calendar icon + "Mon, Mar 15 → Thu, Mar 18" + "3 nights" (muted)
@@ -858,7 +858,7 @@ If missing or `expiresAt < Date.now()` → show expired screen:
 
 ---
 
-### `NfsPaymentSuccess` — `/payment/success`
+### `NfsPaymentSuccess` - `/payment/success`
 
 On mount: read + delete `nfs_last_reservation` from sessionStorage.
 
@@ -890,7 +890,7 @@ Actions:
 
 ---
 
-### `NfsPaymentCancel` — `/payment/cancel`
+### `NfsPaymentCancel` - `/payment/cancel`
 
 Centered, max-w-sm, pt-24.
 - Amber circle + AlertTriangle icon
@@ -901,7 +901,7 @@ Centered, max-w-sm, pt-24.
 
 ---
 
-### `NfsGuestBookingLookup` — `/booking`
+### `NfsGuestBookingLookup` - `/booking`
 
 Centered, max-w-lg, pt-16.
 
@@ -928,7 +928,7 @@ Results list:
 
 ---
 
-### `SignInPage` — `/signin`
+### `SignInPage` - `/signin`
 
 Centered card (max-w-sm, mt-16).
 - nfstay logo above card
@@ -943,7 +943,7 @@ Centered card (max-w-sm, mt-16).
 
 Error state: red banner "Invalid email or password"
 
-### `SignUpPage` — `/signup`
+### `SignUpPage` - `/signup`
 
 Same layout as SignIn.
 - "Create your account"
@@ -953,7 +953,7 @@ Same layout as SignIn.
 - Success → redirect to `/verify-email`
 - Footer: "Already have an account? Sign in →"
 
-### `TravelerLoginPage` — `/traveler/login`
+### `TravelerLoginPage` - `/traveler/login`
 
 - "Sign in as Guest"
 - "Enter your email and we'll send you a magic link"
@@ -961,7 +961,7 @@ Same layout as SignIn.
 - "Send magic link" button
 - Success: message "Check your inbox at [email]" with resend button (disabled 60s countdown)
 
-### `VerifyEmailPage` — `/verify-email`
+### `VerifyEmailPage` - `/verify-email`
 
 - Envelope icon (large, muted)
 - "Check your inbox"
@@ -969,14 +969,14 @@ Same layout as SignIn.
 - "Resend email" link (with 60s countdown)
 - "Wrong email? Sign up again" link → `/signup`
 
-### `AuthCallbackPage` — `/auth/callback`
+### `AuthCallbackPage` - `/auth/callback`
 
 Blank page with centered spinner while processing Supabase auth hash.
 Redirects to appropriate page after session established.
 
 ---
 
-### `TravelerReservationsPage` — `/traveler/reservations`
+### `TravelerReservationsPage` - `/traveler/reservations`
 
 Auth required. Redirect to `/traveler/login` if no session.
 
@@ -1004,7 +1004,7 @@ Click → `/traveler/reservation/:id`
 
 ---
 
-### `TravelerReservationDetail` — `/traveler/reservation/:id`
+### `TravelerReservationDetail` - `/traveler/reservation/:id`
 
 **Header:**
 - Back arrow → `/traveler/reservations`
@@ -1040,7 +1040,7 @@ Click → `/traveler/reservation/:id`
 
 ---
 
-### `NfsOperatorDashboard` — `/nfstay`
+### `NfsOperatorDashboard` - `/nfstay`
 
 Guard: redirect to onboarding if not completed.
 
@@ -1073,7 +1073,7 @@ Each metric card (bg-card border rounded-2xl p-5):
 
 ---
 
-### `NfsOnboarding` — `/nfstay/onboarding`
+### `NfsOnboarding` - `/nfstay/onboarding`
 
 Full-screen layout (no operator nav). Clean wizard UI.
 
@@ -1087,37 +1087,37 @@ Full-screen layout (no operator nav). Clean wizard UI.
 
 ---
 
-**Step 1 — Account Setup**
+**Step 1 - Account Setup**
 Heading: "Welcome! Let's set up your account"
 - First name input (required)
 - Last name input (required)
 - Email (pre-filled from auth, read-only with edit link)
 - Avatar preview: circle with initials, updates live
 
-**Step 2 — Your Role**
+**Step 2 - Your Role**
 Heading: "I am a..."
 Two large radio cards (border-2, rounded-2xl, p-6, cursor-pointer):
 - Selected: `border-primary bg-primary/5`
 - Card A: 🏠 icon | "Property Owner" (bold) | "I own the properties I list"
 - Card B: 🏢 icon | "Property Manager" (bold) | "I manage properties for owners"
 
-**Step 3 — How Will You Use nfstay?**
+**Step 3 - How Will You Use nfstay?**
 Heading: "What's your main goal?"
 Four radio cards (2×2 grid):
-- "Direct Booking" — Take bookings from my own audience
-- "Vacation Rental" — List on the nfstay marketplace
-- "Booking Widget" — Embed booking on my existing site
-- "Not sure yet" — I need some guidance
+- "Direct Booking" - Take bookings from my own audience
+- "Vacation Rental" - List on the nfstay marketplace
+- "Booking Widget" - Embed booking on my existing site
+- "Not sure yet" - I need some guidance
 
-**Step 4 — Your Brand**
+**Step 4 - Your Brand**
 Heading: "Tell us about your brand"
-- Brand name input (required) — "What guests will see"
-- Legal name input (optional) — "For invoices and contracts"
-- Subdomain input — shows preview: "[input].nfstay.app" updates live
+- Brand name input (required) - "What guests will see"
+- Legal name input (optional) - "For invoices and contracts"
+- Subdomain input - shows preview: "[input].nfstay.app" updates live
   - Validates on blur: checks uniqueness via Supabase query
   - Green checkmark if available, red X if taken
 
-**Step 5 — Landing Page**
+**Step 5 - Landing Page**
 Heading: "Create your homepage"
 - Hero headline (required, 80 char max with counter)
 - Hero subheadline (optional, 160 char max with counter)
@@ -1126,21 +1126,21 @@ Heading: "Create your homepage"
   - Preview: shows uploaded photo with text overlay (headline + subheadline) as live preview card
   - Remove X button on uploaded photo
 
-**Step 6 — Website Look**
+**Step 6 - Website Look**
 Heading: "Make it yours"
 - Logo upload: circle drop zone (camera icon). Preview: circular logo
 - Accent color: 8 preset color swatches + custom hex input + color picker popup
   - Live preview: "Button preview" pill button with chosen color
 - Favicon upload: square 32×32 drop zone
 
-**Step 7 — Contact Details**
+**Step 7 - Contact Details**
 Heading: "How can guests reach you?"
 - Contact email (required)
 - Phone (required, with dial code selector)
 - WhatsApp number (optional, WhatsApp icon)
 - Telegram handle (optional, @ prefix)
 
-**Step 8 — Get Paid (Optional)**
+**Step 8 - Get Paid (Optional)**
 Heading: "Set up payments to receive bookings"
 - Info card (bg-muted, rounded-xl, p-4):
   - Bank icon + "Connect Stripe to accept payments directly from guests. nfstay takes a small platform fee."
@@ -1153,14 +1153,14 @@ On final step completion: PATCH `nfs_operators` set `onboarding_step = 'complete
 
 ---
 
-### `NfsProperties` — `/nfstay/properties`
+### `NfsProperties` - `/nfstay/properties`
 
 **Header row:**
 - "Properties" h1 + "[N] listings" badge (muted, bg-muted rounded-full px-2)
 - "Add property" primary button (PlusCircle icon)
 
 **Filter bar:**
-- Status tabs: All | Listed | Unlisted | Draft | Archived — pill style, active = bg-foreground text-background
+- Status tabs: All | Listed | Unlisted | Draft | Archived - pill style, active = bg-foreground text-background
 - Search input (MagnifyingGlass icon, debounced 300ms, filters client-side on title/city/country)
 
 **Bulk action bar** (appears when ≥1 checkbox selected, slides down from top, bg-foreground text-background, rounded-xl, flex items-center gap-3, p-3):
@@ -1197,7 +1197,7 @@ Each row (py-4 flex items-center gap-4 hover:bg-muted/50 px-2 rounded-xl cursor-
 
 ---
 
-### `NfsPropertyNew` — `/nfstay/properties/new`
+### `NfsPropertyNew` - `/nfstay/properties/new`
 
 Full-screen wizard (hides operator layout nav during wizard).
 
@@ -1223,7 +1223,7 @@ Each step: number circle (current = green fill, completed = green outline with c
 - Left: "Back" ghost button
 - Right: "Save & Continue" primary button | on step 10: "Publish listing" button
 
-**Step 1 — Property Basics**
+**Step 1 - Property Basics**
 "What type of property are you listing?"
 - Grid of accommodation type cards (3 columns, each: emoji + name, border rounded-xl p-3 cursor-pointer text-center):
   - Row 1: Apartment · House · Villa
@@ -1235,7 +1235,7 @@ Each step: number circle (current = green fill, completed = green outline with c
 - Rental type (radio cards): "Entire place" | "Private room" | "Shared room"
 - Property size: number input + unit toggle (sqm / sqft)
 
-**Step 2 — Location**
+**Step 2 - Location**
 "Where is your property located?"
 - Google Places Autocomplete input (full address search)
   - Dropdown shows suggestions as user types
@@ -1248,7 +1248,7 @@ Each step: number circle (current = green fill, completed = green outline with c
   - User can also type to search and see pin move
 - Timezone: auto-detected from lat/lng (shown as read-only info)
 
-**Step 3 — Guests & Rooms**
+**Step 3 - Guests & Rooms**
 "Who can stay here?"
 - Max guests: large stepper (− count +), min 1, max 20
 - Allow children: toggle
@@ -1259,7 +1259,7 @@ Each step: number circle (current = green fill, completed = green outline with c
 - "Add room details (optional)" expandable:
   - For each bedroom: "Bedroom [N]" + bed type dropdown (King/Queen/Double/Twin/Single/Sofa bed/Bunk bed) + count stepper
 
-**Step 4 — Photos**
+**Step 4 - Photos**
 "Show guests what makes your place special"
 - Upload zone (dashed border, h-48, cloud icon, "Drag photos here or click to browse"):
   - Accepts: jpg, jpeg, png, webp
@@ -1275,7 +1275,7 @@ Each step: number circle (current = green fill, completed = green outline with c
 - "Min 5 photos recommended" hint (amber if < 5)
 - Photos uploaded directly to Supabase Storage: `nfs-images/{operatorId}/{propertyId}/{uuid}.jpg`
 
-**Step 5 — Amenities**
+**Step 5 - Amenities**
 "What do you offer?"
 Category tabs (horizontal scroll): Popular | General | Accessibility | Outdoors | Leisure | Entertainment | Children
 
@@ -1299,7 +1299,7 @@ Full amenity list (organized by category):
 
 **Children (8):** Baby bath, Baby monitor, High chair, Children's toys, Safety gates, Crib, Changing table, Children's books & toys
 
-**Step 6 — Description**
+**Step 6 - Description**
 "Tell guests about your place"
 - Public title input (required, max 100 chars):
   - Character counter "XX/100" bottom-right of input
@@ -1309,7 +1309,7 @@ Full amenity list (organized by category):
   - Character counter + hint "Describe the space, what's nearby, what makes it special"
 - Right panel (desktop): writing tips card (bg-muted)
 
-**Step 7 — House Rules**
+**Step 7 - House Rules**
 "Set expectations for guests"
 - Check-in time: dropdown (12:00, 12:30, ... 23:30, "Flexible")
 - Check-out time: same
@@ -1322,7 +1322,7 @@ Full amenity list (organized by category):
   - **Non-refundable**: red icon | "No refund"
 - Additional rules: textarea placeholder "No smoking · No parties · etc."
 
-**Step 8 — Availability**
+**Step 8 - Availability**
 "Control when guests can book"
 - Availability window: dropdown (3 months / 6 months / 1 year / 2 years / All future dates)
 - Advance notice required: dropdown (Same day / 1 day / 2 days / 3 days / 5 days / 1 week / 2 weeks)
@@ -1334,7 +1334,7 @@ Full amenity list (organized by category):
   - Each block: hover shows trash icon to remove
   - "Add blocked dates" button as alternative to drag
 
-**Step 9 — Pricing**
+**Step 9 - Pricing**
 "Set your rates"
 - **Base rate:** currency selector (dropdown with flags, 31 currencies) + amount input (number, large font)
 - **Smart pricing section:**
@@ -1348,7 +1348,7 @@ Full amenity list (organized by category):
   - Shows: base rate as default gray, overrides in green
   - Existing overrides listed below calendar as chips with X to remove
 
-**Step 10 — Review & Publish**
+**Step 10 - Review & Publish**
 "Almost there!"
 - Summary cards for each previous step (expandable):
   - Basics: property type + rental type
@@ -1373,7 +1373,7 @@ Full amenity list (organized by category):
 
 ---
 
-### `NfsPropertyDetail` — `/nfstay/properties/:id`
+### `NfsPropertyDetail` - `/nfstay/properties/:id`
 
 **Header:**
 - ArrowLeft "← Properties" → `/nfstay/properties`
@@ -1450,7 +1450,7 @@ All property fields editable inline. Organized in sections matching wizard steps
 
 ---
 
-### `NfsReservations` — `/nfstay/reservations`
+### `NfsReservations` - `/nfstay/reservations`
 
 **Header row:**
 - "Reservations" h1 + "[N]" count badge
@@ -1496,7 +1496,7 @@ Click row → `/nfstay/reservations/:id`
 
 ---
 
-### `NfsReservationDetail` — `/nfstay/reservations/:id`
+### `NfsReservationDetail` - `/nfstay/reservations/:id`
 
 **Header:**
 - "← Reservations" back link
@@ -1582,9 +1582,9 @@ Click row → `/nfstay/reservations/:id`
 
 ---
 
-### `NfsCreateReservation` — `/nfstay/create-reservation`
+### `NfsCreateReservation` - `/nfstay/create-reservation`
 
-Full-screen page (no sidebar layout — clean focus mode).
+Full-screen page (no sidebar layout - clean focus mode).
 
 **Header (border-b):**
 - X button → back to reservations
@@ -1595,45 +1595,45 @@ Full-screen page (no sidebar layout — clean focus mode).
 
 **Left form (sections):**
 
-*Step 1 — Choose Property:*
+*Step 1 - Choose Property:*
 - "Property" heading
 - Search dropdown: type to filter operator's properties
 - Each option: thumbnail + title + city
 - Selecting shows property details card: cover photo + title + rate + check-in/out times
 
-*Step 2 — Dates & Times:*
+*Step 2 - Dates & Times:*
 - Check-in date + time (time dropdown, 30-min increments from check_in_time)
 - Check-out date + time (time dropdown)
 - Duration auto-shows: "[N] nights" (green badge) or red "Not available" if dates blocked
 
-*Step 3 — Guest Information:*
+*Step 3 - Guest Information:*
 - First name (required) + Last name (required)
 - Email (required)
 - Phone (optional, with dial code)
 
-*Step 4 — Guests:*
+*Step 4 - Guests:*
 - Adults (stepper, min 1) + Children + Infants + Pets
 
-*Step 5 — Message to Guest (optional):*
+*Step 5 - Message to Guest (optional):*
 - Textarea "Notes or message to include in confirmation email"
 
-*Step 6 — Pricing:*
+*Step 6 - Pricing:*
 - Auto-calculated: nightly rate × nights + cleaning fee + fees
 - Toggle "Override total amount":
   - If on: shows editable total amount input
   - Currency selector
 - Promo code input + Apply
 
-*Step 7 — Status:*
+*Step 7 - Status:*
 - Radio: Confirmed (default, immediate) | Pending (awaiting confirmation)
 
-**Right — Booking Summary card (sticky):**
+**Right - Booking Summary card (sticky):**
 - Property: thumbnail + name + city
 - Dates + nights
 - Guests
 - Price breakdown
 - Total (bold)
-- "Create Reservation" primary button (full-width) — disabled until property + dates + guest name filled
+- "Create Reservation" primary button (full-width) - disabled until property + dates + guest name filled
   - Loading spinner while creating
   - On success: **Booking Created Modal**
 
@@ -1647,7 +1647,7 @@ Full-screen page (no sidebar layout — clean focus mode).
 
 ---
 
-### `NfsOperatorSettings` — `/nfstay/settings`
+### `NfsOperatorSettings` - `/nfstay/settings`
 
 **Layout:** Sidebar tabs on left (desktop, w-56) | content right | mobile: horizontal scroll tabs
 
@@ -1799,7 +1799,7 @@ Full-screen page (no sidebar layout — clean focus mode).
 
 ---
 
-### `NfsAnalytics` — `/nfstay/analytics`
+### `NfsAnalytics` - `/nfstay/analytics`
 
 **Header:** "Analytics" h1 | Time range pills: 7d · 30d · 90d (right side)
 
@@ -1841,9 +1841,9 @@ Uses existing `AdminLayout` from the hub app (shared layout with nfstay workspac
 
 ---
 
-### `AdminNfsReservations` — `/admin/nfstay`
+### `AdminNfsReservations` - `/admin/nfstay`
 
-**Header:** "nfstay — Reservations" h1 | Export CSV button
+**Header:** "nfstay - Reservations" h1 | Export CSV button
 
 **Filter bar:**
 - Search (guest name, email, property name, reservation ID)
@@ -1882,9 +1882,9 @@ Each row:
 
 ---
 
-### `AdminNfsProperties` — `/admin/nfstay/properties`
+### `AdminNfsProperties` - `/admin/nfstay/properties`
 
-**Header:** "nfstay — Properties" h1 | "[N] total" badge
+**Header:** "nfstay - Properties" h1 | "[N] total" badge
 
 **Filters:**
 - Search (title, city, country, operator name)
@@ -1913,9 +1913,9 @@ Each row:
 
 ---
 
-### `AdminNfsOperators` — `/admin/nfstay/operators`
+### `AdminNfsOperators` - `/admin/nfstay/operators`
 
-**Header:** "nfstay — Operators" h1 | "[N] operators" badge | "Invite operator" button
+**Header:** "nfstay - Operators" h1 | "[N] operators" badge | "Invite operator" button
 
 **Table (paginated):**
 Columns: Operator | Brand | Domain | Properties | Reservations | Stripe | Joined | Actions
@@ -1941,7 +1941,7 @@ Each row:
 
 ## WHITE-LABEL PAGES
 
-### `NfsWlLanding` — `/` on white-label domain
+### `NfsWlLanding` - `/` on white-label domain
 
 **Same structure as NfsMainLanding but entirely operator-branded:**
 
@@ -1959,16 +1959,16 @@ All color uses `accent_color` from `nfs_operators` instead of primary green:
 - **Contact section:** WhatsApp button, email link, phone link
 - **Footer:** `NfsWhiteLabelLayout` footer with operator socials
 
-### `NfsWlSearch` — `/search` on white-label domain
+### `NfsWlSearch` - `/search` on white-label domain
 Same as `NfsSearch` but `operator_id` filter always applied. Branding from `NfsWhiteLabelLayout`.
 
-### `NfsWlProperty` — `/property/:id` on white-label domain
+### `NfsWlProperty` - `/property/:id` on white-label domain
 Same as `NfsPropertyView`. `bookingSource = 'white_label'` in booking intent. Layout uses `NfsWhiteLabelLayout`.
 
 ### `NfsWlPaymentSuccess` / `NfsWlPaymentCancel`
 Same pages as main site with `NfsWhiteLabelLayout` wrapping (operator logo + colors).
 
-### `NfsWlError` — `/error`
+### `NfsWlError` - `/error`
 - Operator logo
 - "Something went wrong"
 - "Return to homepage" button
@@ -1986,7 +1986,7 @@ Initialize: new google.maps.Map(container, {
   zoom: 14,
   disableDefaultUI: true,
   gestureHandling: 'none',   ← non-interactive
-  styles: [minimal map style — gray roads, no POI labels]
+  styles: [minimal map style - gray roads, no POI labels]
 })
 
 Marker: AdvancedMarkerElement (try first) OR fallback to classic Marker
@@ -2077,9 +2077,9 @@ On select:
 ### Currencies (31)
 USD ($) · EUR (€) · GBP (£) · AUD (A$) · CAD (C$) · CHF (Fr) · JPY (¥) · CNY (¥) · INR (₹) · KRW (₩) · MXN ($) · NOK (kr) · NZD (NZ$) · SEK (kr) · SGD (S$) · ZAR (R) · BRL (R$) · DKK (kr) · HKD (HK$) · HUF (Ft) · IDR (Rp) · ILS (₪) · MYR (RM) · PHP (₱) · PLN (zł) · RON (lei) · THB (฿) · TRY (₺) · BGN (лв) · CZK (Kč) · ISK (kr)
 
-### Property Types (85+ — show 12 in wizard step 1, rest in "Show more")
+### Property Types (85+ - show 12 in wizard step 1, rest in "Show more")
 Apartment · House · Villa · Cottage · Cabin · Boat · Treehouse · Castle · Hotel · Hostel · Farm Stay · Other (first 12)
-— then: Aparthotel · Barn · Boutique hotel · Bungalow · Bus · Camper/RV · Campsite · Casa Particular · Cave · Chalet · Condominium · Cycladic House · Dammusi · Dome House · Dorm · Earth House · Guesthouse · Guest Suite · Heritage hotel · Holiday Home · Holiday Park · Houseboat · Hut · Igloo · Island · Lighthouse · Loft · Nature lodge · Pension · Ranch · Religious Building · Resort · Riad · Ryokan · Serviced apartment · Shepherds Hut · Shipping Container · Studio · Tent · Timeshare · Tiny House · Tipi · Tower · Townhouse · Train · Trullo · Villa · Windmill · Yurt
+- then: Aparthotel · Barn · Boutique hotel · Bungalow · Bus · Camper/RV · Campsite · Casa Particular · Cave · Chalet · Condominium · Cycladic House · Dammusi · Dome House · Dorm · Earth House · Guesthouse · Guest Suite · Heritage hotel · Holiday Home · Holiday Park · Houseboat · Hut · Igloo · Island · Lighthouse · Loft · Nature lodge · Pension · Ranch · Religious Building · Resort · Riad · Ryokan · Serviced apartment · Shepherds Hut · Shipping Container · Studio · Tent · Timeshare · Tiny House · Tipi · Tower · Townhouse · Train · Trullo · Villa · Windmill · Yurt
 
 ### Cancellation Policies
 | Key | Label | Description |
@@ -2146,14 +2146,14 @@ When white-label domain not recognized:
 The `nfs_*` tables are NOT in the auto-generated `src/integrations/supabase/types.ts`. Until you regenerate types after running migrations, use this pattern for every Supabase query touching `nfs_*` tables:
 
 ```ts
-// ✓ CORRECT — cast required until types are regenerated
+// ✓ CORRECT - cast required until types are regenerated
 const { data } = await (supabase
   .from('nfs_operators') as any)
   .select('*')
   .eq('profile_id', profileId)
   .single();
 
-// ✗ WRONG — will give TypeScript error
+// ✗ WRONG - will give TypeScript error
 const { data } = await supabase
   .from('nfs_operators')   // ← TS error: not in generated types
   .select('*');
@@ -2163,7 +2163,7 @@ Apply `as any` after every `.from('nfs_*')` call throughout the entire codebase.
 
 ---
 
-## Hooks Reference — 20 Hooks to Implement
+## Hooks Reference - 20 Hooks to Implement
 
 Generate ALL of these with matching names so they can be replaced by pre-built implementations later.
 
@@ -2190,7 +2190,7 @@ Generate ALL of these with matching names so they can be replaced by pre-built i
 |------|------|---|
 | `useNfsPropertyMutation()` | `use-nfs-property-mutation.ts` | `createProperty(data)` / `updateProperty(id, data)` / `deleteProperty(id)`. Returns `{ create, update, delete, loading }` |
 | `useNfsReservationMutation()` | `use-nfs-reservation-mutation.ts` | `createReservation(data)` / `updateReservation(id, data)` / `cancelReservation(id, reason)`. Returns `{ create, update, cancel, loading }` |
-| `useNfsOperatorUpdate()` | `use-nfs-operator-update.ts` | `updateOperator(fields)` — PATCH nfs_operators. Returns `{ update, loading, error }` |
+| `useNfsOperatorUpdate()` | `use-nfs-operator-update.ts` | `updateOperator(fields)` - PATCH nfs_operators. Returns `{ update, loading, error }` |
 | `useNfsPropertyWizard()` | `use-nfs-property-wizard.ts` | Step machine for new property wizard. Auto-saves each step as draft. Returns `{ step, goNext, goBack, goTo, canProceed, savedData }` |
 | `useNfsImageUpload()` | `use-nfs-image-upload.ts` | Upload files to `nfs-images/{operatorId}/{propertyId}/{uuid}.ext` in Supabase Storage. Returns `{ upload, uploading, progress }` |
 | `useNfsStripeConnect()` | `use-nfs-stripe.ts` | Initiate Stripe Connect OAuth via edge function. Returns `{ account, connect, disconnect, loading }` |
@@ -2216,18 +2216,18 @@ Every email uses the same base layout:
 - Body: 16px Inter, `#1a1a1a` text, 24px line-height
 - CTA button: green background, white text, 8px radius, 48px height
 - Footer: "© nfstay · Unsubscribe · Privacy Policy" in `#888` 12px
-- Responsive — single column, max-width 600px, mobile-safe padding
+- Responsive - single column, max-width 600px, mobile-safe padding
 
 ### Guest Emails
 
 | Template ID | Trigger | Subject | Key Content |
 |---|---|---|---|
-| `guest-booking-confirmation` | Reservation created (`status = confirmed`) | "Your booking is confirmed — [property]" | Property photo, name, dates, guest count, total price, host contact, add to calendar link, "Manage Booking" CTA |
-| `guest-payment-receipt` | Stripe payment captured | "Payment receipt — [property]" | Amount charged, last 4 digits, booking ref, itemised breakdown (nightly rate × nights + cleaning fee − discount), download PDF link |
-| `guest-booking-cancelled` | Reservation `status` changes to `cancelled` | "Your booking has been cancelled — [property]" | Cancellation reason, refund amount + expected days, support email, "Find another property" CTA |
-| `guest-booking-reminder` | 24h before `check_in` (n8n scheduled) | "Check-in tomorrow — [property]" | Property address, check-in time, door code (if stored), host phone, Google Maps link |
+| `guest-booking-confirmation` | Reservation created (`status = confirmed`) | "Your booking is confirmed - [property]" | Property photo, name, dates, guest count, total price, host contact, add to calendar link, "Manage Booking" CTA |
+| `guest-payment-receipt` | Stripe payment captured | "Payment receipt - [property]" | Amount charged, last 4 digits, booking ref, itemised breakdown (nightly rate × nights + cleaning fee − discount), download PDF link |
+| `guest-booking-cancelled` | Reservation `status` changes to `cancelled` | "Your booking has been cancelled - [property]" | Cancellation reason, refund amount + expected days, support email, "Find another property" CTA |
+| `guest-booking-reminder` | 24h before `check_in` (n8n scheduled) | "Check-in tomorrow - [property]" | Property address, check-in time, door code (if stored), host phone, Google Maps link |
 | `guest-magic-link` | Traveler requests login link | "Sign in to nfstay" | One-use sign-in button, expires 15 min, "Didn't request this? Ignore" footer |
-| `guest-status-change` | Any reservation status change except confirm/cancel | "Update on your booking — [property]" | Old status → new status, short explanation, "View Booking" CTA |
+| `guest-status-change` | Any reservation status change except confirm/cancel | "Update on your booking - [property]" | Old status → new status, short explanation, "View Booking" CTA |
 | `guest-review-request` | 24h after `check_out` (n8n scheduled) | "How was your stay at [property]?" | Star picker (1–5 links in email), "Leave a full review" CTA, property photo |
 | `guest-welcome` | First booking ever for this email | "Welcome to nfstay" | Short intro, what to expect, support link, app download teaser |
 
@@ -2235,23 +2235,23 @@ Every email uses the same base layout:
 
 | Template ID | Trigger | Subject | Key Content |
 |---|---|---|---|
-| `operator-new-reservation` | New reservation created for their property | "New booking — [property] · [dates]" | Guest name, dates, payout amount, "View Reservation" CTA, quick action buttons (Confirm / Message Guest) |
-| `operator-reservation-cancelled` | Guest cancels reservation | "Booking cancelled — [property]" | Guest name, dates, reason, whether penalty applies, refund status |
-| `operator-payment-received` | Stripe payment captured | "Payment received — £[amount]" | Booking ref, gross amount, nfstay fee (%), net payout, expected payout date |
+| `operator-new-reservation` | New reservation created for their property | "New booking - [property] · [dates]" | Guest name, dates, payout amount, "View Reservation" CTA, quick action buttons (Confirm / Message Guest) |
+| `operator-reservation-cancelled` | Guest cancels reservation | "Booking cancelled - [property]" | Guest name, dates, reason, whether penalty applies, refund status |
+| `operator-payment-received` | Stripe payment captured | "Payment received - £[amount]" | Booking ref, gross amount, nfstay fee (%), net payout, expected payout date |
 | `operator-payout-processed` | Stripe payout landed in bank | "Payout of £[amount] is on its way" | Amount, bank last 4, expected arrival, "View Analytics" CTA |
 | `operator-team-invite` | Operator invites team member | "You've been invited to manage [operator name]" | Invited by name, role assigned, "Accept Invitation" CTA (magic link), expires 48h |
 | `operator-team-member-joined` | Invitee accepts invite | "[Name] has joined your team" | Name + role, "Manage Team" CTA |
-| `operator-hospitable-synced` | n8n Hospitable sync workflow completes | "Calendar synced — [property]" | Properties synced, new bookings imported, any conflicts flagged |
-| `operator-hospitable-failed` | Hospitable sync errors | "Sync failed — action required" | Error reason, "Reconnect Hospitable" CTA |
+| `operator-hospitable-synced` | n8n Hospitable sync workflow completes | "Calendar synced - [property]" | Properties synced, new bookings imported, any conflicts flagged |
+| `operator-hospitable-failed` | Hospitable sync errors | "Sync failed - action required" | Error reason, "Reconnect Hospitable" CTA |
 | `operator-domain-verified` | DNS check confirms domain live | "Your custom domain is live 🎉" | Domain name, preview link, "View your site" CTA |
-| `operator-listing-approved` | Admin approves a property listing | "Your listing is live — [property]" | Property name, public listing URL, "View Listing" CTA |
-| `operator-listing-rejected` | Admin rejects a property | "Action needed on your listing — [property]" | Rejection reason (from admin), "Edit Listing" CTA |
-| `operator-low-inventory-alert` | Property has 0 available nights in next 30 days | "Heads up — no availability showing for [property]" | Calendar gap warning, "Update Availability" CTA |
-| `operator-onboarding-complete` | All 8 onboarding steps done | "You're all set — [operator name]" | Summary of what's configured, "Go to Dashboard" CTA, 3 quick-start tips |
-| `operator-weekly-summary` | Every Monday 08:00 (n8n scheduled) | "Your week in review — [dates]" | Reservations this week, revenue, occupancy %, top property, "View Analytics" CTA |
+| `operator-listing-approved` | Admin approves a property listing | "Your listing is live - [property]" | Property name, public listing URL, "View Listing" CTA |
+| `operator-listing-rejected` | Admin rejects a property | "Action needed on your listing - [property]" | Rejection reason (from admin), "Edit Listing" CTA |
+| `operator-low-inventory-alert` | Property has 0 available nights in next 30 days | "Heads up - no availability showing for [property]" | Calendar gap warning, "Update Availability" CTA |
+| `operator-onboarding-complete` | All 8 onboarding steps done | "You're all set - [operator name]" | Summary of what's configured, "Go to Dashboard" CTA, 3 quick-start tips |
+| `operator-weekly-summary` | Every Monday 08:00 (n8n scheduled) | "Your week in review - [dates]" | Reservations this week, revenue, occupancy %, top property, "View Analytics" CTA |
 
 ### Email UI Notes for Lovable
-- The app does NOT render email templates in the browser — email sending is always backend (Edge Function)
+- The app does NOT render email templates in the browser - email sending is always backend (Edge Function)
 - The UI only needs **trigger points**: buttons/actions that call `nfs-email-send`
 - "Send Email" modal in ReservationDetail (operator side): compose subject + message body → POST to edge function → sends to guest
 - "Resend confirmation" link in guest booking lookup page → POST `guest-booking-confirmation`
@@ -2262,7 +2262,7 @@ Every email uses the same base layout:
 
 ## Nice-to-Have Features
 
-Include these as polished enhancements — they make the product feel 10× more complete.
+Include these as polished enhancements - they make the product feel 10× more complete.
 
 ### Property Sharing
 - On `NfsPropertyView`, add a **Share** button (top-right, icon-only on mobile, icon+text on desktop)
@@ -2289,22 +2289,22 @@ Include these as polished enhancements — they make the product feel 10× more 
 ### Currency Selector
 - Global currency switcher in `NfsMainLayout` header (top-right, flag + code dropdown)
 - Persisted in `localStorage('nfs_currency')`, default `GBP`
-- Supported: GBP, USD, EUR, AED, SGD (5 currencies, no live FX — multiply by a static rate map stored in a `constants/currencies.ts` file)
+- Supported: GBP, USD, EUR, AED, SGD (5 currencies, no live FX - multiply by a static rate map stored in a `constants/currencies.ts` file)
 - All price displays wrap in `<NfsCurrencyAmount value={penceGBP} />` component that reads localStorage and applies the rate
 - Operator dashboard stays in GBP always (payout currency)
-- Rates updated in `constants/currencies.ts` manually — a comment says "update quarterly"
+- Rates updated in `constants/currencies.ts` manually - a comment says "update quarterly"
 
 ### Print / PDF Booking Summary
 - In guest booking lookup result, add a **Print summary** button (icon: printer)
 - Opens a print-optimised `window.print()` view: clean black-and-white layout, property name, booking ref, dates, guest name, total paid, check-in instructions
 - `@media print` CSS: hide nav, hide footer, hide buttons, show print-only elements
-- Also available in operator's `ReservationDetail` page — "Print / Export PDF" in the action bar
+- Also available in operator's `ReservationDetail` page - "Print / Export PDF" in the action bar
 
-### CSV Export — Reservations
+### CSV Export - Reservations
 - In `NfsOperatorReservationsList`, add an **Export CSV** button (top-right, beside filters)
 - Downloads all currently filtered reservations as CSV: columns = ref, guest email, property, check-in, check-out, nights, guests, total, status, created_at
 - Pure client-side: use `Papa.unparse()` from `papaparse` library, trigger download via Blob URL
-- Also in Admin `AdminNfsReservations` — "Export All" downloads unfiltered full set
+- Also in Admin `AdminNfsReservations` - "Export All" downloads unfiltered full set
 
 ### Notification Preferences (Operator Settings)
 - Add a **"Notifications"** tab to `NfsOperatorSettings` (tab 12, after existing 11)
@@ -2312,11 +2312,11 @@ Include these as polished enhancements — they make the product feel 10× more 
   - Email: New reservation | Cancellation | Payment received | Payout processed | Weekly summary | Listing status change | Sync alerts
   - Each toggle: label + description + switch component
 - Save button at bottom, `PATCH` to `nfs_operators` table
-- The Edge Function reads these prefs before sending — if toggle is off, skip that template
+- The Edge Function reads these prefs before sending - if toggle is off, skip that template
 
 ### Comparison Feature
 - "Compare" checkbox on each `NfsPropertyCard` (appears on hover, bottom-left)
-- Max 3 properties selected — 4th triggers a toast "Maximum 3 properties for comparison"
+- Max 3 properties selected - 4th triggers a toast "Maximum 3 properties for comparison"
 - Sticky **comparison bar** at bottom of viewport (slides up when ≥ 2 selected): shows property thumbnails + "Compare [N]" button
 - `NfsComparisonPage` at `/compare?ids=uuid1,uuid2,uuid3`: side-by-side table
   - Rows: Photo, Name, Price/night, Bedrooms, Bathrooms, Max guests, Cancellation policy, Amenities (green check / grey dash), Rating, "Book now" button

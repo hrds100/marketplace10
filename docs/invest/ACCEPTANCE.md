@@ -1,4 +1,4 @@
-# Investment Module — Acceptance Scenarios
+# Investment Module - Acceptance Scenarios
 
 > BDD-style Given/When/Then for every major feature.
 

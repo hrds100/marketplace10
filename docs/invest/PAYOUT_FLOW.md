@@ -1,4 +1,4 @@
-# Investment Module — Payout Flow
+# Investment Module - Payout Flow
 
 > Complete payout system documentation. Crypto (immediate) and Bank (weekly via Revolut).
 
@@ -8,7 +8,7 @@
 
 | Type | Speed | Method | Approval |
 |------|-------|--------|----------|
-| **Crypto** | Immediate | On-chain (USDC, STAY, LP) | None — automatic |
+| **Crypto** | Immediate | On-chain (USDC, STAY, LP) | None - automatic |
 | **Bank Transfer** | Weekly (Tuesday) | Revolut Business API | Hugo Face ID in Revolut app |
 
 ---
@@ -54,7 +54,7 @@ No admin involvement. No batch. Instant.
 4. Edge Function `submit-payout-claim`:
    - Validates bank details exist
    - Calculates amount server-side (NEVER from frontend)
-   - Checks UNIQUE(user_id, week_ref) — rejects if already claimed this week
+   - Checks UNIQUE(user_id, week_ref) - rejects if already claimed this week
    - Creates row in `payout_claims` (status: pending)
    - Logs to `payout_audit_log` (event: claim_submitted)
 5. User sees: "Your claim has been submitted. Payouts are processed every Tuesday."
@@ -83,7 +83,7 @@ No admin involvement. No batch. Instant.
     GBP: £4,230 (8 payees)
     EUR: €890 (3 payees)
     USD: $1,200 (2 payees)
-    Other: £340 equiv (2 payees — SWIFT)
+    Other: £340 equiv (2 payees - SWIFT)
     Largest: £420 → John Smith
 
     👉 Open Revolut app → Review → Approve with Face ID
@@ -99,9 +99,9 @@ No admin involvement. No batch. Instant.
 
 **SAME DAY (automatic):**
 
-19. GBP: Faster Payments — arrives same day
-20. EUR: SEPA — arrives same day or next business day
-21. USD: ACH/Wire — arrives same day (wire) or 1-2 days (ACH)
+19. GBP: Faster Payments - arrives same day
+20. EUR: SEPA - arrives same day or next business day
+21. USD: ACH/Wire - arrives same day (wire) or 1-2 days (ACH)
 22. International (SWIFT): arrives 1-5 business days depending on corridor
 21. Revolut fires webhook for each completed/failed transaction
 22. Edge Function `revolut-webhook`:
@@ -113,7 +113,7 @@ No admin involvement. No batch. Instant.
     - On TRANSACTION_FAILED:
       - Updates `payout_claims`: status → 'failed'
       - Logs to `payout_audit_log` (event: payment_failed)
-      - Sends WhatsApp to Hugo: "⚠️ Payout failed for John Smith — £420"
+      - Sends WhatsApp to Hugo: "⚠️ Payout failed for John Smith - £420"
 
 ---
 
@@ -139,7 +139,7 @@ Day 14: Commission becomes claimable (status: claimable)
 Next Tuesday: Agent can claim via bank or crypto
 ```
 
-Investment rental income has **no holdback** — claimable as soon as rent is deposited by admin.
+Investment rental income has **no holdback** - claimable as soon as rent is deposited by admin.
 
 ---
 
@@ -160,8 +160,8 @@ Investment rental income has **no holdback** — claimable as soon as rent is de
 
 | Endpoint | Method | When Used |
 |----------|--------|-----------|
-| `/counterparty` | POST | First payout — register user's bank with Revolut |
-| `/payment-drafts` | POST | Tuesday batch — create draft with all claims |
+| `/counterparty` | POST | First payout - register user's bank with Revolut |
+| `/payment-drafts` | POST | Tuesday batch - create draft with all claims |
 | Webhook handler | POST (incoming) | After Revolut processes each payment |
 
 **Production:** `https://b2b.revolut.com/api/1.0`
@@ -184,8 +184,8 @@ Investment rental income has **no holdback** — claimable as soon as rent is de
 | Problem | Who Gets Notified | Resolution |
 |---------|-------------------|------------|
 | Payment fails | Hugo (WhatsApp) | Check Revolut dashboard, re-trigger manually |
-| Webhook signature invalid | Logged in payout_audit_log | Investigate — possible attack |
-| User claims twice in one week | Blocked by UNIQUE constraint | Automatic — user sees error message |
+| Webhook signature invalid | Logged in payout_audit_log | Investigate - possible attack |
+| User claims twice in one week | Blocked by UNIQUE constraint | Automatic - user sees error message |
 | n8n cron doesn't fire | Hugo (check n8n dashboard) | Manual trigger or fix cron |
 | Revolut API down on Tuesday | Batch fails, claims stay 'pending' | Re-run next day or manually |
 | User entered wrong bank details | Bank details locked | Admin unlocks, user re-enters |

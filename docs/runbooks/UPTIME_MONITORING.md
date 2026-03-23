@@ -30,7 +30,7 @@ Backed by Supabase Edge Function `health`. Rewrites configured in `vercel.json`.
 - **Recovery**: automatic when endpoint returns 200 + "ok"
 
 ## What To Do When Alert Fires
-1. Check https://hub.nfstay.com — is the page loading?
+1. Check https://hub.nfstay.com - is the page loading?
 2. Check Vercel dashboard → latest deployment status
 3. Check Supabase dashboard → is the project running?
 4. If Vercel deploy failed: rollback via Vercel dashboard (see DEPLOY_SAFETY.md)

@@ -22,7 +22,7 @@ All must be set in Vercel → hugos-projects-f8cc36a8 → marketplace10 → Sett
 | VITE_SENTRY_DSN | No | ⬜ (optional) |
 
 **If any required var is missing, the app will blank-screen in production.**
-Vite injects `VITE_*` at build time — they cannot be added after deploy.
+Vite injects `VITE_*` at build time - they cannot be added after deploy.
 
 ## Preview Deploy Validation
 Vercel creates a preview URL for every commit. Before merging:
@@ -40,7 +40,7 @@ If production is broken after a deploy:
 2. Find the last working deployment (green "Ready" badge, before the broken one)
 3. Click the three-dot menu (⋯) on that deployment
 4. Click **"Promote to Production"**
-5. Takes effect in ~10 seconds — no rebuild needed
+5. Takes effect in ~10 seconds - no rebuild needed
 
 ## Post-Deploy Smoke Test
 After every production deploy, verify:

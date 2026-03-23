@@ -1,4 +1,4 @@
-# nfstay — Database Spec
+# nfstay - Database Spec
 *Exact Supabase table/column names the frontend touches. Backend wires to these.*
 
 ---
@@ -13,12 +13,12 @@
 
 ---
 
-## Shared Tables (Already Exist — Read Only for nfstay)
+## Shared Tables (Already Exist - Read Only for nfstay)
 
 | Table | How nfstay uses it |
 |-------|-------------------|
 | `profiles` | `nfs_operators.profile_id` references `profiles.id`. No new columns. |
-| `auth.users` | Supabase Auth — same login system. Not touched directly. |
+| `auth.users` | Supabase Auth - same login system. Not touched directly. |
 | `notifications` | nfstay INSERTS into this when bookings are confirmed, cancelled, etc. |
 
 ---
@@ -446,7 +446,7 @@ CREATE POLICY "operator_reservations" ON nfs_reservations
   );
 
 -- Guests can read their own reservation by token (unauthenticated lookup)
--- Handled via edge function or service role — not direct RLS
+-- Handled via edge function or service role - not direct RLS
 ```
 
 ---
@@ -658,7 +658,7 @@ profiles (EXISTING)
   ├── nfs_operator_users     many:many bridge (profile_id + operator_id)
   └── nfs_guest_sessions     (linked_user_id → profiles.id, optional)
 
-nfs_webhook_events           standalone (no FK — stores raw data)
+nfs_webhook_events           standalone (no FK - stores raw data)
 nfs_auth_tokens              (operator_id → nfs_operators, optional)
 ```
 
@@ -763,7 +763,7 @@ Upload path convention:
 ### `nfs_operators.faqs`
 ```json
 [
-  { "question": "What is your cancellation policy?", "answer": "Flexible — full refund if cancelled 24 hours before check-in." },
+  { "question": "What is your cancellation policy?", "answer": "Flexible - full refund if cancelled 24 hours before check-in." },
   { "question": "Is parking available?", "answer": "Yes, free on-site parking for all guests." }
 ]
 ```
@@ -789,7 +789,7 @@ Upload path convention:
 
 ---
 
-## Key Column Lookup — "What query fetches X?"
+## Key Column Lookup - "What query fetches X?"
 
 | UI need | Table | Filter |
 |---------|-------|--------|

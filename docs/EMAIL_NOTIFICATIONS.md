@@ -1,4 +1,4 @@
-# Email & Notification System — Full Audit
+# Email & Notification System - Full Audit
 
 > Complete map of every email, notification, and alert in the system.
 > Last audited: 2026-03-17
@@ -8,15 +8,15 @@
 ## 1. EMAIL SERVICE
 
 **Provider:** Resend (https://resend.com)
-**API Key:** `RESEND_API_KEY` — set as Supabase Edge Function secret (shared by marketplace10 + nfstay)
+**API Key:** `RESEND_API_KEY` - set as Supabase Edge Function secret (shared by marketplace10 + nfstay)
 
 ### Domains
 
 | Domain | Module | From address | Status |
 |--------|--------|-------------|--------|
-| `hub.nfstay.com` | marketplace10 | `notifications@hub.nfstay.com` | **Not verified** — needs DNS records in Resend |
-| `nfstay.app` | nfstay booking module | `bookings@nfstay.app` | **Not verified** — needs DNS records in Resend |
-| `nfstay.com` | **NEVER USE** | — | Separate business |
+| `hub.nfstay.com` | marketplace10 | `notifications@hub.nfstay.com` | **Not verified** - needs DNS records in Resend |
+| `nfstay.app` | nfstay booking module | `bookings@nfstay.app` | **Not verified** - needs DNS records in Resend |
+| `nfstay.com` | **NEVER USE** | - | Separate business |
 | `resend.dev` | Sandbox (current) | `onboarding@resend.dev` | Active but emails may land in spam |
 
 **Current state:** All emails send from Resend sandbox (`onboarding@resend.dev`). Once Hugo verifies the two domains, we switch the from addresses.
@@ -37,7 +37,7 @@
 | Email | When sent | Status |
 |-------|----------|--------|
 | Password reset | User clicks "Forgot password" | **Working** (Supabase SMTP) |
-| Email confirmation | User signs up | **Bypassed** — signup flow signs in immediately |
+| Email confirmation | User signs up | **Bypassed** - signup flow signs in immediately |
 
 ### Emails that SHOULD exist but DON'T
 
@@ -104,13 +104,13 @@ The Settings page shows 4 toggles. They save to the `profiles` table but **nothi
 | MyListingsPanel | `properties` | Live status changes |
 | useUserTier | `profiles` | Live tier upgrade |
 
-**No realtime on `notifications` table** — admin polls every 30 seconds instead.
+**No realtime on `notifications` table** - admin polls every 30 seconds instead.
 
 ---
 
 ## 7. NFSTAY BOOKING MODULE EMAILS (planned)
 
-Edge Function `nfs-email-send` (does not exist yet — Phase 3):
+Edge Function `nfs-email-send` (does not exist yet - Phase 3):
 
 | Email | When sent | From |
 |-------|----------|------|

@@ -1,4 +1,4 @@
-# nfstay — Domain & Terms
+# nfstay - Domain & Terms
 
 _Last updated: 2026-03-16_
 
@@ -44,15 +44,15 @@ _Last updated: 2026-03-16_
 
 ## Where this is used
 
-- **AGENT_INSTRUCTIONS.md** — Section 3a references this file.
-- **MESSAGING.md** — Inbox flows reference this canonical definition.
-- **ACCEPTANCE.md** — Scenarios use these terms.
+- **AGENT_INSTRUCTIONS.md** - Section 3a references this file.
+- **MESSAGING.md** - Inbox flows reference this canonical definition.
+- **ACCEPTANCE.md** - Scenarios use these terms.
 - When adding new concepts or actors, add them here first; then use them consistently everywhere.
 
 ---
 
 ## AI operating protocol
 
-The full two-phase execution protocol (Prompt Refinement → Execution) lives in **`docs/AGENT_INSTRUCTIONS.md`**. This file contains domain definitions only — no workflow rules are duplicated here.
+The full two-phase execution protocol (Prompt Refinement → Execution) lives in **`docs/AGENT_INSTRUCTIONS.md`**. This file contains domain definitions only - no workflow rules are duplicated here.
 
 When a task touches roles or flows (who pays, who signs NDA, who sends first message), Claude includes **DOMAIN.md** in the Phase 1 refined prompt's doc list, confirms the canonical flow, and flags any inversion before executing.

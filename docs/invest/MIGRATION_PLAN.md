@@ -1,4 +1,4 @@
-# Legacy Investment Module Port — Migration Plan
+# Legacy Investment Module Port - Migration Plan
 
 > Approved 2026-03-20. This is the single execution plan for porting all investment features from legacy app.nfstay.com into hub.nfstay.com.
 
@@ -14,11 +14,11 @@ Every contract call, every subgraph query, every wallet interaction comes from l
 
 ## Hard Rules (learned from 2026-03-20 incident)
 
-1. **All work on `feature/invest-wiring` branch** — never push to main
-2. **Vercel preview URL for every push** — verify before merge
-3. **One phase at a time** — test each before starting next
-4. **Do not touch `vite.config.ts`** — `@particle-network/authkit@2.1.1` ships React 19 internally; bundler config changes expose the conflict and crash the app
-5. **Do not install new Particle packages** — authkit@2.1.1 is what works; connectkit and others conflict
+1. **All work on `feature/invest-wiring` branch** - never push to main
+2. **Vercel preview URL for every push** - verify before merge
+3. **One phase at a time** - test each before starting next
+4. **Do not touch `vite.config.ts`** - `@particle-network/authkit@2.1.1` ships React 19 internally; bundler config changes expose the conflict and crash the app
+5. **Do not install new Particle packages** - authkit@2.1.1 is what works; connectkit and others conflict
 6. **Do not modify `package.json` dependencies** without verifying the build loads in a browser first
 7. **Every change must be tested on a preview URL before merge**
 
@@ -54,7 +54,7 @@ Every contract call, every subgraph query, every wallet interaction comes from l
 
 ## User Flows (all cloned from legacy)
 
-### Flow 1 — Sign Up & Get a Wallet
+### Flow 1 - Sign Up & Get a Wallet
 
 ```
 User clicks Google on hub.nfstay.com
@@ -67,7 +67,7 @@ User clicks Google on hub.nfstay.com
 
 **Result:** Same wallet `0xAA884...` on both sites.
 
-### Flow 2 — Buy Shares with Card
+### Flow 2 - Buy Shares with Card
 
 ```
 User goes to Marketplace
@@ -80,7 +80,7 @@ User goes to Marketplace
 → Visible on Portfolio page
 ```
 
-### Flow 3 — Buy Shares with Crypto (USDC)
+### Flow 3 - Buy Shares with Crypto (USDC)
 
 ```
 User goes to Marketplace
@@ -90,11 +90,11 @@ User goes to Marketplace
 → Shares in wallet
 ```
 
-### Flow 4 — Claim Rent (Payout)
+### Flow 4 - Claim Rent (Payout)
 
 ```
 User goes to Payouts
-→ Sees "Pembroke Place — $0.56 available"
+→ Sees "Pembroke Place - $0.56 available"
 → Clicks "Claim"
 → Modal with 4 options:
     Bank Transfer → Revolut batch next Tuesday
@@ -105,7 +105,7 @@ User goes to Payouts
 → Money moves
 ```
 
-### Flow 5 — Vote on a Proposal
+### Flow 5 - Vote on a Proposal
 
 ```
 User goes to Proposals
@@ -115,7 +115,7 @@ User goes to Proposals
 → Vote recorded on-chain (weighted by shares)
 ```
 
-### Flow 6 — Boost APR
+### Flow 6 - Boost APR
 
 ```
 User goes to Portfolio
@@ -126,7 +126,7 @@ User goes to Portfolio
 → "Claim Rewards" → STAY to wallet
 ```
 
-### Flow 7 — Agent Commissions
+### Flow 7 - Agent Commissions
 
 ```
 Agent shares referral link
@@ -140,33 +140,33 @@ Agent shares referral link
 
 ## Phases
 
-### Phase 0 — Signing Fix
+### Phase 0 - Signing Fix
 - Fix Particle MPC signing so `withdrawRent()` works
 - Must work before anything else
 - **Gate:** One successful on-chain transaction from hub.nfstay.com
 
-### Phase 1 — Payouts (Claim Rent)
+### Phase 1 - Payouts (Claim Rent)
 - Port `claim.jsx` multi-step flow
 - All 4 methods: Bank, USDC, STAY, LP
 - Real data from Rent contract + The Graph
 - **Gate:** Successfully claim $0.56 from Pembroke Place
 
-### Phase 2 — Portfolio
+### Phase 2 - Portfolio
 - Port share balances, boost APR, STAY rewards, LP staking
 - From `nfstayContext.jsx` boost/farm functions
 - **Gate:** See real share balance, boost APR, claim rewards
 
-### Phase 3 — Proposals (Voting)
+### Phase 3 - Proposals (Voting)
 - Port governance voting
 - From `subgraphHelper.js` proposal queries
 - **Gate:** Cast a vote and see it recorded
 
-### Phase 4 — Marketplace (Buy Shares)
+### Phase 4 - Marketplace (Buy Shares)
 - Port crypto purchase flow
 - SamCart card flow already wired
 - **Gate:** Buy 1 share with USDC
 
-### Phase 5 — Agent Dashboard
+### Phase 5 - Agent Dashboard
 - Port commission tracking, analytics, referral system
 - From `subgraphHelper.js` agent/commission queries
 - **Gate:** See real commission data for whitelisted agent
@@ -179,7 +179,7 @@ Agent shares referral link
 For each phase:
   1. Audit legacy implementation (read, don't copy)
   2. Write adapted code for our stack (TypeScript, Supabase, shadcn/ui)
-  3. Build locally — must pass
+  3. Build locally - must pass
   4. Push to feature/invest-wiring
   5. Get Vercel preview URL
   6. Test on preview URL
@@ -202,8 +202,8 @@ For each phase:
 | Money | Same | Same |
 | Sign in | Google only | Google + WhatsApp + Email |
 | Admin | Basic | Full property management |
-| Bank payouts | Not available | New — Revolut weekly batch |
+| Bank payouts | Not available | New - Revolut weekly batch |
 
 ---
 
-*Every arrow, every wallet popup, every dollar — identical to legacy. We're putting a new coat of paint on a running engine.*
+*Every arrow, every wallet popup, every dollar - identical to legacy. We're putting a new coat of paint on a running engine.*

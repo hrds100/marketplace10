@@ -19,6 +19,6 @@ Every Supabase schema change follows this sequence. No shortcuts.
 
 ## After Migration
 - [ ] Regenerate types: `SUPABASE_ACCESS_TOKEN=... npx supabase gen types typescript --linked > src/integrations/supabase/types.ts`
-- [ ] Run `npx tsc --noEmit` — fix any type errors from new schema
+- [ ] Run `npx tsc --noEmit` - fix any type errors from new schema
 - [ ] Update `docs/DATABASE.md` with new columns/tables
 - [ ] Commit types + docs in the same PR as the feature code

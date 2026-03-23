@@ -1,4 +1,4 @@
-# nfstay — Messaging & Inbox Feature Spec
+# nfstay - Messaging & Inbox Feature Spec
 _Last updated: 2026-03-16_
 
 > **Claude must read this before touching anything in `src/pages/InboxPage.tsx`, `src/components/inbox/`, or any `chat_*` Supabase table.**
@@ -7,9 +7,9 @@ _Last updated: 2026-03-16_
 
 ## 1. VISION
 
-A clean, bright, Airbnb-style inbox where operators (rent-to-rent operators / serviced accommodation managers) and landlords/agents communicate inside nfstay. Every conversation is anchored to a specific property deal. nfstay is the source of truth — WhatsApp is notifications only.
+A clean, bright, Airbnb-style inbox where operators (rent-to-rent operators / serviced accommodation managers) and landlords/agents communicate inside nfstay. Every conversation is anchored to a specific property deal. nfstay is the source of truth - WhatsApp is notifications only.
 
-**UX reference:** Airbnb Messages (airbnb.co.uk/hosting/messages) — clone the layout as closely as possible.
+**UX reference:** Airbnb Messages (airbnb.co.uk/hosting/messages) - clone the layout as closely as possible.
 
 ---
 
@@ -97,7 +97,7 @@ Inbox sits in the **left sidebar navigation between Deals and CRM**.
 📊 CRM
 ```
 
-Use a clean inbox/chat icon (not emoji in production — use a Lucide icon e.g. `MessageSquare`).
+Use a clean inbox/chat icon (not emoji in production - use a Lucide icon e.g. `MessageSquare`).
 Route: `/inbox` and `/inbox/:threadId`
 
 ---
@@ -209,10 +209,10 @@ Every outbound message goes through an AI filter **before** being saved to DB.
 ### Operator → Landlord flow:
 1. Operator types message and hits send
 2. Frontend sends message body to Supabase Edge Function `filter-message`
-3. Edge function calls AI (fastest available — use `gpt-4o-mini` or `claude-haiku`) with prompt:
+3. Edge function calls AI (fastest available - use `gpt-4o-mini` or `claude-haiku`) with prompt:
    > "You are a contact detail filter. Remove any phone numbers, email addresses, WhatsApp numbers, physical addresses, or any attempt to bypass contact protection (including written-out numbers like 'oh eight one two'). Replace removed content with [contact hidden]. Return the cleaned message only."
 4. Cleaned message saved to `chat_messages.body`, original saved to `body_original` (audit only, never shown)
-5. Landlord sees cleaned version seamlessly — never knows it was filtered
+5. Landlord sees cleaned version seamlessly - never knows it was filtered
 
 ### Landlord → Operator flow (blocked until agreement signed):
 1. If `terms_accepted = false` on the thread:
@@ -234,7 +234,7 @@ Every outbound message goes through an AI filter **before** being saved to DB.
    - `agreement_acceptances` row inserted (with timestamp + thread metadata)
    - `chat_threads.terms_accepted` flipped to `true`
    - Right sidebar updates: phone/email revealed
-   - Thread unlocked — messages flow freely
+   - Thread unlocked - messages flow freely
 
 ---
 
@@ -298,7 +298,7 @@ Claude should implement ALL of the following in one complete pass:
 - [x] Centre panel: chat bubbles, date grouping, system notices, input bar with send
 - [x] Right panel: property details, profit, agreement CTA, landlord details, next steps
 - [x] Quick replies modal (full CRUD: add, edit, delete with inline confirmation)
-- [x] Messaging settings modal (gear) — UI stub
+- [x] Messaging settings modal (gear) - UI stub
 - [x] Thread context menu (hover ••• → Mark unread / Star / Archive with icons)
 - [x] Empty state (MessageSquare icon + "Select a conversation")
 - [x] Mobile: full-screen chat (left panel hides, back button shown)
@@ -306,17 +306,17 @@ Claude should implement ALL of the following in one complete pass:
 - [x] Sidebar-responsive layout (full-bleed, no gap on collapse)
 
 ### Current implementation status (as of 2026-03-16)
-- [x] chat_threads, chat_messages, message_templates, landlord_invites, agreement_acceptances (and RLS) — done
+- [x] chat_threads, chat_messages, message_templates, landlord_invites, agreement_acceptances (and RLS) - done
 - [x] Supabase Realtime on `chat_messages`; thread list and unread for both operator and landlord
 - [x] Agreement flow + AgreementModal; landlord signs NDA; NDA modal openable from centre panel
 - [x] Payment gate for tenant (first message); PaymentSheet + GHL; payment-success redirect + tier refresh
 - [x] Quick replies CRUD persisted to `message_templates`; n8n webhooks (inbox-new-inquiry, inbox-new-message, inbox-landlord-replied, inbox-nda-signed)
 - [x] Magic link handler `?token=` on inbox (landlord_invites lookup)
-- [ ] Optional: `filter-message` Edge Function (AI contact filter) — client-side regex masking in place
-- [ ] Optional: Support thread auto-created on first load — currently hardcoded SUPPORT_THREAD
+- [ ] Optional: `filter-message` Edge Function (AI contact filter) - client-side regex masking in place
+- [ ] Optional: Support thread auto-created on first load - currently hardcoded SUPPORT_THREAD
 
 ### Prompt scope for messaging changes
-When refining a prompt (Phase 1) for inbox/messaging work, include: **MESSAGING.md**, **INTEGRATIONS.md**, **DOMAIN.md**, and the full list of touched files (InboxPage, ChatWindow, InboxInquiryPanel, AgreementModal, PaymentSheet, useUserTier, ghl.ts). One end-to-end prompt — no part-1/part-2. Include relevant scenarios from **ACCEPTANCE.md**. See `docs/AGENT_INSTRUCTIONS.md` Section 4 (Full Flow Audits).
+When refining a prompt (Phase 1) for inbox/messaging work, include: **MESSAGING.md**, **INTEGRATIONS.md**, **DOMAIN.md**, and the full list of touched files (InboxPage, ChatWindow, InboxInquiryPanel, AgreementModal, PaymentSheet, useUserTier, ghl.ts). One end-to-end prompt - no part-1/part-2. Include relevant scenarios from **ACCEPTANCE.md**. See `docs/AGENT_INSTRUCTIONS.md` Section 4 (Full Flow Audits).
 
 ### Current component tree
 ```
@@ -346,7 +346,7 @@ src/components/inbox/
 
 ### If Claude gets stuck on anything:
 - List it at the end of the output report under `⚠️ ISSUES`
-- Do not stop mid-build — complete everything possible, flag blockers at the end
+- Do not stop mid-build - complete everything possible, flag blockers at the end
 - Hugo and Perplexity will unblock and continue
 
 ---
@@ -396,7 +396,7 @@ src/components/Layout.tsx          ← add Inbox to nav
 
 | Var | Purpose |
 |-----|---------|
-| `VITE_AI_FILTER_MODEL` | Optional — defaults to fastest available. Set to `gpt-4o-mini` or leave blank |
+| `VITE_AI_FILTER_MODEL` | Optional - defaults to fastest available. Set to `gpt-4o-mini` or leave blank |
 | `OPENAI_API_KEY py` | Supabase secret for Edge Function AI filter |
 
 ---

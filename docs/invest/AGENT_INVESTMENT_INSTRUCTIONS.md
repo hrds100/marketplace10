@@ -1,4 +1,4 @@
-# Investment Module — AI Agent Instructions
+# Investment Module - AI Agent Instructions
 
 > Single source of truth for all Investment/JV module work. Read FIRST. Every session. No exceptions.
 
@@ -30,7 +30,7 @@ All documentation lives in `docs/invest/`. Before any task, read this file PLUS 
 
 | # | File | Purpose |
 |---|------|---------|
-| 1 | **AGENT_INVESTMENT_INSTRUCTIONS.md** | This file — master protocol, hard rules, commission rules, changelog |
+| 1 | **AGENT_INVESTMENT_INSTRUCTIONS.md** | This file - master protocol, hard rules, commission rules, changelog |
 | 2 | **HOTKEYS.md** | Copy-paste hotkey prompt for the coding agent |
 | 3 | **DOMAIN.md** | Investment terminology dictionary (actors, concepts, ranks, statuses) |
 | 4 | **DATABASE.md** | All table schemas (7 inv_ + 4 aff_ + 3 shared) with RLS policies |
@@ -40,7 +40,7 @@ All documentation lives in `docs/invest/`. Before any task, read this file PLUS 
 | 8 | **ACCEPTANCE.md** | BDD Given/When/Then scenarios for every feature |
 | 9 | **STACK.md** | Contract addresses, wallets, Graph endpoints, APIs, Revolut, env vars |
 | 10 | **BOUNDARIES.md** | What invest owns, what's shared, what must never be touched |
-| 11 | **MODULE_AUDIT.md** | Current state snapshot — what's built, what's mock, what's missing |
+| 11 | **MODULE_AUDIT.md** | Current state snapshot - what's built, what's mock, what's missing |
 | 12 | **EXECUTION_PLAN.md** | Step-by-step implementation sequence with dependencies |
 | 13 | **PAYOUT_FLOW.md** | Complete crypto + bank payout documentation (Revolut weekly batch) |
 | 14 | **USER_JOURNEY.md** | Every flow explained in simple English with emojis (non-technical) |
@@ -73,7 +73,7 @@ The original nfstay blockchain app (the working version on app.nfstay.com) lives
 **Local path:** `/Users/hugo/Downloads/AI Folder/openclaw/nfstay-org/`
 **GitHub:** `https://github.com/nfstay-Organization/nfstay`
 
-This is the **reference implementation** — all smart contract interactions, ABIs, subgraph queries, wallet connection, boost/farm logic, agent commission tracking, and rent claiming are working in this codebase. When building the investment module, **always check how the legacy app does it first** before writing new code.
+This is the **reference implementation** - all smart contract interactions, ABIs, subgraph queries, wallet connection, boost/farm logic, agent commission tracking, and rent claiming are working in this codebase. When building the investment module, **always check how the legacy app does it first** before writing new code.
 
 ### Key reference files
 
@@ -93,7 +93,7 @@ This is the **reference implementation** — all smart contract interactions, AB
 | `backend/routes/adminRoute.js` | Admin functions: complete-order, update-order |
 | `backend/models/` | MongoDB models: user, order, subscription, reward |
 
-**Rule:** When implementing any blockchain feature, first read how the legacy app does it, then adapt for our stack (React + Supabase instead of Next.js + MongoDB). The contract calls and ABIs are identical — only the frontend framework and database differ.
+**Rule:** When implementing any blockchain feature, first read how the legacy app does it, then adapt for our stack (React + Supabase instead of Next.js + MongoDB). The contract calls and ABIs are identical - only the frontend framework and database differ.
 
 ---
 
@@ -105,12 +105,12 @@ All rules from `docs/AGENT_INSTRUCTIONS.md` apply. These are ADDITIONAL rules fo
 2. **Never expose private keys.** All wallet operations happen client-side via Particle Network wallet connection.
 3. **All investment tables use the `inv_` prefix.** All affiliate tables use the `aff_` prefix.
 4. **All investment n8n workflows use the `inv-` prefix.** All affiliate workflows use the `aff-` prefix.
-5. **Commission rates are admin-configurable.** Never hardcode commission percentages — always read from `aff_commission_settings` table.
+5. **Commission rates are admin-configurable.** Never hardcode commission percentages - always read from `aff_commission_settings` table.
 6. **The admin wallet holds treasury funds.** Address: `0xE1F532A57Fd6a1d3af3Ec8E268249d6B6cEe3df6`
 7. **All admin actions in the investment module must log to `admin_audit_log`.** Same rule as marketplace10.
 8. **Payouts have a 14-day holdback.** Commissions become claimable 14 days after earning. This is configurable by admin.
-9. **The Graph is the source of truth for on-chain data.** Never query the blockchain directly for historical data — use The Graph subgraph endpoints.
-10. **Mock data files stay until real data is wired.** Don't delete `investMockData.ts` — components fall back to it during development.
+9. **The Graph is the source of truth for on-chain data.** Never query the blockchain directly for historical data - use The Graph subgraph endpoints.
+10. **Mock data files stay until real data is wired.** Don't delete `investMockData.ts` - components fall back to it during development.
 11. **Bank payouts go through Revolut.** Weekly batch every Tuesday at 05:00 AM UK time. Hugo approves via Revolut Face ID. Never bypass the approval step.
 12. **Payout amounts are always server-side calculated.** Never accept claim amounts from the frontend. Edge Function calculates from source tables.
 13. **Playwright e2e test is mandatory before marking DONE.** After every fix or feature, write a Playwright test that verifies the change works, run it with `npx playwright test`, and include the pass/fail result in the report. No exceptions. Do not claim something is "working" or "fixed" without a passing Playwright test.
@@ -126,20 +126,20 @@ These rules exist because breaking them crashed the entire app for all users.
 
 16. **NEVER modify `vite.config.ts` unless you are 100% certain it won't break the build.** The Particle SDK, node polyfills, WASM loader, and React resolution are all fragile. Adding resolve.alias entries for React 18 caused a TextEncoder crash that blanked the entire site.
 
-17. **NEVER modify `src/main.tsx` entry point.** The import order and polyfill setup are critical. ES module imports are hoisted — inline code before `import` does NOT run first.
+17. **NEVER modify `src/main.tsx` entry point.** The import order and polyfill setup are critical. ES module imports are hoisted - inline code before `import` does NOT run first.
 
 18. **NEVER use `sed` to inject code into React/TypeScript files.** It creates malformed merges (duplicate hooks, broken syntax) that crash the entire app. Always use proper file editing tools.
 
 19. **If the site goes blank (white page on all routes), check these in order:**
-    - `vite.config.ts` — was `resolve.alias` changed? Revert it.
-    - `src/main.tsx` — was it modified? Revert it.
-    - `src/layouts/AdminLayout.tsx` — are all lucide-react icon imports present? Missing icons = `ReferenceError` = blank page.
-    - `src/App.tsx` — are all imported components' files present? Missing file = crash.
+    - `vite.config.ts` - was `resolve.alias` changed? Revert it.
+    - `src/main.tsx` - was it modified? Revert it.
+    - `src/layouts/AdminLayout.tsx` - are all lucide-react icon imports present? Missing icons = `ReferenceError` = blank page.
+    - `src/App.tsx` - are all imported components' files present? Missing file = crash.
     - Run `git show <last-working-commit>:vite.config.ts` and `git show <last-working-commit>:src/main.tsx` to compare.
 
-20. **The known working state of `vite.config.ts` has NO React 18 resolve aliases.** The site works without them. Do not add `"react": path.resolve(...)` aliases — they break the node polyfills plugin and cause `TextEncoder is not a constructor`.
+20. **The known working state of `vite.config.ts` has NO React 18 resolve aliases.** The site works without them. Do not add `"react": path.resolve(...)` aliases - they break the node polyfills plugin and cause `TextEncoder is not a constructor`.
 
-21. **Before pushing ANY change to main, verify the build passes AND the app renders.** Run `npm run build` and check for errors. A passing build does NOT guarantee the app renders — runtime crashes (missing imports, duplicate hooks) are not caught by the build.
+21. **Before pushing ANY change to main, verify the build passes AND the app renders.** Run `npm run build` and check for errors. A passing build does NOT guarantee the app renders - runtime crashes (missing imports, duplicate hooks) are not caught by the build.
 
 22. **After any merge from another branch, always diff the critical files:**
     ```bash
@@ -181,10 +181,10 @@ Never push directly to main. Hugo merges when ready.
 
 | Date | Change | Docs Updated |
 |------|--------|-------------|
-| 2026-03-18 | Initial creation — all 12 docs | All |
-| 2026-03-18 | Added Revolut payout system — 3 new tables, removed aff_payout_requests, Tuesday batch workflow, 3 Edge Functions | DATABASE.md, INTEGRATIONS.md, ARCHITECTURE.md, STACK.md, AGENT_INVESTMENT_INSTRUCTIONS.md |
-| 2026-03-18 | Added PAYOUT_FLOW.md — complete crypto + bank payout documentation | PAYOUT_FLOW.md |
-| 2026-03-18 | Added USER_JOURNEY.md — simple English overview of every flow | USER_JOURNEY.md |
+| 2026-03-18 | Initial creation - all 12 docs | All |
+| 2026-03-18 | Added Revolut payout system - 3 new tables, removed aff_payout_requests, Tuesday batch workflow, 3 Edge Functions | DATABASE.md, INTEGRATIONS.md, ARCHITECTURE.md, STACK.md, AGENT_INVESTMENT_INSTRUCTIONS.md |
+| 2026-03-18 | Added PAYOUT_FLOW.md - complete crypto + bank payout documentation | PAYOUT_FLOW.md |
+| 2026-03-18 | Added USER_JOURNEY.md - simple English overview of every flow | USER_JOURNEY.md |
 | 2026-03-18 | Updated document index to list all 14 docs + added legacy reference codebase section | AGENT_INVESTMENT_INSTRUCTIONS.md |
 
 ---

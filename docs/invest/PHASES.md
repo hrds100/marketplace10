@@ -1,4 +1,4 @@
-# Investment Module — Build Phases
+# Investment Module - Build Phases
 
 > Step-by-step implementation plan. Each phase is self-contained and testable.
 

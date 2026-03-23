@@ -1,7 +1,7 @@
 # Incident: nfstay Branch Silently Overwrote 30 marketplace10 Files
 
 **Date:** 2026-03-19
-**Severity:** High (caught before merge — no production impact)
+**Severity:** High (caught before merge - no production impact)
 **Branch:** `claude/design-agent-prompts-0Fd0G`
 **Status:** Resolved
 
@@ -60,11 +60,11 @@ The changes were not caught during development because:
 **None.** The branch was never merged to main. All changes were on a feature branch.
 
 If merged without this fix, hub.nfstay.com would have experienced:
-- **FavouritesProvider crash** — any page using favourites context would throw at runtime
+- **FavouritesProvider crash** - any page using favourites context would throw at runtime
 - **404s** on `/testing/design`, `/dashboard/invest/*`
-- **Missing components** — NotificationBell, BurgerMenu, FavouritesDropdown gone
-- **Modified layouts** — DashboardLayout, Sidebar, TopNav all changed
-- **Edge Function changes** — deal-expiry and send-email silently modified
+- **Missing components** - NotificationBell, BurgerMenu, FavouritesDropdown gone
+- **Modified layouts** - DashboardLayout, Sidebar, TopNav all changed
+- **Edge Function changes** - deal-expiry and send-email silently modified
 
 ---
 
@@ -88,7 +88,7 @@ The AI coding agent during nfstay development did not properly isolate its chang
 
 ## Prevention
 
-1. **Always diff against `origin/main`** before approving any nfstay branch — not just grep the branch files
+1. **Always diff against `origin/main`** before approving any nfstay branch - not just grep the branch files
 2. **Pre-merge checklist:** Run `git diff origin/main --name-status | grep -v nfstay | grep -v nfs` to catch non-nfstay changes
 3. **Agent instructions updated:** Reinforce that marketplace10 files must never be modified during nfstay work
 4. **CI gate (future):** Add a check that rejects PRs modifying files outside the nfstay safe zone without explicit approval

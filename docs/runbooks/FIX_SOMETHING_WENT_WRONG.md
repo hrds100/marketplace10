@@ -1,4 +1,4 @@
-# Runbook: "Something went wrong — The app encountered an unexpected error"
+# Runbook: "Something went wrong - The app encountered an unexpected error"
 
 > How to diagnose and fix the React ErrorBoundary crash on hub.nfstay.com
 
@@ -13,7 +13,7 @@ Something went wrong
 The app encountered an unexpected error. Please try reloading.
 ```
 
-This is NOT a build error — the app built and deployed fine. It's a **runtime crash** in the browser.
+This is NOT a build error - the app built and deployed fine. It's a **runtime crash** in the browser.
 
 ---
 
@@ -21,7 +21,7 @@ This is NOT a build error — the app built and deployed fine. It's a **runtime 
 
 ### Option A: Sentry Dashboard (fastest)
 1. Go to Sentry → javascript-react project
-2. Look at the latest issue — it shows the exact error + stack trace
+2. Look at the latest issue - it shows the exact error + stack trace
 3. The stack trace will be minified (e.g., `at Tre (/assets/index-B2W8vET-.js:986:26215)`)
 4. The error MESSAGE is what matters: e.g., `ReferenceError: property is not defined`
 
@@ -133,7 +133,7 @@ npx tsc --noEmit
 npm run build
 
 # 4. If build fails, fix the build error
-# 5. If build passes, the crash is runtime-only — need browser testing
+# 5. If build passes, the crash is runtime-only - need browser testing
 
 # 6. Fix the code
 # 7. Verify
@@ -151,7 +151,7 @@ gh api repos/hrds100/marketplace10/deployments/DEPLOY_ID/statuses --jq '.[0] | {
 ```
 
 ### If Fix Deployed But Still Broken
-1. Vercel CDN might serve cached version — wait 2-3 minutes
+1. Vercel CDN might serve cached version - wait 2-3 minutes
 2. User should hard refresh: Ctrl+Shift+R (or Cmd+Shift+R on Mac)
 3. Check if the JS bundle hash changed: `curl -s https://hub.nfstay.com/ | grep 'index.*\.js'`
 
@@ -172,7 +172,7 @@ npm run build       # Catches bundle errors
 function SubComponent({ property }: { property: PropertyData }) { ... }
 
 // NEVER reference parent variables from module-scope functions
-// (TypeScript won't catch this — it's a runtime-only error)
+// (TypeScript won't catch this - it's a runtime-only error)
 
 // ALWAYS null-check data from Supabase/blockchain
 const value = data?.field ?? defaultValue;

@@ -1,4 +1,4 @@
-# Investment Module — Architecture
+# Investment Module - Architecture
 
 > How the pieces connect. What handles what. Where data lives.
 
@@ -127,7 +127,7 @@ USER (Browser)
 7. For new users: registers counterparty with Revolut API
 8. n8n creates Revolut payment draft (all claims in one batch)
 9. Claims updated to status: processing
-10. Hugo receives WhatsApp: "Batch ready — X claims, £Y total"
+10. Hugo receives WhatsApp: "Batch ready - X claims, £Y total"
 11. Hugo opens Revolut app → reviews → approves with Face ID
 12. Revolut processes payments (Faster Payments GBP / SEPA EUR)
 13. Revolut webhook fires → Edge Function (revolut-webhook)

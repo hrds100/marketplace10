@@ -80,9 +80,9 @@ const SHADOW_SPECS = [
 
 const DESIGN_PROMPT = `You are building a page for nfstay (hub.nfstay.com). Follow this design system exactly.
 
-PHILOSOPHY: Clean, editorial, trust-first. Premium property magazine — not SaaS dashboard. Generous whitespace, minimal colour, typographic hierarchy.
+PHILOSOPHY: Clean, editorial, trust-first. Premium property magazine - not SaaS dashboard. Generous whitespace, minimal colour, typographic hierarchy.
 
-COLOURS (only these — no others):
+COLOURS (only these - no others):
 - Primary green: #1E9A80 (buttons, links, active states, checkmarks)
 - Green tint: rgba(30,154,128,0.08) (active tabs, hover fills, badges)
 - Heading text: #1A1A1A
@@ -291,7 +291,7 @@ export default function BrandPage() {
 
         {/* Header */}
         <h1 className="text-2xl font-bold tracking-tight mb-1" style={S.h1}>Brand Assets</h1>
-        <p className="text-sm mb-10" style={S.sub}><strong>nfstay</strong> — visual identity &amp; design system</p>
+        <p className="text-sm mb-10" style={S.sub}><strong>nfstay</strong> - visual identity &amp; design system</p>
 
         {/* Two-column layout */}
         <div className="grid lg:grid-cols-[1fr_380px] gap-6">
@@ -303,9 +303,9 @@ export default function BrandPage() {
             <div className="bg-white rounded-xl p-6" style={S.card}>
               <h2 className="text-sm font-semibold mb-3" style={S.heading}>Design Philosophy</h2>
               <p className="text-[13px] leading-relaxed" style={S.sub}>
-                Clean, editorial, trust-first. Think premium property magazine — not SaaS dashboard.
+                Clean, editorial, trust-first. Think premium property magazine - not SaaS dashboard.
                 Generous whitespace, minimal colour, strong typographic hierarchy, soft containers on
-                warm off-white backgrounds. One accent colour (green) — everything else is greyscale.
+                warm off-white backgrounds. One accent colour (green) - everything else is greyscale.
               </p>
             </div>
 
@@ -327,7 +327,7 @@ export default function BrandPage() {
                   <div style={{ width: 32, height: 32, border: '1.5px solid #0a0a0a', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 13, color: '#0a0a0a', lineHeight: 1, background: 'white' }}>nf</div>
                   <div style={{ width: 16, height: 16, border: '1px solid #0a0a0a', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 7, color: '#0a0a0a', lineHeight: 1, background: 'white' }}>nf</div>
                 </div>
-                <p className="text-[10px] mb-2" style={S.sub}>Favicon — download at standard sizes</p>
+                <p className="text-[10px] mb-2" style={S.sub}>Favicon - download at standard sizes</p>
                 <div className="flex gap-2">
                   {[16, 32, 48, 180, 512].map((sz) => (
                     <Button key={sz} variant="outline" size="sm" onClick={() => downloadFavicon(sz)} className="text-[10px] px-2 py-1 h-auto">
@@ -515,7 +515,7 @@ export default function BrandPage() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN — Design Prompt */}
+          {/* RIGHT COLUMN - Design Prompt */}
           <div className="lg:sticky lg:top-6 lg:self-start space-y-6">
             <div className="bg-white rounded-xl p-5" style={S.card}>
               <div className="flex items-center justify-between mb-3">

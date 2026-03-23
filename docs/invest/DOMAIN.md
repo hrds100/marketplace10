@@ -1,4 +1,4 @@
-# Investment Module — Domain Terms
+# Investment Module - Domain Terms
 
 > Canonical terminology for the investment module. Use these terms consistently in all code, docs, and prompts.
 

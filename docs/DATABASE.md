@@ -1,4 +1,4 @@
-# nfstay — Database Schema
+# nfstay - Database Schema
 
 All tables are in the `public` schema on Supabase project `asazddtvjvmckouxcmmo`.
 
@@ -134,7 +134,7 @@ Platform notifications (currently admin-only).
 | created_at | timestamptz | |
 
 **RLS**: Users select own rows. Service role inserts (via n8n).
-**Note**: Not in generated TypeScript types — accessed via `as any` casts.
+**Note**: Not in generated TypeScript types - accessed via `as any` casts.
 
 ## ai_settings
 Admin-configurable AI model and prompt settings. Single row.
@@ -152,10 +152,10 @@ Admin-configurable AI model and prompt settings. Single row.
 | updated_by | uuid | References auth.users |
 
 **RLS**: Open (single row, admin-managed via AdminSettings page).
-**Note**: Not in generated TypeScript types — accessed via `as any` casts.
+**Note**: Not in generated TypeScript types - accessed via `as any` casts.
 
 ## admin_audit_log
-Append-only log of all admin actions. Immutable — no UPDATE or DELETE policies.
+Append-only log of all admin actions. Immutable - no UPDATE or DELETE policies.
 
 | Column | Type | Default | Notes |
 |--------|------|---------|-------|
@@ -168,4 +168,4 @@ Append-only log of all admin actions. Immutable — no UPDATE or DELETE policies
 | created_at | timestamptz | now() | |
 
 **RLS**: Admin emails can INSERT and SELECT only. No UPDATE or DELETE.
-**Note**: Not in generated TypeScript types — accessed via `as any` casts in `src/lib/auditLog.ts`.
+**Note**: Not in generated TypeScript types - accessed via `as any` casts in `src/lib/auditLog.ts`.

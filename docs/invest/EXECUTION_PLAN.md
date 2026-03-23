@@ -1,4 +1,4 @@
-# Investment Module — Execution Plan
+# Investment Module - Execution Plan
 
 > End-to-end implementation sequence. What to build, in what order, with dependencies.
 

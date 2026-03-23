@@ -3,18 +3,18 @@
 ## Files
 | File | Workflow | Webhook Path | Notifies |
 |------|----------|-------------|----------|
-| workflow-1-new-inquiry.json | nfstay — New Inquiry | /webhook/inbox-new-inquiry | Landlord |
-| workflow-2-new-message.json | nfstay — New Message | /webhook/inbox-new-message | Landlord |
-| workflow-3-landlord-replied.json | nfstay — Landlord Replied | /webhook/inbox-landlord-replied | Tenant |
-| workflow-4-tenant-message.json | nfstay — Tenant New Message | /webhook/inbox-tenant-message | Tenant |
+| workflow-1-new-inquiry.json | nfstay - New Inquiry | /webhook/inbox-new-inquiry | Landlord |
+| workflow-2-new-message.json | nfstay - New Message | /webhook/inbox-new-message | Landlord |
+| workflow-3-landlord-replied.json | nfstay - Landlord Replied | /webhook/inbox-landlord-replied | Tenant |
+| workflow-4-tenant-message.json | nfstay - Tenant New Message | /webhook/inbox-tenant-message | Tenant |
 | **workflow-test-echo.json** | **Test Echo (all 4)** | All 4 paths | Logs only |
 
-## Quick Start — Test First
+## Quick Start - Test First
 1. Import `workflow-test-echo.json` into n8n
 2. Activate it
 3. Send a message in the nfstay inbox
-4. Check n8n execution log — you should see the payload logged with `status: ok`
-5. Check browser console — you should see `[nfstay webhook] ✅ fired successfully`
+4. Check n8n execution log - you should see the payload logged with `status: ok`
+5. Check browser console - you should see `[nfstay webhook] ✅ fired successfully`
 6. Once confirmed working, deactivate test workflow and import the real 4 workflows
 
 ## How to Import
@@ -34,7 +34,7 @@ These templates must exist in GHL before the workflows will send messages:
 |-------------|---------|
 | `nfstay_new_inquiry` | First message from tenant to landlord |
 | `nfstay_new_message` | Follow-up message from tenant |
-| `nfstay_landlord_replied` | Landlord replied — notify tenant |
+| `nfstay_landlord_replied` | Landlord replied - notify tenant |
 | `nfstay_tenant_new_message` | General tenant notification |
 
 ## GHL Custom Fields
@@ -56,7 +56,7 @@ These templates must exist in GHL before the workflows will send messages:
 **Note:** Test Echo and New Inquiry share the same webhook path (`inbox-new-inquiry`). When New Inquiry is activated (after Meta approves the template), deactivate the Test Echo workflow to avoid conflicts.
 
 ## Troubleshooting
-- **Webhook returns 404**: workflow is not activated — toggle it on
+- **Webhook returns 404**: workflow is not activated - toggle it on
 - **GHL returns 401**: API key expired or invalid
 - **WhatsApp not received**: check GHL template is approved by Meta
 - **Contact not found**: landlord_id/operator_id must match a GHL contact ID

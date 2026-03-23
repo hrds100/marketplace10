@@ -1,4 +1,4 @@
-# Investment Module — Database Schema
+# Investment Module - Database Schema
 
 > All Supabase tables for the investment module. Prefixed `inv_` (investment) and `aff_` (affiliate). Shared infrastructure tables (user_bank_accounts, payout_claims, payout_audit_log) are unprefixed.
 
@@ -169,7 +169,7 @@ Agent/affiliate profiles.
 | updated_at | TIMESTAMPTZ DEFAULT now() | |
 
 ### aff_commissions
-Commission ledger — all commission entries from all sources.
+Commission ledger - all commission entries from all sources.
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -228,16 +228,16 @@ Bank details for payouts via Revolut. Supports worldwide payouts (200+ countries
 |--------|------|-------|
 | id | UUID PRIMARY KEY DEFAULT gen_random_uuid() | |
 | user_id | UUID REFERENCES auth.users(id) NOT NULL | |
-| currency | TEXT NOT NULL | GBP, EUR, USD, BRL, THB, NGN, etc. — any Revolut-supported currency |
+| currency | TEXT NOT NULL | GBP, EUR, USD, BRL, THB, NGN, etc. - any Revolut-supported currency |
 | account_name | TEXT NOT NULL | Full legal name on the bank account |
 | account_number | TEXT | UK (8 digits), US (up to 17 digits), or local account number |
-| sort_code | TEXT | UK only — 6 digits (XX-XX-XX) |
-| routing_number | TEXT | US only — 9 digits (ABA routing) |
-| iban | TEXT | EU / international — up to 34 chars |
-| bic | TEXT | SWIFT/BIC code — 8 or 11 chars (required for international SWIFT) |
+| sort_code | TEXT | UK only - 6 digits (XX-XX-XX) |
+| routing_number | TEXT | US only - 9 digits (ABA routing) |
+| iban | TEXT | EU / international - up to 34 chars |
+| bic | TEXT | SWIFT/BIC code - 8 or 11 chars (required for international SWIFT) |
 | bank_name | TEXT | Name of the bank (helps Revolut route correctly) |
 | bank_country | TEXT NOT NULL | ISO 2-letter code (GB, US, BR, TH, NG, etc.) |
-| bank_address | TEXT | Optional — some countries require for SWIFT |
+| bank_address | TEXT | Optional - some countries require for SWIFT |
 | revolut_counterparty_id | TEXT | Populated after Revolut registration |
 | revolut_counterparty_account_id | TEXT | Returned alongside counterparty_id |
 | is_verified | BOOLEAN DEFAULT false | Set true after first successful payout |
@@ -255,8 +255,8 @@ Bank details for payouts via Revolut. Supports worldwide payouts (200+ countries
 
 **Notes:**
 - Revolut sends via the fastest rail available: local rails for UK/EU/US, SWIFT for everywhere else
-- Currency is what the partner wants to receive in — Revolut auto-converts from GBP if needed
-- bank_address is only required for some SWIFT corridors (Revolut will error if missing — save and retry)
+- Currency is what the partner wants to receive in - Revolut auto-converts from GBP if needed
+- bank_address is only required for some SWIFT corridors (Revolut will error if missing - save and retry)
 
 ### payout_claims
 Unified payout claims for all user types. Processed in weekly Revolut batch.
@@ -300,7 +300,7 @@ Immutable audit trail for all payout events.
 ## Profiles Table Note
 
 The shared `profiles` table needs a new column added:
-- `wallet_address TEXT` — user's crypto wallet address for on-chain payouts
+- `wallet_address TEXT` - user's crypto wallet address for on-chain payouts
 
 ---
 

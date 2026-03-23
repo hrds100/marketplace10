@@ -18,9 +18,9 @@
 ```
 
 ### Nodes:
-1. **Webhook (POST)** — receives payload above
-2. **GHL — Update Contact**: set custom field `contact.property_reference` = `{{property_title}}` on the landlord contact (lookup by landlord_id → profiles → phone → GHL contact)
-3. **GHL — Send WhatsApp Template**: template name = `nfstay_new_inquiry`, to = landlord phone number, variables: `{{1}}` = First Name, button URL variable = `contact.magic_link_url`
+1. **Webhook (POST)** - receives payload above
+2. **GHL - Update Contact**: set custom field `contact.property_reference` = `{{property_title}}` on the landlord contact (lookup by landlord_id → profiles → phone → GHL contact)
+3. **GHL - Send WhatsApp Template**: template name = `nfstay_new_inquiry`, to = landlord phone number, variables: `{{1}}` = First Name, button URL variable = `contact.magic_link_url`
 4. **End**
 
 ---
@@ -43,9 +43,9 @@
 ```
 
 ### Nodes:
-1. **Webhook (POST)** — receives payload above
-2. **GHL — Update Contact**: set `contact.property_reference` = `{{property_title}}`
-3. **GHL — Send WhatsApp Template**: template name = `nfstay_new_message`, variables: `{{1}}` = First Name, button URL variable = `contact.magic_link_url`
+1. **Webhook (POST)** - receives payload above
+2. **GHL - Update Contact**: set `contact.property_reference` = `{{property_title}}`
+3. **GHL - Send WhatsApp Template**: template name = `nfstay_new_message`, variables: `{{1}}` = First Name, button URL variable = `contact.magic_link_url`
 4. **End**
 
 ---
@@ -53,7 +53,7 @@
 ## WORKFLOW 3: inbox-landlord-replied
 **Webhook path:** `/webhook/inbox-landlord-replied`
 **Trigger:** POST from nfstay when the LANDLORD sends a reply
-**Sends to:** Tenant (operator) — they already have an account, no magic link needed
+**Sends to:** Tenant (operator) - they already have an account, no magic link needed
 
 ### Payload received:
 ```json
@@ -70,10 +70,10 @@
 ```
 
 ### Nodes:
-1. **Webhook (POST)** — receives payload above
-2. **GHL — Look up tenant contact** by thread_id → get operator phone from profiles table via Supabase HTTP node
-3. **GHL — Update Contact**: set `contact.property_reference` = `{{property_title}}` on TENANT contact
-4. **GHL — Send WhatsApp Template**: template name = `nfstay_landlord_replied`, to = tenant phone, variables: `{{1}}` = `contact.property_reference`
+1. **Webhook (POST)** - receives payload above
+2. **GHL - Look up tenant contact** by thread_id → get operator phone from profiles table via Supabase HTTP node
+3. **GHL - Update Contact**: set `contact.property_reference` = `{{property_title}}` on TENANT contact
+4. **GHL - Send WhatsApp Template**: template name = `nfstay_landlord_replied`, to = tenant phone, variables: `{{1}}` = `contact.property_reference`
 5. **End**
 
 ---
@@ -85,8 +85,8 @@
 
 ### Nodes:
 1. **Webhook (POST)**
-2. **GHL — Update Contact**: set `contact.property_reference` on tenant contact
-3. **GHL — Send WhatsApp Template**: `nfstay_tenant_new_message`, `{{1}}` = `contact.property_reference`
+2. **GHL - Update Contact**: set `contact.property_reference` on tenant contact
+3. **GHL - Send WhatsApp Template**: `nfstay_tenant_new_message`, `{{1}}` = `contact.property_reference`
 4. **End**
 
 ---

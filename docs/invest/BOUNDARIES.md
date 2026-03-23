@@ -1,4 +1,4 @@
-# Investment Module — Boundaries
+# Investment Module - Boundaries
 
 > What the investment module owns, what it shares, and what it must never touch.
 > Read this on EVERY investment task.
@@ -15,7 +15,7 @@ Unlike nfstay booking (completely isolated), the invest module:
 - Lives in `src/pages/invest/` (existing directory)
 - Uses the existing `DashboardLayout`, `DashboardSidebar`, `InvestSubNav`
 - Extends the existing admin panel (new admin pages in `src/pages/admin/`)
-- Shares `profiles` table (read + write — it's the same users)
+- Shares `profiles` table (read + write - it's the same users)
 - Shares `notifications` table
 - Shares `admin_audit_log`
 
@@ -38,14 +38,14 @@ Unlike nfstay booking (completely isolated), the invest module:
 
 | Shared resource | How invest uses it |
 |----------------|-------------------|
-| `profiles` | Read AND write — same users invest and do deals |
-| `notifications` | INSERT — send investment notifications |
-| `admin_audit_log` | INSERT — log admin actions |
-| `DashboardLayout` | Uses as-is — no modifications |
-| `DashboardSidebar` | Already has invest menu — no modifications unless Hugo requests |
-| `InvestSubNav` | Already exists — no modifications unless Hugo requests |
-| `components/ui/*` | Use freely — shared UI kit |
-| Auth hooks | Use freely — same auth |
+| `profiles` | Read AND write - same users invest and do deals |
+| `notifications` | INSERT - send investment notifications |
+| `admin_audit_log` | INSERT - log admin actions |
+| `DashboardLayout` | Uses as-is - no modifications |
+| `DashboardSidebar` | Already has invest menu - no modifications unless Hugo requests |
+| `InvestSubNav` | Already exists - no modifications unless Hugo requests |
+| `components/ui/*` | Use freely - shared UI kit |
+| Auth hooks | Use freely - same auth |
 | `AffiliatesPage` | This page already exists for subscription affiliates. Investment commissions will be added to it. |
 
 ---
@@ -54,13 +54,13 @@ Unlike nfstay booking (completely isolated), the invest module:
 
 | Do NOT touch | Why |
 |-------------|-----|
-| `src/pages/DealsPageV2.tsx` | Deals page — separate feature |
-| `src/pages/InboxPage.tsx` | Inbox — separate feature |
-| `src/pages/CRMPage.tsx` | CRM — separate feature |
-| `src/pages/UniversityPage.tsx` | University — separate feature |
-| Any `nfs_*` table | nfstay booking module — Tajul's territory |
+| `src/pages/DealsPageV2.tsx` | Deals page - separate feature |
+| `src/pages/InboxPage.tsx` | Inbox - separate feature |
+| `src/pages/CRMPage.tsx` | CRM - separate feature |
+| `src/pages/UniversityPage.tsx` | University - separate feature |
+| Any `nfs_*` table | nfstay booking module - Tajul's territory |
 | Any existing n8n workflow without `inv-` or `aff-` prefix | marketplace10 or nfstay workflows |
-| `middleware.ts` | Routing for all modules — requires Hugo approval |
+| `middleware.ts` | Routing for all modules - requires Hugo approval |
 | `supabase/functions/` (existing) | Edge functions for other features |
 
 ---
