@@ -3,10 +3,44 @@
 //   1. Legacy SamCart flow: webhook has { type, order: { id } }, we call SamCart API
 //      to validate + get customer data, parse phone field for propertyId/agentWallet/recipient
 //   2. Direct payload flow: webhook has customer.email + custom_fields (our current approach)
-// Env: SAMCART_API_KEY (optional — enables legacy API validation)
+// After order creation, calls sendPrimaryShares() on-chain (same as legacy backend)
+// Env: SAMCART_API_KEY (optional), BACKEND_PRIVATE_KEY (required for on-chain)
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { ethers } from 'https://esm.sh/ethers@5.7.2'
+
+// ---------------------------------------------------------------------------
+// Blockchain: sendPrimaryShares on Marketplace contract (same as legacy)
+// ---------------------------------------------------------------------------
+const RPC_URL = 'https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T'
+const MARKETPLACE_ADDRESS = '0xDD22fDC50062F49a460E5a6bADF96Cbec85ac128'
+const SEND_PRIMARY_ABI = [
+  'function sendPrimaryShares(address recipient, address agentWallet, uint256 propertyId, uint256 sharesRequested) external payable',
+]
+
+async function sendSharesOnChain(
+  recipientWallet: string,
+  agentWallet: string,
+  propertyId: number,
+  shares: number,
+): Promise<{ txHash: string }> {
+  const privateKey = Deno.env.get('BACKEND_PRIVATE_KEY')
+  if (!privateKey) throw new Error('BACKEND_PRIVATE_KEY not set — cannot send shares on-chain')
+
+  const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
+  const wallet = new ethers.Wallet(privateKey, provider)
+  const contract = new ethers.Contract(MARKETPLACE_ADDRESS, SEND_PRIMARY_ABI, wallet)
+
+  // Dry-run first (same as legacy samcartRoute.js line 112)
+  await contract.callStatic.sendPrimaryShares(recipientWallet, agentWallet, propertyId, shares)
+
+  // Execute real transaction
+  const tx = await contract.sendPrimaryShares(recipientWallet, agentWallet, propertyId, shares)
+  const receipt = await tx.wait()
+
+  return { txHash: receipt.transactionHash }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -329,7 +363,7 @@ serve(async (req) => {
         agentUserId = agentProfile?.id || null
       }
 
-      // Create order
+      // Create order as PENDING first (same as legacy samcartRoute.js)
       const { data: order, error: orderErr } = await supabase
         .from('inv_orders')
         .insert({
@@ -339,7 +373,7 @@ serve(async (req) => {
           amount_paid: amountPaid,
           payment_method: 'card',
           agent_id: agentUserId,
-          status: 'completed',
+          status: 'pending',
           external_order_id: orderId,
         })
         .select()
@@ -347,7 +381,48 @@ serve(async (req) => {
 
       if (orderErr) throw orderErr
 
-      // Update shareholdings (upsert)
+      // ── On-chain: sendPrimaryShares (same as legacy samcartRoute.js) ──
+      // If the buyer has a wallet, send shares on-chain automatically
+      let txHash: string | null = null
+      const targetWallet = recipientWallet || '0x0000000000000000000000000000000000000000'
+      const targetAgent = agentWallet || '0x0000000000000000000000000000000000000000'
+
+      if (recipientWallet && Deno.env.get('BACKEND_PRIVATE_KEY')) {
+        try {
+          console.log(`Sending ${finalShares} shares on-chain: property=${propertyId}, recipient=${recipientWallet}`)
+          const result = await sendSharesOnChain(recipientWallet, targetAgent, propertyId, finalShares)
+          txHash = result.txHash
+          console.log(`On-chain success: txHash=${txHash}`)
+        } catch (chainErr: any) {
+          console.error('On-chain sendPrimaryShares failed:', chainErr?.message || chainErr)
+          // Log failure but continue — order stays pending, admin can retry
+          await supabase.from('payout_audit_log').insert({
+            user_id: userId,
+            event_type: 'samcart_onchain_failed',
+            performed_by: 'system',
+            metadata: {
+              order_id: order.id,
+              error: chainErr?.message || 'Unknown blockchain error',
+              recipient: recipientWallet,
+              property_id: propertyId,
+              shares: finalShares,
+            },
+          })
+        }
+      } else {
+        console.log('No wallet or BACKEND_PRIVATE_KEY — skipping on-chain, order stays pending')
+      }
+
+      // Update order status based on blockchain result
+      const finalStatus = txHash ? 'completed' : 'pending'
+      await supabase.from('inv_orders').update({
+        status: finalStatus,
+        ...(txHash ? { tx_hash: txHash } : {}),
+        updated_at: new Date().toISOString(),
+      }).eq('id', order.id)
+
+      // Update shareholdings (upsert) — always, even if on-chain failed
+      // (DB tracks ownership; on-chain can be retried by admin)
       const { data: existing } = await supabase
         .from('inv_shareholdings')
         .select('id, shares_owned, invested_amount')
@@ -382,12 +457,12 @@ serve(async (req) => {
       }
 
       // Send notification
-      await sendNotification(customerFirstName || 'Investor', amountPaid, '', customerEmail, null, userId)
+      await sendNotification(customerFirstName || 'Investor', amountPaid, txHash || '', customerEmail, null, userId)
 
       // Audit log
       await supabase.from('payout_audit_log').insert({
         user_id: userId,
-        event_type: 'samcart_order_completed',
+        event_type: txHash ? 'samcart_order_completed' : 'samcart_order_pending',
         performed_by: 'system',
         metadata: {
           order_id: order.id,
@@ -395,15 +470,17 @@ serve(async (req) => {
           shares: finalShares,
           property_id: propertyId,
           agent_wallet: agentWallet,
+          tx_hash: txHash,
           flow: 'legacy_api',
         },
       })
 
       return new Response(JSON.stringify({
-        status: 'completed',
+        status: finalStatus,
         order_id: order.id,
         shares: finalShares,
         property_id: propertyId,
+        tx_hash: txHash,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 

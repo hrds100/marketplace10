@@ -1780,23 +1780,32 @@ export default function InvestMarketplacePage() {
       );
       const userEmail = encodeURIComponent(user?.email || '');
 
-      // Wallet address goes in last_name ("DON'T EDIT - Wallet ID" on SamCart)
+      // Get wallet address from Particle provider
       let walletAddr = '';
       try { walletAddr = (window as any).__particle_wallet_address || ''; } catch { /* no wallet */ }
 
-      // Encode propertyId + agent + wallet in last_name so webhook can parse it
-      const walletPayload = encodeURIComponent(JSON.stringify({
+      // Property + agent + wallet encoded in phone_number field (same as legacy)
+      // The webhook (inv-samcart-webhook) parses this JSON from the customer phone field
+      const phonePayload = encodeURIComponent(JSON.stringify({
         propertyId: property.id,
         agentWallet: '0x0000000000000000000000000000000000000000',
         recipient: walletAddr,
       }));
 
-      // Phone number stays clean (user's real phone from profile, or empty)
-      const userPhone = encodeURIComponent(
-        user?.user_metadata?.whatsapp || user?.user_metadata?.phone || ''
-      );
+      // Wallet address also goes in SamCart custom field (slug: custom_0zdAJJKy)
+      const params = new URLSearchParams({
+        first_name: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+        email: user?.email || '',
+        phone_number: JSON.stringify({
+          propertyId: property.id,
+          agentWallet: '0x0000000000000000000000000000000000000000',
+          recipient: walletAddr,
+        }),
+        custom_0zdAJJKy: walletAddr, // wallet_address custom field
+        amount: String(investAmount), // prefill PWYW amount
+      });
 
-      const url = `https://stay.samcart.com/products/${SAMCART_PRODUCT_SLUG}/?first_name=${firstName}&last_name=${walletPayload}&email=${userEmail}&phone_number=${userPhone}`;
+      const url = `https://stay.samcart.com/products/${SAMCART_PRODUCT_SLUG}/?${params.toString()}`;
       setSamcartUrl(url);
       setSamcartOpen(true);
       return;
