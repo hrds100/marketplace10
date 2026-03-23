@@ -4,7 +4,7 @@ import {
   ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap,
   CreditCard, HelpCircle, UserCheck, Settings, Bell, TrendingUp,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
-  LayoutGrid, ArrowLeftRight, Plug, Globe, CalendarCheck,
+  LayoutGrid, ArrowLeftRight, Plug, Globe, CalendarCheck, Zap,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +12,7 @@ import { NfsLogo } from '@/components/nfstay/NfsLogo';
 
 const marketplaceLinks = [
   { to: '/admin/marketplace', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { to: '/admin/marketplace/quick-list', label: 'Quick List', icon: Zap },
   { to: '/admin/marketplace/listings', label: 'Listings', icon: List },
   { to: '/admin/marketplace/users', label: 'Users', icon: Users },
   { to: '/admin/marketplace/submissions', label: 'Submissions', icon: FileText },

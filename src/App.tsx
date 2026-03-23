@@ -27,6 +27,7 @@ import BookingSitePage from "./pages/BookingSitePage";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminListings from "./pages/admin/AdminListings";
+import AdminQuickList from "./pages/admin/AdminQuickList";
 import AdminSubmissions from "./pages/admin/AdminSubmissions";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPricing from "./pages/admin/AdminPricing";
@@ -164,6 +165,7 @@ const App = () => (
 
             {/* Marketplace workspace */}
             <Route path="marketplace" element={<AdminDashboard />} />
+            <Route path="marketplace/quick-list" element={<AdminQuickList />} />
             <Route path="marketplace/listings" element={<AdminListings />} />
             <Route path="marketplace/properties" element={<AdminListings />} />
             <Route path="marketplace/submissions" element={<AdminSubmissions />} />
@@ -177,6 +179,7 @@ const App = () => (
 
             {/* Legacy routes (without /marketplace/) -- keep working */}
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="quick-list" element={<AdminQuickList />} />
             <Route path="listings" element={<AdminListings />} />
             <Route path="properties" element={<AdminListings />} />
             <Route path="submissions" element={<AdminSubmissions />} />
