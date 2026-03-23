@@ -2,9 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import LandingPage from "./pages/LandingPage";
 import LandingPageV8 from "./pages/LandingPageV8";
-import LandingPageV10 from "./pages/LandingPageV10";
 import MagicLoginPage from "./pages/MagicLoginPage";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -52,13 +50,8 @@ import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
 import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
 import AdminArchitecture from "./pages/admin/AdminArchitecture";
 import AdminGuard from "./components/AdminGuard";
-import NickelLandingPage from "./pages/NickelLandingPage";
 import NotFound from "./pages/NotFound";
-import LogosPage from "./pages/LogosPage";
 import BrandPage from "./pages/BrandPage";
-import TestingDesign from "./pages/TestingDesign";
-import LandingTestPage from "./pages/LandingTestPage";
-import TestAuthRedesign from "./pages/TestAuthRedesign";
 import InvestMarketplacePage from "./pages/invest/InvestMarketplacePage";
 import InvestPortfolioPage from "./pages/invest/InvestPortfolioPage";
 import InvestPayoutsPage from "./pages/invest/InvestPayoutsPage";
@@ -135,8 +128,6 @@ const App = () => (
       <NfsWhiteLabelRouter>
         <Routes>
           <Route path="/" element={<LandingPageV8 />} />
-          <Route path="/nickel" element={<NickelLandingPage />} />
-          <Route path="/retired" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
@@ -224,11 +215,7 @@ const App = () => (
             {/* Architecture overview */}
             <Route path="architecture" element={<AdminArchitecture />} />
           </Route>
-          <Route path="/logos" element={<LogosPage />} />
           <Route path="/brand" element={<BrandPage />} />
-          <Route path="/landingtest" element={<LandingTestPage />} />
-          <Route path="/testing/design" element={<TestingDesign />} />
-          <Route path="/testing/auth-redesign" element={<TestAuthRedesign />} />
           {/* NFStay operator routes — isolated module */}
           <Route path="/nfstay" element={<NfsOperatorLayout />}>
             <Route index element={<NfsOperatorDashboard />} />

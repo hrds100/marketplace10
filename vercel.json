@@ -59,10 +59,6 @@
       "destination": "/app.html"
     },
     {
-      "source": "/retired",
-      "destination": "/app.html"
-    },
-    {
       "source": "/privacy",
       "destination": "/app.html"
     },
@@ -71,15 +67,7 @@
       "destination": "/app.html"
     },
     {
-      "source": "/logos",
-      "destination": "/app.html"
-    },
-    {
       "source": "/brand",
-      "destination": "/app.html"
-    },
-    {
-      "source": "/landingtest",
       "destination": "/app.html"
     }
   ]
