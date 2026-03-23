@@ -89,20 +89,21 @@ export default function BrandPage() {
             <div className="grid grid-cols-4 gap-3">
               {[
                 { name: 'Green', hex: '#1E9A80' },
+                { name: 'Green Hover', hex: '#178F72' },
+                { name: 'Green Light', hex: 'rgba(30,154,128,0.08)' },
                 { name: 'Dark', hex: '#1C1C1C' },
                 { name: 'Grey', hex: '#6B7280' },
                 { name: 'Background', hex: '#F3F3EE' },
                 { name: 'Warm', hex: '#EAE9E4' },
                 { name: 'White', hex: '#FFFFFF' },
-                { name: 'Green Light', hex: '#E6F5F1' },
-                { name: 'Border', hex: '#E5E5E5' },
+                { name: 'Border', hex: 'rgba(0,0,0,0.08)' },
               ].map((c) => (
                 <div key={c.name} className="text-center">
                   <div
                     className="w-full aspect-square rounded-lg mb-1.5"
                     style={{
                       backgroundColor: c.hex,
-                      border: c.hex === '#FFFFFF' || c.hex === '#F3F3EE' || c.hex === '#EAE9E4' || c.hex === '#E5E5E5' || c.hex === '#E6F5F1' ? '1px solid #ddd' : undefined,
+                      border: c.hex === '#FFFFFF' || c.hex.includes('rgba') || c.hex === '#F3F3EE' || c.hex === '#EAE9E4' ? '1px solid #ddd' : undefined,
                     }}
                   />
                   <p className="text-[11px] font-medium" style={{ color: '#1C1C1C' }}>{c.name}</p>
