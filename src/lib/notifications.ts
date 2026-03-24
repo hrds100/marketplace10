@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
+const GHL_TOKEN = import.meta.env.VITE_GHL_BEARER_TOKEN || '';
+
 // Send notification via n8n webhook → GHL WhatsApp + in-app
 export async function sendInvestNotification(event: {
   type: string;
@@ -26,7 +28,7 @@ export async function sendInvestNotification(event: {
         fetch(`https://services.leadconnectorhq.com/contacts/${event.ghl_contact_id}/workflow/75b14201-f492-44e9-a6e8-4423842fa07e`, {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer pit-28d63a20-4d9f-46bc-aaa3-26556d8b518f',
+            'Authorization': `Bearer ${GHL_TOKEN}`,
             'Version': '2021-07-28',
             'Content-Type': 'application/json',
           },

@@ -75,12 +75,12 @@ export default function AdminInvestPayouts() {
   }, []);
 
   // Load all users for credit dropdown
-  useState(() => {
+  useEffect(() => {
     (async () => {
       const { data } = await (supabase.from('profiles') as any).select('id, name').order('name');
       if (data) setAllUsers(data);
     })();
-  });
+  }, []);
   const [statusFilter, setStatusFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
   const [weekFilter, setWeekFilter] = useState('All');

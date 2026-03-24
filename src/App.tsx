@@ -162,6 +162,7 @@ const App = () => (
           <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
             {/* Workspace selector */}
             <Route index element={<AdminWorkspaceSelector />} />
+            <Route path="workspace-selector" element={<AdminWorkspaceSelector />} />
 
             {/* Marketplace workspace */}
             <Route path="marketplace" element={<AdminDashboard />} />

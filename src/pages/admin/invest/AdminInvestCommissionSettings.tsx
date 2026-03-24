@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Save, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { useCommissionSettings, useUpdateCommissionRate } from '@/hooks/useInvestData';
@@ -41,22 +41,7 @@ const rateLabels: Record<string, { label: string; description: string }> = {
   investment_recurring: { label: 'Investment Recurring', description: 'Ongoing commission on subsequent share purchases by a referred investor. Applied on every purchase after the first.' },
 };
 
-const initialAgents: AgentOverride[] = [
-  { id: 'a1', name: 'Hugo Souza', email: 'hugo@nfstay.com', referralCode: 'HUGO2026', subscriptionRate: 40, firstPurchaseRate: 7, recurringRate: 3, isCustom: true },
-  { id: 'a2', name: 'John Smith', email: 'john@gmail.com', referralCode: 'JOHN100', subscriptionRate: 40, firstPurchaseRate: 5, recurringRate: 2, isCustom: false },
-  { id: 'a3', name: 'Sarah Chen', email: 'sarah@outlook.com', referralCode: 'SARAH88', subscriptionRate: 40, firstPurchaseRate: 5, recurringRate: 2, isCustom: false },
-  { id: 'a4', name: 'Ahmed Ali', email: 'ahmed@yahoo.com', referralCode: 'AHMED55', subscriptionRate: 50, firstPurchaseRate: 6, recurringRate: 2.5, isCustom: true },
-  { id: 'a5', name: 'Maria Garcia', email: 'maria@gmail.com', referralCode: 'MARIA77', subscriptionRate: 40, firstPurchaseRate: 5, recurringRate: 2, isCustom: false },
-];
-
-const allUsers = [
-  { id: 'u1', name: 'Hugo Souza', email: 'hugo@nfstay.com' },
-  { id: 'u2', name: 'John Smith', email: 'john@gmail.com' },
-  { id: 'u3', name: 'Sarah Chen', email: 'sarah@outlook.com' },
-  { id: 'u4', name: 'Ahmed Ali', email: 'ahmed@yahoo.com' },
-  { id: 'u5', name: 'Maria Garcia', email: 'maria@gmail.com' },
-  { id: 'u6', name: 'David Park', email: 'david@proton.me' },
-];
+/* Per-agent overrides and user list are loaded from Supabase below (no hardcoded mock data) */
 
 export default function AdminInvestCommissionSettings() {
   const { data: commissionRows = [], isLoading: isLoadingSettings } = useCommissionSettings();
@@ -76,8 +61,54 @@ export default function AdminInvestCommissionSettings() {
     }));
   })();
 
-  const [agents, setAgents] = useState<AgentOverride[]>(initialAgents);
+  const [agents, setAgents] = useState<AgentOverride[]>([]);
+  const [allUsers, setAllUsers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [loadingOverrides, setLoadingOverrides] = useState(true);
   const [editingGlobal, setEditingGlobal] = useState<Record<string, number>>({});
+
+  // Load per-agent overrides and all users from Supabase
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // Fetch all users (for the dropdown)
+        const { data: profiles } = await (supabase.from('profiles') as any)
+          .select('id, name, email')
+          .order('name');
+        if (!cancelled && profiles) setAllUsers(profiles.map((p: any) => ({ id: p.id, name: p.name || '', email: p.email || '' })));
+
+        // Fetch per-user override rows (user_id IS NOT NULL)
+        const overrideRows = commissionRows.filter((r: Record<string, unknown>) => r.user_id !== null);
+        // Group by user_id
+        const byUser: Record<string, Record<string, number>> = {};
+        for (const r of overrideRows) {
+          const uid = r.user_id as string;
+          if (!byUser[uid]) byUser[uid] = {};
+          byUser[uid][r.commission_type as string] = Number(r.rate) * 100;
+        }
+        // Build agent overrides from grouped rows
+        const agentList: AgentOverride[] = Object.entries(byUser).map(([uid, rates]) => {
+          const profile = (profiles || []).find((p: any) => p.id === uid);
+          return {
+            id: uid,
+            name: profile?.name || uid.slice(0, 8),
+            email: profile?.email || '',
+            referralCode: '',
+            subscriptionRate: rates['subscription'] ?? (globalRates.find((r) => r.key === 'subscription')?.rate ?? 40),
+            firstPurchaseRate: rates['investment_first'] ?? (globalRates.find((r) => r.key === 'investment_first')?.rate ?? 5),
+            recurringRate: rates['investment_recurring'] ?? (globalRates.find((r) => r.key === 'investment_recurring')?.rate ?? 2),
+            isCustom: true,
+          };
+        });
+        if (!cancelled) setAgents(agentList);
+      } catch (err) {
+        console.error('Failed to load overrides:', err);
+      } finally {
+        if (!cancelled) setLoadingOverrides(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [commissionRows]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editAgent, setEditAgent] = useState<AgentOverride | null>(null);
   const [overrideForm, setOverrideForm] = useState({
@@ -261,7 +292,7 @@ export default function AdminInvestCommissionSettings() {
         </CardContent>
       </Card>
 
-      {/* Per-User Overrides (mock data — no user-commission junction data yet) */}
+      {/* Per-User Overrides (loaded from aff_commission_settings where user_id IS NOT NULL) */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-foreground">Per-User Overrides</h2>
         <Button onClick={openAddOverride} variant="outline" className="gap-2">
@@ -283,6 +314,20 @@ export default function AdminInvestCommissionSettings() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {loadingOverrides && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <Loader2 className="w-5 h-5 animate-spin inline mr-2" /> Loading overrides...
+                  </TableCell>
+                </TableRow>
+              )}
+              {!loadingOverrides && agents.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    No agent overrides configured. All agents use the global default rates above.
+                  </TableCell>
+                </TableRow>
+              )}
               {agents.map((a) => (
                 <TableRow key={a.id}>
                   <TableCell>
