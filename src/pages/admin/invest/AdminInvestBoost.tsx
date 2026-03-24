@@ -92,7 +92,7 @@ export default function AdminInvestBoost() {
       <h1 className="text-[28px] font-bold text-foreground mb-6">Boost Management</h1>
 
       {/* Admin Boost Card */}
-      <Card className="border-border mb-8">
+      <Card data-feature="ADMIN__INVEST_BOOST_CONTROLS" className="border-border mb-8">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Rocket className="w-5 h-5 text-emerald-500" />
@@ -190,7 +190,7 @@ export default function AdminInvestBoost() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right text-sm">{b.costUsdc > 0 ? `$${b.costUsdc}` : '\u2014'}</TableCell>
+                  <TableCell data-feature="ADMIN__INVEST_BOOST_COST" className="text-right text-sm">{b.costUsdc > 0 ? `$${b.costUsdc}` : '\u2014'}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{b.boostedDate || '\u2014'}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{b.expires || '\u2014'}</TableCell>
                 </TableRow>

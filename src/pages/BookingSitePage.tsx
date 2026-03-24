@@ -89,7 +89,7 @@ export default function BookingSitePage() {
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {activeTab === 'brand' && (
-            <>
+            <div data-feature="BOOKING_NFSTAY__CUSTOMIZER_BRANDING">
               <Field label="Brand Name">
                 <input
                   type="text"
@@ -126,13 +126,14 @@ export default function BookingSitePage() {
                   <p className="text-[10px] text-muted-foreground/60 mt-0.5">PNG, SVG — max 2MB</p>
                 </div>
               </Field>
-            </>
+            </div>
           )}
 
           {activeTab === 'content' && (
             <>
               <Field label="Hero Headline">
                 <input
+                  data-feature="BOOKING_NFSTAY__CUSTOMIZER_HEADLINE"
                   type="text"
                   value={branding.heroHeadline}
                   onChange={e => update('heroHeadline', e.target.value)}
@@ -162,7 +163,7 @@ export default function BookingSitePage() {
           )}
 
           {activeTab === 'contact' && (
-            <>
+            <div data-feature="BOOKING_NFSTAY__CUSTOMIZER_CONTACT">
               <Field label="Email">
                 <input
                   type="email"
@@ -181,13 +182,13 @@ export default function BookingSitePage() {
                   placeholder="+44 7xxx xxx xxx"
                 />
               </Field>
-            </>
+            </div>
           )}
         </div>
 
         {/* Bottom Actions */}
         <div className="p-5 border-t border-border/30 bg-gray-50/50 space-y-2">
-          <button className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[13px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95">
+          <button data-feature="BOOKING_NFSTAY__CUSTOMIZER_SAVE" className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[13px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95">
             Publish Site
           </button>
           <p className="text-[10px] text-center text-muted-foreground">
@@ -197,7 +198,7 @@ export default function BookingSitePage() {
       </div>
 
       {/* Right Panel — Preview */}
-      <div className="flex-1 bg-[hsl(210,20%,96%)] flex flex-col overflow-hidden">
+      <div data-feature="BOOKING_NFSTAY__CUSTOMIZER_PREVIEW" className="flex-1 bg-[hsl(210,20%,96%)] flex flex-col overflow-hidden">
         {/* Preview Toolbar */}
         <div className="h-12 px-5 flex items-center justify-between border-b border-border/30 bg-white/60 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center gap-3">

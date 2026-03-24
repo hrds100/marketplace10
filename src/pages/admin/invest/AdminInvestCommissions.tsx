@@ -116,7 +116,7 @@ export default function AdminInvestCommissions() {
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div data-feature="ADMIN__INVEST_COMMISSIONS_FILTER" className="flex flex-wrap gap-3 mb-6">
         <select
           className="h-10 px-3 rounded-md border border-input bg-background text-sm"
           value={sourceFilter}
@@ -165,7 +165,7 @@ export default function AdminInvestCommissions() {
 
       <Card className="border-border">
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table data-feature="ADMIN__INVEST_COMMISSIONS_TABLE">
             <TableHeader>
               <TableRow>
                 <TableHead>Agent</TableHead>

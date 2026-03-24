@@ -274,7 +274,7 @@ export default function AdminTestConsole() {
       </div>
 
       {/* Blockchain State */}
-      <Card>
+      <Card data-feature="ADMIN__TEST_WALLET">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
@@ -297,7 +297,7 @@ export default function AdminTestConsole() {
               <p className="text-muted-foreground">BNB (gas)</p>
               <p className="font-bold">{bnbBalance} BNB</p>
             </div>
-            <div>
+            <div data-feature="ADMIN__TEST_SHARES">
               <p className="text-muted-foreground">Shares</p>
               <p className="font-bold">{shares}</p>
             </div>
@@ -349,7 +349,7 @@ export default function AdminTestConsole() {
             </div>
             <div className="flex items-center gap-2">
               <StatusBadge result={bankClaimTest} />
-              <Button size="sm" onClick={testBankClaim} disabled={bankClaimTest.status === 'running'}>Test</Button>
+              <Button data-feature="ADMIN__TEST_CLAIM" size="sm" onClick={testBankClaim} disabled={bankClaimTest.status === 'running'}>Test</Button>
             </div>
           </div>
 
@@ -455,7 +455,7 @@ export default function AdminTestConsole() {
                     <span className="text-muted-foreground text-xs">{claim.week_ref}</span>
                     <span className="text-muted-foreground text-xs">{new Date(claim.created_at).toLocaleString()}</span>
                   </div>
-                  <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 h-7 px-2" onClick={() => deleteTestClaim(claim.id)}>
+                  <Button data-feature="ADMIN__TEST_DELETE" size="sm" variant="ghost" className="text-red-500 hover:text-red-700 h-7 px-2" onClick={() => deleteTestClaim(claim.id)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>

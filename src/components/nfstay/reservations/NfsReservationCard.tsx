@@ -40,14 +40,14 @@ export default function NfsReservationCard({ reservation }: Props) {
         <div className="space-y-2 min-w-0">
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <span className="font-medium text-sm truncate">{guestName}</span>
+            <span data-feature="BOOKING_NFSTAY__RESCARD_GUEST" className="font-medium text-sm truncate">{guestName}</span>
             {reservation.guest_email && (
               <span className="text-xs text-muted-foreground truncate hidden sm:inline">{reservation.guest_email}</span>
             )}
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarDays className="w-4 h-4 flex-shrink-0" />
-            <span>{formatDate(reservation.check_in)} — {formatDate(reservation.check_out)}</span>
+            <span data-feature="BOOKING_NFSTAY__RESCARD_DATES">{formatDate(reservation.check_in)} — {formatDate(reservation.check_out)}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="w-4 h-4 flex-shrink-0" />
@@ -55,7 +55,7 @@ export default function NfsReservationCard({ reservation }: Props) {
           </div>
         </div>
         <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusColor}`}>
+          <span data-feature="BOOKING_NFSTAY__RESCARD_STATUS" className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusColor}`}>
             {statusLabel}
           </span>
           <span className="font-semibold text-sm">

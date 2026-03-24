@@ -562,7 +562,7 @@ export default function InvestPortfolioPage() {
               </CardHeader>
               <CardContent className="space-y-5">
                 {summaryItems.map((item) => (
-                  <div key={item.label} className="flex items-center gap-3">
+                  <div key={item.label} className="flex items-center gap-3" data-feature="INVEST__PORTFOLIO_TOTAL">
                     <div className={cn('p-2.5 rounded-lg', item.bg)}>
                       <item.icon className={cn('h-4 w-4', item.color)} />
                     </div>
@@ -599,7 +599,7 @@ export default function InvestPortfolioPage() {
 
           {/* CENTER — Monthly Earnings (Horizontal Bars) */}
           <div className="lg:col-span-4">
-            <Card className="bg-gradient-to-br from-primary/5 to-background h-full rounded-2xl shadow-sm">
+            <Card className="bg-gradient-to-br from-primary/5 to-background h-full rounded-2xl shadow-sm" data-feature="INVEST__PORTFOLIO_CHART">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-primary" />
@@ -748,6 +748,7 @@ export default function InvestPortfolioPage() {
             return (
               <Card
                 key={h.propertyId}
+                data-feature="INVEST__PORTFOLIO_HOLDING"
                 className={cn(
                   'overflow-hidden transition-all rounded-2xl shadow-sm',
                   !isCollapsed && 'ring-1 ring-primary/30'
@@ -766,6 +767,7 @@ export default function InvestPortfolioPage() {
                         <img
                           src={h.image}
                           alt={h.propertyTitle}
+                          data-feature="INVEST__PORTFOLIO_IMAGE"
                           className="h-14 w-20 rounded-lg object-cover flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
@@ -944,6 +946,7 @@ export default function InvestPortfolioPage() {
                             size="sm"
                             variant="outline"
                             className="w-full text-xs rounded-full border-primary/30 text-primary hover:bg-primary/10"
+                            data-feature="INVEST__PORTFOLIO_CLAIM"
                             disabled={boostLoading || Number(estimatedRewards) === 0}
                             onClick={async () => {
                               const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);

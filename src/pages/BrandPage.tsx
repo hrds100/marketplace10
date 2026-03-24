@@ -340,7 +340,7 @@ export default function BrandPage() {
             </div>
 
             {/* Colour Palette */}
-            <div className="bg-white rounded-xl p-6" style={S.card}>
+            <div data-feature="BRAND__COLOURS" className="bg-white rounded-xl p-6" style={S.card}>
               <h2 className="text-sm font-semibold mb-5" style={S.heading}>Colour Palette</h2>
               <div className="space-y-6">
                 {COLOR_GROUPS.map((group) => (
@@ -368,7 +368,7 @@ export default function BrandPage() {
             </div>
 
             {/* Typography */}
-            <div className="bg-white rounded-xl p-6" style={S.card}>
+            <div data-feature="BRAND__TYPOGRAPHY" className="bg-white rounded-xl p-6" style={S.card}>
               <h2 className="text-sm font-semibold mb-4" style={S.heading}>Typography</h2>
               <div className="space-y-5">
                 {TYPOGRAPHY.map((t) => (
@@ -409,7 +409,7 @@ export default function BrandPage() {
             </div>
 
             {/* Buttons */}
-            <div className="bg-white rounded-xl p-6" style={S.card}>
+            <div data-feature="BRAND__BUTTONS" className="bg-white rounded-xl p-6" style={S.card}>
               <h2 className="text-sm font-semibold mb-4" style={S.heading}>Buttons</h2>
               <div className="space-y-3">
                 {BUTTON_SPECS.map((b) => (
@@ -439,7 +439,7 @@ export default function BrandPage() {
             </div>
 
             {/* Cards & Shadows */}
-            <div className="bg-white rounded-xl p-6" style={S.card}>
+            <div data-feature="BRAND__CARDS" className="bg-white rounded-xl p-6" style={S.card}>
               <h2 className="text-sm font-semibold mb-4" style={S.heading}>Cards</h2>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="rounded-xl p-4" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', boxShadow: 'rgba(0,0,0,0.08) 0 4px 24px -2px' }}>
@@ -452,7 +452,7 @@ export default function BrandPage() {
                 </div>
               </div>
 
-              <h3 className="text-[11px] font-semibold mb-2" style={S.label}>Shadows</h3>
+              <h3 data-feature="BRAND__SHADOWS" className="text-[11px] font-semibold mb-2" style={S.label}>Shadows</h3>
               <div className="space-y-2">
                 {SHADOW_SPECS.map((s) => (
                   <div key={s.name} className="flex items-center gap-3">

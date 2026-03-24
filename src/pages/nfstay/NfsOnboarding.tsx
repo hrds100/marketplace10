@@ -116,6 +116,7 @@ export default function NfsOnboarding() {
           {STEP_LABELS.map((_, i) => (
             <div
               key={i}
+              data-feature="BOOKING_NFSTAY__ONBOARDING_STEP"
               className={`h-1.5 flex-1 rounded-full transition-colors ${
                 i < currentStepIndex
                   ? 'bg-primary'
@@ -144,7 +145,7 @@ export default function NfsOnboarding() {
       <div className="flex items-center justify-between">
         <div>
           {!isFirstStep && (
-            <Button type="button" variant="ghost" onClick={back} disabled={saving}>
+            <Button data-feature="BOOKING_NFSTAY__ONBOARDING_BACK" type="button" variant="ghost" onClick={back} disabled={saving}>
               <ChevronLeft className="w-4 h-4 mr-1" /> Back
             </Button>
           )}
@@ -156,6 +157,7 @@ export default function NfsOnboarding() {
             </Button>
           )}
           <Button
+            data-feature={isLastStep ? "BOOKING_NFSTAY__ONBOARDING_SUBMIT" : "BOOKING_NFSTAY__ONBOARDING_NEXT"}
             type="submit"
             form="onboarding-step-form"
             disabled={saving}

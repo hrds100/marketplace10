@@ -344,7 +344,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div data-feature="CRM_INBOX__MESSAGES_LIST" className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
           <div className="px-4 py-4 space-y-4">
             {[1, 2, 3].map(i => (
@@ -421,7 +421,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
 
       {/* OPERATOR PAYMENT GATE — visible only after send attempt (operator + free tier + no messages) */}
       {isCurrentUserOperator && !paid && !hasExistingMessages && hasAttemptedSend && (
-        <div className="flex items-center justify-between bg-amber-50 border-t border-amber-200 px-4 py-3 shrink-0">
+        <div data-feature="CRM_INBOX__PAYMENT_GATE" className="flex items-center justify-between bg-amber-50 border-t border-amber-200 px-4 py-3 shrink-0">
           <div className="flex items-center gap-2 text-sm text-amber-800">
             <LockKeyhole className="h-4 w-4 shrink-0" />
             <span>Send your first message — upgrade to unlock</span>
@@ -450,10 +450,10 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         isCurrentUserOperator && !paid && !hasExistingMessages ? (
           <>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => fileInputRef.current?.click()} title="Attach files"><Plus className="w-5 h-5 text-muted-foreground" /></button>
-            <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
-            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
+            <button data-feature="CRM_INBOX__QUICK_REPLIES_TRIGGER" className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
+            <textarea data-feature="CRM_INBOX__MESSAGE_INPUT" ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
               className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] transition-all" style={{ minHeight: 36 }} />
-            <button onClick={() => { setHasAttemptedSend(true); setPaymentSheetOpen(true); }}
+            <button data-feature="CRM_INBOX__SEND_BUTTON" onClick={() => { setHasAttemptedSend(true); setPaymentSheetOpen(true); }}
               className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
               <Send className="w-5 h-5" />
             </button>
@@ -462,10 +462,10 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           /* NORMAL: paid operator, landlord with NDA signed, or support → full input */
           <>
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => fileInputRef.current?.click()} title="Attach files"><Plus className="w-5 h-5 text-muted-foreground" /></button>
-            <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
-            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
+            <button data-feature="CRM_INBOX__QUICK_REPLIES_TRIGGER" className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
+            <textarea data-feature="CRM_INBOX__MESSAGE_INPUT" ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
               className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] transition-all" style={{ minHeight: 36 }} />
-            <button onClick={handleSend} disabled={!input.trim()}
+            <button data-feature="CRM_INBOX__SEND_BUTTON" onClick={handleSend} disabled={!input.trim()}
               className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
               <Send className="w-5 h-5" />
             </button>

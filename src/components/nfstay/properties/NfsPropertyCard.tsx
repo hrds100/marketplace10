@@ -44,6 +44,7 @@ export default function NfsPropertyCard({ property, onClick }: NfsPropertyCardPr
       <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 mb-3">
         {coverImage ? (
           <img
+            data-feature="BOOKING_NFSTAY__OPCARD_IMAGE"
             src={coverImage}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
@@ -104,9 +105,9 @@ export default function NfsPropertyCard({ property, onClick }: NfsPropertyCardPr
       <div className="space-y-0.5 px-0.5">
         {/* Title row */}
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-gray-900 truncate leading-snug">{title}</p>
+          <p data-feature="BOOKING_NFSTAY__OPCARD_TITLE" className="text-sm font-semibold text-gray-900 truncate leading-snug">{title}</p>
           {/* Placeholder rating — swap with real data when available */}
-          <div className="flex items-center gap-0.5 flex-shrink-0">
+          <div data-feature="BOOKING_NFSTAY__OPCARD_STATUS" className="flex items-center gap-0.5 flex-shrink-0">
             <Star className="w-3.5 h-3.5 fill-gray-900 stroke-none" />
             <span className="text-xs font-medium text-gray-900">New</span>
           </div>
@@ -123,7 +124,7 @@ export default function NfsPropertyCard({ property, onClick }: NfsPropertyCardPr
         )}
 
         {/* Price */}
-        <p className="text-sm text-gray-900 mt-1">
+        <p data-feature="BOOKING_NFSTAY__OPCARD_PRICE" className="text-sm text-gray-900 mt-1">
           {property.base_rate_amount != null ? (
             <>
               <span className="font-semibold">

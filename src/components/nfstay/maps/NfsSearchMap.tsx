@@ -76,6 +76,7 @@ export default function NfsSearchMap({ properties, onPropertyClick }: NfsSearchM
           if (useAdvanced) {
             const el = document.createElement('div');
             el.className = 'bg-white text-gray-900 text-xs font-bold px-2.5 py-1.5 rounded-full shadow-md border border-gray-200 cursor-pointer hover:bg-gray-900 hover:text-white transition-colors whitespace-nowrap';
+            el.setAttribute('data-feature', 'BOOKING_NFSTAY__SEARCH_MAP_MARKER');
             el.textContent = label;
 
             const marker = new markerLib.AdvancedMarkerElement({ position: pos, map, content: el, title: property.public_title ?? '' });
@@ -117,5 +118,5 @@ export default function NfsSearchMap({ properties, onPropertyClick }: NfsSearchM
     );
   }
 
-  return <div data-feature="BOOKING_NFSTAY__MAPS" ref={mapRef} className="h-full w-full rounded-2xl" />;
+  return <div data-feature="BOOKING_NFSTAY__SEARCH_MAP_CONTAINER" ref={mapRef} className="h-full w-full rounded-2xl" />;
 }

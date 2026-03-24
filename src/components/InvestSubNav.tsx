@@ -22,6 +22,7 @@ export default function InvestSubNav() {
             <NavLink
               key={tab.to}
               to={tab.to}
+              data-feature={`INVEST__NAV_${tab.label.toUpperCase()}`}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] transition-all duration-200 whitespace-nowrap ${
                 isActive
                   ? 'bg-accent-light text-primary font-semibold'

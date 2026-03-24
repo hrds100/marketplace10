@@ -32,7 +32,7 @@ export default function AdminFAQ() {
     <div data-feature="ADMIN">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[28px] font-bold text-foreground">FAQ Management ({faqs.length})</h1>
-        <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ q: '', a: '' }); }} className="h-11 px-5 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
+        <button data-feature="ADMIN__FAQ_ADD" onClick={() => { setShowForm(true); setEditingId(null); setForm({ q: '', a: '' }); }} className="h-11 px-5 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
           <Plus className="w-4 h-4" /> Add FAQ
         </button>
       </div>
@@ -53,14 +53,14 @@ export default function AdminFAQ() {
         </div>
       )}
 
-      <div className="space-y-3">
+      <div data-feature="ADMIN__FAQ_LIST" className="space-y-3">
         {faqs.map(f => (
           <div key={f.id} className="bg-card border border-border rounded-2xl p-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-foreground">{f.q}</h3>
               <div className="flex gap-2">
-                <button onClick={() => { setEditingId(f.id); setForm({ q: f.q, a: f.a }); setShowForm(true); }} className="text-xs text-primary font-medium inline-flex items-center gap-1"><Edit2 className="w-3 h-3" /> Edit</button>
-                <button onClick={() => { setFaqs(prev => prev.filter(x => x.id !== f.id)); toast.success('Deleted'); }} className="text-xs text-destructive font-medium inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Delete</button>
+                <button data-feature="ADMIN__FAQ_EDIT" onClick={() => { setEditingId(f.id); setForm({ q: f.q, a: f.a }); setShowForm(true); }} className="text-xs text-primary font-medium inline-flex items-center gap-1"><Edit2 className="w-3 h-3" /> Edit</button>
+                <button data-feature="ADMIN__FAQ_DELETE" onClick={() => { setFaqs(prev => prev.filter(x => x.id !== f.id)); toast.success('Deleted'); }} className="text-xs text-destructive font-medium inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Delete</button>
               </div>
             </div>
             <p className="text-sm text-muted-foreground mt-2">{f.a}</p>

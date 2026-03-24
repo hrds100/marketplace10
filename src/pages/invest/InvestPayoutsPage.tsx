@@ -125,7 +125,7 @@ function BlockchainDot({ tooltip }: { tooltip?: string }) {
 function StatusBadge({ status }: { status: string }) {
   const config = statusConfig[status] || { label: status, className: 'bg-gray-500/15 text-gray-400 border-gray-500/30' };
   return (
-    <Badge variant="outline" className={cn('text-xs font-medium', config.className)}>
+    <Badge variant="outline" data-feature="INVEST__PAYOUT_STATUS" className={cn('text-xs font-medium', config.className)}>
       {config.label}
     </Badge>
   );
@@ -271,7 +271,7 @@ function ClaimModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" data-feature="INVEST__PAYOUT_MODAL">
         <DialogHeader>
           <DialogTitle>
             {claimStep === 'choose' && 'Claim Rental Income'}
@@ -361,7 +361,7 @@ function ClaimModal({
 
         {/* Step 1b: Bank Setup (no bank account on file) */}
         {claimStep === 'bank_setup' && (
-          <div className="py-2">
+          <div className="py-2" data-feature="INVEST__PAYOUT_BANK">
             <BankDetailsForm
               onSave={() => {
                 // After bank details saved, proceed straight to the claim
@@ -757,7 +757,7 @@ export default function InvestPayoutsPage() {
               </Card>
             ) : (
               claimable.map((payout) => (
-                <Card key={payout.id} className="border-green-500/20">
+                <Card key={payout.id} className="border-green-500/20" data-feature="INVEST__PAYOUT_CARD">
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -774,13 +774,13 @@ export default function InvestPayoutsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="bg-green-500/15 text-green-400 border-green-500/30 shadow-[0_0_8px_rgba(34,197,94,0.2)]">
+                        <Badge variant="outline" className="bg-green-500/15 text-green-400 border-green-500/30 shadow-[0_0_8px_rgba(34,197,94,0.2)]" data-feature="INVEST__PAYOUT_STATUS">
                           Claimable
                         </Badge>
-                        <p className="text-lg font-bold text-green-500 whitespace-nowrap">
+                        <p className="text-lg font-bold text-green-500 whitespace-nowrap" data-feature="INVEST__PAYOUT_AMOUNT">
                           {formatCurrency(payout.amount)}<BlockchainDot tooltip="Amount from blockchain" />
                         </p>
-                        <Button size="sm" onClick={() => handleClaim(payout)}>
+                        <Button size="sm" onClick={() => handleClaim(payout)} data-feature="INVEST__PAYOUT_CLAIM">
                           Claim
                         </Button>
                       </div>

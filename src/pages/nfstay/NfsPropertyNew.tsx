@@ -110,6 +110,7 @@ export default function NfsPropertyNew() {
           {allSteps.map((_, i) => (
             <div
               key={i}
+              data-feature="BOOKING_NFSTAY__WIZARD_STEP"
               className={`h-1.5 flex-1 rounded-full transition-colors ${
                 i < wizard.currentStepIndex
                   ? 'bg-primary'
@@ -136,12 +137,12 @@ export default function NfsPropertyNew() {
         <div className="flex items-center justify-between">
           <div>
             {!wizard.isFirstStep && (
-              <Button type="button" variant="ghost" onClick={wizard.back} disabled={wizard.saving}>
+              <Button data-feature="BOOKING_NFSTAY__WIZARD_BACK" type="button" variant="ghost" onClick={wizard.back} disabled={wizard.saving}>
                 <ChevronLeft className="w-4 h-4 mr-1" /> Back
               </Button>
             )}
           </div>
-          <Button type="submit" form="property-step-form" disabled={wizard.saving}>
+          <Button data-feature="BOOKING_NFSTAY__WIZARD_NEXT" type="submit" form="property-step-form" disabled={wizard.saving}>
             {wizard.saving ? 'Saving...' : 'Next'}
             {!wizard.saving && <ChevronRight className="w-4 h-4 ml-1" />}
           </Button>

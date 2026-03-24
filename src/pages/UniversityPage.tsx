@@ -49,13 +49,13 @@ export default function UniversityPage() {
       {/* Gamification bar */}
       <div className="rounded-2xl border p-5 mt-5" style={{ background: '#FFFFFF', borderColor: '#E5E7EB' }}>
         <div className="flex flex-wrap items-center gap-4 md:gap-6">
-          <div className="flex items-center gap-2">
+          <div data-feature="UNIVERSITY__XP_DISPLAY" className="flex items-center gap-2">
             <Trophy className="w-5 h-5" style={{ color: '#1DB954' }} />
             <span className="text-sm font-bold" style={{ color: '#111827' }}>
               <AnimatedXP target={progress.totalXP} /> XP earned
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div data-feature="UNIVERSITY__STREAK" className="flex items-center gap-2">
             <Flame className="w-5 h-5" style={{ color: '#F59E0B' }} />
             <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full" style={{ background: '#FFFBEB', color: '#92400E' }}>
               {progress.streak}-day streak
@@ -99,6 +99,7 @@ export default function UniversityPage() {
           return (
             <div
               key={mod.id}
+              data-feature="UNIVERSITY__MODULE_CARD"
               className="rounded-2xl border p-5 transition-all duration-200 cursor-pointer group"
               style={{
                 background: '#FFFFFF',
@@ -133,7 +134,7 @@ export default function UniversityPage() {
               </div>
 
               {/* Progress bar */}
-              <div className="mt-3">
+              <div data-feature="UNIVERSITY__MODULE_PROGRESS" className="mt-3">
                 <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: '#E5E7EB' }}>
                   <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: '#1DB954' }} />
                 </div>
@@ -167,7 +168,7 @@ export default function UniversityPage() {
       </div>
 
       {/* Achievements panel */}
-      <div className="mt-10 mb-4">
+      <div data-feature="UNIVERSITY__ACHIEVEMENTS" className="mt-10 mb-4">
         <h2 className="text-lg font-bold" style={{ color: '#111827' }}>Achievements</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
           {achievements.map(a => {
@@ -185,7 +186,7 @@ export default function UniversityPage() {
                 }}
               >
                 {!unlocked && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10">
+                  <div data-feature="UNIVERSITY__TIER_LOCK" className="absolute inset-0 flex items-center justify-center z-10">
                     <Lock className="w-5 h-5" style={{ color: '#9CA3AF' }} />
                   </div>
                 )}

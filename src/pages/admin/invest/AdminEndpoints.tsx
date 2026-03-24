@@ -252,7 +252,7 @@ export default function AdminEndpoints() {
                   </div>
 
                   {/* Name */}
-                  <div className="flex-1 min-w-0">
+                  <div data-feature="ADMIN__INVEST_ENDPOINTS_ADDRESS" className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm">{contract.name}</span>
                       <Badge
@@ -302,7 +302,7 @@ export default function AdminEndpoints() {
 
                 {/* Expanded function list */}
                 {isExpanded && (
-                  <div className="border-t border-border px-5 py-3">
+                  <div data-feature="ADMIN__INVEST_ENDPOINTS_FUNCTIONS" className="border-t border-border px-5 py-3">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-left text-xs text-muted-foreground">

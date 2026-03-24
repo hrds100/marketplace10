@@ -181,8 +181,8 @@ export default function DealsPageV2() {
           <div className="px-6 md:px-8 py-5">
 
             {/* Filter bar */}
-            <div className="flex items-center gap-2 mb-6 flex-wrap">
-              <div className="flex gap-0.5 bg-muted p-1 rounded-lg">
+            <div data-feature="DEALS__FILTER_BAR" className="flex items-center gap-2 mb-6 flex-wrap">
+              <div data-feature="DEALS__STATUS_TABS" className="flex gap-0.5 bg-muted p-1 rounded-lg">
                 {tabs.map(t => (
                   <button
                     key={t}
@@ -198,6 +198,7 @@ export default function DealsPageV2() {
                 ))}
               </div>
               <select
+                data-feature="DEALS__FILTER_CITY"
                 value={city}
                 onChange={e => { setCity(e.target.value); setPage(1); }}
                 className="input-nfstay h-8 text-xs pr-7 bg-card"
@@ -206,6 +207,7 @@ export default function DealsPageV2() {
                 {cities.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
               <select
+                data-feature="DEALS__FILTER_TYPE"
                 value={type}
                 onChange={e => { setType(e.target.value); setPage(1); }}
                 className="input-nfstay h-8 text-xs pr-7 bg-card"
@@ -214,6 +216,7 @@ export default function DealsPageV2() {
                 {types.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
               <select
+                data-feature="DEALS__FILTER_SORT"
                 value={sort}
                 onChange={e => setSort(e.target.value)}
                 className="input-nfstay h-8 text-xs pr-7 bg-card"
@@ -222,7 +225,7 @@ export default function DealsPageV2() {
                 <option value="profit">Highest profit</option>
                 <option value="rent">Lowest rent</option>
               </select>
-              <span className="text-xs text-muted-foreground">
+              <span data-feature="DEALS__COUNT" className="text-xs text-muted-foreground">
                 {filtered.length + highlighted.length} deals
               </span>
             </div>
@@ -233,7 +236,7 @@ export default function DealsPageV2() {
                 {[0, 1, 2, 3, 4, 5].map(i => <CardSkeleton key={i} />)}
               </div>
             ) : [...highlighted, ...pageListings].length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div data-feature="DEALS__GRID" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {[...highlighted, ...pageListings].map(l => (
                   <div
                     key={l.id}

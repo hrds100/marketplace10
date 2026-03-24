@@ -38,11 +38,11 @@ export default function ModuleOverviewPage() {
 
       <div className="flex items-center gap-3 mb-2">
         <span className="text-[32px]">{mod.emoji}</span>
-        <h1 className="text-[26px] font-bold" style={{ color: '#111827' }}>{mod.title}</h1>
+        <h1 data-feature="UNIVERSITY__MODULE_TITLE" className="text-[26px] font-bold" style={{ color: '#111827' }}>{mod.title}</h1>
       </div>
       <p className="text-sm" style={{ color: '#6B7280' }}>{mod.summary}</p>
 
-      <div className="mt-5 flex items-center gap-3 flex-wrap">
+      <div data-feature="UNIVERSITY__COMPLETION" className="mt-5 flex items-center gap-3 flex-wrap">
         <span className="text-sm font-medium" style={{ color: '#111827' }}>{completedCount} of {mod.lessons.length} lessons completed</span>
         <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full" style={{ background: '#ECFDF5', color: '#065F46' }}>
           <Zap className="w-3 h-3 mr-0.5" /> +{mod.xpReward} XP for completing this module
@@ -79,6 +79,7 @@ export default function ModuleOverviewPage() {
         {/* Tier gate overlay */}
         {isGated && (
           <div
+            data-feature="UNIVERSITY__LESSON_LOCK"
             className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl"
             style={{ background: 'rgba(249,250,251,0.95)', border: '2px solid #E5E7EB' }}
           >
@@ -105,6 +106,7 @@ export default function ModuleOverviewPage() {
           return (
             <div
               key={lesson.id}
+              data-feature="UNIVERSITY__LESSON_CARD"
               className="rounded-2xl border p-4 flex items-center gap-4 transition-all duration-200"
               style={{
                 background: done ? '#FAFAFA' : '#FFFFFF',
@@ -150,6 +152,7 @@ export default function ModuleOverviewPage() {
                 )}
                 {!locked && !done && (
                   <button
+                    data-feature="UNIVERSITY__START_LESSON"
                     className="h-9 px-4 rounded-[10px] text-xs font-semibold inline-flex items-center gap-1 transition-opacity hover:opacity-90"
                     style={{ background: '#111827', color: '#FFFFFF' }}
                     onClick={e => { e.stopPropagation(); navigate(`/university/${mod.id}/${lesson.id}`); }}

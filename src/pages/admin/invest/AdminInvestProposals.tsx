@@ -120,7 +120,7 @@ export default function AdminInvestProposals() {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div data-feature="ADMIN__INVEST_PROPOSALS_FILTER" className="mb-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -134,7 +134,7 @@ export default function AdminInvestProposals() {
 
       <Card className="border-border">
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table data-feature="ADMIN__INVEST_PROPOSALS_TABLE">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">#</TableHead>

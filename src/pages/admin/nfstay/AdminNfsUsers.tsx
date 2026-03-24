@@ -25,7 +25,7 @@ export default function AdminNfsUsers() {
   const UserTable = ({ data }: { data: typeof all }) => {
     const filtered = filterList(data);
     return (
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div data-feature="ADMIN__NFS_USERS_TABLE" className="bg-card border border-border rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -66,7 +66,7 @@ export default function AdminNfsUsers() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem className="gap-2" onClick={() => toast({ title: "Email sent (mock)" })}><Mail className="w-4 h-4" /> Send email</DropdownMenuItem>
                         {u.status === 'active' ? (
-                          <DropdownMenuItem className="gap-2 text-destructive" onClick={() => toast({ title: `${u.full_name} suspended (mock)` })}><UserX className="w-4 h-4" /> Suspend</DropdownMenuItem>
+                          <DropdownMenuItem data-feature="ADMIN__NFS_USERS_SUSPEND" className="gap-2 text-destructive" onClick={() => toast({ title: `${u.full_name} suspended (mock)` })}><UserX className="w-4 h-4" /> Suspend</DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem className="gap-2 text-primary" onClick={() => toast({ title: `${u.full_name} activated (mock)` })}><UserCheck className="w-4 h-4" /> Activate</DropdownMenuItem>
                         )}
@@ -91,7 +91,7 @@ export default function AdminNfsUsers() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-lg" />
+        <Input data-feature="ADMIN__NFS_USERS_SEARCH" placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-lg" />
       </div>
 
       <Tabs defaultValue="all">

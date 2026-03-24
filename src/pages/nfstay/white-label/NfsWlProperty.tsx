@@ -78,7 +78,7 @@ export default function NfsWlProperty() {
 
       <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
         {/* Left — Details */}
-        <div className="space-y-6">
+        <div data-feature="BOOKING_NFSTAY__WL_PROPERTY_DETAILS" className="space-y-6">
           {/* Quick stats */}
           <div className="flex flex-wrap gap-4 text-sm">
             {property.max_guests && (
@@ -138,7 +138,7 @@ export default function NfsWlProperty() {
         </div>
 
         {/* Right — Booking widget */}
-        <div className="lg:sticky lg:top-4 self-start">
+        <div data-feature="BOOKING_NFSTAY__WL_BOOKING" className="lg:sticky lg:top-4 self-start">
           <NfsBookingWidget
             property={property}
             bookingSource="white_label"

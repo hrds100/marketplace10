@@ -80,7 +80,7 @@ export default function AgreementModal({ thread, isOperator, onClose, onSign }: 
             <h2 className="text-lg font-semibold text-gray-900">NDA Agreement</h2>
             <p className="text-xs text-gray-500 mt-0.5">Non-Disclosure Agreement between nfstay and the Landlord/Agent</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-50"><X className="w-5 h-5 text-gray-400" /></button>
+          <button data-feature="CRM_INBOX__NDA_CLOSE" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-50"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
 
         {/* Scrollable body */}
@@ -111,7 +111,7 @@ export default function AgreementModal({ thread, isOperator, onClose, onSign }: 
           </div>
 
           {/* Agreement text */}
-          <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-mono text-[13px] bg-gray-50 rounded-xl p-5 border border-gray-100">
+          <div data-feature="CRM_INBOX__NDA_CONTENT" className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-mono text-[13px] bg-gray-50 rounded-xl p-5 border border-gray-100">
             {NDA_TEXT}
           </div>
 
@@ -147,6 +147,7 @@ export default function AgreementModal({ thread, isOperator, onClose, onSign }: 
 
               {/* Sign button */}
               <button
+                data-feature="CRM_INBOX__NDA_SIGN"
                 onClick={handleSign}
                 disabled={!canSign}
                 className="w-full h-11 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"

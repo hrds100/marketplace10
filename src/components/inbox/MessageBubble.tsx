@@ -39,11 +39,12 @@ export default function MessageBubble({ message, isSender, termsAccepted }: Prop
   return (
     <div data-feature="CRM_INBOX__CHAT_WINDOW" className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1`}>
       <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl ${isMe ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-foreground'}`}>
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{displayText}</p>
+        <p data-feature="CRM_INBOX__MESSAGE_BODY" className="text-sm leading-relaxed whitespace-pre-wrap">{displayText}</p>
 
         {/* Masked content CTA — only shown to receiver when NDA not signed */}
         {showMaskedCTA && (
           <button
+            data-feature="CRM_INBOX__MESSAGE_MASKED"
             onClick={() => {
               if (termsAccepted) {
                 toast('Details already unlocked — check the right panel');
@@ -57,7 +58,7 @@ export default function MessageBubble({ message, isSender, termsAccepted }: Prop
           </button>
         )}
 
-        <div className={`text-[10px] mt-1 ${isMe ? 'text-gray-400' : 'text-muted-foreground'}`}>{time}</div>
+        <div data-feature="CRM_INBOX__MESSAGE_TIME" className={`text-[10px] mt-1 ${isMe ? 'text-gray-400' : 'text-muted-foreground'}`}>{time}</div>
       </div>
     </div>
   );

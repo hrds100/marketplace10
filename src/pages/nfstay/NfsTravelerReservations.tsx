@@ -11,7 +11,7 @@ function ReservationCard({ r }: { r: MockReservation }) {
   const { formatPrice } = useCurrency();
   const prop = getReservationProperty(r);
   return (
-    <Link to={`/nfstay/traveler/reservation/${r.id}`} className="flex gap-4 bg-card border border-border rounded-2xl p-4 hover:border-primary/30 hover:shadow-sm transition-all group">
+    <Link data-feature="BOOKING_NFSTAY__TRAVELER_CARD" to={`/nfstay/traveler/reservation/${r.id}`} className="flex gap-4 bg-card border border-border rounded-2xl p-4 hover:border-primary/30 hover:shadow-sm transition-all group">
       <img src={prop.image} alt={prop.title} className="w-24 h-24 rounded-xl object-cover shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
@@ -49,8 +49,8 @@ export default function NfsTravelerReservations() {
       <Tabs defaultValue="all">
         <TabsList className="mb-6">
           <TabsTrigger value="all">All ({all.length})</TabsTrigger>
-          <TabsTrigger value="upcoming">Upcoming ({upcoming.length})</TabsTrigger>
-          <TabsTrigger value="past">Past ({past.length})</TabsTrigger>
+          <TabsTrigger data-feature="BOOKING_NFSTAY__TRAVELER_UPCOMING" value="upcoming">Upcoming ({upcoming.length})</TabsTrigger>
+          <TabsTrigger data-feature="BOOKING_NFSTAY__TRAVELER_PAST" value="past">Past ({past.length})</TabsTrigger>
           <TabsTrigger value="cancelled">Cancelled ({cancelled.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="all">{renderList(all)}</TabsContent>

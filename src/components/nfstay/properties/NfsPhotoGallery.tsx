@@ -58,6 +58,7 @@ function Lightbox({
 
   return (
     <div
+      data-feature="BOOKING_NFSTAY__GALLERY_LIGHTBOX"
       className="fixed inset-0 z-50 bg-black/95 flex flex-col"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -180,6 +181,7 @@ export default function NfsPhotoGallery({
               onClick={() => openLightbox(0)}
             >
               <img
+                data-feature="BOOKING_NFSTAY__GALLERY_HERO"
                 src={cover.url}
                 alt={cover.caption ?? 'Cover photo'}
                 className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
@@ -200,6 +202,7 @@ export default function NfsPhotoGallery({
                       onClick={() => openLightbox(i + 1)}
                     >
                       <img
+                        data-feature="BOOKING_NFSTAY__GALLERY_THUMB"
                         src={img.url}
                         alt={img.caption ?? `Photo ${i + 2}`}
                         className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
@@ -289,14 +292,14 @@ export default function NfsPhotoGallery({
               onChange={(e) => onCaptionChange?.(index, e.target.value)}
             />
             <div className="flex items-center gap-1">
-              <Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => moveImage(index, 'up')} aria-label="Move up">
+              <Button data-feature="BOOKING_NFSTAY__GALLERY_REORDER" type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => moveImage(index, 'up')} aria-label="Move up">
                 <ArrowUp className="h-4 w-4" />
               </Button>
-              <Button type="button" variant="ghost" size="icon" disabled={index === images.length - 1} onClick={() => moveImage(index, 'down')} aria-label="Move down">
+              <Button data-feature="BOOKING_NFSTAY__GALLERY_REORDER" type="button" variant="ghost" size="icon" disabled={index === images.length - 1} onClick={() => moveImage(index, 'down')} aria-label="Move down">
                 <ArrowDown className="h-4 w-4" />
               </Button>
               <div className="flex-1" />
-              <Button type="button" variant="ghost" size="icon" onClick={() => onDelete?.(index)} aria-label="Delete photo" className="text-destructive hover:text-destructive">
+              <Button data-feature="BOOKING_NFSTAY__GALLERY_DELETE" type="button" variant="ghost" size="icon" onClick={() => onDelete?.(index)} aria-label="Delete photo" className="text-destructive hover:text-destructive">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>

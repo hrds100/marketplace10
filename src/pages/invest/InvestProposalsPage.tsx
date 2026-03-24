@@ -444,7 +444,7 @@ export default function InvestProposalsPage() {
     const voted = yes + no;
     const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
     return (
-      <div className="space-y-1.5">
+      <div className="space-y-1.5" data-feature="INVEST__PROPOSAL_PROGRESS">
         <div className="flex justify-between text-xs text-muted-foreground">
           <span className="text-emerald-400">{yesPct}% Yes ({fmt(yes)})<BlockchainDot tooltip="Vote count from blockchain" /></span>
           <span className="text-muted-foreground">{noPct}% No ({fmt(no)})<BlockchainDot tooltip="Vote count from blockchain" /></span>
@@ -507,7 +507,7 @@ export default function InvestProposalsPage() {
       );
     }
     return (
-      <div className="flex gap-2">
+      <div className="flex gap-2" data-feature="INVEST__PROPOSAL_VOTE">
         <Button
           size="sm"
           className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -533,6 +533,7 @@ export default function InvestProposalsPage() {
     return (
       <Badge
         variant="outline"
+        data-feature="INVEST__PROPOSAL_STATUS"
         className={cn(
           'text-xs',
           result === 'approved'
@@ -616,7 +617,7 @@ export default function InvestProposalsPage() {
           </Card>
 
           {/* Filter by Type */}
-          <Card>
+          <Card data-feature="INVEST__MARKETPLACE_FILTER">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Filter className="h-4 w-4" />
@@ -693,6 +694,7 @@ export default function InvestProposalsPage() {
                     />
 
                     <Card
+                      data-feature="INVEST__PROPOSAL_CARD"
                       className={cn(
                         'transition-all',
                         'cursor-pointer',
@@ -715,7 +717,7 @@ export default function InvestProposalsPage() {
                               )}
                               {!isActive && <ResultBadge result={(p as PastProposal).result} />}
                             </div>
-                            <h3 className={cn('font-semibold', isActive ? 'text-base' : 'text-sm')}>
+                            <h3 data-feature="INVEST__PROPOSAL_TITLE" className={cn('font-semibold', isActive ? 'text-base' : 'text-sm')}>
                               {p.title}
                             </h3>
                             {!isActive && !isExpanded && (
@@ -734,7 +736,7 @@ export default function InvestProposalsPage() {
                           <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
                             {/* Description — formatted with paragraphs */}
                             {p.description && (
-                              <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                              <div data-feature="INVEST__PROPOSAL_DESCRIPTION" className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                                 {p.description}
                               </div>
                             )}

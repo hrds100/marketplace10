@@ -96,6 +96,13 @@ export default function AdminLayout() {
                   <Link
                     key={l.to}
                     to={l.to}
+                    data-feature={
+                      l.label === 'Dashboard' ? 'NAV_LAYOUT__ADMIN_DASHBOARD' :
+                      l.label === 'Listings' ? 'NAV_LAYOUT__ADMIN_LISTINGS' :
+                      l.label === 'Users' ? 'NAV_LAYOUT__ADMIN_USERS' :
+                      l.label === 'Quick List' ? 'NAV_LAYOUT__ADMIN_QUICK_LIST' :
+                      'NAV_LAYOUT__ADMIN_LINK'
+                    }
                     className={`px-3 py-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap transition-colors inline-flex items-center gap-1.5 ${
                       isActive ? 'bg-accent-light text-primary' : 'text-muted-foreground hover:text-foreground'
                     }`}
@@ -113,12 +120,14 @@ export default function AdminLayout() {
 
             <div className="flex items-center gap-2 flex-shrink-0">
               <Link
+                data-feature="NAV_LAYOUT__ADMIN_WORKSPACE"
                 to="/admin"
                 className="h-9 px-3 rounded-lg border border-border text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-1.5 whitespace-nowrap"
               >
                 <ArrowLeftRight className="w-3.5 h-3.5" /> Switch
               </Link>
               <Link
+                data-feature="NAV_LAYOUT__ADMIN_WORKSPACE"
                 to="/dashboard/deals"
                 className="h-9 px-3 rounded-lg border border-border text-[13px] font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-1.5 whitespace-nowrap"
               >
@@ -131,6 +140,7 @@ export default function AdminLayout() {
         {workspace === 'selector' && (
           <div className="flex-1 flex justify-end">
             <Link
+              data-feature="NAV_LAYOUT__ADMIN_WORKSPACE"
               to="/dashboard/deals"
               className="h-9 px-4 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-2 whitespace-nowrap"
             >

@@ -83,14 +83,14 @@ export default function NfsProperties() {
           <h1 className="text-2xl font-bold tracking-tight">Properties</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage your vacation rental listings.</p>
         </div>
-        <Button onClick={() => navigate(NFS_ROUTES.PROPERTY_NEW)}>
+        <Button data-feature="BOOKING_NFSTAY__PROPERTIES_ADD" onClick={() => navigate(NFS_ROUTES.PROPERTY_NEW)}>
           <Plus className="w-4 h-4 mr-1" /> Add property
         </Button>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1.5">
+        <div data-feature="BOOKING_NFSTAY__PROPERTIES_FILTER" className="flex gap-1.5">
           {STATUS_FILTERS.map(s => (
             <button
               key={s}
@@ -105,7 +105,7 @@ export default function NfsProperties() {
             </button>
           ))}
         </div>
-        <div className="relative flex-1 max-w-xs">
+        <div data-feature="BOOKING_NFSTAY__PROPERTIES_SEARCH" className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search properties..."
@@ -151,7 +151,7 @@ export default function NfsProperties() {
           )}
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div data-feature="BOOKING_NFSTAY__PROPERTIES_LIST" className="grid gap-3">
           {filtered.map((p: NfsProperty) => {
             const coverImage = p.images?.[0];
             const title = p.public_title || p.internal_title || 'Untitled';
@@ -161,6 +161,7 @@ export default function NfsProperties() {
             return (
               <div
                 key={p.id}
+                data-feature="BOOKING_NFSTAY__PROPERTIES_CARD"
                 className="flex items-center gap-4 p-4 rounded-xl border border-border/40 bg-white dark:bg-card hover:border-primary/30 transition-all cursor-pointer"
                 onClick={() => navigate(`/nfstay/properties/${p.id}`)}
               >

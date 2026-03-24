@@ -537,6 +537,7 @@ export default function AdminQuickList() {
 
           {/* Raw text */}
           <textarea
+            data-feature="ADMIN__QUICK_LIST_INPUT"
             rows={16}
             value={rawText}
             onChange={e => setRawText(e.target.value)}
@@ -546,6 +547,7 @@ export default function AdminQuickList() {
 
           {/* Generate button */}
           <button
+            data-feature="ADMIN__QUICK_LIST_PARSE"
             onClick={handleGenerate}
             disabled={parsing || !rawText.trim()}
             className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 inline-flex items-center justify-center gap-2"
@@ -563,7 +565,7 @@ export default function AdminQuickList() {
               <p className="text-sm text-muted-foreground">Paste text and click Generate to preview the listing here</p>
             </div>
           ) : (
-            <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+            <div data-feature="ADMIN__QUICK_LIST_PREVIEW" className="bg-card border border-border rounded-2xl p-5 space-y-4">
               {/* Multi-listing tabs */}
               {listings.length > 1 && (
                 <div className="flex gap-1 flex-wrap mb-2">
@@ -713,6 +715,7 @@ export default function AdminQuickList() {
               {/* Action buttons */}
               <div className="flex gap-3 pt-2">
                 <button
+                  data-feature="ADMIN__QUICK_LIST_SUBMIT"
                   onClick={() => handlePublish('live')}
                   disabled={publishing}
                   className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-50 inline-flex items-center justify-center gap-2"

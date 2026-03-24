@@ -29,7 +29,7 @@ function PropertyInfo({ thread }: { thread: Thread }) {
       </div>
       <div>
         <h4 className="text-base font-semibold text-gray-900 leading-snug">{thread.propertyTitle}</h4>
-        <div className="flex items-center gap-1.5 mt-1">
+        <div data-feature="CRM_INBOX__INQUIRY_ADDRESS" className="flex items-center gap-1.5 mt-1">
           <MapPin className="w-3.5 h-3.5 text-gray-400" />
           <span className="text-sm text-gray-500">{thread.propertyCity}{thread.propertyPostcode ? ` · ${thread.propertyPostcode}` : ''}</span>
         </div>
@@ -65,13 +65,15 @@ function OperatorView({ thread, onEstimatedProfitChange }: { thread: Thread; onE
     <>
       <PropertyInfo thread={thread} />
 
-      <EarningsEstimator
-        monthlyRent={thread.propertyRent ?? 0}
-        bedrooms={thread.propertyBedrooms ?? 0}
-        propertyType={thread.dealType ?? 'Property'}
-        propertyProfit={thread.propertyProfit ?? 0}
-        onEstimatedProfitChange={onEstimatedProfitChange}
-      />
+      <div data-feature="CRM_INBOX__INQUIRY_EARNINGS">
+        <EarningsEstimator
+          monthlyRent={thread.propertyRent ?? 0}
+          bedrooms={thread.propertyBedrooms ?? 0}
+          propertyType={thread.dealType ?? 'Property'}
+          propertyProfit={thread.propertyProfit ?? 0}
+          onEstimatedProfitChange={onEstimatedProfitChange}
+        />
+      </div>
 
       {/* Landlord Details — locked */}
       <div>
@@ -203,7 +205,7 @@ export default function InboxInquiryPanel({ thread, onClose, onSignNDA, isOperat
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-5">
+      <div data-feature="CRM_INBOX__INQUIRY_DETAILS" className="flex-1 overflow-y-auto p-4 space-y-5">
         {isOperator ? (
           <OperatorView thread={thread} onEstimatedProfitChange={onEstimatedProfitChange} />
         ) : (

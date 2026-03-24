@@ -54,7 +54,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
   return (
     <div data-feature="BOOKING_NFSTAY__RESERVATIONS" className="sticky top-6 rounded-xl border border-border/40 bg-white dark:bg-card p-5 space-y-4 shadow-sm">
       {/* Price header */}
-      <p className="text-2xl font-bold">
+      <p data-feature="BOOKING_NFSTAY__WIDGET_PRICE" className="text-2xl font-bold">
         {property.base_rate_currency} {property.base_rate_amount?.toFixed(2)}
         <span className="text-sm font-normal text-muted-foreground"> / night</span>
       </p>
@@ -64,6 +64,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
         <div>
           <label className="text-xs text-muted-foreground block mb-1">Check-in</label>
           <Input
+            data-feature="BOOKING_NFSTAY__WIDGET_CHECKIN"
             type="date"
             min={minDate}
             value={checkIn}
@@ -73,6 +74,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
         <div>
           <label className="text-xs text-muted-foreground block mb-1">Check-out</label>
           <Input
+            data-feature="BOOKING_NFSTAY__WIDGET_CHECKOUT"
             type="date"
             min={checkIn || minDate}
             value={checkOut}
@@ -82,7 +84,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
       </div>
 
       {/* Guests */}
-      <div className="grid grid-cols-2 gap-2">
+      <div data-feature="BOOKING_NFSTAY__WIDGET_GUESTS" className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-xs text-muted-foreground block mb-1">Adults</label>
           <Input
@@ -146,7 +148,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
             </div>
           ))}
 
-          <NfsPromoCodeInput onValidated={handlePromoValidated} />
+          <NfsPromoCodeInput data-feature="BOOKING_NFSTAY__WIDGET_PROMO" onValidated={handlePromoValidated} />
 
           <div className="flex justify-between font-bold text-base border-t border-border/40 pt-2 mt-2">
             <span>Total</span>
@@ -154,6 +156,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
           </div>
 
           <Button
+            data-feature="BOOKING_NFSTAY__WIDGET_RESERVE"
             className="w-full mt-2 bg-gradient-to-r from-purple-600 to-teal-500 hover:opacity-90 border-0"
             onClick={handleReserve}
           >

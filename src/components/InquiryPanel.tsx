@@ -199,6 +199,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
           </div>
           {!paymentComplete && (
             <button
+              data-feature="DEALS__INQUIRY_PANEL_CLOSE"
               onClick={handleClose}
               className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
             >
@@ -221,7 +222,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
             </div>
           ) : paid ? (
             /* ── PAID USER → WhatsApp ── */
-            <div className="p-6">
+            <div data-feature="DEALS__INQUIRY_PANEL_INFO" className="p-6">
               <label className="text-xs font-semibold text-foreground block mb-2">Your message</label>
               <textarea
                 value={message}
@@ -231,6 +232,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
               />
               {listing.landlordWhatsapp ? (
                 <button
+                  data-feature="DEALS__INQUIRY_PANEL_CONTACT"
                   onClick={handleSendWhatsApp}
                   className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold mt-4 hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                 >

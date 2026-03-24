@@ -284,7 +284,7 @@ function InvestModal({
     )}
 
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" data-feature="INVEST__MARKETPLACE_CHECKOUT">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {'Invest in ' + property.title}
@@ -441,6 +441,7 @@ function ImageCarousel({
         <img
           src={property.images[currentImage]}
           alt={`${property.title} - ${currentImage + 1}`}
+          data-feature="INVEST__MARKETPLACE_IMAGE"
           className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
         />
         {overlay && (
@@ -577,13 +578,13 @@ function InvestCardContent({
   return (
     <div className="space-y-4">
       {/* Allocation price */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between" data-feature="INVEST__MARKETPLACE_TARGET">
         <span className="text-sm text-muted-foreground">Allocation price</span>
         <span className="text-xl font-bold">${property.pricePerShare}</span>
       </div>
 
       {/* Progress */}
-      <div className="space-y-1.5">
+      <div className="space-y-1.5" data-feature="INVEST__MARKETPLACE_PROGRESS">
         <Progress value={fundedPercent} className="h-2.5" />
         <p className="text-xs text-muted-foreground">
           {property.sharesSold.toLocaleString()} allocations sold<BlockchainDot tooltip="Allocations sold from blockchain" /> &middot; {sharesRemaining.toLocaleString()} remaining
@@ -591,7 +592,7 @@ function InvestCardContent({
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-2 text-center">
+      <div className="grid grid-cols-3 gap-2 text-center" data-feature="INVEST__MARKETPLACE_SHARES">
         <div className="rounded-lg bg-muted/50 p-2">
           <p className="text-[10px] text-muted-foreground">Owners<BlockchainDot tooltip="Owner count from blockchain" /></p>
           <p className="text-sm font-bold">{totalOwners}</p>
@@ -600,7 +601,7 @@ function InvestCardContent({
           <p className="text-[10px] text-muted-foreground">Total Allocations<BlockchainDot tooltip="Deal price at $1/allocation from blockchain" /></p>
           <p className="text-sm font-bold">{property.totalShares.toLocaleString()}</p>
         </div>
-        <div className="rounded-lg bg-muted/50 p-2">
+        <div className="rounded-lg bg-muted/50 p-2" data-feature="INVEST__MARKETPLACE_MIN">
           <p className="text-[10px] text-muted-foreground">Remaining<BlockchainDot tooltip="From marketplace contract" /></p>
           <p className="text-sm font-bold">{sharesRemaining.toLocaleString()}</p>
         </div>
@@ -616,6 +617,7 @@ function InvestCardContent({
         </div>
         <div
           className="space-y-3"
+          data-feature="INVEST__MARKETPLACE_SLIDER"
           data-testid="invest-earn-slider"
           data-slider-min={minInvest}
           data-slider-max={maxInvest}
@@ -645,7 +647,7 @@ function InvestCardContent({
             <span>${maxInvest.toLocaleString()}</span>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3" data-feature="INVEST__MARKETPLACE_RETURNS">
           <div className="rounded-xl bg-white/80 border border-[#1E9A80]/10 p-3 shadow-sm">
             <p className="text-[11px] text-muted-foreground">Est. monthly income</p>
             <p className="text-sm font-bold text-[#1E9A80]">${monthlyIncome}</p>
@@ -658,7 +660,7 @@ function InvestCardContent({
       </div>
 
       {/* Payment method */}
-      <div>
+      <div data-feature="INVEST__MARKETPLACE_WALLET">
         <label className="mb-1.5 block text-sm font-medium">Payment method</label>
         <div className={cn('grid gap-2', compact ? 'grid-cols-2' : 'grid-cols-2')}>
           <button
@@ -728,6 +730,7 @@ function InvestCardContent({
       <Button
         className="w-full gap-2"
         size="lg"
+        data-feature="INVEST__MARKETPLACE_BUY"
         disabled={
           !tsaAgreed ||
           cardCheckoutBlocked ||
@@ -1499,7 +1502,7 @@ function Version1({
         {/* RIGHT — Sticky Invest Card */}
         <div className="lg:col-span-5">
           <div className="sticky top-6">
-            <Card className="rounded-2xl shadow-lg">
+            <Card className="rounded-2xl shadow-lg" data-feature="INVEST__MARKETPLACE_CARD">
               <CardContent className="pt-5">
                 <InvestCardContent
                   property={property}
@@ -1661,7 +1664,7 @@ function Version2({
 
       {/* SECTION 3: Invest Card — centered, not sticky */}
       <div className="mx-auto mb-10 max-w-lg">
-        <Card className="rounded-2xl shadow-lg">
+        <Card className="rounded-2xl shadow-lg" data-feature="INVEST__MARKETPLACE_CARD">
           <CardContent className="pt-5">
             <InvestCardContent
               property={property}
@@ -1935,6 +1938,7 @@ export default function InvestMarketplacePage() {
       <Sheet open={samcartOpen} onOpenChange={(open) => { setSamcartOpen(open); if (!open) setSamcartUrl(''); }}>
         <SheetContent
           side="right"
+          data-feature="INVEST__MARKETPLACE_CHECKOUT"
           className="w-full sm:max-w-[42rem] p-0 z-[200] border-l shadow-2xl [&>button]:z-[210]"
         >
           <SheetHeader className="px-4 py-3 border-b">

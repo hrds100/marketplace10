@@ -90,6 +90,7 @@ export default function FavouritesDropdown() {
   return (
     <div data-feature="FAVOURITES" ref={ref} className="relative">
       <button
+        data-feature="FAVOURITES__DROPDOWN_TRIGGER"
         onClick={() => setOpen(!open)}
         className={`relative flex items-center gap-1 p-2 rounded-lg transition-all duration-200 ${
           open ? 'text-red-500 bg-red-50' : 'text-muted-foreground hover:text-muted-foreground/80'
@@ -108,7 +109,7 @@ export default function FavouritesDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 w-[340px] bg-white border border-border/40 rounded-xl shadow-2xl z-[200] overflow-hidden">
+        <div data-feature="FAVOURITES__DROPDOWN_PANEL" className="absolute right-0 top-11 w-[340px] bg-white border border-border/40 rounded-xl shadow-2xl z-[200] overflow-hidden">
           {/* Header */}
           <div className="px-4 py-3 border-b border-border/20">
             <span className="text-[13px] font-semibold text-foreground">Favourites</span>
@@ -133,6 +134,7 @@ export default function FavouritesDropdown() {
                 return (
                   <div
                     key={p.id}
+                    data-feature="FAVOURITES__DROPDOWN_ITEM"
                     className={`group flex items-center gap-3 px-4 py-3 hover:bg-gray-50/80 transition-colors cursor-pointer ${i < properties.length - 1 ? 'border-b border-border/10' : ''}`}
                     onClick={() => handleClick(p.id)}
                   >

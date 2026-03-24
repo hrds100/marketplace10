@@ -118,7 +118,7 @@ export default function AdminNotifications() {
           <p className="text-sm text-muted-foreground">No notifications yet.</p>
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div data-feature="ADMIN__NOTIFICATIONS_LIST" className="bg-card border border-border rounded-2xl overflow-hidden">
           {notifications.map((notif, i) => (
             <div
               key={notif.id}
@@ -148,6 +148,7 @@ export default function AdminNotifications() {
               </div>
               {!notif.read && (
                 <button
+                  data-feature="ADMIN__NOTIFICATIONS_TOGGLE"
                   onClick={(e) => { e.stopPropagation(); markRead(notif.id); }}
                   className="text-[10px] font-medium text-primary hover:opacity-75 flex-shrink-0 mt-1"
                 >

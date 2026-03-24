@@ -31,6 +31,7 @@ export default function NfsAnalytics() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
         <select
+          data-feature="BOOKING_NFSTAY__ANALYTICS_FILTER"
           value={days}
           onChange={e => setDays(Number(e.target.value))}
           className="h-9 rounded-lg border border-border/40 bg-background px-3 text-sm"
@@ -51,10 +52,10 @@ export default function NfsAnalytics() {
         <>
           {/* Stat cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard icon={Eye} label="Page Views" value={summary.totalPageViews} />
+            <StatCard icon={Eye} label="Page Views" value={summary.totalPageViews} data-feature="BOOKING_NFSTAY__ANALYTICS_VIEWS" />
             <StatCard icon={Home} label="Property Views" value={summary.totalPropertyViews} />
-            <StatCard icon={ShoppingCart} label="Bookings Started" value={summary.totalBookingStarts} />
-            <StatCard icon={TrendingUp} label="Conversion Rate" value={`${summary.conversionRate.toFixed(1)}%`} />
+            <StatCard icon={ShoppingCart} label="Bookings Started" value={summary.totalBookingStarts} data-feature="BOOKING_NFSTAY__ANALYTICS_BOOKINGS" />
+            <StatCard icon={TrendingUp} label="Conversion Rate" value={`${summary.conversionRate.toFixed(1)}%`} data-feature="BOOKING_NFSTAY__ANALYTICS_REVENUE" />
           </div>
 
           {/* Views by day (simple bar chart) */}

@@ -186,7 +186,7 @@ export default function MyListingsPanel({ userId }: Props) {
     return (
       <div className="bg-card border border-border rounded-2xl p-6">
         <h3 className="text-base font-bold text-foreground mb-2">My Listings</h3>
-        <div className="text-center py-8">
+        <div data-feature="DEALS__MY_LISTING_EMPTY" className="text-center py-8">
           <p className="text-sm text-muted-foreground">No listings yet.</p>
           <p className="text-xs text-muted-foreground mt-1">Submit your first deal using the form.</p>
         </div>
@@ -268,7 +268,7 @@ export default function MyListingsPanel({ userId }: Props) {
 
           // Normal card row
           return (
-            <div key={listing.id} className="border border-border rounded-xl overflow-hidden">
+            <div data-feature="DEALS__MY_LISTING_CARD" key={listing.id} className="border border-border rounded-xl overflow-hidden">
               <div className="flex items-start gap-3 p-3">
                 <div className="w-[60px] h-[60px] rounded-lg bg-secondary flex-shrink-0 overflow-hidden">
                   {photo ? (
@@ -286,10 +286,10 @@ export default function MyListingsPanel({ userId }: Props) {
                   </div>
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
-                  <button onClick={() => startEdit(listing)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors" title="Edit">
+                  <button data-feature="DEALS__MY_LISTING_EDIT" onClick={() => startEdit(listing)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors" title="Edit">
                     <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
-                  <button onClick={() => handleDelete(listing.id)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" title="Delete">
+                  <button data-feature="DEALS__MY_LISTING_DELETE" onClick={() => handleDelete(listing.id)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" title="Delete">
                     <Trash2 className="w-3.5 h-3.5 text-red-500" />
                   </button>
                 </div>

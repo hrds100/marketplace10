@@ -20,23 +20,23 @@ export default function LandingNav() {
     <>
       <nav data-feature="NAV_LAYOUT" className={`fixed top-0 left-0 right-0 z-50 h-[68px] flex items-center transition-all duration-200 ${scrolled ? 'bg-card/95 backdrop-blur-md border-b border-border shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-[1280px] w-full mx-auto px-6 md:px-10 flex items-center justify-between">
-          <a href="/" className={`text-xl font-extrabold tracking-tight ${scrolled ? 'text-foreground' : 'text-white'}`}>nfstay</a>
+          <a data-feature="NAV_LAYOUT__LANDING_LOGO" href="/" className={`text-xl font-extrabold tracking-tight ${scrolled ? 'text-foreground' : 'text-white'}`}>nfstay</a>
           
           <div className="hidden md:flex items-center gap-8">
-            <a href="#deals-strip" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Deals</a>
-            <a href="#how-it-works" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>How it Works</a>
-            <a href="#pricing" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Pricing</a>
-            <a href="#university" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>University</a>
+            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#deals-strip" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Deals</a>
+            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#how-it-works" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>How it Works</a>
+            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#pricing" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Pricing</a>
+            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#university" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>University</a>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/signin" className={`text-sm font-medium transition-colors px-3 py-2 ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Sign In</Link>
-            <Link to="/signup" className="bg-primary text-primary-foreground text-sm font-semibold h-10 px-5 rounded-lg inline-flex items-center transition-all duration-200 hover:opacity-90 active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">
+            <Link data-feature="NAV_LAYOUT__LANDING_CTA" to="/signin" className={`text-sm font-medium transition-colors px-3 py-2 ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Sign In</Link>
+            <Link data-feature="NAV_LAYOUT__LANDING_CTA" to="/signup" className="bg-primary text-primary-foreground text-sm font-semibold h-10 px-5 rounded-lg inline-flex items-center transition-all duration-200 hover:opacity-90 active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">
               Get Started →
             </Link>
           </div>
 
-          <button className="md:hidden p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" onClick={() => setMobileOpen(true)}>
+          <button data-feature="NAV_LAYOUT__LANDING_BURGER" className="md:hidden p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" onClick={() => setMobileOpen(true)}>
             <Menu className={`w-6 h-6 ${scrolled ? 'text-foreground' : 'text-white'}`} />
           </button>
         </div>

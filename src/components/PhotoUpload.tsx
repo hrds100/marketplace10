@@ -74,6 +74,7 @@ export default function PhotoUpload({ photos, onChange }: Props) {
       <p className="text-xs text-muted-foreground mb-2">Upload up to {MAX_PHOTOS} photos. JPG or PNG, max {MAX_SIZE_MB}MB each.</p>
 
       <label
+        data-feature="DEALS__PHOTO_DROPZONE"
         className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center cursor-pointer hover:border-primary/30 transition-colors"
         onDragOver={e => e.preventDefault()}
         onDrop={handleDrop}
@@ -97,7 +98,7 @@ export default function PhotoUpload({ photos, onChange }: Props) {
       {photos.length > 0 && (
         <div className="grid grid-cols-2 gap-2 mt-3">
           {photos.map((url, i) => (
-            <div key={i} className="relative rounded-xl overflow-hidden aspect-[4/3]">
+            <div data-feature="DEALS__PHOTO_THUMB" key={i} className="relative rounded-xl overflow-hidden aspect-[4/3]">
               <img src={url} className="w-full h-full object-cover" alt={`Photo ${i + 1}`} />
               <button
                 type="button"

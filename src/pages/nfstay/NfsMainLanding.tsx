@@ -41,7 +41,7 @@ export default function NfsMainLanding() {
   return (
     <div data-feature="BOOKING_NFSTAY__MAIN_SITE">
       {/* Hero */}
-      <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
+      <section data-feature="BOOKING_NFSTAY__LANDING_HERO" className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1920&h=1080&fit=crop"
@@ -62,7 +62,7 @@ export default function NfsMainLanding() {
             Discover handpicked vacation rentals from verified hosts. No middlemen, no hidden fees \u2014 just incredible stays.
           </p>
 
-          <div className="max-w-3xl mx-auto">
+          <div data-feature="BOOKING_NFSTAY__LANDING_SEARCH" className="max-w-3xl mx-auto">
             <NfsHeroSearch />
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function NfsMainLanding() {
       )}
 
       {/* Popular Destinations */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
+      <section data-feature="BOOKING_NFSTAY__LANDING_DESTINATIONS" className="max-w-7xl mx-auto px-4 py-16">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold tracking-tight">Popular Destinations</h2>
           <div className="flex gap-2">
@@ -115,7 +115,7 @@ export default function NfsMainLanding() {
       </section>
 
       {/* Featured Properties */}
-      <section className="max-w-7xl mx-auto px-4 py-8">
+      <section data-feature="BOOKING_NFSTAY__LANDING_FEATURED" className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold tracking-tight">Featured Properties</h2>
           <Button variant="link" onClick={() => navigate('/search')} className="text-primary">
@@ -124,7 +124,7 @@ export default function NfsMainLanding() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {featuredProperties.map((p) => (
-            <NfsPropertyCard key={p.id} property={p} />
+            <NfsPropertyCard key={p.id} property={p} data-feature="BOOKING_NFSTAY__LANDING_CARD" />
           ))}
         </div>
       </section>
@@ -177,7 +177,7 @@ export default function NfsMainLanding() {
       </section>
 
       {/* Testimonials */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
+      <section data-feature="BOOKING_NFSTAY__LANDING_TESTIMONIALS" className="max-w-7xl mx-auto px-4 py-16">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold tracking-tight">What our guests say</h2>
           <div className="flex gap-2">
@@ -209,7 +209,7 @@ export default function NfsMainLanding() {
       </section>
 
       {/* FAQs */}
-      <section className="max-w-3xl mx-auto px-4 py-16">
+      <section data-feature="BOOKING_NFSTAY__LANDING_FAQ" className="max-w-3xl mx-auto px-4 py-16">
         <h2 className="text-2xl font-bold tracking-tight text-center mb-8">Frequently Asked Questions</h2>
         <Accordion type="single" collapsible className="space-y-2">
           {faqs.map((faq, i) => (
@@ -222,7 +222,7 @@ export default function NfsMainLanding() {
       </section>
 
       {/* CTA */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
+      <section data-feature="BOOKING_NFSTAY__LANDING_CTA" className="max-w-7xl mx-auto px-4 py-16">
         <div className="bg-primary rounded-3xl p-10 md:p-16 text-center">
           <h2 className="text-3xl font-bold text-primary-foreground mb-3">Ready to list your property?</h2>
           <p className="text-primary-foreground/80 mb-6 max-w-md mx-auto">Join hundreds of operators already using nfstay to accept direct bookings.</p>

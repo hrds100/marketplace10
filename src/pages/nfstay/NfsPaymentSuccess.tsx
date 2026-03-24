@@ -50,7 +50,7 @@ export default function NfsPaymentSuccess() {
     <div data-feature="BOOKING_NFSTAY__CHECKOUT" className="min-h-screen bg-background flex items-start justify-center pt-16 px-4">
       <div className="w-full max-w-md space-y-6">
         {/* Success header */}
-        <div className="text-center space-y-3">
+        <div data-feature="BOOKING_NFSTAY__SUCCESS_MESSAGE" className="text-center space-y-3">
           <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
@@ -63,7 +63,7 @@ export default function NfsPaymentSuccess() {
 
         {/* Booking details card */}
         {summary ? (
-          <div className="bg-white dark:bg-card border border-border/40 rounded-2xl overflow-hidden shadow-sm">
+          <div data-feature="BOOKING_NFSTAY__SUCCESS_SUMMARY" className="bg-white dark:bg-card border border-border/40 rounded-2xl overflow-hidden shadow-sm">
             {summary.coverImage && (
               <div className="h-40 overflow-hidden">
                 <img src={summary.coverImage} alt={summary.propertyTitle} className="w-full h-full object-cover" />
@@ -131,7 +131,7 @@ export default function NfsPaymentSuccess() {
               </Link>
             </Button>
           )}
-          <Button asChild className="w-full bg-gradient-to-r from-purple-600 to-teal-500 hover:opacity-90 border-0">
+          <Button data-feature="BOOKING_NFSTAY__SUCCESS_BROWSE" asChild className="w-full bg-gradient-to-r from-purple-600 to-teal-500 hover:opacity-90 border-0">
             <Link to="/search">
               Browse More Properties <ArrowRight className="w-4 h-4 ml-1" />
             </Link>

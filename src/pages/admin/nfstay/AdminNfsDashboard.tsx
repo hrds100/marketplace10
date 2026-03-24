@@ -46,7 +46,7 @@ export default function AdminNfsDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div data-feature="ADMIN__NFS_STATS" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((s) => (
           <div key={s.label} className="bg-card border border-border rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
@@ -93,7 +93,7 @@ export default function AdminNfsDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-2xl p-5">
+        <div data-feature="ADMIN__NFS_RECENT" className="bg-card border border-border rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold">Recent Users</h2>
             <Button variant="ghost" size="sm" asChild className="text-primary gap-1">
@@ -118,7 +118,7 @@ export default function AdminNfsDashboard() {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl p-5">
+        <div data-feature="ADMIN__NFS_PENDING" className="bg-card border border-border rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold">Pending Operator Approvals</h2>
             <Button variant="ghost" size="sm" asChild className="text-primary gap-1">

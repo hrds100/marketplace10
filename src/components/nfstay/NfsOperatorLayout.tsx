@@ -28,6 +28,7 @@ export default function NfsOperatorLayout() {
           </Link>
           <div className="ml-auto">
             <button
+              data-feature="BOOKING_NFSTAY__OPERATOR_LOGOUT"
               onClick={async () => {
                 await signOut();
                 navigate('/signup');

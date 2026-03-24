@@ -215,7 +215,7 @@ export default function AdminInvestOrders() {
 
       <Card className="border-border">
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table data-feature="ADMIN__INVEST_ORDERS_TABLE">
             <TableHeader>
               <TableRow>
                 <TableHead>Order ID</TableHead>
@@ -253,7 +253,7 @@ export default function AdminInvestOrders() {
                       {paymentLabels[o.payment_method] || o.payment_method || 'N/A'}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-feature="ADMIN__INVEST_ORDERS_STATUS">
                     <Badge variant="outline" className={cn('text-xs capitalize', statusColors[o.status] || '')}>
                       {o.status}
                     </Badge>

@@ -4,7 +4,7 @@ export default function TermsPage() {
       <div className="max-w-[720px] mx-auto px-6 py-16">
         <a href="/" className="text-lg font-extrabold text-foreground tracking-tight">nfstay</a>
         <h1 className="text-[32px] font-bold text-foreground mt-8 mb-6">Terms of Service</h1>
-        <div className="prose prose-sm text-muted-foreground space-y-4">
+        <div data-feature="SHARED__TERMS_CONTENT" className="prose prose-sm text-muted-foreground space-y-4">
           <p className="text-sm leading-relaxed"><strong className="text-foreground">Last updated:</strong> 13 March 2026</p>
           <h2 className="text-lg font-bold text-foreground mt-6">1. Acceptance of Terms</h2>
           <p className="text-sm leading-relaxed">By accessing nfstay, you agree to these Terms of Service. If you do not agree, do not use the platform.</p>

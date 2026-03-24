@@ -232,11 +232,11 @@ export default function DealDetail() {
         {/* Title row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-[28px] font-bold text-foreground">{name}</h1>
+            <h1 data-feature="DEALS__DETAIL_TITLE" className="text-[28px] font-bold text-foreground">{name}</h1>
             <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><MapPin className="w-3.5 h-3.5" /> {city} · {postcode}</p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => toggle(id || '')} className={`h-10 px-4 rounded-lg border border-border flex items-center gap-2 text-sm font-medium transition-colors ${isFav(id || '') ? 'text-primary bg-accent-light' : 'text-foreground hover:bg-secondary'}`}>
+            <button data-feature="DEALS__DETAIL_FAVOURITE" onClick={() => toggle(id || '')} className={`h-10 px-4 rounded-lg border border-border flex items-center gap-2 text-sm font-medium transition-colors ${isFav(id || '') ? 'text-primary bg-accent-light' : 'text-foreground hover:bg-secondary'}`}>
               <Heart className={`w-4 h-4 ${isFav(id || '') ? 'fill-primary' : ''}`} /> {isFav(id || '') ? 'Saved' : 'Save'}
             </button>
             <button className="h-10 px-4 rounded-lg border border-border flex items-center gap-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors">
@@ -259,7 +259,7 @@ export default function DealDetail() {
         </div>
 
         {/* Photo grid */}
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 rounded-2xl overflow-hidden mb-8">
+        <div data-feature="DEALS__DETAIL_PHOTOS" className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 rounded-2xl overflow-hidden mb-8">
           <img src={images[0]} className="w-full h-[300px] md:h-[400px] object-cover cursor-pointer" alt="" onClick={() => { setGalleryIdx(0); setShowGallery(true); }} />
           <div className="grid grid-rows-2 gap-2">
             <img src={images[1]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={() => { setGalleryIdx(1); setShowGallery(true); }} />
@@ -280,7 +280,7 @@ export default function DealDetail() {
                 </span>
                 {landlordApproved && <span className="badge-green">Landlord approved</span>}
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+              <div data-feature="DEALS__DETAIL_FINANCIALS" className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
                 {[
                   { label: 'Monthly rent', value: `£${rent.toLocaleString()}` },
                   { label: 'Est. profit', value: `£${profit.toLocaleString()}`, green: true },
@@ -296,7 +296,7 @@ export default function DealDetail() {
             </div>
 
             <div className="mt-10">
-              <h2 className="text-xl font-bold text-foreground mb-4">About this deal</h2>
+              <h2 data-feature="DEALS__DETAIL_FAQ" className="text-xl font-bold text-foreground mb-4">About this deal</h2>
               {listing.description ? (
                 <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{listing.description as string}</p>
               ) : (
@@ -387,7 +387,7 @@ export default function DealDetail() {
                   <span className={`font-bold text-lg ${finalProfit > 0 ? 'text-accent-foreground' : 'text-destructive'}`}>£{finalProfit.toLocaleString()}</span>
                 </div>
               </div>
-              <button onClick={() => handleInquire(listingShape)} className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold mt-6 hover:opacity-90 transition-opacity">
+              <button data-feature="DEALS__DETAIL_INQUIRE" onClick={() => handleInquire(listingShape)} className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold mt-6 hover:opacity-90 transition-opacity">
                 Inquire Now
               </button>
               <p className="text-xs text-muted-foreground text-center mt-2">Contact via WhatsApp</p>

@@ -185,14 +185,14 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
               {paymentComplete ? 'Unlocking your inbox...' : 'Get full access to contact landlords directly'}
             </p>
           </div>
-          <button onClick={handleClose} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
+          <button onClick={handleClose} data-feature="PAYMENTS__CLOSE" className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden">
           {paymentComplete ? (
-            <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
+            <div data-feature="PAYMENTS__SUCCESS" className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
               {pollTimedOut ? (
                 <>
                   <h3 className="text-lg font-bold text-foreground">Almost there</h3>
@@ -239,6 +239,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
               <div className="flex-1 min-h-0 overflow-hidden">
                 <iframe
                   src={funnelUrl}
+                  data-feature="PAYMENTS__GHL_IFRAME"
                   className="w-full h-full border-0"
                   style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%', height: '125%' }}
                   allow="payment *; camera; microphone; geolocation; clipboard-write"

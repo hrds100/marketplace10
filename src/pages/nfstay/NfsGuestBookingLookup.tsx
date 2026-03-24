@@ -110,7 +110,7 @@ export default function NfsGuestBookingLookup() {
 
         {/* Lookup form */}
         <div className="bg-white dark:bg-card border border-border/40 rounded-2xl p-6 shadow-sm space-y-4">
-          <div className="space-y-1">
+          <div data-feature="BOOKING_NFSTAY__LOOKUP_EMAIL" className="space-y-1">
             <label className="text-sm font-medium">Email address</label>
             <Input
               type="email"
@@ -120,7 +120,7 @@ export default function NfsGuestBookingLookup() {
               onKeyDown={e => e.key === 'Enter' && handleLookup()}
             />
           </div>
-          <div className="space-y-1">
+          <div data-feature="BOOKING_NFSTAY__LOOKUP_ID" className="space-y-1">
             <label className="text-sm font-medium">Reservation ID</label>
             <Input
               placeholder="e.g. res_abc12345..."
@@ -142,6 +142,7 @@ export default function NfsGuestBookingLookup() {
           )}
 
           <Button
+            data-feature="BOOKING_NFSTAY__LOOKUP_SUBMIT"
             className="w-full bg-gradient-to-r from-purple-600 to-teal-500 hover:opacity-90 border-0"
             onClick={handleLookup}
             disabled={loading}
@@ -161,7 +162,7 @@ export default function NfsGuestBookingLookup() {
 
         {/* Result */}
         {reservation && (
-          <div className="mt-8 bg-white dark:bg-card border border-border/40 rounded-2xl overflow-hidden shadow-sm">
+          <div data-feature="BOOKING_NFSTAY__LOOKUP_RESULT" className="mt-8 bg-white dark:bg-card border border-border/40 rounded-2xl overflow-hidden shadow-sm">
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-600 to-teal-500 p-5 text-white">
               <div className="flex items-center gap-2 mb-1">

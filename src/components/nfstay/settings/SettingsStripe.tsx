@@ -48,7 +48,7 @@ export default function SettingsStripe() {
               Connect your Stripe account to accept payments from guests. Payouts are sent directly to your bank account.
             </p>
           </div>
-          <Button onClick={initiateConnect} disabled={connecting} className="w-full max-w-xs">
+          <Button data-feature="BOOKING_NFSTAY__STRIPE_CONNECT" onClick={initiateConnect} disabled={connecting} className="w-full max-w-xs">
             {connecting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             {connecting ? 'Connecting...' : 'Connect with Stripe'}
           </Button>
@@ -57,7 +57,7 @@ export default function SettingsStripe() {
         /* ── Connected ── */
         <div className="rounded-xl border border-border/40 bg-white dark:bg-card p-6 space-y-4">
           {/* Status */}
-          <div className="flex items-center gap-3">
+          <div data-feature="BOOKING_NFSTAY__STRIPE_STATUS" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
@@ -115,6 +115,7 @@ export default function SettingsStripe() {
               <ExternalLink className="w-4 h-4 mr-2" /> Stripe Dashboard
             </Button>
             <Button
+              data-feature="BOOKING_NFSTAY__STRIPE_DISCONNECT"
               variant="ghost"
               size="sm"
               onClick={handleDisconnect}

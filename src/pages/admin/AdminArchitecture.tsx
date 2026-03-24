@@ -5,7 +5,7 @@ export default function AdminArchitecture() {
       <p className="text-sm text-muted-foreground mb-8">One repo, one database, one signup — three products</p>
 
       {/* Three Apps */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-10">
+      <div data-feature="ADMIN__ARCHITECTURE_DIAGRAM" className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-10">
         {/* Marketplace */}
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-primary to-emerald-400" />

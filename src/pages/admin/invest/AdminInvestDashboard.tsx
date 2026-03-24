@@ -71,7 +71,7 @@ export default function AdminInvestDashboard() {
       <h1 className="text-[28px] font-bold text-foreground mb-6">Investment Dashboard</h1>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      <div data-feature="ADMIN__INVEST_STATS" className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         {stats.map((s) => (
           <Card key={s.label} className="border-border">
             <CardContent className="p-5">
@@ -115,7 +115,7 @@ export default function AdminInvestDashboard() {
             <CardTitle className="text-base font-bold text-foreground">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div data-feature="ADMIN__INVEST_ACTIONS" className="space-y-3">
               {quickActions.map((action) => (
                 <Button
                   key={action.label}

@@ -153,7 +153,7 @@ export default function SettingsDomain({ operator }: Props) {
         </form>
 
         {subdomainUrl && (
-          <div className="flex items-center gap-2 text-sm">
+          <div data-feature="BOOKING_NFSTAY__DOMAIN_SUBDOMAIN" className="flex items-center gap-2 text-sm">
             <a
               href={subdomainUrl}
               target="_blank"
@@ -162,7 +162,7 @@ export default function SettingsDomain({ operator }: Props) {
             >
               {subdomainUrl} <ExternalLink className="w-3 h-3" />
             </a>
-            <button onClick={handleCopySubdomain} className="text-muted-foreground hover:text-foreground">
+            <button data-feature="BOOKING_NFSTAY__DOMAIN_COPY" onClick={handleCopySubdomain} className="text-muted-foreground hover:text-foreground">
               {subdomainCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
@@ -182,6 +182,7 @@ export default function SettingsDomain({ operator }: Props) {
           <div>
             <Label className="text-xs text-muted-foreground">Domain</Label>
             <Input
+              data-feature="BOOKING_NFSTAY__DOMAIN_CUSTOM"
               value={customDomain}
               onChange={e => setCustomDomain(e.target.value)}
               placeholder="bookings.yourbrand.com"
@@ -190,7 +191,7 @@ export default function SettingsDomain({ operator }: Props) {
           </div>
 
           <div className="flex gap-2">
-            <Button size="sm" onClick={handleVerifyDomain} disabled={verifying || !customDomain.trim()}>
+            <Button data-feature="BOOKING_NFSTAY__DOMAIN_VERIFY" size="sm" onClick={handleVerifyDomain} disabled={verifying || !customDomain.trim()}>
               {verifying ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
               {verifying ? 'Verifying...' : 'Verify DNS'}
             </Button>

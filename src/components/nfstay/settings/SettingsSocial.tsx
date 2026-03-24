@@ -56,37 +56,37 @@ export default function SettingsSocial({ operator }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="ss-google">Google Business URL</Label>
-        <Input id="ss-google" value={googleBusiness} onChange={e => setGoogleBusiness(e.target.value)} placeholder="https://g.page/yourbusiness" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__SOCIAL_INPUT" id="ss-google" value={googleBusiness} onChange={e => setGoogleBusiness(e.target.value)} placeholder="https://g.page/yourbusiness" disabled={saving} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ss-airbnb">Airbnb profile URL</Label>
-        <Input id="ss-airbnb" value={airbnb} onChange={e => setAirbnb(e.target.value)} placeholder="https://airbnb.com/users/show/..." disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__SOCIAL_INPUT" id="ss-airbnb" value={airbnb} onChange={e => setAirbnb(e.target.value)} placeholder="https://airbnb.com/users/show/..." disabled={saving} />
       </div>
 
       <hr className="border-border/30" />
 
       <div className="space-y-2">
         <Label htmlFor="ss-instagram">Instagram</Label>
-        <Input id="ss-instagram" value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="@yourbrand" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__SOCIAL_INPUT" id="ss-instagram" value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="@yourbrand" disabled={saving} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ss-facebook">Facebook</Label>
-        <Input id="ss-facebook" value={facebook} onChange={e => setFacebook(e.target.value)} placeholder="https://facebook.com/yourbrand" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__SOCIAL_INPUT" id="ss-facebook" value={facebook} onChange={e => setFacebook(e.target.value)} placeholder="https://facebook.com/yourbrand" disabled={saving} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ss-twitter">X / Twitter</Label>
-        <Input id="ss-twitter" value={twitter} onChange={e => setTwitter(e.target.value)} placeholder="@yourbrand" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__SOCIAL_INPUT" id="ss-twitter" value={twitter} onChange={e => setTwitter(e.target.value)} placeholder="@yourbrand" disabled={saving} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ss-tiktok">TikTok</Label>
-        <Input id="ss-tiktok" value={tiktok} onChange={e => setTiktok(e.target.value)} placeholder="@yourbrand" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__SOCIAL_INPUT" id="ss-tiktok" value={tiktok} onChange={e => setTiktok(e.target.value)} placeholder="@yourbrand" disabled={saving} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ss-youtube">YouTube</Label>
-        <Input id="ss-youtube" value={youtube} onChange={e => setYoutube(e.target.value)} placeholder="https://youtube.com/@yourbrand" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__SOCIAL_INPUT" id="ss-youtube" value={youtube} onChange={e => setYoutube(e.target.value)} placeholder="https://youtube.com/@yourbrand" disabled={saving} />
       </div>
 
-      <Button type="submit" disabled={saving}>
+      <Button data-feature="BOOKING_NFSTAY__SOCIAL_SAVE" type="submit" disabled={saving}>
         {saving ? 'Saving...' : 'Save changes'}
       </Button>
     </form>

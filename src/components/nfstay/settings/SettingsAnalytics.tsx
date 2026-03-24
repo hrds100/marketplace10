@@ -48,25 +48,25 @@ export default function SettingsAnalytics({ operator }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="sa-gaId">Google Analytics ID</Label>
-        <Input id="sa-gaId" value={gaId} onChange={e => setGaId(e.target.value)} placeholder="G-XXXXXXXXXX" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__ANALYTICS_GA" id="sa-gaId" value={gaId} onChange={e => setGaId(e.target.value)} placeholder="G-XXXXXXXXXX" disabled={saving} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="sa-pixelId">Meta Pixel ID</Label>
-        <Input id="sa-pixelId" value={pixelId} onChange={e => setPixelId(e.target.value)} placeholder="123456789012345" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__ANALYTICS_META" id="sa-pixelId" value={pixelId} onChange={e => setPixelId(e.target.value)} placeholder="123456789012345" disabled={saving} />
       </div>
 
       <hr className="border-border/30" />
 
       <div className="space-y-2">
         <Label htmlFor="sa-metaTitle">SEO title</Label>
-        <Input id="sa-metaTitle" value={metaTitle} onChange={e => setMetaTitle(e.target.value)} placeholder="Your Brand — Holiday Rentals" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__ANALYTICS_SEO" id="sa-metaTitle" value={metaTitle} onChange={e => setMetaTitle(e.target.value)} placeholder="Your Brand — Holiday Rentals" disabled={saving} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="sa-metaDesc">SEO description</Label>
-        <Textarea id="sa-metaDesc" value={metaDescription} onChange={e => setMetaDescription(e.target.value)} placeholder="Book luxury holiday rentals directly..." rows={3} disabled={saving} />
+        <Textarea data-feature="BOOKING_NFSTAY__ANALYTICS_SEO" id="sa-metaDesc" value={metaDescription} onChange={e => setMetaDescription(e.target.value)} placeholder="Book luxury holiday rentals directly..." rows={3} disabled={saving} />
       </div>
 
-      <Button type="submit" disabled={saving}>
+      <Button data-feature="BOOKING_NFSTAY__ANALYTICS_SAVE" type="submit" disabled={saving}>
         {saving ? 'Saving...' : 'Save changes'}
       </Button>
     </form>

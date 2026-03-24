@@ -56,7 +56,7 @@ export default function SettingsProfile({ operator }: Props) {
       {error && <div className="bg-destructive/10 text-destructive text-sm px-4 py-3 rounded-lg">{error}</div>}
       {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg">Saved successfully.</div>}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div data-feature="BOOKING_NFSTAY__PROFILE_NAME" className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="sp-firstName">First name</Label>
           <Input id="sp-firstName" value={firstName} onChange={e => setFirstName(e.target.value)} disabled={saving} />
@@ -90,7 +90,7 @@ export default function SettingsProfile({ operator }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="sp-brandName">Brand name</Label>
-        <Input id="sp-brandName" value={brandName} onChange={e => setBrandName(e.target.value)} disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__PROFILE_BRAND" id="sp-brandName" value={brandName} onChange={e => setBrandName(e.target.value)} disabled={saving} />
       </div>
 
       <div className="space-y-2">
@@ -112,7 +112,7 @@ export default function SettingsProfile({ operator }: Props) {
         </div>
       </div>
 
-      <Button type="submit" disabled={saving}>
+      <Button data-feature="BOOKING_NFSTAY__PROFILE_SAVE" type="submit" disabled={saving}>
         {saving ? 'Saving...' : 'Save changes'}
       </Button>
     </form>

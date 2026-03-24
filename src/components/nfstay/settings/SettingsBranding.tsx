@@ -58,7 +58,7 @@ export default function SettingsBranding({ operator }: Props) {
 
       <div className="space-y-2">
         <Label>Accent color</Label>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div data-feature="BOOKING_NFSTAY__BRAND_COLORS" className="flex items-center gap-2 flex-wrap">
           {COLOR_PRESETS.map(color => (
             <button
               key={color}
@@ -77,7 +77,7 @@ export default function SettingsBranding({ operator }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="sb-logoUrl">Logo URL</Label>
-        <Input id="sb-logoUrl" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__BRAND_LOGO" id="sb-logoUrl" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" disabled={saving} />
         <p className="text-xs text-muted-foreground">Image upload coming soon.</p>
       </div>
 
@@ -90,7 +90,7 @@ export default function SettingsBranding({ operator }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="sb-headline">Hero headline</Label>
-        <Input id="sb-headline" value={heroHeadline} onChange={e => setHeroHeadline(e.target.value)} placeholder="Your perfect stay awaits" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__BRAND_HEADLINE" id="sb-headline" value={heroHeadline} onChange={e => setHeroHeadline(e.target.value)} placeholder="Your perfect stay awaits" disabled={saving} />
       </div>
 
       <div className="space-y-2">
@@ -103,7 +103,7 @@ export default function SettingsBranding({ operator }: Props) {
         <Textarea id="sb-aboutBio" value={aboutBio} onChange={e => setAboutBio(e.target.value)} placeholder="Tell guests about your properties..." rows={4} disabled={saving} />
       </div>
 
-      <Button type="submit" disabled={saving}>
+      <Button data-feature="BOOKING_NFSTAY__BRAND_SAVE" type="submit" disabled={saving}>
         {saving ? 'Saving...' : 'Save changes'}
       </Button>
     </form>

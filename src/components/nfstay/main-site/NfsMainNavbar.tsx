@@ -30,12 +30,13 @@ export function NfsMainNavbar() {
         {/* Left: hamburger + logo */}
         <div className="flex items-center gap-2 shrink-0">
           <button
+            data-feature="BOOKING_NFSTAY__NAVBAR_MENU"
             className="p-2 rounded-lg hover:bg-secondary"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <NfsLogo />
+          <NfsLogo data-feature="BOOKING_NFSTAY__NAVBAR_LOGO" />
         </div>
 
         {/* Center: context-dependent */}
@@ -62,7 +63,7 @@ export function NfsMainNavbar() {
         ) : isSearchPage ? (
           /* Search page: inline search bar in the navbar */
           <div className="hidden md:flex items-center justify-center flex-1">
-            <div className="flex items-center border border-border rounded-full bg-background px-2 py-1.5 shadow-sm max-w-2xl w-full">
+            <div data-feature="BOOKING_NFSTAY__NAVBAR_SEARCH" className="flex items-center border border-border rounded-full bg-background px-2 py-1.5 shadow-sm max-w-2xl w-full">
               <div className="flex items-center gap-2 flex-1 px-3">
                 <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                 <input

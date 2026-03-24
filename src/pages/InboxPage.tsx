@@ -342,10 +342,10 @@ export default function InboxPage() {
   return (
     <div data-feature="CRM_INBOX" className="h-full w-full flex flex-col overflow-hidden flex-1">
     <div className="flex-1 flex overflow-hidden">
-      <div className={`shrink-0 ${leftPanelCollapsed ? 'w-14' : 'w-[320px]'} transition-all duration-200`}>
+      <div data-feature="CRM_INBOX__THREAD_PANEL" className={`shrink-0 ${leftPanelCollapsed ? 'w-14' : 'w-[320px]'} transition-all duration-200`}>
         <ThreadList threads={allThreads} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} onArchive={handleArchiveThread} isCollapsed={leftPanelCollapsed} onExpand={() => setLeftPanelCollapsed(false)} onCollapse={() => setLeftPanelCollapsed(true)} />
       </div>
-      <div className="flex-1 min-w-0">
+      <div data-feature="CRM_INBOX__CHAT_PANEL" className="flex-1 min-w-0">
         {selectedThread ? (
           <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={!!showRightPanel} isMobile={false} onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => { setShowDetails(true); setLeftPanelCollapsed(false); dashCtx?.setSidebarCollapsed(false); }} displayProfit={showRightPanel && liveEstimatedProfit !== null ? liveEstimatedProfit : null} />
         ) : (

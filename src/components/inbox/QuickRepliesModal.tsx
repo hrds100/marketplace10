@@ -135,7 +135,7 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
       {/* Category pills */}
       <div className="flex gap-1.5 px-4 py-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
         {categories.map(cat => (
-          <button key={cat} onClick={() => setActiveCategory(cat)}
+          <button key={cat} data-feature="CRM_INBOX__QUICK_REPLY_FILTER" onClick={() => setActiveCategory(cat)}
             className={`rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${activeCategory === cat ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
             {cat}
           </button>
@@ -175,7 +175,7 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
               );
             }
             return (
-              <div key={qr.id} className="group relative">
+              <div key={qr.id} data-feature="CRM_INBOX__QUICK_REPLY_ITEM" className="group relative">
                 <button onClick={() => { if (typeof qr.body === 'string') { onSelect(qr.body); onClose(); } }} className="w-full text-left p-3 rounded-xl hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-gray-900">{qr.title}</span>
@@ -193,7 +193,7 @@ export default function QuickRepliesModal({ open, onClose, onSelect }: Props) {
         </div>
       )}
       <div className="px-4 py-3 border-t border-gray-100">
-        <button onClick={addNew} className="flex items-center gap-1.5 text-sm text-emerald-600 font-medium hover:underline"><Plus className="w-4 h-4" /> Add quick reply</button>
+        <button data-feature="CRM_INBOX__QUICK_REPLY_ADD" onClick={addNew} className="flex items-center gap-1.5 text-sm text-emerald-600 font-medium hover:underline"><Plus className="w-4 h-4" /> Add quick reply</button>
       </div>
     </div>
   );

@@ -263,6 +263,7 @@ export default function AdminInvestShareholders() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
+            data-feature="ADMIN__INVEST_SHAREHOLDERS_SEARCH"
             className="h-10 pl-9 pr-3 rounded-md border border-input bg-background text-sm w-64"
             placeholder="Search by name, wallet, or label..."
             value={search}
@@ -273,7 +274,7 @@ export default function AdminInvestShareholders() {
 
       <Card className="border-border">
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table data-feature="ADMIN__INVEST_SHAREHOLDERS_TABLE">
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>

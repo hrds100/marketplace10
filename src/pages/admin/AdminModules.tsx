@@ -148,6 +148,7 @@ export default function AdminModules() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[28px] font-bold text-foreground">University — Modules ({modules.length})</h1>
         <button
+          data-feature="ADMIN__MODULES_ADD"
           onClick={openCreate}
           className="h-11 px-5 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity"
           style={{ background: '#111827', color: '#fff' }}
@@ -314,7 +315,7 @@ export default function AdminModules() {
         </div>
       )}
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div data-feature="ADMIN__MODULES_TABLE" className="bg-card border border-border rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
@@ -352,12 +353,14 @@ export default function AdminModules() {
                       <ArrowDown className="w-3.5 h-3.5" />
                     </button>
                     <button
+                      data-feature="ADMIN__MODULES_EDIT"
                       onClick={() => startEdit(mod)}
                       className="text-xs text-primary font-medium inline-flex items-center gap-1 px-1"
                     >
                       <Edit2 className="w-3 h-3" /> Edit
                     </button>
                     <button
+                      data-feature="ADMIN__MODULES_DELETE"
                       onClick={() => confirmDelete(mod.id)}
                       className="text-xs text-destructive font-medium inline-flex items-center gap-1 px-1"
                     >

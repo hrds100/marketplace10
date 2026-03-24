@@ -161,7 +161,7 @@ export default function SignIn() {
             </div>
 
             {/* Tab switcher */}
-            <div className="grid grid-cols-2 w-full border rounded-xl" style={{ height: 40, gap: 2, backgroundColor: '#f3f3ee', borderColor: '#e8e5df', padding: 2, marginBottom: 'clamp(11px, 2vh, 29px)' }}>
+            <div data-feature="AUTH__TAB_BAR" className="grid grid-cols-2 w-full border rounded-xl" style={{ height: 40, gap: 2, backgroundColor: '#f3f3ee', borderColor: '#e8e5df', padding: 2, marginBottom: 'clamp(11px, 2vh, 29px)' }}>
               <button className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-white text-[#1b1b1b]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)' }}>Sign In</button>
               <Link to="/signup" className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-transparent text-[#73757c] hover:bg-white/50">Register</Link>
             </div>
@@ -170,7 +170,7 @@ export default function SignIn() {
               {/* Social 2×2 on top */}
               <div className="flex gap-2">
                 {PROVIDERS.slice(0, 2).map(({ id, label, icon }) => (
-                  <button key={id} onClick={() => handleSocialSignIn(id)} disabled={loading || socialLoading !== null}
+                  <button key={id} data-feature="AUTH__SIGNIN_SOCIAL" onClick={() => handleSocialSignIn(id)} disabled={loading || socialLoading !== null}
                     className="flex-1 flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8] disabled:opacity-50 relative"
                     style={{ height: 45, padding: '8px 12px' }}>
                     {icon} {label}
@@ -180,7 +180,7 @@ export default function SignIn() {
               </div>
               <div className="flex gap-2">
                 {PROVIDERS.slice(2).map(({ id, label, icon }) => (
-                  <button key={id} onClick={() => handleSocialSignIn(id)} disabled={loading || socialLoading !== null}
+                  <button key={id} data-feature="AUTH__SIGNIN_SOCIAL" onClick={() => handleSocialSignIn(id)} disabled={loading || socialLoading !== null}
                     className="flex-1 flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8] disabled:opacity-50 relative"
                     style={{ height: 45, padding: '8px 12px' }}>
                     {icon} {label}
@@ -202,7 +202,7 @@ export default function SignIn() {
                   <label className="text-sm font-medium text-[#525252] tracking-wide">Email</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-                    <input type="email" placeholder="Enter your email" value={email} onChange={e => setEmail(e.target.value)} required
+                    <input data-feature="AUTH__SIGNIN_EMAIL" type="email" placeholder="Enter your email" value={email} onChange={e => setEmail(e.target.value)} required
                       className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                       style={{ padding: '4px 12px 4px 40px' }} />
                   </div>
@@ -211,7 +211,7 @@ export default function SignIn() {
                   <label className="text-sm font-medium text-[#525252] tracking-wide">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-                    <input type={showPassword ? 'text' : 'password'} placeholder="Enter your password" value={password} onChange={e => setPassword(e.target.value)} required
+                    <input data-feature="AUTH__SIGNIN_PASSWORD" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" value={password} onChange={e => setPassword(e.target.value)} required
                       className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                       style={{ padding: '4px 40px 4px 40px' }} />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}
@@ -232,12 +232,12 @@ export default function SignIn() {
                       }} />
                     <label htmlFor="remember" className="text-sm text-[#1b1b1b] cursor-pointer select-none">Remember me</label>
                   </div>
-                  <Link to="/forgot-password" className="bg-transparent border-none text-[#1e9a80] text-sm font-medium cursor-pointer p-0 hover:underline">Forgot Password?</Link>
+                  <Link data-feature="AUTH__SIGNIN_FORGOT" to="/forgot-password" className="bg-transparent border-none text-[#1e9a80] text-sm font-medium cursor-pointer p-0 hover:underline">Forgot Password?</Link>
                 </div>
 
                 {error && <p className="text-sm text-red-500">{error}</p>}
 
-                <button type="submit" disabled={loading || !email.trim() || !password.trim()}
+                <button data-feature="AUTH__SIGNIN_SUBMIT" type="submit" disabled={loading || !email.trim() || !password.trim()}
                   className="w-full rounded-lg font-medium text-white cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ height: 37, backgroundColor: '#1e9a80', fontSize: 16, padding: '8px 16px', border: 'none', boxShadow: '0 4px 8px -1px rgba(0,0,0,0.05)' }}>
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -247,7 +247,7 @@ export default function SignIn() {
 
               <p className="text-sm text-[#737373] text-center mt-2">
                 Don't have an account?{' '}
-                <Link to="/signup" className="text-[#1e9a80] font-semibold">Sign up</Link>
+                <Link data-feature="AUTH__SIGNIN_SIGNUP_LINK" to="/signup" className="text-[#1e9a80] font-semibold">Sign up</Link>
               </p>
             </div>
           </div>

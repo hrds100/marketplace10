@@ -57,7 +57,7 @@ export default function NfsOperatorDashboard() {
       </div>
 
       {/* Quick action cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div data-feature="BOOKING_NFSTAY__OPERATOR_QUICK_LINKS" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           to={NFS_ROUTES.PROPERTIES}
           className="group flex items-center gap-4 p-5 rounded-xl border border-border/40 bg-white dark:bg-card hover:border-primary/30 hover:shadow-sm transition-all"
