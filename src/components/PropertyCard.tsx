@@ -150,7 +150,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         </div>
         <div className="p-3.5 pt-3 flex flex-col flex-1">
           <h3 className="text-[15px] font-bold text-foreground">{listing.name}</h3>
-          <p className="text-[13px] text-muted-foreground mt-0.5">{listing.city} · {listing.postcode}</p>
+          <p className="text-[13px] text-muted-foreground mt-0.5">{listing.city}{listing.postcode ? ` · ${listing.postcode}` : ''}</p>
           <div className="mt-3 mb-2">
             <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${funded}%`, background: 'linear-gradient(90deg, #BF953F, #F0D55E, #BF953F)' }} />

@@ -130,11 +130,18 @@ export default function DealsPageV2() {
       // Monthly profit estimate: (monthlyRent * annualYield / 100) simplified
       const monthlyProfit = Math.round((propertyValue * (annualYield / 100)) / 12);
 
+      // Use inv_properties location (e.g. "Liverpool, United Kingdom") as the display location
+      const invLocation = (inv.location as string) || '';
+
       return base.map(l => {
         if (!l.prime) return l;
         return {
           ...l,
           name: inv.title || l.name,
+          city: invLocation || l.city,
+          postcode: '',
+          image: (inv.image as string) || l.image,
+          type: (inv.type as string) || l.type,
           investTarget: propertyValue,
           investFundedPct: fundedPct,
           investMinContribution: minContribution,
