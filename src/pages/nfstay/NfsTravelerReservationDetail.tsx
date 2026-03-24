@@ -31,7 +31,7 @@ export default function NfsTravelerReservationDetail() {
         <ArrowLeft className="w-4 h-4" /> Back to reservations
       </button>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div data-feature="BOOKING_NFSTAY__TRAVELER_DETAIL_PROPERTY" className="bg-card border border-border rounded-2xl overflow-hidden">
         <div className="relative h-48">
           <img src={prop.image} alt={prop.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -54,7 +54,7 @@ export default function NfsTravelerReservationDetail() {
 
           <hr className="border-border" />
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div data-feature="BOOKING_NFSTAY__TRAVELER_DETAIL_DATES" className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> Check-in</p>
               <p className="font-semibold">{format(parseISO(res.check_in), 'EEE, MMM d, yyyy')}</p>
@@ -75,7 +75,7 @@ export default function NfsTravelerReservationDetail() {
 
           <hr className="border-border" />
 
-          <div>
+          <div data-feature="BOOKING_NFSTAY__TRAVELER_DETAIL_PAYMENT">
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2"><CreditCard className="w-4 h-4" /> Payment</h2>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total</span>
@@ -96,7 +96,7 @@ export default function NfsTravelerReservationDetail() {
                   <div>
                     <p className="text-sm font-semibold text-destructive">Cancel reservation</p>
                     <p className="text-xs text-muted-foreground mt-1">Please review the cancellation policy before proceeding. Refund eligibility depends on the property's policy.</p>
-                    <Button variant="destructive" size="sm" className="mt-3 rounded-lg" onClick={() => alert('Cancellation request submitted (mock)')}>
+                    <Button data-feature="BOOKING_NFSTAY__TRAVELER_DETAIL_CANCEL" variant="destructive" size="sm" className="mt-3 rounded-lg" onClick={() => alert('Cancellation request submitted (mock)')}>
                       Request cancellation
                     </Button>
                   </div>
@@ -108,7 +108,7 @@ export default function NfsTravelerReservationDetail() {
       </div>
 
       <div className="mt-4 text-center">
-        <Button variant="outline" className="rounded-xl" asChild>
+        <Button data-feature="BOOKING_NFSTAY__TRAVELER_DETAIL_CONTACT" variant="outline" className="rounded-xl" asChild>
           <Link to={`/nfstay/property/${res.property_id}`}>View property</Link>
         </Button>
       </div>

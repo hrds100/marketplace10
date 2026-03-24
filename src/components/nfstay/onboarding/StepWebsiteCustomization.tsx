@@ -39,6 +39,7 @@ export default function StepWebsiteCustomization({ operator, onSave, saving }: P
               <button
                 key={color}
                 type="button"
+                data-feature="BOOKING_NFSTAY__ONBOARDING_OPTION"
                 disabled={saving}
                 onClick={() => setAccentColor(color)}
                 className={`w-8 h-8 rounded-full border-2 transition-all ${
@@ -48,6 +49,7 @@ export default function StepWebsiteCustomization({ operator, onSave, saving }: P
               />
             ))}
             <Input
+              data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT"
               type="color"
               value={accentColor}
               onChange={e => setAccentColor(e.target.value)}
@@ -58,7 +60,7 @@ export default function StepWebsiteCustomization({ operator, onSave, saving }: P
         </div>
         <div className="space-y-2">
           <Label htmlFor="logoUrl">Logo URL (optional)</Label>
-          <Input id="logoUrl" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" disabled={saving} />
+          <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="logoUrl" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" disabled={saving} />
           <p className="text-xs text-muted-foreground">Image upload coming soon. For now, paste a URL.</p>
         </div>
       </div>

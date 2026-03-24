@@ -51,7 +51,7 @@ export default function StepAvailability({ property, onSave, saving }: Props) {
       <div className="space-y-2">
         <Label htmlFor="availabilityWindow">Availability window</Label>
         <Select value={availabilityWindow} onValueChange={setAvailabilityWindow} disabled={saving}>
-          <SelectTrigger id="availabilityWindow">
+          <SelectTrigger data-feature="BOOKING_NFSTAY__WIZARD_SELECT" id="availabilityWindow">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -67,6 +67,7 @@ export default function StepAvailability({ property, onSave, saving }: Props) {
       <div className="space-y-2">
         <Label htmlFor="advanceNotice">Advance notice (days)</Label>
         <Input
+          data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
           id="advanceNotice"
           type="number"
           min={0}
@@ -82,6 +83,7 @@ export default function StepAvailability({ property, onSave, saving }: Props) {
       <div className="space-y-2">
         <Label htmlFor="minimumStay">Minimum stay (nights)</Label>
         <Input
+          data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
           id="minimumStay"
           type="number"
           min={1}

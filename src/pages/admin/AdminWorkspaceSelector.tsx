@@ -81,7 +81,7 @@ export default function AdminWorkspaceSelector() {
           }
           return (
             <Link key={ws.id} to={ws.to} className="block">
-              <Card data-feature="ADMIN__WORKSPACE_CARD" className={`rounded-2xl border-2 ${ws.border} transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full`}>
+              <Card data-feature={`ADMIN__WORKSPACE_${ws.id === 'marketplace' ? 'MARKETPLACE' : ws.id === 'invest' ? 'INVEST' : ws.id === 'booking' ? 'NFSTAY' : 'CARD'}`} className={`rounded-2xl border-2 ${ws.border} transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full`}>
                 <CardContent className="p-6 flex flex-col items-center text-center gap-4">
                   <div className={`h-14 w-14 rounded-2xl ${ws.bg} flex items-center justify-center`}>
                     <Icon className={`h-7 w-7 ${ws.color}`} />

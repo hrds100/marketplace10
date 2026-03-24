@@ -41,6 +41,7 @@ export default function StepDescription({ property, onSave, saving }: Props) {
           </span>
         </div>
         <Input
+          data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
           id="publicTitle"
           value={publicTitle}
           onChange={(e) => setPublicTitle(e.target.value.slice(0, 100))}
@@ -53,6 +54,7 @@ export default function StepDescription({ property, onSave, saving }: Props) {
       <div className="space-y-2">
         <Label htmlFor="internalTitle">Internal name (only you see this)</Label>
         <Input
+          data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
           id="internalTitle"
           value={internalTitle}
           onChange={(e) => setInternalTitle(e.target.value)}
@@ -69,6 +71,7 @@ export default function StepDescription({ property, onSave, saving }: Props) {
           </span>
         </div>
         <Textarea
+          data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value.slice(0, 2000))}

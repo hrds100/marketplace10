@@ -13,7 +13,7 @@ export default function NfsPaymentCancel() {
           <AlertCircle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
         </div>
         <h1 className="text-2xl font-bold">Payment Cancelled</h1>
-        <p className="text-muted-foreground">
+        <p data-feature="BOOKING_NFSTAY__CANCEL_MESSAGE" className="text-muted-foreground">
           Your payment was cancelled. No charges have been made. You can try again or browse other properties.
         </p>
         {reservationId && (
@@ -22,7 +22,7 @@ export default function NfsPaymentCancel() {
           </p>
         )}
         <div className="flex gap-3 justify-center pt-2">
-          <Button asChild variant="outline">
+          <Button data-feature="BOOKING_NFSTAY__CANCEL_RETRY" asChild variant="outline">
             <Link to="/nfstay/search">Back to Search</Link>
           </Button>
         </div>

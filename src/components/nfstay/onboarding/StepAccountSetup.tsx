@@ -27,11 +27,11 @@ export default function StepAccountSetup({ operator, onSave, saving }: Props) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First name</Label>
-          <Input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} required disabled={saving} />
+          <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} required disabled={saving} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="lastName">Last name</Label>
-          <Input id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} required disabled={saving} />
+          <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} required disabled={saving} />
         </div>
       </div>
     </form>

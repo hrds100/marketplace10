@@ -10,11 +10,11 @@ export default function NfsWlPaymentCancel() {
     <div data-feature="BOOKING_NFSTAY__WHITE_LABEL" className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4 text-center">
       <XCircle className="w-16 h-16 text-muted-foreground" />
       <h1 className="text-2xl font-bold">Payment Cancelled</h1>
-      <p className="text-muted-foreground max-w-md">
+      <p data-feature="BOOKING_NFSTAY__WL_CANCEL_MESSAGE" className="text-muted-foreground max-w-md">
         Your payment was not completed. No charges were made.
         You can try again or browse other properties.
       </p>
-      <Button onClick={() => navigate('/search')} className="mt-4">
+      <Button data-feature="BOOKING_NFSTAY__WL_CANCEL_RETRY" onClick={() => navigate('/search')} className="mt-4">
         Back to Properties
       </Button>
     </div>

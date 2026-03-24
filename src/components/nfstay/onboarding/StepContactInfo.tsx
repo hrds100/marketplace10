@@ -33,15 +33,15 @@ export default function StepContactInfo({ operator, onSave, saving }: Props) {
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="contactEmail">Contact email</Label>
-          <Input id="contactEmail" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="hello@yourbrand.com" disabled={saving} />
+          <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="contactEmail" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="hello@yourbrand.com" disabled={saving} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="contactPhone">Phone number</Label>
-          <Input id="contactPhone" type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="+44 7700 900000" disabled={saving} />
+          <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="contactPhone" type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="+44 7700 900000" disabled={saving} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="contactWhatsapp">WhatsApp (optional)</Label>
-          <Input id="contactWhatsapp" type="tel" value={contactWhatsapp} onChange={e => setContactWhatsapp(e.target.value)} placeholder="+44 7700 900000" disabled={saving} />
+          <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="contactWhatsapp" type="tel" value={contactWhatsapp} onChange={e => setContactWhatsapp(e.target.value)} placeholder="+44 7700 900000" disabled={saving} />
         </div>
       </div>
     </form>

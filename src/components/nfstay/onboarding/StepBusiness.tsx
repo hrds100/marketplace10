@@ -32,16 +32,16 @@ export default function StepBusiness({ operator, onSave, saving }: Props) {
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="brandName">Brand name</Label>
-          <Input id="brandName" value={brandName} onChange={e => setBrandName(e.target.value)} placeholder="Sunny Stays" disabled={saving} />
+          <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="brandName" value={brandName} onChange={e => setBrandName(e.target.value)} placeholder="Sunny Stays" disabled={saving} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="legalName">Legal / company name (optional)</Label>
-          <Input id="legalName" value={legalName} onChange={e => setLegalName(e.target.value)} placeholder="Sunny Stays Ltd" disabled={saving} />
+          <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="legalName" value={legalName} onChange={e => setLegalName(e.target.value)} placeholder="Sunny Stays Ltd" disabled={saving} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="subdomain">Subdomain</Label>
           <div className="flex items-center gap-2">
-            <Input id="subdomain" value={subdomain} onChange={e => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} placeholder="sunny-stays" disabled={saving} className="flex-1" />
+            <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="subdomain" value={subdomain} onChange={e => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} placeholder="sunny-stays" disabled={saving} className="flex-1" />
             <span className="text-sm text-muted-foreground whitespace-nowrap">.nfstay.app</span>
           </div>
         </div>

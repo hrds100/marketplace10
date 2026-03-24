@@ -59,6 +59,7 @@ export default function NfsOperatorDashboard() {
       {/* Quick action cards */}
       <div data-feature="BOOKING_NFSTAY__OPERATOR_QUICK_LINKS" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
+          data-feature="BOOKING_NFSTAY__DASHBOARD_PROPERTIES"
           to={NFS_ROUTES.PROPERTIES}
           className="group flex items-center gap-4 p-5 rounded-xl border border-border/40 bg-white dark:bg-card hover:border-primary/30 hover:shadow-sm transition-all"
         >
@@ -72,6 +73,7 @@ export default function NfsOperatorDashboard() {
         </Link>
 
         <Link
+          data-feature="BOOKING_NFSTAY__DASHBOARD_RESERVATIONS"
           to={NFS_ROUTES.RESERVATIONS}
           className="group flex items-center gap-4 p-5 rounded-xl border border-border/40 bg-white dark:bg-card hover:border-primary/30 hover:shadow-sm transition-all"
         >
@@ -85,6 +87,7 @@ export default function NfsOperatorDashboard() {
         </Link>
 
         <Link
+          data-feature="BOOKING_NFSTAY__DASHBOARD_SETTINGS"
           to={NFS_ROUTES.SETTINGS}
           className="group flex items-center gap-4 p-5 rounded-xl border border-border/40 bg-white dark:bg-card hover:border-primary/30 hover:shadow-sm transition-all"
         >
