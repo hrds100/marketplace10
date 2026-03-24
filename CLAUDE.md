@@ -64,3 +64,17 @@ git push origin main # auto-deploys to Vercel → hub.nfstay.com
 - Admin routes: `/admin/*` wrapped in `AdminGuard`
 - Supabase project: `asazddtvjvmckouxcmmo`
 - Vercel team: `hugos-projects-f8cc36a8`
+
+## Feature Map System
+
+Every file in this repo is mapped to a feature tag in `feature-map.json`. All operational rules live in `docs/AGENT_INSTRUCTIONS.md` - do not duplicate them here.
+
+### Rules
+1. **Check `feature-map.json` before touching any file.** Know which feature session owns it.
+2. **Never modify files outside the active feature scope.** If the task is DEALS, do not edit ADMIN files.
+3. **Never opportunistically refactor unrelated code.** Stay in your lane.
+4. **Always state which file you are editing before editing it.** No silent edits.
+5. **If a cross-feature change is needed, describe it in plain text only and ask Hugo first.** Do not implement cross-feature changes without approval.
+6. **Sub-features use double underscore:** `FEATURE__SUBFEATURE` (e.g. `DEALS__PROPERTY_CARD`).
+7. **LOCKED files in `feature-map.json` must not be modified.** Coordinate with Hugo first.
+8. **Use `AI_SESSION_TEMPLATE.md` to scope every task.** Paste the feature tag and file list before starting work.
