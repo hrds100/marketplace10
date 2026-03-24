@@ -1,38 +1,64 @@
 /**
- * FeatureInspector — dev-only overlay for inspecting data-feature tags.
+ * FeatureInspector — overlay for inspecting data-feature tags.
  *
- * Alt+Hover: highlights the nearest tagged element with a border + tooltip.
- * Alt+Click: copies the tag to clipboard + shows a toast with session info.
+ * Activation:
+ *   - Always active in dev mode (import.meta.env.MODE === 'development')
+ *   - On deployed previews: visit any URL with ?inspector to activate.
+ *     This sets localStorage so it persists across page navigations.
+ *     Visit ?inspector=off to deactivate.
  *
- * Guarded by import.meta.env.MODE === 'development' — zero cost in production.
+ * Usage:
+ *   Option+Hover (Mac) / Alt+Hover (Windows): highlights nearest tagged
+ *   element with a green border + tooltip showing the tag.
+ *   Option+Click / Alt+Click: copies tag to clipboard + toast with session.
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 
-// Session is the top-level part before "__"
+const STORAGE_KEY = 'feature-inspector-enabled';
+
+function isInspectorEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  // Process URL param first (sets/clears localStorage for persistence)
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('inspector')) {
+    const val = params.get('inspector');
+    if (val === 'off' || val === 'false') {
+      localStorage.removeItem(STORAGE_KEY);
+      return import.meta.env.MODE === 'development';
+    }
+    localStorage.setItem(STORAGE_KEY, 'true');
+    return true;
+  }
+
+  // Always on in dev
+  if (import.meta.env.MODE === 'development') return true;
+
+  // Fall back to localStorage (persists across navigations on previews)
+  return localStorage.getItem(STORAGE_KEY) === 'true';
+}
+
 function getSession(tag: string): string {
   return tag.includes('__') ? tag.split('__')[0] : tag;
 }
 
 export default function FeatureInspector() {
-  // Only active in dev mode OR when ?inspector is in the URL
-  const enabled =
-    import.meta.env.MODE === 'development' ||
-    (typeof window !== 'undefined' && window.location.search.includes('inspector'));
+  const [enabled] = useState(isInspectorEnabled);
   if (!enabled) return null;
-
   return <InspectorOverlay />;
 }
 
 function InspectorOverlay() {
-  const [active, setActive] = useState(false);
+  const activeRef = useRef(false);
   const [tooltip, setTooltip] = useState<{
     tag: string;
     x: number;
     y: number;
   } | null>(null);
   const highlightRef = useRef<HTMLElement | null>(null);
-  const cleanupRef = useRef<(() => void) | null>(null);
+  // Force re-render when tooltip changes
+  const [, forceUpdate] = useState(0);
 
   const clearHighlight = useCallback(() => {
     if (highlightRef.current) {
@@ -55,40 +81,32 @@ function InspectorOverlay() {
   );
 
   useEffect(() => {
+    // --- Key listeners ---
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Alt' || e.altKey) setActive(true);
+      if (e.key === 'Alt' || e.altKey) {
+        activeRef.current = true;
+        forceUpdate((n) => n + 1);
+      }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Alt') {
-        setActive(false);
+        activeRef.current = false;
         clearHighlight();
+        forceUpdate((n) => n + 1);
       }
     };
     const handleBlur = () => {
-      setActive(false);
+      activeRef.current = false;
       clearHighlight();
+      forceUpdate((n) => n + 1);
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('blur', handleBlur);
-
-    cleanupRef.current = () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('blur', handleBlur);
-    };
-
-    return () => cleanupRef.current?.();
-  }, [clearHighlight]);
-
-  useEffect(() => {
-    if (!active) return;
-
+    // --- Mouse listeners (always attached, check activeRef inline) ---
     const handleMove = (e: MouseEvent) => {
+      if (!activeRef.current) return;
       const el = findTaggedParent(e.target as HTMLElement);
       if (el === highlightRef.current) {
-        if (tooltip) setTooltip((t) => (t ? { ...t, x: e.clientX, y: e.clientY } : null));
+        setTooltip((t) => (t ? { ...t, x: e.clientX, y: e.clientY } : null));
         return;
       }
       clearHighlight();
@@ -103,6 +121,7 @@ function InspectorOverlay() {
     };
 
     const handleClick = (e: MouseEvent) => {
+      if (!activeRef.current) return;
       const el = findTaggedParent(e.target as HTMLElement);
       if (!el) return;
 
@@ -112,10 +131,7 @@ function InspectorOverlay() {
       const tag = el.dataset.feature!;
       const session = getSession(tag);
       navigator.clipboard.writeText(tag).then(() => {
-        const label =
-          session === tag
-            ? `Copied: ${tag}`
-            : `Copied: ${tag}`;
+        const label = `Copied: ${tag}`;
         const description =
           session === tag
             ? `Session: ${session}`
@@ -124,17 +140,23 @@ function InspectorOverlay() {
       });
     };
 
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
     document.addEventListener('mousemove', handleMove, true);
     document.addEventListener('click', handleClick, true);
 
     return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
       document.removeEventListener('mousemove', handleMove, true);
       document.removeEventListener('click', handleClick, true);
       clearHighlight();
     };
-  }, [active, clearHighlight, findTaggedParent, tooltip]);
+  }, [clearHighlight, findTaggedParent]);
 
-  if (!active || !tooltip) return null;
+  if (!activeRef.current || !tooltip) return null;
 
   const session = getSession(tooltip.tag);
   const label =
