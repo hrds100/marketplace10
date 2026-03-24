@@ -337,16 +337,48 @@ export function useBlockchain() {
         );
         const receipt = await tx.wait();
 
-        // F9: Write confirmed order to Supabase after on-chain tx succeeds
+        // F9: Write confirmed order to Supabase + attribute affiliate commission
+        let agentUserId: string | null = null;
         try {
-          await (supabase.from('inv_orders') as any).insert({
+          // Look up referrer from buyer's profile
+          const { data: buyerProfile } = await (supabase.from('profiles') as any)
+            .select('referred_by').eq('id', (await supabase.auth.getUser()).data.user?.id).single();
+          if (buyerProfile?.referred_by) {
+            const { data: agentProfile } = await (supabase.from('aff_profiles') as any)
+              .select('user_id').eq('referral_code', buyerProfile.referred_by.toUpperCase()).maybeSingle();
+            agentUserId = agentProfile?.user_id || null;
+          }
+          const { data: orderRow } = await (supabase.from('inv_orders') as any).insert({
             property_id: propertyId,
             shares_requested: shares,
             amount_paid: amountUsdc,
             payment_method: 'crypto_usdc',
             status: 'completed',
             tx_hash: receipt.transactionHash,
-          });
+            agent_id: agentUserId,
+          }).select('id').single();
+
+          // Create affiliate commission if referred
+          if (agentUserId && orderRow?.id) {
+            const { data: affRow } = await (supabase.from('aff_profiles') as any)
+              .select('id').eq('user_id', agentUserId).maybeSingle();
+            if (affRow?.id) {
+              const { data: rateSetting } = await (supabase.from('aff_commission_settings') as any)
+                .select('rate').eq('commission_type', 'investment_first').is('user_id', null).maybeSingle();
+              const rate = rateSetting?.rate || 0.05;
+              await (supabase.from('aff_commissions') as any).insert({
+                affiliate_id: affRow.id,
+                source: 'investment_first',
+                source_id: orderRow.id,
+                referred_user_id: (await supabase.auth.getUser()).data.user?.id,
+                property_id: propertyId,
+                gross_amount: amountUsdc,
+                commission_rate: rate,
+                commission_amount: amountUsdc * rate,
+                claimable_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+              }).then(() => {}).catch(() => {});
+            }
+          }
         } catch (dbErr) {
           console.error('[F9] Supabase order record failed (tx already confirmed):', dbErr);
         }
@@ -365,6 +397,7 @@ export function useBlockchain() {
                 shares,
                 amount_usd: amountUsdc,
                 tx_hash: receipt.transactionHash,
+                agent_user_id: agentUserId,
               }),
             });
           }
