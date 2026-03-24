@@ -371,6 +371,28 @@ serve(async (req) => {
         agentUserId = agentProfile?.id || null
       }
 
+      // Fallback: resolve agent from buyer's referred_by field
+      if (!agentUserId && userId) {
+        const { data: buyerProfile } = await supabase
+          .from('profiles')
+          .select('referred_by')
+          .eq('id', userId)
+          .maybeSingle()
+
+        if (buyerProfile?.referred_by) {
+          const { data: affByCode } = await supabase
+            .from('aff_profiles')
+            .select('user_id')
+            .eq('referral_code', buyerProfile.referred_by)
+            .maybeSingle()
+
+          if (affByCode?.user_id) {
+            agentUserId = affByCode.user_id
+            console.log(`Agent resolved from buyer referred_by: ${buyerProfile.referred_by} → ${agentUserId}`)
+          }
+        }
+      }
+
       // Payment below one full share (e.g. $5 test when price/share > $5) — still record inv_orders so the user sees it
       if (finalShares <= 0) {
         if (amountPaid <= 0) {
@@ -442,76 +464,9 @@ serve(async (req) => {
 
       if (orderErr) throw orderErr
 
-      // ── On-chain: sendPrimaryShares (same as legacy samcartRoute.js) ──
-      // If the buyer has a wallet, send shares on-chain automatically
-      let txHash: string | null = null
-      const targetWallet = recipientWallet || '0x0000000000000000000000000000000000000000'
-      const targetAgent = agentWallet || '0x0000000000000000000000000000000000000000'
-
-      if (recipientWallet && Deno.env.get('BACKEND_PRIVATE_KEY')) {
-        try {
-          const chainPropertyId = property.blockchain_property_id ?? propertyId
-          console.log(`Sending ${finalShares} shares on-chain: chainPropertyId=${chainPropertyId}, dbPropertyId=${propertyId}, recipient=${recipientWallet}`)
-          const result = await sendSharesOnChain(recipientWallet, targetAgent, chainPropertyId, finalShares)
-          txHash = result.txHash
-          console.log(`On-chain success: txHash=${txHash}`)
-        } catch (chainErr: any) {
-          console.error('On-chain sendPrimaryShares failed:', chainErr?.message || chainErr)
-          // Log failure but continue — order stays pending, admin can retry
-          await supabase.from('payout_audit_log').insert({
-            user_id: userId,
-            event_type: 'samcart_onchain_failed',
-            performed_by: 'system',
-            metadata: {
-              order_id: order.id,
-              error: chainErr?.message || 'Unknown blockchain error',
-              recipient: recipientWallet,
-              property_id: propertyId,
-              shares: finalShares,
-            },
-          })
-        }
-      } else {
-        console.log('No wallet or BACKEND_PRIVATE_KEY — skipping on-chain, order stays pending')
-      }
-
-      // Update order status based on blockchain result
-      const finalStatus = txHash ? 'completed' : 'pending'
-      await supabase.from('inv_orders').update({
-        status: finalStatus,
-        ...(txHash ? { tx_hash: txHash } : {}),
-        updated_at: new Date().toISOString(),
-      }).eq('id', order.id)
-
-      // Update shareholdings (upsert) — always, even if on-chain failed
-      // (DB tracks ownership; on-chain can be retried by admin)
-      const { data: existing } = await supabase
-        .from('inv_shareholdings')
-        .select('id, shares_owned, invested_amount')
-        .eq('user_id', userId)
-        .eq('property_id', propertyId)
-        .maybeSingle()
-
-      if (existing) {
-        await supabase.from('inv_shareholdings').update({
-          shares_owned: existing.shares_owned + finalShares,
-          invested_amount: existing.invested_amount + amountPaid,
-          updated_at: new Date().toISOString(),
-        }).eq('id', existing.id)
-      } else {
-        await supabase.from('inv_shareholdings').insert({
-          user_id: userId,
-          property_id: propertyId,
-          shares_owned: finalShares,
-          invested_amount: amountPaid,
-          current_value: amountPaid,
-        })
-      }
-
-      // Update property shares_sold
-      await supabase.from('inv_properties').update({
-        shares_sold: (property.shares_sold || 0) + finalShares,
-      }).eq('id', propertyId)
+      // ── On-chain: SKIPPED — admin must approve before shares are sent ──
+      // sendSharesOnChain() is NOT called here. Order stays 'pending'.
+      // Shareholdings and shares_sold are NOT updated — that happens on admin approve.
 
       // Create agent commission if applicable
       if (agentUserId) {
@@ -519,12 +474,12 @@ serve(async (req) => {
       }
 
       // Send notification
-      await sendNotification(customerFirstName || 'Investor', amountPaid, txHash || '', customerEmail, null, userId)
+      await sendNotification(customerFirstName || 'Investor', amountPaid, '', customerEmail, null, userId)
 
       // Audit log
       await supabase.from('payout_audit_log').insert({
         user_id: userId,
-        event_type: txHash ? 'samcart_order_completed' : 'samcart_order_pending',
+        event_type: 'samcart_order_pending',
         performed_by: 'system',
         metadata: {
           order_id: order.id,
@@ -532,17 +487,15 @@ serve(async (req) => {
           shares: finalShares,
           property_id: propertyId,
           agent_wallet: agentWallet,
-          tx_hash: txHash,
           flow: 'legacy_api',
         },
       })
 
       return new Response(JSON.stringify({
-        status: finalStatus,
+        status: 'pending',
         order_id: order.id,
         shares: finalShares,
         property_id: propertyId,
-        tx_hash: txHash,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
@@ -771,6 +724,28 @@ serve(async (req) => {
       agentUserId = agentByWallet?.id || null
     }
 
+    // Fallback: resolve agent from buyer's referred_by field
+    if (!agentUserId && userId) {
+      const { data: buyerProfile } = await supabase
+        .from('profiles')
+        .select('referred_by')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (buyerProfile?.referred_by) {
+        const { data: affByCode } = await supabase
+          .from('aff_profiles')
+          .select('user_id')
+          .eq('referral_code', buyerProfile.referred_by)
+          .maybeSingle()
+
+        if (affByCode?.user_id) {
+          agentUserId = affByCode.user_id
+          console.log(`Agent resolved from buyer referred_by: ${buyerProfile.referred_by} → ${agentUserId}`)
+        }
+      }
+    }
+
     // Check for duplicate order (idempotency)
     if (transactionId) {
       const { data: existingOrder } = await supabase
@@ -787,9 +762,8 @@ serve(async (req) => {
     }
 
     const sharesStored = sharesRequested > 0 ? sharesRequested : 0
-    const orderStatus = sharesRequested > 0 ? 'completed' : 'pending'
 
-    // Create order (0 shares when payment is below one full share — user still sees amount on dashboard)
+    // Create order as PENDING — admin must approve before shares are granted
     const { data: order, error: orderErr } = await supabase
       .from('inv_orders')
       .insert({
@@ -799,7 +773,7 @@ serve(async (req) => {
         amount_paid: amount,
         payment_method: 'card',
         agent_id: agentUserId,
-        status: orderStatus,
+        status: 'pending',
         external_order_id: transactionId ? String(transactionId) : null,
       })
       .select()
@@ -807,40 +781,11 @@ serve(async (req) => {
 
     if (orderErr) throw orderErr
 
-    if (sharesRequested > 0) {
-      // Update shareholdings (upsert)
-      const { data: existing } = await supabase
-        .from('inv_shareholdings')
-        .select('id, shares_owned, invested_amount')
-        .eq('user_id', userId)
-        .eq('property_id', propertyId)
-        .maybeSingle()
+    // Shareholdings and shares_sold are NOT updated here — that happens on admin approve.
 
-      if (existing) {
-        await supabase.from('inv_shareholdings').update({
-          shares_owned: existing.shares_owned + sharesRequested,
-          invested_amount: existing.invested_amount + amount,
-          updated_at: new Date().toISOString(),
-        }).eq('id', existing.id)
-      } else {
-        await supabase.from('inv_shareholdings').insert({
-          user_id: userId,
-          property_id: propertyId,
-          shares_owned: sharesRequested,
-          invested_amount: amount,
-          current_value: amount,
-        })
-      }
-
-      // Update property shares_sold
-      await supabase.from('inv_properties').update({
-        shares_sold: (property.shares_sold || 0) + sharesRequested,
-      }).eq('id', propertyId)
-
-      // Create agent commission if applicable
-      if (agentUserId) {
-        await createCommission(supabase, agentUserId, userId, propertyId, amount, order.id)
-      }
+    // Create agent commission if applicable (commissions are created at webhook time)
+    if (agentUserId) {
+      await createCommission(supabase, agentUserId, userId, propertyId, amount, order.id)
     }
 
     // Send notification via n8n
@@ -856,7 +801,7 @@ serve(async (req) => {
     // Audit log
     await supabase.from('payout_audit_log').insert({
       user_id: userId,
-      event_type: sharesRequested > 0 ? 'samcart_order_completed' : 'samcart_below_min_share',
+      event_type: 'samcart_order_pending',
       performed_by: 'system',
       metadata: {
         order_id: order.id,
@@ -870,7 +815,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        status: orderStatus,
+        status: 'pending',
         order_id: order.id,
         shares: sharesRequested,
         property_id: propertyId,
@@ -903,13 +848,47 @@ async function createCommission(
   orderId: string,
 ) {
   try {
-    const { data: affProfile } = await supabase
+    let affProfile = await supabase
       .from('aff_profiles')
       .select('id')
       .eq('user_id', agentUserId)
       .maybeSingle()
+      .then((r: any) => r.data)
 
-    if (!affProfile) return
+    if (!affProfile) {
+      // Auto-create aff_profiles entry for this agent
+      const { data: agentUser } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', agentUserId)
+        .maybeSingle()
+
+      const code = (agentUser?.name || 'AGENT').substring(0, 4).toUpperCase().replace(/[^A-Z]/g, 'X')
+        + Math.random().toString(36).substring(2, 4).toUpperCase()
+
+      const { data: newAff, error: affErr } = await supabase
+        .from('aff_profiles')
+        .insert({
+          user_id: agentUserId,
+          referral_code: code,
+          full_name: agentUser?.name || agentUser?.email || 'Agent',
+          tier: 'standard',
+          total_earned: 0,
+          total_claimed: 0,
+          pending_balance: 0,
+          link_clicks: 0,
+          signups: 0,
+          paid_users: 0,
+        })
+        .select('id')
+        .single()
+
+      if (affErr) {
+        console.log('Failed to auto-create aff_profile:', affErr)
+        return
+      }
+      affProfile = newAff
+    }
 
     // Get rate (user-specific or global)
     const { data: customRate } = await supabase

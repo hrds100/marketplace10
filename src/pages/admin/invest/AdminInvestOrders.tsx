@@ -61,6 +61,8 @@ export default function AdminInvestOrders() {
   const [search, setSearch] = useState('');
   const [editModal, setEditModal] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ property_id: 0, wallet_address: '', agent_wallet: '' });
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [confirmApprove, setConfirmApprove] = useState<Order | null>(null);
 
   // Map real data to display format
   const orders: Order[] = realOrders.map((o: any) => ({
@@ -95,16 +97,21 @@ export default function AdminInvestOrders() {
     return true;
   });
 
-  const handleComplete = async (id: string) => {
+  const handleApprove = async (order: Order) => {
     try {
-      const { error } = await (supabase.from('inv_orders') as any)
-        .update({ status: 'completed', updated_at: new Date().toISOString() })
-        .eq('id', id);
+      setApprovingId(order.id);
+      setConfirmApprove(null);
+      const { data, error } = await supabase.functions.invoke('inv-approve-order', {
+        body: { order_id: order.id },
+      });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       qc.invalidateQueries({ queryKey: ['inv_orders'] });
-      toast.success('Order marked as completed');
-    } catch {
-      toast.error('Failed to update order');
+      toast.success('Order approved - shares sent on-chain');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to approve order');
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -210,7 +217,7 @@ export default function AdminInvestOrders() {
       <p className="text-xs text-muted-foreground mb-4 max-w-3xl">
         Rows are newest first. <strong>Investor wallet</strong> comes from the user&apos;s profile (same wallet used for JV).{' '}
         On-chain shares are sent by the <strong>SamCart webhook</strong> when payment succeeds (see Tx Hash).{' '}
-        <strong>Mark complete</strong> only updates status in the database — it does not send a blockchain transaction.
+        <strong>Approve</strong> sends shares on-chain and marks the order as completed.
       </p>
 
       <Card className="border-border">
@@ -273,14 +280,18 @@ export default function AdminInvestOrders() {
                     <div className="flex items-center justify-end gap-1">
                       {o.status === 'pending' && (
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 text-xs shrink-0"
-                          onClick={() => handleComplete(o.id)}
-                          title="Sets status to completed in the database only (does not send on-chain)"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-[#1E9A80] hover:bg-[#1E9A80]/10 rounded"
+                          onClick={() => setConfirmApprove(o)}
+                          title="Approve order and send shares on-chain"
+                          disabled={approvingId === o.id}
                         >
-                          <Check className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-                          Mark complete
+                          {approvingId === o.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
                         </Button>
                       )}
                       <Button variant="ghost" size="sm" onClick={() => openEdit(o)} title="Edit">
@@ -306,6 +317,31 @@ export default function AdminInvestOrders() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Approve Confirmation Dialog */}
+      <Dialog open={!!confirmApprove} onOpenChange={() => setConfirmApprove(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Order</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Send <strong>{confirmApprove?.shares}</strong> shares to wallet{' '}
+            <code className="text-xs">{confirmApprove?.investor_wallet || confirmApprove?.wallet_address}</code>?
+            This will execute a blockchain transaction.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmApprove(null)}>Cancel</Button>
+            <Button
+              className="bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white"
+              onClick={() => confirmApprove && handleApprove(confirmApprove)}
+              disabled={!!approvingId}
+            >
+              {approvingId ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirm & Send Shares
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Modal */}
       <Dialog open={!!editModal} onOpenChange={() => setEditModal(null)}>

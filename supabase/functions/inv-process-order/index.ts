@@ -26,6 +26,30 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders })
     }
 
+    // Resolve agent: use provided agent_id, or fall back to buyer's referred_by
+    let resolvedAgentId: string | null = agent_id || null
+
+    if (!resolvedAgentId) {
+      const { data: buyerProfile } = await supabase
+        .from('profiles')
+        .select('referred_by')
+        .eq('id', user_id)
+        .maybeSingle()
+
+      if (buyerProfile?.referred_by) {
+        const { data: affByCode } = await supabase
+          .from('aff_profiles')
+          .select('user_id')
+          .eq('referral_code', buyerProfile.referred_by)
+          .maybeSingle()
+
+        if (affByCode?.user_id) {
+          resolvedAgentId = affByCode.user_id
+          console.log(`Agent resolved from buyer referred_by: ${buyerProfile.referred_by} → ${resolvedAgentId}`)
+        }
+      }
+    }
+
     // 1. Create order
     const { data: order, error: orderErr } = await supabase
       .from('inv_orders')
@@ -35,7 +59,7 @@ serve(async (req) => {
         shares_requested: shares,
         amount_paid: amount,
         payment_method: payment_method || 'card',
-        agent_id: agent_id || null,
+        agent_id: resolvedAgentId,
         tx_hash: tx_hash || null,
         status: tx_hash ? 'completed' : 'pending',
       })
@@ -80,48 +104,11 @@ serve(async (req) => {
             await supabase.from('inv_properties').update({ shares_sold: prop.shares_sold + shares }).eq('id', property_id)
           }
         })
+    }
 
-      // 3. If agent, create commission (5% first purchase)
-      if (agent_id) {
-        // Get agent's affiliate profile
-        const { data: affProfile } = await supabase
-          .from('aff_profiles')
-          .select('id')
-          .eq('user_id', agent_id)
-          .maybeSingle()
-
-        if (affProfile) {
-          // Get commission rate (user-specific or global default)
-          const { data: customRate } = await supabase
-            .from('aff_commission_settings')
-            .select('rate')
-            .eq('user_id', agent_id)
-            .eq('commission_type', 'investment_first')
-            .maybeSingle()
-
-          const { data: globalRate } = await supabase
-            .from('aff_commission_settings')
-            .select('rate')
-            .is('user_id', null)
-            .eq('commission_type', 'investment_first')
-            .maybeSingle()
-
-          const rate = customRate?.rate || globalRate?.rate || 0.05
-          const commissionAmount = amount * rate
-
-          await supabase.from('aff_commissions').insert({
-            affiliate_id: affProfile.id,
-            source: 'investment_first',
-            source_id: order.id,
-            referred_user_id: user_id,
-            property_id,
-            gross_amount: amount,
-            commission_rate: rate,
-            commission_amount: commissionAmount,
-            claimable_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 day holdback
-          })
-        }
-      }
+    // 3. Create commission if agent found (works for both pending and completed orders)
+    if (resolvedAgentId) {
+      await createCommission(supabase, resolvedAgentId, user_id, property_id, amount, order.id)
     }
 
     return new Response(JSON.stringify({ order_id: order.id, status: order.status }), {
@@ -134,3 +121,94 @@ serve(async (req) => {
     })
   }
 })
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Create affiliate commission for an agent (with auto-create aff_profiles) */
+async function createCommission(
+  supabase: any,
+  agentUserId: string,
+  referredUserId: string,
+  propertyId: number,
+  amount: number,
+  orderId: string,
+) {
+  try {
+    let affProfile = await supabase
+      .from('aff_profiles')
+      .select('id')
+      .eq('user_id', agentUserId)
+      .maybeSingle()
+      .then((r: any) => r.data)
+
+    if (!affProfile) {
+      // Auto-create aff_profiles entry for this agent
+      const { data: agentUser } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', agentUserId)
+        .maybeSingle()
+
+      const code = (agentUser?.name || 'AGENT').substring(0, 4).toUpperCase().replace(/[^A-Z]/g, 'X')
+        + Math.random().toString(36).substring(2, 4).toUpperCase()
+
+      const { data: newAff, error: affErr } = await supabase
+        .from('aff_profiles')
+        .insert({
+          user_id: agentUserId,
+          referral_code: code,
+          full_name: agentUser?.name || agentUser?.email || 'Agent',
+          tier: 'standard',
+          total_earned: 0,
+          total_claimed: 0,
+          pending_balance: 0,
+          link_clicks: 0,
+          signups: 0,
+          paid_users: 0,
+        })
+        .select('id')
+        .single()
+
+      if (affErr) {
+        console.log('Failed to auto-create aff_profile:', affErr)
+        return
+      }
+      affProfile = newAff
+    }
+
+    // Get rate (user-specific or global)
+    const { data: customRate } = await supabase
+      .from('aff_commission_settings')
+      .select('rate')
+      .eq('user_id', agentUserId)
+      .eq('commission_type', 'investment_first')
+      .maybeSingle()
+
+    const { data: globalRate } = await supabase
+      .from('aff_commission_settings')
+      .select('rate')
+      .is('user_id', null)
+      .eq('commission_type', 'investment_first')
+      .maybeSingle()
+
+    const rate = customRate?.rate || globalRate?.rate || 0.05
+    const commissionAmount = amount * rate
+
+    await supabase.from('aff_commissions').insert({
+      affiliate_id: affProfile.id,
+      source: 'investment_first',
+      source_id: orderId,
+      referred_user_id: referredUserId,
+      property_id: propertyId,
+      gross_amount: amount,
+      commission_rate: rate,
+      commission_amount: commissionAmount,
+      claimable_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    })
+  } catch (e) {
+    // Don't fail the order if commission creation fails
+    console.log('Commission creation failed:', e)
+  }
+}
