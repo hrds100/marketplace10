@@ -39,6 +39,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     landlordApproved: (p as Record<string, unknown>).sa_approved === 'yes',
     landlordWhatsapp: p.landlord_whatsapp,
     listing_type: ((p as Record<string, unknown>).listing_type as 'rental' | 'sale') || 'rental',
+    slug: ((p as Record<string, unknown>).slug as string) || null,
   };
 }
 

@@ -21,6 +21,7 @@ export interface ListingShape {
   image: string;
   landlordApproved: boolean;
   landlordWhatsapp?: string | null;
+  slug?: string | null;
   // Investment data (only present on JV/prime cards)
   investTarget?: number;
   investFundedPct?: number;
