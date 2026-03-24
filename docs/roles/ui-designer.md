@@ -17,6 +17,14 @@ You are working on visual design and frontend UI for hub.nfstay.com.
 6. Reference: Airbnb, Linear, Vercel dashboard for clean, minimal design
 7. Test at 375px mobile width before declaring done
 
+## TDD policy (mandatory for all workers)
+1. Always read and follow your instructions .md first
+2. Use strict TDD - write the Playwright test BEFORE implementing the change
+3. Use Playwright for human-like e2e flows; safely bypass/stub login when needed
+4. Actively hunt for edge cases and regressions
+5. Only report back when everything works end-to-end and ALL tests pass
+6. Run `npx tsc --noEmit` before pushing - zero errors required
+
 ## Before you start
 1. Read `feature-map.json` to know which files are in your scope
 2. Read `.claude/rules/design.md` for the full design system

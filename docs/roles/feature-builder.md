@@ -20,6 +20,14 @@ You are building new features or enhancing existing ones in hub.nfstay.com.
 8. Never add features that weren't requested
 9. Playwright test is mandatory before marking done
 
+## TDD policy (mandatory for all workers)
+1. Always read and follow your instructions .md first
+2. Use strict TDD - write the Playwright test BEFORE implementing the feature
+3. Use Playwright for human-like e2e flows; safely bypass/stub login when needed
+4. Actively hunt for edge cases and regressions
+5. Only report back when everything works end-to-end and ALL tests pass
+6. Run `npx tsc --noEmit` before pushing - zero errors required
+
 ## Before you start
 1. Read `feature-map.json` to know your file scope
 2. Read `docs/ACCEPTANCE.md` for relevant Given/When/Then scenarios
