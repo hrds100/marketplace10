@@ -7,6 +7,7 @@ import { bsc } from '@particle-network/authkit/chains';
 import { PARTICLE_CONFIG } from '@/lib/particle';
 
 let initialized = false;
+let pendingCreation: Promise<string> | null = null;
 
 function ensureInit() {
   if (initialized) return;
@@ -32,11 +33,23 @@ function ensureInit() {
 /**
  * Create a Particle wallet using JWT authentication.
  * Uses auth-core directly — no React components, no AuthCoreContextProvider.
+ * Guarded by a global lock — only one creation can run at a time.
  *
  * @param jwt - Signed JWT from particle-generate-jwt Edge Function
  * @returns Wallet address (0x...)
  */
 export async function createWalletWithJWT(jwt: string): Promise<string> {
+  // Global lock: if a creation is already in progress, wait for it
+  if (pendingCreation) {
+    console.log('[Particle] Wallet creation already in progress — waiting...');
+    return pendingCreation;
+  }
+
+  pendingCreation = doCreateWallet(jwt).finally(() => { pendingCreation = null; });
+  return pendingCreation;
+}
+
+async function doCreateWallet(jwt: string): Promise<string> {
   ensureInit();
 
   // Connect with JWT — this creates the wallet on Particle's servers
