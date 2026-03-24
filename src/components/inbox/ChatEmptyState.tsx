@@ -83,14 +83,15 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
 
       {/* Property image with live dot */}
       <div className="relative">
-        <div data-feature="CRM_INBOX__EMPTY_IMAGE" className="w-20 h-20 rounded-2xl bg-gray-100 shadow-sm" style={{ overflow: 'hidden', borderRadius: '1rem' }}>
-          <div style={thread.propertyImageBlurred ? { filter: 'blur(8px)', transform: 'scale(1.1)', width: '100%', height: '100%' } : { width: '100%', height: '100%' }}>
+        <div data-feature="CRM_INBOX__EMPTY_IMAGE" className="w-16 h-16 bg-gray-100 shadow-sm" style={{ overflow: 'hidden', borderRadius: '16px' }}>
+          <div style={thread.propertyImageBlurred ? { filter: 'blur(8px)', transform: 'scale(1.15)', width: '100%', height: '100%', borderRadius: '16px' } : { width: '100%', height: '100%' }}>
             <img src={thread.propertyImage || fallbackImage} alt=""
               className="w-full h-full object-cover"
+              style={{ borderRadius: '16px' }}
               onError={e => { (e.target as HTMLImageElement).src = fallbackImage; }} />
           </div>
           {thread.propertyImageBlurred && (
-            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }}>
+            <div className="flex items-center justify-center" style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', borderRadius: '16px' }}>
               <span className="text-white text-[8px] font-medium">On request</span>
             </div>
           )}
@@ -112,7 +113,7 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
 
       {/* Earnings estimate with slider */}
       <div className="w-full max-w-md space-y-3">
-        <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A] text-center leading-tight">
+        <h2 className="text-2xl md:text-[28px] font-bold text-[#1A1A1A] text-center leading-tight">
           You could earn{' '}
           <span className="text-[#1E9A80]">£{estimatedProfit.toLocaleString()}/month</span>
           {' '}hosting this property on Airbnb
