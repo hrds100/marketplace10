@@ -15,8 +15,8 @@ function getSession(tag: string): string {
 }
 
 export default function FeatureInspector() {
-  // Dev-only guard
-  if (import.meta.env.MODE !== 'development') return null;
+  // Dev-only guard (also enabled by VITE_FEATURE_INSPECTOR for preview deploys)
+  if (import.meta.env.MODE !== 'development' && import.meta.env.VITE_FEATURE_INSPECTOR !== 'true') return null;
 
   return <InspectorOverlay />;
 }

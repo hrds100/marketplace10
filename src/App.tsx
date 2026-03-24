@@ -121,7 +121,7 @@ const App = () => (
     <ParticleProvider>
     <TooltipProvider>
       <Sonner />
-      {import.meta.env.DEV && <FeatureInspector />}
+      {(import.meta.env.DEV || import.meta.env.VITE_FEATURE_INSPECTOR === 'true') && <FeatureInspector />}
       <BrowserRouter>
       <FavouritesProvider>
       <NfsCurrencyProvider>
