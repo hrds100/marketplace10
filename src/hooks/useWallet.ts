@@ -149,7 +149,7 @@ export function useWallet() {
       setWallet(w => ({ ...w, connecting: false }));
       throw err;
     }
-  }, [user?.id, retryWalletCreation]);
+  }, [user?.id]);
 
   const disconnect = useCallback(() => {
     setWallet({ address: null, connected: false, connecting: false, chainId: null });
