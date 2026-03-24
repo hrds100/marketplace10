@@ -28,6 +28,7 @@ export default function VerifyOtp() {
   const [error, setError] = useState('');
   const [timer, setTimer] = useState(300); // 5 min
   const [canResend, setCanResend] = useState(false);
+  const [walletStatus, setWalletStatus] = useState<'idle' | 'creating' | 'done' | 'failed'>('idle');
   const verifyingRef = useRef(false);
   const toastFiredRef = useRef(false);
 
@@ -166,7 +167,8 @@ export default function VerifyOtp() {
       }
     } catch { /* non-blocking */ }
 
-    // ── JWT path: generate JWT and store for WalletProvisioner ────────────
+    // ── Create Particle wallet for email signups ────────────────────────
+    setWalletStatus('creating');
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;
@@ -181,11 +183,29 @@ export default function VerifyOtp() {
         const jwtData = await jwtRes.json();
         if (jwtData.jwt) {
           try { sessionStorage.setItem('particle_jwt', jwtData.jwt); } catch { /* skip */ }
-          console.log('Particle JWT stored for wallet creation on dashboard');
+          // Create wallet silently via Particle SDK
+          const { createParticleWallet, destroyIframe } = await import('@/lib/particleIframe');
+          const address = await createParticleWallet(jwtData.jwt);
+          if (address) {
+            await (supabase.from('profiles') as any)
+              .update({ wallet_address: address, wallet_auth_method: 'jwt' })
+              .eq('id', userId);
+            console.log('[VerifyOtp] Wallet created:', address);
+            try { sessionStorage.removeItem('particle_jwt'); } catch { /* skip */ }
+            setWalletStatus('done');
+          } else {
+            setWalletStatus('failed');
+          }
+          destroyIframe();
+        } else {
+          setWalletStatus('failed');
         }
+      } else {
+        setWalletStatus('failed');
       }
     } catch (err) {
-      console.log('JWT generation skipped (non-blocking):', err);
+      console.log('[VerifyOtp] Wallet creation failed (non-blocking):', err);
+      setWalletStatus('failed');
     }
 
     setTimeout(() => {
@@ -260,7 +280,42 @@ export default function VerifyOtp() {
                   <CheckCircle2 className="w-16 h-16 mx-auto" style={{ color: '#00D084' }} />
                 </motion.div>
                 <h1 className="text-[28px] font-bold text-foreground mt-4">Verified!</h1>
-                <p className="text-sm text-muted-foreground mt-1">
+
+                {/* Wallet creation progress */}
+                {!authMethod && walletStatus !== 'idle' && (
+                  <div className="mt-6 space-y-3">
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      {walletStatus === 'creating' && (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#1E9A80' }} />
+                          <span className="text-muted-foreground">Setting up your wallet...</span>
+                        </>
+                      )}
+                      {walletStatus === 'done' && (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" style={{ color: '#1E9A80' }} />
+                          <span style={{ color: '#1E9A80' }} className="font-medium">Wallet ready</span>
+                        </>
+                      )}
+                      {walletStatus === 'failed' && (
+                        <span className="text-muted-foreground">Wallet will be created on your dashboard</span>
+                      )}
+                    </div>
+                    {walletStatus === 'creating' && (
+                      <div className="w-48 mx-auto h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,154,128,0.15)' }}>
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ background: '#1E9A80' }}
+                          initial={{ width: '0%' }}
+                          animate={{ width: '90%' }}
+                          transition={{ duration: 8, ease: 'easeOut' }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-sm text-muted-foreground mt-3">
                   Redirecting to your dashboard...
                 </p>
               </motion.div>
