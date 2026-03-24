@@ -168,7 +168,7 @@ export default function SignUp() {
     try {
       const { particleAuth, thirdpartyAuth } = await import('@particle-network/auth-core');
       const { bsc } = await import('@particle-network/authkit/chains');
-      const { PARTICLE_LEGACY_CONFIG, PARTICLE_CUSTOM_STYLE } = await import('@/lib/particle');
+      const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
       const pa = particleAuth as any;
       try {
         pa.init({
@@ -176,7 +176,7 @@ export default function SignUp() {
           clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
           appId: PARTICLE_LEGACY_CONFIG.appId,
           chains: [bsc],
-          customStyle: PARTICLE_CUSTOM_STYLE,
+
         });
       } catch { /* already initialized */ }
       localStorage.setItem('particle_intent', JSON.stringify({ type: 'signup', provider }));

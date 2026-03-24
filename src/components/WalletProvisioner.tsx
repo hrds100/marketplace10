@@ -11,53 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// CSS injection to rebrand the Particle popup
-const PARTICLE_CSS = `
-  .particle-auth-core-modal [class*="title"],
-  .particle-auth-core-modal h2 {
-    font-family: 'Inter', sans-serif !important;
-  }
-  .particle-auth-core-modal button[class*="primary"],
-  .particle-auth-core-modal button[type="submit"] {
-    background: #1E9A80 !important;
-    border-radius: 10px !important;
-  }
-  .particle-auth-core-modal button[class*="primary"]:hover,
-  .particle-auth-core-modal button[type="submit"]:hover {
-    background: #178a72 !important;
-  }
-`;
-
-function injectParticleBranding() {
-  // Inject CSS once
-  if (!document.getElementById('nfstay-particle-css')) {
-    const style = document.createElement('style');
-    style.id = 'nfstay-particle-css';
-    style.textContent = PARTICLE_CSS;
-    document.head.appendChild(style);
-  }
-
-  // Watch for Particle iframes/modals and rebrand them
-  const observer = new MutationObserver(() => {
-    // Target the Particle popup iframe content
-    document.querySelectorAll('iframe').forEach((iframe) => {
-      try {
-        const src = iframe.src || '';
-        if (!src.includes('particle') && !src.includes('auth-core')) return;
-        const doc = iframe.contentDocument;
-        if (!doc) return;
-        if (doc.getElementById('nfstay-particle-css')) return;
-        const style = doc.createElement('style');
-        style.id = 'nfstay-particle-css';
-        style.textContent = PARTICLE_CSS;
-        doc.head.appendChild(style);
-      } catch { /* cross-origin — can't access iframe content */ }
-    });
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-  return observer;
-}
-
 export default function WalletProvisioner() {
   const { user } = useAuth();
   const { address: walletAddress, connect: connectWallet, connecting } = useWallet();
@@ -65,11 +18,6 @@ export default function WalletProvisioner() {
   const [showModal, setShowModal] = useState(false);
   const [walletDone, setWalletDone] = useState(false);
 
-  // Inject Particle branding CSS
-  useEffect(() => {
-    const observer = injectParticleBranding();
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     if (!user?.id || checkedRef.current) return;
@@ -183,7 +131,7 @@ async function restoreParticleSocialSession(authMethod: string) {
   try {
     const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
     const { bsc } = await import('@particle-network/authkit/chains');
-    const { PARTICLE_LEGACY_CONFIG, PARTICLE_CUSTOM_STYLE } = await import('@/lib/particle');
+    const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
     const pa = particleAuth as any;
 
     try {
@@ -192,7 +140,7 @@ async function restoreParticleSocialSession(authMethod: string) {
         clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
         appId: PARTICLE_LEGACY_CONFIG.appId,
         chains: [bsc],
-        customStyle: PARTICLE_CUSTOM_STYLE,
+
       });
     } catch { /* already initialized */ }
 
@@ -220,7 +168,7 @@ async function restoreParticleSession(userId: string) {
   try {
     const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
     const { bsc } = await import('@particle-network/authkit/chains');
-    const { PARTICLE_CONFIG, PARTICLE_CUSTOM_STYLE } = await import('@/lib/particle');
+    const { PARTICLE_CONFIG } = await import('@/lib/particle');
     const pa = particleAuth as any;
 
     try {
@@ -229,7 +177,7 @@ async function restoreParticleSession(userId: string) {
         clientKey: PARTICLE_CONFIG.clientKey,
         appId: PARTICLE_CONFIG.appId,
         chains: [bsc],
-        customStyle: PARTICLE_CUSTOM_STYLE,
+
       });
     } catch { /* already initialized */ }
 

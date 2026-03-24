@@ -40,7 +40,7 @@ export default function ParticleAuthCallback() {
       // Init Particle
       const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
       const { bsc } = await import('@particle-network/authkit/chains');
-      const { PARTICLE_LEGACY_CONFIG, PARTICLE_CUSTOM_STYLE } = await import('@/lib/particle');
+      const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
       const pa = particleAuth as any;
 
       // Use legacy project for social login — same Google account → same wallet (0xAA884...)
@@ -50,7 +50,7 @@ export default function ParticleAuthCallback() {
           clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
           appId: PARTICLE_LEGACY_CONFIG.appId,
           chains: [bsc],
-          customStyle: PARTICLE_CUSTOM_STYLE,
+
         });
       } catch { /* already initialized */ }
 

@@ -4,7 +4,7 @@
 
 import { particleAuth, connect as particleConnect } from '@particle-network/auth-core';
 import { bsc } from '@particle-network/authkit/chains';
-import { PARTICLE_CONFIG, PARTICLE_CUSTOM_STYLE } from '@/lib/particle';
+import { PARTICLE_CONFIG } from '@/lib/particle';
 
 let initialized = false;
 let pendingCreation: Promise<string> | null = null;
@@ -17,9 +17,7 @@ function ensureInit() {
       clientKey: PARTICLE_CONFIG.clientKey,
       appId: PARTICLE_CONFIG.appId,
       chains: [bsc],
-      authTypes: ['email'],
-      customStyle: PARTICLE_CUSTOM_STYLE,
-    } as any);
+    });
     initialized = true;
     console.log('[Particle] auth-core initialized');
   } catch (err) {
