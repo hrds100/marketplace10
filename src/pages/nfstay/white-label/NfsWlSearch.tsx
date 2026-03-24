@@ -66,7 +66,7 @@ export default function NfsWlSearch() {
   };
 
   return (
-    <div className="min-h-[60vh]">
+    <div data-feature="BOOKING_NFSTAY__WHITE_LABEL" className="min-h-[60vh]">
       {/* Search bar */}
       <div className="border-b border-border/40 bg-white dark:bg-card">
         <div className="max-w-7xl mx-auto px-4 py-4">

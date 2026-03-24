@@ -32,7 +32,7 @@ export default function BookingSitePage() {
   };
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row overflow-hidden">
+    <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row overflow-hidden">
       {/* Left Panel — Controls */}
       <div className="w-full lg:w-[380px] xl:w-[420px] border-r border-border/30 bg-white flex flex-col overflow-hidden flex-shrink-0">
         {/* Header */}

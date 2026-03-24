@@ -88,7 +88,7 @@ export default function AdminInvestBoost() {
   };
 
   return (
-    <div>
+    <div data-feature="ADMIN__INVEST">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Boost Management</h1>
 
       {/* Admin Boost Card */}

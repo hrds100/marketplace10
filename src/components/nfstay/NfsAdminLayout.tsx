@@ -5,7 +5,7 @@ import { NfsAdminSidebar } from "./NfsAdminSidebar";
 export function NfsAdminLayout() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div data-feature="ADMIN__NFSTAY" className="min-h-screen flex w-full">
         <NfsAdminSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-14 flex items-center border-b border-border px-4 bg-card shrink-0">

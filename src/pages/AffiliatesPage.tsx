@@ -232,7 +232,7 @@ export default function AffiliatesPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <div data-feature="AFFILIATES" className="p-6 md:p-8 space-y-6">
 
       {/* ─── HEADER + JOIN CTA ───────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-4">

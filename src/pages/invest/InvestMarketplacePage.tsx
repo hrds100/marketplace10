@@ -1907,7 +1907,7 @@ export default function InvestMarketplacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground">
+    <div data-feature="INVEST__MARKETPLACE" className="min-h-screen bg-background font-sans text-foreground">
       <Version1
         property={property}
         fundedPercent={fundedPercent}

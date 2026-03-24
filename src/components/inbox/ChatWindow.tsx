@@ -316,7 +316,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
 
   return (
     // relative — gives QuickRepliesModal (absolute bottom-16) a position context anchored to the chat panel
-    <div className="relative h-full flex flex-col bg-white">
+    <div data-feature="CRM_INBOX__CHAT_WINDOW" className="relative h-full flex flex-col bg-white">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
         {isMobile && (

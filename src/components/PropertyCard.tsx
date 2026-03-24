@@ -188,7 +188,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
 
   // ─── REGULAR CARD ────────────────────────────────────
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden card-hover flex flex-col">
+    <div data-feature="DEALS__PROPERTY_CARD" className="bg-card border border-border rounded-2xl overflow-hidden card-hover flex flex-col">
       <div className="relative h-[200px] overflow-hidden">
         <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy"
           className="w-full h-full object-cover"

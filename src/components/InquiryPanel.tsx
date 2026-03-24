@@ -183,6 +183,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
       {/* Panel */}
       <div
+        data-feature="DEALS__INQUIRY_PANEL"
         className={`fixed inset-y-0 right-0 z-[301] w-full md:w-[40vw] max-w-[640px] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}
         onClick={e => e.stopPropagation()}
       >

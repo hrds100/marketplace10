@@ -99,7 +99,7 @@ export default function NfsGuestBookingLookup() {
     : '';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div data-feature="BOOKING_NFSTAY__TRAVELER" className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold">Find Your Booking</h1>

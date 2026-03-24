@@ -164,7 +164,7 @@ export default function DealsPageV2() {
   );
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div data-feature="DEALS" className="flex flex-col flex-1 overflow-hidden">
 
       {/* ── HEADER — subtitle only, no "Deals" title ───────────── */}
       <div className="px-6 md:px-8 pt-4 pb-3 flex-shrink-0">

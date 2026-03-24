@@ -163,7 +163,7 @@ export default function AdminUsers() {
   };
 
   return (
-    <div>
+    <div data-feature="ADMIN">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-[28px] font-bold text-foreground">Users ({filtered.length})</h1>
         <div className="flex items-center gap-3">

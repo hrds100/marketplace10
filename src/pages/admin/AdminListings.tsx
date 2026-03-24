@@ -152,7 +152,7 @@ export default function AdminListings() {
   };
 
   return (
-    <div>
+    <div data-feature="ADMIN">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[28px] font-bold text-foreground">Listings ({listings.length})</h1>
         <div className="flex gap-2">

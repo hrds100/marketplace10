@@ -25,7 +25,7 @@ export default function AdminNfsAnalytics() {
   const stats = mockPlatformStats;
 
   return (
-    <div className="p-6 max-w-7xl space-y-6">
+    <div data-feature="ADMIN__NFSTAY" className="p-6 max-w-7xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Platform Analytics</h1>
         <p className="text-sm text-muted-foreground">Detailed metrics and trends across the platform.</p>

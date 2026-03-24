@@ -7,7 +7,7 @@ export default function NfsPaymentCancel() {
   const reservationId = searchParams.get('reservation_id');
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
+    <div data-feature="BOOKING_NFSTAY__CHECKOUT" className="flex items-center justify-center min-h-[60vh]">
       <div className="text-center space-y-4 max-w-md mx-auto px-4">
         <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto">
           <AlertCircle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />

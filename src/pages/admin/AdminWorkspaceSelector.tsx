@@ -51,7 +51,7 @@ const workspaces = [
 
 export default function AdminWorkspaceSelector() {
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
+    <div data-feature="ADMIN" className="min-h-[60vh] flex flex-col items-center justify-center px-4">
       <div className="text-center mb-10">
         <h1 className="text-3xl font-extrabold tracking-tight">Admin Panel</h1>
         <p className="text-sm text-muted-foreground mt-2">Choose a workspace to manage</p>

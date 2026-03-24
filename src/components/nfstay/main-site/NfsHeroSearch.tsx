@@ -61,7 +61,7 @@ export function NfsHeroSearch() {
     : null;
 
   return (
-    <div className="bg-card/95 backdrop-blur-sm rounded-full shadow-xl border border-border flex flex-col md:flex-row md:items-center">
+    <div data-feature="BOOKING_NFSTAY__MAIN_SITE" className="bg-card/95 backdrop-blur-sm rounded-full shadow-xl border border-border flex flex-col md:flex-row md:items-center">
       {/* Destination */}
       <div className="flex-1 px-7 py-4 min-w-0">
         <p className="text-xs font-semibold text-foreground mb-0.5">Destination</p>

@@ -69,7 +69,7 @@ export default function PhotoUpload({ photos, onChange }: Props) {
   };
 
   return (
-    <div>
+    <div data-feature="DEALS__LIST_A_DEAL">
       <label className="text-xs font-semibold text-foreground block mb-1">Property photos</label>
       <p className="text-xs text-muted-foreground mb-2">Upload up to {MAX_PHOTOS} photos. JPG or PNG, max {MAX_SIZE_MB}MB each.</p>
 

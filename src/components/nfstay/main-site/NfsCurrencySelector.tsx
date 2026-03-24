@@ -6,7 +6,7 @@ export function NfsCurrencySelector() {
   const { currency, setCurrencyCode } = useCurrency();
 
   return (
-    <Select value={currency.code} onValueChange={setCurrencyCode}>
+    <Select data-feature="BOOKING_NFSTAY__MAIN_SITE" value={currency.code} onValueChange={setCurrencyCode}>
       <SelectTrigger className="w-auto h-8 gap-1 border-none bg-transparent text-sm font-medium px-2 focus:ring-0">
         <SelectValue />
       </SelectTrigger>

@@ -177,7 +177,7 @@ export default function ParticleAuthCallback() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div data-feature="AUTH" className="min-h-screen flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-[#00D084]" />
         <p className="text-sm text-muted-foreground">Completing sign in...</p>

@@ -140,7 +140,7 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div data-feature="INVEST__PAYOUTS" className="space-y-4">
       {/* Currency toggle */}
       <div className="flex gap-2">
         <button

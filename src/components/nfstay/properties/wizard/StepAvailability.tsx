@@ -40,7 +40,7 @@ export default function StepAvailability({ property, onSave, saving }: Props) {
   };
 
   return (
-    <form id="property-step-form" onSubmit={handleSubmit} className="space-y-6">
+    <form data-feature="BOOKING_NFSTAY__PROPERTY_WIZARD" id="property-step-form" onSubmit={handleSubmit} className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Availability</h2>
         <p className="text-sm text-muted-foreground mt-1">

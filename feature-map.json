@@ -1,0 +1,662 @@
+{
+  "AUTH": {
+    "description": "User authentication: sign-in, sign-up, OTP, password reset, social login (Particle)",
+    "session": "AUTH",
+    "active": true,
+    "files": [
+      "src/pages/SignIn.tsx",
+      "src/pages/SignUp.tsx",
+      "src/pages/VerifyOtp.tsx",
+      "src/pages/ForgotPassword.tsx",
+      "src/pages/ResetPassword.tsx",
+      "src/pages/ParticleAuthCallback.tsx",
+      "src/components/AuthSlidePanel.tsx",
+      "src/components/ProtectedRoute.tsx",
+      "src/components/ParticleProvider.tsx",
+      "src/components/ParticleWalletCreator.tsx",
+      "src/hooks/useAuth.ts",
+      "src/lib/particle.ts",
+      "src/lib/particleIframe.ts",
+      "src/lib/validation.ts"
+    ],
+    "sub_features": {
+      "AUTH__MAGIC_LINK": {
+        "locked": true,
+        "owner": "magic-link-agent",
+        "description": "WhatsApp magic link auto-login for landlords",
+        "files": [
+          "src/pages/MagicLoginPage.tsx",
+          "src/components/ClaimAccountBanner.tsx",
+          "supabase/functions/landlord-magic-login/index.ts",
+          "supabase/functions/claim-landlord-account/index.ts"
+        ],
+        "note": "Do not modify. Coordinate with Hugo first.",
+        "PROTECTED_ROUTE": true
+      },
+      "AUTH__PARTICLE_JWT": {
+        "description": "Particle Network JWT generation and JWKS endpoints",
+        "files": [
+          "supabase/functions/particle-generate-jwt/index.ts",
+          "supabase/functions/particle-jwks/index.ts"
+        ]
+      }
+    }
+  },
+
+  "DEALS": {
+    "description": "Browse, filter, and view rent-to-rent property deals",
+    "session": "DEALS",
+    "active": true,
+    "files": [
+      "src/pages/DealsPageV2.tsx",
+      "src/pages/DealDetail.tsx",
+      "src/components/PropertyCard.tsx",
+      "src/components/InquiryPanel.tsx",
+      "src/components/DealsMap.tsx",
+      "src/hooks/usePropertyImage.ts",
+      "src/lib/propertyImage.ts",
+      "src/lib/pexels.ts"
+    ],
+    "sub_features": {
+      "DEALS__PROPERTY_CARD": {
+        "description": "Deal card showing image, rent, profit, badges, favourite toggle",
+        "files": ["src/components/PropertyCard.tsx"]
+      },
+      "DEALS__DEALS_MAP": {
+        "description": "Google Maps overlay with property markers by city",
+        "files": ["src/components/DealsMap.tsx"]
+      },
+      "DEALS__INQUIRY_PANEL": {
+        "description": "Property inquiry panel with NDA, contact masking, WhatsApp",
+        "files": ["src/components/InquiryPanel.tsx"]
+      },
+      "DEALS__LIST_A_DEAL": {
+        "description": "Multi-section property submission form with photo upload and My Listings",
+        "files": [
+          "src/pages/ListADealPage.tsx",
+          "src/components/PhotoUpload.tsx",
+          "src/components/MyListingsPanel.tsx"
+        ]
+      }
+    }
+  },
+
+  "CRM_INBOX": {
+    "description": "CRM pipeline and landlord-tenant messaging inbox with NDA enforcement",
+    "session": "CRM_INBOX",
+    "active": true,
+    "files": [
+      "src/pages/CRMPage.tsx",
+      "src/pages/InboxPage.tsx",
+      "src/components/inbox/ChatWindow.tsx",
+      "src/components/inbox/ChatEmptyState.tsx",
+      "src/components/inbox/MessageBubble.tsx",
+      "src/components/inbox/ThreadItem.tsx",
+      "src/components/inbox/ThreadList.tsx",
+      "src/components/inbox/AgreementModal.tsx",
+      "src/components/inbox/QuickRepliesModal.tsx",
+      "src/components/inbox/MessagingSettingsModal.tsx",
+      "src/components/inbox/InboxInquiryPanel.tsx",
+      "src/components/inbox/EarningsEstimator.tsx",
+      "src/components/inbox/types.ts",
+      "src/hooks/useInquiry.ts"
+    ],
+    "sub_features": {
+      "CRM_INBOX__THREAD_LIST": {
+        "description": "Thread list with search, filter, unread badges",
+        "files": [
+          "src/components/inbox/ThreadList.tsx",
+          "src/components/inbox/ThreadItem.tsx"
+        ]
+      },
+      "CRM_INBOX__CHAT_WINDOW": {
+        "description": "Message thread with contact masking, quick replies, payment gate",
+        "files": [
+          "src/components/inbox/ChatWindow.tsx",
+          "src/components/inbox/MessageBubble.tsx"
+        ]
+      },
+      "CRM_INBOX__NDA_AGREEMENT": {
+        "description": "Landlord NDA signing modal",
+        "files": ["src/components/inbox/AgreementModal.tsx"]
+      },
+      "CRM_INBOX__EARNINGS_ESTIMATOR": {
+        "description": "Interactive profit calculator inside inbox",
+        "files": ["src/components/inbox/EarningsEstimator.tsx"]
+      },
+      "CRM_INBOX__CRM_PIPELINE": {
+        "description": "Kanban board for deal stages (New Lead to Deal Won)",
+        "files": ["src/pages/CRMPage.tsx"]
+      }
+    }
+  },
+
+  "INVEST": {
+    "description": "Blockchain-based property investment: marketplace, portfolio, governance, payouts",
+    "session": "INVEST",
+    "active": true,
+    "files": [
+      "src/pages/invest/InvestMarketplacePage.tsx",
+      "src/pages/invest/InvestPortfolioPage.tsx",
+      "src/pages/invest/InvestProposalsPage.tsx",
+      "src/pages/invest/InvestPayoutsPage.tsx",
+      "src/components/InvestSubNav.tsx",
+      "src/components/BankDetailsForm.tsx",
+      "src/hooks/useBlockchain.ts",
+      "src/hooks/useCryptoPurchase.ts",
+      "src/hooks/useInvestData.ts",
+      "src/hooks/usePayoutsWithBlockchain.ts",
+      "src/hooks/usePortfolioWithBlockchain.ts",
+      "src/hooks/useProposalsFromGraph.ts",
+      "src/lib/contractAbis.ts",
+      "src/lib/ipfs.ts",
+      "src/lib/celebration.ts",
+      "src/lib/notifications.ts",
+      "src/lib/invest/buildSamcartPrefillParams.ts",
+      "src/lib/invest/mergeOrderBuyerEmails.ts"
+    ],
+    "sub_features": {
+      "INVEST__MARKETPLACE": {
+        "description": "Browse and purchase investment property shares",
+        "files": ["src/pages/invest/InvestMarketplacePage.tsx"]
+      },
+      "INVEST__PORTFOLIO": {
+        "description": "Holdings, claimable rent, performance chart",
+        "files": ["src/pages/invest/InvestPortfolioPage.tsx"]
+      },
+      "INVEST__PROPOSALS": {
+        "description": "Governance voting on investment proposals",
+        "files": ["src/pages/invest/InvestProposalsPage.tsx"]
+      },
+      "INVEST__PAYOUTS": {
+        "description": "Claim rent payouts with bank details",
+        "files": [
+          "src/pages/invest/InvestPayoutsPage.tsx",
+          "src/components/BankDetailsForm.tsx"
+        ]
+      }
+    }
+  },
+
+  "BLOCKCHAIN_WALLET": {
+    "description": "Particle Network wallet provisioning and legacy wallet migration",
+    "session": "BLOCKCHAIN_WALLET",
+    "active": true,
+    "files": [
+      "src/components/WalletProvisioner.tsx",
+      "src/components/LegacyWalletBanner.tsx",
+      "src/hooks/useWallet.ts"
+    ]
+  },
+
+  "PAYMENTS": {
+    "description": "GoHighLevel payment funnel, tier gating, and payment success handling",
+    "session": "PAYMENTS",
+    "active": true,
+    "files": [
+      "src/components/PaymentSheet.tsx",
+      "src/components/PaymentSuccessRefresher.tsx",
+      "src/hooks/useUserTier.ts",
+      "src/lib/ghl.ts"
+    ]
+  },
+
+  "UNIVERSITY": {
+    "description": "Educational academy with modules, lessons, XP, achievements, AI chat",
+    "session": "UNIVERSITY",
+    "active": true,
+    "files": [
+      "src/pages/UniversityPage.tsx",
+      "src/pages/LessonPage.tsx",
+      "src/pages/ModuleOverviewPage.tsx",
+      "src/hooks/useUniversityProgress.ts",
+      "src/hooks/useAIChat.ts",
+      "src/data/universityData.ts"
+    ]
+  },
+
+  "AFFILIATES": {
+    "description": "Referral program: share link, stats, commission earnings, referral tracking",
+    "session": "AFFILIATES",
+    "active": true,
+    "files": [
+      "src/pages/AffiliatesPage.tsx",
+      "supabase/functions/track-referral/index.ts"
+    ],
+    "sub_features": {
+      "AFFILIATES__COMMISSION_WEBHOOK": {
+        "description": "n8n workflow and webhook for affiliate commission on subscription/investment",
+        "files": [
+          "n8n-workflows/inv-commission-subscription.json"
+        ],
+        "note": "Shared with INVEST - fires from PaymentSheet.tsx and InquiryPanel.tsx"
+      }
+    }
+  },
+
+  "FAVOURITES": {
+    "description": "Save and manage favourite deals",
+    "session": "FAVOURITES",
+    "active": true,
+    "files": [
+      "src/pages/FavouritesPage.tsx",
+      "src/components/FavouritesDropdown.tsx",
+      "src/hooks/useFavourites.ts"
+    ]
+  },
+
+  "SETTINGS": {
+    "description": "User profile, security, membership, notifications, payout settings",
+    "session": "SETTINGS",
+    "active": true,
+    "files": [
+      "src/pages/SettingsPage.tsx"
+    ]
+  },
+
+  "BRAND": {
+    "description": "Design system reference page (colour palette, shadows, buttons, cards)",
+    "session": "BRAND",
+    "active": true,
+    "files": [
+      "src/pages/BrandPage.tsx"
+    ]
+  },
+
+  "NAV_LAYOUT": {
+    "description": "Dashboard sidebar, top nav, landing nav, admin layout, burger menu",
+    "session": "NAV_LAYOUT",
+    "active": true,
+    "files": [
+      "src/components/DashboardSidebar.tsx",
+      "src/components/DashboardTopNav.tsx",
+      "src/components/LandingNav.tsx",
+      "src/components/BurgerMenu.tsx",
+      "src/components/NavLink.tsx",
+      "src/components/NotificationBell.tsx",
+      "src/layouts/DashboardLayout.tsx",
+      "src/layouts/AdminLayout.tsx"
+    ]
+  },
+
+  "NOTIFICATIONS": {
+    "description": "Notification bell, unread count, realtime updates",
+    "session": "NOTIFICATIONS",
+    "active": true,
+    "files": [
+      "src/components/NotificationBell.tsx"
+    ],
+    "note": "NotificationBell also appears in NAV_LAYOUT - shared component"
+  },
+
+  "BOOKING_NFSTAY": {
+    "description": "NFStay vacation rental platform: operator dashboard, properties, reservations, guest booking",
+    "session": "BOOKING_NFSTAY",
+    "active": true,
+    "files": [
+      "src/pages/nfstay/NfsMainLanding.tsx",
+      "src/pages/nfstay/NfsSearchPage.tsx",
+      "src/pages/nfstay/NfsPropertyView.tsx",
+      "src/pages/nfstay/NfsPropertyDetail.tsx",
+      "src/pages/nfstay/NfsPropertyNew.tsx",
+      "src/pages/nfstay/NfsCheckoutPage.tsx",
+      "src/pages/nfstay/NfsPaymentSuccess.tsx",
+      "src/pages/nfstay/NfsPaymentCancel.tsx",
+      "src/pages/nfstay/NfsReservations.tsx",
+      "src/pages/nfstay/NfsReservationDetail.tsx",
+      "src/pages/nfstay/NfsTravelerReservations.tsx",
+      "src/pages/nfstay/NfsTravelerReservationDetail.tsx",
+      "src/pages/nfstay/NfsCreateReservation.tsx",
+      "src/pages/nfstay/NfsOperatorDashboard.tsx",
+      "src/pages/nfstay/NfsProperties.tsx",
+      "src/pages/nfstay/NfsOperatorSettings.tsx",
+      "src/pages/nfstay/NfsOnboarding.tsx",
+      "src/pages/nfstay/NfsAnalytics.tsx",
+      "src/pages/nfstay/NfsGuestBookingLookup.tsx",
+      "src/pages/BookingSitePage.tsx",
+      "src/pages/NfsAuthCallbackPage.tsx",
+      "src/pages/NfsOAuthCallbackPage.tsx",
+      "src/pages/NfsVerifyEmailPage.tsx"
+    ],
+    "sub_features": {
+      "BOOKING_NFSTAY__MAIN_SITE": {
+        "description": "Traveler-facing landing, search, property view",
+        "files": [
+          "src/pages/nfstay/NfsMainLanding.tsx",
+          "src/pages/nfstay/NfsSearchPage.tsx",
+          "src/pages/nfstay/NfsPropertyView.tsx",
+          "src/components/nfstay/main-site/NfsHeroSearch.tsx",
+          "src/components/nfstay/main-site/NfsPropertyCard.tsx",
+          "src/components/nfstay/main-site/NfsSearchFilters.tsx",
+          "src/components/nfstay/main-site/NfsSearchMap.tsx",
+          "src/components/nfstay/main-site/NfsMainLayout.tsx",
+          "src/components/nfstay/main-site/NfsMainNavbar.tsx",
+          "src/components/nfstay/main-site/NfsMainFooter.tsx",
+          "src/components/nfstay/main-site/NfsCurrencySelector.tsx",
+          "src/components/nfstay/main-site/NfsEmptyState.tsx"
+        ]
+      },
+      "BOOKING_NFSTAY__OPERATOR_DASHBOARD": {
+        "description": "Operator management: dashboard, properties, reservations, analytics, settings",
+        "files": [
+          "src/pages/nfstay/NfsOperatorDashboard.tsx",
+          "src/pages/nfstay/NfsProperties.tsx",
+          "src/pages/nfstay/NfsPropertyDetail.tsx",
+          "src/pages/nfstay/NfsPropertyNew.tsx",
+          "src/pages/nfstay/NfsReservations.tsx",
+          "src/pages/nfstay/NfsReservationDetail.tsx",
+          "src/pages/nfstay/NfsCreateReservation.tsx",
+          "src/pages/nfstay/NfsAnalytics.tsx",
+          "src/pages/nfstay/NfsOperatorSettings.tsx",
+          "src/components/nfstay/NfsOperatorLayout.tsx",
+          "src/components/nfstay/NfsOperatorSidebar.tsx",
+          "src/components/nfstay/NfsOperatorGuard.tsx"
+        ]
+      },
+      "BOOKING_NFSTAY__ONBOARDING": {
+        "description": "8-step operator onboarding wizard",
+        "files": [
+          "src/pages/nfstay/NfsOnboarding.tsx",
+          "src/components/nfstay/onboarding/StepAccountSetup.tsx",
+          "src/components/nfstay/onboarding/StepBusiness.tsx",
+          "src/components/nfstay/onboarding/StepContactInfo.tsx",
+          "src/components/nfstay/onboarding/StepLandingPage.tsx",
+          "src/components/nfstay/onboarding/StepPaymentMethods.tsx",
+          "src/components/nfstay/onboarding/StepPersona.tsx",
+          "src/components/nfstay/onboarding/StepUsageIntent.tsx",
+          "src/components/nfstay/onboarding/StepWebsiteCustomization.tsx"
+        ]
+      },
+      "BOOKING_NFSTAY__PROPERTY_WIZARD": {
+        "description": "10-step property creation and editing wizard",
+        "files": [
+          "src/components/nfstay/properties/wizard/StepAmenities.tsx",
+          "src/components/nfstay/properties/wizard/StepAvailability.tsx",
+          "src/components/nfstay/properties/wizard/StepDescription.tsx",
+          "src/components/nfstay/properties/wizard/StepGuestsAndRooms.tsx",
+          "src/components/nfstay/properties/wizard/StepHouseRules.tsx",
+          "src/components/nfstay/properties/wizard/StepLocation.tsx",
+          "src/components/nfstay/properties/wizard/StepPhotos.tsx",
+          "src/components/nfstay/properties/wizard/StepPricing.tsx",
+          "src/components/nfstay/properties/wizard/StepPropertyBasics.tsx",
+          "src/components/nfstay/properties/wizard/StepReview.tsx",
+          "src/components/nfstay/properties/NfsPhotoGallery.tsx",
+          "src/components/nfstay/properties/NfsPhotoUpload.tsx",
+          "src/components/nfstay/properties/NfsPropertyCard.tsx",
+          "src/components/nfstay/properties/PropertyCalendars.tsx"
+        ]
+      },
+      "BOOKING_NFSTAY__RESERVATIONS": {
+        "description": "Booking widget, calendar view, promo codes, reservation cards",
+        "files": [
+          "src/components/nfstay/reservations/NfsBookingWidget.tsx",
+          "src/components/nfstay/reservations/NfsCalendarView.tsx",
+          "src/components/nfstay/reservations/NfsPromoCodeInput.tsx",
+          "src/components/nfstay/reservations/NfsPromoCodeManager.tsx",
+          "src/components/nfstay/reservations/NfsReservationCard.tsx"
+        ]
+      },
+      "BOOKING_NFSTAY__SETTINGS": {
+        "description": "Operator settings: branding, contact, domain, Stripe, Hospitable, analytics",
+        "files": [
+          "src/components/nfstay/settings/SettingsAnalytics.tsx",
+          "src/components/nfstay/settings/SettingsBranding.tsx",
+          "src/components/nfstay/settings/SettingsContact.tsx",
+          "src/components/nfstay/settings/SettingsDomain.tsx",
+          "src/components/nfstay/settings/SettingsHospitable.tsx",
+          "src/components/nfstay/settings/SettingsProfile.tsx",
+          "src/components/nfstay/settings/SettingsSocial.tsx",
+          "src/components/nfstay/settings/SettingsStripe.tsx"
+        ]
+      },
+      "BOOKING_NFSTAY__MAPS": {
+        "description": "Google Maps: autocomplete, property map, search map",
+        "files": [
+          "src/components/nfstay/maps/NfsPlacesAutocomplete.tsx",
+          "src/components/nfstay/maps/NfsPropertyMap.tsx",
+          "src/components/nfstay/maps/NfsSearchMap.tsx"
+        ]
+      },
+      "BOOKING_NFSTAY__WHITE_LABEL": {
+        "description": "Operator-branded storefront: landing, search, property, payment",
+        "files": [
+          "src/pages/nfstay/white-label/NfsWlLanding.tsx",
+          "src/pages/nfstay/white-label/NfsWlSearch.tsx",
+          "src/pages/nfstay/white-label/NfsWlProperty.tsx",
+          "src/pages/nfstay/white-label/NfsWlPaymentSuccess.tsx",
+          "src/pages/nfstay/white-label/NfsWlPaymentCancel.tsx",
+          "src/components/nfstay/white-label/NfsWhiteLabelLayout.tsx",
+          "src/components/nfstay/white-label/NfsWhiteLabelProvider.tsx",
+          "src/components/nfstay/white-label/NfsWhiteLabelRouter.tsx"
+        ]
+      },
+      "BOOKING_NFSTAY__CHECKOUT": {
+        "description": "Guest checkout flow and payment results",
+        "files": [
+          "src/pages/nfstay/NfsCheckoutPage.tsx",
+          "src/pages/nfstay/NfsPaymentSuccess.tsx",
+          "src/pages/nfstay/NfsPaymentCancel.tsx"
+        ]
+      },
+      "BOOKING_NFSTAY__TRAVELER": {
+        "description": "Guest reservation history and detail views",
+        "files": [
+          "src/pages/nfstay/NfsTravelerReservations.tsx",
+          "src/pages/nfstay/NfsTravelerReservationDetail.tsx",
+          "src/pages/nfstay/NfsGuestBookingLookup.tsx"
+        ]
+      }
+    }
+  },
+
+  "ADMIN": {
+    "description": "Admin panel: dashboard, listings, users, submissions, FAQ, notifications, pricing, university, affiliates, settings",
+    "session": "ADMIN",
+    "active": true,
+    "files": [
+      "src/pages/admin/AdminDashboard.tsx",
+      "src/pages/admin/AdminWorkspaceSelector.tsx",
+      "src/pages/admin/AdminArchitecture.tsx",
+      "src/pages/admin/AdminUsers.tsx",
+      "src/pages/admin/AdminListings.tsx",
+      "src/pages/admin/AdminSubmissions.tsx",
+      "src/pages/admin/AdminNotifications.tsx",
+      "src/pages/admin/AdminFAQ.tsx",
+      "src/pages/admin/AdminAffiliates.tsx",
+      "src/pages/admin/AdminPricing.tsx",
+      "src/pages/admin/AdminSettings.tsx",
+      "src/pages/admin/AdminLessons.tsx",
+      "src/pages/admin/AdminModules.tsx",
+      "src/pages/admin/AdminUniversity.tsx",
+      "src/pages/admin/AdminUniversityAnalytics.tsx",
+      "src/pages/admin/AdminQuickList.tsx",
+      "src/components/AdminGuard.tsx"
+    ],
+    "sub_features": {
+      "ADMIN__INVEST": {
+        "description": "Admin panel for investment module: properties, orders, shareholders, commissions, payouts, proposals, boost, endpoints, test console",
+        "files": [
+          "src/pages/admin/invest/AdminInvestDashboard.tsx",
+          "src/pages/admin/invest/AdminInvestProperties.tsx",
+          "src/pages/admin/invest/AdminInvestProposals.tsx",
+          "src/pages/admin/invest/AdminInvestPayouts.tsx",
+          "src/pages/admin/invest/AdminInvestOrders.tsx",
+          "src/pages/admin/invest/AdminInvestCommissions.tsx",
+          "src/pages/admin/invest/AdminInvestShareholders.tsx",
+          "src/pages/admin/invest/AdminEndpoints.tsx",
+          "src/pages/admin/invest/AdminInvestBoost.tsx",
+          "src/pages/admin/invest/AdminInvestCommissionSettings.tsx",
+          "src/pages/admin/invest/AdminTestConsole.tsx"
+        ]
+      },
+      "ADMIN__NFSTAY": {
+        "description": "Admin panel for NFStay booking: dashboard, properties, reservations, users, operators, analytics, settings",
+        "files": [
+          "src/pages/admin/nfstay/AdminNfsDashboard.tsx",
+          "src/pages/admin/nfstay/AdminNfsProperties.tsx",
+          "src/pages/admin/nfstay/AdminNfsReservations.tsx",
+          "src/pages/admin/nfstay/AdminNfsAnalytics.tsx",
+          "src/pages/admin/nfstay/AdminNfsOperators.tsx",
+          "src/pages/admin/nfstay/AdminNfsUsers.tsx",
+          "src/pages/admin/nfstay/AdminNfsSettings.tsx",
+          "src/components/nfstay/NfsAdminLayout.tsx",
+          "src/components/nfstay/NfsAdminSidebar.tsx"
+        ]
+      },
+      "ADMIN__UNIVERSITY": {
+        "description": "Admin lesson/module editor and analytics",
+        "files": [
+          "src/pages/admin/AdminLessons.tsx",
+          "src/pages/admin/AdminModules.tsx",
+          "src/pages/admin/AdminUniversity.tsx",
+          "src/pages/admin/AdminUniversityAnalytics.tsx"
+        ]
+      },
+      "ADMIN__QUICK_LIST": {
+        "description": "Rapid property listing from WhatsApp text via AI parsing",
+        "files": ["src/pages/admin/AdminQuickList.tsx"]
+      }
+    }
+  },
+
+  "SUPABASE_BACKEND": {
+    "description": "Supabase client, generated types, edge functions, migrations",
+    "session": "SUPABASE_BACKEND",
+    "active": true,
+    "files": [
+      "src/integrations/supabase/client.ts",
+      "src/integrations/supabase/types.ts",
+      "supabase/config.toml",
+      "supabase/schema.sql",
+      "supabase/seed-university.sql"
+    ],
+    "sub_features": {
+      "SUPABASE_BACKEND__EDGE_FUNCTIONS": {
+        "description": "All Supabase Edge Functions (except magic-link-agent owned and affiliate-owned ones)",
+        "files": [
+          "supabase/functions/create-admin/index.ts",
+          "supabase/functions/hard-delete-user/index.ts",
+          "supabase/functions/hard-delete-property/index.ts",
+          "supabase/functions/health/index.ts",
+          "supabase/functions/reset-for-testing/index.ts",
+          "supabase/functions/generate-description/index.ts",
+          "supabase/functions/ai-parse-listing/index.ts",
+          "supabase/functions/send-email/index.ts",
+          "supabase/functions/nfs-email-send/index.ts",
+          "supabase/functions/revolut-pay/index.ts",
+          "supabase/functions/revolut-webhook/index.ts",
+          "supabase/functions/revolut-token-refresh/index.ts",
+          "supabase/functions/revolut-check-status/index.ts",
+          "supabase/functions/save-bank-details/index.ts",
+          "supabase/functions/nfs-stripe-checkout/index.ts",
+          "supabase/functions/nfs-stripe-webhook/index.ts",
+          "supabase/functions/nfs-stripe-connect-oauth/index.ts",
+          "supabase/functions/nfs-domain-verify/index.ts",
+          "supabase/functions/nfs-hospitable-oauth/index.ts",
+          "supabase/functions/nfs-ical-feed/index.ts",
+          "supabase/functions/inv-process-order/index.ts",
+          "supabase/functions/inv-samcart-webhook/index.ts",
+          "supabase/functions/submit-payout-claim/index.ts",
+          "supabase/functions/deal-expiry/index.ts"
+        ]
+      },
+      "SUPABASE_BACKEND__MIGRATIONS": {
+        "description": "All SQL migration files",
+        "files": ["supabase/migrations/*.sql"]
+      }
+    }
+  },
+
+  "N8N_WORKFLOWS": {
+    "description": "n8n workflow JSON exports and automation docs",
+    "session": "N8N_WORKFLOWS",
+    "active": true,
+    "files": [
+      "n8n-workflows/03-ghl-webhook.json",
+      "n8n-workflows/13-inbox-new-message.json",
+      "n8n-workflows/14-inbox-landlord-replied.json",
+      "n8n-workflows/nfs-hospitable-init-sync.json",
+      "n8n-workflows/nfs-hospitable-listing-sync.json",
+      "n8n-workflows/nfs-hospitable-reservation-sync.json",
+      "n8n-workflows/nfs-hospitable-manual-sync.json",
+      "n8n-workflows/nfs-hospitable-retry.json",
+      "n8n-workflows/nfs-cleanup-expired.json",
+      "n8n-workflows/inv-notify-events.json",
+      "n8n-workflows/inv-notify-ghl-whatsapp.json",
+      "n8n-workflows/inv-tuesday-payout-batch.json",
+      "n8n-workflows/inv-revolut-token-refresh.json",
+      "n8n-workflows/university-ai-chat.json",
+      "n8n-workflows/README.md",
+      "n8n-workflows/IMPORT_AND_ACTIVATE.md",
+      "n8n-workflows/NEXT_3MINS.md",
+      "src/lib/n8n.ts",
+      "scripts/import-n8n-workflows.mjs"
+    ]
+  },
+
+  "SHARED": {
+    "description": "Cross-feature utilities, UI primitives, data, contexts, and shared hooks",
+    "session": "SHARED",
+    "active": true,
+    "files": [
+      "src/App.tsx",
+      "src/main.tsx",
+      "src/lib/utils.ts",
+      "src/lib/searchFilter.ts",
+      "src/lib/csvExport.ts",
+      "src/lib/auditLog.ts",
+      "src/hooks/useScrollReveal.ts",
+      "src/hooks/use-mobile.tsx",
+      "src/hooks/use-toast.ts",
+      "src/contexts/NfsCurrencyContext.tsx",
+      "src/data/mockData.ts",
+      "src/components/CountryCodeSelect.tsx",
+      "src/components/nfstay/NfsLogo.tsx",
+      "src/components/nfstay/NfsEmptyState.tsx",
+      "src/components/nfstay/NfsStatusBadge.tsx",
+      "src/pages/Index.tsx",
+      "src/pages/TermsPage.tsx",
+      "src/pages/PrivacyPage.tsx",
+      "src/pages/NotFound.tsx",
+      "scripts/backfill-inv-order-manual.sql"
+    ],
+    "sub_features": {
+      "SHARED__UI_PRIMITIVES": {
+        "description": "shadcn/ui components (50+ files) - never hand-edit",
+        "files": ["src/components/ui/*"]
+      },
+      "SHARED__NFSTAY_HOOKS": {
+        "description": "21 nfstay-specific React hooks for property, reservation, operator management",
+        "files": ["src/hooks/nfstay/*"]
+      },
+      "SHARED__NFSTAY_LIB": {
+        "description": "NFStay constants, pricing, types, white-label detection",
+        "files": [
+          "src/lib/nfstay/constants.ts",
+          "src/lib/nfstay/pricing.ts",
+          "src/lib/nfstay/types.ts",
+          "src/lib/nfstay/white-label.ts"
+        ]
+      },
+      "SHARED__NFSTAY_DATA": {
+        "description": "NFStay mock data for dev/testing",
+        "files": [
+          "src/data/nfstay/mock-admin.ts",
+          "src/data/nfstay/mock-destinations.ts",
+          "src/data/nfstay/mock-properties.ts",
+          "src/data/nfstay/mock-reservations.ts"
+        ]
+      }
+    }
+  },
+
+  "NICKEL": {
+    "description": "Nickel product landing page (separate product)",
+    "session": "NICKEL",
+    "active": true,
+    "files": [
+      "src/components/nickel/HeroSection.tsx",
+      "src/components/nickel/Navbar.tsx"
+    ]
+  }
+}

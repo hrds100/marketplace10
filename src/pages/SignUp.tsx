@@ -349,7 +349,7 @@ export default function SignUp() {
   // ── Email / password view ────────────────────────────────────────────────
 
   return (
-    <AuthShell showTabs={false} heading="Sign up with Email" subtitle="Fill in your details to create an account">
+    <AuthShell data-feature="AUTH" showTabs={false} heading="Sign up with Email" subtitle="Fill in your details to create an account">
       <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
         <button onClick={() => setView('social')} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a] mb-2">
           <ArrowLeft className="w-4 h-4" /> Back

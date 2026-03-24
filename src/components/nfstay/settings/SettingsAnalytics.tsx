@@ -37,7 +37,7 @@ export default function SettingsAnalytics({ operator }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-lg">
+    <form data-feature="BOOKING_NFSTAY__SETTINGS" onSubmit={handleSubmit} className="space-y-6 max-w-lg">
       <div>
         <h3 className="text-lg font-semibold">Analytics & SEO</h3>
         <p className="text-sm text-muted-foreground">Tracking codes and SEO metadata for your booking site.</p>

@@ -4,7 +4,7 @@ import { NfsMainFooter } from "./NfsMainFooter";
 
 export default function NfsMainLayout() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div data-feature="BOOKING_NFSTAY__MAIN_SITE" className="min-h-screen flex flex-col">
       <NfsMainNavbar />
       <main className="flex-1">
         <Outlet />

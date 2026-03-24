@@ -46,7 +46,7 @@ export default function NfsOperatorDashboard() {
   const displayName = [operator.first_name, operator.last_name].filter(Boolean).join(' ') || user?.email || 'Operator';
 
   return (
-    <div className="space-y-8">
+    <div data-feature="BOOKING_NFSTAY__OPERATOR_DASHBOARD" className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
           Welcome back, {displayName}

@@ -248,7 +248,7 @@ export default function AdminUniversityAnalytics() {
   const topModuleTitle = modules.find(m => m.id === topModule)?.title ?? topModule;
 
   return (
-    <div className="space-y-8">
+    <div data-feature="ADMIN__UNIVERSITY" className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-[28px] font-bold text-foreground">University Analytics</h1>
         <button

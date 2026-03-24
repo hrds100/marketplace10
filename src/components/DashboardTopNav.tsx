@@ -64,7 +64,7 @@ export default function DashboardTopNav() {
 
   return (
     <>
-      <header className="h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[100] relative flex-shrink-0">
+      <header data-feature="NAV_LAYOUT" className="h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[100] relative flex-shrink-0">
         {/* Logo — extra spacing before nav */}
         <Link
           to="/dashboard/deals"
@@ -188,7 +188,7 @@ export default function DashboardTopNav() {
           </nav>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -236,7 +236,7 @@ function JVPartnersDropdown({ isActive }: { isActive: (path: string) => boolean 
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }
 

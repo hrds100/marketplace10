@@ -286,7 +286,7 @@ export default function BrandPage() {
   }
 
   return (
-    <div className="min-h-screen" style={S.page}>
+    <div data-feature="BRAND" className="min-h-screen" style={S.page}>
       <div className="max-w-[1100px] mx-auto px-6 py-12">
 
         {/* Header */}

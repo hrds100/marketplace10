@@ -32,6 +32,7 @@ export default function NfsReservationCard({ reservation }: Props) {
 
   return (
     <div
+      data-feature="BOOKING_NFSTAY__RESERVATIONS"
       className="border border-border/40 rounded-xl p-4 hover:border-border/80 transition-colors cursor-pointer bg-white dark:bg-card"
       onClick={() => navigate(`/nfstay/reservations/${reservation.id}`)}
     >

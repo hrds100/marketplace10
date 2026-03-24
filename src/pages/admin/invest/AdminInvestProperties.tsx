@@ -262,7 +262,7 @@ export default function AdminInvestProperties() {
   };
 
   return (
-    <div>
+    <div data-feature="ADMIN__INVEST">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[28px] font-bold text-foreground">Investment Properties</h1>
         <Button onClick={openCreate} className="gap-2">

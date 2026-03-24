@@ -340,7 +340,7 @@ export default function InboxPage() {
   const showRightPanel = showDetails && selectedThread && !selectedThread.isSupport;
 
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden flex-1">
+    <div data-feature="CRM_INBOX" className="h-full w-full flex flex-col overflow-hidden flex-1">
     <div className="flex-1 flex overflow-hidden">
       <div className={`shrink-0 ${leftPanelCollapsed ? 'w-14' : 'w-[320px]'} transition-all duration-200`}>
         <ThreadList threads={allThreads} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} onArchive={handleArchiveThread} isCollapsed={leftPanelCollapsed} onExpand={() => setLeftPanelCollapsed(false)} onCollapse={() => setLeftPanelCollapsed(true)} />

@@ -26,7 +26,7 @@ export default function StepWebsiteCustomization({ operator, onSave, saving }: P
   };
 
   return (
-    <form id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
+    <form data-feature="BOOKING_NFSTAY__ONBOARDING" id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Website customization</h2>
         <p className="text-sm text-muted-foreground mt-1">Choose your brand color and logo. You can update these anytime.</p>

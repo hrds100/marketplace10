@@ -92,7 +92,7 @@ export default function NfsPropertyNew() {
   const allSteps = NFS_PROPERTY_STEPS;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div data-feature="BOOKING_NFSTAY__PROPERTY_WIZARD" className="max-w-2xl mx-auto space-y-8">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate(NFS_ROUTES.PROPERTIES)}>
           <ChevronLeft className="w-4 h-4 mr-1" /> Properties

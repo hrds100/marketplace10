@@ -36,7 +36,7 @@ export default function BurgerMenu() {
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div data-feature="NAV_LAYOUT" ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"

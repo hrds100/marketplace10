@@ -31,7 +31,7 @@ export default function ModuleOverviewPage() {
   const isGated = !tierSatisfied(dbModuleTierRequired, userTier);
 
   return (
-    <div className="max-w-[860px] mx-auto">
+    <div data-feature="UNIVERSITY" className="max-w-[860px] mx-auto">
       <button onClick={() => navigate('/dashboard/university')} className="flex items-center gap-1.5 text-sm font-medium mb-6 hover:opacity-70 transition-opacity" style={{ color: '#6B7280' }}>
         <ArrowLeft className="w-4 h-4" /> Academy
       </button>

@@ -137,7 +137,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div data-feature="AUTH" className="min-h-screen flex">
       <div className="flex-1 flex items-center justify-center p-6 md:p-8">
         <div className="w-full max-w-[400px]">
           <a href="/" className="text-xl font-extrabold text-foreground tracking-tight">nfstay</a>

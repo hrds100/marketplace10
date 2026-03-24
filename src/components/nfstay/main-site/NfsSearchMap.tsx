@@ -8,7 +8,7 @@ interface NfsSearchMapProps {
 
 export function NfsSearchMap({ properties }: NfsSearchMapProps) {
   return (
-    <div className="relative w-full h-full bg-muted overflow-hidden">
+    <div data-feature="BOOKING_NFSTAY__MAIN_SITE" className="relative w-full h-full bg-muted overflow-hidden">
       {/* Placeholder map background */}
       <div className="absolute inset-0 bg-gradient-to-br from-muted to-secondary opacity-60" />
 

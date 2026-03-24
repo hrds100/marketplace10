@@ -96,7 +96,7 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="max-w-[600px]">
+    <div data-feature="ADMIN" className="max-w-[600px]">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Admin Settings</h1>
 
       <div className="space-y-6">

@@ -25,7 +25,7 @@ export default function SettingsStripe() {
   }
 
   return (
-    <div className="space-y-6 max-w-lg">
+    <div data-feature="BOOKING_NFSTAY__SETTINGS" className="space-y-6 max-w-lg">
       <div>
         <h3 className="text-lg font-semibold">Stripe Connect</h3>
         <p className="text-sm text-muted-foreground">Accept payments from guests via Stripe.</p>

@@ -14,6 +14,7 @@ export default function NfsOperatorLayout() {
   return (
     <NfsOperatorGuard>
       <div
+        data-feature="BOOKING_NFSTAY__OPERATOR_DASHBOARD"
         className="h-screen flex flex-col animate-in fade-in duration-300"
         style={{ background: 'hsl(210 20% 98%)' }}
       >

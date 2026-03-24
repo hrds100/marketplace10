@@ -47,7 +47,7 @@ export default function NfsPaymentSuccess() {
     : '';
 
   return (
-    <div className="min-h-screen bg-background flex items-start justify-center pt-16 px-4">
+    <div data-feature="BOOKING_NFSTAY__CHECKOUT" className="min-h-screen bg-background flex items-start justify-center pt-16 px-4">
       <div className="w-full max-w-md space-y-6">
         {/* Success header */}
         <div className="text-center space-y-3">

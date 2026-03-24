@@ -14,7 +14,7 @@ export default function InvestSubNav() {
   const embeddedWallet = useEmbeddedWallet();
 
   return (
-    <div className="border-b border-border/30 bg-white/60 backdrop-blur-sm flex-shrink-0">
+    <div data-feature="INVEST" className="border-b border-border/30 bg-white/60 backdrop-blur-sm flex-shrink-0">
       <nav className="flex items-center gap-1 px-6 md:px-8 py-1.5">
         {tabs.map(tab => {
           const isActive = location.pathname === tab.to;

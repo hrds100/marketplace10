@@ -118,7 +118,7 @@ export default function SettingsDomain({ operator }: Props) {
   };
 
   return (
-    <div className="space-y-8 max-w-lg">
+    <div data-feature="BOOKING_NFSTAY__SETTINGS" className="space-y-8 max-w-lg">
       <div>
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Globe className="w-5 h-5" />

@@ -63,7 +63,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div>
+    <div data-feature="ADMIN">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Admin Dashboard</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">

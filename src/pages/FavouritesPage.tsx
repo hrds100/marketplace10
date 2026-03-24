@@ -81,7 +81,7 @@ export default function FavouritesPage() {
   }
 
   return (
-    <div>
+    <div data-feature="FAVOURITES">
       <h1 className="text-[28px] font-bold text-foreground">Favourites</h1>
       <p className="text-sm text-muted-foreground mt-1 mb-6">Your saved rent-to-rent deals</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">

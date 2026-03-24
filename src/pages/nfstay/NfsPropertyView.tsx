@@ -39,7 +39,7 @@ export default function NfsPropertyView() {
   const enabledAmenities = Object.entries(property.amenities || {}).filter(([, v]) => v).map(([k]) => k);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div data-feature="BOOKING_NFSTAY__MAIN_SITE" className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
         {/* Back nav */}
         <Button variant="ghost" size="sm" onClick={() => navigate('/search')}>

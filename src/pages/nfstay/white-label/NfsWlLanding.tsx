@@ -14,7 +14,7 @@ export default function NfsWlLanding() {
   const faqs = Array.isArray(operator.faqs) ? operator.faqs as { question: string; answer: string }[] : [];
 
   return (
-    <div>
+    <div data-feature="BOOKING_NFSTAY__WHITE_LABEL">
       {/* Hero Section */}
       <section
         className="relative bg-cover bg-center py-24 px-4"

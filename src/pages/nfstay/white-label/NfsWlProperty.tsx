@@ -56,7 +56,7 @@ export default function NfsWlProperty() {
   const operatorDomain = typeof window !== 'undefined' ? window.location.hostname : '';
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
+    <div data-feature="BOOKING_NFSTAY__WHITE_LABEL" className="max-w-5xl mx-auto px-4 py-6 space-y-8">
       <Button variant="ghost" size="sm" onClick={() => navigate('/search')}>
         <ChevronLeft className="w-4 h-4 mr-1" /> Back to properties
       </Button>

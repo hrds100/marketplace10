@@ -45,7 +45,7 @@ export default function SettingsSocial({ operator }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-lg">
+    <form data-feature="BOOKING_NFSTAY__SETTINGS" onSubmit={handleSubmit} className="space-y-6 max-w-lg">
       <div>
         <h3 className="text-lg font-semibold">Social & external accounts</h3>
         <p className="text-sm text-muted-foreground">Links shown on your booking site and used for SEO.</p>

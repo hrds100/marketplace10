@@ -24,7 +24,7 @@ export default function StepBusiness({ operator, onSave, saving }: Props) {
   };
 
   return (
-    <form id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
+    <form data-feature="BOOKING_NFSTAY__ONBOARDING" id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Your business</h2>
         <p className="text-sm text-muted-foreground mt-1">Tell us about your brand.</p>

@@ -26,7 +26,7 @@ export default function StepLandingPage({ operator, onSave, saving }: Props) {
   };
 
   return (
-    <form id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
+    <form data-feature="BOOKING_NFSTAY__ONBOARDING" id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Landing page content</h2>
         <p className="text-sm text-muted-foreground mt-1">This appears on your public booking site. You can refine it later.</p>

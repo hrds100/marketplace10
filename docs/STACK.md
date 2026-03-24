@@ -28,6 +28,7 @@ _Last updated: 2026-03-24_
 | CI Pipeline | GitHub Actions | github.com/hrds100/marketplace10/actions | - | - | `.github/workflows/ci.yml` (typecheck + test + lint) |
 | Health Check | Supabase Edge Fn | hub.nfstay.com/api/health | - | - | supabase/functions/health/index.ts |
 | Maps | Google Maps | maps.googleapis.com | - | VITE_GOOGLE_MAPS_API_KEY | src/components/DealsMap.tsx |
+| Feature Inspector | Dev-only overlay | - | - | - | src/components/dev/FeatureInspector.tsx (Alt+Hover/Click to inspect data-feature tags, dev mode only) |
 
 ## Supabase Tables
 

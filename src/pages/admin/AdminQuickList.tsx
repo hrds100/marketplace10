@@ -446,7 +446,7 @@ export default function AdminQuickList() {
   // (updateField defined above with listings array support)
 
   return (
-    <div className="max-w-[1200px]">
+    <div data-feature="ADMIN__QUICK_LIST" className="max-w-[1200px]">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-[28px] font-bold text-foreground">Quick List</h1>

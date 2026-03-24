@@ -153,7 +153,7 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="max-w-[860px] mx-auto pb-20">
+    <div data-feature="UNIVERSITY" className="max-w-[860px] mx-auto pb-20">
       <Confetti show={showConfetti} />
 
       {/* Top progress bar */}

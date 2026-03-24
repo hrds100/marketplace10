@@ -49,6 +49,7 @@ export default function NfsPhotoUpload({ onUpload, uploading = false }: NfsPhoto
 
   return (
     <div
+      data-feature="BOOKING_NFSTAY__PROPERTY_WIZARD"
       className={`flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-8 transition-colors ${
         dragging
           ? 'border-primary bg-primary/5'

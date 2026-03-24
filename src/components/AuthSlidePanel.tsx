@@ -51,7 +51,7 @@ export default function AuthSlidePanel() {
   }, [next]);
 
   return (
-    <div className="relative w-1/2 h-full overflow-hidden rounded-3xl hidden lg:flex flex-shrink-0">
+    <div data-feature="AUTH" className="relative w-1/2 h-full overflow-hidden rounded-3xl hidden lg:flex flex-shrink-0">
       {/* Slides */}
       {SLIDES.map((slide, i) => (
         <div

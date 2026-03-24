@@ -20,6 +20,7 @@ export default function NfsOperatorSidebar({ collapsed, onCollapse }: NfsOperato
 
   return (
     <aside
+      data-feature="BOOKING_NFSTAY__OPERATOR_DASHBOARD"
       className={`hidden md:flex flex-col border-r border-border/30 bg-white/80 dark:bg-card/80 backdrop-blur-xl transition-all duration-300 ease-out flex-shrink-0 ${
         collapsed ? 'w-16' : 'w-56'
       }`}

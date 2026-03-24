@@ -82,7 +82,7 @@ export default function NotificationBell() {
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div data-feature="NOTIFICATIONS" ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
         className="relative flex items-center p-2 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"

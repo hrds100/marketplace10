@@ -195,7 +195,7 @@ function LandlordView({ thread, onOpenAgreement }: { thread: Thread; onOpenAgree
 
 export default function InboxInquiryPanel({ thread, onClose, onSignNDA, isOperator = true, onOpenAgreement, onEstimatedProfitChange }: Props) {
   return (
-    <div className="h-full flex flex-col bg-white border-l border-gray-100">
+    <div data-feature="CRM_INBOX" className="h-full flex flex-col bg-white border-l border-gray-100">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
         <h3 className="text-sm font-bold text-gray-900">Inquiry Details</h3>
         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-50 transition-colors">

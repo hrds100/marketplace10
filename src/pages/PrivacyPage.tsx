@@ -1,6 +1,6 @@
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div data-feature="SHARED" className="min-h-screen bg-background">
       <div className="max-w-[720px] mx-auto px-6 py-16">
         <a href="/" className="text-lg font-extrabold text-foreground tracking-tight">nfstay</a>
         <h1 className="text-[32px] font-bold text-foreground mt-8 mb-6">Privacy Policy</h1>

@@ -123,7 +123,7 @@ export default function AdminLessons() {
   };
 
   return (
-    <div>
+    <div data-feature="ADMIN__UNIVERSITY">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[28px] font-bold text-foreground">University — Lessons ({lessons.length})</h1>
         <button

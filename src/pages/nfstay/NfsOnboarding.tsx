@@ -105,7 +105,7 @@ export default function NfsOnboarding() {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-8">
+    <div data-feature="BOOKING_NFSTAY__ONBOARDING" className="max-w-xl mx-auto space-y-8">
       {/* Progress bar */}
       <div className="space-y-3">
         <div className="flex items-center justify-between text-xs text-muted-foreground">

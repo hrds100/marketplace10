@@ -149,7 +149,7 @@ export default function CRMPage() {
   };
 
   return (
-    <div>
+    <div data-feature="CRM_INBOX__CRM_PIPELINE">
       <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-[28px] font-bold text-foreground">CRM Pipeline</h1>

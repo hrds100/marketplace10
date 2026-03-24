@@ -78,7 +78,7 @@ export default function AdminNfsOperators() {
   };
 
   return (
-    <div className="p-6 max-w-7xl space-y-6">
+    <div data-feature="ADMIN__NFSTAY" className="p-6 max-w-7xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Operator Management</h1>
         <p className="text-sm text-muted-foreground">{apps.length} total applications · {pending.length} pending</p>

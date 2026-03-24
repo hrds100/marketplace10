@@ -34,7 +34,7 @@ export function NfsAdminSidebar() {
   }, [location.pathname, isMobile, setOpenMobile]);
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+    <Sidebar data-feature="ADMIN__NFSTAY" collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="p-4">
         {collapsed ? (
           <div className="flex justify-center">

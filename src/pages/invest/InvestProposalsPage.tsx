@@ -578,7 +578,7 @@ export default function InvestProposalsPage() {
   // ─── Render ────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div data-feature="INVEST__PROPOSALS" className="space-y-6">
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Governance Proposals</h1>

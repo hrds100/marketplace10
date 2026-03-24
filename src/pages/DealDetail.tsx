@@ -215,7 +215,7 @@ export default function DealDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-card">
+    <div data-feature="DEALS" className="min-h-screen bg-card">
       {/* Nav */}
       <div className="h-[68px] flex items-center px-6 md:px-10 border-b border-border">
         <Link to="/dashboard/deals" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">

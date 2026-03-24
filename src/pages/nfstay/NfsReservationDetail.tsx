@@ -63,7 +63,7 @@ export default function NfsReservationDetail() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div data-feature="BOOKING_NFSTAY__OPERATOR_DASHBOARD" className="space-y-6 max-w-3xl">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/nfstay/reservations')}>
           <ChevronLeft className="w-4 h-4 mr-1" /> Back

@@ -37,7 +37,7 @@ export function NfsSearchFilters({
   onPriceMaxChange, bedrooms, onBedroomsChange, hasFilters, onClearFilters,
 }: NfsSearchFiltersProps) {
   return (
-    <div className="space-y-3">
+    <div data-feature="BOOKING_NFSTAY__MAIN_SITE" className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-foreground font-semibold">{resultCount}+ results</p>
         <div className="flex items-center gap-2">
