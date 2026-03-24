@@ -112,9 +112,10 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
 
       {/* Earnings estimate with slider */}
       <div className="w-full max-w-md space-y-3">
-        <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A] text-center leading-tight">
+        <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A] text-center leading-tight">
           You could earn{' '}
           <span className="text-[#1E9A80]">£{estimatedProfit.toLocaleString()}/month</span>
+          {' '}hosting this property on Airbnb
         </h2>
 
         <div className="space-y-2">
