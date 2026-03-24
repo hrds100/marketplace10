@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import PropertyCard from '@/components/PropertyCard';
+import PropertyCard from '@/components/PropertyCardV2';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
