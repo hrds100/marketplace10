@@ -153,7 +153,8 @@
       "src/lib/celebration.ts",
       "src/lib/notifications.ts",
       "src/lib/invest/buildSamcartPrefillParams.ts",
-      "src/lib/invest/mergeOrderBuyerEmails.ts"
+      "src/lib/invest/mergeOrderBuyerEmails.ts",
+      "scripts/backfill-inv-order-manual.sql"
     ],
     "sub_features": {
       "INVEST__MARKETPLACE": {
@@ -617,8 +618,7 @@
       "src/pages/Index.tsx",
       "src/pages/TermsPage.tsx",
       "src/pages/PrivacyPage.tsx",
-      "src/pages/NotFound.tsx",
-      "scripts/backfill-inv-order-manual.sql"
+      "src/pages/NotFound.tsx"
     ],
     "sub_features": {
       "SHARED__UI_PRIMITIVES": {
