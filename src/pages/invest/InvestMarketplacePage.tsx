@@ -1459,7 +1459,7 @@ function Version1({
         >
           <button
             onClick={() => setJvExpanded(!jvExpanded)}
-            className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-primary/[0.02] rounded-2xl"
+            className="group flex w-full items-start sm:items-center flex-col sm:flex-row gap-3 sm:gap-4 px-4 sm:px-5 py-4 text-left transition-colors hover:bg-primary/[0.02] rounded-2xl"
           >
             <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 ring-2 ring-primary/20 flex-shrink-0">
               <Users className="h-4 w-4 text-primary" />
@@ -1487,7 +1487,7 @@ function Version1({
             </div>
             <div
               className={cn(
-                'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all flex-shrink-0',
+                'flex items-center justify-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all w-full sm:w-auto',
                 jvExpanded
                   ? 'bg-muted text-muted-foreground hover:bg-muted/80'
                   : 'bg-primary text-white shadow-sm shadow-primary/25 group-hover:shadow-md group-hover:shadow-primary/30'
