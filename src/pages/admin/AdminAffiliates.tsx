@@ -115,7 +115,7 @@ export default function AdminAffiliates() {
   });
 
   return (
-    <div>
+    <div data-feature="ADMIN">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Affiliate Agents</h1>
 
       {/* Global stats */}

@@ -53,7 +53,7 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
   }
 
   return (
-    <div className="h-full flex flex-col bg-white border-r border-border">
+    <div data-feature="CRM_INBOX__THREAD_LIST" className="h-full flex flex-col bg-white border-r border-border">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         {searchOpen ? (

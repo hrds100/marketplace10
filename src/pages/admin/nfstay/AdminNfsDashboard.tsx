@@ -25,7 +25,7 @@ export default function AdminNfsDashboard() {
   void mockReservations;
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl">
+    <div data-feature="ADMIN__NFSTAY" className="p-6 space-y-6 max-w-7xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-sm text-muted-foreground">Platform overview and key metrics.</p>

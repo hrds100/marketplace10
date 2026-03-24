@@ -38,6 +38,7 @@ export function NfsPropertyCard({ property }: NfsPropertyCardProps) {
 
   return (
     <Link
+      data-feature="BOOKING_NFSTAY__MAIN_SITE"
       to={`/property/${property.id}`}
       className="group block"
       onMouseEnter={() => setIsHovered(true)}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export default function NfsVerifyEmailPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div data-feature="BOOKING_NFSTAY" className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6 text-center">
         <NfsLogo className="justify-center text-2xl mb-4" />
         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto">

@@ -25,7 +25,7 @@ export default function StepContactInfo({ operator, onSave, saving }: Props) {
   };
 
   return (
-    <form id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
+    <form data-feature="BOOKING_NFSTAY__ONBOARDING" id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Contact information</h2>
         <p className="text-sm text-muted-foreground mt-1">How guests can reach you. Shown on your booking site.</p>

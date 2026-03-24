@@ -25,7 +25,7 @@ export function NfsMainNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-card border-b border-border">
+    <header data-feature="BOOKING_NFSTAY__MAIN_SITE" className="sticky top-0 z-50 bg-card border-b border-border">
       <div className="max-w-[1600px] mx-auto flex items-center h-16 px-4 gap-3">
         {/* Left: hamburger + logo */}
         <div className="flex items-center gap-2 shrink-0">

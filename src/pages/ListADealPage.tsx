@@ -406,7 +406,7 @@ export default function ListADealPage() {
 
   // ── Phase: Idle (form) ──
   return (
-    <div>
+    <div data-feature="DEALS__LIST_A_DEAL">
       <h1 className="text-[28px] font-bold text-foreground">Submit a Deal</h1>
       <p className="text-sm text-muted-foreground mt-1 mb-8">List a landlord-approved rent-to-rent opportunity.</p>
 

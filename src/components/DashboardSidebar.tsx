@@ -66,7 +66,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
   };
 
   return (
-    <>
+    <div data-feature="NAV_LAYOUT">
       {/* Desktop sidebar — no logo, starts below persistent top bar */}
       <aside className={`hidden md:flex fixed left-0 top-14 h-[calc(100vh-3.5rem)] bg-white/80 dark:bg-card/80 backdrop-blur-xl border-r border-border/30 z-[100] flex-col transition-all duration-300 ease-out ${collapsed ? 'w-16' : 'w-56'}`}>
 
@@ -202,7 +202,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
           );
         })}
       </div>
-    </>
+    </div>
   );
 }
 

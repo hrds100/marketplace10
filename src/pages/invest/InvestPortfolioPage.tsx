@@ -458,7 +458,7 @@ export default function InvestPortfolioPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div data-feature="INVEST__PORTFOLIO" className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
         {/* ---------------------------------------------------------------- */}
         {/* 1. HEADER                                                        */}

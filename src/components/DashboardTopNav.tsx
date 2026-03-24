@@ -63,7 +63,7 @@ export default function DashboardTopNav() {
     (to === '/dashboard/deals' && (location.pathname === '/dashboard' || location.pathname === '/dashboard/deals'));
 
   return (
-    <>
+    <div data-feature="NAV_LAYOUT">
       <header className="h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[100] relative flex-shrink-0">
         {/* Logo — extra spacing before nav */}
         <Link
@@ -188,7 +188,7 @@ export default function DashboardTopNav() {
           </nav>
         </div>
       )}
-    </>
+    </div>
   );
 }
 

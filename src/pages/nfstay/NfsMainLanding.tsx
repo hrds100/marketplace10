@@ -39,7 +39,7 @@ export default function NfsMainLanding() {
   const recentProperties = recentIds.map(id => mockProperties.find(p => p.id === id)).filter(Boolean);
 
   return (
-    <div>
+    <div data-feature="BOOKING_NFSTAY__MAIN_SITE">
       {/* Hero */}
       <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">

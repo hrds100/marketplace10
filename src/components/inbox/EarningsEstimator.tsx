@@ -34,7 +34,7 @@ export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType,
   const summary = [bedrooms > 0 ? `${bedrooms}-bed` : null, propertyType].filter(Boolean).join(' ') || 'Property';
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 space-y-4 shadow-sm">
+    <div data-feature="CRM_INBOX__EARNINGS_ESTIMATOR" className="rounded-2xl border border-gray-100 bg-white p-4 space-y-4 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-gray-900">Earnings Estimator</span>

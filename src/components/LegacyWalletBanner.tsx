@@ -65,7 +65,7 @@ export default function LegacyWalletBanner() {
   }
 
   return (
-    <div className="bg-amber-50 border-b border-amber-100">
+    <div data-feature="BLOCKCHAIN_WALLET" className="bg-amber-50 border-b border-amber-100">
       {!expanded ? (
         <div className="px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">

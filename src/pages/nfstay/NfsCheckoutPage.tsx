@@ -165,7 +165,7 @@ export default function NfsCheckoutPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-background">
+    <div data-feature="BOOKING_NFSTAY__CHECKOUT" className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-6">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-6">
           <ChevronLeft className="w-4 h-4 mr-1" /> Back to property

@@ -52,7 +52,7 @@ export default function NfsBookingWidget({ property, bookingSource = 'main_platf
   };
 
   return (
-    <div className="sticky top-6 rounded-xl border border-border/40 bg-white dark:bg-card p-5 space-y-4 shadow-sm">
+    <div data-feature="BOOKING_NFSTAY__RESERVATIONS" className="sticky top-6 rounded-xl border border-border/40 bg-white dark:bg-card p-5 space-y-4 shadow-sm">
       {/* Price header */}
       <p className="text-2xl font-bold">
         {property.base_rate_currency} {property.base_rate_amount?.toFixed(2)}

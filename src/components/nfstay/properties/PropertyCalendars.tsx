@@ -101,7 +101,7 @@ export default function PropertyCalendars({ property, onUpdate, saving }: Props)
   };
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div data-feature="BOOKING_NFSTAY__OPERATOR_DASHBOARD" className="space-y-8 max-w-2xl">
       {/* Outbound Calendar */}
       <section className="space-y-4">
         <div>

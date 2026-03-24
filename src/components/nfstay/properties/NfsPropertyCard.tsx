@@ -36,6 +36,7 @@ export default function NfsPropertyCard({ property, onClick }: NfsPropertyCardPr
 
   return (
     <div
+      data-feature="BOOKING_NFSTAY__OPERATOR_DASHBOARD"
       className="group cursor-pointer"
       onClick={onClick}
     >

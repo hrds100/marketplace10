@@ -172,6 +172,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
         aria-hidden
       />
       <div
+        data-feature="PAYMENTS"
         className={`fixed inset-y-0 right-0 z-[301] w-full md:w-[40vw] max-w-[640px] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}
         onClick={e => e.stopPropagation()}
       >

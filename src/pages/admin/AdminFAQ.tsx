@@ -29,7 +29,7 @@ export default function AdminFAQ() {
   };
 
   return (
-    <div>
+    <div data-feature="ADMIN">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[28px] font-bold text-foreground">FAQ Management ({faqs.length})</h1>
         <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ q: '', a: '' }); }} className="h-11 px-5 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">

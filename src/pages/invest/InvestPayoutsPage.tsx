@@ -667,7 +667,7 @@ export default function InvestPayoutsPage() {
   const history = payouts.filter((p) => p.status !== 'claimable');
 
   return (
-    <div className="space-y-6">
+    <div data-feature="INVEST__PAYOUTS" className="space-y-6">
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Payouts</h1>

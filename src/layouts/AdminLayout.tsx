@@ -76,7 +76,7 @@ export default function AdminLayout() {
   const workspaceLabel = workspace === 'invest' ? 'JV Partners' : workspace === 'booking' ? 'Booking Site' : 'Marketplace';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div data-feature="NAV_LAYOUT" className="min-h-screen bg-background">
       {/* Top nav */}
       <nav className="h-[64px] bg-card border-b border-border flex items-center px-6 gap-4">
         <NfsLogo size="sm" className="flex-shrink-0" />

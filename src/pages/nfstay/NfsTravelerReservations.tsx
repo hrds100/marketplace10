@@ -44,7 +44,7 @@ export default function NfsTravelerReservations() {
       : <div className="space-y-3">{list.map(r => <ReservationCard key={r.id} r={r} />)}</div>;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div data-feature="BOOKING_NFSTAY__TRAVELER" className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-bold tracking-tight mb-6">My Reservations</h1>
       <Tabs defaultValue="all">
         <TabsList className="mb-6">

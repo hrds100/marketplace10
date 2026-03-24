@@ -117,5 +117,5 @@ export default function NfsSearchMap({ properties, onPropertyClick }: NfsSearchM
     );
   }
 
-  return <div ref={mapRef} className="h-full w-full rounded-2xl" />;
+  return <div data-feature="BOOKING_NFSTAY__MAPS" ref={mapRef} className="h-full w-full rounded-2xl" />;
 }

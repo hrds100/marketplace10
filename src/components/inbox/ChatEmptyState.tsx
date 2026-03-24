@@ -62,7 +62,7 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
   ].filter(Boolean).join(', ').replace(', ·', ' ·') || thread.propertyTitle;
 
   return (
-    <div className="h-full flex flex-col items-center justify-center px-8 py-6 gap-4">
+    <div data-feature="CRM_INBOX" className="h-full flex flex-col items-center justify-center px-8 py-6 gap-4">
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
         onChange={e => { const f = e.target.files?.[0]; if (f) toast.info(`Selected: ${f.name} — image upload coming soon`); e.target.value = ''; }} />

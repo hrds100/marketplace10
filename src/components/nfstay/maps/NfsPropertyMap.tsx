@@ -78,5 +78,5 @@ export default function NfsPropertyMap({ lat, lng, title }: NfsPropertyMapProps)
     );
   }
 
-  return <div ref={mapRef} className="h-full w-full rounded-lg" />;
+  return <div data-feature="BOOKING_NFSTAY__MAPS" ref={mapRef} className="h-full w-full rounded-lg" />;
 }

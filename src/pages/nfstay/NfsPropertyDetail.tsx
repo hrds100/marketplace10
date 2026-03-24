@@ -307,7 +307,7 @@ function PricingTab({ property, onUpdate, saving }: { property: NfsProperty; onU
   const [currency, setCurrency] = useState(property.base_rate_currency);
 
   return (
-    <div className="space-y-6 max-w-lg">
+    <div data-feature="BOOKING_NFSTAY__OPERATOR_DASHBOARD" className="space-y-6 max-w-lg">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Base Rate</Label>

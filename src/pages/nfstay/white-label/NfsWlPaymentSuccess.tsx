@@ -9,7 +9,7 @@ export default function NfsWlPaymentSuccess() {
   const { operator } = useNfsWhiteLabel();
 
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4 text-center">
+    <div data-feature="BOOKING_NFSTAY__WHITE_LABEL" className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4 text-center">
       <CheckCircle className="w-16 h-16 text-green-500" />
       <h1 className="text-2xl font-bold">Booking Confirmed!</h1>
       <p className="text-muted-foreground max-w-md">

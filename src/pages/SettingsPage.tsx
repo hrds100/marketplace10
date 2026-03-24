@@ -209,7 +209,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <div>
+    <div data-feature="SETTINGS">
       <div className="text-[13px] text-muted-foreground mb-4">
         Settings &gt; <span className="text-foreground capitalize">{activeTab}</span>
       </div>

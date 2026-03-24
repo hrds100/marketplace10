@@ -60,7 +60,7 @@ export default function StepReview({ property, onSave, saving }: Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <div data-feature="BOOKING_NFSTAY__PROPERTY_WIZARD" className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Review &amp; publish</h2>
         <p className="text-sm text-muted-foreground mt-1">

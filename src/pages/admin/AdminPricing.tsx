@@ -8,7 +8,7 @@ export default function AdminPricing() {
   ];
 
   return (
-    <div>
+    <div data-feature="ADMIN">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Pricing & Plans</h1>
       <p className="text-sm text-muted-foreground mb-6">Payments are handled via GoHighLevel funnel. Products are configured in GHL dashboard.</p>
       <div className="grid md:grid-cols-3 gap-4">

@@ -88,7 +88,7 @@ export default function NfsPromoCodeInput({ onValidated }: Props) {
   }
 
   return (
-    <div className="space-y-1">
+    <div data-feature="BOOKING_NFSTAY__RESERVATIONS" className="space-y-1">
       <div className="flex gap-2">
         <Input
           placeholder="Promo code"

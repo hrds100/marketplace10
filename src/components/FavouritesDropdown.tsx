@@ -88,7 +88,7 @@ export default function FavouritesDropdown() {
   }, [count]);
 
   return (
-    <div ref={ref} className="relative">
+    <div data-feature="FAVOURITES" ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
         className={`relative flex items-center gap-1 p-2 rounded-lg transition-all duration-200 ${

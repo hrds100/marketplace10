@@ -56,7 +56,7 @@ export default function NfsSearchPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div data-feature="BOOKING_NFSTAY__MAIN_SITE" className="flex h-[calc(100vh-64px)]">
       {/* Left panel – listings */}
       <div className="w-full lg:w-[50%] flex flex-col overflow-hidden border-r border-border">
         <div className="px-5 pt-4 pb-2 shrink-0">

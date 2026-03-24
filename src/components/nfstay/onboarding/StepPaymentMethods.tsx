@@ -15,7 +15,7 @@ export default function StepPaymentMethods({ operator, onSave, saving }: Props) 
   };
 
   return (
-    <form id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
+    <form data-feature="BOOKING_NFSTAY__ONBOARDING" id="onboarding-step-form" onSubmit={handleSubmit} className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Payment methods</h2>
         <p className="text-sm text-muted-foreground mt-1">Connect Stripe to accept payments from guests.</p>

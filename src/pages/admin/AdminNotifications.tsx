@@ -92,7 +92,7 @@ export default function AdminNotifications() {
   }
 
   return (
-    <div>
+    <div data-feature="ADMIN">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <h1 className="text-[28px] font-bold text-foreground">Notifications</h1>

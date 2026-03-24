@@ -121,7 +121,7 @@ export default function DashboardLayout() {
 
   return (
     <ProtectedRoute>
-      <div className="h-screen flex flex-col animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
+      <div data-feature="NAV_LAYOUT" className="h-screen flex flex-col animate-in fade-in duration-300" style={{ background: 'hsl(210 20% 98%)' }}>
         <PaymentSuccessRefresher />
         <WalletProvisioner />
 

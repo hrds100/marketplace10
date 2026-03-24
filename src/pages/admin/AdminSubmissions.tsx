@@ -111,7 +111,7 @@ export default function AdminSubmissions() {
   };
 
   return (
-    <div>
+    <div data-feature="ADMIN">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Deal Submissions</h1>
 
       <div className="flex gap-2 mb-6">

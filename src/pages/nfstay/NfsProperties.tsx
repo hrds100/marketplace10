@@ -77,7 +77,7 @@ export default function NfsProperties() {
   }
 
   return (
-    <div className="space-y-6">
+    <div data-feature="BOOKING_NFSTAY__OPERATOR_DASHBOARD" className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Properties</h1>

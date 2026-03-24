@@ -17,7 +17,7 @@ export default function LandingNav() {
   useEffect(() => setMobileOpen(false), [location]);
 
   return (
-    <>
+    <div data-feature="NAV_LAYOUT">
       <nav className={`fixed top-0 left-0 right-0 z-50 h-[68px] flex items-center transition-all duration-200 ${scrolled ? 'bg-card/95 backdrop-blur-md border-b border-border shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-[1280px] w-full mx-auto px-6 md:px-10 flex items-center justify-between">
           <a href="/" className={`text-xl font-extrabold tracking-tight ${scrolled ? 'text-foreground' : 'text-white'}`}>nfstay</a>
@@ -63,6 +63,6 @@ export default function LandingNav() {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }

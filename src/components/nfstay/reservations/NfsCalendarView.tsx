@@ -52,7 +52,7 @@ export default function NfsCalendarView({ reservations }: Props) {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   return (
-    <div className="space-y-4">
+    <div data-feature="BOOKING_NFSTAY__RESERVATIONS" className="space-y-4">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={prev}>
           <ChevronLeft className="w-4 h-4" />

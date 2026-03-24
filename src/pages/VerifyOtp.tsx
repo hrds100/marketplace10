@@ -205,7 +205,7 @@ export default function VerifyOtp() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div data-feature="AUTH" className="min-h-screen flex">
       {/* Form side */}
       <div className="flex-1 flex items-center justify-center p-6 md:p-8 relative z-10">
         <div className="w-full max-w-[400px]">

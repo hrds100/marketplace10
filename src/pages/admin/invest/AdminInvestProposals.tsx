@@ -110,7 +110,7 @@ export default function AdminInvestProposals() {
   }
 
   return (
-    <div>
+    <div data-feature="ADMIN__INVEST">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-[28px] font-bold text-foreground">Proposals</h1>

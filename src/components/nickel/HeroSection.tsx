@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 
 const HeroSection = () => {
   return (
-    <section className="bg-background min-h-[calc(100vh-4rem)] relative overflow-hidden">
+    <section data-feature="NICKEL" className="bg-background min-h-[calc(100vh-4rem)] relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 min-h-[calc(100vh-4rem)] flex items-center w-full relative z-10">
         <div className="max-w-xl">
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-foreground leading-[1.05]">

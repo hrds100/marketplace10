@@ -17,7 +17,7 @@ export default function AdminUniversity() {
   };
 
   return (
-    <Tabs value={activeTab} onValueChange={handleTabChange}>
+    <Tabs data-feature="ADMIN__UNIVERSITY" value={activeTab} onValueChange={handleTabChange}>
       <TabsList className="mb-6">
         <TabsTrigger value="lessons">Lessons</TabsTrigger>
         <TabsTrigger value="modules">Modules</TabsTrigger>

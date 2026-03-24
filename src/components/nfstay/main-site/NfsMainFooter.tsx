@@ -3,7 +3,7 @@ import { NfsLogo } from "@/components/nfstay/NfsLogo";
 
 export function NfsMainFooter() {
   return (
-    <footer className="bg-card border-t border-border">
+    <footer data-feature="BOOKING_NFSTAY__MAIN_SITE" className="bg-card border-t border-border">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* About */}

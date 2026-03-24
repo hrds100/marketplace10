@@ -195,7 +195,7 @@ export default function MyListingsPanel({ userId }: Props) {
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5">
+    <div data-feature="DEALS__LIST_A_DEAL" className="bg-card border border-border rounded-2xl p-5">
       <h3 className="text-base font-bold text-foreground mb-4">My Listings ({listings.length})</h3>
       <div className="space-y-3">
         {listings.map(listing => {

@@ -67,7 +67,7 @@ export default function AdminInvestDashboard() {
   }, [orders]);
 
   return (
-    <div>
+    <div data-feature="ADMIN__INVEST">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Investment Dashboard</h1>
 
       {/* Stat cards */}

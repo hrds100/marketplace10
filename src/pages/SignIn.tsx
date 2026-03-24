@@ -141,7 +141,7 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center" style={{ backgroundColor: '#f3f3ee' }}>
+    <div data-feature="AUTH" className="min-h-screen w-full flex items-center justify-center" style={{ backgroundColor: '#f3f3ee' }}>
       <div className="flex w-full h-screen overflow-hidden p-2 gap-2" style={{ backgroundColor: '#f3f3ee' }}>
 
         {/* Left panel */}

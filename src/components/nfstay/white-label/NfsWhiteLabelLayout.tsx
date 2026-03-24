@@ -27,7 +27,7 @@ export default function NfsWhiteLabelLayout() {
   const accentColor = operator.accent_color || '#2563eb';
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" style={{ '--nfs-accent': accentColor } as React.CSSProperties}>
+    <div data-feature="BOOKING_NFSTAY__WHITE_LABEL" className="min-h-screen flex flex-col bg-background" style={{ '--nfs-accent': accentColor } as React.CSSProperties}>
       {/* Header */}
       <header className="border-b border-border/40 bg-white dark:bg-card">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
