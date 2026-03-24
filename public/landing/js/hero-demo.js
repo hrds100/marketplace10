@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let storyActive = false;
   let typewriterInterval = null;
   let autoCycleTimer = null;
+  let userInitiated = false; // true after user clicks — gates typing sound
 
   // ========================================
   // 2. GSAP ENTRANCE
@@ -166,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
       typewriterInterval = setInterval(() => {
         if (i < text.length) {
           typewriterEl.textContent = text.slice(0, i + 1);
-          playTypingSound();
+          if (userInitiated) playTypingSound();
           i++;
         } else {
           clearInterval(typewriterInterval);
@@ -815,6 +816,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resetStory() {
     storyActive = false;
+    userInitiated = false;
     hideCursor();
 
     // Clean up story artifacts
@@ -828,9 +830,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(startAutoCycle, 2000);
   }
 
-  // Click handlers
-  if (tooltipEl) tooltipEl.addEventListener('click', runStory);
-  if (sendBtn) sendBtn.addEventListener('click', () => { if (!storyActive) runStory(); });
+  // Click handlers — set userInitiated so typing sound only plays on manual interaction
+  if (tooltipEl) tooltipEl.addEventListener('click', () => { userInitiated = true; runStory(); });
+  if (sendBtn) sendBtn.addEventListener('click', () => { if (!storyActive) { userInitiated = true; runStory(); } });
 
   // ========================================
   // 12. UTILITY
