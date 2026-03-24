@@ -15,8 +15,11 @@ function getSession(tag: string): string {
 }
 
 export default function FeatureInspector() {
-  // Dev-only guard (also enabled by VITE_FEATURE_INSPECTOR for preview deploys)
-  if (import.meta.env.MODE !== 'development' && import.meta.env.VITE_FEATURE_INSPECTOR !== 'true') return null;
+  // Only active in dev mode OR when ?inspector is in the URL
+  const enabled =
+    import.meta.env.MODE === 'development' ||
+    (typeof window !== 'undefined' && window.location.search.includes('inspector'));
+  if (!enabled) return null;
 
   return <InspectorOverlay />;
 }
