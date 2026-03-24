@@ -55,15 +55,28 @@ export default function AdminInvestDashboard() {
     ];
   }, [orders, shareholders, properties, claims]);
 
-  // Real activity feed: last 10 completed orders
+  // Real activity feed: last 10 completed orders with user details
   const activities = useMemo(() => {
     return (orders as any[])
       .filter((o: any) => o.status === 'completed')
       .slice(0, 10)
-      .map((o: any) => ({
-        text: `${o.user_id?.slice(0, 8) || 'Investor'} purchased ${o.shares_count || '?'} share${Number(o.shares_count) !== 1 ? 's' : ''} of ${o.inv_properties?.title || 'a property'}`,
-        time: o.created_at ? timeAgo(o.created_at) : '',
-      }));
+      .map((o: any) => {
+        const name = o.user_name || o.user_email?.split('@')[0] || o.user_id?.slice(0, 8) || 'Investor';
+        const dateStr = o.created_at
+          ? new Date(o.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
+            ', ' +
+            new Date(o.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+          : '';
+        return {
+          name,
+          email: o.user_email || '',
+          whatsapp: o.user_whatsapp || '',
+          shares: o.shares_count || '?',
+          property: o.inv_properties?.title || 'a property',
+          date: dateStr,
+          timeAgo: o.created_at ? timeAgo(o.created_at) : '',
+        };
+      });
   }, [orders]);
 
   return (
@@ -99,10 +112,19 @@ export default function AdminInvestDashboard() {
               ) : activities.map((a, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between py-2.5 border-b border-border last:border-0"
+                  className="py-3 border-b border-border last:border-0"
                 >
-                  <span className="text-sm text-foreground">{a.text}</span>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">{a.time}</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-foreground">
+                      {a.name} purchased {a.shares} share{Number(a.shares) !== 1 ? 's' : ''} of {a.property}
+                    </span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">{a.timeAgo}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+                    <span>{a.date}</span>
+                    {a.email && <span>{a.email}</span>}
+                    {a.whatsapp && <span>WhatsApp: {a.whatsapp}</span>}
+                  </div>
                 </div>
               ))}
             </div>
