@@ -114,12 +114,14 @@ if (typeof window !== 'undefined') {
 
 import { FavouritesProvider } from '@/hooks/useFavourites';
 import ParticleProvider from './components/ParticleProvider';
+import FeatureInspector from './components/dev/FeatureInspector';
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ParticleProvider>
     <TooltipProvider>
       <Sonner />
+      {import.meta.env.DEV && <FeatureInspector />}
       <BrowserRouter>
       <FavouritesProvider>
       <NfsCurrencyProvider>
