@@ -2042,7 +2042,7 @@ export default function InvestMarketplacePage() {
         initialCalcAmount={initialCalcAmount}
         setInitialCalcAmount={setInitialCalcAmount}
         totalOwners={totalOwners}
-        cardCheckoutBlocked={paymentMethod === 'card' && (!walletAddress || walletConnecting)}
+        cardCheckoutBlocked={false}
       />
 
       <InvestModal open={investOpen} onOpenChange={setInvestOpen} property={property} />
