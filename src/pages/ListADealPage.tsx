@@ -140,6 +140,7 @@ export default function ListADealPage() {
   const [form, setForm] = useState<DealForm>(INITIAL_FORM);
   const [profileWhatsapp, setProfileWhatsapp] = useState('');
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['property-details', 'media']));
+  const [listingType, setListingType] = useState<'rental' | 'sale'>('rental');
   const [aiQuickMode, setAiQuickMode] = useState(false);
   const [aiRawText, setAiRawText] = useState('');
   const [aiParsing, setAiParsing] = useState(false);
@@ -207,6 +208,7 @@ export default function ListADealPage() {
     setNotes('');
     setForm(INITIAL_FORM);
     setOpenSections(new Set(['property-details', 'media']));
+    setListingType('rental');
     setAiQuickMode(false);
     setAiRawText('');
     setSaConfirmed(false);
@@ -405,7 +407,7 @@ export default function ListADealPage() {
     if (!resolvedType) missing.push('Property type');
     if (!form.bedrooms) missing.push('Bedrooms');
     if (!form.bathrooms) missing.push('Bathrooms');
-    if (!form.rent) missing.push('Monthly rent');
+    if (!form.rent) missing.push(listingType === 'sale' ? 'Property price' : 'Monthly rent');
     if (!form.profit) missing.push('Est. monthly profit');
     if (!form.deposit) missing.push('Deposit');
     if (!form.saApproved) missing.push('SA Approval');
@@ -423,7 +425,7 @@ export default function ListADealPage() {
       const { data: insertedRow, error } = await (supabase.from('properties') as any).insert({
         name: nextId, city: form.city, postcode: form.postcode,
         rent_monthly: parseInt(form.rent) || 0, profit_est: parseInt(form.profit) || 0,
-        type: resolvedType, status: 'pending', submitted_by: user?.id || null,
+        type: resolvedType, status: 'pending', submitted_by: user?.id || null, listing_type: listingType,
         property_category: form.propertyCategory || null, bedrooms: parseInt(form.bedrooms) || null, bathrooms: parseInt(form.bathrooms) || null,
         garage: form.garage === 'yes', deposit: parseInt(form.deposit) || null, agent_fee: parseInt(form.agentFee) || null,
         sa_approved: form.saApproved.toLowerCase(), contact_name: form.contactName, contact_phone: form.contactPhone,
@@ -571,6 +573,19 @@ export default function ListADealPage() {
               />
             </div>
 
+            {/* ── Listing Type Radio ── */}
+            <div className="flex items-center gap-4 mb-2" data-feature="DEALS__LIST_TYPE_SELECT">
+              <span className="text-sm font-medium text-foreground">Listing type:</span>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="listingType" value="rental" checked={listingType === 'rental'} onChange={() => setListingType('rental')} className="accent-[#1E9A80]" />
+                <span className="text-sm">To Rent</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="listingType" value="sale" checked={listingType === 'sale'} onChange={() => setListingType('sale')} className="accent-[#1E9A80]" />
+                <span className="text-sm">For Sale</span>
+              </label>
+            </div>
+
             {/* ── AI Quick Listing Input ── */}
             {aiQuickMode && (
               <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
@@ -681,7 +696,7 @@ export default function ListADealPage() {
               summary={summaries['financials']()}>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Monthly rent (£) *</label><input type="number" placeholder="1200" value={form.rent} onChange={e => set('rent', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">{listingType === 'sale' ? 'Property price (£) *' : 'Monthly rent (£) *'}</label><input type="number" placeholder={listingType === 'sale' ? '250000' : '1200'} value={form.rent} onChange={e => set('rent', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
                   <div><label className="text-xs font-semibold text-foreground block mb-1.5">Est. monthly profit (£) *</label><p className="text-[10px] text-muted-foreground mb-1">We will cross-check with Airbnb similar listings for accuracy.</p><input type="number" placeholder="600" value={form.profit} onChange={e => set('profit', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

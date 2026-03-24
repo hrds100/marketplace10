@@ -10,7 +10,7 @@
   var SUPABASE_URL = 'https://asazddtvjvmckouxcmmo.supabase.co';
   var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzYXpkZHR2anZtY2tvdXhjbW1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTg0NjQsImV4cCI6MjA4ODk5NDQ2NH0.15ushgp1bOe04pyOYmsZ7wavQ_JWTj4xEB6Ga-3FX_A';
 
-  var ENDPOINT = SUPABASE_URL + '/rest/v1/properties?select=id,city,postcode,rent_monthly,profit_est,type,photos,status,featured,name&status=eq.live&order=created_at.desc&limit=3';
+  var ENDPOINT = SUPABASE_URL + '/rest/v1/properties?select=id,city,postcode,rent_monthly,profit_est,type,photos,status,featured,name,listing_type&status=eq.live&order=created_at.desc&limit=3';
 
   var DEFAULT_IMAGES = [
     'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=220&fit=crop',
@@ -47,7 +47,10 @@
 
   function buildDealCard(p, index) {
     var photo = getPhoto(p, index);
-    var badge = p.featured ? '<div class="deal-badge">Featured</div>' : '<div class="deal-badge">Live</div>';
+    var listingBadge = p.listing_type === 'sale'
+      ? '<span style="background:rgba(5,150,105,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px">Sale</span>'
+      : '<span style="background:rgba(30,154,128,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px">Rental</span>';
+    var badge = (p.featured ? '<div class="deal-badge">Featured</div>' : '<div class="deal-badge">Live</div>') + listingBadge;
     var title = getTitle(p);
     var location = getLocation(p);
     var rent = formatCurrency(p.rent_monthly);

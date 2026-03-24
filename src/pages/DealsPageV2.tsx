@@ -38,6 +38,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     image,
     landlordApproved: (p as Record<string, unknown>).sa_approved === 'yes',
     landlordWhatsapp: p.landlord_whatsapp,
+    listing_type: ((p as Record<string, unknown>).listing_type as 'rental' | 'sale') || 'rental',
   };
 }
 
@@ -71,6 +72,7 @@ export default function DealsPageV2() {
   const [city, setCity] = useState('');
   const [type, setType] = useState('');
   const [sort, setSort] = useState('newest');
+  const [listingTypeFilter, setListingTypeFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const perPage = 12;
@@ -183,11 +185,12 @@ export default function DealsPageV2() {
     }
     if (city) result = result.filter(l => l.city === city);
     if (type) result = result.filter(l => l.type === type);
+    if (listingTypeFilter !== 'all') result = result.filter(l => (l.listing_type || 'rental') === listingTypeFilter);
     if (sort === 'profit') result.sort((a, b) => b.profit - a.profit);
     else if (sort === 'rent') result.sort((a, b) => a.rent - b.rent);
     else result.sort((a, b) => a.daysAgo - b.daysAgo);
     return result;
-  }, [activeTab, city, type, sort, listings, highlightedIds]);
+  }, [activeTab, city, type, sort, listingTypeFilter, listings, highlightedIds]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const pageListings = filtered.slice((page - 1) * perPage, page * perPage);
@@ -254,6 +257,16 @@ export default function DealsPageV2() {
               >
                 <option value="">All types</option>
                 {types.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <select
+                data-feature="DEALS__FILTER_LISTING_TYPE"
+                value={listingTypeFilter}
+                onChange={e => { setListingTypeFilter(e.target.value); setPage(1); }}
+                className="input-nfstay h-8 text-xs pr-7 bg-card"
+              >
+                <option value="all">All listings</option>
+                <option value="rental">Rental only</option>
+                <option value="sale">For Sale only</option>
               </select>
               <select
                 data-feature="DEALS__FILTER_SORT"

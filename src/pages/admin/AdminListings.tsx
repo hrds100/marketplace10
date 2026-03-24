@@ -197,7 +197,7 @@ export default function AdminListings() {
         <table className="w-full text-sm min-w-[900px]">
           <thead>
             <tr className="border-b border-border">
-              {['Name', 'City', 'Rent', 'Profit', 'Status', 'Featured', 'WhatsApp', 'Actions'].map(h => (
+              {['Name', 'City', 'Type', 'Rent', 'Profit', 'Status', 'Featured', 'WhatsApp', 'Actions'].map(h => (
                 <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
               ))}
             </tr>
@@ -207,6 +207,11 @@ export default function AdminListings() {
               <tr key={l.id} className={i % 2 === 1 ? 'bg-secondary' : ''}>
                 <td className="p-3.5 font-medium text-foreground">{l.name}</td>
                 <td className="p-3.5 text-muted-foreground">{l.city}</td>
+                <td className="p-3.5">
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full text-white ${(l as Record<string, unknown>).listing_type === 'sale' ? 'bg-emerald-600' : 'bg-[#1E9A80]'}`}>
+                    {(l as Record<string, unknown>).listing_type === 'sale' ? 'Sale' : 'Rental'}
+                  </span>
+                </td>
                 <td className="p-3.5 text-foreground">£{l.rent_monthly.toLocaleString()}</td>
                 <td className="p-3.5 text-accent-foreground font-medium">£{l.profit_est}</td>
                 <td className="p-3.5">
