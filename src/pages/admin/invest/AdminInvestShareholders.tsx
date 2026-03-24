@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { SUBGRAPHS } from '@/lib/particle';
+import { SUBGRAPHS, CONTRACTS } from '@/lib/particle';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
