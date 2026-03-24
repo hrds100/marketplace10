@@ -4,6 +4,7 @@ import { useInvestProperties, useMyAffiliateProfile } from '@/hooks/useInvestDat
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
+import { useWalletGate } from '@/components/WalletProvisioner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -1812,6 +1813,7 @@ function Version2({
 export default function InvestMarketplacePage() {
   const { user } = useAuth();
   const { address: walletAddress, connecting: walletConnecting } = useWallet();
+  const { requireWallet } = useWalletGate();
   const { data: allProperties, isLoading } = useInvestProperties();
   const dbProperty = allProperties?.[0] || null;
 
@@ -1948,8 +1950,12 @@ export default function InvestMarketplacePage() {
   // SamCart "Pembroke Place" product (ID 1003039, pay-what-you-want, min $500)
   const SAMCART_PRODUCT_SLUG = '1';
 
-  const handleInvest = () => {
+  const handleInvest = async () => {
     if (!property) return;
+
+    // Gate: require wallet verification before any investment
+    const ok = await requireWallet('To become a partner, you must verify your account. Click continue and enter the email you used to register.');
+    if (!ok) return;
 
     if (paymentMethod === 'card') {
       // Guard: wallet must be loaded before opening SamCart (amount is entered once in SamCart PWYW)

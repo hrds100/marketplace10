@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useWalletGate } from '@/components/WalletProvisioner';
 
 const BASE_URL = 'https://hub.nfstay.com';
 
@@ -44,6 +45,7 @@ export default function AffiliatesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: realAffProfile } = useMyAffiliateProfile();
+  const { requireWallet } = useWalletGate();
   // TODO: Wire realAffProfile to replace mock affiliate data when available
   const [copied, setCopied] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
@@ -224,7 +226,9 @@ export default function AffiliatesPage() {
   const referralLink = profile ? `${BASE_URL}/signup?ref=${profile.referral_code}` : '';
   const isAgent = !!profile;
 
-  const copyLink = () => {
+  const copyLink = async () => {
+    const ok = await requireWallet('To get your affiliate link, you must verify your email. Click continue and enter the email you used to register.');
+    if (!ok) return;
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
