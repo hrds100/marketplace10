@@ -187,7 +187,7 @@
   position: relative;
 }
 
-/* Rainbow gradient border that rotates around the input */
+/* Single green line that travels around the input border */
 .chat-input-glow {
   position: absolute;
   left: 12px;
@@ -197,12 +197,11 @@
   border-radius: 20px;
   padding: 2px;
   background: conic-gradient(from var(--glow-angle, 0deg),
-    #f9a8d4, #c084fc, #818cf8, #38bdf8, #34d399,
-    #fbbf24, #fb923c, #f87171, #f9a8d4);
+    transparent 0%, transparent 85%, #1E9A80 93%, #1E9A80 100%);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0.6;
+  opacity: 0.8;
   animation: rotateGlow 3s linear infinite;
   pointer-events: none;
   z-index: 0;
@@ -221,7 +220,7 @@
 
 .chat-input-container {
   background: white;
-  border: 1px solid rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.03);
   border-radius: 18px;
   padding: 18px 22px;
   padding-right: 100px;

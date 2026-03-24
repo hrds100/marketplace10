@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ========================================
-  // 5. TYPEWRITER
+  // 5. TYPEWRITER + TYPING SOUND
   // ========================================
   const IDLE_PLACEHOLDERS = [
     'Ask the landlord about viewings…',
@@ -125,6 +125,37 @@ document.addEventListener('DOMContentLoaded', () => {
     'Ask the landlord about serviced accommodation terms…',
   ];
   let placeholderIdx = 0;
+
+  // Subtle keyboard click sound via Web Audio API
+  const typingSoundCtx = new (window.AudioContext || window.webkitAudioContext)();
+  let lastTypeSoundTime = 0;
+  function playTypingSound() {
+    try {
+      const now = typingSoundCtx.currentTime;
+      if (now - lastTypeSoundTime < 0.05) return; // throttle to ~60ms
+      lastTypeSoundTime = now;
+      // Short noise burst to simulate soft key click
+      const bufferSize = typingSoundCtx.sampleRate * 0.012; // 12ms
+      const buffer = typingSoundCtx.createBuffer(1, bufferSize, typingSoundCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 8);
+      }
+      const source = typingSoundCtx.createBufferSource();
+      source.buffer = buffer;
+      const gain = typingSoundCtx.createGain();
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+      const filter = typingSoundCtx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 2000;
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(typingSoundCtx.destination);
+      source.start(now);
+      source.stop(now + 0.015);
+    } catch (e) { /* silent fallback */ }
+  }
 
   function typeText(text, speed = 40) {
     return new Promise(resolve => {
@@ -135,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
       typewriterInterval = setInterval(() => {
         if (i < text.length) {
           typewriterEl.textContent = text.slice(0, i + 1);
+          playTypingSound();
           i++;
         } else {
           clearInterval(typewriterInterval);
@@ -260,6 +292,38 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ========================================
+  // 8b. CLICK RIPPLE EFFECT
+  // ========================================
+  function createClickRipple(targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    const containerRect = demoComponent.getBoundingClientRect();
+    const cx = rect.left - containerRect.left + rect.width / 2;
+    const cy = rect.top - containerRect.top + rect.height / 2;
+
+    for (let i = 0; i < 3; i++) {
+      const ring = document.createElement('div');
+      ring.style.cssText = `
+        position:absolute; left:${cx}px; top:${cy}px;
+        width:0; height:0; border-radius:50%;
+        border:2px solid #1E9A80;
+        pointer-events:none; z-index:100;
+        transform:translate(-50%,-50%);
+        opacity:0.6;
+      `;
+      demoComponent.appendChild(ring);
+      gsap.to(ring, {
+        width: 80 + i * 30,
+        height: 80 + i * 30,
+        opacity: 0,
+        duration: 0.8,
+        delay: i * 0.15,
+        ease: 'power2.out',
+        onComplete: () => ring.remove(),
+      });
+    }
+  }
+
+  // ========================================
   // 9. SLIDER & COUNTER HELPERS
   // ========================================
   // ========================================
@@ -336,9 +400,11 @@ document.addEventListener('DOMContentLoaded', () => {
       await delay(2000);
     }
 
-    // --- DESKTOP STEP 2: CLICK "INQUIRE NOW" (4-7s) ---
+    // --- DESKTOP STEP 2: CLICK "INQUIRE NOW" with ripple (4-7s) ---
     if (inquireBtn1) {
       await clickCursorOn(inquireBtn1);
+      // Ripple effect on button
+      createClickRipple(inquireBtn1);
       inquireBtn1.textContent = '✓ Inquiry Sent';
       inquireBtn1.style.background = '#1e9a80';
       inquireBtn1.style.color = 'white';
@@ -349,40 +415,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
     hideCursor();
 
-    // --- DESKTOP STEP 3: START CHATTING ---
+    // --- DESKTOP STEP 3: START CHATTING (8 messages) ---
     switchPreview('inbox');
-    setProgress(40);
+    setProgress(35);
     await delay(800);
 
-    // Type inquiry
-    await typeText('Is this property available for Airbnb?', 50);
-    await delay(400);
-    await addMessage('me', 'Is this property available for Airbnb?');
-    clearTypewriter();
-    setProgress(50);
-    await delay(1500);
-
-    // Landlord typing...
-    await showTypingIndicator('them');
-    await delay(1500);
-    await addMessage('them', 'Yes it is! The landlord has approved it for short-term lets. Would you like to arrange a viewing?');
-    setProgress(60);
-    await delay(2000);
-
-    // Type viewing request
-    await typeText('Tomorrow at 5pm works for me!', 50);
-    await delay(400);
-    await addMessage('me', 'Tomorrow at 5pm works for me!');
-    clearTypewriter();
-    setProgress(70);
-    await delay(1000);
-
-    // Landlord typing...
+    // 1. Them: inquiry
     await showTypingIndicator('them');
     await delay(1200);
-    await addMessage('them', 'Perfect! You\'re booked in for 5pm tomorrow. See you then! 🎉');
+    await addMessage('them', 'Hi! I saw the 2-bed in Ancoats. Is it available for Airbnb?');
+    setProgress(40);
+    await delay(1200);
+
+    // 2. Me: response
+    await typeText('Yes! Landlord approved. Rent £850, est. profit £1,200/mo.', 45);
+    await delay(300);
+    await addMessage('me', 'Yes! Landlord approved. Rent £850, est. profit £1,200/mo.');
+    clearTypewriter();
+    setProgress(45);
+    await delay(1200);
+
+    // 3. Them: viewing question
+    await showTypingIndicator('them');
+    await delay(1200);
+    await addMessage('them', 'That sounds great. When can I arrange a viewing?');
+    setProgress(50);
+    await delay(1000);
+
+    // 4. Me: offer dates
+    await typeText('Thursday or Friday - which works for you?', 45);
+    await delay(300);
+    await addMessage('me', 'Thursday or Friday - which works for you?');
+    clearTypewriter();
+    setProgress(55);
+    await delay(1000);
+
+    // 5. Them: pick time
+    await showTypingIndicator('them');
+    await delay(1000);
+    await addMessage('them', 'Tomorrow 5pm works for me, perfect!');
+    setProgress(60);
+    await delay(1000);
+
+    // 6. Me: confirm
+    await typeText('Tomorrow 5pm confirmed, right?', 45);
+    await delay(300);
+    await addMessage('me', 'Tomorrow 5pm confirmed, right?');
+    clearTypewriter();
+    setProgress(65);
+    await delay(1000);
+
+    // 7. Them: WhatsApp request
+    await showTypingIndicator('them');
+    await delay(1400);
+    await addMessage('them', 'Yes! Please can you just send me a message on my WhatsApp and I will share the address.');
+    setProgress(72);
+    await delay(1200);
+
+    // 8. Me: closing
+    await typeText('Okay, thank you, I\'ll text you now.', 45);
+    await delay(300);
+    await addMessage('me', 'Okay, thank you, I\'ll text you now.');
+    clearTypewriter();
     setProgress(80);
-    await delay(2000);
+    await delay(1500);
 
     // --- STEP 4: SHOW PIPELINE + DRAG DEAL (16-24s) ---
     switchPreview('crm');
@@ -534,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await delay(1200);
     }
 
-    // Click the button
+    // Click the button with ripple
     const mBtn = document.getElementById('mobileInquireBtn');
     if (mBtn) {
       // Cursor click animation
@@ -557,7 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await showMobileScreen(`
       <div style="width:100%;max-width:320px;height:100%;display:flex;flex-direction:column;">
         <div style="font-size:10px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Conversation</div>
-        <div style="border:1px solid #e8e5df;border-radius:16px;background:#fafafa;padding:16px;display:flex;flex-direction:column;gap:10px;flex:1;" id="mobileChatArea">
+        <div style="border:1px solid #e8e5df;border-radius:16px;background:#fafafa;padding:16px;display:flex;flex-direction:column;gap:10px;flex:1;overflow-y:auto;" id="mobileChatArea">
           <div style="padding:10px;font-size:13px;font-weight:600;color:#1a1a1a;border-bottom:1px solid #f3f4f6;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
             <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;"><img src="https://i.pravatar.cc/56?img=12" style="width:100%;height:100%;object-fit:cover;" alt=""></div>
             James Thornton <span style="font-size:9px;font-weight:600;color:#1e9a80;background:rgba(30,154,128,0.1);padding:2px 6px;border-radius:100px;margin-left:auto;">2-Bed, Ancoats</span>
@@ -565,10 +661,16 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
     `);
-    setProgress(40);
+    setProgress(35);
 
     // Type messages one by one into the chat area
     const chatArea = document.getElementById('mobileChatArea');
+    function makeMobileDots() {
+      const d = document.createElement('div');
+      d.style.cssText = 'display:flex;gap:3px;padding:8px 12px;align-self:flex-start;';
+      d.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite;"></span><span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite 0.15s;"></span><span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite 0.3s;"></span>';
+      return d;
+    }
     async function addMobileBubble(from, text, delayMs) {
       const bubble = document.createElement('div');
       const isMe = from === 'me';
@@ -576,33 +678,46 @@ document.addEventListener('DOMContentLoaded', () => {
         (isMe ? 'background:#1e9a80;color:#fff;border-bottom-right-radius:4px;align-self:flex-end;margin-left:auto;' : 'background:#fff;border:1px solid #e8e5df;border-bottom-left-radius:4px;color:#1a1a1a;');
       bubble.textContent = text;
       chatArea.appendChild(bubble);
+      chatArea.scrollTop = chatArea.scrollHeight;
       requestAnimationFrame(() => { bubble.style.opacity = '1'; bubble.style.transform = 'translateY(0)'; });
       playMessageSound();
       await delay(delayMs);
     }
 
-    await addMobileBubble('me', 'Is this available for Airbnb?', 1200);
+    // 1. Them
+    let dots = makeMobileDots(); chatArea.appendChild(dots); await delay(1000); dots.remove();
+    await addMobileBubble('them', 'Hi! I saw the 2-bed in Ancoats. Is it available for Airbnb?', 1000);
+    setProgress(40);
+
+    // 2. Me
+    await addMobileBubble('me', 'Yes! Landlord approved. Rent £850, est. profit £1,200/mo.', 1000);
+    setProgress(45);
+
+    // 3. Them
+    dots = makeMobileDots(); chatArea.appendChild(dots); await delay(1000); dots.remove();
+    await addMobileBubble('them', 'That sounds great. When can I arrange a viewing?', 1000);
     setProgress(50);
 
-    // Typing dots
-    const dots = document.createElement('div');
-    dots.style.cssText = 'display:flex;gap:3px;padding:8px 12px;align-self:flex-start;';
-    dots.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite;"></span><span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite 0.15s;"></span><span style="width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typingBounce 1.4s ease-in-out infinite 0.3s;"></span>';
-    chatArea.appendChild(dots);
-    await delay(1200);
-    dots.remove();
+    // 4. Me
+    await addMobileBubble('me', 'Thursday or Friday - which works for you?', 800);
+    setProgress(55);
 
-    await addMobileBubble('them', 'Yes! Landlord approved. Would you like to arrange a viewing?', 1500);
+    // 5. Them
+    dots = makeMobileDots(); chatArea.appendChild(dots); await delay(800); dots.remove();
+    await addMobileBubble('them', 'Tomorrow 5pm works for me, perfect!', 800);
     setProgress(60);
-    await addMobileBubble('me', 'Tomorrow at 5pm works!', 1000);
-    setProgress(70);
 
-    const dots2 = dots.cloneNode(true);
-    chatArea.appendChild(dots2);
-    await delay(1000);
-    dots2.remove();
+    // 6. Me
+    await addMobileBubble('me', 'Tomorrow 5pm confirmed, right?', 800);
+    setProgress(65);
 
-    await addMobileBubble('them', 'Booked! See you at 5pm tomorrow. 🎉', 2000);
+    // 7. Them
+    dots = makeMobileDots(); chatArea.appendChild(dots); await delay(1000); dots.remove();
+    await addMobileBubble('them', 'Yes! Please can you just send me a message on my WhatsApp and I will share the address.', 1000);
+    setProgress(72);
+
+    // 8. Me
+    await addMobileBubble('me', 'Okay, thank you, I\'ll text you now.', 1500);
     setProgress(80);
 
     // SCREEN 3: Full-screen pipeline with deals + drag animation
