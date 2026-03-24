@@ -59,7 +59,8 @@ MANDATORY PROCESS:
 5. Only report back when everything works e2e and ALL tests pass
 6. Run npx tsc --noEmit - zero errors
 7. Push your branch
-8. Report: what you did, which files changed, branch name, test results
+8. After merge, run Playwright LIVE SITE TEST against production URLs (hub.nfstay.com / nfstay.app) - NON-NEGOTIABLE
+9. Report: what you did, which files changed, branch name, test results + live test results
 ```
 
 ## Anti-overlap rules (critical)
