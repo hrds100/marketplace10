@@ -59,15 +59,15 @@ export default function WalletProvisioner() {
   const handleConnect = async () => {
     try {
       await connectWallet();
-      toast.success('Wallet connected!');
+      toast.success('Account verified!');
     } catch {
-      toast.error('Wallet setup failed. You can try again in Settings.');
+      toast.error('Verification incomplete. Please try again.');
     }
   };
 
   return (
     <Dialog open={showModal} onOpenChange={() => { /* prevent closing — verification is required */ }}>
-      <DialogContent className="max-w-[400px]" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+      <DialogContent className="max-w-[400px] [&>button[class*='close']]:hidden [&>button:last-of-type]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <CheckCircle2 className="w-5 h-5" style={{ color: '#1E9A80' }} />
