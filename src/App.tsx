@@ -100,6 +100,23 @@ if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
 
 const queryClient = new QueryClient();
 
+// Auto-reload on stale chunk error (happens after Vercel deploys new build)
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (e) => {
+    const msg = String(e.reason?.message || e.reason || '');
+    if (msg.includes('Failed to fetch dynamically imported module') || msg.includes('Importing a module script failed')) {
+      // Only reload once to avoid infinite loop
+      const key = 'chunk_reload';
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+      }
+    }
+  });
+  // Clear the flag on successful page load
+  sessionStorage.removeItem('chunk_reload');
+}
+
 // Detect GHL payment redirect: ?payment=success
 // GHL thank-you page redirects to hub.nfstay.com/dashboard/inbox?payment=success
 if (typeof window !== 'undefined') {
