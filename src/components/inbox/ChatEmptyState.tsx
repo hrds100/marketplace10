@@ -26,6 +26,20 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fallbackImage = `https://picsum.photos/seed/${thread.id.slice(0, 8)}/160/160`;
 
+  // Earnings slider state — mirrors EarningsEstimator logic
+  const monthlyRent = thread.propertyRent || 0;
+  const [nightsBooked, setNightsBooked] = useState(27);
+  const [nightlyRate] = useState(() => {
+    const profit = thread.propertyProfit || 0;
+    if (profit > 0 && monthlyRent > 0) {
+      return Math.max(20, Math.min(500, Math.round((monthlyRent + profit) / 27)));
+    }
+    return 85;
+  });
+  const estimatedRevenue = nightsBooked * nightlyRate;
+  const estimatedProfit = Math.max(0, estimatedRevenue - monthlyRent);
+  const sliderPercent = ((nightsBooked - 5) / 25) * 100;
+
   // Typewriter effect
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [charIdx, setCharIdx] = useState(0);
@@ -84,25 +98,56 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
         <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${thread.isOnline ? 'bg-emerald-500' : 'bg-gray-300'}`} />
       </div>
 
+      {/* Subtitle */}
+      <p className="text-sm text-[#6B7280] text-center">
+        Message the landlord or agent
+      </p>
+
       {/* Property row */}
       <button data-feature="CRM_INBOX__EMPTY_CTA" onClick={onOpenDetails}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors max-w-md">
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors max-w-md -mt-1">
         <span className="truncate">{propertyLine}</span>
         <ChevronRight className="w-3 h-3 shrink-0 text-gray-400" />
       </button>
 
-      {/* Headline — earnings copy with real amount (live from estimator when right panel is open) */}
-      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 text-center max-w-2xl leading-[1.05] tracking-tight">
-        You could earn{' '}
-        <span className="text-emerald-600">£{(displayProfit != null ? displayProfit : thread.propertyProfit || 0).toLocaleString()}</span>
-        <br />
-        hosting this property on Airbnb
-      </h2>
+      {/* Earnings estimate with slider */}
+      <div className="w-full max-w-md space-y-3">
+        <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A] text-center leading-tight">
+          You could earn{' '}
+          <span className="text-[#1E9A80]">£{estimatedProfit.toLocaleString()}/month</span>
+        </h2>
 
-      {/* Supporting copy */}
-      <p className="text-base text-muted-foreground text-center max-w-sm">
-        Message the landlord or agent and ask what matters first.
-      </p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[#6B7280]">Nights booked / month</span>
+            <span className="text-xs font-semibold text-[#1E9A80] bg-[#ECFDF5] px-2 py-0.5 rounded-full">{nightsBooked} nights</span>
+          </div>
+          <input
+            type="range"
+            min={5}
+            max={30}
+            step={1}
+            value={nightsBooked}
+            onChange={e => setNightsBooked(parseInt(e.target.value))}
+            className="w-full h-1.5 rounded-full appearance-none cursor-pointer outline-none"
+            style={{
+              background: `linear-gradient(to right, #1E9A80 0%, #1E9A80 ${sliderPercent}%, #E5E7EB ${sliderPercent}%, #E5E7EB 100%)`,
+            }}
+          />
+          <div className="flex justify-between text-[10px] text-[#9CA3AF]">
+            <span>5 nights</span>
+            <span>30 nights</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-3 text-xs text-[#6B7280]">
+          <span>Nightly: £{nightlyRate}</span>
+          <span className="text-[#E5E7EB]">·</span>
+          <span>Rent: £{monthlyRent.toLocaleString()}</span>
+          <span className="text-[#E5E7EB]">·</span>
+          <span className="font-semibold text-[#1E9A80]">Profit: £{estimatedProfit.toLocaleString()}</span>
+        </div>
+      </div>
 
       {/* Composer box */}
       <div className="w-full max-w-[900px] mt-3">
