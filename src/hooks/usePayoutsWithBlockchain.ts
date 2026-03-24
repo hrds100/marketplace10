@@ -126,7 +126,7 @@ export function usePayoutsWithBlockchain() {
                 payouts.push({
                   propertyId: blockchainPropertyId, // Must be blockchain ID, not Supabase row ID
                   propertyTitle: prop.title || 'Property',
-                  propertyImage: prop.image || '',
+                  propertyImage: prop.photos?.[0] || prop.image || '',
                   sharesOwned,
                   rentPerShare,
                   totalRent,
@@ -217,7 +217,7 @@ export function usePayoutsWithBlockchain() {
         const propMap = new Map<number, { id: number; title: string; image: string }>();
         for (const p of allProperties as any[]) {
           if (p.blockchain_property_id != null) {
-            propMap.set(Number(p.blockchain_property_id), { id: p.id, title: p.title || 'Property', image: p.image || '' });
+            propMap.set(Number(p.blockchain_property_id), { id: p.id, title: p.title || 'Property', image: p.photos?.[0] || p.image || '' });
           }
         }
 
@@ -289,7 +289,7 @@ export function usePayoutsWithBlockchain() {
       items.push({
         id: p.id,
         propertyTitle: p.inv_properties?.title || 'Property',
-        propertyImage: p.inv_properties?.image || '',
+        propertyImage: (p.inv_properties as any)?.photos?.[0] || p.inv_properties?.image || '',
         propertyId: p.property_id,
         date: p.period_date,
         sharesOwned: p.shares_owned || 0,

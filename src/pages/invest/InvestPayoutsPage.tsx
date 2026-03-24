@@ -635,7 +635,7 @@ export default function InvestPayoutsPage() {
     payouts.push({
       id: `claim-${c.id}`,
       propertyTitle: firstProperty?.title || 'Bank Transfer',
-      propertyImage: firstProperty?.image || '',
+      propertyImage: (firstProperty as any)?.photos?.[0] || firstProperty?.image || '',
       propertyId: firstProperty?.id || 0,
       date: c.paid_at || c.created_at,
       sharesOwned: 0,
