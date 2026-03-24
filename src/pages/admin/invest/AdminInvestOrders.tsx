@@ -233,6 +233,7 @@ export default function AdminInvestOrders() {
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Referrer</TableHead>
                 <TableHead>Tx Hash</TableHead>
                 <TableHead>Date & time</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -264,6 +265,13 @@ export default function AdminInvestOrders() {
                     <Badge variant="outline" className={cn('text-xs capitalize', statusColors[o.status] || '')}>
                       {o.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-[11px] max-w-[140px] truncate" title={o.agent_wallet || undefined}>
+                    {o.agent_wallet ? (
+                      <span>{o.agent_wallet.slice(0, 6)}...{o.agent_wallet.slice(-4)}</span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {o.tx_hash ? (

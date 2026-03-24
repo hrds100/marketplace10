@@ -109,12 +109,19 @@ export function useInvestOrders() {
       if (error) throw error;
       const list = orders || [];
       if (list.length === 0) return [];
-      const ids = [...new Set(list.map((o: { user_id: string }) => o.user_id).filter(Boolean))];
+      const userIds = [...new Set(list.map((o: { user_id: string }) => o.user_id).filter(Boolean))];
+      const agentIds = [...new Set(list.map((o: { agent_id: string | null }) => o.agent_id).filter(Boolean))] as string[];
+      const allIds = [...new Set([...userIds, ...agentIds])];
       const { data: profs, error: pe } = await (supabase.from('profiles') as any)
         .select('id, email, wallet_address, name, whatsapp')
-        .in('id', ids);
+        .in('id', allIds);
       if (pe) throw pe;
-      return mergeBuyerEmailsIntoOrders(list, profs || []);
+      const profMap = new Map((profs || []).map((p: any) => [p.id, p]));
+      const merged = mergeBuyerEmailsIntoOrders(list, profs || []);
+      return merged.map((o: any) => {
+        const agent = o.agent_id ? profMap.get(o.agent_id) : null;
+        return { ...o, agent_wallet: agent?.wallet_address || '', agent_email: agent?.email || '' };
+      });
     },
   });
 }
