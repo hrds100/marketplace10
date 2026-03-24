@@ -113,6 +113,36 @@ export default function DealDetail() {
     : Array.from({ length: 5 }, (_, i) => `https://placehold.co/1200x900/1a1a2e/ffffff?text=${encodeURIComponent(city || 'Property')}-${i + 1}`);
   const images = [...userPhotos, ...stockImages.slice(0, 5 - userPhotos.length)].slice(0, 5);
 
+  // More deals (newest globally, excluding current)
+  const { data: moreDeals = [] } = useQuery({
+    queryKey: ['more-deals', id],
+    queryFn: async () => {
+      const { data } = await (supabase.from('properties') as any)
+        .select('*')
+        .neq('id', id!)
+        .eq('status', 'live')
+        .order('created_at', { ascending: false })
+        .limit(3);
+      return (data || []).map((p: Record<string, unknown>) => ({
+        id: p.id as string,
+        name: p.name as string,
+        city: p.city as string,
+        postcode: p.postcode as string,
+        rent: (p.rent_monthly as number) || 0,
+        profit: (p.profit_est as number) || 0,
+        type: p.type as string,
+        status: (p.status as 'live' | 'on-offer' | 'inactive') || 'inactive',
+        featured: !!p.featured,
+        prime: !!p.prime,
+        daysAgo: Math.max(0, Math.floor((Date.now() - new Date(p.created_at as string).getTime()) / 86400000)),
+        image: ((p.photos as string[] | null)?.[0]) || `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent((p.city as string) || 'Property')}`,
+        landlordApproved: p.sa_approved === 'yes',
+        landlordWhatsapp: (p.landlord_whatsapp as string) || null,
+      })) as ListingShape[];
+    },
+    enabled: !!id,
+  });
+
   // Nearby deals from Supabase (same city, live only)
   const { data: nearbyDeals = [] } = useQuery({
     queryKey: ['nearby-deals', city, id],
@@ -259,14 +289,12 @@ export default function DealDetail() {
         </div>
 
         {/* Photo grid */}
-        <div data-feature="DEALS__DETAIL_PHOTOS" className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 rounded-2xl overflow-hidden mb-8">
-          <img src={images[0]} className="w-full h-[300px] md:h-[400px] object-cover cursor-pointer" alt="" onClick={() => { setGalleryIdx(0); setShowGallery(true); }} />
-          <div className="grid grid-rows-2 gap-2">
-            <img src={images[1]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={() => { setGalleryIdx(1); setShowGallery(true); }} />
-            <div className="relative">
-              <img src={images[2]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={() => { setGalleryIdx(2); setShowGallery(true); }} />
-              <button onClick={() => setShowGallery(true)} className="absolute bottom-3 right-3 bg-card/90 backdrop-blur-sm text-sm font-medium px-3 py-1.5 rounded-lg border border-border">Show all photos</button>
-            </div>
+        <div data-feature="DEALS__DETAIL_PHOTOS" className="grid grid-cols-1 md:grid-cols-[2fr_1fr] md:grid-rows-2 gap-2 rounded-2xl overflow-hidden mb-8 md:h-[400px]">
+          <img src={images[0]} className="w-full h-[300px] md:h-full md:row-span-2 object-cover cursor-pointer" alt="" onClick={() => { setGalleryIdx(0); setShowGallery(true); }} />
+          <img src={images[1]} className="w-full h-full object-cover cursor-pointer hidden md:block" alt="" onClick={() => { setGalleryIdx(1); setShowGallery(true); }} />
+          <div className="relative hidden md:block">
+            <img src={images[2]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={() => { setGalleryIdx(2); setShowGallery(true); }} />
+            <button onClick={() => setShowGallery(true)} className="absolute bottom-3 right-3 bg-card/90 backdrop-blur-sm text-sm font-medium px-3 py-1.5 rounded-lg border border-border">Show all photos</button>
           </div>
         </div>
 
@@ -405,6 +433,18 @@ export default function DealDetail() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* More deals you might be interested in */}
+        {moreDeals.length > 0 && (
+          <section data-feature="DEALS__DETAIL_MORE_DEALS" className="mt-12 mb-8">
+            <h2 className="text-xl font-bold text-foreground mb-6">More deals you might be interested in</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {moreDeals.map(l => (
+                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} />
+              ))}
+            </div>
+          </section>
         )}
       </div>
 
