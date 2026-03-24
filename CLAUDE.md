@@ -104,3 +104,7 @@ Tell the commander what you want done. Example:
 - Each worker gets its OWN branch
 - LOCKED files are never assigned to workers
 - Shared files (App.tsx, main.tsx) are commander-only
+
+## Cross-Repo Coordination
+
+marketplace10 and bookingsite share Supabase. Read `docs/CROSS_REPO_COORDINATION.md` before making changes to shared tables (nfs_*, profiles), auth flows, or edge functions. Deploy marketplace10 first, bookingsite second.
