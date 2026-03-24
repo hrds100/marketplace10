@@ -30,6 +30,7 @@ You are writing and running tests for hub.nfstay.com.
 4. Actively hunt for edge cases and regressions
 5. Only report back when everything works end-to-end and ALL tests pass
 6. Run `npx tsc --noEmit` before pushing - zero errors required
+7. After merge, run Playwright LIVE SITE TEST against production (hub.nfstay.com / nfstay.app) - NON-NEGOTIABLE
 
 ## Before you start
 1. Read `feature-map.json` to understand what was changed
