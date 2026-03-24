@@ -191,3 +191,27 @@ Never push directly to main. Hugo merges when ready.
 
 *For the main project rules, see `docs/AGENT_INSTRUCTIONS.md`.*
 *For boundaries, see `docs/invest/BOUNDARIES.md`.*
+
+---
+
+## Feature Map System (added 2026-03-24)
+
+A feature map is live at `feature-map.json` (project root).
+Every file in this repo is assigned to a named feature session.
+Some files are marked `locked: true` -- do not touch without
+coordinating with Hugo first.
+
+### Rules for all agents
+1. Check `feature-map.json` before touching any file.
+2. Never modify files outside the active feature scope.
+3. Never opportunistically refactor unrelated code.
+4. Always state which file you are editing before editing it.
+5. Cross-feature changes: describe in plain text only, ask Hugo first.
+6. Use `AI_SESSION_TEMPLATE.md` (project root) to scope every task.
+7. LOCKED files must not be modified without Hugo's approval.
+
+### Your feature scope
+- Investment agent: your files are tagged INVEST, INVEST__*,
+  and ADMIN__INVEST in feature-map.json.
+- Main agent: all sessions in scope -- feature-map.json defines
+  the boundary per task.
