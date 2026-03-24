@@ -70,14 +70,20 @@ MANDATORY PROCESS:
 4. **LOCKED files in feature-map.json** - never assign these to any worker.
 5. **Shared files** (App.tsx, main.tsx, vite.config.ts) - never assign to workers. Only you (the commander) touch shared files, and only after workers finish.
 
-## Assigning roles
+## Assigning roles (automatic — Hugo never picks)
 
-Pick the right role file based on the task:
-- UI/design work → `docs/roles/ui-designer.md`
-- Bug fix → `docs/roles/bug-fixer.md`
-- New feature or enhancement → `docs/roles/feature-builder.md`
-- Testing → `docs/roles/tester.md`
-- Mixed/unclear → `docs/roles/feature-builder.md` (default)
+Hugo just says what he wants. You detect the type of work and assign the role automatically. Hugo never needs to know or say which role to use.
+
+| Hugo says something like... | You assign |
+|---|---|
+| "fix", "broken", "not working", "bug" | `docs/roles/bug-fixer.md` |
+| "redesign", "make it look", "spacing", "colour", "mobile" | `docs/roles/ui-designer.md` |
+| "add", "build", "create", "new feature", "implement" | `docs/roles/feature-builder.md` |
+| "test", "check if", "verify", "make sure", "write tests" | `docs/roles/tester.md` |
+| "audit", "review", "check all pages", "what's missing", "trace" | `docs/roles/auditor.md` |
+| Mixed or unclear | `docs/roles/feature-builder.md` (default) |
+
+If a task needs multiple roles (e.g. "fix the bug and test it"), create two workers — one bug-fixer, one tester.
 
 ## Reporting to Hugo
 
@@ -99,9 +105,43 @@ NEXT STEPS:
 [what Hugo needs to do - usually "say merge to main"]
 ```
 
+## Rules every worker must follow
+
+These are included in every worker prompt automatically:
+
+### Legacy reference rule
+When fixing bugs or working on features that existed before, workers must check the `legacy/` folder first. Legacy is reference-only — never copy files from it. Workers must say either:
+- "I checked legacy and found how this used to work"
+- "I checked legacy and did not find a reliable reference"
+
+### End-to-end trace rule
+For any bug or broken flow, trace the full path before fixing:
+Entry UI, component state, hooks, API/Supabase calls, wallet state (if investment), contract read/write (if investment), success/error handling, displayed output.
+
+### Evidence-first rule
+Before asking any question, try to answer it by inspecting code, docs, config, runtime flow, legacy behavior, and contract surfaces. If a question can be answered by inspection, inspect it.
+
+### Smart contract rule (investment module only)
+Workers on INVEST features must verify behavior against live contracts. Do not assume or invent contract behavior. Contract addresses are listed in `docs/roles/auditor.md`.
+
+### DONE format
+Every worker must end their report with:
+```
+DONE
+What: [one sentence]
+Files: [list of files modified]
+Build: pass/fail
+Test: [Playwright result + preview URL]
+```
+
+### Project isolation (bookingsite workers)
+Workers assigned to bookingsite must never touch, read, or import from marketplace10. Hard boundary.
+
 ## Your rules
 1. Hugo is not a developer. Explain everything in plain English.
-2. Never start workers before confirming the task split with Hugo.
+2. Never start workers before confirming the task split with Hugo (unless auto-approve mode).
 3. If two tasks might touch the same files, flag it and ask Hugo how to sequence them.
 4. If a worker fails or gets stuck, diagnose the issue yourself before asking Hugo.
 5. After all workers finish, review their branches for conflicts before telling Hugo to merge.
+6. Hugo never picks the role. You detect the work type and assign automatically.
+7. Hugo never needs to know technical details. Filter everything into plain English.
