@@ -7,6 +7,25 @@
 //
 // Rule: social login always uses PARTICLE_LEGACY_CONFIG so legacy wallets are recovered.
 
+// Shared branding for all Particle popups
+export const PARTICLE_CUSTOM_STYLE = {
+  projectName: 'nfstay',
+  subtitle: 'Verify your account to continue',
+  logo: 'https://hub.nfstay.com/og-preview.png',
+  modalBorderRadius: 16,
+  primaryBtnBorderRadius: 10,
+  theme: {
+    light: {
+      primaryBtnColor: '#ffffff',
+      primaryBtnBackgroundColor: '#1E9A80',
+      textColor: '#1A1A1A',
+      secondaryTextColor: '#6B7280',
+      themeBackgroundColor: '#ffffff',
+      accentColor: '#1E9A80',
+    },
+  },
+};
+
 // Legacy project — social login (Google, Apple, Twitter, Facebook)
 export const PARTICLE_LEGACY_CONFIG = {
   projectId: '4f8aca10-0c7e-4617-bfff-7ccb5269f365',

@@ -130,7 +130,7 @@ async function restoreParticleSocialSession(authMethod: string) {
   try {
     const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
     const { bsc } = await import('@particle-network/authkit/chains');
-    const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
+    const { PARTICLE_LEGACY_CONFIG, PARTICLE_CUSTOM_STYLE } = await import('@/lib/particle');
     const pa = particleAuth as any;
 
     try {
@@ -139,6 +139,7 @@ async function restoreParticleSocialSession(authMethod: string) {
         clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
         appId: PARTICLE_LEGACY_CONFIG.appId,
         chains: [bsc],
+        customStyle: PARTICLE_CUSTOM_STYLE,
       });
     } catch { /* already initialized */ }
 
@@ -166,7 +167,7 @@ async function restoreParticleSession(userId: string) {
   try {
     const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
     const { bsc } = await import('@particle-network/authkit/chains');
-    const { PARTICLE_CONFIG } = await import('@/lib/particle');
+    const { PARTICLE_CONFIG, PARTICLE_CUSTOM_STYLE } = await import('@/lib/particle');
     const pa = particleAuth as any;
 
     try {
@@ -175,6 +176,7 @@ async function restoreParticleSession(userId: string) {
         clientKey: PARTICLE_CONFIG.clientKey,
         appId: PARTICLE_CONFIG.appId,
         chains: [bsc],
+        customStyle: PARTICLE_CUSTOM_STYLE,
       });
     } catch { /* already initialized */ }
 
