@@ -86,8 +86,6 @@ import NfsVerifyEmailPage from "./pages/NfsVerifyEmailPage";
 import NfsAuthCallbackPage from "./pages/NfsAuthCallbackPage";
 import ParticleAuthCallback from "./pages/ParticleAuthCallback";
 import { NfsCurrencyProvider } from "./contexts/NfsCurrencyContext";
-import NfsWhiteLabelProvider from "./components/nfstay/white-label/NfsWhiteLabelProvider";
-import NfsWhiteLabelRouter from "./components/nfstay/white-label/NfsWhiteLabelRouter";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -125,8 +123,6 @@ const App = () => (
       <BrowserRouter>
       <FavouritesProvider>
       <NfsCurrencyProvider>
-      <NfsWhiteLabelProvider>
-      <NfsWhiteLabelRouter>
         <Routes>
           {/* "/" is served by the static landing page (public/landing/index.html) */}
           <Route path="/signin" element={<SignIn />} />
@@ -249,8 +245,6 @@ const App = () => (
           <Route path="/auth/particle" element={<ParticleAuthCallback />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </NfsWhiteLabelRouter>
-      </NfsWhiteLabelProvider>
       </NfsCurrencyProvider>
       </FavouritesProvider>
       </BrowserRouter>
