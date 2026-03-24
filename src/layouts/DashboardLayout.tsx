@@ -65,19 +65,6 @@ function TopBar() {
           <PlusCircle className="w-[14px] h-[14px]" strokeWidth={1.8} />
           Submit a Deal
         </button>
-        <button
-          onClick={() => {
-            if (embeddedWallet?.openWallet) {
-              embeddedWallet.openWallet();
-            } else {
-              navigate('/dashboard/settings');
-            }
-          }}
-          className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-secondary"
-          title="Wallet"
-        >
-          <Wallet className="w-[15px] h-[15px]" strokeWidth={1.8} />
-        </button>
         <FavouritesDropdown />
         <NotificationBell />
         <BurgerMenu />
