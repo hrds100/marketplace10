@@ -751,6 +751,50 @@ function InvestCardContent({
   );
 }
 
+function FinancialBreakdown({ property }: { property: PropertyData }) {
+  const [open, setOpen] = useState(false);
+  const hasFinancials = property.financials?.transaction?.length || property.financials?.rental?.length;
+  if (!hasFinancials) return null;
+
+  return (
+    <div data-feature="INVEST__MARKETPLACE_FINANCIALS" className="border-t">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between w-full py-3 text-left"
+      >
+        <span className="text-sm font-semibold">Financial Breakdown</span>
+        <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform duration-200', open && 'rotate-180')} />
+      </button>
+      <div className={cn('overflow-hidden transition-all duration-200 ease-out', open ? 'max-h-[800px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {property.financials?.transaction?.length ? (
+            <div className="bg-white border rounded-xl p-4">
+              <h4 className="font-semibold mb-3 text-sm">Transaction</h4>
+              {property.financials.transaction.map((item, i) => (
+                <div key={i} className="flex justify-between py-1.5 border-b border-gray-50 text-sm last:border-0">
+                  <span className="text-muted-foreground">{item.label}</span>
+                  <span className="font-medium">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {property.financials?.rental?.length ? (
+            <div className="bg-white border rounded-xl p-4">
+              <h4 className="font-semibold mb-3 text-sm">Rental</h4>
+              {property.financials.rental.map((item, i) => (
+                <div key={i} className="flex justify-between py-1.5 border-b border-gray-50 text-sm last:border-0">
+                  <span className="text-muted-foreground">{item.label}</span>
+                  <span className="font-medium">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DescriptionHighlights({ property }: { property: PropertyData }) {
   return (
     <Card className="rounded-2xl">
@@ -1528,6 +1572,7 @@ function Version1({
       {/* Full-width sections below */}
       <div className="mt-8 space-y-6">
         <DescriptionHighlights property={property} />
+        <FinancialBreakdown property={property} />
         <ProfitCalculator
           property={property}
           initialCalcAmount={initialCalcAmount}
@@ -1687,6 +1732,7 @@ function Version2({
       {/* SECTION 4-8 */}
       <div className="space-y-6">
         <DescriptionHighlights property={property} />
+        <FinancialBreakdown property={property} />
         <ProfitCalculator
           property={property}
           initialCalcAmount={initialCalcAmount}
@@ -1717,8 +1763,8 @@ export default function InvestMarketplacePage() {
     title: dbProperty.title || '',
     location: dbProperty.location || '',
     country: dbProperty.country || '',
-    image: dbProperty.image || '',
-    images: dbProperty.images?.length ? dbProperty.images : [dbProperty.image || ''],
+    image: (dbProperty as any).photos?.[0] || dbProperty.image || '',
+    images: (dbProperty as any).photos?.length ? (dbProperty as any).photos : (dbProperty.images?.length ? dbProperty.images : [dbProperty.image || '']),
     pricePerShare: dbProperty.price_per_share || 0,
     totalShares: dbProperty.total_shares || 1,
     sharesSold: dbProperty.shares_sold || 0,
@@ -1738,6 +1784,8 @@ export default function InvestMarketplacePage() {
     occupancyRate: dbProperty.occupancy_rate || 0,
     yearBuilt: dbProperty.year_built || 0,
     rentCost: (dbProperty as any).rent_cost || 0,
+    financials: (dbProperty as any).financials || undefined,
+    photos: (dbProperty as any).photos || undefined,
   } : null;
 
   // Fetch blockchain stats: Owners, Total Shares, APR (aprBips), Shares Remaining

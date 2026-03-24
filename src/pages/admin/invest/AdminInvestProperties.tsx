@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, Pencil, Loader2, Upload, X, ImageIcon, Link2, Trash2, Download, FileText } from 'lucide-react';
+import { Plus, Pencil, Loader2, Upload, X, ImageIcon, Link2, Trash2, Download, FileText, DollarSign } from 'lucide-react';
 import { useInvestProperties, useCreateProperty, useUpdateProperty } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,11 @@ interface Property {
   documents?: string[];
   appreciation_rate?: number;
   property_docs?: DocEntry[];
+  financials?: {
+    transaction?: { label: string; value: string }[];
+    rental?: { label: string; value: string }[];
+  };
+  photos?: string[];
 }
 
 async function uploadImage(file: File, propertyId: number): Promise<string> {
@@ -98,9 +103,39 @@ export default function AdminInvestProperties() {
   const [docFiles, setDocFiles] = useState<File[]>([]);
   const [highlightInput, setHighlightInput] = useState('');
   const [uploading, setUploading] = useState(false);
+  // Financials edit state
+  const [finModalOpen, setFinModalOpen] = useState(false);
+  const [finProperty, setFinProperty] = useState<Property | null>(null);
+  const [finTransaction, setFinTransaction] = useState<{ label: string; value: string }[]>([]);
+  const [finRental, setFinRental] = useState<{ label: string; value: string }[]>([]);
+  const [finSaving, setFinSaving] = useState(false);
   const mainImageRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const docRef = useRef<HTMLInputElement>(null);
+
+  const openFinancials = (p: Property) => {
+    setFinProperty(p);
+    setFinTransaction(p.financials?.transaction ? [...p.financials.transaction] : []);
+    setFinRental(p.financials?.rental ? [...p.financials.rental] : []);
+    setFinModalOpen(true);
+  };
+
+  const handleFinSave = async () => {
+    if (!finProperty) return;
+    try {
+      setFinSaving(true);
+      await updateProperty.mutateAsync({
+        id: finProperty.id,
+        financials: { transaction: finTransaction, rental: finRental },
+      });
+      setFinModalOpen(false);
+      toast.success('Financials updated');
+    } catch {
+      toast.error('Failed to save financials');
+    } finally {
+      setFinSaving(false);
+    }
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -314,9 +349,14 @@ export default function AdminInvestProperties() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button data-feature="ADMIN__INVEST_PROPERTIES_EDIT" variant="ghost" size="sm" onClick={() => openEdit(p)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button data-feature="ADMIN__INVEST_PROPERTIES_EDIT" variant="ghost" size="sm" onClick={() => openEdit(p)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button data-feature="ADMIN__INVEST_PROPERTIES_FINANCIALS" variant="ghost" size="sm" onClick={() => openFinancials(p)} title="Edit Financials">
+                          <DollarSign className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -577,6 +617,23 @@ export default function AdminInvestProperties() {
             </div>
           </div>
 
+          {/* ── Photo URLs (database) ────────────────────────── */}
+          <div className="grid grid-cols-1 gap-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Photo URLs (shown on marketplace)</label>
+              <p className="text-[11px] text-muted-foreground mb-2">These override gallery images on the marketplace page. One URL per line.</p>
+              <textarea
+                className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm resize-none font-mono"
+                value={((form.photos as string[]) || []).join('\n')}
+                onChange={(e) => {
+                  const urls = e.target.value.split('\n').map(u => u.trim()).filter(Boolean);
+                  setForm(prev => ({ ...prev, photos: urls }));
+                }}
+                placeholder="https://images.unsplash.com/..."
+              />
+            </div>
+          </div>
+
           {/* Marketplace Preview — matches frontend layout */}
           <div className="mt-6 pt-4 border-t">
             <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Marketplace Preview</h4>
@@ -679,6 +736,115 @@ export default function AdminInvestProperties() {
             <Button onClick={handleSave} disabled={createProperty.isPending || updateProperty.isPending || uploading}>
               {(createProperty.isPending || updateProperty.isPending || uploading) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {uploading ? 'Uploading...' : editing ? 'Save Changes' : 'Create Property'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Financials Edit Modal */}
+      <Dialog open={finModalOpen} onOpenChange={setFinModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-feature="ADMIN__INVEST_PROPERTIES_FINANCIALS">
+          <DialogHeader>
+            <DialogTitle>Edit Financials - {finProperty?.title}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Transaction section */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Transaction Costs</h4>
+              {finTransaction.map((item, i) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <input
+                    className="flex-1 h-9 px-3 rounded-md border border-input bg-background text-sm"
+                    value={item.label}
+                    placeholder="Label"
+                    onChange={(e) => {
+                      const updated = [...finTransaction];
+                      updated[i] = { ...updated[i], label: e.target.value };
+                      setFinTransaction(updated);
+                    }}
+                  />
+                  <input
+                    className="w-40 h-9 px-3 rounded-md border border-input bg-background text-sm"
+                    value={item.value}
+                    placeholder="Value"
+                    onChange={(e) => {
+                      const updated = [...finTransaction];
+                      updated[i] = { ...updated[i], value: e.target.value };
+                      setFinTransaction(updated);
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 flex-shrink-0"
+                    onClick={() => setFinTransaction(finTransaction.filter((_, idx) => idx !== i))}
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFinTransaction([...finTransaction, { label: '', value: '' }])}
+                className="gap-1.5 mt-1"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add row
+              </Button>
+            </div>
+
+            {/* Rental section */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Rental Income</h4>
+              {finRental.map((item, i) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <input
+                    className="flex-1 h-9 px-3 rounded-md border border-input bg-background text-sm"
+                    value={item.label}
+                    placeholder="Label"
+                    onChange={(e) => {
+                      const updated = [...finRental];
+                      updated[i] = { ...updated[i], label: e.target.value };
+                      setFinRental(updated);
+                    }}
+                  />
+                  <input
+                    className="w-40 h-9 px-3 rounded-md border border-input bg-background text-sm"
+                    value={item.value}
+                    placeholder="Value"
+                    onChange={(e) => {
+                      const updated = [...finRental];
+                      updated[i] = { ...updated[i], value: e.target.value };
+                      setFinRental(updated);
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 flex-shrink-0"
+                    onClick={() => setFinRental(finRental.filter((_, idx) => idx !== i))}
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFinRental([...finRental, { label: '', value: '' }])}
+                className="gap-1.5 mt-1"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add row
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFinModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleFinSave} disabled={finSaving}>
+              {finSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save Financials
             </Button>
           </DialogFooter>
         </DialogContent>
