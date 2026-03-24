@@ -112,17 +112,17 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
       </button>
 
       {/* Earnings estimate with slider */}
-      <div className="w-full max-w-md space-y-3">
-        <h2 className="text-2xl md:text-[28px] font-bold text-[#1A1A1A] text-center leading-tight">
+      <div className="w-full max-w-md space-y-2">
+        <h2 className="text-3xl md:text-4xl font-bold text-[#1A1A1A] text-center leading-snug">
           You could earn{' '}
           <span className="text-[#1E9A80]">£{estimatedProfit.toLocaleString()}/month</span>
           {' '}hosting this property on Airbnb
         </h2>
 
-        <div className="space-y-2">
+        <div className="space-y-1 pt-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#6B7280]">Nights booked / month</span>
-            <span className="text-xs font-semibold text-[#1E9A80] bg-[#ECFDF5] px-2 py-0.5 rounded-full">{nightsBooked} nights</span>
+            <span className="text-[10px] text-[#9CA3AF]">Nights booked / month</span>
+            <span className="text-[10px] font-medium text-[#1E9A80]">{nightsBooked} nights</span>
           </div>
           <input
             type="range"
@@ -131,22 +131,23 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
             step={1}
             value={nightsBooked}
             onChange={e => setNightsBooked(parseInt(e.target.value))}
-            className="w-full h-1.5 rounded-full appearance-none cursor-pointer outline-none"
+            className="w-full rounded-full appearance-none cursor-pointer outline-none"
             style={{
+              height: '3px',
               background: `linear-gradient(to right, #1E9A80 0%, #1E9A80 ${sliderPercent}%, #E5E7EB ${sliderPercent}%, #E5E7EB 100%)`,
             }}
           />
-          <div className="flex justify-between text-[10px] text-[#9CA3AF]">
-            <span>5 nights</span>
-            <span>30 nights</span>
+          <div className="flex justify-between text-[9px] text-[#9CA3AF]">
+            <span>5</span>
+            <span>30</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-3 text-xs text-[#6B7280]">
+        <div className="flex items-center justify-center gap-2 text-[10px] text-[#9CA3AF]">
           <span>Nightly: £{nightlyRate}</span>
-          <span className="text-[#E5E7EB]">·</span>
+          <span>·</span>
           <span>Rent: £{monthlyRent.toLocaleString()}</span>
-          <span className="text-[#E5E7EB]">·</span>
+          <span>·</span>
           <span className="font-semibold text-[#1E9A80]">Profit: £{estimatedProfit.toLocaleString()}</span>
         </div>
       </div>
