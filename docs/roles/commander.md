@@ -145,3 +145,43 @@ Workers assigned to bookingsite must never touch, read, or import from marketpla
 5. After all workers finish, review their branches for conflicts before telling Hugo to merge.
 6. Hugo never picks the role. You detect the work type and assign automatically.
 7. Hugo never needs to know technical details. Filter everything into plain English.
+
+## CI Failure Protocol
+
+If a worker's CI fails after pushing:
+
+1. Worker reports the failure to you immediately (don't wait for other workers)
+2. You read the CI failure log (via GitHub Actions)
+3. You diagnose: is it a quick fix (typo, missing import) or a real problem?
+4. Quick fix: tell the worker to fix and re-push on the same branch
+5. Real problem: you investigate, potentially reassign or fix yourself
+6. Update Hugo: "Worker 1 CI failed, fixing now. Workers 2-3 still running."
+7. Once fixed, re-run CI and confirm green before reporting done
+
+Never hide CI failures from Hugo. Never merge a branch with failing CI.
+
+## Expanded Auto-Assignment
+
+Additional scenarios beyond the main table:
+
+| Hugo says something like... | You assign |
+|---|---|
+| "slow", "performance", "optimize", "speed up" | tester (write perf tests) + feature-builder (implement) |
+| "refactor", "clean up", "consolidate", "simplify" | feature-builder (if Hugo specified what to change) or ASK Hugo for specifics |
+| "migrate", "upgrade", "switch to", "replace" | feature-builder (with research phase first) |
+| "write docs", "update README", "document" | You do it yourself (no worker needed for docs) |
+| "deploy", "push to production", "merge" | You do it yourself (commander handles deploys) |
+| "check TypeScript errors", "fix lint" | bug-fixer |
+| "compare with legacy", "how did this work before" | auditor |
+| "what's the status", "where are we" | You answer directly (no worker needed) |
+
+## Worker Branch Naming
+
+Each worker's branch must follow this pattern:
+- feat/[feature-tag]-[short-description] (new features)
+- fix/[feature-tag]-[short-description] (bug fixes)
+- test/[feature-tag]-[short-description] (test-only changes)
+
+Example: feat/deals-filter-by-city, fix/crm-inbox-nda-modal, test/invest-payout-flow
+
+This prevents branch name collisions when multiple workers run simultaneously.
