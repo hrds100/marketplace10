@@ -112,7 +112,11 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   // ─── JV CARD (Style 4: Floating + Shimmer + Progress) ───
   // Exact match to Card 4 from /testing/design
   if (isPrime) {
-    const funded = 64;
+    const funded = listing.investFundedPct ?? 0;
+    const target = listing.investTarget ?? 0;
+    const minContribution = listing.investMinContribution ?? 0;
+    const monthlyProfit = listing.investMonthlyProfit ?? listing.profit;
+    const estReturns = listing.investReturns ?? 0;
     return (
       <div
         className="bg-card rounded-2xl overflow-hidden border-[1.5px] flex flex-col"
@@ -153,21 +157,21 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             </div>
             <div className="flex justify-between mt-1">
               <span className="text-[10px] text-muted-foreground">{funded}% funded</span>
-              <span className="text-[10px] font-medium" style={{ color: '#A67C00' }}>Target: £45,000</span>
+              <span className="text-[10px] font-medium" style={{ color: '#A67C00' }}>Target: £{target.toLocaleString()}</span>
             </div>
           </div>
           <div className="flex-1 space-y-0">
             <div className="flex justify-between items-center py-[7px] border-b border-border/50">
               <span className="text-xs text-muted-foreground">Min. contribution</span>
-              <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£500</span>
+              <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£{minContribution.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-[7px] border-b border-border/50">
               <span className="text-xs text-muted-foreground">Est. monthly profit</span>
-              <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£{listing.profit}</span>
+              <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£{monthlyProfit.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-[7px]">
               <span className="text-xs text-muted-foreground">Est. Returns</span>
-              <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>12.4%</span>
+              <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>{estReturns}%</span>
             </div>
           </div>
           <div className="mt-auto pt-3">

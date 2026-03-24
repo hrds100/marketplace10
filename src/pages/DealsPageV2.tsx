@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import { useInvestProperties } from '@/hooks/useInvestData';
 
 const DealsMap = lazy(() => import('@/components/DealsMap'));
 
@@ -107,12 +108,44 @@ export default function DealsPageV2() {
     },
   });
 
+  const { data: investProperties } = useInvestProperties();
+
   const listings = useMemo(() => {
     if (!dbProperties) return [];
-    return dbProperties
+    const base = dbProperties
       .filter(p => p.status === 'live' || p.status === 'on-offer')
       .map(toListingShape);
-  }, [dbProperties]);
+
+    // Enrich prime/JV cards with real investment data from inv_properties
+    if (investProperties && investProperties.length > 0) {
+      const inv = investProperties[0]; // Primary investment property (Pembroke Place)
+      const totalShares = inv.total_shares || 1;
+      const sharesSold = inv.shares_sold || 0;
+      const fundedPct = Math.round((sharesSold / totalShares) * 100);
+      const propertyValue = Number(inv.property_value) || 0;
+      const pricePerShare = Number(inv.price_per_share) || 1;
+      const minContribution = Math.max(pricePerShare * 500, 500); // Min 500 shares or £500
+      const annualYield = Number(inv.annual_yield) || 0;
+      const monthlyRent = Number(inv.monthly_rent) || 0;
+      // Monthly profit estimate: (monthlyRent * annualYield / 100) simplified
+      const monthlyProfit = Math.round((propertyValue * (annualYield / 100)) / 12);
+
+      return base.map(l => {
+        if (!l.prime) return l;
+        return {
+          ...l,
+          name: inv.title || l.name,
+          investTarget: propertyValue,
+          investFundedPct: fundedPct,
+          investMinContribution: minContribution,
+          investMonthlyProfit: monthlyProfit,
+          investReturns: annualYield,
+        };
+      });
+    }
+
+    return base;
+  }, [dbProperties, investProperties]);
 
   const liveCount = listings.filter(l => l.status === 'live').length;
 
