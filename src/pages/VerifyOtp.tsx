@@ -121,6 +121,7 @@ export default function VerifyOtp() {
           }
 
           if (userId) {
+            const refCode = localStorage.getItem('nfstay_ref');
             await (supabase.from('profiles') as any)
               .upsert({
                 id: userId,
@@ -129,8 +130,16 @@ export default function VerifyOtp() {
                 whatsapp_verified: true,
                 wallet_address: wallet,
                 wallet_auth_method: authMethod,
+                ...(refCode ? { referred_by: refCode } : {}),
               } as any);
             console.log('[VerifyOtp] Social profile saved. wallet:', wallet, 'authMethod:', authMethod);
+
+            // Track referral signup
+            if (refCode) {
+              const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+              fetch(`${supabaseUrl}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${userId}&userName=${encodeURIComponent(name)}&userEmail=${encodeURIComponent(email)}`, { method: 'POST' }).catch(() => {});
+              localStorage.removeItem('nfstay_ref');
+            }
           }
         }
       } catch (err) {
@@ -141,6 +150,21 @@ export default function VerifyOtp() {
       setLoading(false);
       return;
     }
+
+    // ── Fallback referral tracking for email signups ────────────────────
+    try {
+      const refCode = localStorage.getItem('nfstay_ref');
+      if (refCode) {
+        const { data: authData } = await supabase.auth.getUser();
+        const uid = authData?.user?.id;
+        if (uid) {
+          const sbUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+          fetch(`${sbUrl}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${uid}&userName=${encodeURIComponent(name)}&userEmail=${encodeURIComponent(email)}`, { method: 'POST' }).catch(() => {});
+          (supabase.from('profiles') as any).update({ referred_by: refCode } as any).eq('id', uid).then(() => {}).catch(() => {});
+          localStorage.removeItem('nfstay_ref');
+        }
+      }
+    } catch { /* non-blocking */ }
 
     // ── JWT path: generate JWT and store for WalletProvisioner ────────────
     try {

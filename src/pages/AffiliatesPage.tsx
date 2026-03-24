@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe } from 'lucide-react';
+import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe, Pencil, X, Loader2 } from 'lucide-react';
 import { useMyAffiliateProfile } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -53,6 +53,10 @@ export default function AffiliatesPage() {
   const [calcDealAmount, setCalcDealAmount] = useState(6000);
   const [calcDeals, setCalcDeals] = useState(3);
   const [payoutTab, setPayoutTab] = useState<'bank' | 'paypal' | 'other'>('bank');
+  const [editingCode, setEditingCode] = useState(false);
+  const [newCode, setNewCode] = useState('');
+  const [codeError, setCodeError] = useState('');
+  const [codeSaving, setCodeSaving] = useState(false);
 
   // Check for new referral signups → toast
   useEffect(() => {
@@ -186,6 +190,37 @@ export default function AffiliatesPage() {
     toast.success('Saved');
   };
 
+  const saveReferralCode = async () => {
+    if (!profile?.id) return;
+    const code = newCode.trim().toLowerCase();
+    if (!/^[a-z0-9]{3,20}$/.test(code)) {
+      setCodeError('Code must be 3-20 characters, lowercase letters and numbers only.');
+      return;
+    }
+    setCodeSaving(true);
+    setCodeError('');
+    try {
+      const { data: existing } = await (supabase.from('affiliate_profiles') as any)
+        .select('id').eq('referral_code', code.toUpperCase()).maybeSingle();
+      if (existing && existing.id !== profile.id) {
+        setCodeError('This code is already in use.');
+        setCodeSaving(false);
+        return;
+      }
+      const { error } = await (supabase.from('affiliate_profiles') as any)
+        .update({ referral_code: code.toUpperCase() }).eq('id', profile.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] });
+      toast.success('Referral code updated!');
+      setEditingCode(false);
+      setNewCode('');
+    } catch (err: any) {
+      setCodeError(err?.message || 'Failed to save.');
+    } finally {
+      setCodeSaving(false);
+    }
+  };
+
   const referralLink = profile ? `${BASE_URL}/signup?ref=${profile.referral_code}` : '';
   const isAgent = !!profile;
 
@@ -247,9 +282,42 @@ export default function AffiliatesPage() {
               <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">3</span> You get paid</span>
             </div>
           </div>
-          <p data-feature="AFFILIATES__REFERRAL_CODE" className="text-sm text-muted-foreground mt-0.5">
-            {profile?.referral_code ? `Your code: ${profile.referral_code}` : 'Earn commission by referring people to nfstay.'}
-          </p>
+          <div data-feature="AFFILIATES__REFERRAL_CODE" className="flex items-center gap-2 mt-0.5">
+            {profile?.referral_code ? (
+              editingCode ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newCode}
+                    onChange={(e) => { setNewCode(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '')); setCodeError(''); }}
+                    placeholder="your-code"
+                    maxLength={20}
+                    className="input-nfstay text-sm w-40 h-8 px-2"
+                    autoFocus
+                  />
+                  <button onClick={saveReferralCode} disabled={codeSaving}
+                    className="h-8 px-3 rounded-lg bg-[#1E9A80] text-white text-xs font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-1">
+                    {codeSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Save
+                  </button>
+                  <button onClick={() => { setEditingCode(false); setNewCode(''); setCodeError(''); }}
+                    className="h-8 px-2 rounded-lg text-muted-foreground hover:text-foreground">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  {codeError && <span className="text-xs text-red-500">{codeError}</span>}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Your code: <span className="font-mono font-medium text-foreground">{profile.referral_code}</span>
+                  <button data-feature="AFFILIATES__EDIT_CODE" onClick={() => { setEditingCode(true); setNewCode(profile.referral_code.toLowerCase()); }}
+                    className="ml-2 inline-flex items-center gap-1 text-xs text-[#1E9A80] hover:underline">
+                    <Pencil className="w-3 h-3" /> Edit
+                  </button>
+                </p>
+              )
+            ) : (
+              <p className="text-sm text-muted-foreground">Earn commission by referring people to nfstay.</p>
+            )}
+          </div>
         </div>
       </div>
 
