@@ -31,7 +31,7 @@ function layout(title: string, body: string): string {
       ${body}
     </div>
     <div style="text-align:center;padding:24px 0;font-size:12px;color:#9ca3af;">
-      nfstay · <a href="${BASE_URL}" style="color:${BRAND.color};text-decoration:none;">hub.nfstay.com</a>
+      nfstay &middot; <a href="${BASE_URL}" style="color:${BRAND.color};text-decoration:none;">hub.nfstay.com</a>
     </div>
   </div>
 </body>
@@ -39,7 +39,7 @@ function layout(title: string, body: string): string {
 }
 
 function btn(text: string, href: string): string {
-  return `<a href="${href}" style="display:inline-block;margin-top:16px;padding:10px 24px;background:${BRAND.color};color:#fff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">${text}</a>`;
+  return `<a href="${href}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:${BRAND.color};color:#fff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">${text}</a>`;
 }
 
 function row(label: string, value: string): string {
@@ -59,13 +59,13 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'new-deal-admin':
       return {
         to: ADMIN_EMAIL,
-        subject: `New Deal Submitted — ${data.city} ${data.type}`,
+        subject: `New Deal Submitted - ${data.city} ${data.type}`,
         html: layout('New deal submitted', `
           ${row('Property', String(data.name))}
           ${row('Location', `${data.city} ${data.postcode}`)}
           ${row('Type', String(data.type))}
           ${row('Rent', `£${Number(data.rent).toLocaleString()}/mo`)}
-          ${row('Contact', `${data.contactName} — ${data.contactEmail}`)}
+          ${row('Contact', `${data.contactName} - ${data.contactEmail}`)}
           ${btn('Review in Admin →', `${BASE_URL}/admin/submissions`)}
         `),
       };
@@ -73,11 +73,11 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'new-signup-admin':
       return {
         to: ADMIN_EMAIL,
-        subject: `New User — ${data.name || data.email}`,
+        subject: `New User - ${data.name || data.email}`,
         html: layout('New user signed up', `
-          ${row('Name', String(data.name || '—'))}
+          ${row('Name', String(data.name || '-'))}
           ${row('Email', String(data.email))}
-          ${row('Phone', String(data.phone || '—'))}
+          ${row('Phone', String(data.phone || '-'))}
           ${btn('View Users →', `${BASE_URL}/admin/users`)}
         `),
       };
@@ -86,10 +86,10 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'deal-approved-member':
       return {
         to: String(data.memberEmail),
-        subject: `Your deal has been approved — ${data.city}`,
-        html: layout('Your deal is live! 🎉', `
+        subject: `Your deal has been approved - ${data.city}`,
+        html: layout('Your deal is live!', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-            Great news — your property in <strong>${data.city}</strong> has been approved and is now live on the marketplace.
+            Great news - your property in <strong>${data.city}</strong> has been approved and is now live on the marketplace.
           </p>
           ${row('Property', String(data.name))}
           ${row('Status', 'Live')}
@@ -100,7 +100,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'deal-rejected-member':
       return {
         to: String(data.memberEmail),
-        subject: `Update on your deal — ${data.city}`,
+        subject: `Update on your deal - ${data.city}`,
         html: layout('Deal not approved', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             Unfortunately, your submitted property in <strong>${data.city}</strong> was not approved at this time.
@@ -117,7 +117,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'deal-expired-member':
       return {
         to: String(data.memberEmail),
-        subject: `Your deal has expired — ${data.city}`,
+        subject: `Your deal has expired - ${data.city}`,
         html: layout('Deal expired', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             Your property listing in <strong>${data.city}</strong> has been moved to <strong>${data.newStatus === 'inactive' ? 'inactive' : 'on offer'}</strong> after ${data.days || '14'} days.
@@ -134,10 +134,10 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'welcome-member':
       return {
         to: String(data.email),
-        subject: 'Welcome to nfstay! 🏠',
+        subject: 'Welcome to nfstay!',
         html: layout('Welcome to nfstay', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-            Hi${data.name ? ` ${data.name}` : ''} — welcome to the UK's rent-to-rent property marketplace.
+            Hi${data.name ? ` ${data.name}` : ''} - welcome to the UK's rent-to-rent property marketplace.
           </p>
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             Here's what you can do:
@@ -155,7 +155,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'tier-upgraded-member':
       return {
         to: String(data.email),
-        subject: 'Payment confirmed — you\'re upgraded! 🚀',
+        subject: 'Payment confirmed - you\'re upgraded!',
         html: layout('Payment confirmed', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             Your payment has been processed and your account has been upgraded.
@@ -173,14 +173,14 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'payout-requested-admin':
       return {
         to: ADMIN_EMAIL,
-        subject: `Payout Request — ${data.name} (£${Number(data.amount).toFixed(2)})`,
+        subject: `Payout Request - ${data.name} (£${Number(data.amount).toFixed(2)})`,
         html: layout('Payout Requested', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             An agent has requested a payout.
           </p>
           ${row('Agent', String(data.name))}
           ${row('Amount', `£${Number(data.amount).toFixed(2)}`)}
-          ${row('PayPal', String(data.paypal || '—'))}
+          ${row('PayPal', String(data.paypal || '-'))}
           ${row('Email', String(data.email))}
           ${btn('Review Payouts →', `${BASE_URL}/admin/affiliates`)}
         `),
@@ -189,7 +189,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'payout-sent-member':
       return {
         to: String(data.email),
-        subject: `Payout sent — £${Number(data.amount).toFixed(2)} 💰`,
+        subject: `Payout sent - £${Number(data.amount).toFixed(2)}`,
         html: layout('Payout Sent', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             Your commission payout has been sent.
@@ -197,7 +197,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
           ${row('Amount', `£${Number(data.amount).toFixed(2)}`)}
           ${row('Method', String(data.method || 'PayPal'))}
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:16px 0 0;">
-            It may take 1-2 business days to arrive. Keep referring — your next payout is every Tuesday!
+            It may take 1-2 business days to arrive. Keep referring - your next payout is every Tuesday!
           </p>
           ${btn('View Dashboard →', `${BASE_URL}/dashboard/affiliates`)}
         `),
@@ -206,13 +206,13 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'new-referral-agent':
       return {
         to: String(data.agentEmail),
-        subject: `New referral signup — ${data.referredName || 'someone'} joined via your link! 🎉`,
+        subject: `New referral signup - ${data.referredName || 'someone'} joined via your link!`,
         html: layout('New Referral', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             Someone just signed up using your referral link.
           </p>
           ${row('New User', String(data.referredName || data.referredEmail || 'Anonymous'))}
-          ${row('Your Total Signups', String(data.totalSignups || '—'))}
+          ${row('Your Total Signups', String(data.totalSignups || '-'))}
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:16px 0 0;">
             When they subscribe, you'll earn commission automatically.
           </p>
