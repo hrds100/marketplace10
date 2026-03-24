@@ -78,3 +78,29 @@ Every file in this repo is mapped to a feature tag in `feature-map.json`. All op
 6. **Sub-features use double underscore:** `FEATURE__SUBFEATURE` (e.g. `DEALS__PROPERTY_CARD`).
 7. **LOCKED files in `feature-map.json` must not be modified.** Coordinate with Hugo first.
 8. **Use `AI_SESSION_TEMPLATE.md` to scope every task.** Paste the feature tag and file list before starting work.
+
+## Agent Teams
+
+Agent Teams is enabled. Multiple workers can run in parallel on different features.
+
+### How it works
+- **Commander** (team lead): reads `docs/roles/commander.md`, coordinates workers
+- **Workers**: each gets a role, a feature scope, and their own branch
+- `feature-map.json` prevents overlap - no two workers touch the same files
+
+### Role files (in docs/roles/)
+- `commander.md` - team lead instructions (task splitting, anti-overlap, reporting)
+- `ui-designer.md` - visual/frontend work (follows .claude/rules/design.md)
+- `bug-fixer.md` - diagnose-first bug fixing (follows runbooks)
+- `feature-builder.md` - new features and enhancements
+- `tester.md` - Playwright e2e tests and edge case hunting
+
+### To start a team session
+Tell the commander what you want done. Example:
+"Create a team. Worker 1: fix inbox NDA bug (CRM_INBOX). Worker 2: redesign deals filters (DEALS). Worker 3: test the investment payout flow (INVEST)."
+
+### Anti-overlap (enforced by commander)
+- Each worker gets ONE feature session from feature-map.json
+- Each worker gets its OWN branch
+- LOCKED files are never assigned to workers
+- Shared files (App.tsx, main.tsx) are commander-only
