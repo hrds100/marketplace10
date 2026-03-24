@@ -144,13 +144,22 @@ export default function ParticleAuthCallback() {
       // Use .update() not .upsert() — profiles has no INSERT RLS for regular users.
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (userId) {
+        const refCode = localStorage.getItem('nfstay_ref');
         const updatePayload: Record<string, string> = {
           wallet_auth_method: intent.provider,
         };
         if (walletAddress) updatePayload.wallet_address = walletAddress;
+        if (refCode) updatePayload.referred_by = refCode;
         await (supabase.from('profiles') as any)
           .update(updatePayload)
           .eq('id', userId);
+
+        // Track referral signup for auto-created accounts (signin path)
+        if (refCode) {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+          fetch(`${supabaseUrl}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${userId}&userName=${encodeURIComponent(name)}&userEmail=${encodeURIComponent(email)}`, { method: 'POST' }).catch(() => {});
+          localStorage.removeItem('nfstay_ref');
+        }
       }
 
       const dest = intent.redirectTo ? decodeURIComponent(intent.redirectTo) : '/dashboard/deals';
