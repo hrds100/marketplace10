@@ -1,132 +1,136 @@
 // WalletProvisioner — Runs once per session inside DashboardLayout.
-// If the user has no wallet_address in their profile, generates a JWT
-// and creates a Particle wallet in the background.
-// Renders nothing. Completely silent.
+// If the user has no wallet_address, shows a modal prompting them to connect.
+// For email/password users, Particle requires email verification (interactive popup).
+// For social login users, wallet was already created at signup — just restores session.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useWallet } from '@/hooks/useWallet';
 import { supabase } from '@/integrations/supabase/client';
-import { createParticleWallet, destroyIframe } from '@/lib/particleIframe';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Loader2, Wallet, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function WalletProvisioner() {
   const { user } = useAuth();
-  const attemptedRef = useRef(false);
+  const { address: walletAddress, connect: connectWallet, connecting } = useWallet();
+  const checkedRef = useRef(false);
+  const [showModal, setShowModal] = useState(false);
+  const [walletDone, setWalletDone] = useState(false);
 
   useEffect(() => {
-    if (!user?.id || attemptedRef.current) return;
-    attemptedRef.current = true;
+    if (!user?.id || checkedRef.current) return;
+    checkedRef.current = true;
 
-    provisionWallet(user.id);
+    // Check if user needs a wallet
+    (supabase.from('profiles') as any)
+      .select('wallet_address, wallet_auth_method')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }: { data: any }) => {
+        if (data?.wallet_address) {
+          // Wallet exists — restore Particle session silently
+          restoreSession(user.id, data.wallet_auth_method || 'jwt');
+          return;
+        }
+
+        // Social login users should already have a wallet — skip modal
+        const authMethod = data?.wallet_auth_method || 'jwt';
+        if (authMethod !== 'jwt') return;
+
+        // Email user with no wallet — show the connect modal
+        // Small delay so the dashboard loads first
+        setTimeout(() => setShowModal(true), 1000);
+      });
   }, [user?.id]);
 
-  return null;
+  // Close modal when wallet appears (from connectWallet or other source)
+  useEffect(() => {
+    if (walletAddress && showModal) {
+      setWalletDone(true);
+      setTimeout(() => {
+        setShowModal(false);
+        setWalletDone(false);
+      }, 1500);
+    }
+  }, [walletAddress, showModal]);
+
+  const handleConnect = async () => {
+    try {
+      await connectWallet();
+      toast.success('Wallet connected!');
+    } catch {
+      toast.error('Wallet setup failed. You can try again in Settings.');
+    }
+  };
+
+  const handleSkip = () => {
+    setShowModal(false);
+  };
+
+  return (
+    <Dialog open={showModal} onOpenChange={setShowModal}>
+      <DialogContent className="max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <Wallet className="w-5 h-5" style={{ color: '#1E9A80' }} />
+            Set up your wallet
+          </DialogTitle>
+        </DialogHeader>
+
+        {walletDone ? (
+          <div className="text-center py-6">
+            <CheckCircle2 className="w-12 h-12 mx-auto" style={{ color: '#1E9A80' }} />
+            <p className="text-sm font-medium mt-3" style={{ color: '#1E9A80' }}>Wallet connected!</p>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">
+              Your wallet is needed to receive investment shares. A verification code will be sent to your email.
+            </p>
+
+            <div className="flex flex-col gap-2 mt-4">
+              <Button
+                onClick={handleConnect}
+                disabled={connecting}
+                className="w-full h-11 text-white font-semibold"
+                style={{ background: '#1E9A80' }}
+              >
+                {connecting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Check your email for the code...
+                  </>
+                ) : (
+                  'Connect Wallet'
+                )}
+              </Button>
+
+              <button
+                onClick={handleSkip}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Skip for now
+              </button>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 }
 
-async function provisionWallet(userId: string) {
-  try {
-    // 1. Check if wallet already exists
-    const { data } = await (supabase.from('profiles') as any)
-      .select('wallet_address, wallet_auth_method, wallet_change_allowed_until')
-      .eq('id', userId)
-      .single();
+// ── Session restore helpers (kept from original — no user interaction needed) ──
 
-    if (data?.wallet_address) {
-      console.log('[WalletProvisioner] Wallet exists:', data.wallet_address);
-      const authMethod = (data as any).wallet_auth_method || 'jwt';
-      if (authMethod !== 'jwt') {
-        // Social login user — wallet was set at signup. Restore session via social reconnect.
-        await restoreParticleSocialSession(authMethod);
-      } else {
-        // JWT user — restore via JWT
-        await restoreParticleSession(userId);
-      }
-      return;
-    }
-
-    // Skip JWT creation for social users (wallet should have been set at signup)
-    const authMethod = (data as any)?.wallet_auth_method || 'jwt';
-    if (authMethod !== 'jwt') {
-      console.log('[WalletProvisioner] Social user — skipping JWT wallet creation');
-      await restoreParticleSocialSession(authMethod);
-      return;
-    }
-
-    // Also skip if wallet change was recently granted (user is managing their own wallet)
-    if (data?.wallet_change_allowed_until && new Date(data.wallet_change_allowed_until) > new Date()) {
-      console.log('[WalletProvisioner] Wallet change window active — skipping auto-creation');
-      return;
-    }
-
-    console.log('[WalletProvisioner] No wallet — starting creation...');
-
-    // 2. Get or generate JWT
-    let jwt: string | null = null;
-    try { jwt = sessionStorage.getItem('particle_jwt'); } catch { /* skip */ }
-
-    if (!jwt) {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
-      const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
-        body: JSON.stringify({ user_id: userId }),
-      });
-      const jwtData = await res.json();
-      jwt = jwtData?.jwt || null;
-      if (!jwt) {
-        console.log('[WalletProvisioner] JWT generation failed');
-        return;
-      }
-    }
-
-    // 3. Create wallet via lazy-loaded Particle SDK
-    const address = await createParticleWallet(jwt);
-
-    if (address) {
-      // 4. Save to profile
-      await (supabase.from('profiles') as any)
-        .update({ wallet_address: address })
-        .eq('id', userId);
-      console.log('[WalletProvisioner] Wallet created:', address);
-      try { sessionStorage.removeItem('particle_jwt'); } catch { /* skip */ }
-
-      // 5. Notify user via WhatsApp + email (fire-and-forget)
-      try {
-        const { data: profile } = await (supabase.from('profiles') as any)
-          .select('name, whatsapp, email:id')
-          .eq('id', userId)
-          .single();
-        const { data: authData } = await supabase.auth.getUser();
-        const email = authData?.user?.email || '';
-        const phone = profile?.whatsapp || '';
-        const name = profile?.name || '';
-
-        const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
-        fetch(`${N8N_BASE}/webhook/wallet-created`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            wallet_address: address,
-            email,
-            phone,
-            name,
-          }),
-        }).catch(() => {}); // Silent — never block on notification failure
-      } catch {
-        // Notification failed — wallet is still created, non-critical
-      }
-    }
-
-    destroyIframe();
-  } catch (err) {
-    console.log('[WalletProvisioner] Failed (non-blocking):', err);
-    destroyIframe();
+async function restoreSession(userId: string, authMethod: string) {
+  if (authMethod !== 'jwt') {
+    await restoreParticleSocialSession(authMethod);
+  } else {
+    await restoreParticleSession(userId);
   }
 }
 
-// Restore Particle session for social login users (Google, Apple, Twitter, Facebook).
-// Checks if session is already live; if not, triggers social reconnect.
 async function restoreParticleSocialSession(authMethod: string) {
   try {
     const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
@@ -134,7 +138,6 @@ async function restoreParticleSocialSession(authMethod: string) {
     const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
     const pa = particleAuth as any;
 
-    // Legacy project — same Google account → same wallet (0xAA884...)
     try {
       pa.init({
         projectId: PARTICLE_LEGACY_CONFIG.projectId,
@@ -144,7 +147,6 @@ async function restoreParticleSocialSession(authMethod: string) {
       });
     } catch { /* already initialized */ }
 
-    // Check if already connected
     let accounts: string[] = [];
     if (pa.ethereum) {
       try {
@@ -157,18 +159,14 @@ async function restoreParticleSocialSession(authMethod: string) {
       return;
     }
 
-    // Session expired — reconnect with social provider (opens popup on interaction)
     console.log('[WalletProvisioner] Social session not found — reconnecting via', authMethod);
     await particleConnect({ socialType: authMethod as any });
     console.log('[WalletProvisioner] Social Particle session restored via', authMethod);
   } catch (err) {
-    // Expected if user hasn't interacted yet — not an error
     console.log('[WalletProvisioner] Social session restore deferred (no user interaction):', (err as any)?.message || err);
   }
 }
 
-// Restore Particle auth-core signing session for users who already have a wallet.
-// Called on every dashboard load so particleAuth.ethereum is ready before any tx.
 async function restoreParticleSession(userId: string) {
   try {
     const { particleAuth, connect: particleConnect } = await import('@particle-network/auth-core');
@@ -176,7 +174,6 @@ async function restoreParticleSession(userId: string) {
     const { PARTICLE_CONFIG } = await import('@/lib/particle');
     const pa = particleAuth as any;
 
-    // Step 1: init (idempotent — safe to call multiple times)
     try {
       pa.init({
         projectId: PARTICLE_CONFIG.projectId,
@@ -186,10 +183,6 @@ async function restoreParticleSession(userId: string) {
       });
     } catch { /* already initialized */ }
 
-    // Step 2: check if session is already live
-    // NOTE: must NOT use optional chaining + .catch() together — if pa.ethereum is
-    // undefined, `pa.ethereum?.request()` returns undefined, then undefined.catch()
-    // throws TypeError before the outer catch can help.
     let accounts: string[] = [];
     if (pa.ethereum) {
       try {
@@ -202,7 +195,6 @@ async function restoreParticleSession(userId: string) {
       return;
     }
 
-    // Step 3: session expired or first load — reconnect silently with a fresh JWT
     console.log('[WalletProvisioner] Particle session not found — reconnecting...');
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
     const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';

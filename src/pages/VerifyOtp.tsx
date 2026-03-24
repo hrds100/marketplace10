@@ -28,7 +28,6 @@ export default function VerifyOtp() {
   const [error, setError] = useState('');
   const [timer, setTimer] = useState(300); // 5 min
   const [canResend, setCanResend] = useState(false);
-  const [walletStatus, setWalletStatus] = useState<'idle' | 'creating' | 'done' | 'failed'>('idle');
   const verifyingRef = useRef(false);
   const toastFiredRef = useRef(false);
 
@@ -167,50 +166,12 @@ export default function VerifyOtp() {
       }
     } catch { /* non-blocking */ }
 
-    // ── Create Particle wallet for email signups ────────────────────────
-    // Particle will open a popup asking for an email verification code.
-    // We wait for the user to complete it before redirecting.
-    setWalletStatus('creating');
+    // Wallet creation is handled by WalletProvisioner on the dashboard.
+    // It shows a modal prompting the user to connect their wallet.
+    setTimeout(() => {
+      window.location.href = '/dashboard/deals';
+    }, 1500);
     setLoading(false);
-    try {
-      const { data: authData } = await supabase.auth.getUser();
-      const userId = authData?.user?.id;
-      if (userId) {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
-        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
-        const jwtRes = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
-          body: JSON.stringify({ user_id: userId }),
-        });
-        const jwtData = await jwtRes.json();
-        if (jwtData.jwt) {
-          try { sessionStorage.setItem('particle_jwt', jwtData.jwt); } catch { /* skip */ }
-          // Particle SDK opens a popup for email code verification
-          // DO NOT call destroyIframe() — let the user interact with the popup
-          const { createParticleWallet } = await import('@/lib/particleIframe');
-          const address = await createParticleWallet(jwtData.jwt);
-          if (address) {
-            await (supabase.from('profiles') as any)
-              .update({ wallet_address: address, wallet_auth_method: 'jwt' })
-              .eq('id', userId);
-            console.log('[VerifyOtp] Wallet created:', address);
-            try { sessionStorage.removeItem('particle_jwt'); } catch { /* skip */ }
-            setWalletStatus('done');
-            // Wallet created — redirect after short delay
-            setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
-            return;
-          }
-        }
-      }
-      // If we get here, something failed — still redirect
-      setWalletStatus('failed');
-      setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
-    } catch (err) {
-      console.log('[VerifyOtp] Wallet creation failed (non-blocking):', err);
-      setWalletStatus('failed');
-      setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
-    }
   };
 
   // Auto-verify when 4 digits entered
@@ -280,50 +241,9 @@ export default function VerifyOtp() {
                 </motion.div>
                 <h1 className="text-[28px] font-bold text-foreground mt-4">Verified!</h1>
 
-                {/* Wallet creation progress */}
-                {!authMethod && walletStatus !== 'idle' && (
-                  <div className="mt-6 space-y-3">
-                    <div className="flex items-center justify-center gap-2 text-sm">
-                      {walletStatus === 'creating' && (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#1E9A80' }} />
-                          <span className="text-muted-foreground">Setting up your wallet...</span>
-                        </>
-                      )}
-                      {walletStatus === 'done' && (
-                        <>
-                          <CheckCircle2 className="w-4 h-4" style={{ color: '#1E9A80' }} />
-                          <span style={{ color: '#1E9A80' }} className="font-medium">Wallet ready</span>
-                        </>
-                      )}
-                      {walletStatus === 'failed' && (
-                        <span className="text-muted-foreground">Wallet will be created on your dashboard</span>
-                      )}
-                    </div>
-                    {walletStatus === 'creating' && (
-                      <>
-                        <p className="text-xs text-muted-foreground">
-                          Check your email for a verification code from Particle
-                        </p>
-                        <div className="w-48 mx-auto h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,154,128,0.15)' }}>
-                          <motion.div
-                            className="h-full rounded-full"
-                            style={{ background: '#1E9A80' }}
-                            initial={{ width: '0%' }}
-                            animate={{ width: '90%' }}
-                            transition={{ duration: 15, ease: 'easeOut' }}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {walletStatus !== 'creating' && (
-                  <p className="text-sm text-muted-foreground mt-3">
-                    Redirecting to your dashboard...
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground mt-1">
+                  Redirecting to your dashboard...
+                </p>
               </motion.div>
             ) : (
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
