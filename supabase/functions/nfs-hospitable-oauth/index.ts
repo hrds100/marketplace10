@@ -98,14 +98,14 @@ serve(async (req) => {
         if (errorParam) {
           return new Response(null, {
             status: 302,
-            headers: { Location: `/nfstay/settings?tab=hospitable&error=${encodeURIComponent(errorParam)}` },
+            headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&error=${encodeURIComponent(errorParam)}` },
           });
         }
 
         if (!code || !state) {
           return new Response(null, {
             status: 302,
-            headers: { Location: `/nfstay/settings?tab=hospitable&error=missing_params` },
+            headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&error=missing_params` },
           });
         }
 
@@ -119,7 +119,7 @@ serve(async (req) => {
         if (!connectionRow) {
           return new Response(null, {
             status: 302,
-            headers: { Location: `/nfstay/settings?tab=hospitable&error=invalid_state` },
+            headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&error=invalid_state` },
           });
         }
 
@@ -127,7 +127,7 @@ serve(async (req) => {
         if (connectionRow.auth_code_expires_at && new Date(connectionRow.auth_code_expires_at) < new Date()) {
           return new Response(null, {
             status: 302,
-            headers: { Location: `/nfstay/settings?tab=hospitable&error=state_expired` },
+            headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&error=state_expired` },
           });
         }
 
@@ -158,7 +158,7 @@ serve(async (req) => {
 
           return new Response(null, {
             status: 302,
-            headers: { Location: `/nfstay/settings?tab=hospitable&error=token_exchange_failed` },
+            headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&error=token_exchange_failed` },
           });
         }
 
@@ -214,7 +214,7 @@ serve(async (req) => {
         // Redirect back to settings with success
         return new Response(null, {
           status: 302,
-          headers: { Location: `/nfstay/settings?tab=hospitable&success=connected` },
+          headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&success=connected` },
         });
       }
     }
