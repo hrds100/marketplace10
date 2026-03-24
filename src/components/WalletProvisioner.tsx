@@ -11,12 +11,65 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// CSS injection to rebrand the Particle popup
+const PARTICLE_CSS = `
+  .particle-auth-core-modal [class*="title"],
+  .particle-auth-core-modal h2 {
+    font-family: 'Inter', sans-serif !important;
+  }
+  .particle-auth-core-modal button[class*="primary"],
+  .particle-auth-core-modal button[type="submit"] {
+    background: #1E9A80 !important;
+    border-radius: 10px !important;
+  }
+  .particle-auth-core-modal button[class*="primary"]:hover,
+  .particle-auth-core-modal button[type="submit"]:hover {
+    background: #178a72 !important;
+  }
+`;
+
+function injectParticleBranding() {
+  // Inject CSS once
+  if (!document.getElementById('nfstay-particle-css')) {
+    const style = document.createElement('style');
+    style.id = 'nfstay-particle-css';
+    style.textContent = PARTICLE_CSS;
+    document.head.appendChild(style);
+  }
+
+  // Watch for Particle iframes/modals and rebrand them
+  const observer = new MutationObserver(() => {
+    // Target the Particle popup iframe content
+    document.querySelectorAll('iframe').forEach((iframe) => {
+      try {
+        const src = iframe.src || '';
+        if (!src.includes('particle') && !src.includes('auth-core')) return;
+        const doc = iframe.contentDocument;
+        if (!doc) return;
+        if (doc.getElementById('nfstay-particle-css')) return;
+        const style = doc.createElement('style');
+        style.id = 'nfstay-particle-css';
+        style.textContent = PARTICLE_CSS;
+        doc.head.appendChild(style);
+      } catch { /* cross-origin — can't access iframe content */ }
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  return observer;
+}
+
 export default function WalletProvisioner() {
   const { user } = useAuth();
   const { address: walletAddress, connect: connectWallet, connecting } = useWallet();
   const checkedRef = useRef(false);
   const [showModal, setShowModal] = useState(false);
   const [walletDone, setWalletDone] = useState(false);
+
+  // Inject Particle branding CSS
+  useEffect(() => {
+    const observer = injectParticleBranding();
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!user?.id || checkedRef.current) return;
@@ -69,12 +122,12 @@ export default function WalletProvisioner() {
   // While Particle popup is active: show blurred backdrop but no card (so Particle gets focus)
   if (connecting) {
     return (
-      <div className="fixed inset-0 z-[40]" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }} />
+      <div className="fixed inset-0 z-[9998]" style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)' }} />
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[40] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
+    <div className="fixed inset-0 z-[9998] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-[400px] mx-4 p-6">
         <div className="flex items-center gap-2 mb-4">
           <CheckCircle2 className="w-5 h-5" style={{ color: '#1E9A80' }} />
