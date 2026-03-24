@@ -16,14 +16,15 @@ export default function DealDetail() {
   const { user } = useAuth();
   const { toggle, isFav } = useFavourites();
 
-  // Fetch real property from Supabase
+  // Fetch real property from Supabase (supports both slug and UUID)
   const { data: listing, isLoading } = useQuery({
     queryKey: ['property', id],
     queryFn: async () => {
       // properties has columns not in generated types — cast needed
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id!);
       const { data, error } = await (supabase.from('properties') as any)
         .select('*')
-        .eq('id', id!)
+        .or(`slug.eq.${id}${isUuid ? `,id.eq.${id}` : ''}`)
         .single();
       if (error) throw error;
       return data as Record<string, unknown>;
@@ -113,14 +114,16 @@ export default function DealDetail() {
     : Array.from({ length: 5 }, (_, i) => `https://placehold.co/1200x900/1a1a2e/ffffff?text=${encodeURIComponent(city || 'Property')}-${i + 1}`);
   const images = [...userPhotos, ...stockImages.slice(0, 5 - userPhotos.length)].slice(0, 5);
 
-  // More deals (newest globally, excluding current)
+  // More deals (same city, excluding current)
   const { data: moreDeals = [] } = useQuery({
-    queryKey: ['more-deals', id],
+    queryKey: ['more-deals', id, city],
     queryFn: async () => {
+      if (!city) return [];
       const { data } = await (supabase.from('properties') as any)
         .select('*')
         .neq('id', id!)
         .eq('status', 'live')
+        .eq('city', city)
         .order('created_at', { ascending: false })
         .limit(3);
       return (data || []).map((p: Record<string, unknown>) => ({
@@ -138,9 +141,10 @@ export default function DealDetail() {
         image: ((p.photos as string[] | null)?.[0]) || `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent((p.city as string) || 'Property')}`,
         landlordApproved: p.sa_approved === 'yes',
         landlordWhatsapp: (p.landlord_whatsapp as string) || null,
+        slug: (p.slug as string) || null,
       })) as ListingShape[];
     },
-    enabled: !!id,
+    enabled: !!id && !!city,
   });
 
   // Nearby deals from Supabase (same city, live only)
@@ -168,6 +172,7 @@ export default function DealDetail() {
         image: ((p.photos as string[] | null)?.[0]) || `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent((p.city as string) || 'Property')}`,
         landlordApproved: p.sa_approved === 'yes',
         landlordWhatsapp: (p.landlord_whatsapp as string) || null,
+        slug: (p.slug as string) || null,
       })) as ListingShape[];
     },
     enabled: !!city && !!id,
@@ -269,7 +274,23 @@ export default function DealDetail() {
             <button data-feature="DEALS__DETAIL_FAVOURITE" onClick={() => toggle(id || '')} className={`h-10 px-4 rounded-lg border border-border flex items-center gap-2 text-sm font-medium transition-colors ${isFav(id || '') ? 'text-primary bg-accent-light' : 'text-foreground hover:bg-secondary'}`}>
               <Heart className={`w-4 h-4 ${isFav(id || '') ? 'fill-primary' : ''}`} /> {isFav(id || '') ? 'Saved' : 'Save'}
             </button>
-            <button className="h-10 px-4 rounded-lg border border-border flex items-center gap-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors">
+            <button
+              data-feature="DEALS__DETAIL_SHARE"
+              onClick={async () => {
+                const url = window.location.href;
+                try {
+                  if (navigator.share) {
+                    await navigator.share({ title: name, url });
+                  } else {
+                    await navigator.clipboard.writeText(url);
+                    toast.success('Link copied!');
+                  }
+                } catch {
+                  // User cancelled share or clipboard failed
+                }
+              }}
+              className="h-10 px-4 rounded-lg border border-border flex items-center gap-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+            >
               <Share2 className="w-4 h-4" /> Share
             </button>
             <div className="relative inline-block min-w-[140px]">
@@ -435,10 +456,10 @@ export default function DealDetail() {
           </div>
         )}
 
-        {/* More deals you might be interested in */}
+        {/* More deals near city (same city only) */}
         {moreDeals.length > 0 && (
           <section data-feature="DEALS__DETAIL_MORE_DEALS" className="mt-12 mb-8">
-            <h2 className="text-xl font-bold text-foreground mb-6">More deals you might be interested in</h2>
+            <h2 className="text-xl font-bold text-foreground mb-6">More deals near {city}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {moreDeals.map(l => (
                 <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} />

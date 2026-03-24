@@ -277,7 +277,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             </>
           ) : (
             <>
-              <Link data-feature="DEALS__PROPERTY_CARD_VIEW" to={`/deals/${listing.id}`} className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
+              <Link data-feature="DEALS__PROPERTY_CARD_VIEW" to={`/deals/${listing.slug || listing.id}`} className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
                 Visit Listing
               </Link>
               <button data-feature="DEALS__PROPERTY_CARD_INQUIRE" onClick={handleInquire} className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">

@@ -422,6 +422,10 @@ export default function ListADealPage() {
 
     setLoading(true);
     try {
+      // Auto-generate slug from name + city
+      const slugBase = (nextId || resolvedType + '-' + form.city)
+        .toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+
       const { data: insertedRow, error } = await (supabase.from('properties') as any).insert({
         name: nextId, city: form.city, postcode: form.postcode,
         rent_monthly: parseInt(form.rent) || 0, profit_est: parseInt(form.profit) || 0,
@@ -436,6 +440,12 @@ export default function ListADealPage() {
 
       if (error) throw error;
       const propertyId = insertedRow?.id || null;
+
+      // Set slug with UUID prefix for uniqueness (non-blocking)
+      if (propertyId) {
+        const slug = slugBase + '-' + (propertyId as string).slice(0, 8);
+        (supabase.from('properties') as any).update({ slug }).eq('id', propertyId).then(() => {});
+      }
       setSubmittedPropertyId(propertyId);
       setSubmitPhase('analysing');
       setLoading(false);
