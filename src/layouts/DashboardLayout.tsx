@@ -36,7 +36,10 @@ function TopBar() {
   try { embeddedWallet = useEmbeddedWallet(); } catch { /* hook not available outside ConnectKitProvider */ }
   return (
     <header className="dashboard-topbar h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
-      <NfsLogo size="sm" />
+      <a href="/dashboard/deals" className="flex items-center" style={{ gap: 3 }}>
+        <div style={{ width: 28, height: 28, border: '1.5px solid #0a0a0a', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 12, color: '#0a0a0a', lineHeight: 1 }}>nf</div>
+        <span style={{ fontFamily: "'Sora', sans-serif", fontWeight: 400, fontSize: 18, color: '#0a0a0a', letterSpacing: 2, lineHeight: 1 }}>stay</span>
+      </a>
 
       <div className="ml-auto flex items-center gap-3">
         {isAdmin && (
