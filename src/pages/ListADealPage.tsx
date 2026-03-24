@@ -6,6 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import PhotoUpload from '@/components/PhotoUpload';
 import MyListingsPanel from '@/components/MyListingsPanel';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 
 const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
 
@@ -137,6 +140,10 @@ export default function ListADealPage() {
   const [form, setForm] = useState<DealForm>(INITIAL_FORM);
   const [profileWhatsapp, setProfileWhatsapp] = useState('');
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['property-details', 'media']));
+  const [aiQuickMode, setAiQuickMode] = useState(false);
+  const [aiRawText, setAiRawText] = useState('');
+  const [aiParsing, setAiParsing] = useState(false);
+  const [saConfirmed, setSaConfirmed] = useState(false);
 
   // Reset form when user navigates to this page fresh (e.g. sidebar click after submit)
   useEffect(() => {
@@ -200,6 +207,9 @@ export default function ListADealPage() {
     setNotes('');
     setForm(INITIAL_FORM);
     setOpenSections(new Set(['property-details', 'media']));
+    setAiQuickMode(false);
+    setAiRawText('');
+    setSaConfirmed(false);
   };
 
   // Section completion checks
@@ -246,6 +256,142 @@ export default function ListADealPage() {
       if (data?.description || data?.text) { setDescription(data.description || data.text); toast.success('Description generated with AI'); }
     } catch { toast.error('Failed to generate description'); }
     finally { setGenerating(false); }
+  };
+
+  const handleAiParse = async () => {
+    if (!aiRawText.trim()) {
+      toast.error('Paste some listing text first');
+      return;
+    }
+    setAiParsing(true);
+    try {
+      const text = aiRawText;
+
+      // Extract postcode
+      const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
+      const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : '';
+
+      // Extract bedrooms
+      const bedsMatch = text.match(/(\d+)\s*(?:bed(?:room)?s?|double\s+bed)/i);
+      const totalUnitsMatch = text.match(/total:?\s*(\d+)\s*(?:flat|unit|room)/i);
+      const unitCountMatch = text.match(/(\d+)[\s-]*unit/i);
+      const bedrooms = totalUnitsMatch ? totalUnitsMatch[1]
+        : unitCountMatch ? unitCountMatch[1]
+        : bedsMatch ? bedsMatch[1]
+        : '';
+
+      // Extract bathrooms
+      const allBathMatches = [...text.matchAll(/(\d+)\s*bath(?:room)?s?/gi)];
+      let bathrooms = '';
+      if (allBathMatches.length > 0) {
+        const nums = allBathMatches.map(m => parseInt(m[1]));
+        bathrooms = String(Math.max(...nums));
+      }
+
+      // Extract rent
+      const rentMatch = text.match(/[£]?\s*(\d[\d,]*)\s*(?:pcm|pm|per\s*month)/i);
+      const rent = rentMatch ? rentMatch[1].replace(/,/g, '') : '';
+
+      // Extract profit
+      const profitMatch = text.match(/(?:monthly\s*)?profit[:\s]*[£]?\s*(\d[\d,]*)/i);
+      const profit = profitMatch ? profitMatch[1].replace(/,/g, '') : '';
+
+      // Resolve city from postcode
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      let city = '';
+      if (postcode && apiKey) {
+        try {
+          const geoRes = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(postcode + ', UK')}&key=${apiKey}`
+          );
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            const result = geoData.results?.[0];
+            if (result) {
+              const components = result.address_components || [];
+              const postalTown = components.find((c: { types: string[] }) => c.types.includes('postal_town'));
+              const locality = components.find((c: { types: string[] }) => c.types.includes('locality'));
+              const admin2 = components.find((c: { types: string[] }) => c.types.includes('administrative_area_level_2'));
+              city = postalTown?.long_name || locality?.long_name || admin2?.long_name || '';
+            }
+          }
+        } catch {
+          // Geocoding failed - fall through to text search
+        }
+      }
+      if (!city) {
+        const knownCities = [
+          'London', 'Manchester', 'Birmingham', 'Leeds', 'Liverpool', 'Sheffield',
+          'Bristol', 'Newcastle', 'Nottingham', 'Leicester', 'Coventry', 'Bradford',
+          'Cardiff', 'Edinburgh', 'Glasgow', 'Belfast', 'Southampton', 'Portsmouth',
+          'Plymouth', 'Brighton', 'Hull', 'Stoke', 'Blackpool', 'Bolton', 'Luton',
+          'Milton Keynes', 'Reading', 'Oxford', 'Cambridge', 'Norwich', 'Exeter',
+          'Gloucester', 'Bath', 'Bournemouth', 'Croydon', 'Slough', 'York', 'Preston',
+        ];
+        city = knownCities.find(c => new RegExp(`\\b${c}\\b`, 'i').test(text)) || '';
+      }
+
+      // Detect property type
+      const typeMap: [RegExp, string, string][] = [
+        [/\bbungalow\b/i, 'Bungalow', 'house'],
+        [/\bhmo\b/i, 'HMO', 'hmo'],
+        [/\bstudio\b/i, 'Studio', 'flat'],
+        [/\bflat\b/i, 'Flat', 'flat'],
+        [/\bhouse\b/i, 'House', 'house'],
+        [/\broom\b/i, 'Room', 'flat'],
+        [/\bapartment\b/i, 'Flat', 'flat'],
+      ];
+      let type = '';
+      let propertyCategory: DealForm['propertyCategory'] = '';
+      for (const [re, t, cat] of typeMap) {
+        if (re.test(text)) {
+          type = `${bedrooms ? bedrooms + '-bed ' : ''}${t}`;
+          propertyCategory = cat as DealForm['propertyCategory'];
+          break;
+        }
+      }
+
+      // Detect SA approved
+      const saMatch = /sa\s*(?:approved|compliant)/i.test(text);
+
+      // Detect furnished
+      let furnished: DealForm['furnished'] = '';
+      if (/\bpart[\s-]*furnished\b/i.test(text)) furnished = 'part-furnished';
+      else if (/\bunfurnished\b/i.test(text)) furnished = 'unfurnished';
+      else if (/\bfurnished\b/i.test(text)) furnished = 'furnished';
+
+      // Detect garage
+      const garage = /\b(garage|parking)\b/i.test(text) ? 'yes' : '';
+
+      // Extract deposit
+      const depositMatch = text.match(/deposit[:\s]*[£]?\s*(\d[\d,]*)/i);
+      const deposit = depositMatch ? depositMatch[1].replace(/,/g, '') : '';
+
+      // Fill the form
+      setForm(prev => ({
+        ...prev,
+        city: city || prev.city,
+        postcode: postcode || prev.postcode,
+        bedrooms: bedrooms || prev.bedrooms,
+        bathrooms: bathrooms || prev.bathrooms,
+        rent: rent || prev.rent,
+        profit: profit || prev.profit,
+        propertyCategory: propertyCategory || prev.propertyCategory,
+        type: type || prev.type,
+        saApproved: saMatch ? 'Yes' : prev.saApproved,
+        furnished: furnished || prev.furnished,
+        garage: garage || prev.garage,
+        deposit: deposit || prev.deposit,
+      }));
+
+      // Switch back to manual form
+      setAiQuickMode(false);
+      toast.success('Listing parsed - review the pre-filled fields below');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to parse listing');
+    } finally {
+      setAiParsing(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -414,6 +560,43 @@ export default function ListADealPage() {
         <div>
           <form onSubmit={handleSubmit} className="space-y-4">
 
+            {/* ── AI Quick Listing Toggle ── */}
+            <div className="flex items-center justify-center gap-3 py-3 px-4 bg-card border border-border rounded-2xl">
+              <label htmlFor="ai-quick-toggle" className="text-sm font-semibold text-foreground cursor-pointer select-none">AI Quick Listing</label>
+              <Switch
+                id="ai-quick-toggle"
+                data-feature="DEALS__LIST_AI_TOGGLE"
+                checked={aiQuickMode}
+                onCheckedChange={setAiQuickMode}
+              />
+            </div>
+
+            {/* ── AI Quick Listing Input ── */}
+            {aiQuickMode && (
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+                <Textarea
+                  data-feature="DEALS__LIST_AI_INPUT"
+                  rows={8}
+                  value={aiRawText}
+                  onChange={e => setAiRawText(e.target.value)}
+                  placeholder={"Paste your property description or WhatsApp text here...\n\nExample:\n\uD83D\uDD25 R2R Opportunity - 2 Bed Flat | Manchester (M14)\nRent: \u00A31,200 pcm\nProfit: \u00A3600/month\nSA Approved\nFurnished, parking available"}
+                  className="w-full resize-none rounded-xl text-sm"
+                />
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    data-feature="DEALS__LIST_AI_PARSE"
+                    onClick={handleAiParse}
+                    disabled={aiParsing || !aiRawText.trim()}
+                    className="h-11 px-8 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 inline-flex items-center gap-2"
+                  >
+                    {aiParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {aiParsing ? 'Parsing...' : 'Parse with AI'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* ── Property Details ── */}
             <AccordionSection id="property-details" title="Property Details" description="Basic information about the property location."
               isOpen={openSections.has('property-details')} isComplete={sectionComplete['property-details']()} onToggle={() => toggleSection('property-details')}
@@ -575,7 +758,19 @@ export default function ListADealPage() {
               </div>
             </AccordionSection>
 
-            <button data-feature="DEALS__LIST_SUBMIT" type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+            <div className="flex items-start gap-3 mt-4 mb-4">
+              <Checkbox
+                id="sa-confirm"
+                checked={saConfirmed}
+                onCheckedChange={(checked) => setSaConfirmed(!!checked)}
+                data-feature="DEALS__LIST_SA_CONFIRM"
+              />
+              <label htmlFor="sa-confirm" className="text-sm text-muted-foreground leading-snug cursor-pointer">
+                I confirm this property is approved for serviced accommodation
+              </label>
+            </div>
+
+            <button data-feature="DEALS__LIST_SUBMIT" type="submit" disabled={!saConfirmed || loading} className="w-full h-12 rounded-xl bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
               {loading ? 'Submitting...' : 'Submit Deal'}
             </button>
             <p className="text-xs text-muted-foreground text-center mt-2">Our team reviews all submissions within 24–48 hours.</p>
