@@ -1,43 +1,17 @@
 // Particle Network configuration for nfstay Investment module
 //
-// TWO PROJECTS:
-//   LEGACY — social login (Google/Apple/Twitter/Facebook). Same project as app.nfstay.com.
-//            Google account → same wallet returned (0xAA884...). Used for all OAuth flows.
-//   HUB    — JWT auth only. JWKS endpoint configured. Used for email/password signups.
-//
-// Rule: social login always uses PARTICLE_LEGACY_CONFIG so legacy wallets are recovered.
+// ONE PROJECT — Legacy. Used for everything: social login + email wallet creation.
+// Project ID: 4f8aca10-0c7e-4617-bfff-7ccb5269f365
 
-// Shared branding for all Particle popups
-export const PARTICLE_CUSTOM_STYLE = {
-  projectName: 'nfstay',
-  subtitle: 'Verify your account to continue',
-  logo: 'https://hub.nfstay.com/og-preview.png',
-  modalBorderRadius: 16,
-  primaryBtnBorderRadius: 10,
-  theme: {
-    light: {
-      primaryBtnColor: '#ffffff',
-      primaryBtnBackgroundColor: '#1E9A80',
-      textColor: '#1A1A1A',
-      secondaryTextColor: '#6B7280',
-      themeBackgroundColor: '#ffffff',
-      accentColor: '#1E9A80',
-    },
-  },
-};
-
-// Legacy project — social login (Google, Apple, Twitter, Facebook)
 export const PARTICLE_LEGACY_CONFIG = {
   projectId: '4f8aca10-0c7e-4617-bfff-7ccb5269f365',
   clientKey: 'cWniBMIDt2lhrhdIERSBWURpannCk30SGNwdPK7D',
   appId: 'd80e484f-a690-4f0b-80a8-d1a1d0264b90',
 };
 
-// Hub project — JWT auth (email/password users)
+// Alias — all code that imported PARTICLE_CONFIG now uses Legacy
 export const PARTICLE_CONFIG = {
-  projectId: '470629ca-91af-45fa-a52b-62ed2adf9ef0',
-  clientKey: 'cTHFOA18eAs4iRrkgn8lG1QARC8HFkkv5jeYQPc1',
-  appId: 'a82d525c-85da-4786-a0ed-e4cf110c8377',
+  ...PARTICLE_LEGACY_CONFIG,
   walletConnectProjectId: '28e91881cee345ca645f8ad85e4db6fe',
   chainId: 56, // BNB Chain mainnet
   chainName: 'BNB Smart Chain',
