@@ -6,10 +6,17 @@ const FROM_EMAIL = 'nfstay <notifications@hub.nfstay.com>';
 const BASE_URL = 'https://hub.nfstay.com';
 
 const BRAND = {
-  color: '#059669',
-  bg: '#f8fafb',
-  font: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+  color: '#1E9A80',
+  bg: '#f3f3ee',
+  font: "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif",
 };
+
+const LOGO_HTML = `<div style="text-align:center;padding:0 0 24px;">
+  <span style="display:inline-flex;align-items:center;gap:4px;font-family:'Sora',Inter,system-ui,sans-serif;">
+    <span style="display:inline-block;border:2px solid #0A0A0A;border-radius:8px;padding:2px 6px;font-size:16px;font-weight:700;color:#0A0A0A;line-height:1.2;">nf</span>
+    <span style="font-size:16px;font-weight:400;color:#0A0A0A;letter-spacing:2px;">stay</span>
+  </span>
+</div>`;
 
 function layout(title: string, body: string): string {
   return `
@@ -17,18 +24,14 @@ function layout(title: string, body: string): string {
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:${BRAND.bg};font-family:${BRAND.font};">
-  <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
-    <div style="text-align:left;margin-bottom:24px;">
-      <span style="font-size:20px;font-weight:800;color:#111;letter-spacing:-0.5px;">nfstay</span>
-    </div>
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:32px;margin-bottom:24px;">
+  <div style="max-width:560px;margin:0 auto;padding:40px 20px;">
+    ${LOGO_HTML}
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:32px;">
       <h2 style="margin:0 0 16px;font-size:18px;font-weight:700;color:#111;">${title}</h2>
       ${body}
     </div>
-    <div style="text-align:center;padding:16px 0;">
-      <p style="margin:0;font-size:12px;color:#9ca3af;">
-        nfstay · <a href="${BASE_URL}" style="color:${BRAND.color};text-decoration:none;">hub.nfstay.com</a>
-      </p>
+    <div style="text-align:center;padding:24px 0;font-size:12px;color:#9ca3af;">
+      nfstay · <a href="${BASE_URL}" style="color:${BRAND.color};text-decoration:none;">hub.nfstay.com</a>
     </div>
   </div>
 </body>
@@ -40,7 +43,7 @@ function btn(text: string, href: string): string {
 }
 
 function row(label: string, value: string): string {
-  return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:14px;"><span style="color:#6b7280;">${label}</span><span style="font-weight:500;color:#111;">${value}</span></div>`;
+  return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:14px;"><span style="color:#6b7280;">${label}:</span><span style="font-weight:500;color:#111;">${value}</span></div>`;
 }
 
 interface EmailConfig {
