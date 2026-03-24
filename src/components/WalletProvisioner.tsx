@@ -66,8 +66,12 @@ export default function WalletProvisioner() {
 
   if (!showModal) return null;
 
-  // Hide our overlay while Particle popup is active so user can interact with it
-  if (connecting) return null;
+  // While Particle popup is active: show blurred backdrop but no card (so Particle gets focus)
+  if (connecting) {
+    return (
+      <div className="fixed inset-0 z-[40]" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }} />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[40] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
