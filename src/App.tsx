@@ -11,7 +11,6 @@ import ResetPassword from "./pages/ResetPassword";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import DashboardLayout from "./layouts/DashboardLayout";
-import DealsPage from "./pages/DealsPage";
 import DealsPageV2 from "./pages/DealsPageV2";
 import InboxPage from "./pages/InboxPage";
 // FavouritesPage removed — replaced by FavouritesDropdown in top bar
@@ -141,7 +140,6 @@ const App = () => (
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="deals" replace />} />
             <Route path="deals" element={<DealsPageV2 />} />
-            <Route path="deals-v2" element={<DealsPage />} />
             <Route path="inbox" element={<InboxPage />} />
             {/* Favourites page removed — now a dropdown in top bar */}
             <Route path="crm" element={<CRMPage />} />
