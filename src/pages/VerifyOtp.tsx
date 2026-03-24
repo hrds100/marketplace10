@@ -168,7 +168,10 @@ export default function VerifyOtp() {
     } catch { /* non-blocking */ }
 
     // ── Create Particle wallet for email signups ────────────────────────
+    // Particle will open a popup asking for an email verification code.
+    // We wait for the user to complete it before redirecting.
     setWalletStatus('creating');
+    setLoading(false);
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;
@@ -183,8 +186,9 @@ export default function VerifyOtp() {
         const jwtData = await jwtRes.json();
         if (jwtData.jwt) {
           try { sessionStorage.setItem('particle_jwt', jwtData.jwt); } catch { /* skip */ }
-          // Create wallet silently via Particle SDK
-          const { createParticleWallet, destroyIframe } = await import('@/lib/particleIframe');
+          // Particle SDK opens a popup for email code verification
+          // DO NOT call destroyIframe() — let the user interact with the popup
+          const { createParticleWallet } = await import('@/lib/particleIframe');
           const address = await createParticleWallet(jwtData.jwt);
           if (address) {
             await (supabase.from('profiles') as any)
@@ -193,25 +197,20 @@ export default function VerifyOtp() {
             console.log('[VerifyOtp] Wallet created:', address);
             try { sessionStorage.removeItem('particle_jwt'); } catch { /* skip */ }
             setWalletStatus('done');
-          } else {
-            setWalletStatus('failed');
+            // Wallet created — redirect after short delay
+            setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
+            return;
           }
-          destroyIframe();
-        } else {
-          setWalletStatus('failed');
         }
-      } else {
-        setWalletStatus('failed');
       }
+      // If we get here, something failed — still redirect
+      setWalletStatus('failed');
+      setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
     } catch (err) {
       console.log('[VerifyOtp] Wallet creation failed (non-blocking):', err);
       setWalletStatus('failed');
+      setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
     }
-
-    setTimeout(() => {
-      window.location.href = '/dashboard/deals';
-    }, 1500);
-    setLoading(false);
   };
 
   // Auto-verify when 4 digits entered
@@ -302,22 +301,29 @@ export default function VerifyOtp() {
                       )}
                     </div>
                     {walletStatus === 'creating' && (
-                      <div className="w-48 mx-auto h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,154,128,0.15)' }}>
-                        <motion.div
-                          className="h-full rounded-full"
-                          style={{ background: '#1E9A80' }}
-                          initial={{ width: '0%' }}
-                          animate={{ width: '90%' }}
-                          transition={{ duration: 8, ease: 'easeOut' }}
-                        />
-                      </div>
+                      <>
+                        <p className="text-xs text-muted-foreground">
+                          Check your email for a verification code from Particle
+                        </p>
+                        <div className="w-48 mx-auto h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,154,128,0.15)' }}>
+                          <motion.div
+                            className="h-full rounded-full"
+                            style={{ background: '#1E9A80' }}
+                            initial={{ width: '0%' }}
+                            animate={{ width: '90%' }}
+                            transition={{ duration: 15, ease: 'easeOut' }}
+                          />
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
 
-                <p className="text-sm text-muted-foreground mt-3">
-                  Redirecting to your dashboard...
-                </p>
+                {walletStatus !== 'creating' && (
+                  <p className="text-sm text-muted-foreground mt-3">
+                    Redirecting to your dashboard...
+                  </p>
+                )}
               </motion.div>
             ) : (
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
