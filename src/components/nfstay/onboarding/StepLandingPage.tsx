@@ -34,15 +34,15 @@ export default function StepLandingPage({ operator, onSave, saving }: Props) {
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="headline">Hero headline</Label>
-          <Input id="headline" value={headline} onChange={e => setHeadline(e.target.value)} placeholder="Your perfect stay awaits" disabled={saving} />
+          <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="headline" value={headline} onChange={e => setHeadline(e.target.value)} placeholder="Your perfect stay awaits" disabled={saving} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="subheadline">Subheadline</Label>
-          <Input id="subheadline" value={subheadline} onChange={e => setSubheadline(e.target.value)} placeholder="Luxury holiday rentals in the heart of..." disabled={saving} />
+          <Input data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="subheadline" value={subheadline} onChange={e => setSubheadline(e.target.value)} placeholder="Luxury holiday rentals in the heart of..." disabled={saving} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="aboutBio">About you / your business</Label>
-          <Textarea id="aboutBio" value={aboutBio} onChange={e => setAboutBio(e.target.value)} placeholder="Tell guests about your properties and hosting philosophy..." rows={4} disabled={saving} />
+          <Textarea data-feature="BOOKING_NFSTAY__ONBOARDING_INPUT" id="aboutBio" value={aboutBio} onChange={e => setAboutBio(e.target.value)} placeholder="Tell guests about your properties and hosting philosophy..." rows={4} disabled={saving} />
         </div>
       </div>
     </form>

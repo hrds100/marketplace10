@@ -54,7 +54,7 @@ export default function StepPropertyBasics({ property, onSave, saving }: Props) 
       <div className="space-y-2">
         <Label htmlFor="propertyType">Property type</Label>
         <Select value={propertyType} onValueChange={setPropertyType} disabled={saving}>
-          <SelectTrigger id="propertyType">
+          <SelectTrigger data-feature="BOOKING_NFSTAY__WIZARD_SELECT" id="propertyType">
             <SelectValue placeholder="Select property type" />
           </SelectTrigger>
           <SelectContent>
@@ -88,6 +88,7 @@ export default function StepPropertyBasics({ property, onSave, saving }: Props) 
       <div className="space-y-2">
         <Label htmlFor="accommodationType">Accommodation type</Label>
         <Input
+          data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
           id="accommodationType"
           value={accommodationType}
           onChange={(e) => setAccommodationType(e.target.value)}
@@ -100,6 +101,7 @@ export default function StepPropertyBasics({ property, onSave, saving }: Props) 
         <div className="space-y-2">
           <Label htmlFor="sizeValue">Size</Label>
           <Input
+            data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
             id="sizeValue"
             type="number"
             min={0}
@@ -112,7 +114,7 @@ export default function StepPropertyBasics({ property, onSave, saving }: Props) 
         <div className="space-y-2">
           <Label htmlFor="sizeUnit">Unit</Label>
           <Select value={sizeUnit} onValueChange={setSizeUnit} disabled={saving}>
-            <SelectTrigger id="sizeUnit">
+            <SelectTrigger data-feature="BOOKING_NFSTAY__WIZARD_SELECT" id="sizeUnit">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -43,6 +43,7 @@ export default function StepLocation({ property, onSave, saving }: Props) {
       <div className="space-y-2">
         <Label htmlFor="address">Address</Label>
         <Input
+          data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
           id="address"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
@@ -58,6 +59,7 @@ export default function StepLocation({ property, onSave, saving }: Props) {
         <div className="space-y-2">
           <Label htmlFor="city">City</Label>
           <Input
+            data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
             id="city"
             value={city}
             onChange={(e) => setCity(e.target.value)}
@@ -67,6 +69,7 @@ export default function StepLocation({ property, onSave, saving }: Props) {
         <div className="space-y-2">
           <Label htmlFor="state">State / Region</Label>
           <Input
+            data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
             id="state"
             value={state}
             onChange={(e) => setState(e.target.value)}
@@ -79,6 +82,7 @@ export default function StepLocation({ property, onSave, saving }: Props) {
         <div className="space-y-2">
           <Label htmlFor="country">Country</Label>
           <Input
+            data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
             id="country"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
@@ -88,6 +92,7 @@ export default function StepLocation({ property, onSave, saving }: Props) {
         <div className="space-y-2">
           <Label htmlFor="postalCode">Postal code</Label>
           <Input
+            data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
             id="postalCode"
             value={postalCode}
             onChange={(e) => setPostalCode(e.target.value)}
@@ -100,6 +105,7 @@ export default function StepLocation({ property, onSave, saving }: Props) {
         <div className="space-y-2">
           <Label htmlFor="lat">Latitude</Label>
           <Input
+            data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
             id="lat"
             type="number"
             step="any"
@@ -113,6 +119,7 @@ export default function StepLocation({ property, onSave, saving }: Props) {
         <div className="space-y-2">
           <Label htmlFor="lng">Longitude</Label>
           <Input
+            data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
             id="lng"
             type="number"
             step="any"

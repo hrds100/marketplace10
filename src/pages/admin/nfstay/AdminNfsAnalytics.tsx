@@ -45,7 +45,7 @@ export default function AdminNfsAnalytics() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div data-feature="ADMIN__NFS_ANALYTICS_CHARTS" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-card border border-border rounded-2xl p-5">
           <h2 className="text-sm font-semibold mb-4">Revenue Trend</h2>
           <ResponsiveContainer width="100%" height={260}>

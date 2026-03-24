@@ -48,6 +48,7 @@ function NumberStepper({
       <Label>{label}</Label>
       <div className="flex items-center gap-3">
         <Button
+          data-feature="BOOKING_NFSTAY__WIZARD_COUNTER"
           type="button"
           variant="outline"
           size="icon"
@@ -59,6 +60,7 @@ function NumberStepper({
         </Button>
         <span className="w-8 text-center font-medium">{value}</span>
         <Button
+          data-feature="BOOKING_NFSTAY__WIZARD_COUNTER"
           type="button"
           variant="outline"
           size="icon"
@@ -114,6 +116,7 @@ export default function StepGuestsAndRooms({ property, onSave, saving }: Props) 
       <div className="flex items-center justify-between">
         <Label htmlFor="allowChildren">Allow children</Label>
         <Switch
+          data-feature="BOOKING_NFSTAY__WIZARD_TOGGLE"
           id="allowChildren"
           checked={allowChildren}
           onCheckedChange={setAllowChildren}

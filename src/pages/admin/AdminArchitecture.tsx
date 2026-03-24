@@ -7,7 +7,7 @@ export default function AdminArchitecture() {
       {/* Three Apps */}
       <div data-feature="ADMIN__ARCHITECTURE_DIAGRAM" className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-10">
         {/* Marketplace */}
-        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        <div data-feature="ADMIN__ARCH_MARKETPLACE" className="bg-card rounded-2xl border border-border overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-primary to-emerald-400" />
           <div className="p-6">
             <div className="text-2xl mb-2">🏠</div>
@@ -22,7 +22,7 @@ export default function AdminArchitecture() {
         </div>
 
         {/* Invest */}
-        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        <div data-feature="ADMIN__ARCH_INVEST" className="bg-card rounded-2xl border border-border overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-amber-500 to-yellow-400" />
           <div className="p-6">
             <div className="text-2xl mb-2">⛓️</div>
@@ -38,7 +38,7 @@ export default function AdminArchitecture() {
         </div>
 
         {/* Booking */}
-        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        <div data-feature="ADMIN__ARCH_NFSTAY" className="bg-card rounded-2xl border border-border overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-400" />
           <div className="p-6">
             <div className="text-2xl mb-2">🏨</div>
@@ -54,7 +54,7 @@ export default function AdminArchitecture() {
       </div>
 
       {/* Shared Infrastructure */}
-      <div className="bg-card rounded-2xl border border-border p-6 max-w-[560px] mx-auto mb-10">
+      <div data-feature="ADMIN__ARCH_INTEGRATIONS" className="bg-card rounded-2xl border border-border p-6 max-w-[560px] mx-auto mb-10">
         <h3 className="text-sm font-bold text-foreground mb-0.5 text-center">Where They Meet</h3>
         <p className="text-[11px] text-muted-foreground text-center mb-5">Shared infrastructure — the building's foundation</p>
         <div className="grid grid-cols-2 gap-2.5">

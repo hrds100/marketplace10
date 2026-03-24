@@ -96,6 +96,7 @@ export default function StepPhotos({ property, onSave, saving }: Props) {
                   <span className="text-xs font-medium text-primary">Cover photo</span>
                 )}
                 <Input
+                  data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
                   placeholder="Caption (optional)"
                   value={img.caption ?? ''}
                   onChange={(e) => updateCaption(index, e.target.value)}

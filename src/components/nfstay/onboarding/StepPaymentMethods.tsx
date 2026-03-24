@@ -20,7 +20,7 @@ export default function StepPaymentMethods({ operator, onSave, saving }: Props) 
         <h2 className="text-xl font-semibold">Payment methods</h2>
         <p className="text-sm text-muted-foreground mt-1">Connect Stripe to accept payments from guests.</p>
       </div>
-      <div className="rounded-xl border border-border/40 bg-white dark:bg-card p-6 text-center space-y-3">
+      <div data-feature="BOOKING_NFSTAY__ONBOARDING_PREVIEW" className="rounded-xl border border-border/40 bg-white dark:bg-card p-6 text-center space-y-3">
         <div className="text-4xl">💳</div>
         <p className="font-medium text-sm">Stripe Connect</p>
         <p className="text-xs text-muted-foreground max-w-sm mx-auto">

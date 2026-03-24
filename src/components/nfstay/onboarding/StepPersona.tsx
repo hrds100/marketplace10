@@ -32,6 +32,7 @@ export default function StepPersona({ operator, onSave, saving }: Props) {
           <button
             key={opt.value}
             type="button"
+            data-feature="BOOKING_NFSTAY__ONBOARDING_OPTION"
             disabled={saving}
             onClick={() => setSelected(opt.value)}
             className={`text-left p-4 rounded-xl border transition-all ${

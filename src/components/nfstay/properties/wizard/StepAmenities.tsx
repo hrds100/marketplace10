@@ -55,6 +55,7 @@ export default function StepAmenities({ property, onSave, saving }: Props) {
               {items.map((amenity) => (
                 <div key={amenity} className="flex items-center gap-2">
                   <Checkbox
+                    data-feature="BOOKING_NFSTAY__WIZARD_TOGGLE"
                     id={`amenity-${amenity}`}
                     checked={!!amenities[amenity]}
                     onCheckedChange={() => toggle(amenity)}

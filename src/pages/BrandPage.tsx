@@ -350,6 +350,7 @@ export default function BrandPage() {
                       {group.colors.map((c) => (
                         <div key={c.value} className="text-center" style={{ width: 88 }}>
                           <div
+                            data-feature="BRAND__COLOUR_SWATCH"
                             className="w-full h-14 rounded-lg mb-1.5"
                             style={{
                               backgroundColor: c.value,
@@ -372,7 +373,7 @@ export default function BrandPage() {
               <h2 className="text-sm font-semibold mb-4" style={S.heading}>Typography</h2>
               <div className="space-y-5">
                 {TYPOGRAPHY.map((t) => (
-                  <div key={t.font}>
+                  <div key={t.font} data-feature="BRAND__TYPE_SAMPLE">
                     <div className="flex items-baseline gap-2 mb-1">
                       <p className="text-[11px] font-semibold" style={S.label}>{t.font}</p>
                       <p className="text-[9px]" style={S.cellSub}>{t.role} · {t.weights}</p>
@@ -415,6 +416,7 @@ export default function BrandPage() {
                 {BUTTON_SPECS.map((b) => (
                   <div key={b.name} className="flex items-center gap-4">
                     <div
+                      data-feature="BRAND__BUTTON_SAMPLE"
                       className="shrink-0 flex items-center justify-center text-[12px] font-medium"
                       style={{
                         backgroundColor: b.bg,
@@ -442,11 +444,11 @@ export default function BrandPage() {
             <div data-feature="BRAND__CARDS" className="bg-white rounded-xl p-6" style={S.card}>
               <h2 className="text-sm font-semibold mb-4" style={S.heading}>Cards</h2>
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="rounded-xl p-4" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', boxShadow: 'rgba(0,0,0,0.08) 0 4px 24px -2px' }}>
+                <div data-feature="BRAND__CARD_SAMPLE" className="rounded-xl p-4" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', boxShadow: 'rgba(0,0,0,0.08) 0 4px 24px -2px' }}>
                   <p className="text-[10px] font-medium" style={S.heading}>Default Card</p>
                   <p className="text-[9px] mt-1" style={S.cellSub}>radius 12–16px, shadow, border</p>
                 </div>
-                <div className="rounded-xl p-4" style={{ background: '#fff', borderTop: '3px solid #1E9A80', border: '1px solid rgba(0,0,0,0.08)', borderTopWidth: 3, borderTopColor: '#1E9A80', boxShadow: 'rgba(0,0,0,0.08) 0 4px 24px -2px' }}>
+                <div data-feature="BRAND__CARD_SAMPLE" className="rounded-xl p-4" style={{ background: '#fff', borderTop: '3px solid #1E9A80', border: '1px solid rgba(0,0,0,0.08)', borderTopWidth: 3, borderTopColor: '#1E9A80', boxShadow: 'rgba(0,0,0,0.08) 0 4px 24px -2px' }}>
                   <p className="text-[10px] font-medium" style={S.heading}>Feature Card</p>
                   <p className="text-[9px] mt-1" style={S.cellSub}>+ green top border</p>
                 </div>
@@ -456,7 +458,7 @@ export default function BrandPage() {
               <div className="space-y-2">
                 {SHADOW_SPECS.map((s) => (
                   <div key={s.name} className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-white shrink-0" style={{ boxShadow: s.value }} />
+                    <div data-feature="BRAND__SHADOW_SAMPLE" className="w-10 h-10 rounded-lg bg-white shrink-0" style={{ boxShadow: s.value }} />
                     <div>
                       <p className="text-[10px] font-medium" style={S.heading}>{s.name}</p>
                       <p className="text-[9px] font-mono" style={S.cellSub}>{s.value}</p>

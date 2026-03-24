@@ -54,7 +54,7 @@ export default function StepHouseRules({ property, onSave, saving }: Props) {
         <div className="space-y-2">
           <Label htmlFor="checkInTime">Check-in time</Label>
           <Select value={checkInTime} onValueChange={setCheckInTime} disabled={saving}>
-            <SelectTrigger id="checkInTime">
+            <SelectTrigger data-feature="BOOKING_NFSTAY__WIZARD_SELECT" id="checkInTime">
               <SelectValue placeholder="Select time" />
             </SelectTrigger>
             <SelectContent>
@@ -69,7 +69,7 @@ export default function StepHouseRules({ property, onSave, saving }: Props) {
         <div className="space-y-2">
           <Label htmlFor="checkOutTime">Check-out time</Label>
           <Select value={checkOutTime} onValueChange={setCheckOutTime} disabled={saving}>
-            <SelectTrigger id="checkOutTime">
+            <SelectTrigger data-feature="BOOKING_NFSTAY__WIZARD_SELECT" id="checkOutTime">
               <SelectValue placeholder="Select time" />
             </SelectTrigger>
             <SelectContent>
@@ -86,6 +86,7 @@ export default function StepHouseRules({ property, onSave, saving }: Props) {
       <div className="space-y-2">
         <Label htmlFor="maxPets">Max pets allowed</Label>
         <Input
+          data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
           id="maxPets"
           type="number"
           min={0}
@@ -99,6 +100,7 @@ export default function StepHouseRules({ property, onSave, saving }: Props) {
       <div className="space-y-2">
         <Label htmlFor="rules">Custom rules</Label>
         <Textarea
+          data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
           id="rules"
           value={rules}
           onChange={(e) => setRules(e.target.value)}
@@ -111,7 +113,7 @@ export default function StepHouseRules({ property, onSave, saving }: Props) {
       <div className="space-y-2">
         <Label htmlFor="cancellationPolicy">Cancellation policy</Label>
         <Select value={cancellationPolicy} onValueChange={setCancellationPolicy} disabled={saving}>
-          <SelectTrigger id="cancellationPolicy">
+          <SelectTrigger data-feature="BOOKING_NFSTAY__WIZARD_SELECT" id="cancellationPolicy">
             <SelectValue placeholder="Select policy" />
           </SelectTrigger>
           <SelectContent>

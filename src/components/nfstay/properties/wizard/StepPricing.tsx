@@ -88,7 +88,7 @@ export default function StepPricing({ property, onSave, saving }: Props) {
         <div className="space-y-2">
           <Label htmlFor="currency">Currency</Label>
           <Select value={currency} onValueChange={setCurrency} disabled={saving}>
-            <SelectTrigger id="currency">
+            <SelectTrigger data-feature="BOOKING_NFSTAY__WIZARD_SELECT" id="currency">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -103,6 +103,7 @@ export default function StepPricing({ property, onSave, saving }: Props) {
         <div className="col-span-2 space-y-2">
           <Label htmlFor="baseRate">Nightly rate</Label>
           <Input
+            data-feature="BOOKING_NFSTAY__WIZARD_INPUT"
             id="baseRate"
             type="number"
             min={0}
@@ -120,6 +121,7 @@ export default function StepPricing({ property, onSave, saving }: Props) {
         <div className="flex items-center justify-between">
           <Label>Cleaning fee</Label>
           <Switch
+            data-feature="BOOKING_NFSTAY__WIZARD_TOGGLE"
             checked={cleaningEnabled}
             onCheckedChange={setCleaningEnabled}
             disabled={saving}
@@ -143,6 +145,7 @@ export default function StepPricing({ property, onSave, saving }: Props) {
         <div className="flex items-center justify-between">
           <Label>Extra guest fee</Label>
           <Switch
+            data-feature="BOOKING_NFSTAY__WIZARD_TOGGLE"
             checked={extraGuestEnabled}
             onCheckedChange={setExtraGuestEnabled}
             disabled={saving}
@@ -188,6 +191,7 @@ export default function StepPricing({ property, onSave, saving }: Props) {
         <div className="flex items-center justify-between">
           <Label>Weekly discount</Label>
           <Switch
+            data-feature="BOOKING_NFSTAY__WIZARD_TOGGLE"
             checked={weeklyEnabled}
             onCheckedChange={setWeeklyEnabled}
             disabled={saving}
@@ -215,6 +219,7 @@ export default function StepPricing({ property, onSave, saving }: Props) {
         <div className="flex items-center justify-between">
           <Label>Monthly discount</Label>
           <Switch
+            data-feature="BOOKING_NFSTAY__WIZARD_TOGGLE"
             checked={monthlyEnabled}
             onCheckedChange={setMonthlyEnabled}
             disabled={saving}
