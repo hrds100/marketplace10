@@ -98,6 +98,17 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const isPexelsPhoto = resolvedImage?.includes('images.pexels.com') || false;
   const isPrime = listing.prime;
 
+  const placeholderUrl = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`;
+  const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.src !== placeholderUrl) img.src = placeholderUrl;
+  };
+  const handleImgLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    // If image decoded but has 0 dimensions (broken/HTML response), swap to placeholder
+    if (img.naturalWidth === 0 && img.src !== placeholderUrl) img.src = placeholderUrl;
+  };
+
   // ─── JV CARD (Style 4: Floating + Shimmer + Progress) ───
   // Exact match to Card 4 from /testing/design
   if (isPrime) {
@@ -115,7 +126,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           <img src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy"
             className="w-full h-full object-cover"
             style={isPexelsPhoto ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined}
-            onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
+            onError={handleImgError} onLoad={handleImgLoad} />
           {isPexelsPhoto && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 z-[1]" style={{ background: 'rgba(0,0,0,0.4)' }}>
               <Lock className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.9)' }} />
@@ -193,7 +204,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         <img data-feature="DEALS__PROPERTY_CARD_IMAGE" src={resolvedImage} alt={`Property in ${listing.city}`} loading="lazy"
           className="w-full h-full object-cover"
           style={isPexelsPhoto ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined}
-          onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`; }} />
+          onError={handleImgError} onLoad={handleImgLoad} />
         {isPexelsPhoto && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 z-[1]" style={{ background: 'rgba(0,0,0,0.4)' }}>
             <Lock className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.9)' }} />
