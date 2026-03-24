@@ -27,6 +27,7 @@ export interface ListingShape {
   investMinContribution?: number;
   investMonthlyProfit?: number;
   investReturns?: number;
+  listing_type?: 'rental' | 'sale';
 }
 
 interface Props {

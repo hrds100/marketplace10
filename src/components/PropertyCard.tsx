@@ -218,6 +218,9 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         <div className="absolute top-2.5 left-2.5 flex gap-1.5 z-[2]">
           {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
           {listing.featured && <span data-feature="DEALS__PROPERTY_CARD_BADGE" className="badge-green-fill text-[11px]">Featured</span>}
+          <span data-feature="DEALS__PROPERTY_CARD_LISTING_TYPE" className={`text-white text-[9px] font-semibold px-2 py-0.5 rounded-full ${listing.listing_type === 'sale' ? 'bg-emerald-600/90' : 'bg-[#1E9A80]/90'}`}>
+            {listing.listing_type === 'sale' ? 'Sale' : 'Rental'}
+          </span>
         </div>
         <button
           data-feature="DEALS__PROPERTY_CARD_FAVOURITE"
@@ -244,7 +247,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
 
         <div className="mt-3 space-y-0">
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-            <span className="text-xs text-muted-foreground">Monthly rent</span>
+            <span className="text-xs text-muted-foreground">{listing.listing_type === 'sale' ? 'Property price' : 'Monthly rent'}</span>
             <span data-feature="DEALS__PROPERTY_CARD_RENT" className="text-[13px] font-medium text-foreground">£{listing.rent.toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
