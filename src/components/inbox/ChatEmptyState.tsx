@@ -143,12 +143,10 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-2 text-[10px] text-[#9CA3AF]">
+        <div className="flex items-center justify-center gap-2 text-[10px] text-[#9CA3AF] -mt-1">
           <span>Nightly: £{nightlyRate}</span>
           <span>·</span>
           <span>Rent: £{monthlyRent.toLocaleString()}</span>
-          <span>·</span>
-          <span className="font-semibold text-[#1E9A80]">Profit: £{estimatedProfit.toLocaleString()}</span>
         </div>
       </div>
 
