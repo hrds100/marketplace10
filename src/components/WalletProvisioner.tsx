@@ -66,8 +66,11 @@ export default function WalletProvisioner() {
 
   if (!showModal) return null;
 
+  // Hide our overlay while Particle popup is active so user can interact with it
+  if (connecting) return null;
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
+    <div className="fixed inset-0 z-[40] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-[400px] mx-4 p-6">
         <div className="flex items-center gap-2 mb-4">
           <CheckCircle2 className="w-5 h-5" style={{ color: '#1E9A80' }} />
