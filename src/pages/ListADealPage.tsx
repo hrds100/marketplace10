@@ -93,7 +93,7 @@ function AccordionSection({ id, title, description, isOpen, isComplete, onToggle
 }) {
   return (
     <div className={`bg-card border rounded-2xl overflow-hidden transition-all ${isComplete && !isOpen ? 'border-emerald-200' : 'border-border'}`}>
-      <button type="button" onClick={onToggle} className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-secondary/40 transition-colors">
+      <button data-feature="DEALS__LIST_FORM_SECTION" type="button" onClick={onToggle} className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-secondary/40 transition-colors">
         <div className="flex items-center gap-3">
           {isComplete ? (
             <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
@@ -575,7 +575,7 @@ export default function ListADealPage() {
               </div>
             </AccordionSection>
 
-            <button type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+            <button data-feature="DEALS__LIST_SUBMIT" type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
               {loading ? 'Submitting...' : 'Submit Deal'}
             </button>
             <p className="text-xs text-muted-foreground text-center mt-2">Our team reviews all submissions within 24–48 hours.</p>
@@ -583,13 +583,13 @@ export default function ListADealPage() {
         </div>
 
         {/* Right column — My Listings (desktop) */}
-        <div className="hidden lg:block">
+        <div data-feature="DEALS__MY_LISTINGS" className="hidden lg:block">
           <MyListingsPanel userId={user?.id} />
         </div>
       </div>
 
       {/* Mobile: My Listings below form */}
-      <div className="lg:hidden mt-8">
+      <div data-feature="DEALS__MY_LISTINGS" className="lg:hidden mt-8">
         <MyListingsPanel userId={user?.id} />
       </div>
     </div>

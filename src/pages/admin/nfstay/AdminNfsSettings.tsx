@@ -60,7 +60,7 @@ export default function AdminNfsSettings() {
                 <p className="text-sm font-medium">Auto-approve operators</p>
                 <p className="text-xs text-muted-foreground">Skip manual review for new operator applications.</p>
               </div>
-              <Switch checked={autoApprove} onCheckedChange={setAutoApprove} />
+              <Switch data-feature="ADMIN__NFS_SETTINGS_AUTO_APPROVE" checked={autoApprove} onCheckedChange={setAutoApprove} />
             </div>
           </section>
         </TabsContent>
@@ -71,7 +71,7 @@ export default function AdminNfsSettings() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Platform Commission (%)</Label>
-                <Input type="number" min={0} max={100} value={commissionRate} onChange={e => setCommissionRate(e.target.value)} className="mt-1.5" />
+                <Input data-feature="ADMIN__NFS_SETTINGS_COMMISSION" type="number" min={0} max={100} value={commissionRate} onChange={e => setCommissionRate(e.target.value)} className="mt-1.5" />
                 <p className="text-xs text-muted-foreground mt-1">Applied to each booking as a platform fee.</p>
               </div>
               <div>
@@ -124,7 +124,7 @@ export default function AdminNfsSettings() {
                 </p>
                 <p className="text-xs text-muted-foreground">Show a maintenance page to all visitors. Only admins can access the site.</p>
               </div>
-              <Switch checked={maintenanceMode} onCheckedChange={setMaintenanceMode} />
+              <Switch data-feature="ADMIN__NFS_SETTINGS_MAINTENANCE" checked={maintenanceMode} onCheckedChange={setMaintenanceMode} />
             </div>
             {maintenanceMode && (
               <div className="bg-warning/10 border border-warning/30 rounded-xl p-3">
@@ -144,7 +144,7 @@ export default function AdminNfsSettings() {
       </Tabs>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} className="rounded-lg" disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+        <Button data-feature="ADMIN__NFS_SETTINGS_SAVE" onClick={handleSave} className="rounded-lg" disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
       </div>
     </div>
   );

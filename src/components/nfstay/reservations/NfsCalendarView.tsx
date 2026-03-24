@@ -53,7 +53,7 @@ export default function NfsCalendarView({ reservations }: Props) {
 
   return (
     <div data-feature="BOOKING_NFSTAY__RESERVATIONS" className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div data-feature="BOOKING_NFSTAY__CALENDAR_NAV" className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={prev}>
           <ChevronLeft className="w-4 h-4" />
         </Button>
@@ -63,7 +63,7 @@ export default function NfsCalendarView({ reservations }: Props) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-7 gap-px bg-border/40 rounded-lg overflow-hidden">
+      <div data-feature="BOOKING_NFSTAY__CALENDAR_GRID" className="grid grid-cols-7 gap-px bg-border/40 rounded-lg overflow-hidden">
         {days.map(d => (
           <div key={d} className="bg-muted/30 p-2 text-center text-xs font-medium text-muted-foreground">
             {d}
@@ -95,6 +95,7 @@ export default function NfsCalendarView({ reservations }: Props) {
                   return (
                     <div
                       key={r.id}
+                      data-feature="BOOKING_NFSTAY__CALENDAR_EVENT"
                       className={`text-[10px] leading-tight px-1 py-0.5 rounded truncate cursor-pointer ${STATUS_COLORS[r.status] || ''}`}
                       onClick={() => navigate(`/nfstay/reservations/${r.id}`)}
                       title={`${name} — ${r.status}`}

@@ -66,6 +66,7 @@ export function NfsHeroSearch() {
       <div className="flex-1 px-7 py-4 min-w-0">
         <p className="text-xs font-semibold text-foreground mb-0.5">Destination</p>
         <input
+          data-feature="BOOKING_NFSTAY__HERO_LOCATION"
           type="text"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
@@ -80,7 +81,7 @@ export function NfsHeroSearch() {
       {/* Check-in/Check-out */}
       <Popover>
         <PopoverTrigger asChild>
-          <button className="px-7 py-4 text-left min-w-[180px]">
+          <button data-feature="BOOKING_NFSTAY__HERO_CHECKIN" className="px-7 py-4 text-left min-w-[180px]">
             <p className="text-xs font-semibold text-foreground mb-0.5">Check-in/Check-out</p>
             <p className={cn("text-sm", dateLabel ? "text-foreground" : "text-muted-foreground")}>
               {dateLabel ?? "Any dates..."}
@@ -104,7 +105,7 @@ export function NfsHeroSearch() {
       {/* Guests */}
       <Popover open={guestsOpen} onOpenChange={setGuestsOpen}>
         <PopoverTrigger asChild>
-          <button className="px-7 py-4 text-left">
+          <button data-feature="BOOKING_NFSTAY__HERO_GUESTS" className="px-7 py-4 text-left">
             <p className="text-xs font-semibold text-foreground mb-0.5">Guests</p>
             <p className={cn("text-sm", totalGuests > 1 ? "text-foreground" : "text-muted-foreground")}>
               {totalGuests > 1 ? `${totalGuests} guests` : '1 guest'}
@@ -120,7 +121,7 @@ export function NfsHeroSearch() {
 
       {/* Search button */}
       <div className="pr-3 py-2">
-        <Button onClick={handleSearch} size="lg" className="h-12 rounded-full px-7 shrink-0 text-base">
+        <Button data-feature="BOOKING_NFSTAY__HERO_SEARCH_BTN" onClick={handleSearch} size="lg" className="h-12 rounded-full px-7 shrink-0 text-base">
           Search
         </Button>
       </div>

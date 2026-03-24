@@ -127,6 +127,7 @@ export default function AdminLessons() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[28px] font-bold text-foreground">University — Lessons ({lessons.length})</h1>
         <button
+          data-feature="ADMIN__LESSONS_ADD"
           onClick={() => {
             setShowForm(true);
             setEditingId(null);
@@ -263,7 +264,7 @@ export default function AdminLessons() {
         </div>
       )}
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div data-feature="ADMIN__LESSONS_TABLE" className="bg-card border border-border rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
@@ -282,6 +283,7 @@ export default function AdminLessons() {
                 <td className="p-3.5 text-muted-foreground">{l.module_id ?? '—'}</td>
                 <td className="p-3.5">
                   <span
+                    data-feature="ADMIN__LESSONS_PUBLISH"
                     className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full"
                     style={{
                       background: l.is_published ? '#ECFDF5' : '#F3F4F6',
@@ -298,12 +300,14 @@ export default function AdminLessons() {
                 <td className="p-3.5">
                   <div className="flex gap-2">
                     <button
+                      data-feature="ADMIN__LESSONS_EDIT"
                       onClick={() => startEdit(l)}
                       className="text-xs text-primary font-medium inline-flex items-center gap-1"
                     >
                       <Edit2 className="w-3 h-3" /> Edit
                     </button>
                     <button
+                      data-feature="ADMIN__LESSONS_DELETE"
                       onClick={() => deleteLesson(l.id)}
                       className="text-xs text-destructive font-medium inline-flex items-center gap-1"
                     >

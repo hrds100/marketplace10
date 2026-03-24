@@ -160,7 +160,7 @@ export default function AdminListings() {
           <button onClick={downloadCSVTemplate} className="h-11 px-5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-2">
             <Download className="w-4 h-4" /> CSV Template
           </button>
-          <button onClick={() => fileInputRef.current?.click()} className="h-11 px-5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-2">
+          <button data-feature="ADMIN__LISTINGS_BULK" onClick={() => fileInputRef.current?.click()} className="h-11 px-5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-2">
             <Upload className="w-4 h-4" /> Import CSV
           </button>
           <button className="h-11 px-5 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity">+ Add listing</button>
@@ -193,7 +193,7 @@ export default function AdminListings() {
         </div>
       )}
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto">
+      <div data-feature="ADMIN__LISTINGS_TABLE" className="bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto">
         <table className="w-full text-sm min-w-[900px]">
           <thead>
             <tr className="border-b border-border">
@@ -217,7 +217,7 @@ export default function AdminListings() {
                   </select>
                 </td>
                 <td className="p-3.5">
-                  <button onClick={() => toggleFeatured(l.id)} className={`w-9 h-5 rounded-full relative transition-colors ${l.featured ? 'bg-primary' : 'bg-border'}`}>
+                  <button data-feature="ADMIN__LISTINGS_FEATURED" onClick={() => toggleFeatured(l.id)} className={`w-9 h-5 rounded-full relative transition-colors ${l.featured ? 'bg-primary' : 'bg-border'}`}>
                     <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${l.featured ? 'left-[18px]' : 'left-0.5'}`} />
                   </button>
                 </td>
@@ -230,8 +230,8 @@ export default function AdminListings() {
                 </td>
                 <td className="p-3.5">
                   <div className="flex gap-2">
-                    <button onClick={() => startEdit(l)} className="text-xs text-primary font-medium inline-flex items-center gap-1"><Edit2 className="w-3 h-3" /> Edit</button>
-                    <button onClick={() => deleteProperty(l.id)} className="text-xs text-destructive font-medium inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Delete</button>
+                    <button data-feature="ADMIN__LISTINGS_EDIT" onClick={() => startEdit(l)} className="text-xs text-primary font-medium inline-flex items-center gap-1"><Edit2 className="w-3 h-3" /> Edit</button>
+                    <button data-feature="ADMIN__LISTINGS_DELETE" onClick={() => deleteProperty(l.id)} className="text-xs text-destructive font-medium inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Delete</button>
                     <button onClick={() => setHardDeleteTarget({ id: l.id, name: l.name })} className="text-xs font-medium px-2 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Hard Delete</button>
                   </div>
                 </td>

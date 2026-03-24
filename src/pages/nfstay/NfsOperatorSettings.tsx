@@ -45,15 +45,15 @@ export default function NfsOperatorSettings() {
 
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="contact">Contact</TabsTrigger>
-          <TabsTrigger value="branding">Branding</TabsTrigger>
+          <TabsTrigger data-feature="BOOKING_NFSTAY__SETTINGS_PROFILE" value="profile">Profile</TabsTrigger>
+          <TabsTrigger data-feature="BOOKING_NFSTAY__SETTINGS_CONTACT" value="contact">Contact</TabsTrigger>
+          <TabsTrigger data-feature="BOOKING_NFSTAY__SETTINGS_BRANDING" value="branding">Branding</TabsTrigger>
           <TabsTrigger value="social">Social</TabsTrigger>
           <TabsTrigger value="promo">Promo Codes</TabsTrigger>
-          <TabsTrigger value="stripe">Stripe</TabsTrigger>
-          <TabsTrigger value="hospitable">Hospitable</TabsTrigger>
-          <TabsTrigger value="domain">Domain</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger data-feature="BOOKING_NFSTAY__SETTINGS_STRIPE" value="stripe">Stripe</TabsTrigger>
+          <TabsTrigger data-feature="BOOKING_NFSTAY__SETTINGS_HOSPITABLE" value="hospitable">Hospitable</TabsTrigger>
+          <TabsTrigger data-feature="BOOKING_NFSTAY__SETTINGS_DOMAIN" value="domain">Domain</TabsTrigger>
+          <TabsTrigger data-feature="BOOKING_NFSTAY__SETTINGS_ANALYTICS" value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         <div className="mt-6">

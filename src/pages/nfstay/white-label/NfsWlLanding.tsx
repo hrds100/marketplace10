@@ -17,6 +17,7 @@ export default function NfsWlLanding() {
     <div data-feature="BOOKING_NFSTAY__WHITE_LABEL">
       {/* Hero Section */}
       <section
+        data-feature="BOOKING_NFSTAY__WL_HERO"
         className="relative bg-cover bg-center py-24 px-4"
         style={{
           backgroundImage: operator.hero_photo
@@ -68,7 +69,7 @@ export default function NfsWlLanding() {
 
       {/* FAQs */}
       {faqs.length > 0 && (
-        <section className="py-16 px-4 bg-muted/20">
+        <section data-feature="BOOKING_NFSTAY__WL_FAQ" className="py-16 px-4 bg-muted/20">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold text-center mb-8">Frequently Asked Questions</h2>
             <div className="space-y-2">

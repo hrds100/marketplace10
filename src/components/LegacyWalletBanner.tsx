@@ -105,6 +105,7 @@ export default function LegacyWalletBanner() {
                 placeholder="0x..."
                 value={address}
                 onChange={e => { setAddress(e.target.value); setError(''); }}
+                data-feature="BLOCKCHAIN_WALLET__ADDRESS_INPUT"
                 className="w-full h-9 px-3 rounded-md border border-amber-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-400"
                 spellCheck={false}
               />
@@ -114,6 +115,7 @@ export default function LegacyWalletBanner() {
               <button
                 type="submit"
                 disabled={saving || !address.trim()}
+                data-feature="BLOCKCHAIN_WALLET__SAVE"
                 className="h-9 px-4 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold disabled:opacity-50 transition-colors"
               >
                 {saving ? 'Saving…' : 'Save wallet'}

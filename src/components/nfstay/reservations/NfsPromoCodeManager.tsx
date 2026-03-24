@@ -81,7 +81,7 @@ export default function NfsPromoCodeManager() {
         <form onSubmit={handleCreate} className="border border-border/40 rounded-xl p-4 space-y-3 bg-muted/10">
           <div className="grid grid-cols-2 gap-3">
             <Input placeholder="Display name (optional)" value={form.name} onChange={e => set('name', e.target.value)} />
-            <Input placeholder="CODE" value={form.code} onChange={e => set('code', e.target.value.toUpperCase())} required className="font-mono" />
+            <Input data-feature="BOOKING_NFSTAY__PROMO_CODE_INPUT" placeholder="CODE" value={form.code} onChange={e => set('code', e.target.value.toUpperCase())} required className="font-mono" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <select
@@ -121,7 +121,7 @@ export default function NfsPromoCodeManager() {
             )}
           </div>
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={saving}>
+            <Button data-feature="BOOKING_NFSTAY__PROMO_CREATE" type="submit" size="sm" disabled={saving}>
               {saving ? 'Creating...' : 'Create'}
             </Button>
             <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>
@@ -140,7 +140,7 @@ export default function NfsPromoCodeManager() {
       ) : (
         <div className="space-y-2">
           {promoCodes.map(pc => (
-            <div key={pc.id} className="flex items-center justify-between border border-border/40 rounded-lg p-3 bg-white dark:bg-card">
+            <div key={pc.id} data-feature="BOOKING_NFSTAY__PROMO_ROW" className="flex items-center justify-between border border-border/40 rounded-lg p-3 bg-white dark:bg-card">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-medium text-sm">{pc.code}</span>
@@ -166,7 +166,7 @@ export default function NfsPromoCodeManager() {
                 >
                   {pc.status === 'active' ? 'Deactivate' : 'Activate'}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(pc.id)} disabled={saving}>
+                <Button data-feature="BOOKING_NFSTAY__PROMO_DELETE" variant="ghost" size="sm" onClick={() => handleDelete(pc.id)} disabled={saving}>
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </Button>
               </div>

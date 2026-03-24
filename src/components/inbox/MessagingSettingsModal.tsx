@@ -25,6 +25,7 @@ export default function MessagingSettingsModal({ open, onClose }: Props) {
         <div>
           {ITEMS.map((item, i) => (
             <button
+              data-feature="CRM_INBOX__SETTINGS_ITEM"
               key={item.label}
               className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-sm text-foreground ${i < ITEMS.length - 1 ? 'border-b border-gray-100' : ''}`}
             >

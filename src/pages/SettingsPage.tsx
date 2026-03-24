@@ -229,9 +229,9 @@ export default function SettingsPage() {
 
         <div className="bg-card border border-border rounded-2xl p-6">
           {activeTab === 'profile' && (
-            <div>
+            <div data-feature="SETTINGS__PROFILE">
               <h2 className="text-[22px] font-bold text-foreground mb-6">Profile</h2>
-              <div className="flex items-center gap-4 mb-6">
+              <div data-feature="SETTINGS__AVATAR" className="flex items-center gap-4 mb-6">
                 <div className="relative group">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover border-2 border-border" />
@@ -278,7 +278,7 @@ export default function SettingsPage() {
                   <label className="text-xs font-semibold text-foreground block mb-1.5">WhatsApp</label>
                   <input value={profile.whatsapp} onChange={e => setProfile(p => ({ ...p, whatsapp: e.target.value }))} className="input-nfstay w-full" placeholder="+44 7911 123456" />
                 </div>
-                <button onClick={handleSaveProfile} disabled={saving} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
+                <button data-feature="SETTINGS__SAVE" onClick={handleSaveProfile} disabled={saving} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
                   {saving ? 'Saving...' : 'Save changes'}
                 </button>
               </div>
@@ -286,7 +286,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'security' && (
-            <div>
+            <div data-feature="SETTINGS__SECURITY">
               <h2 className="text-[22px] font-bold text-foreground mb-6">Security and privacy</h2>
               <div className="rounded-lg p-3 flex items-center gap-2.5 mb-6 bg-accent-light">
                 <Shield className="w-4 h-4 text-primary flex-shrink-0" />
@@ -301,13 +301,13 @@ export default function SettingsPage() {
                   <label className="text-xs font-semibold text-foreground block mb-1.5">Confirm password</label>
                   <input type="password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} placeholder="Repeat password" className="input-nfstay w-full" />
                 </div>
-                <button onClick={handleUpdatePassword} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Update password</button>
+                <button data-feature="SETTINGS__SAVE" onClick={handleUpdatePassword} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Update password</button>
               </div>
             </div>
           )}
 
           {activeTab === 'membership' && (
-            <div>
+            <div data-feature="SETTINGS__MEMBERSHIP">
               <h2 className="text-[22px] font-bold text-foreground mb-6">Subscription</h2>
 
               {/* Current tier card */}
@@ -409,7 +409,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'notifications' && (
-            <div>
+            <div data-feature="SETTINGS__NOTIFICATIONS">
               <h2 className="text-[22px] font-bold text-foreground mb-2">Notifications</h2>
               <p className="text-sm text-muted-foreground mb-6">Choose how you want to be notified about activity on your account.</p>
 
@@ -481,7 +481,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'payouts' && (
-            <div>
+            <div data-feature="SETTINGS__PAYOUT">
               <h2 className="text-[22px] font-bold text-foreground mb-6">Payout Settings</h2>
 
               {/* Payout Address */}
@@ -579,7 +579,7 @@ export default function SettingsPage() {
             <div className="text-center py-12">
               <h2 className="text-lg font-medium text-foreground mb-6">Are you sure you want to sign out?</h2>
               <div className="flex gap-3 justify-center">
-                <button onClick={handleSignOut} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center hover:opacity-90 transition-opacity">Sign out</button>
+                <button data-feature="SETTINGS__SIGNOUT" onClick={handleSignOut} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center hover:opacity-90 transition-opacity">Sign out</button>
                 <button onClick={() => setActiveTab('profile')} className="h-11 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">Cancel</button>
               </div>
             </div>

@@ -151,12 +151,12 @@ export default function CRMPage() {
   return (
     <div data-feature="CRM_INBOX__CRM_PIPELINE">
       <div className="flex items-center justify-between mb-2">
-        <div>
+        <div data-feature="CRM_INBOX__PIPELINE_HEADER">
           <h1 className="text-[28px] font-bold text-foreground">CRM Pipeline</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage your rent-to-rent acquisition pipeline.</p>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          <button onClick={() => setShowAddForm(true)} className="h-11 px-5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold text-sm inline-flex items-center gap-2 hover:from-emerald-600 hover:to-teal-700 shadow-md transition-all">
+          <button data-feature="CRM_INBOX__PIPELINE_ADD" onClick={() => setShowAddForm(true)} className="h-11 px-5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold text-sm inline-flex items-center gap-2 hover:from-emerald-600 hover:to-teal-700 shadow-md transition-all">
             <Plus className="w-4 h-4" /> Add Your Own Deal
           </button>
           <p className="text-xs text-muted-foreground">Track your prospects & portfolio</p>
@@ -218,6 +218,7 @@ export default function CRMPage() {
         {CRM_STAGES.map(stage => (
           <div
             key={stage}
+            data-feature="CRM_INBOX__PIPELINE_COLUMN"
             className="min-w-[280px] bg-secondary rounded-[14px] p-3.5 flex flex-col"
             onDragOver={e => e.preventDefault()}
             onDrop={() => onDrop(stage)}
@@ -238,6 +239,7 @@ export default function CRMPage() {
                   key={deal.id}
                   draggable
                   onDragStart={() => onDragStart(deal.id)}
+                  data-feature="CRM_INBOX__PIPELINE_CARD"
                   className={`bg-card border border-border rounded-lg overflow-hidden cursor-grab active:cursor-grabbing transition-shadow ${dragId === deal.id ? 'shadow-lg opacity-75' : 'shadow-sm'}`}
                 >
                   {/* Clickable header — always visible */}

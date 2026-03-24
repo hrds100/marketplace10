@@ -69,7 +69,7 @@ export default function FavouritesPage() {
 
   if (favIds.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+      <div data-feature="FAVOURITES__EMPTY" className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <Heart className="w-12 h-12 text-border mb-4" strokeWidth={1.5} />
         <h3 className="text-xl font-semibold text-foreground">No saved deals yet</h3>
         <p className="text-sm text-muted-foreground mt-1.5 max-w-[300px]">Browse live deals and tap the heart icon to save them here.</p>
@@ -86,7 +86,7 @@ export default function FavouritesPage() {
       <p className="text-sm text-muted-foreground mt-1 mb-6">Your saved rent-to-rent deals</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         {favListings.map(l => (
-          <PropertyCard key={l.id} listing={l} isFav={true} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} showSavedBadge />
+          <div key={l.id} data-feature="FAVOURITES__CARD"><PropertyCard listing={l} isFav={true} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} showSavedBadge /></div>
         ))}
       </div>
       {/* InquiryPanel removed — Inquire Now navigates to inbox */}

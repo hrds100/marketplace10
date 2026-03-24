@@ -213,7 +213,7 @@ export default function AdminInvestCommissionSettings() {
       <h1 className="text-[28px] font-bold text-foreground mb-6">Commission Settings</h1>
 
       {/* Global Defaults */}
-      <Card className="border-border mb-8">
+      <Card data-feature="ADMIN__INVEST_COMMISSION_GLOBAL" className="border-border mb-8">
         <CardHeader>
           <CardTitle className="text-base">Global Default Rates</CardTitle>
         </CardHeader>
@@ -245,6 +245,7 @@ export default function AdminInvestCommissionSettings() {
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
                   </div>
                   <Button
+                    data-feature="ADMIN__INVEST_COMMISSION_SAVE"
                     size="sm"
                     disabled={!hasEdit}
                     onClick={() => handleGlobalSave(r.key)}
@@ -268,7 +269,7 @@ export default function AdminInvestCommissionSettings() {
         </Button>
       </div>
 
-      <Card className="border-border">
+      <Card data-feature="ADMIN__INVEST_COMMISSION_AGENTS" className="border-border">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>

@@ -45,7 +45,7 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
   if (isCollapsed) {
     return (
       <div className="h-full flex flex-col items-center bg-white border-r border-border py-4 w-14">
-        <button onClick={onExpand} className="p-2 rounded-lg hover:bg-secondary transition-colors" title="Expand messages">
+        <button data-feature="CRM_INBOX__THREAD_COLLAPSE" onClick={onExpand} className="p-2 rounded-lg hover:bg-secondary transition-colors" title="Expand messages">
           <PanelLeftOpen className="w-5 h-5 text-muted-foreground" />
         </button>
       </div>
@@ -60,6 +60,7 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
           <div className="flex items-center gap-2 w-full">
             <Search className="w-4 h-4 text-gray-400 shrink-0" />
             <input
+              data-feature="CRM_INBOX__THREAD_SEARCH"
               ref={searchRef}
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -72,7 +73,7 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
           <>
             <div className="flex items-center gap-1">
               {onCollapse && (
-                <button className="p-1.5 rounded-lg hover:bg-secondary transition-colors" onClick={onCollapse} title="Collapse">
+                <button data-feature="CRM_INBOX__THREAD_COLLAPSE" className="p-1.5 rounded-lg hover:bg-secondary transition-colors" onClick={onCollapse} title="Collapse">
                   <PanelLeftClose className="w-4 h-4 text-muted-foreground" />
                 </button>
               )}
@@ -94,6 +95,7 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
       <div className="flex gap-2 px-4 py-2">
         {(['all', 'unread'] as const).map(f => (
           <button
+            data-feature="CRM_INBOX__THREAD_FILTER"
             key={f}
             onClick={() => setFilter(f)}
             className={`px-3 py-1 rounded-full text-xs font-semibold capitalize transition-colors ${filter === f ? 'bg-foreground text-background' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
@@ -113,7 +115,7 @@ export default function ThreadList({ threads, selectedId, onSelect, onOpenSettin
           <>
             {supportThreads.length > 0 && (
               <>
-                <div className="text-xs text-gray-400 uppercase tracking-wide px-4 py-1">Pinned</div>
+                <div data-feature="CRM_INBOX__SUPPORT" className="text-xs text-gray-400 uppercase tracking-wide px-4 py-1">Pinned</div>
                 {supportThreads.map(thread => (
                   <ThreadItem key={thread.id} thread={thread} isSelected={selectedId === thread.id} onSelect={() => onSelect(thread.id)} searchQuery={search} onArchive={onArchive} />
                 ))}

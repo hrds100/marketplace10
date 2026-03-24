@@ -108,7 +108,7 @@ export default function NfsPlacesAutocomplete({
 
   return (
     <Input
-      data-feature="BOOKING_NFSTAY__MAPS"
+      data-feature="BOOKING_NFSTAY__PLACES_INPUT"
       ref={inputRef}
       type="text"
       placeholder="Start typing an address..."

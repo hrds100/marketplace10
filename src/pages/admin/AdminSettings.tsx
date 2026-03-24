@@ -148,7 +148,7 @@ export default function AdminSettings() {
           ) : (
             <div className="space-y-5">
               {/* Pricing model */}
-              <div>
+              <div data-feature="ADMIN__SETTINGS_MODEL">
                 <label className="text-xs font-semibold text-foreground block mb-1.5">Airbnb Pricing Model</label>
                 <select
                   value={aiForm.model_pricing}
@@ -176,7 +176,7 @@ export default function AdminSettings() {
               </div>
 
               {/* Pricing system prompt */}
-              <div>
+              <div data-feature="ADMIN__SETTINGS_PROMPT">
                 <label className="text-xs font-semibold text-foreground block mb-1.5">Pricing AI System Prompt</label>
                 <textarea
                   rows={10}
@@ -229,6 +229,7 @@ export default function AdminSettings() {
               </div>
 
               <button
+                data-feature="ADMIN__SETTINGS_SAVE"
                 onClick={handleSaveAI}
                 disabled={aiSaving}
                 className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"

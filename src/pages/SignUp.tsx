@@ -266,7 +266,7 @@ export default function SignUp() {
           {/* Social stacked */}
           <div className="flex flex-col gap-2 w-full">
             {PROVIDERS.map(({ id, label, icon }) => (
-              <button key={id} onClick={() => handleSocialLogin(id)} disabled={socialLoading !== null}
+              <button key={id} data-feature="AUTH__SIGNUP_SOCIAL" onClick={() => handleSocialLogin(id)} disabled={socialLoading !== null}
                 className="w-full flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8] disabled:opacity-50 relative"
                 style={{ height: 45, padding: '8px 12px' }}>
                 {icon} {label}
@@ -351,7 +351,7 @@ export default function SignUp() {
   return (
     <AuthShell data-feature="AUTH" showTabs={false} heading="Sign up with Email" subtitle="Fill in your details to create an account">
       <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
-        <button onClick={() => setView('social')} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a] mb-2">
+        <button data-feature="AUTH__SIGNUP_BACK" onClick={() => setView('social')} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a] mb-2">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
@@ -361,7 +361,7 @@ export default function SignUp() {
             <label className="text-sm font-medium text-[#525252] tracking-wide">Full Name <span className="text-red-500">*</span></label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-              <input {...register('name')} type="text" placeholder="Enter full name"
+              <input data-feature="AUTH__SIGNUP_NAME" {...register('name')} type="text" placeholder="Enter full name"
                 className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                 style={{ padding: '4px 12px 4px 40px' }} />
             </div>
@@ -373,7 +373,7 @@ export default function SignUp() {
             <label className="text-sm font-medium text-[#525252] tracking-wide">Email <span className="text-red-500">*</span></label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-              <input {...register('email')} type="email" placeholder="Enter your email"
+              <input data-feature="AUTH__SIGNUP_EMAIL" {...register('email')} type="email" placeholder="Enter your email"
                 className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                 style={{ padding: '4px 12px 4px 40px' }} />
             </div>
@@ -385,7 +385,7 @@ export default function SignUp() {
             <label className="text-sm font-medium text-[#525252] tracking-wide">Password <span className="text-red-500">*</span></label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-              <input {...register('password')} type={showPassword ? 'text' : 'password'} placeholder="Min 8 characters"
+              <input data-feature="AUTH__SIGNUP_PASSWORD" {...register('password')} type={showPassword ? 'text' : 'password'} placeholder="Min 8 characters"
                 className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                 style={{ padding: '4px 40px 4px 40px' }} />
               <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}
@@ -429,7 +429,7 @@ export default function SignUp() {
               <CountryCodeSelect value={formCountryCode} onChange={(val) => setValue('countryCode', val)} />
               <div className="relative flex-1">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-                <input {...register('phone')} type="tel" placeholder="7863 992 555"
+                <input data-feature="AUTH__SIGNUP_PHONE" {...register('phone')} type="tel" placeholder="7863 992 555"
                   className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-r-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                   style={{ padding: '4px 12px 4px 40px' }} />
               </div>
@@ -453,7 +453,7 @@ export default function SignUp() {
           {errors.terms && <p className="text-xs text-red-500 -mt-2">{errors.terms.message}</p>}
 
           {/* Submit */}
-          <button type="submit" disabled={emailLoading}
+          <button data-feature="AUTH__SIGNUP_SUBMIT" type="submit" disabled={emailLoading}
             className="w-full rounded-lg font-medium text-white cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             style={{ height: 37, backgroundColor: '#1e9a80', fontSize: 16, padding: '8px 16px', border: 'none', boxShadow: '0 4px 8px -1px rgba(0,0,0,0.05)' }}>
             <AnimatePresence mode="wait">

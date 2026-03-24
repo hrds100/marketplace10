@@ -67,6 +67,7 @@ export default function DashboardTopNav() {
       <header data-feature="NAV_LAYOUT" className="h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[100] relative flex-shrink-0">
         {/* Logo — extra spacing before nav */}
         <Link
+          data-feature="NAV_LAYOUT__TOP_LOGO"
           to="/dashboard/deals"
           className="text-[17px] font-extrabold text-foreground tracking-tight hover:opacity-70 transition-opacity mr-14 flex-shrink-0"
         >
@@ -79,6 +80,7 @@ export default function DashboardTopNav() {
             <NavLink
               key={item.to}
               to={item.to}
+              data-feature="NAV_LAYOUT__TOP_NAV_LINK"
               className={`relative flex items-center gap-1.5 px-3 py-[7px] rounded-lg text-[13px] transition-all duration-200 whitespace-nowrap ${
                 isActive(item.to)
                   ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary'
@@ -132,6 +134,7 @@ export default function DashboardTopNav() {
 
         {/* Mobile hamburger */}
         <button
+          data-feature="NAV_LAYOUT__TOP_BURGER"
           onClick={() => setMobileOpen(!mobileOpen)}
           className="md:hidden ml-auto p-2 text-muted-foreground hover:text-foreground transition-colors"
         >

@@ -88,7 +88,7 @@ export default function NfsCreateReservation() {
 
       <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
         {/* Property selection */}
-        <div className="space-y-3">
+        <div data-feature="BOOKING_NFSTAY__CREATE_PROPERTY" className="space-y-3">
           <h2 className="text-lg font-semibold">Property</h2>
           <select
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -110,7 +110,7 @@ export default function NfsCreateReservation() {
         </div>
 
         {/* Guest info */}
-        <div className="space-y-3">
+        <div data-feature="BOOKING_NFSTAY__CREATE_GUEST" className="space-y-3">
           <h2 className="text-lg font-semibold">Guest Information</h2>
           <div className="grid grid-cols-2 gap-3">
             <Input placeholder="First name" value={form.guest_first_name} onChange={e => set('guest_first_name', e.target.value)} />
@@ -123,7 +123,7 @@ export default function NfsCreateReservation() {
         </div>
 
         {/* Dates */}
-        <div className="space-y-3">
+        <div data-feature="BOOKING_NFSTAY__CREATE_DATES" className="space-y-3">
           <h2 className="text-lg font-semibold">Dates</h2>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -208,7 +208,7 @@ export default function NfsCreateReservation() {
           <Textarea placeholder="Guest message or internal notes..." value={form.guest_message} onChange={e => set('guest_message', e.target.value)} />
         </div>
 
-        <Button type="submit" disabled={creating}>
+        <Button data-feature="BOOKING_NFSTAY__CREATE_SUBMIT" type="submit" disabled={creating}>
           <Save className="w-4 h-4 mr-2" />
           {creating ? 'Creating...' : 'Create Reservation'}
         </Button>

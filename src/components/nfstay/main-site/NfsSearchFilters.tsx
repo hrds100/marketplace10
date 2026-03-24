@@ -39,9 +39,9 @@ export function NfsSearchFilters({
   return (
     <div data-feature="BOOKING_NFSTAY__MAIN_SITE" className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-foreground font-semibold">{resultCount}+ results</p>
+        <p data-feature="BOOKING_NFSTAY__FILTER_COUNT" className="text-sm text-foreground font-semibold">{resultCount}+ results</p>
         <div className="flex items-center gap-2">
-          <div className="flex items-center border border-border rounded-lg overflow-hidden">
+          <div data-feature="BOOKING_NFSTAY__FILTER_SORT" className="flex items-center border border-border rounded-lg overflow-hidden">
             <span className="text-xs text-muted-foreground px-3">Sort by:</span>
             <Select value={sortBy} onValueChange={onSortChange}>
               <SelectTrigger className="h-9 w-[120px] text-xs border-0 border-l border-border rounded-none shadow-none focus:ring-0">
@@ -71,7 +71,7 @@ export function NfsSearchFilters({
 
       {showFilters && (
         <div className="bg-card border border-border rounded-xl p-4 flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
+          <div data-feature="BOOKING_NFSTAY__FILTER_TYPE" className="flex items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground">Type:</span>
             <Select value={activeType} onValueChange={onTypeChange}>
               <SelectTrigger className="h-8 w-[140px] text-xs">
@@ -82,7 +82,7 @@ export function NfsSearchFilters({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-2">
+          <div data-feature="BOOKING_NFSTAY__FILTER_PRICE" className="flex items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground">Price / night:</span>
             <div className="flex items-center gap-1">
               <input type="number" placeholder="Min" value={priceMin} onChange={(e) => onPriceMinChange(e.target.value)}
@@ -92,7 +92,7 @@ export function NfsSearchFilters({
                 className="w-20 h-8 px-2 text-xs border border-input rounded-md bg-card outline-none focus:border-primary" />
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div data-feature="BOOKING_NFSTAY__FILTER_BEDROOMS" className="flex items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground">Bedrooms:</span>
             <div className="flex gap-1">
               {[0, 1, 2, 3, 4, 5].map((n) => (

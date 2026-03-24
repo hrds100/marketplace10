@@ -66,17 +66,17 @@ export default function ThreadItem({ thread, isSelected, onSelect, searchQuery =
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold text-foreground truncate">
+          <span data-feature="CRM_INBOX__THREAD_PROPERTY" className="text-sm font-semibold text-foreground truncate">
             {thread.isSupport ? 'nfstay Support' : highlightMatch(thread.propertyTitle, searchQuery)}
           </span>
-          <span className="text-[11px] text-muted-foreground shrink-0">{thread.lastMessageAt}</span>
+          <span data-feature="CRM_INBOX__THREAD_TIME" className="text-[11px] text-muted-foreground shrink-0">{thread.lastMessageAt}</span>
         </div>
         {!thread.isSupport && (
           <div className="text-[11px] text-muted-foreground mt-0.5">{thread.contactName}</div>
         )}
         <div className="flex items-center gap-1.5 mt-0.5">
-          {thread.unread && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
-          <p className="text-xs text-muted-foreground truncate">{highlightMatch(preview, searchQuery)}</p>
+          {thread.unread && <span data-feature="CRM_INBOX__THREAD_UNREAD" className="w-2 h-2 rounded-full bg-primary shrink-0" />}
+          <p data-feature="CRM_INBOX__THREAD_PREVIEW" className="text-xs text-muted-foreground truncate">{highlightMatch(preview, searchQuery)}</p>
         </div>
       </div>
 

@@ -135,12 +135,13 @@ export default function DashboardLayout() {
         <div className="flex-1 flex overflow-hidden relative">
 
           {/* ── Left sidebar — always present, collapsed by default ── */}
-          <div className={cn('dashboard-sidebar-wrap', investCheckoutFocus && 'hidden')}>
+          <div data-feature="NAV_LAYOUT__SIDEBAR_WRAP" className={cn('dashboard-sidebar-wrap', investCheckoutFocus && 'hidden')}>
             <DashboardSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
           </div>
 
           {/* ── Main content ────────────────────────────────── */}
           <div
+            data-feature="NAV_LAYOUT__MAIN_CONTENT"
             className={cn(
               `${marginClass} flex-1 flex flex-col transition-all duration-300 ease-out overflow-hidden`,
               investCheckoutFocus && 'blur-md pointer-events-none select-none md:ml-0',

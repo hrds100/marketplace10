@@ -69,7 +69,7 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
 
       {/* Property image with live dot */}
       <div className="relative">
-        <div className="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden shadow-sm">
+        <div data-feature="CRM_INBOX__EMPTY_IMAGE" className="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden shadow-sm">
           <img src={thread.propertyImage || fallbackImage} alt=""
             className="w-full h-full object-cover"
             style={thread.propertyImageBlurred ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined}
@@ -84,7 +84,7 @@ export default function ChatEmptyState({ thread, onOpenDetails, inputValue, onIn
       </div>
 
       {/* Property row */}
-      <button onClick={onOpenDetails}
+      <button data-feature="CRM_INBOX__EMPTY_CTA" onClick={onOpenDetails}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors max-w-md">
         <span className="truncate">{propertyLine}</span>
         <ChevronRight className="w-3 h-3 shrink-0 text-gray-400" />

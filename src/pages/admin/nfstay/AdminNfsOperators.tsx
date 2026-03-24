@@ -59,10 +59,10 @@ export default function AdminNfsOperators() {
 
       {app.status === 'pending' && (
         <div className="flex gap-2 pt-1">
-          <Button size="sm" variant="outline" className="rounded-lg gap-1 text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => handleReject(app.id)}>
+          <Button data-feature="ADMIN__NFS_OPERATORS_REJECT" size="sm" variant="outline" className="rounded-lg gap-1 text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => handleReject(app.id)}>
             <XCircle className="w-3.5 h-3.5" /> Reject
           </Button>
-          <Button size="sm" className="rounded-lg gap-1" onClick={() => handleApprove(app.id)}>
+          <Button data-feature="ADMIN__NFS_OPERATORS_APPROVE" size="sm" className="rounded-lg gap-1" onClick={() => handleApprove(app.id)}>
             <CheckCircle2 className="w-3.5 h-3.5" /> Approve
           </Button>
         </div>
@@ -74,7 +74,7 @@ export default function AdminNfsOperators() {
     const filtered = filterList(list);
     return filtered.length === 0
       ? <p className="text-sm text-muted-foreground text-center py-8">No applications found.</p>
-      : <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">{filtered.map(a => <AppCard key={a.id} app={a} />)}</div>;
+      : <div data-feature="ADMIN__NFS_OPERATORS_TABLE" className="grid grid-cols-1 lg:grid-cols-2 gap-4">{filtered.map(a => <AppCard key={a.id} app={a} />)}</div>;
   };
 
   return (
@@ -90,7 +90,7 @@ export default function AdminNfsOperators() {
       </div>
 
       <Tabs defaultValue="pending">
-        <TabsList>
+        <TabsList data-feature="ADMIN__NFS_OPERATORS_FILTER">
           <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
           <TabsTrigger value="approved">Approved ({approved.length})</TabsTrigger>
           <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>

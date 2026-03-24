@@ -152,7 +152,7 @@ export default function AdminNfsReservations() {
             className="pl-9"
           />
         </div>
-        <div className="flex gap-1.5 flex-wrap">
+        <div data-feature="ADMIN__NFS_RESERVATIONS_FILTER" className="flex gap-1.5 flex-wrap">
           {STATUSES.map(s => (
             <button
               key={s}
@@ -186,7 +186,7 @@ export default function AdminNfsReservations() {
           No reservations found.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border/40">
+        <div data-feature="ADMIN__NFS_RESERVATIONS_TABLE" className="overflow-x-auto rounded-xl border border-border/40">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/30 border-b border-border/40">

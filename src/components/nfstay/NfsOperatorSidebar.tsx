@@ -8,11 +8,11 @@ interface NfsOperatorSidebarProps {
 }
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', path: NFS_ROUTES.DASHBOARD, icon: Home },
-  { label: 'Properties', path: NFS_ROUTES.PROPERTIES, icon: Building2 },
-  { label: 'Reservations', path: NFS_ROUTES.RESERVATIONS, icon: CalendarDays },
-  { label: 'Analytics', path: NFS_ROUTES.ANALYTICS, icon: BarChart3 },
-  { label: 'Settings', path: NFS_ROUTES.SETTINGS, icon: Settings },
+  { label: 'Dashboard', path: NFS_ROUTES.DASHBOARD, icon: Home, feature: 'BOOKING_NFSTAY__OPSIDEBAR_DASHBOARD' },
+  { label: 'Properties', path: NFS_ROUTES.PROPERTIES, icon: Building2, feature: 'BOOKING_NFSTAY__OPSIDEBAR_PROPERTIES' },
+  { label: 'Reservations', path: NFS_ROUTES.RESERVATIONS, icon: CalendarDays, feature: 'BOOKING_NFSTAY__OPSIDEBAR_RESERVATIONS' },
+  { label: 'Analytics', path: NFS_ROUTES.ANALYTICS, icon: BarChart3, feature: 'BOOKING_NFSTAY__OPSIDEBAR_ANALYTICS' },
+  { label: 'Settings', path: NFS_ROUTES.SETTINGS, icon: Settings, feature: 'BOOKING_NFSTAY__OPSIDEBAR_SETTINGS' },
 ] as const;
 
 export default function NfsOperatorSidebar({ collapsed, onCollapse }: NfsOperatorSidebarProps) {
@@ -30,6 +30,7 @@ export default function NfsOperatorSidebar({ collapsed, onCollapse }: NfsOperato
           <span className="text-sm font-semibold text-foreground tracking-tight">nfstay</span>
         )}
         <button
+          data-feature="BOOKING_NFSTAY__OPSIDEBAR_COLLAPSE"
           onClick={() => onCollapse(!collapsed)}
           className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-muted-foreground"
         >
@@ -38,7 +39,7 @@ export default function NfsOperatorSidebar({ collapsed, onCollapse }: NfsOperato
       </div>
 
       <nav className="flex-1 py-2 px-2 space-y-1">
-        {NAV_ITEMS.map(({ label, path, icon: Icon }) => {
+        {NAV_ITEMS.map(({ label, path, icon: Icon, feature }) => {
           const isActive = location.pathname === path ||
             (path !== NFS_ROUTES.DASHBOARD && location.pathname.startsWith(path));
 
@@ -46,6 +47,7 @@ export default function NfsOperatorSidebar({ collapsed, onCollapse }: NfsOperato
             <Link
               key={path}
               to={path}
+              data-feature={feature}
               title={collapsed ? label : undefined}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive

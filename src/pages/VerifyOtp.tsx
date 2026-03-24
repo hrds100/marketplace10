@@ -263,7 +263,7 @@ export default function VerifyOtp() {
                 </div>
 
                 {/* OTP input */}
-                <div className="mt-6 flex justify-center">
+                <div data-feature="AUTH__OTP_INPUT" className="mt-6 flex justify-center">
                   <InputOTP
                     maxLength={4}
                     value={otp}
@@ -293,6 +293,7 @@ export default function VerifyOtp() {
 
                 {/* Verify button */}
                 <button
+                  data-feature="AUTH__OTP_SUBMIT"
                   onClick={handleVerify}
                   disabled={loading || otp.length !== 4}
                   className="w-full h-12 rounded-lg text-white font-semibold hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-6"
@@ -308,6 +309,7 @@ export default function VerifyOtp() {
 
                 {/* Resend */}
                 <button
+                  data-feature="AUTH__OTP_RESEND"
                   onClick={handleResend}
                   disabled={loading || (!canResend && timer > 0)}
                   className="w-full text-sm text-muted-foreground hover:text-foreground mt-3 disabled:opacity-50 transition-opacity"

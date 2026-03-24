@@ -40,6 +40,7 @@ export default function ForgotPassword() {
           <a href="/" className="text-xl font-extrabold text-foreground tracking-tight">nfstay</a>
 
           <Link
+            data-feature="AUTH__FORGOT_BACK"
             to="/signin"
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-8 mb-4"
           >
@@ -85,6 +86,7 @@ export default function ForgotPassword() {
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
+                        data-feature="AUTH__FORGOT_EMAIL"
                         type="email"
                         placeholder="james@example.com"
                         value={email}
@@ -98,6 +100,7 @@ export default function ForgotPassword() {
                   {error && <p className="text-sm text-red-500">{error}</p>}
 
                   <button
+                    data-feature="AUTH__FORGOT_SUBMIT"
                     type="submit"
                     disabled={loading || !email.trim()}
                     className="w-full h-12 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"

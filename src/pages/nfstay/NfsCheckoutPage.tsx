@@ -177,7 +177,7 @@ export default function NfsCheckoutPage() {
           {/* ── Left: contact form ─────────────────────────────────────────── */}
           <div className="lg:col-span-3 space-y-6">
             {/* Personal details */}
-            <div>
+            <div data-feature="BOOKING_NFSTAY__CHECKOUT_FORM">
               <h2 className="text-lg font-semibold mb-4">Your details</h2>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -238,6 +238,7 @@ export default function NfsCheckoutPage() {
 
             {/* Submit */}
             <Button
+              data-feature="BOOKING_NFSTAY__CHECKOUT_PAY"
               className="w-full h-12 text-base font-semibold bg-gradient-to-r from-purple-600 to-teal-500 hover:opacity-90 border-0"
               onClick={handleSubmit}
               disabled={isSubmitting || !pricing || propertyLoading}
@@ -256,7 +257,7 @@ export default function NfsCheckoutPage() {
 
           {/* ── Right: booking summary ─────────────────────────────────────── */}
           <div className="lg:col-span-2">
-            <div className="sticky top-6 rounded-xl border border-border/40 bg-white dark:bg-card overflow-hidden shadow-sm">
+            <div data-feature="BOOKING_NFSTAY__CHECKOUT_SUMMARY" className="sticky top-6 rounded-xl border border-border/40 bg-white dark:bg-card overflow-hidden shadow-sm">
               {/* Property */}
               {propertyLoading ? (
                 <div className="h-40 bg-muted animate-pulse" />
@@ -279,7 +280,7 @@ export default function NfsCheckoutPage() {
               )}
 
               {/* Trip summary */}
-              <div className="p-4 space-y-3 border-b border-border/40">
+              <div data-feature="BOOKING_NFSTAY__CHECKOUT_DETAILS" className="p-4 space-y-3 border-b border-border/40">
                 <div className="flex items-start gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                   <div>
@@ -308,7 +309,7 @@ export default function NfsCheckoutPage() {
                       </span>
                     </div>
                   ))}
-                  <div className="pt-1">
+                  <div data-feature="BOOKING_NFSTAY__CHECKOUT_PROMO" className="pt-1">
                     <NfsPromoCodeInput onValidated={(d) => setPromoDiscount(d || undefined)} />
                   </div>
                   <div className="flex justify-between font-bold text-base border-t border-border/40 pt-3 mt-1">

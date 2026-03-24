@@ -121,7 +121,7 @@ const App = () => (
     <ParticleProvider>
     <TooltipProvider>
       <Sonner />
-      {import.meta.env.DEV && <FeatureInspector />}
+      <FeatureInspector />
       <BrowserRouter>
       <FavouritesProvider>
       <NfsCurrencyProvider>

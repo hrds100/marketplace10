@@ -187,6 +187,7 @@ export default function ResetPassword() {
                     <label className="text-xs font-semibold text-foreground block mb-1.5">New Password</label>
                     <div className="relative">
                       <input
+                        data-feature="AUTH__RESET_PASSWORD"
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Enter new password"
                         value={password}
@@ -210,6 +211,7 @@ export default function ResetPassword() {
                     <label className="text-xs font-semibold text-foreground block mb-1.5">Confirm Password</label>
                     <div className="relative">
                       <input
+                        data-feature="AUTH__RESET_CONFIRM"
                         type={showConfirm ? 'text' : 'password'}
                         placeholder="Confirm new password"
                         value={confirmPassword}
@@ -232,6 +234,7 @@ export default function ResetPassword() {
                   {error && <p className="text-sm text-red-500">{error}</p>}
 
                   <button
+                    data-feature="AUTH__RESET_SUBMIT"
                     type="submit"
                     disabled={loading || !password.trim() || !confirmPassword.trim()}
                     className="w-full h-12 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"

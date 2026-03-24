@@ -127,12 +127,14 @@ export default function PropertyCalendars({ property, onUpdate, saving }: Props)
           <Label className="text-xs text-muted-foreground">iCal Feed URL</Label>
           <div className="flex gap-2">
             <Input
+              data-feature="BOOKING_NFSTAY__ICAL_OUTBOUND"
               value={outboundUrl}
               readOnly
               className="font-mono text-xs bg-muted/30"
               onClick={(e) => (e.target as HTMLInputElement).select()}
             />
             <Button
+              data-feature="BOOKING_NFSTAY__ICAL_COPY"
               variant="outline"
               size="sm"
               onClick={handleCopy}
@@ -174,7 +176,7 @@ export default function PropertyCalendars({ property, onUpdate, saving }: Props)
 
         {/* Existing inbound calendars */}
         {inboundCalendars.length > 0 ? (
-          <div className="space-y-2">
+          <div data-feature="BOOKING_NFSTAY__ICAL_INBOUND" className="space-y-2">
             {inboundCalendars.map((cal, index) => (
               <div
                 key={`${cal.url}-${index}`}
@@ -227,6 +229,7 @@ export default function PropertyCalendars({ property, onUpdate, saving }: Props)
               />
             </div>
             <Button
+              data-feature="BOOKING_NFSTAY__ICAL_ADD"
               onClick={handleAddInbound}
               disabled={saving || !newUrl.trim()}
               className="self-start"

@@ -38,6 +38,7 @@ export default function BurgerMenu() {
   return (
     <div data-feature="NAV_LAYOUT" ref={ref} className="relative">
       <button
+        data-feature="NAV_LAYOUT__TOP_PROFILE"
         onClick={() => setOpen(!open)}
         className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
         title="Menu"
@@ -50,6 +51,13 @@ export default function BurgerMenu() {
           {menuItems.map(item => (
             <button
               key={item.tab}
+              data-feature={
+                item.tab === 'profile' ? 'NAV_LAYOUT__BURGER_PROFILE' :
+                item.tab === 'security' ? 'NAV_LAYOUT__BURGER_SECURITY' :
+                item.tab === 'membership' ? 'NAV_LAYOUT__BURGER_MEMBERSHIP' :
+                item.tab === 'notifications' ? 'NAV_LAYOUT__BURGER_NOTIFICATIONS' :
+                undefined
+              }
               onClick={() => handleNav(item.tab)}
               className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-foreground hover:bg-gray-50 transition-colors text-left"
             >
@@ -59,6 +67,7 @@ export default function BurgerMenu() {
           ))}
           <div className="border-t border-border/30 my-1" />
           <button
+            data-feature="NAV_LAYOUT__BURGER_LOGOUT"
             onClick={handleSignOut}
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-red-600 hover:bg-red-50 transition-colors text-left"
           >

@@ -43,7 +43,7 @@ export default function NfsReservations() {
 
       {/* Filters + view toggle */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div data-feature="BOOKING_NFSTAY__RESERVATIONS_SEARCH" className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search by guest name or email..."
@@ -54,6 +54,7 @@ export default function NfsReservations() {
         </div>
 
         <select
+          data-feature="BOOKING_NFSTAY__RESERVATIONS_FILTER"
           className="rounded-md border border-input bg-background px-3 py-2 text-sm h-10"
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
@@ -66,7 +67,7 @@ export default function NfsReservations() {
           ))}
         </select>
 
-        <div className="flex border border-border rounded-lg overflow-hidden">
+        <div data-feature="BOOKING_NFSTAY__RESERVATIONS_VIEW_TOGGLE" className="flex border border-border rounded-lg overflow-hidden">
           <button
             className={`px-3 py-2 text-sm ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted/50'}`}
             onClick={() => setViewMode('list')}
@@ -114,7 +115,7 @@ export default function NfsReservations() {
                 )}
               </div>
             ) : (
-              <div className="space-y-3">
+              <div data-feature="BOOKING_NFSTAY__RESERVATIONS_LIST" className="space-y-3">
                 <p className="text-xs text-muted-foreground">{filtered.length} reservation{filtered.length !== 1 ? 's' : ''}</p>
                 {filtered.map(r => (
                   <NfsReservationCard key={r.id} reservation={r} />
@@ -122,7 +123,7 @@ export default function NfsReservations() {
               </div>
             )
           ) : (
-            <NfsCalendarView reservations={reservations} />
+            <NfsCalendarView data-feature="BOOKING_NFSTAY__RESERVATIONS_CALENDAR" reservations={reservations} />
           )}
         </>
       )}

@@ -13,12 +13,12 @@ export default function AdminPricing() {
       <p className="text-sm text-muted-foreground mb-6">Payments are handled via GoHighLevel funnel. Products are configured in GHL dashboard.</p>
       <div className="grid md:grid-cols-3 gap-4">
         {tiers.map(t => (
-          <div key={t.name} className="bg-card border border-border rounded-2xl p-6">
+          <div key={t.name} data-feature="ADMIN__PRICING_TIER" className="bg-card border border-border rounded-2xl p-6">
             <CreditCard className="w-5 h-5 text-muted-foreground mb-3" />
             <h3 className="text-lg font-bold text-foreground">{t.name}</h3>
             <div className="text-2xl font-extrabold text-foreground mt-2">{t.price}</div>
-            <p className="text-xs text-muted-foreground mt-3">GHL Product: <span className="font-mono text-[11px]">{t.productId}</span></p>
-            <p className="text-xs text-muted-foreground mt-1">GHL Price: <span className="font-mono text-[11px]">{t.priceId}</span></p>
+            <p data-feature="ADMIN__PRICING_INPUT" className="text-xs text-muted-foreground mt-3">GHL Product: <span className="font-mono text-[11px]">{t.productId}</span></p>
+            <p data-feature="ADMIN__PRICING_INPUT" className="text-xs text-muted-foreground mt-1">GHL Price: <span className="font-mono text-[11px]">{t.priceId}</span></p>
           </div>
         ))}
       </div>

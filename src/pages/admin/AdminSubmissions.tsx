@@ -114,7 +114,7 @@ export default function AdminSubmissions() {
     <div data-feature="ADMIN">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Deal Submissions</h1>
 
-      <div className="flex gap-2 mb-6">
+      <div data-feature="ADMIN__SUBMISSIONS_FILTER" className="flex gap-2 mb-6">
         {(['all', 'pending', 'live'] as const).map(f => {
           const count = f === 'pending' ? pendingCount : null;
           return (
@@ -129,7 +129,7 @@ export default function AdminSubmissions() {
         })}
       </div>
 
-      <div className="space-y-3">
+      <div data-feature="ADMIN__SUBMISSIONS_TABLE" className="space-y-3">
         {filtered.map(s => (
           <div key={s.id} className="bg-card border border-border rounded-2xl overflow-hidden">
             {/* Row header */}
@@ -144,8 +144,8 @@ export default function AdminSubmissions() {
               <div className="flex items-center gap-2">
                 {(s.status === 'pending' || s.status === 'inactive') && (
                   <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Approve</button>
-                    <button onClick={() => reject(s.id)} className="text-xs text-destructive font-medium px-2">Reject</button>
+                    <button data-feature="ADMIN__SUBMISSIONS_APPROVE" onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Approve</button>
+                    <button data-feature="ADMIN__SUBMISSIONS_REJECT" onClick={() => reject(s.id)} className="text-xs text-destructive font-medium px-2">Reject</button>
                   </div>
                 )}
                 {expandedId === s.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}

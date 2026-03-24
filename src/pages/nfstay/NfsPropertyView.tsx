@@ -48,11 +48,11 @@ export default function NfsPropertyView() {
 
         {/* Photo gallery */}
         {property.images && property.images.length > 0 && (
-          <NfsPhotoGallery images={property.images} readOnly />
+          <NfsPhotoGallery data-feature="BOOKING_NFSTAY__PROPERTY_PHOTOS" images={property.images} readOnly />
         )}
 
         {/* Title + Location */}
-        <div>
+        <div data-feature="BOOKING_NFSTAY__PROPERTY_TITLE">
           <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
           {location && (
             <p className="text-muted-foreground mt-1 flex items-center gap-1.5">
@@ -101,7 +101,7 @@ export default function NfsPropertyView() {
 
             {/* Amenities */}
             {enabledAmenities.length > 0 && (
-              <div>
+              <div data-feature="BOOKING_NFSTAY__PROPERTY_AMENITIES">
                 <h2 className="text-lg font-semibold mb-3">Amenities</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {enabledAmenities.map(a => (
@@ -116,7 +116,7 @@ export default function NfsPropertyView() {
 
             {/* House rules */}
             {(property.check_in_time || property.check_out_time || property.rules) && (
-              <div>
+              <div data-feature="BOOKING_NFSTAY__PROPERTY_RULES">
                 <h2 className="text-lg font-semibold mb-3">House Rules</h2>
                 <div className="space-y-2 text-sm">
                   {property.check_in_time && <p>Check-in: {property.check_in_time}</p>}
@@ -132,7 +132,7 @@ export default function NfsPropertyView() {
 
             {/* Location map */}
             {property.lat && property.lng && (
-              <div>
+              <div data-feature="BOOKING_NFSTAY__PROPERTY_MAP">
                 <h2 className="text-lg font-semibold mb-3">Location</h2>
                 <div className="h-64 rounded-xl overflow-hidden border border-border/40">
                   <NfsPropertyMap lat={property.lat} lng={property.lng} title={title} />
@@ -142,7 +142,7 @@ export default function NfsPropertyView() {
           </div>
 
           {/* Booking widget */}
-          <div className="lg:col-span-1">
+          <div data-feature="BOOKING_NFSTAY__PROPERTY_BOOKING" className="lg:col-span-1">
             <NfsBookingWidget property={property} />
           </div>
         </div>

@@ -48,6 +48,7 @@ export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType,
           <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{nightsBooked} nights</span>
         </div>
         <input
+          data-feature="CRM_INBOX__ESTIMATOR_SLIDER"
           type="range"
           min={5}
           max={30}
@@ -71,6 +72,7 @@ export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType,
         <div className="flex items-center border border-gray-200 rounded-xl px-3 h-10 focus-within:border-emerald-400 focus-within:ring-1 focus-within:ring-emerald-100 transition">
           <span className="text-sm text-gray-400 mr-1">£</span>
           <input
+            data-feature="CRM_INBOX__ESTIMATOR_RATE"
             type="number"
             min={20}
             max={500}
@@ -134,7 +136,7 @@ export default function EarningsEstimator({ monthlyRent, bedrooms, propertyType,
       </div>
 
       {/* Profit highlight */}
-      <div className={`rounded-xl px-3 py-2.5 flex justify-between items-center ${isProfitable ? 'bg-emerald-50' : 'bg-red-50'}`}>
+      <div data-feature="CRM_INBOX__ESTIMATOR_RESULT" className={`rounded-xl px-3 py-2.5 flex justify-between items-center ${isProfitable ? 'bg-emerald-50' : 'bg-red-50'}`}>
         <span className={`text-sm font-semibold ${isProfitable ? 'text-emerald-700' : 'text-red-700'}`}>Est. monthly profit</span>
         <span className={`text-lg font-bold ${isProfitable ? 'text-emerald-600' : 'text-red-600'}`}>
           {isProfitable ? '' : '−'}£{Math.abs(estimatedProfit).toLocaleString()}

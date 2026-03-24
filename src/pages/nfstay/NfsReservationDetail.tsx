@@ -85,7 +85,7 @@ export default function NfsReservationDetail() {
       )}
 
       {/* Guest info */}
-      <div className="border border-border/40 rounded-xl p-5 space-y-3 bg-white dark:bg-card">
+      <div data-feature="BOOKING_NFSTAY__RESERVATION_GUEST" className="border border-border/40 rounded-xl p-5 space-y-3 bg-white dark:bg-card">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <User className="w-5 h-5" /> Guest
         </h2>
@@ -115,7 +115,7 @@ export default function NfsReservationDetail() {
       </div>
 
       {/* Dates */}
-      <div className="border border-border/40 rounded-xl p-5 space-y-3 bg-white dark:bg-card">
+      <div data-feature="BOOKING_NFSTAY__RESERVATION_PROPERTY" className="border border-border/40 rounded-xl p-5 space-y-3 bg-white dark:bg-card">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <CalendarDays className="w-5 h-5" /> Stay
         </h2>
@@ -137,7 +137,7 @@ export default function NfsReservationDetail() {
       </div>
 
       {/* Payment */}
-      <div className="border border-border/40 rounded-xl p-5 space-y-3 bg-white dark:bg-card">
+      <div data-feature="BOOKING_NFSTAY__RESERVATION_PAYMENT" className="border border-border/40 rounded-xl p-5 space-y-3 bg-white dark:bg-card">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <CreditCard className="w-5 h-5" /> Payment
         </h2>
@@ -190,7 +190,7 @@ export default function NfsReservationDetail() {
       )}
 
       {/* Actions */}
-      <div className="flex flex-wrap gap-3">
+      <div data-feature="BOOKING_NFSTAY__RESERVATION_ACTIONS" className="flex flex-wrap gap-3">
         {reservation.status === 'pending' && (
           <>
             <Button onClick={() => handleStatusChange('confirmed')} disabled={updating}>

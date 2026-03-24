@@ -269,7 +269,7 @@ export default function AdminInvestPayouts() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[28px] font-bold text-foreground">Payouts</h1>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered as any[], 'payouts')}>
+          <Button data-feature="ADMIN__INVEST_PAYOUTS_EXPORT" variant="outline" size="sm" onClick={() => exportToCSV(filtered as any[], 'payouts')}>
             <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
           </Button>
           <Button
@@ -349,7 +349,7 @@ export default function AdminInvestPayouts() {
       </Card>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div data-feature="ADMIN__INVEST_PAYOUTS_FILTER" className="flex flex-wrap gap-3 mb-6">
         <select
           className="h-10 px-3 rounded-md border border-input bg-background text-sm"
           value={statusFilter}
@@ -385,7 +385,7 @@ export default function AdminInvestPayouts() {
 
       <Card className="border-border">
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table data-feature="ADMIN__INVEST_PAYOUTS_TABLE">
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>

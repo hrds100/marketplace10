@@ -61,6 +61,7 @@ export default function NfsSearchPage() {
       <div className="w-full lg:w-[50%] flex flex-col overflow-hidden border-r border-border">
         <div className="px-5 pt-4 pb-2 shrink-0">
           <NfsSearchFilters
+            data-feature="BOOKING_NFSTAY__SEARCH_FILTERS"
             resultCount={filteredProperties.length}
             sortBy={sortBy}
             onSortChange={setSortBy}
@@ -89,7 +90,7 @@ export default function NfsSearchPage() {
               onAction={clearFilters}
             />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
+            <div data-feature="BOOKING_NFSTAY__SEARCH_RESULTS" className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
               {filteredProperties.map((p) => (
                 <NfsPropertyCard key={p.id} property={p} />
               ))}
@@ -99,7 +100,7 @@ export default function NfsSearchPage() {
       </div>
 
       {/* Right panel – map (hidden on mobile) */}
-      <div className="hidden lg:block flex-1">
+      <div data-feature="BOOKING_NFSTAY__SEARCH_MAP" className="hidden lg:block flex-1">
         <NfsSearchMap properties={filteredProperties} />
       </div>
     </div>

@@ -47,6 +47,7 @@ export function NfsPropertyCard({ property }: NfsPropertyCardProps) {
       {/* Image area */}
       <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-2.5">
         <img
+          data-feature="BOOKING_NFSTAY__CARD_IMAGE"
           src={sortedImages[currentImage]?.url}
           alt={sortedImages[currentImage]?.caption || property.public_title}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -54,6 +55,7 @@ export function NfsPropertyCard({ property }: NfsPropertyCardProps) {
 
         {/* Favourite */}
         <button
+          data-feature="BOOKING_NFSTAY__CARD_FAVOURITE"
           onClick={toggleFavourite}
           className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-card/80 backdrop-blur-sm hover:bg-card transition"
         >
@@ -101,11 +103,11 @@ export function NfsPropertyCard({ property }: NfsPropertyCardProps) {
 
       {/* Content */}
       <div className="space-y-1">
-        <h3 className="text-sm font-semibold text-foreground truncate leading-tight">{property.public_title}</h3>
+        <h3 data-feature="BOOKING_NFSTAY__CARD_TITLE" className="text-sm font-semibold text-foreground truncate leading-tight">{property.public_title}</h3>
         <p className="text-xs text-muted-foreground capitalize">{property.property_type}</p>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <MapPin className="w-3 h-3 shrink-0" />
-          <span className="truncate">{property.city}, {property.state ? `${property.state}, ` : ''}{property.country}</span>
+          <span data-feature="BOOKING_NFSTAY__CARD_LOCATION" className="truncate">{property.city}, {property.state ? `${property.state}, ` : ''}{property.country}</span>
         </div>
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -123,7 +125,7 @@ export function NfsPropertyCard({ property }: NfsPropertyCardProps) {
             </span>
           </div>
           <div className="text-right">
-            <span className="text-sm font-bold text-foreground">{currency?.symbol}{property.base_rate_amount}</span>
+            <span data-feature="BOOKING_NFSTAY__CARD_PRICE" className="text-sm font-bold text-foreground">{currency?.symbol}{property.base_rate_amount}</span>
             <span className="text-[11px] text-muted-foreground block leading-tight">avg per night</span>
           </div>
         </div>

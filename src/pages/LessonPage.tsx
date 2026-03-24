@@ -162,7 +162,7 @@ export default function LessonPage() {
       </div>
 
       {/* Sticky top bar */}
-      <div className="sticky top-1 z-[140] rounded-xl border px-4 py-2.5 flex items-center justify-between gap-3 mb-6" style={{ background: '#FFFFFF', borderColor: '#E5E7EB' }}>
+      <div data-feature="UNIVERSITY__LESSON_STEPS" className="sticky top-1 z-[140] rounded-xl border px-4 py-2.5 flex items-center justify-between gap-3 mb-6" style={{ background: '#FFFFFF', borderColor: '#E5E7EB' }}>
         <button onClick={() => navigate(`/university/${mod.id}`)} className="flex items-center gap-1 text-sm hover:opacity-70" style={{ color: '#6B7280' }}>
           <ArrowLeft className="w-4 h-4" />
           <span className="hidden sm:inline">{mod.title}</span>
@@ -195,7 +195,7 @@ export default function LessonPage() {
       </div>
 
       {/* Main content */}
-      <div className="mt-8 space-y-5">
+      <div data-feature="UNIVERSITY__LESSON_CONTENT" className="mt-8 space-y-5">
         {lesson.content.map((p, i) => (
           <p key={i} className="text-[15px] leading-[1.7]" style={{ color: '#374151' }}
             dangerouslySetInnerHTML={{
@@ -254,7 +254,7 @@ export default function LessonPage() {
           </button>
         )}
         {lessonDone && (
-          <div className="mt-4 rounded-[10px] p-3 flex items-center gap-2" style={{ background: '#ECFDF5', border: '1px solid #1DB954' }}>
+          <div data-feature="UNIVERSITY__LESSON_COMPLETE" className="mt-4 rounded-[10px] p-3 flex items-center gap-2" style={{ background: '#ECFDF5', border: '1px solid #1DB954' }}>
             <span className="text-sm font-semibold" style={{ color: '#065F46' }}>✓ Lesson completed — XP claimed!</span>
           </div>
         )}
@@ -346,7 +346,7 @@ export default function LessonPage() {
       )}
 
       {/* Lesson Navigation */}
-      <div className="mt-10 flex items-center justify-between gap-4">
+      <div data-feature="UNIVERSITY__LESSON_NAV" className="mt-10 flex items-center justify-between gap-4">
         {prevLesson ? (
           <button onClick={() => navigate(`/university/${mod.id}/${prevLesson.id}`)} className="h-11 px-5 rounded-[10px] text-sm font-medium border flex items-center gap-2 hover:opacity-80 transition-opacity" style={{ borderColor: '#E5E7EB', color: '#6B7280' }}>
             <ArrowLeft className="w-4 h-4" /> Previous lesson
@@ -397,7 +397,7 @@ export default function LessonPage() {
 
         {/* Chat window */}
         <div className="mt-4 rounded-2xl border overflow-hidden" style={{ background: '#FFFFFF', borderColor: '#E5E7EB' }}>
-          <div className="p-5 space-y-4 overflow-y-auto" style={{ minHeight: '280px', maxHeight: '400px' }}>
+          <div data-feature="UNIVERSITY__AI_CHAT_MESSAGES" className="p-5 space-y-4 overflow-y-auto" style={{ minHeight: '280px', maxHeight: '400px' }}>
             {chatMessages.length === 0 && !typing && (
               <div className="space-y-2">
                 {lesson.suggestedPrompts.map((prompt, i) => (
@@ -453,6 +453,7 @@ export default function LessonPage() {
           {/* Input */}
           <div className="flex items-center border-t px-4 py-3 gap-2" style={{ borderColor: '#E5E7EB' }}>
             <input
+              data-feature="UNIVERSITY__AI_CHAT_INPUT"
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -461,6 +462,7 @@ export default function LessonPage() {
               style={{ color: '#111827', padding: '6px 0' }}
             />
             <button
+              data-feature="UNIVERSITY__AI_CHAT_SEND"
               onClick={() => handleSendChat()}
               disabled={!chatInput.trim() || typing}
               className="w-10 h-10 rounded-full flex items-center justify-center transition-opacity flex-shrink-0"

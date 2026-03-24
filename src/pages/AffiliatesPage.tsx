@@ -247,7 +247,7 @@ export default function AffiliatesPage() {
               <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">3</span> You get paid</span>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p data-feature="AFFILIATES__REFERRAL_CODE" className="text-sm text-muted-foreground mt-0.5">
             {profile?.referral_code ? `Your code: ${profile.referral_code}` : 'Earn commission by referring people to nfstay.'}
           </p>
         </div>
@@ -376,7 +376,7 @@ export default function AffiliatesPage() {
         </div>
 
         {/* Top Agents (green card) */}
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white">
+        <div data-feature="AFFILIATES__LEADERBOARD" className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white">
           <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
             <TrendingUp className="w-4 h-4" /> Top Agents This Month
           </h3>
@@ -415,7 +415,7 @@ export default function AffiliatesPage() {
               { label: 'Paid Users', value: profile.total_paid_users || 0, icon: TrendingUp, color: 'text-purple-600' },
               { label: 'Pending Balance', value: `£${Number(profile.pending_balance || 0).toFixed(2)}`, icon: Wallet, color: 'text-amber-600' },
             ].map(s => (
-              <div key={s.label} className="bg-card border border-border rounded-2xl p-4">
+              <div key={s.label} data-feature="AFFILIATES__STAT_CARD" className="bg-card border border-border rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <s.icon className={`w-4 h-4 ${s.color}`} strokeWidth={1.8} />
                   <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">{s.label}</span>
@@ -434,8 +434,8 @@ export default function AffiliatesPage() {
               <div className="bg-card border border-border rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-foreground mb-3">Your Referral Link</h3>
                 <div className="flex gap-2">
-                  <input readOnly value={referralLink} className="input-nfstay flex-1 bg-secondary text-sm font-mono" />
-                  <button onClick={copyLink} className="h-10 px-4 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
+                  <input data-feature="AFFILIATES__LINK" readOnly value={referralLink} className="input-nfstay flex-1 bg-secondary text-sm font-mono" />
+                  <button data-feature="AFFILIATES__SHARE_BUTTON" onClick={copyLink} className="h-10 px-4 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copied ? 'Copied' : 'Copy'}
                   </button>
                 </div>
@@ -445,7 +445,7 @@ export default function AffiliatesPage() {
               </div>
 
               {/* Earnings chart */}
-              <div className="bg-card border border-border rounded-2xl p-5">
+              <div data-feature="AFFILIATES__EARNINGS" className="bg-card border border-border rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-foreground mb-4">Monthly Earnings</h3>
                 <div className="flex items-end gap-2 h-[120px]">
                   {monthlyEarnings.map(m => (
@@ -460,7 +460,7 @@ export default function AffiliatesPage() {
               </div>
 
               {/* Activity feed */}
-              <div className="bg-card border border-border rounded-2xl p-5">
+              <div data-feature="AFFILIATES__EVENTS" className="bg-card border border-border rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-foreground mb-3">Recent Activity</h3>
                 {events.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-4 text-center">No activity yet. Share your link to get started!</p>

@@ -84,20 +84,21 @@ export default function NotificationBell() {
   return (
     <div data-feature="NOTIFICATIONS" ref={ref} className="relative">
       <button
+        data-feature="NOTIFICATIONS__BELL_BUTTON"
         onClick={() => setOpen(!open)}
         className="relative flex items-center p-2 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
         title="Notifications"
       >
         <Bell className="w-[15px] h-[15px] text-muted-foreground" strokeWidth={1.8} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+          <span data-feature="NOTIFICATIONS__UNREAD_COUNT" className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 w-[340px] bg-white border border-border/50 rounded-xl shadow-xl z-[200] overflow-hidden">
+        <div data-feature="NOTIFICATIONS__DROPDOWN" className="absolute right-0 top-10 w-[340px] bg-white border border-border/50 rounded-xl shadow-xl z-[200] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
             <span className="text-[13px] font-semibold text-foreground">Notifications</span>
@@ -118,6 +119,7 @@ export default function NotificationBell() {
               notifications.map(n => (
                 <button
                   key={n.id}
+                  data-feature="NOTIFICATIONS__ITEM"
                   onClick={() => { if (!n.read) markRead(n.id); }}
                   className={`w-full text-left px-4 py-3 border-b border-border/20 hover:bg-gray-50 transition-colors ${!n.read ? 'bg-emerald-50/40' : ''}`}
                 >

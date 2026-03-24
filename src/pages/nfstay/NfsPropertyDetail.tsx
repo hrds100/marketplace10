@@ -112,7 +112,7 @@ export default function NfsPropertyDetail() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(true)}>
+          <Button data-feature="BOOKING_NFSTAY__DETAIL_DELETE" variant="outline" size="sm" onClick={() => setShowDeleteConfirm(true)}>
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
@@ -134,6 +134,7 @@ export default function NfsPropertyDetail() {
         {tabs.map(tab => (
           <button
             key={tab.key}
+            data-feature="BOOKING_NFSTAY__DETAIL_TAB"
             onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.key
@@ -293,6 +294,7 @@ function DetailsTab({ property, onUpdate, saving }: { property: NfsProperty; onU
         />
       </div>
       <Button
+        data-feature="BOOKING_NFSTAY__DETAIL_SAVE"
         onClick={() => onUpdate({ public_title: title || null, description: desc || null, rules: rules || null })}
         disabled={saving}
       >
@@ -328,6 +330,7 @@ function PricingTab({ property, onUpdate, saving }: { property: NfsProperty; onU
         </div>
       </div>
       <Button
+        data-feature="BOOKING_NFSTAY__DETAIL_SAVE"
         onClick={() => onUpdate({ base_rate_amount: rate, base_rate_currency: currency })}
         disabled={saving}
       >

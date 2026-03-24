@@ -252,6 +252,7 @@ export default function AdminUniversityAnalytics() {
       <div className="flex items-center justify-between">
         <h1 className="text-[28px] font-bold text-foreground">University Analytics</h1>
         <button
+          data-feature="ADMIN__UNI_ANALYTICS_EXPORT"
           onClick={handleExportCSV}
           className="h-10 px-4 rounded-lg border border-border text-sm font-medium text-foreground inline-flex items-center gap-2 hover:bg-secondary transition-colors"
         >
@@ -381,7 +382,7 @@ export default function AdminUniversityAnalytics() {
           </div>
         )}
 
-        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div data-feature="ADMIN__UNI_ANALYTICS_TABLE" className="bg-card border border-border rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
@@ -401,6 +402,7 @@ export default function AdminUniversityAnalytics() {
                   </td>
                   <td className="p-3.5">
                     <button
+                      data-feature="ADMIN__UNI_ANALYTICS_RESET"
                       onClick={() => setConfirmReset({ userId: u.user_id, email: u.email })}
                       className="text-xs text-destructive font-medium hover:opacity-80"
                     >

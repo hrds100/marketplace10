@@ -130,7 +130,7 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
           </div>
         )}
         {!isLocked && (
-          <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => setEditing(true)}>
+          <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => setEditing(true)} data-feature="INVEST__BANK_EDIT">
             <Pencil className="h-3.5 w-3.5" />
             Edit Bank Details
           </Button>
@@ -188,6 +188,7 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
               onChange={(e) => setForm({ ...form, sortCode: e.target.value })}
               placeholder="XX-XX-XX"
               maxLength={8}
+              data-feature="INVEST__BANK_SORT"
               className="w-full rounded-lg border px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
@@ -199,6 +200,7 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
               onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
               placeholder="12345678"
               maxLength={8}
+              data-feature="INVEST__BANK_ACCOUNT"
               className="w-full rounded-lg border px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
@@ -215,6 +217,7 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
               value={form.iban}
               onChange={(e) => setForm({ ...form, iban: e.target.value })}
               placeholder="GB29 NWBK 6016 1331 9268 19"
+              data-feature="INVEST__BANK_ACCOUNT"
               className="w-full rounded-lg border px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
@@ -237,6 +240,7 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
         <select
           value={form.country}
           onChange={(e) => setForm({ ...form, country: e.target.value })}
+          data-feature="INVEST__BANK_CURRENCY"
           className="w-full rounded-lg border px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         >
           <option value="GB">United Kingdom</option>
@@ -249,7 +253,7 @@ export default function BankDetailsForm({ onSave }: { onSave?: () => void }) {
         </select>
       </div>
 
-      <Button className="w-full" onClick={handleSave} disabled={!form.accountName || saving}>
+      <Button className="w-full" onClick={handleSave} disabled={!form.accountName || saving} data-feature="INVEST__BANK_SAVE">
         {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Building2 className="h-4 w-4 mr-2" />}
         {saving ? 'Saving...' : 'Save Bank Details'}
       </Button>

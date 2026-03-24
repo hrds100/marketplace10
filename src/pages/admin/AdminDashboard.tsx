@@ -66,7 +66,7 @@ export default function AdminDashboard() {
     <div data-feature="ADMIN">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Admin Dashboard</h1>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      <div data-feature="ADMIN__DASHBOARD_STATS" className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         {stats.map(s => (
           <div key={s.label} className="bg-card border border-border rounded-2xl p-5">
             <s.icon className="w-5 h-5 text-muted-foreground mb-2" />
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="bg-card border border-border rounded-2xl p-5 mb-6">
+      <div data-feature="ADMIN__DASHBOARD_ACTIVITY" className="bg-card border border-border rounded-2xl p-5 mb-6">
         <h2 className="text-base font-bold text-foreground mb-4">Recent activity</h2>
         <div className="space-y-3">
           {activities.map((a, i) => {
@@ -105,6 +105,7 @@ export default function AdminDashboard() {
         </div>
         <p className="text-xs text-red-700 mb-4">Dev/test only. These actions cannot be undone.</p>
         <button
+          data-feature="ADMIN__DASHBOARD_RESET"
           onClick={() => setShowResetDialog(true)}
           className="px-4 py-2 rounded-lg border-2 border-red-300 bg-white text-red-700 text-sm font-semibold hover:bg-red-100 transition-colors"
         >

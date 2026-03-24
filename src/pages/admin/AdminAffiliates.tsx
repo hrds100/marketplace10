@@ -119,7 +119,7 @@ export default function AdminAffiliates() {
       <h1 className="text-[28px] font-bold text-foreground mb-6">Affiliate Agents</h1>
 
       {/* Global stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div data-feature="ADMIN__AFFILIATES_EARNINGS" className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Total Agents', value: totalAgents, icon: Users, color: 'text-emerald-600' },
           { label: 'Total Clicks', value: totalClicks.toLocaleString(), icon: MousePointerClick, color: 'text-blue-600' },
@@ -169,6 +169,7 @@ export default function AdminAffiliates() {
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
+            data-feature="ADMIN__AFFILIATES_SEARCH"
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -192,7 +193,7 @@ export default function AdminAffiliates() {
       </div>
 
       {/* Agents table */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div data-feature="ADMIN__AFFILIATES_TABLE" className="bg-card border border-border rounded-2xl overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center text-sm text-muted-foreground">Loading...</div>
         ) : filtered.length === 0 ? (

@@ -7,10 +7,10 @@ export function NfsMainFooter() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* About */}
-          <div>
+          <div data-feature="BOOKING_NFSTAY__FOOTER_ABOUT">
             <NfsLogo className="mb-3" />
             <p className="text-sm text-muted-foreground mb-4">Book unique vacation rentals directly from verified hosts. No middlemen, no hidden fees.</p>
-            <div className="flex gap-3">
+            <div data-feature="BOOKING_NFSTAY__FOOTER_SOCIAL" className="flex gap-3">
               {['Instagram', 'Twitter', 'Facebook', 'TikTok'].map((s) => (
                 <a key={s} href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">{s}</a>
               ))}
@@ -18,7 +18,7 @@ export function NfsMainFooter() {
           </div>
 
           {/* For Operators */}
-          <div>
+          <div data-feature="BOOKING_NFSTAY__FOOTER_OPERATORS">
             <h4 className="text-sm font-semibold text-foreground mb-3">For Operators</h4>
             <ul className="space-y-2">
               <li><Link to="/signup" className="text-sm text-muted-foreground hover:text-foreground transition-colors">List your property</Link></li>
@@ -29,7 +29,7 @@ export function NfsMainFooter() {
           </div>
 
           {/* For Travelers */}
-          <div>
+          <div data-feature="BOOKING_NFSTAY__FOOTER_TRAVELERS">
             <h4 className="text-sm font-semibold text-foreground mb-3">For Travelers</h4>
             <ul className="space-y-2">
               <li><Link to="/search" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Search properties</Link></li>
@@ -40,7 +40,7 @@ export function NfsMainFooter() {
           </div>
 
           {/* Legal */}
-          <div>
+          <div data-feature="BOOKING_NFSTAY__FOOTER_LEGAL">
             <h4 className="text-sm font-semibold text-foreground mb-3">Legal</h4>
             <ul className="space-y-2">
               <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy policy</a></li>

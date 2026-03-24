@@ -68,7 +68,7 @@ export default function NfsWlSearch() {
   return (
     <div data-feature="BOOKING_NFSTAY__WHITE_LABEL" className="min-h-[60vh]">
       {/* Search bar */}
-      <div className="border-b border-border/40 bg-white dark:bg-card">
+      <div data-feature="BOOKING_NFSTAY__WL_FILTERS" className="border-b border-border/40 bg-white dark:bg-card">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[200px] relative">
@@ -119,7 +119,7 @@ export default function NfsWlSearch() {
             <p className="text-sm text-muted-foreground">No properties available right now.</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div data-feature="BOOKING_NFSTAY__WL_RESULTS" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {results.map(p => (
               <NfsPropertyCard
                 key={p.id}

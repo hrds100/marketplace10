@@ -89,7 +89,7 @@ export default function SettingsHospitable() {
               Link your Hospitable account to automatically import your listings and reservations from Airbnb, VRBO, and other platforms.
             </p>
           </div>
-          <Button onClick={initiateConnect} disabled={connecting} className="w-full max-w-xs">
+          <Button data-feature="BOOKING_NFSTAY__HOSPITABLE_CONNECT" onClick={initiateConnect} disabled={connecting} className="w-full max-w-xs">
             {connecting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wifi className="w-4 h-4 mr-2" />}
             {connecting ? 'Connecting...' : 'Connect with Hospitable'}
           </Button>
@@ -107,7 +107,7 @@ export default function SettingsHospitable() {
         /* ── Connected ── */
         <div className="rounded-xl border border-border/40 bg-white dark:bg-card p-6 space-y-5">
           {/* Connection status */}
-          <div className="flex items-center gap-3">
+          <div data-feature="BOOKING_NFSTAY__HOSPITABLE_STATUS" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
@@ -188,6 +188,7 @@ export default function SettingsHospitable() {
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             <Button
+              data-feature="BOOKING_NFSTAY__HOSPITABLE_SYNC"
               variant="outline"
               size="sm"
               onClick={handleResync}

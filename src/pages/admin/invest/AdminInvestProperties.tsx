@@ -277,7 +277,7 @@ export default function AdminInvestProperties() {
       ) : (
       <Card className="border-border">
         <CardContent className="p-0">
-          <Table>
+          <Table data-feature="ADMIN__INVEST_PROPERTIES_TABLE">
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
@@ -314,7 +314,7 @@ export default function AdminInvestProperties() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(p)}>
+                      <Button data-feature="ADMIN__INVEST_PROPERTIES_EDIT" variant="ghost" size="sm" onClick={() => openEdit(p)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                     </TableCell>

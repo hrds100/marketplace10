@@ -168,6 +168,7 @@ export default function AdminUsers() {
         <h1 className="text-[28px] font-bold text-foreground">Users ({filtered.length})</h1>
         <div className="flex items-center gap-3">
           <select
+            data-feature="ADMIN__USERS_FILTER"
             value={tierFilter}
             onChange={e => { setTierFilter(e.target.value); setPage(0); }}
             className="h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -183,7 +184,7 @@ export default function AdminUsers() {
         <div className="text-center py-12 text-muted-foreground">Loading users...</div>
       ) : (
         <div className="bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-sm min-w-[800px]">
+          <table data-feature="ADMIN__USERS_TABLE" className="w-full text-sm min-w-[800px]">
             <thead>
               <tr className="border-b border-border">
                 {['Name', 'User ID', 'WhatsApp', 'Tier', 'Status', 'Actions'].map(h => (
@@ -225,6 +226,7 @@ export default function AdminUsers() {
                     <td className="p-3.5">
                       <div className="flex gap-2">
                         <button
+                          data-feature="ADMIN__USERS_SUSPEND"
                           onClick={() => suspendMutation.mutate({ id: u.id, suspended: !isSuspended })}
                           className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
                             isSuspended
@@ -269,7 +271,7 @@ export default function AdminUsers() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
+        <div data-feature="ADMIN__USERS_PAGINATION" className="flex items-center justify-between mt-4">
           <span className="text-xs text-muted-foreground">
             Page {page + 1} of {totalPages} · {filtered.length} users
           </span>

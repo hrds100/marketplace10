@@ -122,13 +122,14 @@ export default function AdminNfsProperties() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
+            data-feature="ADMIN__NFS_PROPERTIES_SEARCH"
             placeholder="Search by title, location, or operator..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="pl-9"
           />
         </div>
-        <div className="flex gap-1.5 flex-wrap">
+        <div data-feature="ADMIN__NFS_PROPERTIES_FILTER" className="flex gap-1.5 flex-wrap">
           {STATUSES.map(s => (
             <button
               key={s}
@@ -159,7 +160,7 @@ export default function AdminNfsProperties() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">No properties found.</div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div data-feature="ADMIN__NFS_PROPERTIES_TABLE" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map(p => {
             const cover = p.images?.find(i => i.is_cover)?.url || p.images?.[0]?.url;
             const location = [p.city, p.country].filter(Boolean).join(', ');

@@ -47,11 +47,11 @@ export default function SettingsContact({ operator }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="sc-email">Contact email</Label>
-        <Input id="sc-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="hello@yourbrand.com" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__CONTACT_EMAIL" id="sc-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="hello@yourbrand.com" disabled={saving} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="sc-phone">Phone number</Label>
-        <Input id="sc-phone" type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="+44 7700 900000" disabled={saving} />
+        <Input data-feature="BOOKING_NFSTAY__CONTACT_PHONE" id="sc-phone" type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="+44 7700 900000" disabled={saving} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="sc-whatsapp">WhatsApp</Label>
@@ -62,7 +62,7 @@ export default function SettingsContact({ operator }: Props) {
         <Input id="sc-telegram" value={contactTelegram} onChange={e => setContactTelegram(e.target.value)} placeholder="@yourusername" disabled={saving} />
       </div>
 
-      <Button type="submit" disabled={saving}>
+      <Button data-feature="BOOKING_NFSTAY__CONTACT_SAVE" type="submit" disabled={saving}>
         {saving ? 'Saving...' : 'Save changes'}
       </Button>
     </form>
