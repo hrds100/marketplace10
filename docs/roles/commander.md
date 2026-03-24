@@ -81,6 +81,8 @@ Hugo just says what he wants. You detect the type of work and assign the role au
 | "add", "build", "create", "new feature", "implement" | `docs/roles/feature-builder.md` |
 | "test", "check if", "verify", "make sure", "write tests" | `docs/roles/tester.md` |
 | "audit", "review", "check all pages", "what's missing", "trace" | `docs/roles/auditor.md` |
+| "webhook", "n8n", "supabase", "stripe", "vercel", "deploy", "env var", "API", "edge function", "hospitable", "integration", "resend", "email sending" | `docs/roles/integrations.md` |
+| "blockchain", "smart contract", "wallet", "token", "on-chain", "The Graph", "ethers", "Particle", "BSC", "IPFS", "staking", "RWA" | `docs/roles/blockchain.md` |
 | Mixed or unclear | `docs/roles/feature-builder.md` (default) |
 
 If a task needs multiple roles (e.g. "fix the bug and test it"), create two workers — one bug-fixer, one tester.
