@@ -2,6 +2,39 @@
 
 ## [Unreleased]
 
+## [2026-03-24] - Affiliate Commission Tracking + Profile Photo Upload
+
+### Added - Affiliate Commission Chain (all 3 revenue sources now tracked)
+
+- **GHL subscription commissions (40%)**: `PaymentSheet.tsx` and `InquiryPanel.tsx` detect payment success (tier change in DB), then POST to n8n `/webhook/aff-commission-subscription` with the user's `referred_by` code. n8n creates `aff_commissions` row with 14-day holdback.
+- **Crypto purchase commissions (5%)**: `useBlockchain.ts` now looks up the buyer's `referred_by` from their profile after `buyPrimaryShares` tx confirms. Resolves referral code to `agent_id`, writes `inv_orders.agent_id`, and creates `aff_commissions` row.
+- **Referral code passed to GHL funnel**: `getFunnelUrl()` and `getUpgradeUrl()` accept `ref` param. All payment entry points (PaymentSheet, InquiryPanel, SettingsPage membership tab) fetch `profiles.referred_by` and append `&ref=CODE` to the GHL iframe URL.
+- **Affiliate auto-provisioning**: Visiting `/dashboard/affiliates` auto-creates an `affiliate_profiles` row if none exists. No "Become An Agent" button needed.
+- **n8n workflow activated**: "NFsTay -- Subscription Commission" (`VdiSsyokBcUteHio`) turned ON.
+
+### Added - Profile Photo Upload
+
+- **`profile-photos` Supabase storage bucket**: Created with INSERT/SELECT/UPDATE/DELETE policies for authenticated users. Bucket is public so avatar URLs are accessible.
+- **Migration**: `supabase/migrations/20260323_profile_photos_bucket.sql`
+
+### Fixed
+
+- **Affiliates page crash (TDZ error)**: `useMyAffiliateProfile` import from `useInvestData` pulled in `mergeBuyerEmailsIntoOrders` module, causing a `ReferenceError: Cannot access variable before initialization` in Vercel's production bundle. Fixed by restoring the original import chain and moving auto-provision into the existing `queryFn`.
+- **Profile photo upload failed silently**: The `profile-photos` Supabase storage bucket never existed. Created bucket + RLS policies via Supabase Management API.
+
+### Files Changed
+
+- `src/lib/ghl.ts` - `getFunnelUrl` + `getUpgradeUrl` accept `ref` param
+- `src/components/PaymentSheet.tsx` - fetch `referred_by`, fire n8n commission on payment success
+- `src/components/InquiryPanel.tsx` - same as PaymentSheet
+- `src/pages/SettingsPage.tsx` - pass `ref` to all GHL funnel URLs, fetch `referred_by` + `avatar_url`
+- `src/pages/AffiliatesPage.tsx` - auto-provision affiliate profile in queryFn
+- `src/hooks/useBlockchain.ts` - attribute `agent_id` + create `aff_commissions` on crypto purchase
+- `supabase/migrations/20260323_profile_photos_bucket.sql` - new storage bucket
+- `docs/INTEGRATIONS.md` - full affiliate commission tracking documentation
+
+---
+
 ## [2026-03-20] - Social Login Fix + Chain Disconnection Fix
 
 ### Fixed - Social Login (Particle Network)

@@ -154,6 +154,87 @@ Then polls Supabase every 1s for tier update (up to 10s) → shows success scree
 ### WhatsApp Number
 - Phone: `07676 368123` | Name: nfstay | Quality: Green
 
+## Affiliate Commission Tracking
+
+Three revenue sources feed into `aff_commissions`. All commissions have a 14-day holdback before becoming claimable.
+
+### 1. GHL Subscription Payments (40% commission)
+
+**Flow:** User pays for Monthly/Yearly/Lifetime via GHL funnel -> app detects tier change -> POSTs to n8n
+
+**n8n workflow:** "NFsTay -- Subscription Commission" (id: `VdiSsyokBcUteHio`, ACTIVE)
+**Webhook:** `POST /webhook/aff-commission-subscription`
+**Payload:**
+```json
+{
+  "referral_code": "HUGO12",
+  "user_id": "uuid",
+  "amount": 67,
+  "payment_id": "ghl-uuid-timestamp"
+}
+```
+**Called from:** `PaymentSheet.tsx` and `InquiryPanel.tsx` after confirmed tier change in DB
+**Commission:** n8n queries `aff_profiles` by `referral_code`, calculates 40% (from `aff_commission_settings`), inserts into `aff_commissions` with `ON CONFLICT DO NOTHING`
+
+**How referral code reaches GHL:**
+- `getFunnelUrl()` and `getUpgradeUrl()` in `src/lib/ghl.ts` accept `ref` param
+- `PaymentSheet.tsx`, `InquiryPanel.tsx`, and `SettingsPage.tsx` fetch `profiles.referred_by` and pass it as `&ref=CODE` to the GHL iframe URL
+- On payment success, the app reads `referred_by` from the user's profile and POSTs to n8n directly (does not rely on GHL to forward the code)
+
+### 2. SamCart Investment Payments (5% first / 2% recurring)
+
+**Flow:** User buys shares via SamCart card checkout -> SamCart fires webhook -> edge function creates order + commission
+
+**Edge function:** `supabase/functions/inv-samcart-webhook/index.ts`
+**Referral attribution:** Reads `custom_fields.agent_code` or `custom_fields.referral_code` from SamCart payload
+**Commission logic (lines 898-947):**
+1. Look up agent's `aff_profiles` by `user_id`
+2. Fetch rate from `aff_commission_settings` (user-specific, then global default)
+3. Insert into `aff_commissions` with source `investment_first`, 14-day `claimable_at`
+
+### 3. Crypto On-Chain Purchases (5% from settings)
+
+**Flow:** User buys shares via `buyPrimaryShares()` on BNB Chain -> tx confirms -> hook creates order + commission
+
+**Called from:** `src/hooks/useBlockchain.ts` after `buyPrimaryShares` receipt
+**Attribution logic:**
+1. Query buyer's `profiles.referred_by`
+2. Resolve referral code to `agent_id` via `aff_profiles.referral_code`
+3. Insert `inv_orders` with `agent_id`
+4. Insert `aff_commissions` with rate from `aff_commission_settings` (default 5%)
+
+### Referral Tracking (Clicks + Signups)
+
+**Edge function:** `supabase/functions/track-referral/index.ts`
+**Called from:** `SignUp.tsx` on page load (`?ref=CODE`) and after signup completion
+**Actions:**
+- Click: increments `aff_profiles.total_clicks`, inserts `affiliate_events` (type: click)
+- Signup: increments `aff_profiles.total_signups`, inserts `affiliate_events` (type: signup), stores `profiles.referred_by`
+
+### Auto-Provisioning
+
+Every logged-in user automatically gets an `affiliate_profiles` row on first visit to `/dashboard/affiliates`. No "Become An Agent" button needed. The referral code is generated from the user's name (e.g., `HUGO12`).
+
+**Implementation:** `AffiliatesPage.tsx` queryFn auto-creates row if `maybeSingle()` returns null.
+
+### Commission Rates (Global Defaults)
+
+| Source | Rate | Holdback |
+|--------|------|----------|
+| Subscription (GHL) | 40% | 14 days |
+| Investment first purchase | 5% | 14 days |
+| Investment recurring | 2% | 14 days |
+
+Stored in `aff_commission_settings` (NULL user_id = global). Per-user overrides supported.
+
+### Payout Processing
+
+- **Bank transfer:** Weekly batch every Tuesday 05:00 AM via n8n + Revolut API. Hugo approves in Revolut app.
+- **Crypto (USDC):** Immediate on-chain transfer from treasury wallet to user's Particle wallet.
+- **Payout settings:** Users configure bank details at `/dashboard/settings` (Payout Settings tab).
+
+---
+
 ## Pexels (Stock Photos)
 **API**: https://api.pexels.com/v1
 **Env var**: `VITE_PEXELS_API_KEY`

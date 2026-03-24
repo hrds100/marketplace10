@@ -1,5 +1,5 @@
 # nfstay - Full Stack Reference
-_Last updated: 2026-03-15_
+_Last updated: 2026-03-24_
 
 > **Rule:** Any time a new service, tool, or integration is added to the project, this file MUST be updated in the same commit. No exceptions.
 
@@ -66,6 +66,17 @@ _Last updated: 2026-03-15_
 | POST /webhook/samcart | Payment tier update | SamCart/GHL | `rFFWUhp5PvgGEIHV` |
 | POST /webhook/csv-bulk-properties | Bulk property import | Admin | `yXP6L90l7kSXWQbq` |
 | POST /webhook/ghl-payment-success | GHL payment processed | GHL automation | `wsDjAdpWnjqnO7ML` |
+| POST /webhook/aff-commission-subscription | Affiliate commission on subscription | PaymentSheet.tsx, InquiryPanel.tsx | `VdiSsyokBcUteHio` |
+| POST /webhook/inv-notify | Investment event notification | useBlockchain.ts | `831ee5cZjAp94bYL` |
+
+## Supabase Storage Buckets
+
+| Bucket | Public | Purpose | Policies |
+|--------|--------|---------|----------|
+| `deals-photos` | Yes | Property deal photos | Auth upload, public read |
+| `profile-photos` | Yes | User avatar uploads | Auth upload/update/delete, public read |
+| `inv-property-docs` | Yes | Investment property documents | Auth read, admin insert/delete |
+| `nfs-images` | Yes | NFStay operator property images | Auth upload/read |
 
 ## GHL Products
 
