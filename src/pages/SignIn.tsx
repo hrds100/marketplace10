@@ -249,6 +249,13 @@ export default function SignIn() {
                 Don't have an account?{' '}
                 <Link data-feature="AUTH__SIGNIN_SIGNUP_LINK" to="/signup" className="text-[#1e9a80] font-semibold">Sign up</Link>
               </p>
+
+              <p data-feature="AUTH__TERMS_NOTICE" className="text-[11px] text-muted-foreground text-center mt-4">
+                By signing up, you confirm that you accept our{' '}
+                <a href="/terms" className="text-primary underline">Terms and Conditions</a>{' '}
+                and{' '}
+                <a href="/privacy" className="text-primary underline">Privacy Policy</a>.
+              </p>
             </div>
           </div>
         </div>
