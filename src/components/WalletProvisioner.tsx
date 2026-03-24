@@ -9,7 +9,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Wallet, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function WalletProvisioner() {
@@ -65,32 +65,28 @@ export default function WalletProvisioner() {
     }
   };
 
-  const handleSkip = () => {
-    setShowModal(false);
-  };
-
   return (
-    <Dialog open={showModal} onOpenChange={setShowModal}>
-      <DialogContent className="max-w-[400px]">
+    <Dialog open={showModal} onOpenChange={() => { /* prevent closing — verification is required */ }}>
+      <DialogContent className="max-w-[400px]" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Wallet className="w-5 h-5" style={{ color: '#1E9A80' }} />
-            Set up your wallet
+            <CheckCircle2 className="w-5 h-5" style={{ color: '#1E9A80' }} />
+            Quick account verification
           </DialogTitle>
         </DialogHeader>
 
         {walletDone ? (
           <div className="text-center py-6">
             <CheckCircle2 className="w-12 h-12 mx-auto" style={{ color: '#1E9A80' }} />
-            <p className="text-sm font-medium mt-3" style={{ color: '#1E9A80' }}>Wallet connected!</p>
+            <p className="text-sm font-medium mt-3" style={{ color: '#1E9A80' }}>Account verified!</p>
           </div>
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Your wallet is needed to receive investment shares. A verification code will be sent to your email.
+              We need to quickly verify your account. Click continue and enter the email you used to register.
             </p>
 
-            <div className="flex flex-col gap-2 mt-4">
+            <div className="mt-4">
               <Button
                 onClick={handleConnect}
                 disabled={connecting}
@@ -103,16 +99,9 @@ export default function WalletProvisioner() {
                     Check your email for the code...
                   </>
                 ) : (
-                  'Connect Wallet'
+                  'Continue'
                 )}
               </Button>
-
-              <button
-                onClick={handleSkip}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Skip for now
-              </button>
             </div>
           </>
         )}
