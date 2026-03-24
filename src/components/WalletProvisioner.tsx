@@ -110,7 +110,7 @@ export default function WalletProvisioner({ children }: { children?: React.React
                   {modalMessage}
                 </p>
 
-                <div className="mt-4">
+                <div className="flex flex-col gap-2 mt-4">
                   <Button
                     onClick={handleConnect}
                     disabled={connecting}
@@ -119,6 +119,16 @@ export default function WalletProvisioner({ children }: { children?: React.React
                   >
                     Continue
                   </Button>
+                  <button
+                    onClick={() => {
+                      setShowModal(false);
+                      if (resolveRef.current) resolveRef.current(false);
+                      resolveRef.current = null;
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Not now
+                  </button>
                 </div>
               </>
             )}
