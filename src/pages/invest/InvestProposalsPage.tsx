@@ -169,7 +169,7 @@ export default function InvestProposalsPage() {
     .map((p: any) => ({
       id: p.id,
       propertyTitle: p.inv_properties?.title || 'Property',
-      propertyImage: p.inv_properties?.image || '/placeholder.svg',
+      propertyImage: (p.inv_properties as any)?.photos?.[0] || p.inv_properties?.image || '/placeholder.svg',
       propertyId: p.property_id,
       title: p.title,
       description: p.description || '',
@@ -233,7 +233,7 @@ export default function InvestProposalsPage() {
     .map((p: any) => ({
       id: p.id,
       propertyTitle: p.inv_properties?.title || 'Property',
-      propertyImage: p.inv_properties?.image || '/placeholder.svg',
+      propertyImage: (p.inv_properties as any)?.photos?.[0] || p.inv_properties?.image || '/placeholder.svg',
       propertyId: p.property_id,
       title: p.title,
       description: p.description || '',
@@ -876,7 +876,7 @@ export default function InvestProposalsPage() {
                     {selectedProperty ? (
                       <>
                         <img
-                          src={selectedProperty.image}
+                          src={selectedProperty.photos?.[0] || selectedProperty.image || '/placeholder.svg'}
                           alt={selectedProperty.title}
                           className="h-9 w-9 rounded-lg object-cover flex-shrink-0"
                         />
@@ -913,7 +913,7 @@ export default function InvestProposalsPage() {
                           )}
                         >
                           <img
-                            src={prop.image}
+                            src={prop.photos?.[0] || prop.image || '/placeholder.svg'}
                             alt={prop.title}
                             className="h-9 w-9 rounded-lg object-cover flex-shrink-0"
                           />
@@ -1028,7 +1028,7 @@ export default function InvestProposalsPage() {
               {selectedProperty && (
                 <div className="flex items-center gap-3 rounded-lg bg-muted px-4 py-3">
                   <img
-                    src={selectedProperty.image}
+                    src={selectedProperty.photos?.[0] || selectedProperty.image || '/placeholder.svg'}
                     alt={selectedProperty.title}
                     className="h-10 w-10 rounded-lg object-cover"
                   />

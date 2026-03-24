@@ -145,7 +145,7 @@ export function useMyPayouts() {
     queryFn: async () => {
       if (!user?.id) return [];
       const { data, error } = await (supabase.from('inv_payouts') as any)
-        .select('*, inv_properties(title, image)')
+        .select('*, inv_properties(title, image, photos)')
         .eq('user_id', user.id)
         .order('period_date', { ascending: false });
       if (error) throw error;
@@ -162,7 +162,7 @@ export function useProposals() {
     queryKey: ['inv_proposals'],
     queryFn: async () => {
       const { data, error } = await (supabase.from('inv_proposals') as any)
-        .select('*, inv_properties(title, image)')
+        .select('*, inv_properties(title, image, photos)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];

@@ -153,7 +153,7 @@ export default function AdminInvestProperties() {
     setEditing(p);
     setForm({ ...p });
     setMainImageFile(null);
-    setMainImagePreview(p.image || null);
+    setMainImagePreview((p as any).photos?.[0] || p.image || null);
     setGalleryFiles([]);
     setGalleryPreviews(p.images || []);
     setDocFiles([]);
@@ -227,7 +227,7 @@ export default function AdminInvestProperties() {
       const propertyId = editing?.id || Date.now();
 
       // Upload main image if a new file was selected
-      let mainImageUrl = form.image as string;
+      let mainImageUrl = ((form.photos as string[]) || [])[0] || (form.image as string);
       if (mainImageFile) {
         try {
           mainImageUrl = await uploadImage(mainImageFile, propertyId);
@@ -275,6 +275,7 @@ export default function AdminInvestProperties() {
           ...updates,
           image: mainImageUrl,
           images: allImages,
+          photos: (form.photos as string[]) || [],
           property_docs: allDocs,
         });
       } else {
@@ -283,6 +284,7 @@ export default function AdminInvestProperties() {
           ...newProp,
           image: mainImageUrl,
           images: allImages,
+          photos: (form.photos as string[]) || [],
           property_docs: allDocs,
         });
       }
@@ -639,10 +641,10 @@ export default function AdminInvestProperties() {
             <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Marketplace Preview</h4>
             <div className="rounded-2xl border bg-card overflow-hidden">
               {/* Hero image with overlay */}
-              {(mainImagePreview || (form.image as string)) ? (
+              {(mainImagePreview || ((form.photos as string[]) || [])[0] || (form.image as string)) ? (
                 <div className="relative aspect-[16/9] w-full">
                   <img
-                    src={mainImagePreview || (form.image as string)}
+                    src={mainImagePreview || ((form.photos as string[]) || [])[0] || (form.image as string)}
                     alt="Preview"
                     className="absolute inset-0 w-full h-full object-cover"
                   />

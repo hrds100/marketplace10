@@ -765,7 +765,7 @@ export default function InvestPortfolioPage() {
                         onClick={() => toggleCollapse(h.propertyId)}
                       >
                         <img
-                          src={h.image}
+                          src={h.image || '/placeholder.svg'}
                           alt={h.propertyTitle}
                           data-feature="INVEST__PORTFOLIO_IMAGE"
                           className="h-14 w-20 rounded-lg object-cover flex-shrink-0"
