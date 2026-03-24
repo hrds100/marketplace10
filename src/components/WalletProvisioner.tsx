@@ -7,7 +7,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -65,15 +64,15 @@ export default function WalletProvisioner() {
     }
   };
 
+  if (!showModal) return null;
+
   return (
-    <Dialog open={showModal} onOpenChange={() => { /* prevent closing — verification is required */ }}>
-      <DialogContent className="max-w-[400px] [&>button[class*='close']]:hidden [&>button:last-of-type]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <CheckCircle2 className="w-5 h-5" style={{ color: '#1E9A80' }} />
-            Quick account verification
-          </DialogTitle>
-        </DialogHeader>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-[400px] mx-4 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <CheckCircle2 className="w-5 h-5" style={{ color: '#1E9A80' }} />
+          <h2 className="text-lg font-bold text-foreground">Quick account verification</h2>
+        </div>
 
         {walletDone ? (
           <div className="text-center py-6">
@@ -105,8 +104,8 @@ export default function WalletProvisioner() {
             </div>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
 
