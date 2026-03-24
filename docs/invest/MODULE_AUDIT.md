@@ -143,18 +143,16 @@ Admin workspace selector at `/admin` - 3 workspaces: Marketplace / Investments /
 - WhatsApp notifications working (tested with Hugo's contact)
 - Hugo's GHL contact ID: `bXRhraG8yIBwrmCtzfyB`
 
-### Particle Network ✅ FULLY LIVE
-- **Project:** nfstay Investment (new, separate from legacy)
-- Project ID: `470629ca-91af-45fa-a52b-62ed2adf9ef0`
-- Client Key: `cTHFOA18eAs4iRrkgn8lG1QARC8HFkkv5jeYQPc1`
-- Server Key: `su4XYbQ46MNcuVDBYJn5dBhxqA5zXCXRRfyZrbF0`
-- App ID: `a82d525c-85da-4786-a0ed-e4cf110c8377` (Web, domain: hub.nfstay.com)
-- JWKS endpoint deployed + configured in Particle dashboard
-- JWT generator deployed
-- **Wallet creation LIVE** (2026-03-19): uses `@particle-network/auth-core` directly (bypasses AuthCoreContextProvider which crashed in Vite). Lazy-loaded 1MB chunk, auto-creates wallet at signup via `WalletProvisioner` in DashboardLayout
+### Particle Network ✅ FULLY LIVE (Single Project)
+- **Project:** Legacy (used for everything - social login + email wallet creation)
+- Project ID: `4f8aca10-0c7e-4617-bfff-7ccb5269f365`
+- Client Key: `cWniBMIDt2lhrhdIERSBWURpannCk30SGNwdPK7D`
+- App ID: `d80e484f-a690-4f0b-80a8-d1a1d0264b90`
+- Hub project (`470629ca...`) REMOVED on 2026-03-24 - was causing confusion
+- **Email wallet creation**: WalletProvisioner shows mandatory verification modal on dashboard. User clicks Continue, Particle popup asks for email code. Cannot navigate until wallet is connected.
+- **Social login wallet**: Created at OAuth callback (ParticleAuthCallback.tsx), no extra step needed.
 - `ParticleProvider` remains as pass-through wrapper (safe, no-op)
-- CSS overrides in `index.css` hide Particle modal overlays (pn-modal, pn-auth) to prevent click-blocking
-- See `docs/invest/WALLET_ARCHITECTURE.md` for full flow, security model, and troubleshooting
+- See `docs/invest/WALLET_ARCHITECTURE.md` for full flow
 
 ### The Graph ✅ DEPLOYED + INDEXING
 - Voting: `https://api.studio.thegraph.com/query/95498/votingnfstay/version/latest`

@@ -2,6 +2,44 @@
 
 ## [Unreleased]
 
+## [2026-03-24b] - SamCart Auto-Approve, Affiliate Fix, Wallet Verification
+
+### Fixed - SamCart Order Processing
+- **SamCart webhook was blocked**: `verify_jwt` was `true` on `inv-samcart-webhook` edge function, rejecting all SamCart webhooks with 401. Fixed to `false`. Replayed 2 missed orders ($5 each).
+- **Orders no longer auto-approve**: SamCart orders now land as `pending`. Admin must click "Approve" on the orders page to send shares on-chain. New edge function `inv-approve-order` handles the on-chain transaction.
+- **Approve button on admin orders page**: Replaces old "Mark complete" (DB-only). Shows confirmation dialog before executing blockchain transaction. Loading spinner while tx processes.
+- **Referrer wallet column**: Admin orders table now shows the referrer's wallet address.
+
+### Fixed - Affiliate Tracking
+- **Agent tracking for SamCart (card) purchases**: Webhook now checks buyer's `referred_by` field in profiles to resolve the referrer. Previously, agent was never tracked because `agentWallet` was missing from SamCart data.
+- **Agent tracking for crypto purchases**: `inv-process-order` edge function now resolves agent from `referred_by` (was always `null`).
+- **Auto-create `aff_profiles`**: If a referrer has no affiliate profile, `createCommission()` auto-creates one so commissions are recorded.
+- **Backfilled**: Created `aff_profiles` for hugodesouzax@gmail.com (code AGEN0W), set agent_id on helpmybricks order, created $0.25 commission.
+
+### Fixed - Wallet Creation for Email Signups
+- **Mandatory wallet verification modal**: Email signup users see a blocking overlay on dashboard asking them to verify their account via Particle. Cannot navigate, cannot dismiss, persists on every page load until wallet is connected.
+- **Blurred backdrop**: While Particle popup is active, white blurred overlay blocks all navigation behind it.
+- **Race condition fixed**: Added global lock in `ParticleWalletCreator` so only one wallet creation runs at a time. `useWallet` hook now polls instead of racing with `WalletProvisioner`.
+
+### Changed - Particle Project Consolidation
+- **Removed Hub project** (`470629ca-91af-45fa-a52b-62ed2adf9ef0`) from entire codebase.
+- **Single project**: Everything now uses Legacy (`4f8aca10-0c7e-4617-bfff-7ccb5269f365`) - social login and email wallet creation.
+- `PARTICLE_CONFIG` is now an alias for `PARTICLE_LEGACY_CONFIG` with extra chain fields.
+- Updated `particle-wallet.html` to Legacy credentials.
+
+### Files Changed
+- `supabase/functions/inv-samcart-webhook/index.ts` - pending orders, agent from referred_by
+- `supabase/functions/inv-process-order/index.ts` - agent from referred_by
+- `supabase/functions/inv-approve-order/index.ts` (NEW) - admin approve with on-chain
+- `src/pages/admin/invest/AdminInvestOrders.tsx` - approve button, referrer column
+- `src/hooks/useInvestData.ts` - fetch agent profiles for orders
+- `src/components/WalletProvisioner.tsx` - mandatory verification modal
+- `src/components/ParticleWalletCreator.tsx` - global lock, legacy project
+- `src/hooks/useWallet.ts` - poll instead of race
+- `src/lib/particle.ts` - single project, removed Hub
+- `public/particle-wallet.html` - legacy credentials
+- `src/pages/VerifyOtp.tsx` - cleaned up wallet creation (handled by WalletProvisioner)
+
 ## [2026-03-24] - Affiliate Commission Tracking + Profile Photo Upload
 
 ### Added - Affiliate Commission Chain (all 3 revenue sources now tracked)
