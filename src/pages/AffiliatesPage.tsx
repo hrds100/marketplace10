@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe, Pencil, X, Loader2 } from 'lucide-react';
-import { useMyAffiliateProfile } from '@/hooks/useInvestData';
+import { useMyAffiliateProfile, useInvestProperties } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,7 +64,7 @@ export default function AffiliatesPage() {
   useEffect(() => {
     const lastCheck = localStorage.getItem('nfstay_aff_last_check');
     if (lastCheck && user?.id) {
-      (supabase.from('affiliate_events') as any)
+      (supabase.from('aff_events') as any)
         .select('metadata')
         .eq('event_type', 'signup')
         .gt('created_at', lastCheck)
@@ -85,19 +85,19 @@ export default function AffiliatesPage() {
     queryFn: async () => {
       if (!user?.id) return null;
       // Try to fetch existing profile
-      const { data } = await (supabase.from('affiliate_profiles') as any)
+      const { data } = await (supabase.from('aff_profiles') as any)
         .select('*').eq('user_id', user.id).maybeSingle();
       if (data) return data;
       // No profile yet - auto-create one
       try {
         const code = generateCode(userName || '');
-        const { data: newProfile } = await (supabase.from('affiliate_profiles') as any)
-          .insert({ user_id: user.id, referral_code: code })
+        const { data: newProfile } = await (supabase.from('aff_profiles') as any)
+          .insert({ user_id: user.id, referral_code: code, full_name: userName || '' })
           .select('*').single();
         return newProfile;
       } catch {
         // Duplicate key (another tab/request) - just re-fetch
-        const { data: retry } = await (supabase.from('affiliate_profiles') as any)
+        const { data: retry } = await (supabase.from('aff_profiles') as any)
           .select('*').eq('user_id', user.id).maybeSingle();
         return retry;
       }
@@ -110,7 +110,7 @@ export default function AffiliatesPage() {
     queryKey: ['affiliate-events', profile?.id],
     queryFn: async () => {
       if (!profile?.id) return [];
-      const { data } = await (supabase.from('affiliate_events') as any)
+      const { data } = await (supabase.from('aff_events') as any)
         .select('*').eq('affiliate_id', profile.id).order('created_at', { ascending: false }).limit(20);
       return data || [];
     },
@@ -121,8 +121,8 @@ export default function AffiliatesPage() {
   const { data: leaderboard = [] } = useQuery({
     queryKey: ['affiliate-leaderboard'],
     queryFn: async () => {
-      const { data } = await (supabase.from('affiliate_profiles') as any)
-        .select('id, referral_code, total_signups, total_paid_users, total_earned, user_id')
+      const { data } = await (supabase.from('aff_profiles') as any)
+        .select('id, referral_code, signups, paid_users, total_earned, user_id')
         .order('total_earned', { ascending: false }).limit(10);
       if (!data?.length) return [];
       const userIds = data.map((d: { user_id: string }) => d.user_id);
@@ -150,7 +150,7 @@ export default function AffiliatesPage() {
     mutationFn: async () => {
       if (!user?.id) throw new Error('Not logged in');
       const code = generateCode(userName || '');
-      const { error } = await (supabase.from('affiliate_profiles') as any).insert({
+      const { error } = await (supabase.from('aff_profiles') as any).insert({
         user_id: user.id, referral_code: code,
       });
       if (error) throw error;
@@ -166,12 +166,12 @@ export default function AffiliatesPage() {
   const payoutMutation = useMutation({
     mutationFn: async () => {
       if (!profile?.id || !profile.pending_balance || profile.pending_balance <= 0) throw new Error('No balance');
-      await (supabase.from('affiliate_events') as any).insert({
+      await (supabase.from('aff_events') as any).insert({
         affiliate_id: profile.id, event_type: 'payout_requested', amount: profile.pending_balance,
-        metadata: { paypal: profile.paypal_email || '', bank_sort: profile.bank_sort_code || '', bank_account: profile.bank_account_number || '', payout_method: payoutTab, requested_at: new Date().toISOString() },
+        metadata: { paypal: profile.payout_details?.paypal || '', payout_method: payoutTab, requested_at: new Date().toISOString() },
       });
       supabase.functions.invoke('send-email', {
-        body: { type: 'payout-requested-admin', data: { name: userName, amount: profile.pending_balance, paypal: profile.paypal_email || '(not set)', email: user?.email } },
+        body: { type: 'payout-requested-admin', data: { name: userName, amount: profile.pending_balance, paypal: profile.payout_details?.paypal || '(not set)', email: user?.email } },
       }).catch(() => {});
       (supabase.from('notifications') as any).insert({
         type: 'payout_request', title: 'Payout requested',
@@ -188,7 +188,7 @@ export default function AffiliatesPage() {
   // Save payout details
   const savePayoutDetails = async (field: string, value: string) => {
     if (!profile?.id) return;
-    await (supabase.from('affiliate_profiles') as any).update({ [field]: value }).eq('id', profile.id);
+    await (supabase.from('aff_profiles') as any).update({ [field]: value }).eq('id', profile.id);
     toast.success('Saved');
   };
 
@@ -202,16 +202,20 @@ export default function AffiliatesPage() {
     setCodeSaving(true);
     setCodeError('');
     try {
-      const { data: existing } = await (supabase.from('affiliate_profiles') as any)
-        .select('id').eq('referral_code', code.toUpperCase()).maybeSingle();
+      const newCodeUpper = code.toUpperCase();
+      const { data: existing } = await (supabase.from('aff_profiles') as any)
+        .select('id').eq('referral_code', newCodeUpper).maybeSingle();
       if (existing && existing.id !== profile.id) {
         setCodeError('This code is already in use.');
         setCodeSaving(false);
         return;
       }
-      const { error } = await (supabase.from('affiliate_profiles') as any)
-        .update({ referral_code: code.toUpperCase() }).eq('id', profile.id);
+      const { error } = await (supabase.from('aff_profiles') as any)
+        .update({ referral_code: newCodeUpper }).eq('id', profile.id);
       if (error) throw error;
+      // DB trigger `trg_sync_referred_by` auto-updates profiles.referred_by
+      // for all users who were referred by the old code
+
       queryClient.invalidateQueries({ queryKey: ['affiliate-profile'] });
       toast.success('Referral code updated!');
       setEditingCode(false);
@@ -224,6 +228,11 @@ export default function AffiliatesPage() {
   };
 
   const referralLink = profile ? `${BASE_URL}/signup?ref=${profile.referral_code}` : '';
+  const { data: investProperties } = useInvestProperties();
+  const activeProperty = investProperties?.[0] || null;
+  const investReferralLink = profile && activeProperty
+    ? `${BASE_URL}/dashboard/invest/marketplace?ref=${profile.referral_code}&property=${activeProperty.id}`
+    : '';
   const isAgent = !!profile;
 
   const copyLink = async () => {
@@ -456,7 +465,7 @@ export default function AffiliatesPage() {
             <p className="text-sm opacity-80 py-6 text-center">Be the first on the leaderboard!</p>
           ) : (
             <div className="space-y-0">
-              {leaderboard.map((a: { id: string; name: string; position: number; total_earned: number; total_signups?: number; user_id: string }) => {
+              {leaderboard.map((a: { id: string; name: string; position: number; total_earned: number; signups?: number; user_id: string }) => {
                 const isMe = a.user_id === user?.id;
                 return (
                   <div key={a.id} className={`flex items-center gap-3 py-2.5 border-b border-white/10 last:border-0 ${isMe ? 'bg-white/10 -mx-2 px-2 rounded-lg' : ''}`}>
@@ -467,7 +476,7 @@ export default function AffiliatesPage() {
                       {a.name?.split(' ')[0] || 'Agent'} {(a.name?.split(' ')[1] || '')[0] ? (a.name?.split(' ')[1] || '')[0] + '.' : ''}
                       {isMe && <span className="text-[10px] ml-1 opacity-70">(you)</span>}
                     </span>
-                    <span className="text-sm font-medium opacity-80">{a.total_signups || 0} referrals</span>
+                    <span className="text-sm font-medium opacity-80">{a.signups || 0} referrals</span>
                   </div>
                 );
               })}
@@ -482,9 +491,9 @@ export default function AffiliatesPage() {
           {/* Stats bar */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Link Clicks', value: profile.total_clicks || 0, icon: MousePointerClick, color: 'text-blue-600' },
-              { label: 'Signups', value: profile.total_signups || 0, icon: Users, color: 'text-emerald-600' },
-              { label: 'Paid Users', value: profile.total_paid_users || 0, icon: TrendingUp, color: 'text-purple-600' },
+              { label: 'Link Clicks', value: profile.link_clicks || 0, icon: MousePointerClick, color: 'text-blue-600' },
+              { label: 'Signups', value: profile.signups || 0, icon: Users, color: 'text-emerald-600' },
+              { label: 'Paid Users', value: profile.paid_users || 0, icon: TrendingUp, color: 'text-purple-600' },
               { label: 'Pending Balance', value: `£${Number(profile.pending_balance || 0).toFixed(2)}`, icon: Wallet, color: 'text-amber-600' },
             ].map(s => (
               <div key={s.label} data-feature="AFFILIATES__STAT_CARD" className="bg-card border border-border rounded-2xl p-4">
@@ -502,9 +511,9 @@ export default function AffiliatesPage() {
             {/* ─── LEFT COLUMN ────────────────────────────── */}
             <div className="space-y-6">
 
-              {/* Referral link */}
+              {/* Subscription referral link */}
               <div className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Your Referral Link</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-3">Your Subscription Referral Link</h3>
                 <div className="flex gap-2">
                   <input data-feature="AFFILIATES__LINK" readOnly value={referralLink} className="input-nfstay flex-1 bg-secondary text-sm font-mono" />
                   <button data-feature="AFFILIATES__SHARE_BUTTON" onClick={copyLink} className="h-10 px-4 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
@@ -515,6 +524,42 @@ export default function AffiliatesPage() {
                   40% commission on every subscription from this link.
                 </p>
               </div>
+
+              {/* Investment referral link */}
+              {activeProperty && investReferralLink && (
+                <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                  <div className="flex items-stretch">
+                    {/* Property thumbnail */}
+                    {(activeProperty.photos?.[0] || activeProperty.image) && (
+                      <div className="w-[100px] min-h-[100px] flex-shrink-0">
+                        <img
+                          src={activeProperty.photos?.[0] || activeProperty.image}
+                          alt={activeProperty.title || 'Investment property'}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-5 flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-foreground mb-1">Your Investment Referral Link</h3>
+                      <p className="text-[11px] text-muted-foreground mb-3">
+                        {activeProperty.title || 'Active deal'} — 5% commission on every share purchase.
+                      </p>
+                      <div className="flex gap-2">
+                        <input readOnly value={investReferralLink} className="input-nfstay flex-1 bg-secondary text-sm font-mono min-w-0" />
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(investReferralLink);
+                            toast.success('Investment referral link copied!');
+                          }}
+                          className="h-10 px-4 rounded-lg bg-[#1E9A80] text-white font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity flex-shrink-0"
+                        >
+                          <Copy className="w-4 h-4" /> Copy
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Earnings chart */}
               <div data-feature="AFFILIATES__EARNINGS" className="bg-card border border-border rounded-2xl p-5">
@@ -639,7 +684,7 @@ function PayoutField({ label, field, profileId, currentValue, placeholder, multi
   const [saved, setSaved] = useState(false);
 
   const save = async () => {
-    await (supabase.from('affiliate_profiles') as any).update({ [field]: value }).eq('id', profileId);
+    await (supabase.from('aff_profiles') as any).update({ [field]: value }).eq('id', profileId);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

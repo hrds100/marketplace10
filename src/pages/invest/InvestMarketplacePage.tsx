@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useInvestProperties, useMyAffiliateProfile } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
@@ -1303,7 +1304,7 @@ function AgentReferralLink({ property }: { property: PropertyData }) {
   const [copied, setCopied] = useState(false);
   const { data: affProfile, isLoading: affLoading } = useMyAffiliateProfile();
   const referralUrl = affProfile?.referral_code
-    ? `https://hub.nfstay.com/invest?ref=${affProfile.referral_code}&property=${property.id}`
+    ? `https://hub.nfstay.com/dashboard/invest/marketplace?ref=${affProfile.referral_code}&property=${property.id}`
     : null;
 
   const handleCopy = useCallback(() => {
@@ -1816,6 +1817,18 @@ export default function InvestMarketplacePage() {
   const { requireWallet } = useWalletGate();
   const { data: allProperties, isLoading } = useInvestProperties();
   const dbProperty = allProperties?.[0] || null;
+  const [searchParams] = useSearchParams();
+
+  // Capture referral code from ?ref= param (same logic as SignUp.tsx)
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      localStorage.setItem('nfstay_ref', ref.toUpperCase());
+      fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co'}/functions/v1/track-referral?code=${encodeURIComponent(ref)}`, {
+        method: 'POST',
+      }).catch(() => {});
+    }
+  }, [searchParams]);
 
   // Map Supabase property to the shape used by sub-components
   const property = dbProperty ? {

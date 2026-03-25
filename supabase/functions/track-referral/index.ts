@@ -29,8 +29,8 @@ serve(async (req) => {
 
     // Find affiliate by code
     const { data: affiliate } = await client
-      .from('affiliate_profiles')
-      .select('id, user_id, total_clicks, total_signups')
+      .from('aff_profiles')
+      .select('id, user_id, link_clicks, signups')
       .eq('referral_code', code.toUpperCase())
       .single();
 
@@ -43,7 +43,7 @@ serve(async (req) => {
 
     if (event === 'click') {
       // Log click
-      await client.from('affiliate_events').insert({
+      await client.from('aff_events').insert({
         affiliate_id: affiliate.id,
         event_type: 'click',
         metadata: {
@@ -53,8 +53,8 @@ serve(async (req) => {
       });
       // Increment counter
       await client
-        .from('affiliate_profiles')
-        .update({ total_clicks: (affiliate.total_clicks || 0) + 1 })
+        .from('aff_profiles')
+        .update({ link_clicks: (affiliate.link_clicks || 0) + 1 })
         .eq('id', affiliate.id);
 
     } else if (event === 'signup') {
@@ -63,7 +63,7 @@ serve(async (req) => {
       const userEmail = url.searchParams.get('userEmail');
 
       // Log signup event
-      await client.from('affiliate_events').insert({
+      await client.from('aff_events').insert({
         affiliate_id: affiliate.id,
         event_type: 'signup',
         referred_user_id: userId || null,
@@ -76,8 +76,8 @@ serve(async (req) => {
       });
       // Increment counter
       await client
-        .from('affiliate_profiles')
-        .update({ total_signups: (affiliate.total_signups || 0) + 1 })
+        .from('aff_profiles')
+        .update({ signups: (affiliate.signups || 0) + 1 })
         .eq('id', affiliate.id);
 
       // Notify the agent via email (non-blocking)
@@ -104,7 +104,7 @@ serve(async (req) => {
                   agentEmail: agentProfile.email,
                   referredName: userName,
                   referredEmail: userEmail,
-                  totalSignups: (affiliate.total_signups || 0) + 1,
+                  totalSignups: (affiliate.signups || 0) + 1,
                 },
               }),
             });

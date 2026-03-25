@@ -17,7 +17,7 @@ export default function AdminAffiliates() {
     queryKey: ['admin-affiliates'],
     queryFn: async () => {
       const { data } = await (supabase
-        .from('affiliate_profiles') as any)
+        .from('aff_profiles') as any)
         .select('*')
         .order('total_earned', { ascending: false });
       if (!data?.length) return [];
@@ -42,41 +42,41 @@ export default function AdminAffiliates() {
     queryKey: ['admin-pending-payouts'],
     queryFn: async () => {
       const { data } = await (supabase
-        .from('affiliate_events') as any)
-        .select('*, affiliate_profiles!inner(user_id, referral_code, paypal_email)')
+        .from('aff_events') as any)
+        .select('*, aff_profiles!inner(user_id, referral_code, payout_details)')
         .eq('event_type', 'payout_requested')
         .order('created_at', { ascending: false });
       if (!data?.length) return [];
 
-      const userIds = data.map((d: { affiliate_profiles: { user_id: string } }) => d.affiliate_profiles.user_id);
+      const userIds = data.map((d: { aff_profiles: { user_id: string } }) => d.aff_profiles.user_id);
       const { data: profiles } = await (supabase
         .from('profiles') as any)
         .select('id, name, email')
         .in('id', userIds);
       const profileMap = new Map((profiles || []).map((p: { id: string; name: string; email: string }) => [p.id, p]));
 
-      return data.map((d: { affiliate_profiles: { user_id: string; paypal_email: string }; amount: number; created_at: string; id: string }) => ({
+      return data.map((d: { aff_profiles: { user_id: string; payout_details: { paypal?: string } | null }; amount: number; created_at: string; id: string }) => ({
         ...d,
-        name: (profileMap.get(d.affiliate_profiles.user_id) as { name?: string })?.name || 'Unknown',
-        email: (profileMap.get(d.affiliate_profiles.user_id) as { email?: string })?.email || '',
-        paypal: d.affiliate_profiles.paypal_email,
+        name: (profileMap.get(d.aff_profiles.user_id) as { name?: string })?.name || 'Unknown',
+        email: (profileMap.get(d.aff_profiles.user_id) as { email?: string })?.email || '',
+        paypal: d.aff_profiles.payout_details?.paypal || '',
       }));
     },
   });
 
   const markPaid = async (eventId: string, affiliateId: string, amount: number, agentEmail: string, agentName: string) => {
     // Update event type to payout_paid
-    await (supabase.from('affiliate_events') as any)
+    await (supabase.from('aff_events') as any)
       .update({ event_type: 'payout_paid' })
       .eq('id', eventId);
 
     // Update affiliate balance
     const affiliate = affiliates.find((a: { id: string }) => a.id === affiliateId);
     if (affiliate) {
-      await (supabase.from('affiliate_profiles') as any)
+      await (supabase.from('aff_profiles') as any)
         .update({
           pending_balance: Math.max(0, (affiliate.pending_balance || 0) - amount),
-          total_paid_out: (affiliate.total_paid_out || 0) + amount,
+          total_claimed: (affiliate.total_claimed || 0) + amount,
         })
         .eq('id', affiliateId);
     }
@@ -92,7 +92,7 @@ export default function AdminAffiliates() {
     // Audit log
     if (user) logAdminAction(user.id, {
       action: 'affiliate_payout',
-      target_table: 'affiliate_events',
+      target_table: 'aff_events',
       target_id: eventId,
       metadata: { amount, agent: agentName },
     });
@@ -105,8 +105,8 @@ export default function AdminAffiliates() {
   // Global stats
   const totalAgents = affiliates.length;
   const totalEarned = affiliates.reduce((s: number, a: { total_earned: number }) => s + Number(a.total_earned || 0), 0);
-  const totalClicks = affiliates.reduce((s: number, a: { total_clicks: number }) => s + (a.total_clicks || 0), 0);
-  const totalSignups = affiliates.reduce((s: number, a: { total_signups: number }) => s + (a.total_signups || 0), 0);
+  const totalClicks = affiliates.reduce((s: number, a: { link_clicks: number }) => s + (a.link_clicks || 0), 0);
+  const totalSignups = affiliates.reduce((s: number, a: { signups: number }) => s + (a.signups || 0), 0);
 
   const filtered = affiliates.filter((a: { name: string; email: string; referral_code: string }) => {
     const matchesSearch = !search || [a.name, a.email, a.referral_code].some(v => v?.toLowerCase().includes(search.toLowerCase()));
@@ -202,7 +202,7 @@ export default function AdminAffiliates() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {['Agent', 'Code', 'Clicks', 'Signups', 'Paid Users', 'Earned', 'Pending', 'Rank'].map(h => (
+                {['Agent', 'Code', 'Clicks', 'Signups', 'Paid Users', 'Earned', 'Pending', 'Tier'].map(h => (
                   <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
                 ))}
               </tr>
@@ -215,9 +215,9 @@ export default function AdminAffiliates() {
                     <div className="text-[11px] text-muted-foreground">{a.email as string}</div>
                   </td>
                   <td className="p-3.5 font-mono text-xs text-muted-foreground">{a.referral_code as string}</td>
-                  <td className="p-3.5 text-foreground">{(a.total_clicks as number || 0).toLocaleString()}</td>
-                  <td className="p-3.5 text-foreground">{a.total_signups as number || 0}</td>
-                  <td className="p-3.5 text-foreground">{a.total_paid_users as number || 0}</td>
+                  <td className="p-3.5 text-foreground">{(a.link_clicks as number || 0).toLocaleString()}</td>
+                  <td className="p-3.5 text-foreground">{a.signups as number || 0}</td>
+                  <td className="p-3.5 text-foreground">{a.paid_users as number || 0}</td>
                   <td className="p-3.5 font-semibold text-foreground">£{Number(a.total_earned || 0).toFixed(2)}</td>
                   <td className="p-3.5">
                     {Number(a.pending_balance || 0) > 0 ? (
@@ -228,12 +228,12 @@ export default function AdminAffiliates() {
                   </td>
                   <td className="p-3.5">
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                      a.rank === 'diamond' ? 'bg-blue-100 text-blue-700' :
-                      a.rank === 'gold' ? 'bg-amber-100 text-amber-700' :
-                      a.rank === 'silver' ? 'bg-gray-100 text-gray-700' :
+                      a.tier === 'diamond' ? 'bg-blue-100 text-blue-700' :
+                      a.tier === 'gold' ? 'bg-amber-100 text-amber-700' :
+                      a.tier === 'silver' ? 'bg-gray-100 text-gray-700' :
                       'bg-orange-100 text-orange-700'
                     }`}>
-                      {(a.rank as string || 'bronze').charAt(0).toUpperCase() + (a.rank as string || 'bronze').slice(1)}
+                      {(a.tier as string || 'standard').charAt(0).toUpperCase() + (a.tier as string || 'standard').slice(1)}
                     </span>
                   </td>
                 </tr>
