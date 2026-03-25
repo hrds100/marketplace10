@@ -15,10 +15,11 @@ export function usePropertyImage(
   const [src, setSrc] = useState(() => getPropertyImageSync(photos, city, index));
 
   useEffect(() => {
-    if (photos && photos[index]) return;
+    // If a real photo exists, use it immediately (no Pexels fetch)
+    if (photos && photos[index]) { setSrc(photos[index]); return; }
     if (photos && photos.length > 0) { setSrc(photos[0]); return; }
     resolvePropertyImage(propertyId, photos, city, type, index).then(setSrc);
-  }, [propertyId, city, type, index]);
+  }, [propertyId, photos, city, type, index]);
 
   return src;
 }

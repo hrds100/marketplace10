@@ -143,7 +143,7 @@ export default function DealsPageV2() {
           name: inv.title || l.name,
           city: invLocation || l.city,
           postcode: '',
-          image: (inv as any).images?.[0] || (inv.image as string) || l.image,
+          image: (inv as any).photos?.[0] || (inv as any).images?.[0] || (inv.image as string) || l.image,
           type: (inv.type as string) || l.type,
           investTarget: propertyValue,
           investFundedPct: fundedPct,
