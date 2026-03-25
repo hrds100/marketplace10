@@ -350,7 +350,9 @@ export function useBlockchain() {
               .select('user_id').eq('referral_code', buyerProfile.referred_by.toUpperCase()).maybeSingle();
             agentUserId = agentProfile?.user_id || null;
           }
+          const currentUser = (await supabase.auth.getUser()).data.user;
           const { data: orderRow } = await (supabase.from('inv_orders') as any).insert({
+            user_id: currentUser?.id,
             property_id: propertyId,
             shares_requested: shares,
             amount_paid: amountUsdc,
@@ -394,6 +396,47 @@ export function useBlockchain() {
           }
         } catch (dbErr) {
           console.error('[F9] Supabase order record failed (tx already confirmed):', dbErr);
+        }
+
+        // Emails + notifications for crypto purchase (same as SamCart flow)
+        try {
+          const buyerId = currentUser?.id;
+          const buyerEmail = currentUser?.email || '';
+          const buyerName = currentUser?.user_metadata?.name || buyerEmail.split('@')[0];
+
+          // Send 3 emails: buyer, admin, agent
+          supabase.functions.invoke('send-email', {
+            body: { type: 'inv-purchase-buyer', data: { email: buyerEmail, property: 'Pembroke Place', amount: amountUsdc, shares } },
+          }).catch(() => {});
+          supabase.functions.invoke('send-email', {
+            body: { type: 'inv-purchase-admin', data: { buyerName, buyerEmail, property: 'Pembroke Place', amount: amountUsdc, shares, agentName: agentUserId ? 'Affiliate' : null, commission: agentUserId ? amountUsdc * 0.05 : null } },
+          }).catch(() => {});
+          if (agentUserId) {
+            const { data: agentInfo } = await (supabase.from('profiles') as any).select('email, name').eq('id', agentUserId).maybeSingle();
+            if (agentInfo?.email) {
+              supabase.functions.invoke('send-email', {
+                body: { type: 'inv-purchase-agent', data: { agentEmail: agentInfo.email, property: 'Pembroke Place', amount: amountUsdc, commission: amountUsdc * 0.05, rate: 5, claimableDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB') } },
+              }).catch(() => {});
+            }
+          }
+
+          // In-app notifications
+          (supabase.from('notifications') as any).insert({
+            user_id: buyerId, type: 'purchase_confirmed', title: 'Investment confirmed',
+            body: `Your $${amountUsdc} crypto investment is confirmed. Tx: ${receipt.transactionHash.slice(0, 10)}...`,
+          }).then(() => {}).catch(() => {});
+          (supabase.from('notifications') as any).insert({
+            type: 'purchase_confirmed', title: 'New crypto investment',
+            body: `${buyerName} (${buyerEmail}) invested $${amountUsdc} via crypto.`,
+          }).then(() => {}).catch(() => {});
+          if (agentUserId) {
+            (supabase.from('notifications') as any).insert({
+              user_id: agentUserId, type: 'commission_earned', title: 'You earned commission!',
+              body: `You earned $${(amountUsdc * 0.05).toFixed(2)} from a crypto share purchase.`,
+            }).then(() => {}).catch(() => {});
+          }
+        } catch (notifyErr) {
+          console.error('[N4] Email/notification failed (tx already confirmed):', notifyErr);
         }
 
         // N4: Notify n8n of purchase confirmation (non-blocking)
