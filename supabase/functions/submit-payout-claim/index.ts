@@ -102,6 +102,27 @@ serve(async (req) => {
         .eq('status', 'claimable')
     }
 
+    // Mark aff_commissions as claimed so they don't show as claimable again
+    if (user_type === 'affiliate') {
+      const { data: affProfile } = await supabase
+        .from('aff_profiles')
+        .select('id')
+        .eq('user_id', user_id)
+        .maybeSingle()
+      if (affProfile) {
+        await supabase
+          .from('aff_commissions')
+          .update({ status: 'claimed', claimed_at: new Date().toISOString(), claim_method: 'bank_transfer' })
+          .eq('affiliate_id', affProfile.id)
+          .eq('status', 'claimable')
+        // Move pending_balance to total_claimed
+        await supabase
+          .from('aff_profiles')
+          .update({ pending_balance: 0, total_claimed: amount })
+          .eq('id', affProfile.id)
+      }
+    }
+
     // Log to audit
     await supabase.from('payout_audit_log').insert({
       claim_id: claim.id,

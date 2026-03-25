@@ -171,24 +171,26 @@ export default function AffiliatesPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  // Request payout
+  // Request payout — creates a payout_claims row (same as investor rent claims)
   const payoutMutation = useMutation({
     mutationFn: async () => {
-      if (!profile?.id || !profile.pending_balance || profile.pending_balance <= 0) throw new Error('No balance');
-      await (supabase.from('aff_events') as any).insert({
-        affiliate_id: profile.id, event_type: 'payout_requested', amount: profile.pending_balance,
-        metadata: { paypal: profile.payout_details?.paypal || '', payout_method: payoutTab, requested_at: new Date().toISOString() },
+      if (!user?.id || !profile?.pending_balance || profile.pending_balance <= 0) throw new Error('No claimable balance');
+      const { data, error } = await supabase.functions.invoke('submit-payout-claim', {
+        body: { user_id: user.id, user_type: 'affiliate', currency: 'USD', amount: profile.pending_balance },
       });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      // Notify admin
       supabase.functions.invoke('send-email', {
         body: { type: 'payout-requested-admin', data: { name: userName, amount: profile.pending_balance, paypal: profile.payout_details?.paypal || '(not set)', email: user?.email } },
       }).catch(() => {});
       (supabase.from('notifications') as any).insert({
         type: 'payout_request', title: 'Payout requested',
-        body: `${userName} requested $${Number(profile.pending_balance).toFixed(2)} payout via ${payoutTab}.`,
+        body: `${userName} requested $${Number(profile.pending_balance).toFixed(2)} payout.`,
       }).then(() => {}).catch(() => {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['affiliate-events'] });
+      queryClient.invalidateQueries();
       toast.success('Payout requested! Payouts are processed every Tuesday.');
     },
     onError: (err: Error) => toast.error(err.message),
