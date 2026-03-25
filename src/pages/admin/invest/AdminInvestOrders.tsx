@@ -106,7 +106,7 @@ export default function AdminInvestOrders() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      qc.invalidateQueries({ queryKey: ['inv_orders'] });
+      qc.invalidateQueries();
       toast.success('Order approved - shares sent on-chain');
     } catch (e: any) {
       toast.error(e.message || 'Failed to approve order');
