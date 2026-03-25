@@ -37,8 +37,10 @@ export default function WalletProvisioner({ children }: { children?: React.React
   const resolveRef = useRef<((ok: boolean) => void) | null>(null);
 
   // Restore Particle session silently on mount (no modal)
+  // Skip on settings page — wallet restore popup is disruptive there
   useEffect(() => {
     if (!user?.id || checkedRef.current) return;
+    if (window.location.pathname.includes('/settings')) return;
     checkedRef.current = true;
 
     (supabase.from('profiles') as any)
