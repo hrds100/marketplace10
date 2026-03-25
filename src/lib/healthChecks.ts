@@ -52,26 +52,18 @@ export async function checkSupabase(): Promise<HealthCheckResult> {
 export async function checkN8n(): Promise<HealthCheckResult> {
   const name = 'n8n';
   const label = 'Automations';
-  const apiKey = import.meta.env.VITE_N8N_API_KEY;
-  if (!apiKey) return downResult(name, label, 'Automation API key not configured');
 
   const { signal, clear } = makeController();
   try {
-    const res = await fetch('https://n8n.srv886554.hstgr.cloud/api/v1/workflows?limit=100', {
-      headers: { 'X-N8N-API-KEY': apiKey },
-      signal,
-    });
+    const res = await fetch(
+      'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/n8n-health',
+      { signal },
+    );
     clear();
-    if (!res.ok) {
-      if (res.status === 0 || res.type === 'opaque') {
-        return downResult(name, label, 'Unable to check — requires server proxy');
-      }
-      return downResult(name, label, 'Automation engine returned an error');
-    }
+    if (!res.ok) return downResult(name, label, 'Automation health proxy returned an error');
     const json = await res.json();
-    const workflows: { active: boolean }[] = json?.data ?? [];
-    const total = workflows.length;
-    const active = workflows.filter((w) => w.active).length;
+    const total: number = json?.total ?? 0;
+    const active: number = json?.active ?? 0;
     if (active === total && total > 0)
       return healthyResult(name, label, `All ${total} workflows active`);
     if (active > 0)
