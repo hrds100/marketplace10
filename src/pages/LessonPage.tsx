@@ -87,12 +87,15 @@ export default function LessonPage() {
   const allStepsDone = completed === lesson.steps.length;
   const lessonDone = isLessonComplete(mod.id, lesson.id);
 
-  // Auto-complete lesson when all steps are done
+  // Auto-complete lesson when all steps are done (fire once)
+  const autoCompletedRef = useRef(false);
   useEffect(() => {
-    if (allStepsDone && !lessonDone) {
+    if (allStepsDone && !lessonDone && !autoCompletedRef.current) {
+      autoCompletedRef.current = true;
       completeLesson(mod.id, lesson.id);
     }
-  }, [allStepsDone, lessonDone, mod.id, lesson.id, completeLesson]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allStepsDone, lessonDone]);
 
   const handleCopyScript = async () => {
     if (lesson.script) {
