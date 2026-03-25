@@ -489,6 +489,48 @@ serve(async (req) => {
       // Send notification
       await sendNotification(customerFirstName || 'Investor', amountPaid, '', customerEmail, null, userId)
 
+      // Send purchase emails (buyer, admin, agent) — non-blocking
+      const legacyPropertyTitle = property ? (await supabase.from('inv_properties').select('title').eq('id', propertyId).maybeSingle()).data?.title : ''
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      const sendEmailLegacy = (type: string, data: Record<string, unknown>) =>
+        fetch(`${supabaseUrl}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, data }),
+        }).catch(() => {})
+
+      if (customerEmail) {
+        sendEmailLegacy('inv-purchase-buyer', {
+          email: customerEmail,
+          property: legacyPropertyTitle || 'Investment Property',
+          amount: amountPaid,
+          shares: finalShares,
+        })
+      }
+      sendEmailLegacy('inv-purchase-admin', {
+        buyerName: customerFirstName,
+        buyerEmail: customerEmail,
+        property: legacyPropertyTitle,
+        amount: amountPaid,
+        shares: finalShares,
+        agentName: agentUserId ? (await supabase.from('profiles').select('name').eq('id', agentUserId).maybeSingle()).data?.name : null,
+        commission: agentUserId ? amountPaid * 0.05 : null,
+      })
+      if (agentUserId) {
+        const agentInfo = await supabase.from('profiles').select('email, name').eq('id', agentUserId).maybeSingle()
+        if (agentInfo.data?.email) {
+          sendEmailLegacy('inv-purchase-agent', {
+            agentEmail: agentInfo.data.email,
+            property: legacyPropertyTitle,
+            amount: amountPaid,
+            commission: amountPaid * 0.05,
+            rate: 5,
+            claimableDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
+          })
+        }
+      }
+
       // Audit log
       await supabase.from('payout_audit_log').insert({
         user_id: userId,
