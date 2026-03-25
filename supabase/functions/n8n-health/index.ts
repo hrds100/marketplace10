@@ -1,3 +1,4 @@
+// n8n-health — v2 with execution monitoring
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const N8N_API_KEY = Deno.env.get('N8N_API_KEY');
