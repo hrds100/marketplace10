@@ -14,31 +14,40 @@ interface Notification {
 }
 
 export default function NotificationBell() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   // Fetch notifications
+  // Admin sees: own notifications + admin-wide (user_id IS NULL)
+  // Regular user sees: own notifications only
   useEffect(() => {
     if (!user?.id) return;
-    const fetch = async () => {
-      const { data } = await (supabase
-        .from('notifications') as any)
+    const fetchNotifications = async () => {
+      let query = (supabase.from('notifications') as any)
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(30);
+
+      if (isAdmin) {
+        // Admin: own + admin-wide (null user_id)
+        query = query.or(`user_id.eq.${user.id},user_id.is.null`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data } = await query;
       if (data) {
         setNotifications(data);
         setUnreadCount(data.filter((n: Notification) => !n.read).length);
       }
     };
-    fetch();
-    const interval = setInterval(fetch, 30000);
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, [user?.id]);
+  }, [user?.id, isAdmin]);
 
   // Close on click outside
   useEffect(() => {
@@ -57,7 +66,12 @@ export default function NotificationBell() {
 
   const markAllRead = async () => {
     if (!user?.id) return;
+    // Mark own notifications read
     await (supabase.from('notifications') as any).update({ read: true }).eq('user_id', user.id).eq('read', false);
+    // Admin: also mark admin-wide notifications read
+    if (isAdmin) {
+      await (supabase.from('notifications') as any).update({ read: true }).is('user_id', null).eq('read', false);
+    }
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setUnreadCount(0);
   };
@@ -78,6 +92,17 @@ export default function NotificationBell() {
     if (type === 'deal_rejected') return '❌';
     if (type === 'deal_expired') return '⏰';
     if (type === 'new_signup') return '👤';
+    if (type === 'purchase_confirmed') return '💰';
+    if (type === 'commission_earned') return '🤝';
+    if (type === 'commission_claimable') return '💵';
+    if (type === 'rent_available') return '🏠';
+    if (type === 'rent_claimed') return '🏦';
+    if (type === 'payout_request') return '📤';
+    if (type === 'payout_completed') return '✅';
+    if (type === 'proposal_created') return '📋';
+    if (type === 'proposal_result') return '🗳️';
+    if (type === 'new_deal') return '🏡';
+    if (type === 'deal_edit') return '✏️';
     return '🔔';
   };
 
