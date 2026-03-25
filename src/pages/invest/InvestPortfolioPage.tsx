@@ -108,9 +108,9 @@ function getAchievements(holdingsCount: number, totalClaimed: number, hasVoted: 
     { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Contributed in 3+ properties', icon: Building2, unlocked: holdingsCount >= 3 },
     { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Contributed in 5+ properties', icon: Award, unlocked: holdingsCount >= 5 },
     { id: 'property-titan', name: 'Property Titan', description: 'Contributed in 10+ properties', icon: Crown, unlocked: holdingsCount >= 10 },
+    { id: 'empire-builder', name: 'Empire Builder', description: 'Contributed in 15+ properties', icon: Sparkles, unlocked: holdingsCount >= 15 },
     { id: 'first-payout', name: 'First Payout', description: 'Received your first rental income', icon: Banknote, unlocked: totalClaimed > 0 },
     { id: 'proposal-voter', name: 'Proposal Voter', description: 'Voted on a governance proposal', icon: Vote, unlocked: hasVoted },
-    { id: 'early-investor', name: 'Early Investor', description: 'Among the first 100 investors', icon: Sparkles, unlocked: false },
   ];
 }
 
