@@ -32,11 +32,17 @@ function healthyResult(name: string, label: string, details?: string): HealthChe
 export async function checkSupabase(): Promise<HealthCheckResult> {
   const name = 'supabase';
   const label = 'Database & Login';
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY;
   const { signal, clear } = makeController();
   try {
+    const headers: Record<string, string> = {};
+    if (anonKey) {
+      headers['apikey'] = anonKey;
+      headers['Authorization'] = `Bearer ${anonKey}`;
+    }
     const res = await fetch(
       'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/health',
-      { signal },
+      { signal, headers },
     );
     clear();
     if (!res.ok) return downResult(name, label, 'Database returned an error');
@@ -62,13 +68,20 @@ export async function checkN8n(): Promise<HealthCheckResult> {
     clear();
     if (!res.ok) return downResult(name, label, 'Automation health proxy returned an error');
     const json = await res.json();
-    const total: number = json?.total ?? 0;
-    const active: number = json?.active ?? 0;
-    if (active === total && total > 0)
-      return healthyResult(name, label, `All ${total} workflows active`);
-    if (active > 0)
-      return { name, status: 'degraded', label, lastChecked: new Date(), details: `${active} of ${total} workflows active` };
-    return downResult(name, label, 'No active workflows found');
+    const allWorkflows: { name: string; active: boolean }[] = json?.workflows ?? [];
+    // Only count production workflows (NFsTay/marketplace/nfs- prefixed), ignore test/draft ones
+    const prodWorkflows = allWorkflows.filter((w) =>
+      /^(NFsTay|marketplace10|nfs-)/i.test(w.name)
+    );
+    const prodActive = prodWorkflows.filter((w) => w.active).length;
+    const prodTotal = prodWorkflows.length;
+    const totalActive: number = json?.active ?? 0;
+    if (prodTotal === 0)
+      return healthyResult(name, label, `${totalActive} workflows active (no named production workflows found)`);
+    if (prodActive === prodTotal)
+      return healthyResult(name, label, `All ${prodActive} production workflows active (${totalActive} total)`);
+    const inactive = prodWorkflows.filter((w) => !w.active).map((w) => w.name);
+    return { name, status: 'degraded', label, lastChecked: new Date(), details: `${prodActive} of ${prodTotal} production workflows active. Inactive: ${inactive.join(', ')}` };
   } catch {
     clear();
     return downResult(name, label, 'Unable to connect to automation engine');
