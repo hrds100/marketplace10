@@ -340,21 +340,32 @@ export function useBlockchain() {
         const receipt = await tx.wait();
 
         // F9: Record order server-side via edge function (no auth session dependency)
-        // The Particle wallet signing process drops the Supabase auth session,
-        // so all DB writes happen server-side in inv-crypto-confirm.
+        // Uses raw fetch — NOT supabase.functions.invoke() — because the Particle
+        // wallet signing drops the Supabase auth session. The SDK's invoke() attaches
+        // the expired token which causes a 401 even with verify_jwt=false.
         try {
-          const { data: confirmData, error: confirmErr } = await supabase.functions.invoke('inv-crypto-confirm', {
-            body: {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+          const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+          const confirmRes = await fetch(`${supabaseUrl}/functions/v1/inv-crypto-confirm`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(supabaseAnonKey ? { 'Authorization': `Bearer ${supabaseAnonKey}` } : {}),
+            },
+            body: JSON.stringify({
               tx_hash: receipt.transactionHash,
               wallet_address: address,
               property_id: propertyId,
               shares,
               amount: amountUsdc,
-            },
+            }),
           });
-          if (confirmErr) console.error('[F9] inv-crypto-confirm error:', confirmErr);
-          else if (confirmData?.error) console.error('[F9] inv-crypto-confirm returned error:', confirmData.error);
-          else console.log('[F9] Order confirmed server-side:', confirmData?.order_id);
+          const confirmData = await confirmRes.json();
+          if (!confirmRes.ok || confirmData?.error) {
+            console.error('[F9] inv-crypto-confirm error:', confirmData?.error || confirmRes.status);
+          } else {
+            console.log('[F9] Order confirmed server-side:', confirmData?.order_id);
+          }
         } catch (confirmErr) {
           console.error('[F9] inv-crypto-confirm call failed (tx already confirmed on-chain):', confirmErr);
         }
