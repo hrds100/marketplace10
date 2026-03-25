@@ -1,7 +1,9 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SystemHealthTab from "@/components/admin/SystemHealthTab";
-import TestMonitorTab from "@/components/admin/TestMonitorTab";
-import PingView from "@/components/admin/PingView";
+import { lazy, Suspense } from "react";
+
+const TestMonitorTab = lazy(() => import("@/components/admin/TestMonitorTab"));
+const PingView = lazy(() => import("@/components/admin/PingView"));
 
 export default function AdminArchitecture() {
   return (
@@ -22,13 +24,17 @@ export default function AdminArchitecture() {
         </TabsContent>
 
         <TabsContent value="tests">
-          <TestMonitorTab />
+          <Suspense fallback={<div className="py-12 text-center text-muted-foreground">Loading Test Monitor…</div>}>
+            <TestMonitorTab />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="ping">
-          <div className="bg-gray-950 rounded-2xl p-6 -mx-2 sm:mx-0">
-            <PingView />
-          </div>
+          <Suspense fallback={<div className="py-12 text-center text-muted-foreground">Loading Ping View…</div>}>
+            <div className="bg-gray-950 rounded-2xl p-6 -mx-2 sm:mx-0">
+              <PingView />
+            </div>
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="architecture">

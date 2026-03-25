@@ -9,8 +9,8 @@ import {
   ChevronRight,
   RefreshCw,
   X,
-  Map,
-  List,
+  Map as MapIcon,
+  List as ListIcon,
   Zap,
   CheckCircle2,
   XCircle,
@@ -432,7 +432,7 @@ export default function PingView() {
                   : "text-white/40 hover:text-white/60"
               }`}
             >
-              <Map className="w-3.5 h-3.5" />
+              <MapIcon className="w-3.5 h-3.5" />
               Map View
             </button>
             <button
@@ -444,7 +444,7 @@ export default function PingView() {
                   : "text-white/40 hover:text-white/60"
               }`}
             >
-              <List className="w-3.5 h-3.5" />
+              <ListIcon className="w-3.5 h-3.5" />
               List View
             </button>
           </div>
