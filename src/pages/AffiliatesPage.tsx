@@ -604,6 +604,11 @@ export default function AffiliatesPage() {
                           }`}>
                             {c.status === 'pending' ? 'Pending' : c.status === 'claimable' ? 'Claimable' : c.status === 'claimed' ? 'Claimed' : c.status === 'paid' ? 'Paid' : c.status}
                           </span>
+                          {c.status === 'pending' && c.claimable_at && (
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              Claimable on {new Date(c.claimable_at).toLocaleDateString('en-GB')}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}
