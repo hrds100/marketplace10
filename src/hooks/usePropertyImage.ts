@@ -10,7 +10,8 @@ export function usePropertyImage(
   photos: string[] | null | undefined,
   city: string,
   type: string,
-  index = 0
+  index = 0,
+  skipPexelsFallback = false,
 ): string {
   const [src, setSrc] = useState(() => getPropertyImageSync(photos, city, index));
 
@@ -18,8 +19,10 @@ export function usePropertyImage(
     // If a real photo exists, use it immediately (no Pexels fetch)
     if (photos && photos[index]) { setSrc(photos[index]); return; }
     if (photos && photos.length > 0) { setSrc(photos[0]); return; }
+    // Skip Pexels for prime/investment cards — their images load from inv_properties via React Query
+    if (skipPexelsFallback) return;
     resolvePropertyImage(propertyId, photos, city, type, index).then(setSrc);
-  }, [propertyId, photos, city, type, index]);
+  }, [propertyId, photos, city, type, index, skipPexelsFallback]);
 
   return src;
 }

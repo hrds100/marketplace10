@@ -220,6 +220,62 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
         `),
       };
 
+    // ─── INVESTMENT PURCHASE EMAILS ────────────────────────
+    case 'inv-purchase-buyer':
+      return {
+        to: String(data.email),
+        subject: `Investment confirmed — ${data.property || 'nfstay'}`,
+        html: layout('Your investment is confirmed', `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            Thank you for your investment! Your order has been received and is being processed.
+          </p>
+          ${row('Property', String(data.property || 'Investment Property'))}
+          ${row('Amount', `$${Number(data.amount || 0).toFixed(2)}`)}
+          ${row('Shares', String(data.shares || '—'))}
+          ${row('Status', 'Pending approval')}
+          <p style="font-size:13px;color:#6b7280;line-height:1.6;margin:16px 0 0;">
+            Your shares will be allocated once the admin approves the order. You'll receive another email when this happens.
+          </p>
+          ${btn('View Your Portfolio →', `${BASE_URL}/dashboard/invest/portfolio`)}
+        `),
+      };
+
+    case 'inv-purchase-agent':
+      return {
+        to: String(data.agentEmail),
+        subject: `New sale — you earned $${Number(data.commission || 0).toFixed(2)} commission`,
+        html: layout('You just earned commission!', `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            Someone purchased shares through your referral link. Your commission has been recorded.
+          </p>
+          ${row('Property', String(data.property || 'Investment Property'))}
+          ${row('Sale Amount', `$${Number(data.amount || 0).toFixed(2)}`)}
+          ${row('Your Commission', `$${Number(data.commission || 0).toFixed(2)}`)}
+          ${row('Rate', `${Number(data.rate || 5)}%`)}
+          ${row('Claimable On', String(data.claimableDate || '14 days'))}
+          <p style="font-size:13px;color:#6b7280;line-height:1.6;margin:16px 0 0;">
+            Your commission will become claimable after the 14-day holdback period.
+          </p>
+          ${btn('View Your Earnings →', `${BASE_URL}/dashboard/affiliates`)}
+        `),
+      };
+
+    case 'inv-purchase-admin':
+      return {
+        to: ADMIN_EMAIL,
+        subject: `New investment — $${Number(data.amount || 0).toFixed(2)} from ${data.buyerName || data.buyerEmail || 'Unknown'}`,
+        html: layout('New investment purchase', `
+          ${row('Buyer', String(data.buyerName || data.buyerEmail || '—'))}
+          ${row('Email', String(data.buyerEmail || '—'))}
+          ${row('Property', String(data.property || '—'))}
+          ${row('Amount', `$${Number(data.amount || 0).toFixed(2)}`)}
+          ${row('Shares', String(data.shares || '—'))}
+          ${data.agentName ? row('Referred by', String(data.agentName)) : ''}
+          ${data.commission ? row('Agent Commission', `$${Number(data.commission).toFixed(2)}`) : ''}
+          ${btn('Review Orders →', `${BASE_URL}/admin/invest/orders`)}
+        `),
+      };
+
     default:
       throw new Error(`Unknown email type: ${type}`);
   }

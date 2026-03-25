@@ -94,9 +94,9 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   };
 
   const airdnaUrl = `https://www.airdna.co`;
-  const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type);
-  const isPexelsPhoto = resolvedImage?.includes('images.pexels.com') || false;
   const isPrime = listing.prime;
+  const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type, 0, isPrime);
+  const isPexelsPhoto = resolvedImage?.includes('images.pexels.com') || false;
 
   const placeholderUrl = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`;
   const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {

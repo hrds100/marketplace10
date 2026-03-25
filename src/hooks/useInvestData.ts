@@ -314,7 +314,7 @@ export function useAllCommissions() {
     queryKey: ['aff_commissions'],
     queryFn: async () => {
       const { data, error } = await (supabase.from('aff_commissions') as any)
-        .select('*, aff_profiles(referral_code, full_name)')
+        .select('*, aff_profiles(referral_code, full_name), inv_properties(title)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];

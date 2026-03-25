@@ -824,6 +824,52 @@ serve(async (req) => {
       userId,
     )
 
+    // Send purchase emails (buyer, admin, agent) — non-blocking
+    const propertyTitle = property ? (await supabase.from('inv_properties').select('title').eq('id', propertyId).maybeSingle()).data?.title : productName
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const sendEmail = (type: string, data: Record<string, unknown>) =>
+      fetch(`${supabaseUrl}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, data }),
+      }).catch(() => {})
+
+    // Email to buyer
+    if (email) {
+      sendEmail('inv-purchase-buyer', {
+        email,
+        property: propertyTitle || productName || 'Investment Property',
+        amount,
+        shares: sharesRequested,
+      })
+    }
+    // Email to admin
+    sendEmail('inv-purchase-admin', {
+      buyerName: firstName || profileName,
+      buyerEmail: email,
+      property: propertyTitle || productName,
+      amount,
+      shares: sharesRequested,
+      agentName: agentUserId ? (await supabase.from('profiles').select('name').eq('id', agentUserId).maybeSingle()).data?.name : null,
+      commission: agentUserId ? amount * 0.05 : null,
+    })
+    // Email to agent
+    if (agentUserId) {
+      const agentProfile = await supabase.from('profiles').select('email, name').eq('id', agentUserId).maybeSingle()
+      if (agentProfile.data?.email) {
+        const rate = 0.05
+        sendEmail('inv-purchase-agent', {
+          agentEmail: agentProfile.data.email,
+          property: propertyTitle || productName,
+          amount,
+          commission: amount * rate,
+          rate: rate * 100,
+          claimableDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
+        })
+      }
+    }
+
     // Audit log
     await supabase.from('payout_audit_log').insert({
       user_id: userId,
