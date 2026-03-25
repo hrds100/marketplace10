@@ -55,10 +55,10 @@ export default function AdminInvestDashboard() {
     ];
   }, [orders, shareholders, properties, claims]);
 
-  // Real activity feed: last 10 completed orders with user details
+  // Real activity feed: last 10 orders (pending + completed)
   const activities = useMemo(() => {
     return (orders as any[])
-      .filter((o: any) => o.status === 'completed')
+      .filter((o: any) => o.status === 'completed' || o.status === 'pending')
       .slice(0, 10)
       .map((o: any) => {
         const name = o.user_name || o.user_email?.split('@')[0] || o.user_id?.slice(0, 8) || 'Investor';
@@ -71,7 +71,8 @@ export default function AdminInvestDashboard() {
           name,
           email: o.user_email || '',
           whatsapp: o.user_whatsapp || '',
-          shares: o.shares_count || '?',
+          shares: o.shares_requested || o.shares_count || o.shares || '?',
+          status: o.status || 'pending',
           property: o.inv_properties?.title || 'a property',
           date: dateStr,
           timeAgo: o.created_at ? timeAgo(o.created_at) : '',
@@ -108,7 +109,7 @@ export default function AdminInvestDashboard() {
           <CardContent>
             <div className="space-y-1">
               {activities.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No completed orders yet.</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">No orders yet.</p>
               ) : activities.map((a, i) => (
                 <div
                   key={i}
@@ -117,6 +118,7 @@ export default function AdminInvestDashboard() {
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-foreground">
                       {a.name} purchased {a.shares} share{Number(a.shares) !== 1 ? 's' : ''} of {a.property}
+                      {a.status === 'pending' && <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">Pending</span>}
                     </span>
                     <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">{a.timeAgo}</span>
                   </div>
