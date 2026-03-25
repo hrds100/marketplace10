@@ -14,7 +14,7 @@ const BRAND = {
 const LOGO_URL = 'https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/inv-property-docs/brand/nfstay-email-logo.png';
 const LOGO_HTML = `<div style="text-align:center;padding:0 0 24px;">
   <a href="https://hub.nfstay.com" style="text-decoration:none;">
-    <img src="${LOGO_URL}" alt="nfstay" width="140" height="42" style="display:inline-block;width:140px;height:auto;" />
+    <img src="${LOGO_URL}" alt="nfstay" width="100" style="display:inline-block;width:100px;height:auto;" />
   </a>
 </div>`;
 
