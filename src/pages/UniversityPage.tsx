@@ -1,88 +1,55 @@
 import { useNavigate } from 'react-router-dom';
-import { modules, achievements } from '@/data/universityData';
+import { modules } from '@/data/universityData';
 import { useUniversityProgress } from '@/hooks/useUniversityProgress';
-import { Trophy, Flame, Star, Zap, Lock, ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
-
-function AnimatedXP({ target }: { target: number }) {
-  const [display, setDisplay] = useState(0);
-  useEffect(() => {
-    let start = 0;
-    const duration = 1200;
-    const step = (ts: number) => {
-      if (!start) start = ts;
-      const elapsed = ts - start;
-      const pct = Math.min(elapsed / duration, 1);
-      setDisplay(Math.floor(pct * target));
-      if (pct < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [target]);
-  return <>{display.toLocaleString()}</>;
-}
+import { ChevronRight, BookOpen, Sparkles } from 'lucide-react';
 
 export default function UniversityPage() {
   const navigate = useNavigate();
-  const {
-    progress, level, xpInLevel, xpForNextLevel,
-    isModuleComplete, getModuleCompletedLessons, isLessonComplete,
-  } = useUniversityProgress();
+  const { isModuleComplete, getModuleCompletedLessons } = useUniversityProgress();
+
+  const totalLessons = modules.reduce((a, m) => a + m.lessons.length, 0);
+  const completedLessons = modules.reduce((a, m) => a + getModuleCompletedLessons(m.id, m.lessons), 0);
 
   return (
     <div data-feature="UNIVERSITY" className="max-w-[1200px] mx-auto">
       {/* Header */}
       <div className="mb-2">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-[28px] font-bold" style={{ color: '#111827' }}>nfstay Academy</h1>
-          <span className="inline-flex items-center text-xs font-semibold px-3 py-1 rounded-full" style={{ background: '#ECFDF5', color: '#065F46' }}>
-            UK-Focused Training
-          </span>
-        </div>
-        <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
+        <h1 className="text-[28px] font-bold text-foreground">nfstay Academy</h1>
+        <p className="text-sm mt-1 text-muted-foreground">
           Build a compliant UK rent-to-rent business from the ground up.
         </p>
-        <p className="text-xs mt-2 px-3 py-1.5 rounded-lg inline-block font-medium" style={{ background: '#ECFDF5', color: '#065F46' }}>
-          ✨ We've dumped everything we know into these lessons, those agents represent us with 15+ years of experience. Knowledge you won't find anywhere else. Enjoy.
+        <p className="text-xs mt-2 px-3 py-1.5 rounded-lg inline-block font-medium bg-[#ECFDF5] text-[#065F46]">
+          We've dumped everything we know into these lessons — 15+ years of experience. Knowledge you won't find anywhere else.
         </p>
       </div>
 
-      {/* Gamification bar */}
-      <div className="rounded-2xl border p-5 mt-5" style={{ background: '#FFFFFF', borderColor: '#E5E7EB' }}>
-        <div className="flex flex-wrap items-center gap-4 md:gap-6">
-          <div data-feature="UNIVERSITY__XP_DISPLAY" className="flex items-center gap-2">
-            <Trophy className="w-5 h-5" style={{ color: '#1DB954' }} />
-            <span className="text-sm font-bold" style={{ color: '#111827' }}>
-              <AnimatedXP target={progress.totalXP} /> XP earned
-            </span>
+      {/* Progress bar — simple and clear */}
+      <div className="rounded-2xl border border-border bg-card p-5 mt-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#ECFDF5] flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-[#1E9A80]" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Your Progress</p>
+              <p className="text-xs text-muted-foreground">{completedLessons} of {totalLessons} lessons completed</p>
+            </div>
           </div>
-          <div data-feature="UNIVERSITY__STREAK" className="flex items-center gap-2">
-            <Flame className="w-5 h-5" style={{ color: '#F59E0B' }} />
-            <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full" style={{ background: '#FFFBEB', color: '#92400E' }}>
-              {progress.streak}-day streak
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Star className="w-5 h-5" style={{ color: '#1DB954' }} />
-            <span className="text-sm font-semibold" style={{ color: '#111827' }}>Operator Level {level}</span>
-          </div>
+          <span className="text-2xl font-bold text-[#1E9A80]">{Math.round((completedLessons / totalLessons) * 100)}%</span>
         </div>
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-xs mb-1" style={{ color: '#6B7280' }}>
-            <span>{xpInLevel.toLocaleString()} / {xpForNextLevel.toLocaleString()} XP to Level {level + 1}</span>
-          </div>
-          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: '#E5E7EB' }}>
-            <div
-              className="h-full rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${(xpInLevel / xpForNextLevel) * 100}%`, background: '#1DB954' }}
-            />
-          </div>
+        <div className="mt-3 w-full h-2.5 rounded-full overflow-hidden bg-gray-100">
+          <div
+            className="h-full rounded-full transition-all duration-700 ease-out bg-[#1E9A80]"
+            style={{ width: `${(completedLessons / totalLessons) * 100}%` }}
+          />
         </div>
       </div>
 
-      {/* Stats strip */}
+      {/* Quick stats */}
       <div className="flex flex-wrap gap-2 mt-4">
-        {['9 modules', '36 lessons', '36 checklists', 'Beginner to Intermediate'].map(s => (
-          <span key={s} className="inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-full" style={{ background: '#F7F8FA', color: '#6B7280', border: '1px solid #E5E7EB' }}>
+        {[`${modules.length} modules`, `${totalLessons} lessons`, 'Beginner to Intermediate', 'AI-assisted learning'].map(s => (
+          <span key={s} className="inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-full bg-secondary text-muted-foreground border border-border">
+            {s === 'AI-assisted learning' && <Sparkles className="w-3 h-3 mr-1" />}
             {s}
           </span>
         ))}
@@ -100,64 +67,40 @@ export default function UniversityPage() {
             <div
               key={mod.id}
               data-feature="UNIVERSITY__MODULE_CARD"
-              className="rounded-2xl border p-5 transition-all duration-200 cursor-pointer group"
-              style={{
-                background: '#FFFFFF',
-                borderColor: '#E5E7EB',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 30px rgba(0,0,0,0.08)';
-                (e.currentTarget as HTMLElement).style.borderColor = '#1DB954';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.transform = '';
-                (e.currentTarget as HTMLElement).style.boxShadow = '';
-                (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB';
-              }}
+              className="rounded-2xl border border-border bg-card p-5 transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:border-[#1E9A80]"
               onClick={() => navigate(`/university/${mod.id}`)}
             >
               <div className="flex items-start justify-between mb-3">
                 <span className="text-[32px] leading-none">{mod.emoji}</span>
                 <img src={mod.image} className="w-20 h-14 rounded-lg object-cover" alt="" loading="lazy" />
               </div>
-              <h3 className="text-base font-bold" style={{ color: '#111827' }}>{mod.title}</h3>
-              <p className="text-sm mt-1 line-clamp-1" style={{ color: '#6B7280' }}>{mod.summary}</p>
-              <div className="flex items-center gap-3 mt-3 text-xs" style={{ color: '#6B7280' }}>
+              <h3 className="text-base font-bold text-foreground">{mod.title}</h3>
+              <p className="text-sm mt-1 line-clamp-1 text-muted-foreground">{mod.summary}</p>
+              <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
                 <span>{mod.lessons.length} lessons</span>
                 <span>~{mod.lessons.reduce((a, l) => a + l.duration, 0)} min</span>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: '#ECFDF5', color: '#065F46' }}>
-                  <Zap className="w-3 h-3 mr-0.5" /> +{mod.xpReward} XP
-                </span>
               </div>
 
               {/* Progress bar */}
               <div data-feature="UNIVERSITY__MODULE_PROGRESS" className="mt-3">
-                <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: '#E5E7EB' }}>
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: '#1DB954' }} />
+                <div className="w-full h-1.5 rounded-full overflow-hidden bg-gray-100">
+                  <div className="h-full rounded-full transition-all duration-500 bg-[#1E9A80]" style={{ width: `${pct}%` }} />
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    {lessonsCompleted}/{mod.lessons.length} done
+                  </span>
+                  <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                    completed ? 'bg-[#ECFDF5] text-[#065F46]' : inProgress ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-muted-foreground'
+                  }`}>
+                    {completed ? 'Completed' : inProgress ? 'In progress' : 'Not started'}
+                  </span>
                 </div>
               </div>
 
-              {/* Status */}
-              <div className="flex items-center justify-between mt-3">
-                <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                  completed ? '' : inProgress ? '' : ''
-                }`} style={{
-                  background: completed ? '#ECFDF5' : inProgress ? '#FFFBEB' : '#F3F4F6',
-                  color: completed ? '#065F46' : inProgress ? '#92400E' : '#6B7280',
-                }}>
-                  {completed ? 'Completed ✓' : inProgress ? 'In progress' : 'Not started'}
-                </span>
-              </div>
-
               <button
-                className="w-full h-12 rounded-[10px] font-semibold text-sm mt-4 transition-opacity hover:opacity-90 inline-flex items-center justify-center gap-2"
-                style={{
-                  background: inProgress ? '#1DB954' : '#111827',
-                  color: '#FFFFFF',
-                }}
+                className="w-full h-11 rounded-[10px] font-semibold text-sm mt-4 transition-opacity hover:opacity-90 inline-flex items-center justify-center gap-2 text-white"
+                style={{ background: inProgress ? '#1E9A80' : '#111827' }}
                 onClick={e => { e.stopPropagation(); navigate(`/university/${mod.id}`); }}
               >
                 {inProgress ? <>Continue <ChevronRight className="w-4 h-4" /></> : completed ? 'Review' : <>Open Module <ChevronRight className="w-4 h-4" /></>}
@@ -165,38 +108,6 @@ export default function UniversityPage() {
             </div>
           );
         })}
-      </div>
-
-      {/* Achievements panel */}
-      <div data-feature="UNIVERSITY__ACHIEVEMENTS" className="mt-10 mb-4">
-        <h2 className="text-lg font-bold" style={{ color: '#111827' }}>Achievements</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-          {achievements.map(a => {
-            const unlocked = progress.achievementsUnlocked.includes(a.id);
-            return (
-              <div
-                key={a.id}
-                className="rounded-2xl border p-4 text-center transition-all duration-300 relative overflow-hidden"
-                style={{
-                  background: unlocked ? '#FFFFFF' : '#F9FAFB',
-                  borderColor: unlocked ? '#1DB954' : '#E5E7EB',
-                  boxShadow: unlocked ? '0 0 20px rgba(29,185,84,0.15)' : 'none',
-                  opacity: unlocked ? 1 : 0.6,
-                  transform: unlocked ? 'scale(1)' : 'scale(0.97)',
-                }}
-              >
-                {!unlocked && (
-                  <div data-feature="UNIVERSITY__TIER_LOCK" className="absolute inset-0 flex items-center justify-center z-10">
-                    <Lock className="w-5 h-5" style={{ color: '#9CA3AF' }} />
-                  </div>
-                )}
-                <div className={`text-2xl mb-2 ${!unlocked ? 'blur-sm' : ''}`}>{a.icon === '🔒' ? '🏆' : a.icon}</div>
-                <h4 className={`text-xs font-bold ${!unlocked ? 'blur-sm' : ''}`} style={{ color: '#111827' }}>{a.title}</h4>
-                <p className={`text-[10px] mt-0.5 ${!unlocked ? 'blur-sm' : ''}`} style={{ color: '#6B7280' }}>{a.description}</p>
-              </div>
-            );
-          })}
-        </div>
       </div>
     </div>
   );

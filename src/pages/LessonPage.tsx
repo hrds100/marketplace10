@@ -87,11 +87,12 @@ export default function LessonPage() {
   const allStepsDone = completed === lesson.steps.length;
   const lessonDone = isLessonComplete(mod.id, lesson.id);
 
-  const handleClaimXP = () => {
-    completeLesson(mod.id, lesson.id);
-    setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 2500);
-  };
+  // Auto-complete lesson when all steps are done
+  useEffect(() => {
+    if (allStepsDone && !lessonDone) {
+      completeLesson(mod.id, lesson.id);
+    }
+  }, [allStepsDone, lessonDone, mod.id, lesson.id, completeLesson]);
 
   const handleCopyScript = async () => {
     if (lesson.script) {
@@ -154,7 +155,7 @@ export default function LessonPage() {
 
   return (
     <div data-feature="UNIVERSITY" className="max-w-[860px] mx-auto pb-20">
-      <Confetti show={showConfetti} />
+      {/* Confetti removed — simplified UX */}
 
       {/* Top progress bar */}
       <div className="fixed top-0 left-0 right-0 z-[150] h-1" style={{ background: '#E5E7EB' }}>
@@ -183,10 +184,8 @@ export default function LessonPage() {
       {/* Title */}
       <h1 className="text-[26px] font-bold" style={{ color: '#111827' }}>{lesson.emoji} {lesson.title}</h1>
       <div className="flex items-center gap-3 mt-2">
-        <span className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: '#F3F4F6', color: '#6B7280' }}>{lesson.duration} min</span>
-        <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: '#ECFDF5', color: '#065F46' }}>
-          <Zap className="w-3 h-3 mr-0.5" /> +80 XP
-        </span>
+        <span className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: '#F3F4F6', color: '#6B7280' }}>{lesson.duration} min read</span>
+        <span className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: '#F3F4F6', color: '#6B7280' }}>{lesson.steps.length} action steps</span>
       </div>
 
       {/* Why it matters */}
@@ -248,14 +247,9 @@ export default function LessonPage() {
           <span className="text-xs" style={{ color: '#6B7280' }}>{completed} of {lesson.steps.length}</span>
         </div>
 
-        {allStepsDone && !lessonDone && (
-          <button onClick={handleClaimXP} className="mt-4 h-11 px-6 rounded-[10px] text-sm font-semibold inline-flex items-center gap-2 transition-opacity hover:opacity-90" style={{ background: '#111827', color: '#FFFFFF' }}>
-            Well done! Claim your XP → <Zap className="w-4 h-4" />
-          </button>
-        )}
         {lessonDone && (
           <div data-feature="UNIVERSITY__LESSON_COMPLETE" className="mt-4 rounded-[10px] p-3 flex items-center gap-2" style={{ background: '#ECFDF5', border: '1px solid #1DB954' }}>
-            <span className="text-sm font-semibold" style={{ color: '#065F46' }}>✓ Lesson completed — XP claimed!</span>
+            <span className="text-sm font-semibold" style={{ color: '#065F46' }}>Lesson complete! On to the next one.</span>
           </div>
         )}
       </div>

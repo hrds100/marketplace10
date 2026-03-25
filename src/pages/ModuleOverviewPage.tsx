@@ -44,9 +44,6 @@ export default function ModuleOverviewPage() {
 
       <div data-feature="UNIVERSITY__COMPLETION" className="mt-5 flex items-center gap-3 flex-wrap">
         <span className="text-sm font-medium" style={{ color: '#111827' }}>{completedCount} of {mod.lessons.length} lessons completed</span>
-        <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full" style={{ background: '#ECFDF5', color: '#065F46' }}>
-          <Zap className="w-3 h-3 mr-0.5" /> +{mod.xpReward} XP for completing this module
-        </span>
       </div>
       <div className="w-full h-2 rounded-full overflow-hidden mt-2" style={{ background: '#E5E7EB' }}>
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: '#1DB954' }} />
