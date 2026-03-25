@@ -247,11 +247,12 @@ function FlowCard({
         <SummaryIcon className={`w-4 h-4 ${summaryColor}`} />
         <span className="text-sm font-semibold text-foreground">{flow.name}</span>
       </div>
-      <div className="flex items-center gap-0 flex-wrap">
+      <div className="flex flex-col gap-1.5">
         {flow.steps.map((step, i) => {
           const svcResult = results.get(step.dependsOn);
           const isHealthy = svcResult?.status === "healthy";
           const isDown = svcResult?.status === "down";
+          const isDegraded = svcResult?.status === "degraded";
           const dotColor = !svcResult
             ? "bg-muted-foreground/40"
             : isHealthy
@@ -259,17 +260,36 @@ function FlowCard({
               : isDown
                 ? "bg-red-500"
                 : "bg-amber-500";
+          const statusText = !svcResult
+            ? "Checking…"
+            : isHealthy
+              ? "OK"
+              : isDown
+                ? svcResult.details ?? "Down"
+                : isDegraded
+                  ? svcResult.details ?? "Slow"
+                  : "Unknown";
+          const statusTextColor = !svcResult
+            ? "text-muted-foreground"
+            : isHealthy
+              ? "text-emerald-600"
+              : isDown
+                ? "text-red-600"
+                : "text-amber-600";
 
           return (
-            <div key={step.label} className="flex items-center">
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary/50">
-                <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+            <div key={step.label} className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
                 <span className="text-[11px] font-medium text-foreground whitespace-nowrap">
                   {step.label}
                 </span>
+                <span className={`text-[10px] ${statusTextColor} truncate`}>
+                  — {statusText}
+                </span>
               </div>
               {i < flow.steps.length - 1 && (
-                <span className="text-muted-foreground text-xs px-1">→</span>
+                <span className="text-muted-foreground text-[10px] shrink-0">→</span>
               )}
             </div>
           );
