@@ -15,6 +15,7 @@ import {
   FARM_ABI,
 } from '@/lib/contractAbis';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Helper to get ethers — lazy loaded
 async function getEthers() {
@@ -40,6 +41,7 @@ async function getReadProvider() {
 export function useBlockchain() {
   const { address, connected, connect } = useWallet();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   // ConnectKit hooks — exact same as legacy nfstayContext.jsx lines 64-66
   const { isConnected: ckConnected, connector } = useAccount();
   const { provider: particleProvider } = useEthereum();
@@ -417,6 +419,7 @@ export function useBlockchain() {
         }
 
         setLoading(false);
+        queryClient.invalidateQueries();
         return { txHash: receipt.transactionHash, success: true };
       } catch (err: any) {
         console.error('[buyShares] FAILED:', err);
@@ -441,6 +444,7 @@ export function useBlockchain() {
         const tx = await contract.withdrawRent(propertyId);
         const receipt = await tx.wait();
         setLoading(false);
+        queryClient.invalidateQueries();
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Claim failed';
@@ -465,6 +469,7 @@ export function useBlockchain() {
         const tx = await contract.vote(proposalId, inFavor);
         const receipt = await tx.wait();
         setLoading(false);
+        queryClient.invalidateQueries();
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Vote failed';
@@ -529,6 +534,7 @@ export function useBlockchain() {
         const receipt = await tx.wait();
 
         setLoading(false);
+        queryClient.invalidateQueries();
         return { txHash: receipt.transactionHash, success: true };
       } catch (err: any) {
         console.error('[boostApr] Failed:', err);
@@ -555,6 +561,7 @@ export function useBlockchain() {
         const tx = await contract.claimRewards(propertyId);
         const receipt = await tx.wait();
         setLoading(false);
+        queryClient.invalidateQueries();
         return { txHash: receipt.transactionHash, success: true };
       } catch (err: any) {
         console.error('[claimBoostRewards] Failed:', err);
@@ -624,6 +631,7 @@ export function useBlockchain() {
         console.log('[buyStayTokens] Step 2 done — STAY purchased');
 
         setLoading(false);
+        queryClient.invalidateQueries();
         return { txHash: _swap.hash, success: true };
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'STAY claim failed';
@@ -710,6 +718,7 @@ export function useBlockchain() {
         await _stake.wait();
 
         setLoading(false);
+        queryClient.invalidateQueries();
         return { txHash: _stake.hash, success: true };
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'LP claim failed';
