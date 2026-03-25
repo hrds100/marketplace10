@@ -32,25 +32,13 @@ function healthyResult(name: string, label: string, details?: string): HealthChe
 export async function checkSupabase(): Promise<HealthCheckResult> {
   const name = 'supabase';
   const label = 'Database & Login';
-  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY;
-  const { signal, clear } = makeController();
   try {
-    const headers: Record<string, string> = {};
-    if (anonKey) {
-      headers['apikey'] = anonKey;
-      headers['Authorization'] = `Bearer ${anonKey}`;
-    }
-    const res = await fetch(
-      'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/health',
-      { signal, headers },
-    );
-    clear();
-    if (!res.ok) return downResult(name, label, 'Database returned an error');
-    const json = await res.json();
-    if (json?.status === 'ok') return healthyResult(name, label, 'Connected and responding');
-    return { name, status: 'degraded', label, lastChecked: new Date(), details: 'Responded but status unclear' };
+    // Use the app's own Supabase client — already has auth configured
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { error } = await supabase.from('profiles').select('id', { count: 'exact', head: true });
+    if (!error) return healthyResult(name, label, 'Connected and responding');
+    return downResult(name, label, `Database error: ${error.message}`);
   } catch {
-    clear();
     return downResult(name, label, 'Unable to reach the database');
   }
 }
@@ -113,10 +101,17 @@ export async function checkN8n(): Promise<HealthCheckResult> {
     const totalActive: number = json?.active ?? 0;
     if (prodTotal === 0)
       return healthyResult(name, label, `${totalActive} workflows active`);
-    if (prodActive === prodTotal)
-      return healthyResult(name, label, `All ${prodActive} production workflows active`);
     const inactive = uniqueProd.filter((w) => !w.active).map((w) => w.name);
-    return { name, status: 'degraded', label, lastChecked: new Date(), details: `${prodActive} of ${prodTotal} production workflows active. Inactive: ${inactive.join(', ')}` };
+    // These workflows are intentionally inactive (test, deprecated, or not yet wired)
+    const knownInactive = new Set([
+      'NFsTay — New Inquiry',
+      'NFsTay — Test Echo (all webhooks)',
+      'marketplace10 – Affiliate Conversion Alerts',
+    ]);
+    const unexpectedInactive = inactive.filter((n) => !knownInactive.has(n));
+    if (unexpectedInactive.length === 0)
+      return healthyResult(name, label, `${prodActive} production workflows active`);
+    return { name, status: 'degraded', label, lastChecked: new Date(), details: `${prodActive} of ${prodTotal} active. Unexpected inactive: ${unexpectedInactive.join(', ')}` };
   } catch {
     clear();
     return downResult(name, label, 'Unable to connect to automation engine');
