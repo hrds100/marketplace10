@@ -105,14 +105,17 @@ export async function checkN8n(): Promise<HealthCheckResult> {
     const prodWorkflows = allWorkflows.filter((w) =>
       /^(NFsTay|marketplace10|nfs-)/i.test(w.name)
     );
-    const prodActive = prodWorkflows.filter((w) => w.active).length;
-    const prodTotal = prodWorkflows.length;
+    // Deduplicate: if a workflow name has an active copy, ignore inactive duplicates
+    const activeNames = new Set(prodWorkflows.filter((w) => w.active).map((w) => w.name));
+    const uniqueProd = prodWorkflows.filter((w) => w.active || !activeNames.has(w.name));
+    const prodActive = uniqueProd.filter((w) => w.active).length;
+    const prodTotal = uniqueProd.length;
     const totalActive: number = json?.active ?? 0;
     if (prodTotal === 0)
-      return healthyResult(name, label, `${totalActive} workflows active (no named production workflows found)`);
+      return healthyResult(name, label, `${totalActive} workflows active`);
     if (prodActive === prodTotal)
-      return healthyResult(name, label, `All ${prodActive} production workflows active (${totalActive} total)`);
-    const inactive = prodWorkflows.filter((w) => !w.active).map((w) => w.name);
+      return healthyResult(name, label, `All ${prodActive} production workflows active`);
+    const inactive = uniqueProd.filter((w) => !w.active).map((w) => w.name);
     return { name, status: 'degraded', label, lastChecked: new Date(), details: `${prodActive} of ${prodTotal} production workflows active. Inactive: ${inactive.join(', ')}` };
   } catch {
     clear();
