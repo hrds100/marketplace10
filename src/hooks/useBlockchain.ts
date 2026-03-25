@@ -344,14 +344,11 @@ export function useBlockchain() {
         // wallet signing drops the Supabase auth session. The SDK's invoke() attaches
         // the expired token which causes a 401 even with verify_jwt=false.
         try {
+          console.log('[F9] tx confirmed, calling inv-crypto-confirm with:', { tx_hash: receipt.transactionHash, wallet_address: address, property_id: propertyId, shares, amount: amountUsdc });
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
-          const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
           const confirmRes = await fetch(`${supabaseUrl}/functions/v1/inv-crypto-confirm`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(supabaseAnonKey ? { 'Authorization': `Bearer ${supabaseAnonKey}` } : {}),
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               tx_hash: receipt.transactionHash,
               wallet_address: address,
