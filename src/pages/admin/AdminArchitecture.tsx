@@ -1,5 +1,6 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SystemHealthTab from "@/components/admin/SystemHealthTab";
+import TestMonitorTab from "@/components/admin/TestMonitorTab";
 
 export default function AdminArchitecture() {
   return (
@@ -11,10 +12,15 @@ export default function AdminArchitecture() {
         <TabsList>
           <TabsTrigger value="health">System Health</TabsTrigger>
           <TabsTrigger value="architecture">Architecture</TabsTrigger>
+          <TabsTrigger value="tests">Test Monitor</TabsTrigger>
         </TabsList>
 
         <TabsContent value="health">
           <SystemHealthTab />
+        </TabsContent>
+
+        <TabsContent value="tests">
+          <TestMonitorTab />
         </TabsContent>
 
         <TabsContent value="architecture">

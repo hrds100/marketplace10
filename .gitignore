@@ -29,5 +29,8 @@ dist-ssr
 *.sw?
 .vercel
 
+# Monitoring test results (generated at runtime)
+tests/monitoring/results/*.json
+
 # Supabase CLI local cache
 supabase/.temp/
