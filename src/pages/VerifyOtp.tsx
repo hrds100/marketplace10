@@ -166,6 +166,13 @@ export default function VerifyOtp() {
       }
     } catch { /* non-blocking */ }
 
+    // Admin notification: new signup (email OTP)
+    (supabase.from('notifications') as any).insert({
+      type: 'new_signup',
+      title: 'New user signed up',
+      body: `${name} (${email}) signed up via email.`,
+    }).then(() => {}).catch(() => {});
+
     // Wallet creation is handled by WalletProvisioner on the dashboard.
     // It shows a modal prompting the user to connect their wallet.
     setTimeout(() => {

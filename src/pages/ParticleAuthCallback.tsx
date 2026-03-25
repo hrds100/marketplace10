@@ -163,6 +163,13 @@ export default function ParticleAuthCallback() {
         }
       }
 
+      // Admin notification: new signup (social login)
+      (supabase.from('notifications') as any).insert({
+        type: 'new_signup',
+        title: 'New user signed up',
+        body: `${name} (${email}) signed up via social login.`,
+      }).then(() => {}).catch(() => {});
+
       const dest = intent.redirectTo ? decodeURIComponent(intent.redirectTo) : '/dashboard/deals';
       window.location.href = dest;
     } catch (err: any) {

@@ -531,6 +531,30 @@ serve(async (req) => {
         }
       }
 
+      // In-app notifications — non-blocking
+      // Buyer: purchase confirmed
+      supabase.from('notifications').insert({
+        user_id: userId,
+        type: 'purchase_confirmed',
+        title: 'Investment confirmed',
+        body: `Your $${amountPaid} investment in ${legacyPropertyTitle || 'a property'} is being processed.`,
+      }).then(() => {}).catch(() => {})
+      // Admin: new purchase alert (no user_id = admin-only)
+      supabase.from('notifications').insert({
+        type: 'purchase_confirmed',
+        title: 'New investment',
+        body: `${customerFirstName || 'Investor'} (${customerEmail}) purchased $${amountPaid} of ${legacyPropertyTitle || 'a property'}.`,
+      }).then(() => {}).catch(() => {})
+      // Agent: commission earned
+      if (agentUserId) {
+        supabase.from('notifications').insert({
+          user_id: agentUserId,
+          type: 'commission_earned',
+          title: 'You earned commission!',
+          body: `You earned $${(amountPaid * 0.05).toFixed(2)} commission from a share purchase in ${legacyPropertyTitle || 'a property'}.`,
+        }).then(() => {}).catch(() => {})
+      }
+
       // Audit log
       await supabase.from('payout_audit_log').insert({
         user_id: userId,
@@ -910,6 +934,28 @@ serve(async (req) => {
           claimableDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
         })
       }
+    }
+
+    // In-app notifications — non-blocking
+    const notifProperty = propertyTitle || productName || 'a property'
+    supabase.from('notifications').insert({
+      user_id: userId,
+      type: 'purchase_confirmed',
+      title: 'Investment confirmed',
+      body: `Your $${amount} investment in ${notifProperty} is being processed.`,
+    }).then(() => {}).catch(() => {})
+    supabase.from('notifications').insert({
+      type: 'purchase_confirmed',
+      title: 'New investment',
+      body: `${firstName || 'Investor'} (${email}) purchased $${amount} of ${notifProperty}.`,
+    }).then(() => {}).catch(() => {})
+    if (agentUserId) {
+      supabase.from('notifications').insert({
+        user_id: agentUserId,
+        type: 'commission_earned',
+        title: 'You earned commission!',
+        body: `You earned $${(amount * 0.05).toFixed(2)} commission from a share purchase in ${notifProperty}.`,
+      }).then(() => {}).catch(() => {})
     }
 
     // Audit log
