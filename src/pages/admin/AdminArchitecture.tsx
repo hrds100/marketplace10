@@ -7,10 +7,10 @@ export default function AdminArchitecture() {
       <h1 className="text-[28px] font-bold text-foreground mb-1">nfstay Platform Architecture</h1>
       <p className="text-sm text-muted-foreground mb-8">One repo, one database, one signup — three products</p>
 
-      <Tabs defaultValue="architecture" className="mb-8">
+      <Tabs defaultValue="health" className="mb-8">
         <TabsList>
-          <TabsTrigger value="architecture">Architecture</TabsTrigger>
           <TabsTrigger value="health">System Health</TabsTrigger>
+          <TabsTrigger value="architecture">Architecture</TabsTrigger>
         </TabsList>
 
         <TabsContent value="health">

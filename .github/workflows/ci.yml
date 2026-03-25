@@ -58,6 +58,8 @@ jobs:
           supabase functions deploy landlord-magic-login --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
           supabase functions deploy claim-landlord-account --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
           supabase functions deploy n8n-health --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
+          supabase functions deploy uptimerobot-health --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
           supabase secrets set N8N_API_KEY=${{ secrets.N8N_API_KEY }} --project-ref asazddtvjvmckouxcmmo
+          supabase secrets set UPTIMEROBOT_API_KEY=${{ secrets.UPTIMEROBOT_API_KEY }} --project-ref asazddtvjvmckouxcmmo
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

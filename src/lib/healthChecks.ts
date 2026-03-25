@@ -121,23 +121,17 @@ export async function checkN8n(): Promise<HealthCheckResult> {
 export async function checkUptimeRobot(): Promise<HealthCheckResult> {
   const name = 'uptimerobot';
   const label = 'Uptime Monitoring';
-  const apiKey = import.meta.env.VITE_UPTIMEROBOT_API_KEY;
-  if (!apiKey) return downResult(name, label, 'Uptime monitoring key not configured');
-
   const { signal, clear } = makeController();
   try {
-    const res = await fetch('https://api.uptimerobot.com/v2/getMonitors', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api_key: apiKey, format: 'json' }),
-      signal,
-    });
+    const res = await fetch(
+      'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/uptimerobot-health',
+      { signal },
+    );
     clear();
-    if (!res.ok) return downResult(name, label, 'Uptime service returned an error');
+    if (!res.ok) return downResult(name, label, 'Uptime monitoring proxy returned an error');
     const json = await res.json();
-    const monitors: { status: number }[] = json?.monitors ?? [];
-    const up = monitors.filter((m) => m.status === 2).length;
-    const total = monitors.length;
+    const up: number = json?.up ?? 0;
+    const total: number = json?.total ?? 0;
     if (total === 0) return downResult(name, label, 'No monitors configured');
     if (up === total) return healthyResult(name, label, `All ${total} monitors up`);
     const downCount = total - up;
