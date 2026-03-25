@@ -52,16 +52,15 @@ export default function WalletProvisioner({ children }: { children?: React.React
       });
   }, [user?.id]);
 
-  // Close modal when wallet appears
+  // Close modal when wallet appears, then hard refresh so the whole app picks it up
   useEffect(() => {
     if (walletAddress && showModal) {
       setWalletDone(true);
       if (resolveRef.current) resolveRef.current(true);
       resolveRef.current = null;
       setTimeout(() => {
-        setShowModal(false);
-        setWalletDone(false);
-      }, 1500);
+        window.location.reload();
+      }, 1200);
     }
   }, [walletAddress, showModal]);
 
