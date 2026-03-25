@@ -38,6 +38,8 @@ import {
 
 const RESULTS_URL =
   "https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/monitoring-results/latest.json";
+const BOOKINGSITE_RESULTS_URL =
+  "https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/monitoring-results/bookingsite-latest.json";
 const DISPATCH_URL =
   "https://api.github.com/repos/hrds100/marketplace10/actions/workflows/monitoring-tests.yml/dispatches";
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -106,52 +108,38 @@ export default function PingView() {
     return localStorage.getItem("testmonitor_system_prompt") || DEFAULT_AI_SYSTEM_PROMPT;
   }, []);
 
-  // Fetch results
+  // Fetch results (marketplace10 + bookingsite)
   const fetchResults = useCallback(() => {
-    fetch(RESULTS_URL)
-      .then((res) => {
-        if (!res.ok) throw new Error("not found");
-        return res.json();
-      })
-      .then((data) => {
-        if (data?.results?.length) {
-          const mapped: TestResult[] = data.results.map(
-            (r: {
-              id: string;
-              name: string;
-              suite: string;
-              route: string;
-              status: string;
-              duration: number;
-              error?: string;
-              expected?: string;
-              actual?: string;
-              timestamp: string;
-            }) => ({
-              id: r.id,
-              name: r.name,
-              suite: r.suite,
-              route: r.route,
-              status:
-                r.status === "passed"
-                  ? "passing"
-                  : r.status === "failed"
-                    ? "failing"
-                    : "stale",
-              duration: r.duration,
-              errorMessage: r.error,
-              expected: r.expected,
-              actual: r.actual,
-              timestamp: r.timestamp,
-            })
-          );
-          setTests(mapped);
-        }
-        if (data?.timestamp) setLastUpdated(data.timestamp);
-      })
-      .catch(() => {
-        // Keep existing data on failure
-      });
+    type RawResult = { id: string; name: string; suite: string; route: string; status: string; duration: number; error?: string; expected?: string; actual?: string; timestamp: string };
+    const mapResults = (data: { results?: RawResult[]; timestamp?: string }): { mapped: TestResult[]; ts: string | null } => {
+      const mapped: TestResult[] = (data?.results || []).map((r) => ({
+        id: r.id,
+        name: r.name,
+        suite: r.suite,
+        route: r.route,
+        status: r.status === "passed" ? "passing" : r.status === "failed" ? "failing" : "stale",
+        duration: r.duration,
+        errorMessage: r.error,
+        expected: r.expected,
+        actual: r.actual,
+        timestamp: r.timestamp,
+      }));
+      return { mapped, ts: data?.timestamp || null };
+    };
+    const fetchOne = (url: string) =>
+      fetch(url)
+        .then((res) => { if (!res.ok) throw new Error("not found"); return res.json(); })
+        .then(mapResults)
+        .catch(() => ({ mapped: [] as TestResult[], ts: null as string | null }));
+
+    Promise.all([fetchOne(RESULTS_URL), fetchOne(BOOKINGSITE_RESULTS_URL)]).then(
+      ([mkt, bks]) => {
+        const combined = [...mkt.mapped, ...bks.mapped];
+        if (combined.length) setTests(combined);
+        const latestTs = [mkt.ts, bks.ts].filter(Boolean).sort().pop() || null;
+        if (latestTs) setLastUpdated(latestTs);
+      }
+    );
   }, []);
 
   useEffect(() => {
