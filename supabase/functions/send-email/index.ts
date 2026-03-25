@@ -11,13 +11,11 @@ const BRAND = {
   font: "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif",
 };
 
+const LOGO_URL = 'https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/inv-property-docs/brand/nfstay-email-logo.png';
 const LOGO_HTML = `<div style="text-align:center;padding:0 0 24px;">
-  <table cellpadding="0" cellspacing="0" border="0" style="display:inline-table;border-collapse:collapse;font-family:'Sora',Inter,system-ui,sans-serif;">
-    <tr>
-      <td style="width:42px;height:42px;border:2px solid #0A0A0A;border-radius:8px;text-align:center;vertical-align:middle;font-size:18px;font-weight:700;color:#0A0A0A;line-height:42px;">nf</td>
-      <td style="padding-left:4px;font-size:28px;font-weight:400;color:#0A0A0A;letter-spacing:2px;vertical-align:middle;line-height:42px;">stay</td>
-    </tr>
-  </table>
+  <a href="https://hub.nfstay.com" style="text-decoration:none;">
+    <img src="${LOGO_URL}" alt="nfstay" width="140" height="42" style="display:inline-block;width:140px;height:auto;" />
+  </a>
 </div>`;
 
 function layout(title: string, body: string): string {
