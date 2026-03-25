@@ -46,6 +46,15 @@ export default function AffiliatesPage() {
   const queryClient = useQueryClient();
   const { data: realAffProfile } = useMyAffiliateProfile();
   const { requireWallet } = useWalletGate();
+
+  // Live GBP→USD rate (same API as admin payouts page)
+  const [gbpToUsd, setGbpToUsd] = useState(1.33);
+  useEffect(() => {
+    fetch('https://open.er-api.com/v6/latest/GBP')
+      .then(r => r.json())
+      .then(d => { if (d.rates?.USD) setGbpToUsd(d.rates.USD); })
+      .catch(() => {});
+  }, []);
   // TODO: Wire realAffProfile to replace mock affiliate data when available
   const [copied, setCopied] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
@@ -175,7 +184,7 @@ export default function AffiliatesPage() {
       }).catch(() => {});
       (supabase.from('notifications') as any).insert({
         type: 'payout_request', title: 'Payout requested',
-        body: `${userName} requested £${Number(profile.pending_balance).toFixed(2)} payout via ${payoutTab}.`,
+        body: `${userName} requested $${Number(profile.pending_balance).toFixed(2)} payout via ${payoutTab}.`,
       }).then(() => {}).catch(() => {});
     },
     onSuccess: () => {
@@ -403,20 +412,20 @@ export default function AffiliatesPage() {
                     {calcPlan === 'lifetime' ? 'Total earned' : calcPlan === 'yearly' ? 'Yearly income' : 'Monthly income'}
                   </div>
                   <div className="text-2xl font-extrabold text-emerald-600">
-                    £{commission.toFixed(0)}
+                    ${Math.round(commission * gbpToUsd).toLocaleString()}
                     {calcPlan !== 'lifetime' && <span className="text-sm font-medium text-muted-foreground">{calcPlan === 'yearly' ? '/yr' : '/mo'}</span>}
                   </div>
                 </div>
                 {calcPlan !== 'lifetime' && (
                 <div className="text-right">
                   <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Yearly total</div>
-                  <div className="text-2xl font-extrabold text-foreground">£{yearlyIncome.toFixed(0)}<span className="text-sm font-medium text-muted-foreground">/yr</span></div>
+                  <div className="text-2xl font-extrabold text-foreground">${Math.round(yearlyIncome * gbpToUsd).toLocaleString()}<span className="text-sm font-medium text-muted-foreground">/yr</span></div>
                 </div>
                 )}
                 {calcPlan === 'lifetime' && (
                 <div className="text-right">
                   <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Per referral</div>
-                  <div className="text-2xl font-extrabold text-foreground">£{(997 * 0.40).toFixed(0)}<span className="text-sm font-medium text-muted-foreground"> one-time</span></div>
+                  <div className="text-2xl font-extrabold text-foreground">${Math.round(997 * 0.40 * gbpToUsd)}<span className="text-sm font-medium text-muted-foreground"> one-time</span></div>
                 </div>
                 )}
               </div>
@@ -429,7 +438,7 @@ export default function AffiliatesPage() {
             <>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="text-[11px] text-muted-foreground font-medium">Deal value (£)</label>
+                  <label className="text-[11px] text-muted-foreground font-medium">Deal value ($)</label>
                   <input type="number" value={calcDealAmount} onChange={e => setCalcDealAmount(Number(e.target.value))}
                     className="input-nfstay mt-1 w-full text-sm" />
                 </div>
@@ -442,15 +451,15 @@ export default function AffiliatesPage() {
               <div className="flex justify-between">
                 <div>
                   <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Per deal</div>
-                  <div className="text-2xl font-extrabold text-emerald-600">£{(calcDealAmount * 0.05).toFixed(0)}</div>
+                  <div className="text-2xl font-extrabold text-emerald-600">${(calcDealAmount * 0.05).toFixed(0)}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Total ({calcDeals} deals)</div>
-                  <div className="text-2xl font-extrabold text-foreground">£{(calcDealAmount * 0.05 * calcDeals).toFixed(0)}</div>
+                  <div className="text-2xl font-extrabold text-foreground">${(calcDealAmount * 0.05 * calcDeals).toFixed(0)}</div>
                 </div>
               </div>
               <p className="text-[11px] text-muted-foreground mt-3">
-                Earn <strong>5% commission</strong> on JV property deals. Average deal value is £6,000.
+                Earn <strong>5% commission</strong> on JV property deals. Average deal value is $6,000.
               </p>
             </>
           )}
@@ -508,7 +517,7 @@ export default function AffiliatesPage() {
               { label: 'Link Clicks', value: profile.link_clicks || 0, icon: MousePointerClick, color: 'text-blue-600' },
               { label: 'Signups', value: profile.signups || 0, icon: Users, color: 'text-emerald-600' },
               { label: 'Paid Users', value: profile.paid_users || 0, icon: TrendingUp, color: 'text-purple-600' },
-              { label: 'Pending Balance', value: `£${Number(profile.pending_balance || 0).toFixed(2)}`, icon: Wallet, color: 'text-amber-600' },
+              { label: 'Pending Balance', value: `$${Number(profile.pending_balance || 0).toFixed(2)}`, icon: Wallet, color: 'text-amber-600' },
             ].map(s => (
               <div key={s.label} data-feature="AFFILIATES__STAT_CARD" className="bg-card border border-border rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -581,7 +590,7 @@ export default function AffiliatesPage() {
                 <div className="flex items-end gap-2 h-[120px]">
                   {monthlyEarnings.map(m => (
                     <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
-                      <span className="text-[10px] text-muted-foreground font-medium">{m.amount > 0 ? `£${m.amount.toFixed(0)}` : ''}</span>
+                      <span className="text-[10px] text-muted-foreground font-medium">{m.amount > 0 ? `$${m.amount.toFixed(0)}` : ''}</span>
                       <div className={`w-full rounded-t-md transition-all duration-300 ${m.amount > 0 ? 'bg-gradient-to-t from-emerald-500 to-teal-400' : 'bg-border'}`}
                         style={{ height: `${Math.max((m.amount / maxEarning) * 80, 4)}px` }} />
                       <span className="text-[10px] text-muted-foreground">{m.month}</span>
@@ -610,7 +619,7 @@ export default function AffiliatesPage() {
                         }`}
                       >
                         <Wallet className="w-3.5 h-3.5 inline mr-1.5" />
-                        {hasClaimable ? `Claim £${claimableTotal.toFixed(2)}` : 'Claim'}
+                        {hasClaimable ? `Claim $${claimableTotal.toFixed(2)}` : 'Claim'}
                       </button>
                     </div>
                     <div className="space-y-2">
@@ -624,11 +633,11 @@ export default function AffiliatesPage() {
                               {c.inv_properties?.title || (c.source === 'subscription' ? 'Subscription' : 'Investment')}
                             </p>
                             <p className="text-[11px] text-muted-foreground">
-                              £{Number(c.gross_amount).toFixed(2)} sale · {(Number(c.commission_rate) * 100).toFixed(0)}% rate · {new Date(c.created_at).toLocaleDateString('en-GB')}
+                              ${Number(c.gross_amount).toFixed(2)} sale · {(Number(c.commission_rate) * 100).toFixed(0)}% rate · {new Date(c.created_at).toLocaleDateString('en-GB')}
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-sm font-bold text-foreground">£{Number(c.commission_amount).toFixed(2)}</p>
+                            <p className="text-sm font-bold text-foreground">${Number(c.commission_amount).toFixed(2)}</p>
                             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
                               c.status === 'claimable' ? 'bg-emerald-100 text-emerald-700' :
                               c.status === 'claimed' || c.status === 'paid' ? 'bg-blue-100 text-blue-700' :
@@ -666,7 +675,7 @@ export default function AffiliatesPage() {
                           {e.event_type === 'payout_requested' && 'Payout requested'}
                           {e.event_type === 'payout_paid' && 'Payout sent'}
                         </span>
-                        {e.amount > 0 && <span className="text-[13px] font-semibold text-emerald-600">+£{Number(e.amount).toFixed(2)}</span>}
+                        {e.amount > 0 && <span className="text-[13px] font-semibold text-emerald-600">+${Number(e.amount).toFixed(2)}</span>}
                         <span className="text-[11px] text-muted-foreground flex-shrink-0">{timeAgo(e.created_at)}</span>
                       </div>
                     ))}
