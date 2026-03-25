@@ -11,7 +11,7 @@ const BRAND = {
   font: "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif",
 };
 
-const LOGO_URL = 'https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/inv-property-docs/brand/nfstay-email-logo.png';
+const LOGO_URL = 'https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/public-assets/nfstay-logo-email.png';
 const LOGO_HTML = `<div style="text-align:center;padding:0 0 12px;">
   <a href="https://hub.nfstay.com" style="text-decoration:none;">
     <img src="${LOGO_URL}" alt="nfstay" width="100" style="display:inline-block;width:100px;height:auto;" />
