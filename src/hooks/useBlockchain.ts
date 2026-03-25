@@ -403,19 +403,22 @@ export function useBlockchain() {
           const buyerId = currentUser?.id;
           const buyerEmail = currentUser?.email || '';
           const buyerName = currentUser?.user_metadata?.name || buyerEmail.split('@')[0];
+          // Fetch property title from DB (non-blocking fallback to 'Investment Property')
+          const { data: propData } = await (supabase.from('inv_properties') as any).select('title').eq('id', propertyId).maybeSingle();
+          const propertyTitle = propData?.title || 'Investment Property';
 
           // Send 3 emails: buyer, admin, agent
           supabase.functions.invoke('send-email', {
-            body: { type: 'inv-purchase-buyer', data: { email: buyerEmail, property: 'Pembroke Place', amount: amountUsdc, shares } },
+            body: { type: 'inv-purchase-buyer', data: { email: buyerEmail, property: propertyTitle, amount: amountUsdc, shares } },
           }).catch(() => {});
           supabase.functions.invoke('send-email', {
-            body: { type: 'inv-purchase-admin', data: { buyerName, buyerEmail, property: 'Pembroke Place', amount: amountUsdc, shares, agentName: agentUserId ? 'Affiliate' : null, commission: agentUserId ? amountUsdc * 0.05 : null } },
+            body: { type: 'inv-purchase-admin', data: { buyerName, buyerEmail, property: propertyTitle, amount: amountUsdc, shares, agentName: agentUserId ? 'Affiliate' : null, commission: agentUserId ? amountUsdc * 0.05 : null } },
           }).catch(() => {});
           if (agentUserId) {
             const { data: agentInfo } = await (supabase.from('profiles') as any).select('email, name').eq('id', agentUserId).maybeSingle();
             if (agentInfo?.email) {
               supabase.functions.invoke('send-email', {
-                body: { type: 'inv-purchase-agent', data: { agentEmail: agentInfo.email, property: 'Pembroke Place', amount: amountUsdc, commission: amountUsdc * 0.05, rate: 5, claimableDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB') } },
+                body: { type: 'inv-purchase-agent', data: { agentEmail: agentInfo.email, property: propertyTitle, amount: amountUsdc, commission: amountUsdc * 0.05, rate: 5, claimableDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB') } },
               }).catch(() => {});
             }
           }
@@ -423,16 +426,16 @@ export function useBlockchain() {
           // In-app notifications
           (supabase.from('notifications') as any).insert({
             user_id: buyerId, type: 'purchase_confirmed', title: 'Investment confirmed',
-            body: `Your $${amountUsdc} crypto investment is confirmed. Tx: ${receipt.transactionHash.slice(0, 10)}...`,
+            body: `Your $${amountUsdc} crypto investment in ${propertyTitle} is confirmed. Tx: ${receipt.transactionHash.slice(0, 10)}...`,
           }).then(() => {}).catch(() => {});
           (supabase.from('notifications') as any).insert({
             type: 'purchase_confirmed', title: 'New crypto investment',
-            body: `${buyerName} (${buyerEmail}) invested $${amountUsdc} via crypto.`,
+            body: `${buyerName} (${buyerEmail}) invested $${amountUsdc} in ${propertyTitle} via crypto.`,
           }).then(() => {}).catch(() => {});
           if (agentUserId) {
             (supabase.from('notifications') as any).insert({
               user_id: agentUserId, type: 'commission_earned', title: 'You earned commission!',
-              body: `You earned $${(amountUsdc * 0.05).toFixed(2)} from a crypto share purchase.`,
+              body: `You earned $${(amountUsdc * 0.05).toFixed(2)} from a share purchase in ${propertyTitle}.`,
             }).then(() => {}).catch(() => {});
           }
         } catch (notifyErr) {
