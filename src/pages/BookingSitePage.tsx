@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Globe, Smartphone, Monitor, ExternalLink, Copy, Check, Palette, Type, Image, MessageSquare, Mail, Phone } from 'lucide-react';
+import { Globe, Smartphone, Monitor, ExternalLink, Copy, Check, Palette, Type, Image, MessageSquare, Mail, Phone, Link2 } from 'lucide-react';
+import PaymentSheet from '@/components/PaymentSheet';
+
+const heroImages = [
+  'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
+  'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+  'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
+  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
+];
 
 const defaultBranding = {
   brandName: 'Your Brand',
@@ -7,10 +16,12 @@ const defaultBranding = {
   accentColor: '#10b981',
   heroHeadline: 'Find Your Perfect Stay',
   heroSubheadline: 'Book directly with us for the best rates and experience',
-  heroImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
+  heroImage: heroImages[0],
   aboutBio: 'We offer carefully curated vacation rentals in the most beautiful locations.',
   contactEmail: '',
   contactPhone: '',
+  socialInstagram: '',
+  socialFacebook: '',
 };
 
 export default function BookingSitePage() {
@@ -18,6 +29,7 @@ export default function BookingSitePage() {
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'brand' | 'content' | 'contact'>('brand');
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   const siteUrl = `${branding.subdomain}.nfstay.app`;
 
@@ -159,6 +171,19 @@ export default function BookingSitePage() {
                   placeholder="Tell guests about your business..."
                 />
               </Field>
+              <Field label="Hero Image">
+                <div className="grid grid-cols-5 gap-1.5">
+                  {heroImages.map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => update('heroImage', img)}
+                      className={`aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all ${branding.heroImage === img ? 'border-emerald-500 ring-1 ring-emerald-500/30' : 'border-transparent hover:border-gray-300'}`}
+                    >
+                      <img src={img} alt={`Hero ${i + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </Field>
             </>
           )}
 
@@ -182,19 +207,55 @@ export default function BookingSitePage() {
                   placeholder="+44 7xxx xxx xxx"
                 />
               </Field>
+              <Field label="Instagram">
+                <input
+                  type="text"
+                  value={branding.socialInstagram}
+                  onChange={e => update('socialInstagram', e.target.value)}
+                  className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+                  placeholder="@yourbrand"
+                />
+              </Field>
+              <Field label="Facebook">
+                <input
+                  type="text"
+                  value={branding.socialFacebook}
+                  onChange={e => update('socialFacebook', e.target.value)}
+                  className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+                  placeholder="facebook.com/yourbrand"
+                />
+              </Field>
             </div>
           )}
         </div>
 
         {/* Bottom Actions */}
         <div className="p-5 border-t border-border/30 bg-gray-50/50 space-y-2">
-          <button data-feature="BOOKING_NFSTAY__CUSTOMIZER_SAVE" className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[13px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95">
+          <button
+            data-feature="BOOKING_NFSTAY__CUSTOMIZER_SAVE"
+            onClick={() => setPaymentOpen(true)}
+            className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[13px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95"
+          >
             Publish Site
+          </button>
+          <button
+            onClick={() => setPaymentOpen(true)}
+            className="w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium text-muted-foreground hover:text-foreground rounded-lg border border-border/50 hover:bg-gray-50 transition-colors"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+            Connect your own domain
           </button>
           <p className="text-[10px] text-center text-muted-foreground">
             Your site will be live at <span className="font-medium">{siteUrl}</span>
           </p>
         </div>
+
+        {/* GHL Payment iframe — same as subscription flow */}
+        <PaymentSheet
+          open={paymentOpen}
+          onOpenChange={setPaymentOpen}
+          onUnlocked={() => { setPaymentOpen(false); }}
+        />
       </div>
 
       {/* Right Panel — Preview */}
