@@ -462,27 +462,35 @@ export default function AffiliatesPage() {
           <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
             <TrendingUp className="w-4 h-4" /> Top Agents This Month
           </h3>
-          {leaderboard.length === 0 ? (
-            <p className="text-sm opacity-80 py-6 text-center">Be the first on the leaderboard!</p>
-          ) : (
-            <div className="space-y-0">
-              {leaderboard.map((a: { id: string; name: string; position: number; total_earned: number; signups?: number; user_id: string }) => {
-                const isMe = a.user_id === user?.id;
-                return (
-                  <div key={a.id} className={`flex items-center gap-3 py-2.5 border-b border-white/10 last:border-0 ${isMe ? 'bg-white/10 -mx-2 px-2 rounded-lg' : ''}`}>
-                    <span className={`w-6 text-center text-sm font-bold ${a.position <= 3 ? 'text-yellow-300' : 'text-white/60'}`}>
-                      {a.position <= 3 ? ['🥇', '🥈', '🥉'][a.position - 1] : `#${a.position}`}
-                    </span>
-                    <span className={`text-[13px] flex-1 ${isMe ? 'font-bold' : 'font-medium opacity-90'}`}>
-                      {a.name?.split(' ')[0] || 'Agent'} {(a.name?.split(' ')[1] || '')[0] ? (a.name?.split(' ')[1] || '')[0] + '.' : ''}
-                      {isMe && <span className="text-[10px] ml-1 opacity-70">(you)</span>}
-                    </span>
-                    <span className="text-sm font-medium opacity-80">{a.signups || 0} referrals</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {(() => {
+            const placeholder = [
+              { id: 'p1', name: 'James T.', position: 1, signups: 24, user_id: '' },
+              { id: 'p2', name: 'Sarah M.', position: 2, signups: 18, user_id: '' },
+              { id: 'p3', name: 'David K.', position: 3, signups: 12, user_id: '' },
+              { id: 'p4', name: 'Emma L.', position: 4, signups: 9, user_id: '' },
+              { id: 'p5', name: 'Michael R.', position: 5, signups: 5, user_id: '' },
+            ];
+            const agents = leaderboard.length >= 3 ? leaderboard : placeholder;
+            return (
+              <div className="space-y-0">
+                {agents.map((a: { id: string; name: string; position: number; signups?: number; user_id: string }) => {
+                  const isMe = a.user_id === user?.id;
+                  return (
+                    <div key={a.id} className={`flex items-center gap-3 py-2.5 border-b border-white/10 last:border-0 ${isMe ? 'bg-white/10 -mx-2 px-2 rounded-lg' : ''}`}>
+                      <span className={`w-6 text-center text-sm font-bold ${a.position <= 3 ? 'text-yellow-300' : 'text-white/60'}`}>
+                        {a.position <= 3 ? ['🥇', '🥈', '🥉'][a.position - 1] : `#${a.position}`}
+                      </span>
+                      <span className={`text-[13px] flex-1 ${isMe ? 'font-bold' : 'font-medium opacity-90'}`}>
+                        {a.name?.split(' ')[0] || 'Agent'} {(a.name?.split(' ')[1] || '')[0] ? (a.name?.split(' ')[1] || '')[0] + '.' : ''}
+                        {isMe && <span className="text-[10px] ml-1 opacity-70">(you)</span>}
+                      </span>
+                      <span className="text-sm font-medium opacity-80">{a.signups || 0} referrals</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -578,43 +586,63 @@ export default function AffiliatesPage() {
               </div>
 
               {/* Commission ledger */}
-              {myCommissions.length > 0 && (
-                <div className="bg-card border border-border rounded-2xl p-5">
-                  <h3 className="text-sm font-semibold text-foreground mb-3">Your Commissions</h3>
-                  <div className="space-y-2">
-                    {myCommissions.map((c: { id: string; source: string; gross_amount: number; commission_amount: number; commission_rate: number; status: string; created_at: string; inv_properties?: { title: string } }) => (
-                      <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1E9A80]/10 flex-shrink-0">
-                          <CreditCard className="w-4 h-4 text-[#1E9A80]" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-medium text-foreground truncate">
-                            {c.inv_properties?.title || (c.source === 'subscription' ? 'Subscription' : 'Investment')}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            £{Number(c.gross_amount).toFixed(2)} sale · {(Number(c.commission_rate) * 100).toFixed(0)}% rate · {new Date(c.created_at).toLocaleDateString('en-GB')}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-bold text-foreground">£{Number(c.commission_amount).toFixed(2)}</p>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                            c.status === 'claimable' ? 'bg-emerald-100 text-emerald-700' :
-                            c.status === 'claimed' || c.status === 'paid' ? 'bg-blue-100 text-blue-700' :
-                            'bg-amber-100 text-amber-700'
-                          }`}>
-                            {c.status === 'pending' ? 'Pending' : c.status === 'claimable' ? 'Claimable' : c.status === 'claimed' ? 'Claimed' : c.status === 'paid' ? 'Paid' : c.status}
-                          </span>
-                          {c.status === 'pending' && c.claimable_at && (
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
-                              Claimable on {new Date(c.claimable_at).toLocaleDateString('en-GB')}
+              {myCommissions.length > 0 && (() => {
+                const hasClaimable = myCommissions.some((c: { status: string }) => c.status === 'claimable');
+                const claimableTotal = myCommissions
+                  .filter((c: { status: string }) => c.status === 'claimable')
+                  .reduce((sum: number, c: { commission_amount: number }) => sum + Number(c.commission_amount), 0);
+                return (
+                  <div className="bg-card border border-border rounded-2xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-foreground">Your Commissions</h3>
+                      <button
+                        disabled={!hasClaimable}
+                        onClick={() => { if (hasClaimable) payoutMutation.mutate(); }}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          hasClaimable
+                            ? 'bg-[#1E9A80] text-white hover:opacity-90 cursor-pointer'
+                            : 'bg-muted text-muted-foreground cursor-not-allowed'
+                        }`}
+                      >
+                        <Wallet className="w-3.5 h-3.5 inline mr-1.5" />
+                        {hasClaimable ? `Claim £${claimableTotal.toFixed(2)}` : 'Claim'}
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {myCommissions.map((c: { id: string; source: string; gross_amount: number; commission_amount: number; commission_rate: number; status: string; claimable_at: string; created_at: string; inv_properties?: { title: string } }) => (
+                        <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1E9A80]/10 flex-shrink-0">
+                            <CreditCard className="w-4 h-4 text-[#1E9A80]" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-medium text-foreground truncate">
+                              {c.inv_properties?.title || (c.source === 'subscription' ? 'Subscription' : 'Investment')}
                             </p>
-                          )}
+                            <p className="text-[11px] text-muted-foreground">
+                              £{Number(c.gross_amount).toFixed(2)} sale · {(Number(c.commission_rate) * 100).toFixed(0)}% rate · {new Date(c.created_at).toLocaleDateString('en-GB')}
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-sm font-bold text-foreground">£{Number(c.commission_amount).toFixed(2)}</p>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                              c.status === 'claimable' ? 'bg-emerald-100 text-emerald-700' :
+                              c.status === 'claimed' || c.status === 'paid' ? 'bg-blue-100 text-blue-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {c.status === 'pending' ? 'Pending' : c.status === 'claimable' ? 'Claimable' : c.status === 'claimed' ? 'Claimed' : c.status === 'paid' ? 'Paid' : c.status}
+                            </span>
+                            {c.status === 'pending' && c.claimable_at && (
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                Claimable on {new Date(c.claimable_at).toLocaleDateString('en-GB')}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Activity feed */}
               <div data-feature="AFFILIATES__EVENTS" className="bg-card border border-border rounded-2xl p-5">
