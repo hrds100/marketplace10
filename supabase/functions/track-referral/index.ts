@@ -73,6 +73,14 @@ serve(async (req) => {
       const userName = url.searchParams.get('userName');
       const userEmail = url.searchParams.get('userEmail');
 
+      // Write referred_by to buyer's profile (service role — bypasses RLS)
+      if (userId) {
+        await client
+          .from('profiles')
+          .update({ referred_by: affiliate.referral_code })
+          .eq('id', userId);
+      }
+
       // Log signup event
       await client.from('aff_events').insert({
         affiliate_id: affiliate.id,
