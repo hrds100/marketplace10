@@ -23,7 +23,7 @@ jobs:
       - name: Install Playwright
         run: npx playwright install chromium
       - name: Run monitoring tests
-        run: npx playwright test --config=tests/monitoring/playwright.config.ts --reporter=list --workers=4 --shard=1/1
+        run: npx playwright test --config=tests/monitoring/playwright.config.ts --workers=4
         env:
           TEST_BASE_URL: https://hub.nfstay.com
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
