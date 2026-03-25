@@ -380,6 +380,7 @@ serve(async (req) => {
           .maybeSingle()
 
         if (buyerProfile?.referred_by) {
+          // Try current referral_code first
           const { data: affByCode } = await supabase
             .from('aff_profiles')
             .select('user_id')
@@ -389,6 +390,18 @@ serve(async (req) => {
           if (affByCode?.user_id) {
             agentUserId = affByCode.user_id
             console.log(`Agent resolved from buyer referred_by: ${buyerProfile.referred_by} → ${agentUserId}`)
+          } else {
+            // Fallback: check previous_codes (agent may have changed their code)
+            const { data: affByOldCode } = await supabase
+              .from('aff_profiles')
+              .select('user_id')
+              .contains('previous_codes', [buyerProfile.referred_by])
+              .maybeSingle()
+
+            if (affByOldCode?.user_id) {
+              agentUserId = affByOldCode.user_id
+              console.log(`Agent resolved from previous_codes: ${buyerProfile.referred_by} → ${agentUserId}`)
+            }
           }
         }
       }
@@ -733,6 +746,7 @@ serve(async (req) => {
         .maybeSingle()
 
       if (buyerProfile?.referred_by) {
+        // Try current referral_code first
         const { data: affByCode } = await supabase
           .from('aff_profiles')
           .select('user_id')
@@ -742,6 +756,18 @@ serve(async (req) => {
         if (affByCode?.user_id) {
           agentUserId = affByCode.user_id
           console.log(`Agent resolved from buyer referred_by: ${buyerProfile.referred_by} → ${agentUserId}`)
+        } else {
+          // Fallback: check previous_codes (agent may have changed their code)
+          const { data: affByOldCode } = await supabase
+            .from('aff_profiles')
+            .select('user_id')
+            .contains('previous_codes', [buyerProfile.referred_by])
+            .maybeSingle()
+
+          if (affByOldCode?.user_id) {
+            agentUserId = affByOldCode.user_id
+            console.log(`Agent resolved from previous_codes: ${buyerProfile.referred_by} → ${agentUserId}`)
+          }
         }
       }
     }

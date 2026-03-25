@@ -27,12 +27,23 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Find affiliate by code
-    const { data: affiliate } = await client
+    // Find affiliate by code (current or previous)
+    let affiliate = await client
       .from('aff_profiles')
       .select('id, user_id, link_clicks, signups')
       .eq('referral_code', code.toUpperCase())
-      .single();
+      .maybeSingle()
+      .then((r: any) => r.data);
+
+    if (!affiliate) {
+      // Fallback: check previous_codes (agent may have changed their code)
+      affiliate = await client
+        .from('aff_profiles')
+        .select('id, user_id, link_clicks, signups')
+        .contains('previous_codes', [code.toUpperCase()])
+        .maybeSingle()
+        .then((r: any) => r.data);
+    }
 
     if (!affiliate) {
       return new Response(JSON.stringify({ error: 'Unknown code' }), {
