@@ -55,6 +55,33 @@ export async function checkSupabase(): Promise<HealthCheckResult> {
   }
 }
 
+/* ── execution data cache ────────────────────────────── */
+
+let lastExecutionData: Record<string, ExecutionEntry[]> = {};
+
+export function getExecutionData(): Record<string, ExecutionEntry[]> {
+  return lastExecutionData;
+}
+
+export function getLatestExecution(workflowName: string): ExecutionEntry | null {
+  for (const entries of Object.values(lastExecutionData)) {
+    const match = entries.find(e => e.workflowName === workflowName);
+    if (match) return match;
+  }
+  return null;
+}
+
+export function getAllExecutionsForFlow(flow: FlowDef): ExecutionEntry[] {
+  const names = new Set(flow.steps.map(s => s.workflowName).filter(Boolean));
+  const all: ExecutionEntry[] = [];
+  for (const entries of Object.values(lastExecutionData)) {
+    for (const entry of entries) {
+      if (names.has(entry.workflowName)) all.push(entry);
+    }
+  }
+  return all.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+}
+
 export async function checkN8n(): Promise<HealthCheckResult> {
   const name = 'n8n';
   const label = 'Automations';
@@ -68,6 +95,11 @@ export async function checkN8n(): Promise<HealthCheckResult> {
     clear();
     if (!res.ok) return downResult(name, label, 'Automation health proxy returned an error');
     const json = await res.json();
+
+    // Store execution data if present
+    const executions: Record<string, ExecutionEntry[]> = json?.executions ?? {};
+    lastExecutionData = executions;
+
     const allWorkflows: { name: string; active: boolean }[] = json?.workflows ?? [];
     // Only count production workflows (NFsTay/marketplace/nfs- prefixed), ignore test/draft ones
     const prodWorkflows = allWorkflows.filter((w) =>
@@ -157,9 +189,18 @@ export const BOOKING_SERVICES: ServiceDef[] = [
 
 /* ── flow definitions ────────────────────────────────── */
 
+export interface ExecutionEntry {
+  startedAt: string;
+  finishedAt: string | null;
+  status: 'success' | 'error' | 'running' | 'waiting' | 'crashed';
+  workflowName: string;
+  duration: number | null;
+}
+
 export interface FlowStep {
   label: string;
   dependsOn: string; // service key
+  workflowName?: string; // n8n workflow name for execution data
 }
 
 export interface FlowDef {
@@ -174,14 +215,14 @@ export const MARKETPLACE_FLOWS: FlowDef[] = [
       { label: 'Frontend', dependsOn: 'vercel' },
       { label: 'Saved to Database', dependsOn: 'supabase' },
       { label: 'Images on CDN', dependsOn: 'supabase' },
-      { label: 'Email Sent', dependsOn: 'n8n' },
+      { label: 'Email Sent', dependsOn: 'n8n', workflowName: 'NFsTay – Notify Admin New Deal' },
     ],
   },
   {
     name: 'Payment Processing',
     steps: [
       { label: 'Stripe Checkout', dependsOn: 'stripe' },
-      { label: 'Webhook Received', dependsOn: 'n8n' },
+      { label: 'Webhook Received', dependsOn: 'n8n', workflowName: 'NFsTay -- Subscription Commission' },
       { label: 'Database Updated', dependsOn: 'supabase' },
       { label: 'CRM Notified', dependsOn: 'gohighlevel' },
     ],
@@ -190,16 +231,16 @@ export const MARKETPLACE_FLOWS: FlowDef[] = [
     name: 'Investment Order',
     steps: [
       { label: 'Order Created', dependsOn: 'supabase' },
-      { label: 'Payout Sent', dependsOn: 'stripe' },
+      { label: 'Payout Sent', dependsOn: 'stripe', workflowName: 'NFsTay -- Tuesday Payout Batch' },
       { label: 'Commission Calculated', dependsOn: 'supabase' },
-      { label: 'WhatsApp Sent', dependsOn: 'gohighlevel' },
+      { label: 'WhatsApp Sent', dependsOn: 'gohighlevel', workflowName: 'NFsTay -- Investment Notifications' },
     ],
   },
   {
     name: 'User Signup',
     steps: [
-      { label: 'Registration', dependsOn: 'supabase' },
-      { label: 'Email Sent', dependsOn: 'n8n' },
+      { label: 'Registration', dependsOn: 'supabase', workflowName: 'marketplace10 – Send OTP' },
+      { label: 'Email Sent', dependsOn: 'n8n', workflowName: 'marketplace10 – Signup Welcome Email' },
       { label: 'Account Created', dependsOn: 'supabase' },
       { label: 'CRM Contact', dependsOn: 'gohighlevel' },
     ],
@@ -207,10 +248,10 @@ export const MARKETPLACE_FLOWS: FlowDef[] = [
   {
     name: 'Landlord Magic Link',
     steps: [
-      { label: 'WhatsApp Sent', dependsOn: 'gohighlevel' },
+      { label: 'WhatsApp Sent', dependsOn: 'gohighlevel', workflowName: 'NFsTay — Landlord Replied' },
       { label: 'Link Clicked', dependsOn: 'vercel' },
       { label: 'Auto Login', dependsOn: 'supabase' },
-      { label: 'Inbox Loaded', dependsOn: 'vercel' },
+      { label: 'Inbox Loaded', dependsOn: 'vercel', workflowName: 'NFsTay — New Message' },
     ],
   },
   {
@@ -219,7 +260,7 @@ export const MARKETPLACE_FLOWS: FlowDef[] = [
       { label: 'Property Selected', dependsOn: 'vercel' },
       { label: 'Stripe Checkout', dependsOn: 'stripe' },
       { label: 'Booking Confirmed', dependsOn: 'supabase' },
-      { label: 'Host Notified', dependsOn: 'n8n' },
+      { label: 'Host Notified', dependsOn: 'n8n', workflowName: 'nfs-hospitable-listing-sync' },
     ],
   },
 ];

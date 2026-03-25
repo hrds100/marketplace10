@@ -12,17 +12,23 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type {
   HealthCheckResult,
   ServiceDef,
   FlowDef,
+  FlowStep,
+  ExecutionEntry,
 } from "@/lib/healthChecks";
 import {
   MARKETPLACE_SERVICES,
   MARKETPLACE_FLOWS,
   runAllChecks,
+  getLatestExecution,
+  getAllExecutionsForFlow,
 } from "@/lib/healthChecks";
 
 /* ── icon map ─────────────────────────────────────────── */
@@ -46,6 +52,20 @@ function relativeTime(d: Date): string {
   if (diff < 60) return `${diff} seconds ago`;
   if (diff < 120) return "1 minute ago";
   return `${Math.floor(diff / 60)} minutes ago`;
+}
+
+function relativeTimeShort(iso: string): string {
+  const diff = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function shortWorkflowName(name: string): string {
+  return name
+    .replace(/^(NFsTay|marketplace10|nfs-)\s*[–—-]\s*/i, "")
+    .replace(/^nfs-/, "");
 }
 
 /* ── component ────────────────────────────────────────── */
@@ -214,6 +234,57 @@ function ServiceCard({
   );
 }
 
+/* ── Step status from execution data ──────────────────── */
+
+function getStepStatus(
+  step: FlowStep,
+  results: Map<string, HealthCheckResult>,
+): { dotColor: string; statusText: string; statusTextColor: string } {
+  // If step has a workflowName, try execution data first
+  if (step.workflowName) {
+    const exec = getLatestExecution(step.workflowName);
+    if (exec) {
+      if (exec.status === "success") {
+        const duration = exec.duration != null ? ` (${exec.duration.toFixed(1)}s)` : "";
+        return {
+          dotColor: "bg-emerald-500",
+          statusText: `Last run: ${relativeTimeShort(exec.startedAt)}, succeeded${duration}`,
+          statusTextColor: "text-emerald-600",
+        };
+      }
+      if (exec.status === "error" || exec.status === "crashed") {
+        return {
+          dotColor: "bg-red-500",
+          statusText: `Last run: ${relativeTimeShort(exec.startedAt)}, FAILED`,
+          statusTextColor: "text-red-600",
+        };
+      }
+      if (exec.status === "running") {
+        return {
+          dotColor: "bg-amber-500",
+          statusText: "Running now\u2026",
+          statusTextColor: "text-amber-600",
+        };
+      }
+      if (exec.status === "waiting") {
+        return {
+          dotColor: "bg-amber-500",
+          statusText: "Waiting\u2026",
+          statusTextColor: "text-amber-600",
+        };
+      }
+    }
+  }
+
+  // Fallback: derive from service status
+  const svcResult = results.get(step.dependsOn);
+  if (!svcResult) return { dotColor: "bg-muted-foreground/40", statusText: "Checking\u2026", statusTextColor: "text-muted-foreground" };
+  if (svcResult.status === "healthy") return { dotColor: "bg-emerald-500", statusText: "OK", statusTextColor: "text-emerald-600" };
+  if (svcResult.status === "down") return { dotColor: "bg-red-500", statusText: svcResult.details ?? "Down", statusTextColor: "text-red-600" };
+  if (svcResult.status === "degraded") return { dotColor: "bg-amber-500", statusText: svcResult.details ?? "Slow", statusTextColor: "text-amber-600" };
+  return { dotColor: "bg-muted-foreground/40", statusText: "Unknown", statusTextColor: "text-muted-foreground" };
+}
+
 /* ── Flow Card ────────────────────────────────────────── */
 
 function FlowCard({
@@ -223,6 +294,8 @@ function FlowCard({
   flow: FlowDef;
   results: Map<string, HealthCheckResult>;
 }) {
+  const [showActivity, setShowActivity] = useState(false);
+
   const allHealthy = flow.steps.every(
     (s) => results.get(s.dependsOn)?.status === "healthy",
   );
@@ -241,6 +314,8 @@ function FlowCard({
       ? "text-red-600"
       : "text-amber-600";
 
+  const recentExecutions = getAllExecutionsForFlow(flow).slice(0, 5);
+
   return (
     <div className="bg-card rounded-xl border border-border p-4">
       <div className="flex items-center gap-2 mb-3">
@@ -249,33 +324,7 @@ function FlowCard({
       </div>
       <div className="flex flex-col gap-1.5">
         {flow.steps.map((step, i) => {
-          const svcResult = results.get(step.dependsOn);
-          const isHealthy = svcResult?.status === "healthy";
-          const isDown = svcResult?.status === "down";
-          const isDegraded = svcResult?.status === "degraded";
-          const dotColor = !svcResult
-            ? "bg-muted-foreground/40"
-            : isHealthy
-              ? "bg-emerald-500"
-              : isDown
-                ? "bg-red-500"
-                : "bg-amber-500";
-          const statusText = !svcResult
-            ? "Checking…"
-            : isHealthy
-              ? "OK"
-              : isDown
-                ? svcResult.details ?? "Down"
-                : isDegraded
-                  ? svcResult.details ?? "Slow"
-                  : "Unknown";
-          const statusTextColor = !svcResult
-            ? "text-muted-foreground"
-            : isHealthy
-              ? "text-emerald-600"
-              : isDown
-                ? "text-red-600"
-                : "text-amber-600";
+          const { dotColor, statusText, statusTextColor } = getStepStatus(step, results);
 
           return (
             <div key={step.label} className="flex items-center gap-2">
@@ -295,6 +344,41 @@ function FlowCard({
           );
         })}
       </div>
+
+      {/* ── Recent activity (collapsible) ─────────────── */}
+      {recentExecutions.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-border">
+          <button
+            type="button"
+            onClick={() => setShowActivity(!showActivity)}
+            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showActivity ? (
+              <ChevronUp className="w-3 h-3" />
+            ) : (
+              <ChevronDown className="w-3 h-3" />
+            )}
+            {showActivity ? "Hide recent activity" : "Show recent activity"}
+          </button>
+          {showActivity && (
+            <div className="mt-2 flex flex-col gap-1 select-text">
+              {recentExecutions.map((exec, i) => {
+                const icon = exec.status === "success" ? "\u2705" : "\u274C";
+                const duration = exec.duration != null ? ` (${exec.duration.toFixed(1)}s)` : "";
+                const statusLabel = exec.status === "success" ? "succeeded" : exec.status;
+                return (
+                  <span
+                    key={`${exec.workflowName}-${exec.startedAt}-${i}`}
+                    className="text-[10px] text-muted-foreground leading-relaxed"
+                  >
+                    {icon} {relativeTimeShort(exec.startedAt)} — {shortWorkflowName(exec.workflowName)} — {statusLabel}{duration}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
