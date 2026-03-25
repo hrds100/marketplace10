@@ -29,6 +29,7 @@ export interface ListingShape {
   investMonthlyProfit?: number;
   investReturns?: number;
   listing_type?: 'rental' | 'sale';
+  bedrooms?: number | null;
 }
 
 interface Props {

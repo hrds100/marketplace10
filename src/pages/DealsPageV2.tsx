@@ -13,6 +13,16 @@ const DealsMap = lazy(() => import('@/components/DealsMap'));
 
 const tabs = ['All', 'Live', 'On Offer', 'Inactive'] as const;
 
+// Normalize property type to: HMO, Flat, House
+function normalizeType(rawType: string | null): string {
+  if (!rawType) return 'House';
+  const t = rawType.toLowerCase();
+  if (t.includes('hmo')) return 'HMO';
+  if (t.includes('flat') || t.includes('apartment') || t.includes('studio')) return 'Flat';
+  // Everything else (house, bungalow, terraced, semi-detached, etc.) → House
+  return 'House';
+}
+
 function toListingShape(p: Tables<'properties'>): ListingShape {
   const daysAgo = Math.max(
     0,
@@ -30,7 +40,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     postcode: p.postcode,
     rent: p.rent_monthly,
     profit: p.profit_est,
-    type: p.type,
+    type: normalizeType(p.type),
     status: p.status as 'live' | 'on-offer' | 'inactive',
     featured: p.featured,
     prime: (p as Record<string, unknown>).prime === true,
@@ -40,6 +50,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     landlordWhatsapp: p.landlord_whatsapp,
     listing_type: ((p as Record<string, unknown>).listing_type as 'rental' | 'sale') || 'rental',
     slug: ((p as Record<string, unknown>).slug as string) || null,
+    bedrooms: p.bedrooms,
   };
 }
 
@@ -74,6 +85,7 @@ export default function DealsPageV2() {
   const [type, setType] = useState('');
   const [sort, setSort] = useState('newest');
   const [listingTypeFilter, setListingTypeFilter] = useState('all');
+  const [bedsFilter, setBedsFilter] = useState('');
   const [page, setPage] = useState(1);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const perPage = 12;
@@ -187,11 +199,15 @@ export default function DealsPageV2() {
     if (city) result = result.filter(l => l.city === city);
     if (type) result = result.filter(l => l.type === type);
     if (listingTypeFilter !== 'all') result = result.filter(l => (l.listing_type || 'rental') === listingTypeFilter);
+    if (bedsFilter) {
+      const beds = Number(bedsFilter);
+      result = result.filter(l => beds >= 5 ? (l.bedrooms || 0) >= 5 : l.bedrooms === beds);
+    }
     if (sort === 'profit') result.sort((a, b) => b.profit - a.profit);
     else if (sort === 'rent') result.sort((a, b) => a.rent - b.rent);
     else result.sort((a, b) => a.daysAgo - b.daysAgo);
     return result;
-  }, [activeTab, city, type, sort, listingTypeFilter, listings, highlightedIds]);
+  }, [activeTab, city, type, sort, listingTypeFilter, bedsFilter, listings, highlightedIds]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const pageListings = filtered.slice((page - 1) * perPage, page * perPage);
@@ -257,7 +273,22 @@ export default function DealsPageV2() {
                 className="input-nfstay h-8 text-xs pr-7 bg-card"
               >
                 <option value="">All types</option>
-                {types.map(t => <option key={t} value={t}>{t}</option>)}
+                <option value="HMO">HMO</option>
+                <option value="Flat">Flat</option>
+                <option value="House">House</option>
+              </select>
+              <select
+                data-feature="DEALS__FILTER_BEDS"
+                value={bedsFilter}
+                onChange={e => { setBedsFilter(e.target.value); setPage(1); }}
+                className="input-nfstay h-8 text-xs pr-7 bg-card"
+              >
+                <option value="">All beds</option>
+                <option value="1">1 bed</option>
+                <option value="2">2 bed</option>
+                <option value="3">3 bed</option>
+                <option value="4">4 bed</option>
+                <option value="5">5+ bed</option>
               </select>
               <select
                 data-feature="DEALS__FILTER_LISTING_TYPE"
