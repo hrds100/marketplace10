@@ -12,10 +12,12 @@ const BRAND = {
 };
 
 const LOGO_HTML = `<div style="text-align:center;padding:0 0 24px;">
-  <span style="display:inline-flex;align-items:center;gap:4px;font-family:'Sora',Inter,system-ui,sans-serif;">
-    <span style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border:2px solid #0A0A0A;border-radius:8px;font-size:18px;font-weight:700;color:#0A0A0A;line-height:1;">nf</span>
-    <span style="font-size:28px;font-weight:400;color:#0A0A0A;letter-spacing:2px;line-height:1;">stay</span>
-  </span>
+  <table cellpadding="0" cellspacing="0" border="0" style="display:inline-table;border-collapse:collapse;font-family:'Sora',Inter,system-ui,sans-serif;">
+    <tr>
+      <td style="width:42px;height:42px;border:2px solid #0A0A0A;border-radius:8px;text-align:center;vertical-align:middle;font-size:18px;font-weight:700;color:#0A0A0A;line-height:42px;">nf</td>
+      <td style="padding-left:4px;font-size:28px;font-weight:400;color:#0A0A0A;letter-spacing:2px;vertical-align:middle;line-height:42px;">stay</td>
+    </tr>
+  </table>
 </div>`;
 
 function layout(title: string, body: string): string {
