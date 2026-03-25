@@ -5,6 +5,10 @@ on:
     - cron: '0 5 * * *'  # 6am UK (BST) — full suite runs once daily
   workflow_dispatch:
 
+concurrency:
+  group: monitoring-full
+  cancel-in-progress: false
+
 jobs:
   run-monitoring:
     runs-on: ubuntu-latest
