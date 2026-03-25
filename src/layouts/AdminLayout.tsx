@@ -4,7 +4,7 @@ import {
   ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap,
   CreditCard, HelpCircle, UserCheck, Settings, Bell, TrendingUp,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
-  LayoutGrid, ArrowLeftRight, Plug, Globe, CalendarCheck, Zap,
+  LayoutGrid, Plug, Globe, CalendarCheck, Zap,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -79,13 +79,24 @@ export default function AdminLayout() {
     <div data-feature="NAV_LAYOUT" className="min-h-screen bg-background">
       {/* Top nav */}
       <nav className="h-[64px] bg-card border-b border-border flex items-center px-6 gap-4">
-        <NfsLogo size="sm" className="flex-shrink-0" />
+        <Link to="/admin" className="flex-shrink-0">
+          <NfsLogo size="sm" />
+        </Link>
 
         {workspace !== 'selector' && (
           <>
-            <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${workspace === 'invest' ? 'bg-amber-500/10 text-amber-600' : workspace === 'booking' ? 'bg-blue-500/10 text-blue-600' : 'bg-primary/10 text-primary'} flex-shrink-0`}>
-              {workspaceLabel}
-            </span>
+            {/* Workspace quick-switch tabs */}
+            <div className="flex items-center gap-1 flex-shrink-0 border-r border-border pr-3 mr-1">
+              <Link to="/admin/marketplace" className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors ${workspace === 'marketplace' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
+                Marketplace
+              </Link>
+              <Link to="/admin/invest" className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors ${workspace === 'invest' ? 'bg-amber-500/10 text-amber-600' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
+                JV
+              </Link>
+              <Link to="/admin/booking" className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors ${workspace === 'booking' ? 'bg-blue-500/10 text-blue-600' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
+                Booking
+              </Link>
+            </div>
 
             <div className="flex gap-1 overflow-x-auto flex-1" style={{ scrollbarWidth: 'none' }}>
               {links.map((l) => {
@@ -119,13 +130,6 @@ export default function AdminLayout() {
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Link
-                data-feature="NAV_LAYOUT__ADMIN_WORKSPACE"
-                to="/admin"
-                className="h-9 px-3 rounded-lg border border-border text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-1.5 whitespace-nowrap"
-              >
-                <ArrowLeftRight className="w-3.5 h-3.5" /> Switch
-              </Link>
               <Link
                 data-feature="NAV_LAYOUT__ADMIN_WORKSPACE"
                 to="/dashboard/deals"
