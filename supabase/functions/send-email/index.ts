@@ -12,7 +12,7 @@ const BRAND = {
 };
 
 const LOGO_URL = 'https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/inv-property-docs/brand/nfstay-email-logo.png';
-const LOGO_HTML = `<div style="text-align:center;padding:0 0 24px;">
+const LOGO_HTML = `<div style="text-align:center;padding:0 0 12px;">
   <a href="https://hub.nfstay.com" style="text-decoration:none;">
     <img src="${LOGO_URL}" alt="nfstay" width="100" style="display:inline-block;width:100px;height:auto;" />
   </a>
@@ -43,7 +43,7 @@ function btn(text: string, href: string): string {
 }
 
 function row(label: string, value: string): string {
-  return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:14px;"><span style="color:#6b7280;">${label}:</span><span style="font-weight:500;color:#111;">${value}</span></div>`;
+  return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:14px;"><span style="color:#6b7280;">${label}: </span><span style="font-weight:500;color:#111;">${value}</span></div>`;
 }
 
 interface EmailConfig {
