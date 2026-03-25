@@ -85,12 +85,33 @@ serve(async (req) => {
       }
     }
 
-    // 4. Insert inv_orders
+    // 4. Map blockchain_property_id → inv_properties.id
+    // Browser sends blockchain_property_id (e.g. 1), DB uses inv_properties.id (e.g. 2)
+    let dbPropertyId = property_id
+    const { data: propByBlockchain } = await supabase
+      .from('inv_properties')
+      .select('id')
+      .eq('blockchain_property_id', property_id)
+      .maybeSingle()
+    if (propByBlockchain?.id) {
+      dbPropertyId = propByBlockchain.id
+    }
+    // Fallback: if no match by blockchain_property_id, try direct id match
+    if (!propByBlockchain) {
+      const { data: propById } = await supabase
+        .from('inv_properties')
+        .select('id')
+        .eq('id', property_id)
+        .maybeSingle()
+      if (propById?.id) dbPropertyId = propById.id
+    }
+
+    // 5. Insert inv_orders
     const { data: order, error: orderErr } = await supabase
       .from('inv_orders')
       .insert({
         user_id: userId,
-        property_id,
+        property_id: dbPropertyId,
         shares_requested: shares,
         amount_paid: amount,
         payment_method: 'crypto_usdc',
@@ -111,7 +132,7 @@ serve(async (req) => {
     let commissionAmount = 0
     if (agentUserId) {
       try {
-        await createCommission(supabase, agentUserId, userId, property_id, amount, orderId)
+        await createCommission(supabase, agentUserId, userId, dbPropertyId, amount, orderId)
         commissionAmount = amount * 0.05 // approximation for email — real rate from createCommission
       } catch (commErr) {
         console.error('Commission creation failed (non-blocking):', commErr)
@@ -122,7 +143,7 @@ serve(async (req) => {
     const { data: propData } = await supabase
       .from('inv_properties')
       .select('title')
-      .eq('id', property_id)
+      .eq('id', dbPropertyId)
       .maybeSingle()
     const propertyTitle = propData?.title || 'Investment Property'
 
@@ -204,7 +225,8 @@ serve(async (req) => {
         tx_hash,
         amount,
         shares,
-        property_id,
+        property_id: dbPropertyId,
+        blockchain_property_id: property_id,
         agent_id: agentUserId,
         wallet: wallet_address,
       },
