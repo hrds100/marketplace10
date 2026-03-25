@@ -251,7 +251,7 @@ export default function AffiliatesPage() {
     toast.success(`${platform} message copied`);
   };
 
-  // Monthly earnings for chart
+  // Monthly earnings for chart — reads from aff_commissions (not aff_events)
   const monthlyEarnings = useMemo(() => {
     const months: Record<string, number> = {};
     const now = new Date();
@@ -259,13 +259,12 @@ export default function AffiliatesPage() {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       months[d.toLocaleString('en-GB', { month: 'short' })] = 0;
     }
-    events.filter((e: { event_type: string }) => e.event_type === 'payment')
-      .forEach((e: { created_at: string; amount: number }) => {
-        const key = new Date(e.created_at).toLocaleString('en-GB', { month: 'short' });
-        if (key in months) months[key] += Number(e.amount) || 0;
-      });
+    myCommissions.forEach((c: { created_at: string; commission_amount: number }) => {
+      const key = new Date(c.created_at).toLocaleString('en-GB', { month: 'short' });
+      if (key in months) months[key] += Number(c.commission_amount) || 0;
+    });
     return Object.entries(months).map(([month, amount]) => ({ month, amount }));
-  }, [events]);
+  }, [myCommissions]);
   const maxEarning = Math.max(...monthlyEarnings.map(m => m.amount), 1);
 
   if (isLoading) {
@@ -470,7 +469,13 @@ export default function AffiliatesPage() {
               { id: 'p4', name: 'Emma L.', position: 4, signups: 9, user_id: '' },
               { id: 'p5', name: 'Michael R.', position: 5, signups: 5, user_id: '' },
             ];
-            const agents = leaderboard.length >= 3 ? leaderboard : placeholder;
+            // Show real agents who have activity, pad with placeholders to fill 5 slots
+            const realAgents = leaderboard.filter((a: { signups?: number; total_earned?: number }) => (a.signups || 0) > 0 || Number(a.total_earned || 0) > 0);
+            const needed = Math.max(0, 5 - realAgents.length);
+            const agents = [
+              ...realAgents.map((a: { id: string; name: string; signups?: number; user_id: string }, i: number) => ({ ...a, position: i + 1 })),
+              ...placeholder.slice(0, needed).map((p, i) => ({ ...p, position: realAgents.length + i + 1 })),
+            ];
             return (
               <div className="space-y-0">
                 {agents.map((a: { id: string; name: string; position: number; signups?: number; user_id: string }) => {
