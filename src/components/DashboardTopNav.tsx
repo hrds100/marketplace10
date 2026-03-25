@@ -191,7 +191,7 @@ export default function DashboardTopNav() {
           </nav>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -239,7 +239,7 @@ function JVPartnersDropdown({ isActive }: { isActive: (path: string) => boolean 
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
