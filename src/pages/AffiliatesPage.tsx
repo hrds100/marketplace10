@@ -635,7 +635,7 @@ export default function AffiliatesPage() {
                               {c.inv_properties?.title || (c.source === 'subscription' ? 'Subscription' : 'Investment')}
                             </p>
                             <p className="text-[11px] text-muted-foreground">
-                              ${Number(c.gross_amount).toFixed(2)} sale · {(Number(c.commission_rate) * 100).toFixed(0)}% rate · {new Date(c.created_at).toLocaleDateString('en-GB')}
+                              ${Number(c.gross_amount).toFixed(2)} sale · {(Number(c.commission_rate) * 100).toFixed(0)}% rate · {new Date(c.created_at).toLocaleDateString('en-GB')} {new Date(c.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
