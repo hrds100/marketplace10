@@ -1,0 +1,40 @@
+name: Critical Monitoring (every 20 min)
+
+on:
+  schedule:
+    # Every 20 min, but GitHub Actions doesn't support "pause hours"
+    # So we run every 20 min and skip 1-5am UK (UTC+1 in BST = 0-4am UTC)
+    - cron: '*/20 0 * * *'    # midnight UTC (1am UK BST)
+    - cron: '*/20 5-23 * * *' # 5am-midnight UTC (6am-1am UK BST)
+  workflow_dispatch:
+
+jobs:
+  critical-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright
+        run: npx playwright install chromium
+      - name: Run critical tests only
+        run: npx playwright test tests/monitoring/suites/suite-critical.spec.ts --config=tests/monitoring/playwright.config.ts --reporter=list
+        env:
+          TEST_BASE_URL: https://hub.nfstay.com
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        continue-on-error: true
+      - name: Upload results
+        if: always()
+        run: |
+          if [ -f tests/monitoring/results/latest.json ]; then
+            curl -X POST "https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/monitoring-results/critical-latest.json" \
+              -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "Content-Type: application/json" \
+              -H "x-upsert: true" \
+              --data-binary @tests/monitoring/results/latest.json || true
+          fi

@@ -2,7 +2,7 @@ name: Monitoring Tests
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '0 5 * * *'  # 6am UK (BST) — full suite runs once daily
   workflow_dispatch:
 
 jobs:
