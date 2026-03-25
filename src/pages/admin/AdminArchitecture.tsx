@@ -1,6 +1,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SystemHealthTab from "@/components/admin/SystemHealthTab";
 import TestMonitorTab from "@/components/admin/TestMonitorTab";
+import PingView from "@/components/admin/PingView";
 
 export default function AdminArchitecture() {
   return (
@@ -11,8 +12,9 @@ export default function AdminArchitecture() {
       <Tabs defaultValue="health" className="mb-8">
         <TabsList>
           <TabsTrigger value="health">System Health</TabsTrigger>
-          <TabsTrigger value="architecture">Architecture</TabsTrigger>
           <TabsTrigger value="tests">Test Monitor</TabsTrigger>
+          <TabsTrigger value="ping">Ping View</TabsTrigger>
+          <TabsTrigger value="architecture">Architecture</TabsTrigger>
         </TabsList>
 
         <TabsContent value="health">
@@ -21,6 +23,12 @@ export default function AdminArchitecture() {
 
         <TabsContent value="tests">
           <TestMonitorTab />
+        </TabsContent>
+
+        <TabsContent value="ping">
+          <div className="bg-gray-950 rounded-2xl p-6 -mx-2 sm:mx-0">
+            <PingView />
+          </div>
         </TabsContent>
 
         <TabsContent value="architecture">
