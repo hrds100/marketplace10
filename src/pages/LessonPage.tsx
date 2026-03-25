@@ -67,6 +67,7 @@ export default function LessonPage() {
   const [chatInput, setChatInput] = useState('');
   const [typing, setTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const autoCompletedRef = useRef(false);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,7 +89,6 @@ export default function LessonPage() {
   const lessonDone = isLessonComplete(mod.id, lesson.id);
 
   // Auto-complete lesson when all steps are done (fire once)
-  const autoCompletedRef = useRef(false);
   useEffect(() => {
     if (allStepsDone && !lessonDone && !autoCompletedRef.current) {
       autoCompletedRef.current = true;
