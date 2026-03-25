@@ -12,9 +12,9 @@ const BRAND = {
 };
 
 const LOGO_HTML = `<div style="text-align:center;padding:0 0 24px;">
-  <span style="display:inline-flex;align-items:center;gap:3px;font-family:'Sora',Inter,system-ui,sans-serif;">
-    <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:2px solid #0A0A0A;border-radius:8px;font-size:16px;font-weight:700;color:#0A0A0A;line-height:1;">nf</span>
-    <span style="font-size:24px;font-weight:400;color:#0A0A0A;letter-spacing:2px;line-height:1;">stay</span>
+  <span style="display:inline-flex;align-items:center;gap:4px;font-family:'Sora',Inter,system-ui,sans-serif;">
+    <span style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border:2px solid #0A0A0A;border-radius:8px;font-size:18px;font-weight:700;color:#0A0A0A;line-height:1;">nf</span>
+    <span style="font-size:28px;font-weight:400;color:#0A0A0A;letter-spacing:2px;line-height:1;">stay</span>
   </span>
 </div>`;
 
