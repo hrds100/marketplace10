@@ -32,8 +32,7 @@ export function useDashboardContext() {
 function TopBar() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  let embeddedWallet: any = null;
-  try { embeddedWallet = useEmbeddedWallet(); } catch { /* hook not available outside ConnectKitProvider */ }
+  const embeddedWallet = useEmbeddedWallet();
   return (
     <header className="dashboard-topbar h-14 bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
       <a href="/dashboard/deals" className="flex items-center" style={{ gap: 3 }}>
