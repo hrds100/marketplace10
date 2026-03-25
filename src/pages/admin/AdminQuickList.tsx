@@ -385,6 +385,9 @@ export default function AdminQuickList() {
                   estimated_nightly_rate: pricing.estimated_nightly_rate,
                   estimated_monthly_revenue: pricing.estimated_monthly_revenue,
                   estimated_profit: pricing.estimated_profit,
+                  // Sync to profit_est and rent_monthly so CRM deals get real values
+                  profit_est: pricing.estimated_profit || 0,
+                  rent_monthly: pricing.estimated_monthly_revenue || 0,
                   estimation_confidence: pricing.confidence,
                   estimation_notes: pricing.notes,
                   airbnb_search_url_7d: pricing.airbnb_url_7d || null,
