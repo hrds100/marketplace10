@@ -104,7 +104,10 @@ test.describe('Critical Flows — runs every 20 min', () => {
   });
 
   test('[CRIT-019] n8n health check', async ({ page }) => {
-    const res = await page.request.get('https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/n8n-health');
+    const anonKey = process.env.SUPABASE_ANON_KEY || '';
+    const res = await page.request.get('https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/n8n-health', {
+      headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` },
+    });
     expect(res.status()).toBe(200);
   });
 
