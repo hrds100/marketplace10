@@ -375,6 +375,8 @@ document.addEventListener('DOMContentLoaded', () => {
     storyActive = true;
     stopAutoCycle();
     hideTooltip();
+    // Stop the pulse rings on send button — user already clicked
+    document.querySelectorAll('.send-pulse-ring').forEach(el => { el.style.animation = 'none'; el.style.opacity = '0'; });
     hideBanner();
     clearMessages();
     clearTypewriter();
