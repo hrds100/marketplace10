@@ -339,138 +339,24 @@ export function useBlockchain() {
         );
         const receipt = await tx.wait();
 
-        // F9: Write confirmed order to Supabase + attribute affiliate commission
-        // CRITICAL: Use user.id from useAuth() hook — NOT supabase.auth.getUser()
-        // The Particle wallet signing process can drop the Supabase auth session,
-        // causing getUser() to return null after the blockchain tx completes.
-        const buyerId = user?.id;
-        const buyerEmail = user?.email || '';
-        const buyerName = user?.user_metadata?.name || buyerEmail.split('@')[0];
-        let agentUserId: string | null = null;
-        let orderId: string | null = null;
-
-        if (!buyerId) {
-          console.error('[F9] No user ID available — cannot record order');
-        } else {
-          try {
-            // Look up referrer from buyer's profile
-            const { data: buyerProfile } = await (supabase.from('profiles') as any)
-              .select('referred_by').eq('id', buyerId).single();
-            if (buyerProfile?.referred_by) {
-              const { data: agentProfile } = await (supabase.from('aff_profiles') as any)
-                .select('user_id').eq('referral_code', buyerProfile.referred_by.toUpperCase()).maybeSingle();
-              agentUserId = agentProfile?.user_id || null;
-            }
-            const { data: orderRow } = await (supabase.from('inv_orders') as any).insert({
-              user_id: buyerId,
-              property_id: propertyId,
-              shares_requested: shares,
-              amount_paid: amountUsdc,
-              payment_method: 'crypto_usdc',
-              status: 'completed',
-              tx_hash: receipt.transactionHash,
-              agent_id: agentUserId,
-            }).select('id').single();
-
-            orderId = orderRow?.id || null;
-
-            // Create affiliate commission if referred
-            if (agentUserId && orderId) {
-              const { data: affRow } = await (supabase.from('aff_profiles') as any)
-                .select('id').eq('user_id', agentUserId).maybeSingle();
-              if (affRow?.id) {
-                const { data: rateSetting } = await (supabase.from('aff_commission_settings') as any)
-                  .select('rate').eq('commission_type', 'investment_first').is('user_id', null).maybeSingle();
-                const rate = rateSetting?.rate || 0.05;
-                const commAmt = amountUsdc * rate;
-                await (supabase.from('aff_commissions') as any).insert({
-                  affiliate_id: affRow.id,
-                  source: 'investment_first',
-                  source_id: orderId,
-                  referred_user_id: buyerId,
-                  property_id: propertyId,
-                  gross_amount: amountUsdc,
-                  commission_rate: rate,
-                  commission_amount: commAmt,
-                  claimable_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-                }).then(() => {}).catch(() => {});
-                // Update agent's aggregate stats
-                const { data: cur } = await (supabase.from('aff_profiles') as any)
-                  .select('total_earned, pending_balance, paid_users').eq('id', affRow.id).single();
-                if (cur) {
-                  await (supabase.from('aff_profiles') as any).update({
-                    total_earned: (Number(cur.total_earned) || 0) + commAmt,
-                    pending_balance: (Number(cur.pending_balance) || 0) + commAmt,
-                    paid_users: (cur.paid_users || 0) + 1,
-                  }).eq('id', affRow.id);
-                }
-              }
-            }
-          } catch (dbErr) {
-            console.error('[F9] Supabase order record failed (tx already confirmed):', dbErr);
-          }
-
-          // Emails + notifications for crypto purchase
-          try {
-            const { data: propData } = await (supabase.from('inv_properties') as any).select('title').eq('id', propertyId).maybeSingle();
-            const propertyTitle = propData?.title || 'Investment Property';
-
-            // Send 3 emails: buyer, admin, agent
-            supabase.functions.invoke('send-email', {
-              body: { type: 'inv-purchase-buyer', data: { email: buyerEmail, property: propertyTitle, amount: amountUsdc, shares } },
-            }).catch(() => {});
-            supabase.functions.invoke('send-email', {
-              body: { type: 'inv-purchase-admin', data: { buyerName, buyerEmail, property: propertyTitle, amount: amountUsdc, shares, agentName: agentUserId ? 'Affiliate' : null, commission: agentUserId ? amountUsdc * 0.05 : null } },
-            }).catch(() => {});
-            if (agentUserId) {
-              const { data: agentInfo } = await (supabase.from('profiles') as any).select('email, name').eq('id', agentUserId).maybeSingle();
-              if (agentInfo?.email) {
-                supabase.functions.invoke('send-email', {
-                  body: { type: 'inv-purchase-agent', data: { agentEmail: agentInfo.email, property: propertyTitle, amount: amountUsdc, commission: amountUsdc * 0.05, rate: 5, claimableDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB') } },
-                }).catch(() => {});
-              }
-            }
-
-            // In-app notifications
-            (supabase.from('notifications') as any).insert({
-              user_id: buyerId, type: 'purchase_confirmed', title: 'Investment confirmed',
-              body: `Your $${amountUsdc} crypto investment in ${propertyTitle} is confirmed. Tx: ${receipt.transactionHash.slice(0, 10)}...`,
-            }).then(() => {}).catch(() => {});
-            (supabase.from('notifications') as any).insert({
-              type: 'purchase_confirmed', title: 'New crypto investment',
-              body: `${buyerName} (${buyerEmail}) invested $${amountUsdc} in ${propertyTitle} via crypto.`,
-            }).then(() => {}).catch(() => {});
-            if (agentUserId) {
-              (supabase.from('notifications') as any).insert({
-                user_id: agentUserId, type: 'commission_earned', title: 'You earned commission!',
-                body: `You earned $${(amountUsdc * 0.05).toFixed(2)} from a share purchase in ${propertyTitle}.`,
-              }).then(() => {}).catch(() => {});
-            }
-          } catch (notifyErr) {
-            console.error('[N4] Email/notification failed (tx already confirmed):', notifyErr);
-          }
-        }
-
-        // N4: Notify n8n of purchase confirmation (non-blocking)
+        // F9: Record order server-side via edge function (no auth session dependency)
+        // The Particle wallet signing process drops the Supabase auth session,
+        // so all DB writes happen server-side in inv-crypto-confirm.
         try {
-          const n8nNotifyUrl = import.meta.env.VITE_N8N_INVEST_NOTIFY_WEBHOOK_URL;
-          if (n8nNotifyUrl) {
-            await fetch(n8nNotifyUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                event_type: 'purchase_confirmed',
-                wallet_address: address,
-                property_id: propertyId,
-                shares,
-                amount_usd: amountUsdc,
-                tx_hash: receipt.transactionHash,
-                agent_user_id: agentUserId,
-              }),
-            });
-          }
-        } catch (notifyErr) {
-          console.error('[N4] n8n notify failed (purchase already confirmed):', notifyErr);
+          const { data: confirmData, error: confirmErr } = await supabase.functions.invoke('inv-crypto-confirm', {
+            body: {
+              tx_hash: receipt.transactionHash,
+              wallet_address: address,
+              property_id: propertyId,
+              shares,
+              amount: amountUsdc,
+            },
+          });
+          if (confirmErr) console.error('[F9] inv-crypto-confirm error:', confirmErr);
+          else if (confirmData?.error) console.error('[F9] inv-crypto-confirm returned error:', confirmData.error);
+          else console.log('[F9] Order confirmed server-side:', confirmData?.order_id);
+        } catch (confirmErr) {
+          console.error('[F9] inv-crypto-confirm call failed (tx already confirmed on-chain):', confirmErr);
         }
 
         setLoading(false);
