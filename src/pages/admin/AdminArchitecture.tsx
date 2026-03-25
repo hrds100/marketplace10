@@ -1,5 +1,6 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SystemHealthTab from "@/components/admin/SystemHealthTab";
+import ActivityTerminal from "@/components/admin/ActivityTerminal";
 import { lazy, Suspense } from "react";
 
 const TestMonitorTab = lazy(() => import("@/components/admin/TestMonitorTab"));
@@ -128,6 +129,10 @@ export default function AdminArchitecture() {
 
         </TabsContent>
       </Tabs>
+
+      {/* Bottom padding so content isn't hidden behind the fixed terminal */}
+      <div className="h-12" />
+      <ActivityTerminal />
     </div>
   );
 }

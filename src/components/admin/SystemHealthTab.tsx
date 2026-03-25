@@ -30,6 +30,7 @@ import {
   getLatestExecution,
   getAllExecutionsForFlow,
 } from "@/lib/healthChecks";
+import { logActivity } from "@/lib/activityLog";
 
 /* ── icon map ─────────────────────────────────────────── */
 
@@ -84,6 +85,19 @@ export default function SystemHealthTab() {
     setLastRefresh(new Date());
     setSecondsAgo(0);
     setLoading(false);
+
+    // Log each service result to the activity terminal
+    for (const svc of MARKETPLACE_SERVICES) {
+      const r = map.get(svc.key);
+      if (!r) continue;
+      if (r.status === "healthy") {
+        logActivity("success", "System Health", `${svc.name} — Connected`);
+      } else if (r.status === "degraded") {
+        logActivity("info", "System Health", `${svc.name} — Degraded${r.details ? `: ${r.details}` : ""}`);
+      } else {
+        logActivity("error", "System Health", `${svc.name} — Down${r.details ? `: ${r.details}` : ""}`);
+      }
+    }
   }, []);
 
   /* initial fetch + 30 s auto-refresh */
