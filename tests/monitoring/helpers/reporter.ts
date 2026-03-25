@@ -1,6 +1,7 @@
 import type { Reporter, TestCase, TestResult, FullResult } from '@playwright/test/reporter';
 import * as fs from 'fs';
 import * as path from 'path';
+import { sendFailureAlert } from './alerts';
 
 interface TestPointResult {
   id: string;
@@ -51,6 +52,22 @@ class MonitoringReporter implements Reporter {
 
     fs.writeFileSync(path.join(outputDir, filename), JSON.stringify(summary, null, 2));
     fs.writeFileSync(path.join(outputDir, 'latest.json'), JSON.stringify(summary, null, 2));
+
+    // Send email alerts for failures in CI only
+    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+    if (isCI) {
+      const failures = this.results.filter(r => r.status === 'failed');
+      for (const f of failures) {
+        await sendFailureAlert({
+          testId: f.id,
+          testName: f.name,
+          route: f.route,
+          expected: f.expected || '',
+          actual: f.actual || f.error || '',
+          timestamp: f.timestamp,
+        });
+      }
+    }
   }
 }
 

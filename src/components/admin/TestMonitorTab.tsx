@@ -45,8 +45,15 @@ type StatusFilter = "all" | "failing" | "passing" | "stale";
 
 /* ── component ────────────────────────────────────────── */
 
+const RESULTS_URL =
+  "https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/monitoring-results/latest.json";
+const DISPATCH_URL =
+  "https://api.github.com/repos/hrds100/marketplace10/actions/workflows/monitoring-tests.yml/dispatches";
+
 export default function TestMonitorTab() {
-  const [tests] = useState<TestResult[]>(MOCK_TEST_RESULTS);
+  const [tests, setTests] = useState<TestResult[]>(MOCK_TEST_RESULTS);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [runningNow, setRunningNow] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [snoozedIds, setSnoozedIds] = useState<Set<string>>(new Set());
@@ -57,6 +64,56 @@ export default function TestMonitorTab() {
     return localStorage.getItem("testmonitor_system_prompt") || DEFAULT_AI_SYSTEM_PROMPT;
   });
   const [promptSaved, setPromptSaved] = useState(false);
+
+  // Fetch real results from Supabase Storage on mount
+  useEffect(() => {
+    fetch(RESULTS_URL)
+      .then((res) => {
+        if (!res.ok) throw new Error("not found");
+        return res.json();
+      })
+      .then((data) => {
+        if (data?.results?.length) {
+          const mapped: TestResult[] = data.results.map(
+            (r: { id: string; name: string; suite: string; route: string; status: string; duration: number; error?: string; expected?: string; actual?: string; timestamp: string }) => ({
+              id: r.id,
+              name: r.name,
+              suite: r.suite,
+              route: r.route,
+              status: r.status === "passed" ? "passing" : r.status === "failed" ? "failing" : "stale",
+              duration: r.duration,
+              errorMessage: r.error,
+              expected: r.expected,
+              actual: r.actual,
+              timestamp: r.timestamp,
+            })
+          );
+          setTests(mapped);
+        }
+        if (data?.timestamp) setLastUpdated(data.timestamp);
+      })
+      .catch(() => {
+        // Keep mock data on failure
+      });
+  }, []);
+
+  const triggerWorkflow = useCallback(async () => {
+    setRunningNow(true);
+    try {
+      await fetch(DISPATCH_URL, {
+        method: "POST",
+        headers: {
+          Accept: "application/vnd.github+json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ref: "main" }),
+      });
+    } catch {
+      // silent — user will see results on next poll
+    } finally {
+      setTimeout(() => setRunningNow(false), 3000);
+    }
+  }, []);
 
   // Read URL params on mount
   useEffect(() => {
@@ -179,19 +236,23 @@ export default function TestMonitorTab() {
             {totalPassing.toLocaleString()} passing
           </span>
           <span className="text-xs text-muted-foreground">
-            Last run: {relativeTime(tests[0]?.timestamp || new Date().toISOString())}
+            Last run: {relativeTime(lastUpdated || tests[0]?.timestamp || new Date().toISOString())}
+            {lastUpdated && (
+              <span className="ml-1 text-[10px]">
+                ({new Date(lastUpdated).toLocaleString()})
+              </span>
+            )}
           </span>
         </div>
         <Button
           size="sm"
           variant="outline"
           className="gap-1.5"
-          onClick={() => {
-            // Will call webhook when wired
-          }}
+          disabled={runningNow}
+          onClick={triggerWorkflow}
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Run Now
+          <RefreshCw className={`w-3.5 h-3.5 ${runningNow ? "animate-spin" : ""}`} />
+          {runningNow ? "Triggered..." : "Run Now"}
         </Button>
       </div>
 

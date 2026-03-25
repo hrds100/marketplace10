@@ -1,0 +1,44 @@
+name: Monitoring Tests
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run-monitoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright
+        run: npx playwright install chromium
+      - name: Run monitoring tests
+        run: npx playwright test --config=tests/monitoring/playwright.config.ts --reporter=list
+        env:
+          TEST_BASE_URL: https://hub.nfstay.com
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+        continue-on-error: true
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: monitoring-results-${{ github.run_id }}
+          path: tests/monitoring/results/latest.json
+          retention-days: 7
+      - name: Upload results to Supabase Storage
+        if: always()
+        run: |
+          if [ -f tests/monitoring/results/latest.json ]; then
+            curl -X POST "https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/monitoring-results/latest.json" \
+              -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "Content-Type: application/json" \
+              -H "x-upsert: true" \
+              --data-binary @tests/monitoring/results/latest.json || echo "Upload failed - storage bucket may not exist yet"
+          fi
