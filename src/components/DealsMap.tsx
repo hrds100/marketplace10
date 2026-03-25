@@ -51,8 +51,12 @@ async function geocodePostcode(postcode: string, city: string): Promise<[number,
   } catch {
     // fall through
   }
+  // Match full city string or just the city name (e.g. "Liverpool, United Kingdom" → "liverpool")
   const cityKey = city.toLowerCase().trim();
-  return cityFallbacks[cityKey] ?? null;
+  if (cityFallbacks[cityKey]) return cityFallbacks[cityKey];
+  // Try first word/segment before comma (handles "Liverpool, United Kingdom")
+  const firstPart = cityKey.split(',')[0].trim();
+  return cityFallbacks[firstPart] ?? null;
 }
 
 // Load Google Maps script once
