@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe, Pencil, X, Loader2 } from 'lucide-react';
-import { useMyAffiliateProfile, useInvestProperties } from '@/hooks/useInvestData';
+import { useMyAffiliateProfile, useInvestProperties, useMyCommissions } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -229,6 +229,7 @@ export default function AffiliatesPage() {
 
   const referralLink = profile ? `${BASE_URL}/signup?ref=${profile.referral_code}` : '';
   const { data: investProperties } = useInvestProperties();
+  const { data: myCommissions = [] } = useMyCommissions();
   const activeProperty = investProperties?.[0] || null;
   const investReferralLink = profile && activeProperty
     ? `${BASE_URL}/dashboard/invest/marketplace?ref=${profile.referral_code}&property=${activeProperty.id}`
@@ -353,7 +354,7 @@ export default function AffiliatesPage() {
               onClick={() => setCalcMode('jv')}
               className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${calcMode === 'jv' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
-              JV Deals (10%)
+              JV Deals (5%)
             </button>
           </div>
 
@@ -442,15 +443,15 @@ export default function AffiliatesPage() {
               <div className="flex justify-between">
                 <div>
                   <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Per deal</div>
-                  <div className="text-2xl font-extrabold text-emerald-600">£{(calcDealAmount * 0.10).toFixed(0)}</div>
+                  <div className="text-2xl font-extrabold text-emerald-600">£{(calcDealAmount * 0.05).toFixed(0)}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Total ({calcDeals} deals)</div>
-                  <div className="text-2xl font-extrabold text-foreground">£{(calcDealAmount * 0.10 * calcDeals).toFixed(0)}</div>
+                  <div className="text-2xl font-extrabold text-foreground">£{(calcDealAmount * 0.05 * calcDeals).toFixed(0)}</div>
                 </div>
               </div>
               <p className="text-[11px] text-muted-foreground mt-3">
-                Earn <strong>10% commission</strong> on JV property deals. Average deal value is £6,000. <span className="text-amber-600 font-medium">Coming soon.</span>
+                Earn <strong>5% commission</strong> on JV property deals. Average deal value is £6,000.
               </p>
             </>
           )}
@@ -576,6 +577,40 @@ export default function AffiliatesPage() {
                 </div>
               </div>
 
+              {/* Commission ledger */}
+              {myCommissions.length > 0 && (
+                <div className="bg-card border border-border rounded-2xl p-5">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Your Commissions</h3>
+                  <div className="space-y-2">
+                    {myCommissions.map((c: { id: string; source: string; gross_amount: number; commission_amount: number; commission_rate: number; status: string; created_at: string; inv_properties?: { title: string } }) => (
+                      <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1E9A80]/10 flex-shrink-0">
+                          <CreditCard className="w-4 h-4 text-[#1E9A80]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium text-foreground truncate">
+                            {c.inv_properties?.title || (c.source === 'subscription' ? 'Subscription' : 'Investment')}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            £{Number(c.gross_amount).toFixed(2)} sale · {(Number(c.commission_rate) * 100).toFixed(0)}% rate · {new Date(c.created_at).toLocaleDateString('en-GB')}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-bold text-foreground">£{Number(c.commission_amount).toFixed(2)}</p>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                            c.status === 'claimable' ? 'bg-emerald-100 text-emerald-700' :
+                            c.status === 'claimed' || c.status === 'paid' ? 'bg-blue-100 text-blue-700' :
+                            'bg-amber-100 text-amber-700'
+                          }`}>
+                            {c.status === 'pending' ? 'Pending' : c.status === 'claimable' ? 'Claimable' : c.status === 'claimed' ? 'Claimed' : c.status === 'paid' ? 'Paid' : c.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Activity feed */}
               <div data-feature="AFFILIATES__EVENTS" className="bg-card border border-border rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-foreground mb-3">Recent Activity</h3>
@@ -653,7 +688,7 @@ export default function AffiliatesPage() {
                 <h3 className="text-sm font-semibold text-foreground mb-3">Commission Rates</h3>
                 {[
                   { label: 'Subscriptions', rate: '40%', desc: 'Monthly, Annual, or Lifetime', active: true },
-                  { label: 'JV Deals', rate: '10%', desc: 'Featured property partnerships', active: false },
+                  { label: 'JV Deals', rate: '5%', desc: 'Featured property partnerships', active: true },
                 ].map(c => (
                   <div key={c.label} className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
                     <div>

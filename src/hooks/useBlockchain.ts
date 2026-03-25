@@ -366,6 +366,7 @@ export function useBlockchain() {
               const { data: rateSetting } = await (supabase.from('aff_commission_settings') as any)
                 .select('rate').eq('commission_type', 'investment_first').is('user_id', null).maybeSingle();
               const rate = rateSetting?.rate || 0.05;
+              const commAmt = amountUsdc * rate;
               await (supabase.from('aff_commissions') as any).insert({
                 affiliate_id: affRow.id,
                 source: 'investment_first',
@@ -374,9 +375,19 @@ export function useBlockchain() {
                 property_id: propertyId,
                 gross_amount: amountUsdc,
                 commission_rate: rate,
-                commission_amount: amountUsdc * rate,
+                commission_amount: commAmt,
                 claimable_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
               }).then(() => {}).catch(() => {});
+              // Update agent's aggregate stats
+              const { data: cur } = await (supabase.from('aff_profiles') as any)
+                .select('total_earned, pending_balance, paid_users').eq('id', affRow.id).single();
+              if (cur) {
+                await (supabase.from('aff_profiles') as any).update({
+                  total_earned: (Number(cur.total_earned) || 0) + commAmt,
+                  pending_balance: (Number(cur.pending_balance) || 0) + commAmt,
+                  paid_users: (cur.paid_users || 0) + 1,
+                }).eq('id', affRow.id);
+              }
             }
           }
         } catch (dbErr) {

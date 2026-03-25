@@ -285,6 +285,28 @@ export function useMyAffiliateProfile() {
   });
 }
 
+export function useMyCommissions() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['my_aff_commissions', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      // Get affiliate id first
+      const { data: aff } = await (supabase.from('aff_profiles') as any)
+        .select('id').eq('user_id', user.id).maybeSingle();
+      if (!aff?.id) return [];
+      const { data, error } = await (supabase.from('aff_commissions') as any)
+        .select('id, source, gross_amount, commission_rate, commission_amount, status, claimable_at, created_at, property_id, inv_properties(title)')
+        .eq('affiliate_id', aff.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+}
+
 // ── Commissions ────────────────────────────────────────────────────────
 
 export function useAllCommissions() {

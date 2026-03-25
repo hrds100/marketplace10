@@ -945,6 +945,24 @@ async function createCommission(
       commission_amount: commissionAmount,
       claimable_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     })
+
+    // Update agent's aggregate stats
+    const { data: current } = await supabase
+      .from('aff_profiles')
+      .select('total_earned, pending_balance, paid_users')
+      .eq('id', affProfile.id)
+      .single()
+
+    if (current) {
+      await supabase
+        .from('aff_profiles')
+        .update({
+          total_earned: (Number(current.total_earned) || 0) + commissionAmount,
+          pending_balance: (Number(current.pending_balance) || 0) + commissionAmount,
+          paid_users: (current.paid_users || 0) + 1,
+        })
+        .eq('id', affProfile.id)
+    }
   } catch (e) {
     // Don't fail the webhook if commission creation fails
     console.log('Commission creation failed:', e)

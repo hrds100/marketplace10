@@ -185,4 +185,12 @@ test.describe('Affiliate Consolidation — aff_profiles is the single source of 
     const refValue = await page.evaluate(() => localStorage.getItem('nfstay_ref'));
     expect(refValue).toBe('AGEN0W');
   });
+
+  test('8. Affiliates page shows 5% JV rate (not 10%)', async ({ page }) => {
+    await page.goto(`${BASE}/dashboard/affiliates`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(5000);
+    const body = await page.locator('body').textContent() ?? '';
+    expect(body).toContain('5%');
+    expect(body).not.toContain('Coming soon');
+  });
 });
