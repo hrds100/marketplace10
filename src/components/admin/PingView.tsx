@@ -37,10 +37,11 @@ import { logActivity } from "@/lib/activityLog";
 
 /* ── constants ──────────────────────────────────────── */
 
-const RESULTS_URL =
-  "https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/monitoring-results/latest.json";
-const BOOKINGSITE_RESULTS_URL =
-  "https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/monitoring-results/bookingsite-latest.json";
+const RESULTS_URLS = [
+  "https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/monitoring-results/latest.json",
+  "https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/monitoring-results/critical-latest.json",
+  "https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/monitoring-results/bookingsite-latest.json",
+];
 const DISPATCH_URL =
   "https://api.github.com/repos/hrds100/marketplace10/actions/workflows/monitoring-tests.yml/dispatches";
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -134,14 +135,22 @@ export default function PingView() {
         .catch(() => ({ mapped: [] as TestResult[], ts: null as string | null }));
 
     logActivity("info", "Ping View", "Auto-refresh triggered");
-    Promise.all([fetchOne(RESULTS_URL), fetchOne(BOOKINGSITE_RESULTS_URL)]).then(
-      ([mkt, bks]) => {
-        const combined = [...mkt.mapped, ...bks.mapped];
+    Promise.all(RESULTS_URLS.map(fetchOne)).then(
+      (results) => {
+        const byId = new Map<string, TestResult>();
+        for (const r of results) {
+          for (const t of r.mapped) {
+            const existing = byId.get(t.id);
+            if (!existing || (t.timestamp && existing.timestamp && t.timestamp > existing.timestamp)) {
+              byId.set(t.id, t);
+            }
+          }
+        }
+        const combined = Array.from(byId.values());
         if (combined.length) setTests(combined);
-        const latestTs = [mkt.ts, bks.ts].filter(Boolean).sort().pop() || null;
+        const latestTs = results.map(r => r.ts).filter(Boolean).sort().pop() || null;
         if (latestTs) setLastUpdated(latestTs);
 
-        // Log to activity terminal
         const suites = new Set(combined.map((t) => t.suite));
         logActivity("success", "Ping View", `All clusters loaded (${suites.size} suites)`);
       }
