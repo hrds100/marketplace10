@@ -26,6 +26,7 @@ import {
   DEFAULT_AI_SYSTEM_PROMPT,
   type TestResult,
 } from "./mockTestResults";
+import { logActivity } from "@/lib/activityLog";
 
 /* ── helpers ──────────────────────────────────────────── */
 
@@ -92,12 +93,26 @@ export default function TestMonitorTab() {
         .then(mapResults)
         .catch(() => ({ mapped: [] as TestResult[], ts: null as string | null }));
 
+    logActivity("info", "Test Monitor", "Fetching results from Supabase storage\u2026");
     Promise.all([fetchOne(RESULTS_URL), fetchOne(BOOKINGSITE_RESULTS_URL)]).then(
       ([mkt, bks]) => {
         const combined = [...mkt.mapped, ...bks.mapped];
         if (combined.length) setTests(combined);
         const latestTs = [mkt.ts, bks.ts].filter(Boolean).sort().pop() || null;
         if (latestTs) setLastUpdated(latestTs);
+
+        // Log summary to activity terminal
+        const passingCount = combined.filter((t) => t.status === "passing").length;
+        const failingCount = combined.filter((t) => t.status === "failing").length;
+        logActivity(
+          failingCount > 0 ? "error" : "success",
+          "Test Monitor",
+          `Loaded ${combined.length.toLocaleString()} test results (${passingCount.toLocaleString()} passing, ${failingCount} failing)`
+        );
+        // Log each failure
+        for (const t of combined.filter((t) => t.status === "failing")) {
+          logActivity("error", "Test Monitor", `${t.id} FAILING — ${t.errorMessage || t.actual || "unknown error"}`);
+        }
       }
     );
   }, []);

@@ -33,6 +33,7 @@ import {
   DEFAULT_AI_SYSTEM_PROMPT,
   type TestResult,
 } from "./mockTestResults";
+import { logActivity } from "@/lib/activityLog";
 
 /* ── constants ──────────────────────────────────────── */
 
@@ -132,12 +133,17 @@ export default function PingView() {
         .then(mapResults)
         .catch(() => ({ mapped: [] as TestResult[], ts: null as string | null }));
 
+    logActivity("info", "Ping View", "Auto-refresh triggered");
     Promise.all([fetchOne(RESULTS_URL), fetchOne(BOOKINGSITE_RESULTS_URL)]).then(
       ([mkt, bks]) => {
         const combined = [...mkt.mapped, ...bks.mapped];
         if (combined.length) setTests(combined);
         const latestTs = [mkt.ts, bks.ts].filter(Boolean).sort().pop() || null;
         if (latestTs) setLastUpdated(latestTs);
+
+        // Log to activity terminal
+        const suites = new Set(combined.map((t) => t.suite));
+        logActivity("success", "Ping View", `All clusters loaded (${suites.size} suites)`);
       }
     );
   }, []);
@@ -188,6 +194,7 @@ export default function PingView() {
   // Simulate ping animation on a node
   const simulatePing = useCallback(
     (ids: string[]) => {
+      logActivity("action", "Ping View", "Manual ping triggered by admin");
       setPingingIds(new Set(ids));
       setTimeout(() => {
         setPingingIds(new Set());
