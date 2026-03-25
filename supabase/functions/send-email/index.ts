@@ -276,6 +276,25 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
         `),
       };
 
+    case 'inv-order-approved-buyer':
+      return {
+        to: String(data.email),
+        subject: `Shares allocated — ${data.property || 'nfstay'}`,
+        html: layout('Your shares have been allocated', `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            Great news! Your investment order has been approved and your shares are now in your portfolio.
+          </p>
+          ${row('Property', String(data.property || 'Investment Property'))}
+          ${row('Shares', String(data.shares || '—'))}
+          ${row('Amount', `$${Number(data.amount || 0).toFixed(2)}`)}
+          ${row('Transaction', data.txHash ? `<a href="https://bscscan.com/tx/${data.txHash}" style="color:${BRAND.color};text-decoration:none;">${String(data.txHash).slice(0, 10)}…</a>` : 'Confirmed')}
+          <p style="font-size:13px;color:#6b7280;line-height:1.6;margin:16px 0 0;">
+            Your shares are recorded on the blockchain. You can view your holdings and track returns in your portfolio.
+          </p>
+          ${btn('View Your Portfolio →', `${BASE_URL}/dashboard/invest/portfolio`)}
+        `),
+      };
+
     default:
       throw new Error(`Unknown email type: ${type}`);
   }

@@ -96,7 +96,7 @@ serve(async (req: Request) => {
     // Fetch buyer wallet from profiles
     const { data: buyerProfile } = await supabase
       .from('profiles')
-      .select('wallet_address')
+      .select('wallet_address, email')
       .eq('id', order.user_id)
       .single()
     const recipientWallet = buyerProfile?.wallet_address || order.wallet_address
@@ -217,6 +217,27 @@ serve(async (req: Request) => {
     await supabase.from('inv_properties').update({
       shares_sold: (property.shares_sold || 0) + shares,
     }).eq('id', order.property_id)
+
+    // Email buyer: shares allocated
+    const buyerEmail = buyerProfile?.email || (await supabase.from('profiles').select('email').eq('id', order.user_id).maybeSingle()).data?.email
+    if (buyerEmail) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      fetch(`${supabaseUrl}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'inv-order-approved-buyer',
+          data: {
+            email: buyerEmail,
+            property: property.title || `Property #${order.property_id}`,
+            shares,
+            amount: amountPaid,
+            txHash,
+          },
+        }),
+      }).catch(() => {})
+    }
 
     // Write audit log
     await supabase.from('payout_audit_log').insert({
