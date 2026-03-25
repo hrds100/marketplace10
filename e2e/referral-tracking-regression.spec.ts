@@ -142,4 +142,29 @@ test.describe('Referral Tracking — Regression Tests', () => {
       expect(res.status).toBeLessThan(500);
     }
   });
+
+  test('8. inv-samcart-webhook is alive and responding (NOT returning NOT_FOUND)', async () => {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/inv-samcart-webhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    // Should return 400 (invalid payload) NOT 404 (function not found)
+    expect(res.status).not.toBe(404);
+    const body = await res.json();
+    expect(body.code).not.toBe('NOT_FOUND');
+    expect(body.code).not.toBe('BOOT_ERROR');
+  });
+
+  test('9. inv-approve-order is alive and responding', async () => {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/inv-approve-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).not.toBe(404);
+    const body = await res.json();
+    expect(body.code).not.toBe('NOT_FOUND');
+    expect(body.code).not.toBe('BOOT_ERROR');
+  });
 });
