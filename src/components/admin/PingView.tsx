@@ -88,7 +88,7 @@ interface ClusterData {
 /* ── main component ──────────────────────────────────── */
 
 export default function PingView() {
-  const [tests, setTests] = useState<TestResult[]>(MOCK_TEST_RESULTS);
+  const [tests, setTests] = useState<TestResult[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [runningNow, setRunningNow] = useState(false);
   const [query, setQuery] = useState("");

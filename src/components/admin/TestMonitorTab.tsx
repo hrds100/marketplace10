@@ -53,7 +53,7 @@ const DISPATCH_URL =
   "https://api.github.com/repos/hrds100/marketplace10/actions/workflows/monitoring-tests.yml/dispatches";
 
 export default function TestMonitorTab() {
-  const [tests, setTests] = useState<TestResult[]>(MOCK_TEST_RESULTS);
+  const [tests, setTests] = useState<TestResult[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [runningNow, setRunningNow] = useState(false);
   const [query, setQuery] = useState("");
