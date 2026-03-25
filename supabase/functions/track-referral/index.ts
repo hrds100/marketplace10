@@ -30,7 +30,7 @@ serve(async (req) => {
     // Find affiliate by code (current or previous)
     let affiliate = await client
       .from('aff_profiles')
-      .select('id, user_id, link_clicks, signups')
+      .select('id, user_id, referral_code, link_clicks, signups')
       .eq('referral_code', code.toUpperCase())
       .maybeSingle()
       .then((r: any) => r.data);
@@ -39,7 +39,7 @@ serve(async (req) => {
       // Fallback: check previous_codes (agent may have changed their code)
       affiliate = await client
         .from('aff_profiles')
-        .select('id, user_id, link_clicks, signups')
+        .select('id, user_id, referral_code, link_clicks, signups')
         .contains('previous_codes', [code.toUpperCase()])
         .maybeSingle()
         .then((r: any) => r.data);

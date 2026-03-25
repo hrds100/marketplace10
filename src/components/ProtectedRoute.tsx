@@ -6,6 +6,18 @@ import { supabase } from '@/integrations/supabase/client';
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
+
+  // Capture ?ref= before redirecting to signin (invest page, etc.)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      localStorage.setItem('nfstay_ref', ref.toUpperCase());
+      fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co'}/functions/v1/track-referral?code=${encodeURIComponent(ref)}`, {
+        method: 'POST',
+      }).catch(() => {});
+    }
+  }, [location.search]);
   const [status, setStatus] = useState<'loading' | 'verified' | 'unverified'>(
     'loading'
   );
