@@ -24,6 +24,7 @@ _Last updated: 2026-03-24_
 | Stock Photos | Pexels | api.pexels.com | - | VITE_PEXELS_API_KEY | src/lib/pexels.ts |
 | Email | Resend | api.resend.com | - | RESEND_API_KEY (Supabase secret) | supabase/functions/send-email/ |
 | Error Monitoring | Sentry | nfstay.sentry.io | - | VITE_SENTRY_DSN | src/main.tsx |
+| Error Monitoring (bookingsite) | Sentry | nfstay.sentry.io (project: nfstay-booking) | - | VITE_SENTRY_DSN | bookingsite/src/lib/sentry.ts + src/main.tsx |
 | Uptime Monitoring | UptimeRobot | uptimerobot.com | - | - | hub.nfstay.com/api/health |
 | CI Pipeline | GitHub Actions | github.com/hrds100/marketplace10/actions | - | - | `.github/workflows/ci.yml` (typecheck + test + lint) |
 | Health Check | Supabase Edge Fn | hub.nfstay.com/api/health | - | - | supabase/functions/health/index.ts |
