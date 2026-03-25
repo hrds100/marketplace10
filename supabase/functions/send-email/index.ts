@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
-const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'hugo@nfstay.com';
+const ADMIN_EMAILS = (Deno.env.get('ADMIN_EMAIL') || 'hugo@nfstay.com,chris@nfstay.com').split(',').map(e => e.trim());
 const FROM_EMAIL = 'nfstay <notifications@hub.nfstay.com>';
 const BASE_URL = 'https://hub.nfstay.com';
 
@@ -58,7 +58,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     // ─── ADMIN EMAILS ──────────────────────────────────────
     case 'new-deal-admin':
       return {
-        to: ADMIN_EMAIL,
+        to: ADMIN_EMAILS,
         subject: `New Deal Submitted - ${data.city} ${data.type}`,
         html: layout('New deal submitted', `
           ${row('Property', String(data.name))}
@@ -72,7 +72,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
 
     case 'new-signup-admin':
       return {
-        to: ADMIN_EMAIL,
+        to: ADMIN_EMAILS,
         subject: `New User - ${data.name || data.email}`,
         html: layout('New user signed up', `
           ${row('Name', String(data.name || '-'))}
@@ -172,7 +172,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     // ─── AFFILIATE EMAILS ────────────────────────────────
     case 'payout-requested-admin':
       return {
-        to: ADMIN_EMAIL,
+        to: ADMIN_EMAILS,
         subject: `Payout Request - ${data.name} (£${Number(data.amount).toFixed(2)})`,
         html: layout('Payout Requested', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
@@ -262,7 +262,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
 
     case 'inv-purchase-admin':
       return {
-        to: ADMIN_EMAIL,
+        to: ADMIN_EMAILS,
         subject: `New investment — $${Number(data.amount || 0).toFixed(2)} from ${data.buyerName || data.buyerEmail || 'Unknown'}`,
         html: layout('New investment purchase', `
           ${row('Buyer', String(data.buyerName || data.buyerEmail || '—'))}

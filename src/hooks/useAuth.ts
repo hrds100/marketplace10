@@ -9,7 +9,7 @@ interface AuthState {
   isAdmin: boolean;
 }
 
-const ADMIN_EMAILS = ['admin@hub.nfstay.com', 'hugo@nfstay.com'];
+const ADMIN_EMAILS = ['admin@hub.nfstay.com', 'hugo@nfstay.com', 'chris@nfstay.com'];
 
 export function useAuth() {
   const [state, setState] = useState<AuthState>({
