@@ -1,8 +1,23 @@
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import SystemHealthTab from "@/components/admin/SystemHealthTab";
+
 export default function AdminArchitecture() {
   return (
     <div data-feature="ADMIN">
       <h1 className="text-[28px] font-bold text-foreground mb-1">nfstay Platform Architecture</h1>
       <p className="text-sm text-muted-foreground mb-8">One repo, one database, one signup — three products</p>
+
+      <Tabs defaultValue="architecture" className="mb-8">
+        <TabsList>
+          <TabsTrigger value="architecture">Architecture</TabsTrigger>
+          <TabsTrigger value="health">System Health</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="health">
+          <SystemHealthTab />
+        </TabsContent>
+
+        <TabsContent value="architecture">
 
       {/* Three Apps */}
       <div data-feature="ADMIN__ARCHITECTURE_DIAGRAM" className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-10">
@@ -90,6 +105,9 @@ export default function AdminArchitecture() {
           <DbGroup title="Booking tables (nfs_*)" color="blue" tables={['nfs_operators', 'nfs_properties', 'nfs_reservations', 'nfs_stripe_accounts', 'nfs_hospitable_connections', 'nfs_promo_codes', 'nfs_analytics']} />
         </div>
       </div>
+
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
