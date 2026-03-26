@@ -32,8 +32,11 @@ const defaultBranding = {
   faq3A: 'Most properties have a 2-night minimum stay.',
   contactEmail: '',
   contactPhone: '',
+  contactWhatsapp: '',
   socialInstagram: '',
   socialFacebook: '',
+  socialTwitter: '',
+  socialTiktok: '',
 };
 
 export default function BookingSitePage() {
@@ -81,8 +84,11 @@ export default function BookingSitePage() {
       aboutBio: 'about_bio',
       contactEmail: 'contact_email',
       contactPhone: 'contact_phone',
+      contactWhatsapp: 'contact_whatsapp',
       socialInstagram: 'social_instagram',
       socialFacebook: 'social_facebook',
+      socialTwitter: 'social_twitter',
+      socialTiktok: 'social_tiktok',
     };
     if (dbMap[field]) {
       syncToDb({ [dbMap[field]]: value });
@@ -270,17 +276,33 @@ export default function BookingSitePage() {
 
           {activeTab === 'contact' && (
             <div data-feature="BOOKING_NFSTAY__CUSTOMIZER_CONTACT">
+              <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Contact details appear in your site's footer, navbar, and contact page.</p>
+
               <Field label="Email">
                 <input type="email" value={branding.contactEmail} onChange={e => update('contactEmail', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="hello@yourbrand.com" />
               </Field>
               <Field label="Phone">
                 <input type="tel" value={branding.contactPhone} onChange={e => update('contactPhone', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="+44 7xxx xxx xxx" />
               </Field>
+              <Field label="WhatsApp">
+                <input type="tel" value={branding.contactWhatsapp} onChange={e => update('contactWhatsapp', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="+44 7xxx xxx xxx" />
+              </Field>
+
+              <div className="border-t border-border/30 pt-3 mt-3">
+                <p className="text-[11px] font-semibold text-foreground mb-2">Social Links</p>
+                <p className="text-[10px] text-muted-foreground mb-2">These appear in your footer with clickable icons.</p>
+              </div>
               <Field label="Instagram">
                 <input type="text" value={branding.socialInstagram} onChange={e => update('socialInstagram', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="@yourbrand" />
               </Field>
               <Field label="Facebook">
                 <input type="text" value={branding.socialFacebook} onChange={e => update('socialFacebook', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="facebook.com/yourbrand" />
+              </Field>
+              <Field label="Twitter / X">
+                <input type="text" value={branding.socialTwitter} onChange={e => update('socialTwitter', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="@yourbrand" />
+              </Field>
+              <Field label="TikTok">
+                <input type="text" value={branding.socialTiktok} onChange={e => update('socialTiktok', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="@yourbrand" />
               </Field>
             </div>
           )}
