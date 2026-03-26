@@ -20,9 +20,9 @@
 .nav_component {
   pointer-events: auto;
   width: 100%;
-  max-width: 80rem;
+  max-width: 1680px;
   margin: 0 auto;
-  padding: 0.7rem 1.5rem;
+  padding: 0.7rem 2rem;
   border-radius: 1rem;
   background-color: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
@@ -30,13 +30,13 @@
   border: 1px solid transparent;
   box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.02);
   position: relative;
-  transition: max-width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-              padding 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-              background-color 0.35s ease,
-              backdrop-filter 0.35s ease,
-              border-color 0.35s ease,
-              border-radius 0.35s ease,
-              box-shadow 0.35s ease;
+  transition: max-width 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+              padding 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 1s ease,
+              backdrop-filter 1s ease,
+              border-color 1s ease,
+              border-radius 1s ease,
+              box-shadow 1s ease;
 }
 
 /* Scrolled state — inner component shrinks to pill with stronger glass */
@@ -55,7 +55,7 @@
 .nav_fixed .vertical-divider-navbar,
 .nav_fixed .lang-dropdown,
 .nav_fixed .nav_menu_link[data-feature="SHARED__LANDING_NAV_LOGIN"] {
-  transition: opacity 0.3s ease, max-width 0.3s ease;
+  transition: opacity 0.8s ease, max-width 0.8s ease, padding 0.8s ease, margin 0.8s ease;
   opacity: 1;
   max-width: 200px;
   overflow: hidden;

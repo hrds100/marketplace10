@@ -1565,13 +1565,15 @@
   </script>
 
   <script>
-    // Nav glassmorphism — shrink to pill on scroll
+    // Nav glassmorphism — shrink to pill after scrolling past hero animation
     (function() {
       var nav = document.getElementById('navbar');
-      if (!nav) return;
+      var hero = document.getElementById('hero');
+      if (!nav || !hero) return;
       var isScrolled = false;
       function onScroll() {
-        var past = window.scrollY > 50;
+        var triggerPoint = hero.offsetTop + hero.offsetHeight;
+        var past = window.scrollY > triggerPoint;
         if (past !== isScrolled) {
           isScrolled = past;
           nav.classList.toggle('scrolled', isScrolled);
