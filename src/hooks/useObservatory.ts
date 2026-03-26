@@ -150,14 +150,14 @@ export function useObservatory() {
       let q = supabase
         .from('profiles')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('name', { ascending: true })
         .range(userPage * PAGE_SIZE, (userPage + 1) * PAGE_SIZE - 1);
 
       if (tierFilter !== 'all') {
         q = q.eq('tier', tierFilter);
       }
       if (userSearch.trim()) {
-        q = q.or(`name.ilike.%${userSearch.trim()}%,whatsapp.ilike.%${userSearch.trim()}%`);
+        q = q.or(`name.ilike.%${userSearch.trim()}%,email.ilike.%${userSearch.trim()}%`);
       }
 
       const { data, error } = await q;
