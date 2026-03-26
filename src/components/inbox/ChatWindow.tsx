@@ -10,6 +10,7 @@ import MessageBubble from './MessageBubble';
 import QuickRepliesModal from './QuickRepliesModal';
 import ChatEmptyState from './ChatEmptyState';
 import PaymentSheet from '@/components/PaymentSheet';
+import { createMemberNotification } from '@/lib/memberNotifications';
 
 // ── Masking utility ──────────────────────────────────────────────
 interface MaskResult { maskedBody: string; isMasked: boolean; maskType: string }
@@ -230,6 +231,18 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         message_type: 'text',
       });
       if (error) throw error;
+
+      // In-app notification for the OTHER party (fire-and-forget)
+      const recipientId = user.id === thread.landlordId ? thread.operatorId : thread.landlordId;
+      if (recipientId) {
+        createMemberNotification({
+          userId: recipientId,
+          type: 'new_message',
+          title: 'New message',
+          body: `You have a new message about ${thread.propertyTitle || 'a property'}`,
+          propertyId: thread.propertyId,
+        });
+      }
 
       // Auto-expand right details panel on first message sent
       if (isFirstMessage) onOpenDetails?.();

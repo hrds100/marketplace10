@@ -103,6 +103,8 @@ export default function NotificationBell() {
     if (type === 'proposal_result') return '🗳️';
     if (type === 'new_deal') return '🏡';
     if (type === 'deal_edit') return '✏️';
+    if (type === 'new_message') return '💬';
+    if (type === 'nda_signed') return '📝';
     return '🔔';
   };
 

@@ -111,7 +111,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
-  const [view, setView] = useState<ViewState>('social');
+  const [view, setView] = useState<ViewState>('email');
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
@@ -120,6 +120,8 @@ export default function SignUp() {
   const [particleUser, setParticleUser] = useState<ParticleUserInfo | null>(null);
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+44');
+
+  useEffect(() => { document.title = 'nfstay - Sign Up'; }, []);
 
   // Capture referral code from URL (?ref=CODE)
   useEffect(() => {
@@ -256,6 +258,8 @@ export default function SignUp() {
       supabase.functions.invoke('send-email', { body: { type: 'welcome-member', data: { email: cleanEmail, name: cleanName } } }).catch(() => {});
       supabase.functions.invoke('send-email', { body: { type: 'new-signup-admin', data: { email: cleanEmail, name: cleanName, phone: fullPhone } } }).catch(() => {});
       (supabase.from('notifications') as any).insert({ type: 'new_signup', title: 'New user signed up', body: `${cleanName} (${cleanEmail}) just created an account.` }).then(() => {}).catch(() => {});
+      // Fire-and-forget: n8n welcome webhook
+      fetch('https://n8n.srv886554.hstgr.cloud/webhook/signup-welcome', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: cleanEmail, name: cleanName, phone: fullPhone }) }).catch(() => {});
 
       try { await sendOtp(fullPhone); toast.success('Account created! Check WhatsApp for your code.'); }
       catch { toast.success('Account created! Sending verification code...'); }
@@ -364,11 +368,26 @@ export default function SignUp() {
   // ── Email / password view ────────────────────────────────────────────────
 
   return (
-    <AuthShell data-feature="AUTH" showTabs={false} heading="Sign up with Email" subtitle="Fill in your details to create an account">
+    <AuthShell data-feature="AUTH" showTabs heading="Create your account" subtitle="Join thousands of operators building Airbnb portfolios">
       <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
-        <button data-feature="AUTH__SIGNUP_BACK" onClick={() => setView('social')} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a] mb-2">
-          <ArrowLeft className="w-4 h-4" /> Back
-        </button>
+        {/* Social login buttons */}
+        <div className="flex flex-col gap-2 w-full">
+          {PROVIDERS.map(({ id, label, icon }) => (
+            <button key={id} data-feature="AUTH__SIGNUP_SOCIAL" onClick={() => handleSocialLogin(id)} disabled={socialLoading !== null}
+              className="w-full flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8] disabled:opacity-50 relative"
+              style={{ height: 45, padding: '8px 12px' }}>
+              {icon} {label}
+              {socialLoading === id && <Loader2 className="w-4 h-4 animate-spin absolute right-4" />}
+            </button>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 w-full">
+          <div className="h-px flex-1 bg-[#e5e5e5]" />
+          <span className="text-base text-[#737373] whitespace-nowrap">Or sign up with email</span>
+          <div className="h-px flex-1 bg-[#e5e5e5]" />
+        </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           {/* Name */}
