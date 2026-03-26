@@ -27,7 +27,7 @@ interface AdminReservation {
   guest_last_name?: string;
   guest_email?: string;
   property?: { public_title?: string; city?: string };
-  operator?: { business_name?: string };
+  operator?: { brand_name?: string };
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
@@ -60,7 +60,7 @@ export default function AdminNfsReservations() {
           booking_source, created_at,
           guest_first_name, guest_last_name, guest_email,
           nfs_properties!property_id(public_title, city),
-          nfs_operators!operator_id(business_name)
+          nfs_operators!operator_id(brand_name)
         `)
         .order('created_at', { ascending: false })
         .limit(200);
@@ -102,7 +102,7 @@ export default function AdminNfsReservations() {
       r.guest_first_name?.toLowerCase().includes(q) ||
       r.guest_last_name?.toLowerCase().includes(q) ||
       r.property?.public_title?.toLowerCase().includes(q) ||
-      r.operator?.business_name?.toLowerCase().includes(q) ||
+      r.operator?.brand_name?.toLowerCase().includes(q) ||
       r.id.toLowerCase().includes(q)
     );
   });
@@ -219,8 +219,8 @@ export default function AdminNfsReservations() {
                     <td className="px-4 py-3">
                       <p className="font-medium line-clamp-1">{r.property?.public_title || '—'}</p>
                       <p className="text-xs text-muted-foreground">{r.property?.city || ''}</p>
-                      {r.operator?.business_name && (
-                        <p className="text-xs text-purple-600">{r.operator.business_name}</p>
+                      {r.operator?.brand_name && (
+                        <p className="text-xs text-purple-600">{r.operator.brand_name}</p>
                       )}
                     </td>
                     {/* Dates */}

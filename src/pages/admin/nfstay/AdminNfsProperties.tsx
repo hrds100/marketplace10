@@ -17,7 +17,7 @@ interface AdminProperty {
   base_rate_currency?: string;
   max_guests?: number;
   created_at: string;
-  operator?: { business_name?: string; email?: string };
+  operator?: { brand_name?: string; email?: string };
   images?: { url: string; is_cover?: boolean }[];
 }
 
@@ -45,7 +45,7 @@ export default function AdminNfsProperties() {
         .select(`
           id, public_title, city, country, listing_status,
           base_rate_amount, base_rate_currency, max_guests, created_at, images,
-          nfs_operators!operator_id(business_name, email)
+          nfs_operators!operator_id(brand_name, email)
         `)
         .order('created_at', { ascending: false })
         .limit(300);
@@ -82,7 +82,7 @@ export default function AdminNfsProperties() {
       p.public_title?.toLowerCase().includes(q) ||
       p.city?.toLowerCase().includes(q) ||
       p.country?.toLowerCase().includes(q) ||
-      p.operator?.business_name?.toLowerCase().includes(q) ||
+      p.operator?.brand_name?.toLowerCase().includes(q) ||
       p.operator?.email?.toLowerCase().includes(q) ||
       p.id.toLowerCase().includes(q)
     );
@@ -186,8 +186,8 @@ export default function AdminNfsProperties() {
                       <MapPin className="w-3 h-3" /> {location}
                     </p>
                   )}
-                  {p.operator?.business_name && (
-                    <p className="text-xs text-purple-600">by {p.operator.business_name}</p>
+                  {p.operator?.brand_name && (
+                    <p className="text-xs text-purple-600">by {p.operator.brand_name}</p>
                   )}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     {p.base_rate_amount && (
