@@ -368,7 +368,7 @@ export default function AdminInvestPayouts() {
           onChange={(e) => setTypeFilter(e.target.value)}
         >
           <option>All</option>
-          <option value="investor">Investor</option>
+          <option value="investor">Partner</option>
           <option value="affiliate">Affiliate</option>
           <option value="subscriber">Subscriber</option>
         </select>

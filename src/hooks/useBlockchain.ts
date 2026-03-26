@@ -680,6 +680,105 @@ export function useBlockchain() {
     [address, ensureConnected],
   );
 
+  // ── ADMIN-ONLY FUNCTIONS ──
+
+  // Admin: Add rent to a property (calls Rent.addRent — onlyOwner)
+  const adminAddRent = useCallback(
+    async (propertyId: string, amount: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await ensureConnected();
+        const ethers = await getEthers();
+        if (!ethers) throw new Error('Blockchain not available');
+        const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
+        if (!rentContract) throw new Error('Could not connect to rent contract');
+        const amountWei = ethers.utils.parseUnits(amount, 18); // BSC USDC uses 18 decimals
+        await rentContract.callStatic.addRent(propertyId, amountWei);
+        const tx = await rentContract.addRent(propertyId, amountWei);
+        const receipt = await tx.wait();
+        setLoading(false);
+        return receipt;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Add rent failed';
+        setError(msg);
+        setLoading(false);
+        throw err;
+      }
+    },
+    [ensureConnected],
+  );
+
+  // Admin: Reset property rent details (calls Rent.resetPropertyDetails — onlyOwner)
+  const adminResetPropertyRent = useCallback(
+    async (propertyId: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await ensureConnected();
+        const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
+        if (!rentContract) throw new Error('Could not connect to rent contract');
+        await rentContract.callStatic.resetPropertyDetails(propertyId);
+        const tx = await rentContract.resetPropertyDetails(propertyId);
+        const receipt = await tx.wait();
+        setLoading(false);
+        return receipt;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Reset failed';
+        setError(msg);
+        setLoading(false);
+        throw err;
+      }
+    },
+    [ensureConnected],
+  );
+
+  // Admin: Check if rent is already added for a property (read-only)
+  const adminGetRentDetails = useCallback(
+    async (propertyId: string) => {
+      try {
+        const ethers = await getEthers();
+        if (!ethers) return null;
+        const rentContract = await getContract(CONTRACTS.RENT, RENT_ABI, false);
+        if (!rentContract) return null;
+        const details = await rentContract.getRentDetails(propertyId);
+        return {
+          rentRemaining: parseFloat(ethers.utils.formatUnits(details.rentRemaining, 18)),
+          totalRent: parseFloat(ethers.utils.formatUnits(details.totalRent, 18)),
+          startTime: details.startTime.toNumber(),
+          endTime: details.endTime.toNumber(),
+        };
+      } catch {
+        return null;
+      }
+    },
+    [],
+  );
+
+  // Admin: Boost another user's property APR (calls Booster.boostOnBehalfOf — onlyOwner)
+  const adminBoostUser = useCallback(
+    async (userAddress: string, propertyId: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await ensureConnected();
+        const boosterContract = await getContract(CONTRACTS.BOOSTER, BOOSTER_ABI, true);
+        if (!boosterContract) throw new Error('Could not connect to booster contract');
+        await boosterContract.callStatic.boostOnBehalfOf(userAddress, propertyId);
+        const tx = await boosterContract.boostOnBehalfOf(userAddress, propertyId);
+        const receipt = await tx.wait();
+        setLoading(false);
+        return receipt;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Boost failed';
+        setError(msg);
+        setLoading(false);
+        throw err;
+      }
+    },
+    [ensureConnected],
+  );
+
   return {
     // State
     loading,
@@ -704,6 +803,12 @@ export function useBlockchain() {
     claimBoostRewards,
     buyStayTokens,
     buyLpTokens,
+
+    // Admin
+    adminAddRent,
+    adminResetPropertyRent,
+    adminGetRentDetails,
+    adminBoostUser,
 
     // Wallet
     connectWallet: connect,

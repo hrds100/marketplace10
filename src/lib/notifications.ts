@@ -41,7 +41,7 @@ export async function sendInvestNotification(event: {
     if (event.user_id) {
       await (supabase.from('notifications') as any).insert({
         user_id: event.user_id,
-        title: 'nfstay Investment',
+        title: 'nfstay Partnership',
         body: getNotificationMessage(event.type, event),
         read: false,
       });
@@ -56,7 +56,7 @@ function getNotificationMessage(type: string, event: Record<string, unknown>): s
   const property = event.property || '';
 
   const messages: Record<string, string> = {
-    purchase_confirmed: `Your investment of $${amount} in ${property} is confirmed.`,
+    purchase_confirmed: `Your allocation of $${amount} in ${property} is confirmed.`,
     rent_available: `You have $${amount} rental income available to claim.`,
     rent_claimed: `Your claim of $${amount} has been submitted.`,
     commission_earned: `You earned $${amount} commission!`,

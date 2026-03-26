@@ -251,7 +251,7 @@ export default function AdminInvestShareholders() {
         <div>
           <h1 className="text-[28px] font-bold text-foreground">Shareholders</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {shareholders.length} investors &middot; {totalShares.toLocaleString()} allocations &middot; ${totalInvested.toLocaleString()} invested &middot; ${totalClaimed.toFixed(2)} claimed &middot; ${totalUnclaimed.toFixed(2)} unclaimed
+            {shareholders.length} partners &middot; {totalShares.toLocaleString()} allocations &middot; ${totalInvested.toLocaleString()} allocated &middot; ${totalClaimed.toFixed(2)} claimed &middot; ${totalUnclaimed.toFixed(2)} unclaimed
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered as any[], 'shareholders')}>
@@ -282,7 +282,7 @@ export default function AdminInvestShareholders() {
                 <TableHead>Wallet</TableHead>
                 <TableHead>WhatsApp</TableHead>
                 <TableHead className="text-right">Allocations</TableHead>
-                <TableHead className="text-right">Invested</TableHead>
+                <TableHead className="text-right">Allocated</TableHead>
                 <TableHead className="text-right">Claimed</TableHead>
                 <TableHead className="text-right">Unclaimed</TableHead>
                 <TableHead>Since</TableHead>

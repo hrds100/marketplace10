@@ -20,7 +20,7 @@ type SocialProvider = 'google' | 'apple' | 'twitter' | 'facebook';
 const PROVIDERS: { id: SocialProvider; label: string; icon: React.ReactNode }[] = [
   {
     id: 'google',
-    label: 'Continue with Google',
+    label: 'Google',
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" xmlns="http://www.w3.org/2000/svg">
         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -32,7 +32,7 @@ const PROVIDERS: { id: SocialProvider; label: string; icon: React.ReactNode }[] 
   },
   {
     id: 'apple',
-    label: 'Continue with Apple',
+    label: 'Apple',
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.43c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 3.96zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
@@ -41,7 +41,7 @@ const PROVIDERS: { id: SocialProvider; label: string; icon: React.ReactNode }[] 
   },
   {
     id: 'twitter',
-    label: 'Continue with X',
+    label: 'X',
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -50,7 +50,7 @@ const PROVIDERS: { id: SocialProvider; label: string; icon: React.ReactNode }[] 
   },
   {
     id: 'facebook',
-    label: 'Continue with Facebook',
+    label: 'Facebook',
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" xmlns="http://www.w3.org/2000/svg">
         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/>
@@ -111,7 +111,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
-  const [view, setView] = useState<ViewState>('email');
+  const [view, setView] = useState<ViewState>('social');
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
@@ -275,14 +275,14 @@ export default function SignUp() {
     return (
       <AuthShell showTabs heading="Create your account" subtitle="Join thousands of operators building Airbnb portfolios">
         <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
-          {/* Social stacked */}
-          <div className="flex flex-col gap-2 w-full">
+          {/* Social 2×2 grid */}
+          <div className="grid grid-cols-2 gap-2 w-full">
             {PROVIDERS.map(({ id, label, icon }) => (
               <button key={id} data-feature="AUTH__SIGNUP_SOCIAL" onClick={() => handleSocialLogin(id)} disabled={socialLoading !== null}
-                className="w-full flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8] disabled:opacity-50 relative"
-                style={{ height: 45, padding: '8px 12px' }}>
+                className="flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8] disabled:opacity-50 relative"
+                style={{ height: 45 }}>
                 {icon} {label}
-                {socialLoading === id && <Loader2 className="w-4 h-4 animate-spin absolute right-4" />}
+                {socialLoading === id && <Loader2 className="w-4 h-4 animate-spin absolute right-3" />}
               </button>
             ))}
           </div>
@@ -290,14 +290,14 @@ export default function SignUp() {
           {/* Divider */}
           <div className="flex items-center gap-3 w-full">
             <div className="h-px flex-1 bg-[#e5e5e5]" />
-            <span className="text-base text-[#737373] whitespace-nowrap">Or</span>
+            <span className="text-sm text-[#737373] whitespace-nowrap">or</span>
             <div className="h-px flex-1 bg-[#e5e5e5]" />
           </div>
 
           {/* Email signup button */}
           <button onClick={() => setView('email')}
             className="w-full flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8]"
-            style={{ height: 45, padding: '8px 12px' }}>
+            style={{ height: 45 }}>
             <Mail className="w-5 h-5" /> Sign up with Email
           </button>
 
@@ -370,14 +370,14 @@ export default function SignUp() {
   return (
     <AuthShell data-feature="AUTH" showTabs heading="Create your account" subtitle="Join thousands of operators building Airbnb portfolios">
       <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
-        {/* Social login buttons */}
-        <div className="flex flex-col gap-2 w-full">
+        {/* Social login buttons - 2×2 grid */}
+        <div className="grid grid-cols-2 gap-2 w-full">
           {PROVIDERS.map(({ id, label, icon }) => (
             <button key={id} data-feature="AUTH__SIGNUP_SOCIAL" onClick={() => handleSocialLogin(id)} disabled={socialLoading !== null}
-              className="w-full flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8] disabled:opacity-50 relative"
-              style={{ height: 45, padding: '8px 12px' }}>
+              className="flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8] disabled:opacity-50 relative"
+              style={{ height: 45 }}>
               {icon} {label}
-              {socialLoading === id && <Loader2 className="w-4 h-4 animate-spin absolute right-4" />}
+              {socialLoading === id && <Loader2 className="w-4 h-4 animate-spin absolute right-3" />}
             </button>
           ))}
         </div>

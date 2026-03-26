@@ -487,7 +487,7 @@ export default function InvestPortfolioPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Receipt className="h-4 w-4 text-primary" />
-                Your investment orders
+                Your allocation orders
               </CardTitle>
               <p className="text-xs text-muted-foreground font-normal">
                 Card and checkout payments appear here. Holdings below use on-chain data once shares are allocated.
@@ -735,7 +735,7 @@ export default function InvestPortfolioPage() {
             <Card className="rounded-2xl shadow-sm">
               <CardContent className="py-12 text-center">
                 <Home className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground">You don't own any allocations yet. Visit the Marketplace to start investing.</p>
+                <p className="text-muted-foreground">You don't own any allocations yet. Visit the Marketplace to get started.</p>
               </CardContent>
             </Card>
           ) : null}
@@ -1031,7 +1031,7 @@ export default function InvestPortfolioPage() {
         {nextMilestone && (
           <div className="bg-primary/5 border-l-4 border-primary rounded-r-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
             <p className="text-sm text-foreground">
-              Invest in{' '}
+              Partner on{' '}
               <span className="font-semibold">
                 {propertiesNeeded} more {propertiesNeeded === 1 ? 'property' : 'properties'}
               </span>{' '}
