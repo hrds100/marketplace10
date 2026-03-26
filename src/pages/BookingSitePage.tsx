@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload } from 'lucide-react';
 import PaymentSheet from '@/components/PaymentSheet';
 import BookingSitePreview from './BookingSitePreview';
+import { getBridgeUrl } from '@/lib/authBridge';
 
 const heroImages = [
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
@@ -80,9 +81,14 @@ export default function BookingSitePage() {
               <p className="text-[11px] text-muted-foreground leading-tight">Your branded booking platform, included for all members</p>
             </div>
           </div>
-          <a href="https://nfstay.app/admin/nfstay" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline font-medium">
+          <button
+            onClick={() => {
+              window.open(getBridgeUrl("https://nfstay.app", "/admin/nfstay"), "_blank");
+            }}
+            className="text-xs text-primary hover:underline font-medium"
+          >
             Open Booking Site Admin →
-          </a>
+          </button>
         </div>
 
         {/* URL Bar + Domain toggle */}

@@ -85,6 +85,7 @@ import NfsOAuthCallbackPage from "./pages/NfsOAuthCallbackPage";
 import NfsVerifyEmailPage from "./pages/NfsVerifyEmailPage";
 import NfsAuthCallbackPage from "./pages/NfsAuthCallbackPage";
 import ParticleAuthCallback from "./pages/ParticleAuthCallback";
+import AuthBridgePage from "./pages/AuthBridgePage";
 import { NfsCurrencyProvider } from "./contexts/NfsCurrencyContext";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
@@ -242,6 +243,7 @@ const App = () => (
           <Route path="/nfstay/oauth-callback" element={<NfsOAuthCallbackPage />} />
           <Route path="/nfstay/verify-email" element={<NfsVerifyEmailPage />} />
           <Route path="/auth/callback" element={<NfsAuthCallbackPage />} />
+          <Route path="/auth/bridge" element={<AuthBridgePage />} />
           <Route path="/auth/particle" element={<ParticleAuthCallback />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
