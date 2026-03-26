@@ -221,10 +221,17 @@ export default function SignUp() {
       const cleanName = data.name.trim();
 
       const { data: authData, error: authError } = await signUp(cleanEmail, data.password, cleanName, fullPhone);
-      if (authError) { toast.error(authError.message); return; }
-      if (authData?.user && (!authData.user.identities || authData.user.identities.length === 0)) {
-        toast.error('An account with this email already exists. Please sign in.'); return;
+      const isDuplicate = authError?.message?.toLowerCase().includes('already registered')
+        || (authData?.user && (!authData.user.identities || authData.user.identities.length === 0));
+      if (isDuplicate) {
+        toast('This email already has an account', {
+          description: 'Redirecting you to sign in...',
+          action: { label: 'Sign in now', onClick: () => navigate(`/signin?email=${encodeURIComponent(cleanEmail)}`) },
+        });
+        setTimeout(() => navigate(`/signin?email=${encodeURIComponent(cleanEmail)}`), 2000);
+        return;
       }
+      if (authError) { toast.error(authError.message); return; }
 
       let userId = authData?.user?.id;
       if (!authData?.session?.access_token) {

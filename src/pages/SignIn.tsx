@@ -61,7 +61,8 @@ export default function SignIn() {
   const { signIn } = useAuth();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
-  const [email, setEmail] = useState('');
+  const prefillEmail = searchParams.get('email');
+  const [email, setEmail] = useState(prefillEmail || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
