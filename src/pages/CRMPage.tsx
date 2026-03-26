@@ -12,6 +12,7 @@ import type { ListingShape } from '@/components/InquiryPanel';
 type ExtendedDeal = CRMDeal & { photo_url?: string | null; property_id?: string | null };
 
 export default function CRMPage() {
+  useEffect(() => { document.title = 'nfstay - CRM'; }, []);
   const { user } = useAuth();
   const [deals, setDeals] = useState<ExtendedDeal[]>([]);
   const [archivedIds, setArchivedIds] = useState<string[]>([]);

@@ -19,7 +19,6 @@ function ensureInit() {
       chains: [bsc],
     });
     initialized = true;
-    console.log('[Particle] auth-core initialized');
   } catch (err) {
     // If already initialized, that's fine
     if ((err as Error)?.message?.includes('already')) {
@@ -41,7 +40,6 @@ function ensureInit() {
 export async function createWalletWithJWT(jwt: string): Promise<string> {
   // Global lock: if a creation is already in progress, wait for it
   if (pendingCreation) {
-    console.log('[Particle] Wallet creation already in progress — waiting...');
     return pendingCreation;
   }
 
@@ -65,7 +63,6 @@ async function doCreateWallet(jwt: string): Promise<string> {
   try {
     const accounts = await particleAuth.ethereum.request({ method: 'eth_accounts' });
     if (Array.isArray(accounts) && accounts[0]) {
-      console.log('[Particle] Wallet address from eth_accounts:', accounts[0]);
       return accounts[0] as string;
     }
   } catch (e) {
@@ -79,7 +76,6 @@ async function doCreateWallet(jwt: string): Promise<string> {
   const address = evmWallet?.public_address || null;
 
   if (address) {
-    console.log('[Particle] Wallet address from userInfo.wallets:', address);
     return address;
   }
 

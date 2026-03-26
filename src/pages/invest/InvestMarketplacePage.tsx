@@ -744,16 +744,16 @@ function InvestCardContent({
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" data-feature="INVEST__TOKEN_SALE_CONTENT">
               <DialogHeader>
                 <DialogTitle>nfstay Token Sale Agreement</DialogTitle>
-                <DialogDescription>Please read carefully before proceeding with your investment.</DialogDescription>
+                <DialogDescription>Please read carefully before proceeding with your allocation.</DialogDescription>
               </DialogHeader>
               <div className="space-y-6 text-sm text-muted-foreground leading-relaxed">
                 <section>
                   <h3 className="font-semibold text-foreground mb-2">1. Definitions</h3>
-                  <p>"Tokens" refers to RWA (Real World Asset) tokens issued on the BNB Chain, each representing a fractional ownership share in a specific property listed on the nfstay investment marketplace. "Platform" refers to nfstay (hub.nfstay.com). "Investor" refers to any individual or entity that purchases Tokens through the Platform.</p>
+                  <p>"Tokens" refers to RWA (Real World Asset) tokens issued on the BNB Chain, each representing a fractional ownership share in a specific property listed on the nfstay partnership marketplace. "Platform" refers to nfstay (hub.nfstay.com). "Partner" refers to any individual or entity that purchases Tokens through the Platform.</p>
                 </section>
                 <section>
                   <h3 className="font-semibold text-foreground mb-2">2. Purchase Terms</h3>
-                  <p>By purchasing Tokens, you agree to these terms in their entirety. Token purchases are made via the Platform using supported payment methods (cryptocurrency or fiat via approved payment processors). The minimum investment amount is displayed on each property listing. All purchases are final once confirmed on the blockchain.</p>
+                  <p>By purchasing Tokens, you agree to these terms in their entirety. Token purchases are made via the Platform using supported payment methods (cryptocurrency or fiat via approved payment processors). The minimum allocation amount is displayed on each property listing. All purchases are final once confirmed on the blockchain.</p>
                 </section>
                 <section>
                   <h3 className="font-semibold text-foreground mb-2">3. Token Holder Rights</h3>
@@ -765,7 +765,7 @@ function InvestCardContent({
                 </section>
                 <section>
                   <h3 className="font-semibold text-foreground mb-2">5. Risk Disclosure</h3>
-                  <p>Investment in real estate tokens carries significant risks including but not limited to: property value fluctuation, rental income variability, regulatory changes, smart contract vulnerabilities, market liquidity constraints, and potential total loss of investment. Past performance does not guarantee future results.</p>
+                  <p>Allocation in real estate tokens carries significant risks including but not limited to: property value fluctuation, rental income variability, regulatory changes, smart contract vulnerabilities, market liquidity constraints, and potential total loss of allocation. Past performance does not guarantee future results.</p>
                 </section>
                 <section>
                   <h3 className="font-semibold text-foreground mb-2">6. No Guarantee of Returns</h3>
@@ -1819,6 +1819,7 @@ function Version2({
 // ---------------------------------------------------------------------------
 
 export default function InvestMarketplacePage() {
+  useEffect(() => { document.title = 'nfstay - Partnership Marketplace'; }, []);
   const { user } = useAuth();
   const { address: walletAddress, connecting: walletConnecting } = useWallet();
   const { requireWallet } = useWalletGate();

@@ -42,6 +42,7 @@ function tierSatisfied(required: string, userTier: string): boolean {
 }
 
 export default function LessonPage() {
+  useEffect(() => { document.title = 'nfstay - Lesson'; }, []);
   const { moduleId, lessonId } = useParams<{ moduleId: string; lessonId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();

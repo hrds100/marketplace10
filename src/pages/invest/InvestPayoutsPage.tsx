@@ -577,6 +577,7 @@ function PropertyImage({ src, alt, className }: { src: string; alt: string; clas
 // ─── Main Page Component ─────────────────────────────────────────────────────────
 
 export default function InvestPayoutsPage() {
+  useEffect(() => { document.title = 'nfstay - Payouts'; }, []);
   const { user } = useAuth();
   const { payouts: mergedPayouts, blockchainLoading, refetchRentData } = usePayoutsWithBlockchain();
   const { data: allProperties = [] } = useInvestProperties();

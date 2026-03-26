@@ -79,6 +79,7 @@ function CardSkeleton() {
 }
 
 export default function DealsPageV2() {
+  useEffect(() => { document.title = 'nfstay - Deals'; }, []);
   const { toggle, isFav } = useFavourites();
   const [activeTab, setActiveTab] = useState<string>('All');
   const [city, setCity] = useState('');

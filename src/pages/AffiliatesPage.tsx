@@ -42,6 +42,7 @@ function getNextTuesday() {
 }
 
 export default function AffiliatesPage() {
+  useEffect(() => { document.title = 'nfstay - Affiliates'; }, []);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: realAffProfile } = useMyAffiliateProfile();
@@ -565,7 +566,7 @@ export default function AffiliatesPage() {
                       </div>
                     )}
                     <div className="p-5 flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-foreground mb-1">Your Investment Referral Link</h3>
+                      <h3 className="text-sm font-semibold text-foreground mb-1">Your Partnership Referral Link</h3>
                       <p className="text-[11px] text-muted-foreground mb-3">
                         {activeProperty.title || 'Active deal'} — 5% commission on every share purchase.
                       </p>
@@ -574,7 +575,7 @@ export default function AffiliatesPage() {
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(investReferralLink);
-                            toast.success('Investment referral link copied!');
+                            toast.success('Partnership referral link copied!');
                           }}
                           className="h-10 px-4 rounded-lg bg-[#1E9A80] text-white font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity flex-shrink-0"
                         >

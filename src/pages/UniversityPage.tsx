@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { modules } from '@/data/universityData';
 import { useUniversityProgress } from '@/hooks/useUniversityProgress';
 import { ChevronRight, BookOpen, Sparkles } from 'lucide-react';
 
 export default function UniversityPage() {
+  useEffect(() => { document.title = 'nfstay - Academy'; }, []);
   const navigate = useNavigate();
   const { isModuleComplete, getModuleCompletedLessons } = useUniversityProgress();
 

@@ -132,7 +132,6 @@ export default function VerifyOtp() {
                 wallet_auth_method: authMethod,
                 ...(refCode ? { referred_by: refCode } : {}),
               } as any);
-            console.log('[VerifyOtp] Social profile saved. wallet:', wallet, 'authMethod:', authMethod);
 
             // Track referral signup
             if (refCode) {

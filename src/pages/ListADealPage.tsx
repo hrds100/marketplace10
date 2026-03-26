@@ -125,6 +125,7 @@ function AccordionSection({ id, title, description, isOpen, isComplete, onToggle
 }
 
 export default function ListADealPage() {
+  useEffect(() => { document.title = 'nfstay - List a Deal'; }, []);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

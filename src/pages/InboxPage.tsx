@@ -40,6 +40,7 @@ const SUPPORT_THREAD: Thread = {
 };
 
 export default function InboxPage() {
+  useEffect(() => { document.title = 'nfstay - Inbox'; }, []);
   const { user } = useAuth();
   const dashCtx = useDashboardContext();
   const [dbThreads, setDbThreads] = useState<Thread[]>([]);

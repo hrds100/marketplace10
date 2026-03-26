@@ -65,9 +65,8 @@ export default function ParticleAuthCallback() {
           const decoded = JSON.parse(atob(particleThirdpartyParams));
           code = decoded.code;
           nonce = decoded.nonce;
-          console.log('[ParticleCallback] Decoded params — code length:', code?.length, 'nonce:', nonce);
         } catch (e) {
-          console.log('[ParticleCallback] Could not decode particleThirdpartyParams:', e);
+          console.error('[ParticleCallback] Could not decode particleThirdpartyParams:', e);
         }
       }
 

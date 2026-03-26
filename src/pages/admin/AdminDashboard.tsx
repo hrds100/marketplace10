@@ -37,7 +37,6 @@ export default function AdminDashboard() {
     try {
       const { data, error } = await supabase.functions.invoke('reset-for-testing', { method: 'POST' });
       // On non-2xx, Supabase puts generic message in error but the real reason is in data
-      console.log('[Reset] data:', data, 'error:', error);
       if (error) {
         const detail = data?.error || error.message || JSON.stringify(error);
         console.error('[Reset] Invoke error:', detail);

@@ -155,6 +155,7 @@ function typeBadgeColor(type: string): string {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function InvestProposalsPage() {
+  useEffect(() => { document.title = 'nfstay - Proposals'; }, []);
   const { user } = useAuth();
   const { data: realProposals = [] } = useProposals();
   const { proposals: graphProposals } = useProposalsFromGraph();

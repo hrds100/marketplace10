@@ -32,7 +32,7 @@ const config = createConfig({
       metadata: {
         name: 'nfstay',
         icon: typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : '',
-        description: 'nfstay Investment Platform',
+        description: 'nfstay Partnership Platform',
         url: typeof window !== 'undefined' ? window.location.origin : '',
       },
       walletConnectProjectId: PARTICLE_CONFIG.walletConnectProjectId,

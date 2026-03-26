@@ -125,6 +125,7 @@ function getAchievements(holdingsCount: number, totalClaimed: number, hasVoted: 
 // ---------------------------------------------------------------------------
 
 export default function InvestPortfolioPage() {
+  useEffect(() => { document.title = 'nfstay - Portfolio'; }, []);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { portfolio, isLoading, blockchainLoading } = usePortfolioWithBlockchain();

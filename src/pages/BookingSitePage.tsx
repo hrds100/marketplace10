@@ -35,6 +35,7 @@ const defaultBranding = {
 };
 
 export default function BookingSitePage() {
+  useEffect(() => { document.title = 'nfstay - Booking Site'; }, []);
   const { operator, loading: opLoading, error: opError } = useNfsOperator();
   const { update: saveOperator, saving, error: saveError, success: saveSuccess } = useNfsOperatorUpdate();
   const { tier, loading: tierLoading } = useUserTier();

@@ -64,7 +64,6 @@ export function useWallet() {
         return;
       }
     }
-    console.log('[useWallet] Wallet not created after polling — WalletProvisioner may have failed');
   }, []);
 
   const connect = useCallback(async () => {

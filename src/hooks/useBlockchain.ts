@@ -59,7 +59,6 @@ export function useBlockchain() {
     autoConnectAttempted.current = true;
     const authConnector = connectors.find((c: any) => c.id === 'particleAuth' || c.type === 'particleAuth');
     if (authConnector) {
-      console.log('[useBlockchain] Auto-reconnecting via ConnectKit...');
       connectAsync({ connector: authConnector, chainId: 56 }).catch((e) => {
         console.log('[useBlockchain] Auto-reconnect failed (user may need to sign in again):', e);
       });
@@ -275,27 +274,23 @@ export function useBlockchain() {
             feePercent = Number(feeRaw) / 10;
           }
         } catch { /* use default */ }
-        console.log('[buyShares] Step 1 — fee:', feePercent, '%');
 
         // 2. Calculate fee-adjusted amount (legacy payment.js line 130-131)
         const costWithoutFee = amountUsdc;
         const amountWithFee = costWithoutFee + (costWithoutFee * feePercent / 100);
         const amountWithFeeWei = ethers.utils.parseUnits(amountWithFee.toFixed(6), 18);
         const costWithoutFeeWei = ethers.utils.parseUnits(costWithoutFee.toFixed(6), 18);
-        console.log('[buyShares] Step 2 — cost:', costWithoutFee, '+ fee =', amountWithFee);
 
         // 3. Check USDC balance (legacy balanceChecker)
         const usdcRead = await getContract(CONTRACTS.USDC, ERC20_ABI);
         if (usdcRead) {
           const balance = await usdcRead.balanceOf(address);
-          console.log('[buyShares] Step 3 — USDC balance:', ethers.utils.formatUnits(balance, 18));
           if (balance.lt(amountWithFeeWei)) {
             throw new Error(`Insufficient USDC. Need ${amountWithFee.toFixed(2)} (includes ${feePercent}% fee). You have ${parseFloat(ethers.utils.formatUnits(balance, 18)).toFixed(2)}.`);
           }
         }
 
         // 4. Approve USDC with fee-adjusted amount (legacy checkForApproval)
-        console.log('[buyShares] Step 4 — approving USDC...');
         const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
         if (!usdc) throw new Error('Could not connect to USDC contract');
         const currentAllowance = await usdc.allowance(address, CONTRACTS.RWA_MARKETPLACE);
@@ -303,9 +298,6 @@ export function useBlockchain() {
           await usdc.callStatic.approve(CONTRACTS.RWA_MARKETPLACE, amountWithFeeWei);
           const approveTx = await usdc.approve(CONTRACTS.RWA_MARKETPLACE, amountWithFeeWei);
           await approveTx.wait();
-          console.log('[buyShares] Step 4 — USDC approved');
-        } else {
-          console.log('[buyShares] Step 4 — allowance sufficient, skipping approval');
         }
 
         // 5. Get agent wallet (legacy: localStorage referral)
@@ -314,7 +306,6 @@ export function useBlockchain() {
           : agentWallet || ethers.constants.AddressZero;
 
         // 6. callStatic dry-run (legacy payment.js line 216-224)
-        console.log('[buyShares] Step 6 — dry-run buyPrimaryShares...');
         const marketplace = await getContract(CONTRACTS.RWA_MARKETPLACE, MARKETPLACE_ABI, true);
         if (!marketplace) throw new Error('Could not connect to marketplace');
         await marketplace.callStatic.buyPrimaryShares(
@@ -344,7 +335,6 @@ export function useBlockchain() {
         // wallet signing drops the Supabase auth session. The SDK's invoke() attaches
         // the expired token which causes a 401 even with verify_jwt=false.
         try {
-          console.log('[F9] tx confirmed, calling inv-crypto-confirm with:', { tx_hash: receipt.transactionHash, wallet_address: address, property_id: propertyId, shares, amount: amountUsdc });
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
           const confirmRes = await fetch(`${supabaseUrl}/functions/v1/inv-crypto-confirm`, {
             method: 'POST',
@@ -360,8 +350,6 @@ export function useBlockchain() {
           const confirmData = await confirmRes.json();
           if (!confirmRes.ok || confirmData?.error) {
             console.error('[F9] inv-crypto-confirm error:', confirmData?.error || confirmRes.status);
-          } else {
-            console.log('[F9] Order confirmed server-side:', confirmData?.order_id);
           }
         } catch (confirmErr) {
           console.error('[F9] inv-crypto-confirm call failed (tx already confirmed on-chain):', confirmErr);
@@ -447,7 +435,6 @@ export function useBlockchain() {
         if (!boosterRead) throw new Error('Could not read booster contract');
         const boostAmountRaw = await boosterRead.getBoostAmount(address, propertyId);
         const boostAmount = parseFloat(ethers.utils.formatUnits(boostAmountRaw, 18));
-        console.log('[boostApr] Boost cost:', boostAmount, 'USDC');
 
         // 2. Approve USDC for Booster (legacy line 60-64)
         const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
@@ -548,7 +535,6 @@ export function useBlockchain() {
         const claimedUsdc = rentEvents[0]?.args?.[2]
           ? parseFloat(ethers.utils.formatUnits(rentEvents[0].args[2], 18))
           : 0;
-        console.log('[buyStayTokens] Step 0 done — rent withdrawn:', claimedUsdc, 'USDC');
         if (claimedUsdc <= 0) throw new Error('No rent claimed');
 
         // Step 1: Approve USDC for BuyLP — legacy claim.jsx line 78-83
@@ -562,7 +548,6 @@ export function useBlockchain() {
           const approveTx = await usdcContract.approve(CONTRACTS.BUY_LP, requiredWei);
           await approveTx.wait();
         }
-        console.log('[buyStayTokens] Step 1 done — USDC approved');
 
         // Step 2: Buy STAY — legacy claim.jsx line 92-114
         onStep?.(2, 3);
@@ -577,7 +562,6 @@ export function useBlockchain() {
           address, CONTRACTS.USDC, requiredWei, { value: 0 }
         );
         await _swap.wait();
-        console.log('[buyStayTokens] Step 2 done — STAY purchased');
 
         setLoading(false);
         queryClient.invalidateQueries();
@@ -836,7 +820,6 @@ export function useBlockchain() {
         if (currentAllowance.lt(totalWei)) {
           const approveTx = await usdc.approve(CONTRACTS.RWA_MARKETPLACE, totalWei);
           await approveTx.wait();
-          console.log('[adminDistributePerformanceFees] USDC approved');
         }
 
         // 2. Call distributePerformanceFees on the marketplace contract

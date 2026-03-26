@@ -12,6 +12,7 @@ import PropertyCard from '@/components/PropertyCard';
 import type { ListingShape } from '@/components/InquiryPanel';
 
 export default function DealDetail() {
+  useEffect(() => { document.title = 'nfstay - Deal Detail'; }, []);
   const { id } = useParams();
   const { user } = useAuth();
   const { toggle, isFav } = useFavourites();

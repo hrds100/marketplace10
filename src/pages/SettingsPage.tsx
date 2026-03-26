@@ -33,6 +33,7 @@ const defaultNotifs: NotifPrefs = {
 };
 
 export default function SettingsPage() {
+  useEffect(() => { document.title = 'nfstay - Settings'; }, []);
   const { user, signOut } = useAuth();
   const { tier } = useUserTier();
   const navigate = useNavigate();

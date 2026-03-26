@@ -286,9 +286,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           body: payload,
           signal: ac.signal,
         }).then(res => {
-          if (res.ok) {
-            console.log(`[nfstay webhook] ✅ ${endpoint} fired successfully`);
-          } else {
+          if (!res.ok) {
             console.warn(`[nfstay webhook] ⚠️ ${endpoint} returned ${res.status}`);
           }
         }).catch(err => {
