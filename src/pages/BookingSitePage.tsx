@@ -1,26 +1,21 @@
-import { useState } from 'react';
-import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Link2, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import PaymentSheet from '@/components/PaymentSheet';
 import BookingSitePreview from './BookingSitePreview';
 import { getBridgeUrl } from '@/lib/authBridge';
-
-const heroImages = [
-  'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
-  'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
-  'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
-  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
-];
-
+import { useNfsOperator } from '@/hooks/nfstay/use-nfs-operator';
+import { useNfsOperatorUpdate } from '@/hooks/nfstay/use-nfs-operator-update';
+import { useUserTier } from '@/hooks/useUserTier';
+import { isPaidTier } from '@/lib/ghl';
 
 const defaultBranding = {
-  brandName: 'Your Brand',
-  subdomain: 'yourbrand',
+  brandName: '',
+  subdomain: '',
   customDomain: '',
   accentColor: '#10b981',
   heroHeadline: 'Find Your Perfect Stay',
   heroSubheadline: 'Book directly with us for the best rates and experience',
-  aboutBio: 'We offer carefully curated vacation rentals in the most beautiful locations.',
+  aboutBio: '',
   aboutPhoto: '',
   faq1Q: 'How do I book a property?',
   faq1A: 'Simply browse our listings, select your dates and guests, and complete checkout.',
@@ -39,6 +34,10 @@ const defaultBranding = {
 };
 
 export default function BookingSitePage() {
+  const { operator, loading: opLoading, error: opError } = useNfsOperator();
+  const { update: saveOperator, saving, error: saveError, success: saveSuccess } = useNfsOperatorUpdate();
+  const { tier, loading: tierLoading } = useUserTier();
+
   const [branding, setBranding] = useState(defaultBranding);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [copied, setCopied] = useState(false);
@@ -46,10 +45,47 @@ export default function BookingSitePage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [domainMode, setDomainMode] = useState<'subdomain' | 'custom'>('subdomain');
   const [hexInput, setHexInput] = useState(defaultBranding.accentColor);
+  const [seeded, setSeeded] = useState(false);
+
+  // Pre-fill branding from operator record
+  useEffect(() => {
+    if (!operator || seeded) return;
+    const faqs = (operator.faqs as Array<{ question?: string; answer?: string }>) || [];
+    setBranding({
+      brandName: operator.brand_name || '',
+      subdomain: operator.subdomain || '',
+      customDomain: operator.custom_domain || '',
+      accentColor: operator.accent_color || '#10b981',
+      heroHeadline: operator.hero_headline || defaultBranding.heroHeadline,
+      heroSubheadline: operator.hero_subheadline || defaultBranding.heroSubheadline,
+      aboutBio: operator.about_bio || '',
+      aboutPhoto: operator.about_photo || '',
+      faq1Q: faqs[0]?.question || defaultBranding.faq1Q,
+      faq1A: faqs[0]?.answer || defaultBranding.faq1A,
+      faq2Q: faqs[1]?.question || defaultBranding.faq2Q,
+      faq2A: faqs[1]?.answer || defaultBranding.faq2A,
+      faq3Q: faqs[2]?.question || defaultBranding.faq3Q,
+      faq3A: faqs[2]?.answer || defaultBranding.faq3A,
+      contactEmail: operator.contact_email || '',
+      contactPhone: operator.contact_phone || '',
+      contactWhatsapp: operator.contact_whatsapp || '',
+      socialInstagram: operator.social_instagram || '',
+      socialFacebook: operator.social_facebook || '',
+      socialTwitter: operator.social_twitter || '',
+      socialTiktok: operator.social_tiktok || '',
+      footerTagline: defaultBranding.footerTagline,
+    });
+    setHexInput(operator.accent_color || '#10b981');
+    if (operator.primary_domain_type === 'custom') setDomainMode('custom');
+    setSeeded(true);
+  }, [operator, seeded]);
+
+  const paid = isPaidTier(tier);
+  const loading = opLoading || tierLoading;
 
   const siteUrl = domainMode === 'custom' && branding.customDomain
     ? branding.customDomain
-    : `${branding.subdomain}.nfstay.app`;
+    : `${branding.subdomain || 'yourbrand'}.nfstay.app`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(`https://${siteUrl}`);
@@ -66,8 +102,95 @@ export default function BookingSitePage() {
     setHexInput(color);
   };
 
+  const handleSave = async () => {
+    if (!paid) {
+      setPaymentOpen(true);
+      return;
+    }
+    const faqs = [
+      { question: branding.faq1Q, answer: branding.faq1A },
+      { question: branding.faq2Q, answer: branding.faq2A },
+      { question: branding.faq3Q, answer: branding.faq3A },
+    ];
+    await saveOperator({
+      brand_name: branding.brandName || null,
+      subdomain: branding.subdomain || null,
+      custom_domain: branding.customDomain || null,
+      primary_domain_type: domainMode,
+      accent_color: branding.accentColor || null,
+      hero_headline: branding.heroHeadline || null,
+      hero_subheadline: branding.heroSubheadline || null,
+      about_bio: branding.aboutBio || null,
+      about_photo: branding.aboutPhoto || null,
+      faqs,
+      contact_email: branding.contactEmail || null,
+      contact_phone: branding.contactPhone || null,
+      contact_whatsapp: branding.contactWhatsapp || null,
+      social_instagram: branding.socialInstagram || null,
+      social_facebook: branding.socialFacebook || null,
+      social_twitter: branding.socialTwitter || null,
+      social_tiktok: branding.socialTiktok || null,
+    });
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // No operator record
+  if (!operator && !opLoading) {
+    return (
+      <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex items-center justify-center">
+        <div className="text-center max-w-md px-6">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4">
+            <Globe className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-lg font-bold text-foreground mb-2">Complete your booking site setup</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {opError || 'You need to set up your operator profile before customising your booking site.'}
+          </p>
+          <button
+            onClick={() => {
+              window.open(getBridgeUrl("https://nfstay.app", "/admin/nfstay"), "_blank");
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95"
+          >
+            Start Setup
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row overflow-hidden">
+    <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row overflow-hidden relative">
+      {/* Tier gate overlay for free users */}
+      {!paid && (
+        <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="text-center max-w-sm px-6">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4">
+              <Globe className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-foreground mb-2">Upgrade to unlock your booking site</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Your branded booking site is included with any paid plan. Upgrade to start accepting direct bookings.
+            </p>
+            <button
+              onClick={() => setPaymentOpen(true)}
+              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95"
+            >
+              Upgrade Now
+            </button>
+          </div>
+          <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); }} />
+        </div>
+      )}
+
       {/* Left Panel — Controls */}
       <div className="w-full lg:w-[380px] xl:w-[420px] border-r border-border/30 bg-white flex flex-col overflow-hidden flex-shrink-0">
         {/* Header */}
@@ -87,7 +210,7 @@ export default function BookingSitePage() {
             }}
             className="text-xs text-primary hover:underline font-medium"
           >
-            Open Booking Site Admin →
+            Open Booking Site Admin
           </button>
         </div>
 
@@ -139,8 +262,8 @@ export default function BookingSitePage() {
                   placeholder="yourdomain.com"
                 />
               </div>
-              <button onClick={() => setPaymentOpen(true)} className="p-2 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors" title="Connect domain">
-                <Link2 className="w-4 h-4 text-emerald-600" />
+              <button onClick={handleCopy} className="p-2 rounded-lg border border-border/50 hover:bg-gray-50 transition-colors" title="Copy URL">
+                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
               </button>
             </div>
           )}
@@ -276,8 +399,32 @@ export default function BookingSitePage() {
 
         {/* Bottom Actions */}
         <div className="p-5 border-t border-border/30 bg-gray-50/50 space-y-2">
-          <button data-feature="BOOKING_NFSTAY__CUSTOMIZER_SAVE" onClick={() => setPaymentOpen(true)} className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[13px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95">
-            Publish Site
+          {saveError && (
+            <div className="flex items-center gap-2 text-red-600 text-[12px] mb-1">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{saveError}</span>
+            </div>
+          )}
+          {saveSuccess && (
+            <div className="flex items-center gap-2 text-emerald-600 text-[12px] mb-1">
+              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Changes saved</span>
+            </div>
+          )}
+          <button
+            data-feature="BOOKING_NFSTAY__CUSTOMIZER_SAVE"
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[13px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95 disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </button>
           <p className="text-[10px] text-center text-muted-foreground">
             Your site will be live at <span className="font-medium">{siteUrl}</span>
@@ -287,13 +434,12 @@ export default function BookingSitePage() {
         <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); }} />
       </div>
 
-      {/* Right Panel — Self-contained mockup preview */}
+      {/* Right Panel — Live preview */}
       <div data-feature="BOOKING_NFSTAY__CUSTOMIZER_PREVIEW" className="flex-1 bg-[hsl(210,20%,96%)] flex flex-col overflow-hidden">
         {/* Preview Toolbar */}
         <div className="h-12 px-5 flex items-center justify-between border-b border-border/30 bg-white/60 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center gap-3">
             <span className="text-[12px] font-medium text-muted-foreground">Preview</span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Demo</span>
             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
               <button onClick={() => setPreviewMode('desktop')} className={`p-1.5 rounded-md transition-colors ${previewMode === 'desktop' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
                 <Monitor className="w-4 h-4" />
@@ -334,4 +480,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
-
