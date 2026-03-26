@@ -76,8 +76,8 @@ export default function BookingSitePage() {
               <Globe className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h1 className="text-[15px] font-bold text-foreground leading-tight">Booking Site</h1>
-              <p className="text-[11px] text-muted-foreground leading-tight">Your branded booking platform</p>
+              <h1 className="text-[15px] font-bold text-foreground leading-tight">Booking Site <span className="text-[10px] font-medium text-muted-foreground">(demo)</span></h1>
+              <p className="text-[11px] text-muted-foreground leading-tight">Your branded booking platform — included for all members</p>
             </div>
           </div>
         </div>
