@@ -2,31 +2,72 @@
    NAVBAR — 100% pixel-perfect from shipper.now source
    ==================================================== */
 
-/* Fixed outer wrapper — position:fixed, rounded, white card */
+/* Fixed outer wrapper — transparent shell, full-width */
 .nav_fixed {
   z-index: 12;
-  background-color: #fff;
-  border-radius: 1rem;
-  margin: 1rem 1rem 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.02);
+  padding: 0.5rem 0.5rem 0;
+  display: flex;
+  flex-direction: column;
   overflow: visible;
+  pointer-events: none;
 }
 
-/* Inner nav component — white bg, rounded, vertical padding */
+/* Inner nav component — glass + shrink transition */
 .nav_component {
-  background-color: #fff;
-  border-radius: 1rem;
+  pointer-events: auto;
   width: 100%;
-  padding-top: 0.7rem;
-  padding-bottom: 0.7rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0.7rem 1.5rem;
+  border-radius: 1rem;
+  background-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid transparent;
+  box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.02);
   position: relative;
+  transition: max-width 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+              padding 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.6s ease,
+              backdrop-filter 0.5s ease,
+              border-color 0.6s ease,
+              border-radius 0.6s ease,
+              box-shadow 0.6s ease;
+}
+
+/* Scrolled state — shrink to pill with stronger glass */
+.nav_fixed.scrolled .nav_component {
+  max-width: 56rem;
+  padding: 0.4rem 1.25rem;
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: rgba(0, 0, 0, 0.06);
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255,255,255,0.5) inset;
+}
+
+/* Items that fade out when scrolled — slower transition */
+.nav_fixed .vertical-divider-navbar,
+.nav_fixed .lang-dropdown,
+.nav_fixed .nav_menu_link[data-feature="SHARED__LANDING_NAV_LOGIN"] {
+  transition: opacity 0.5s ease 0.1s, max-width 0.5s ease 0.1s, padding 0.5s ease 0.1s, margin 0.5s ease 0.1s;
+  opacity: 1;
+  max-width: 200px;
+  overflow: hidden;
+}
+.nav_fixed.scrolled .vertical-divider-navbar {
+  opacity: 0; max-width: 0; padding: 0; margin: 0;
+}
+.nav_fixed.scrolled .lang-dropdown {
+  opacity: 0; max-width: 0; padding: 0; margin: 0; pointer-events: none;
+}
+.nav_fixed.scrolled .nav_menu_link[data-feature="SHARED__LANDING_NAV_LOGIN"] {
+  opacity: 0; max-width: 0; padding: 0; margin: 0;
 }
 
 /* Container row — flex between, centered, max-width 80rem */
