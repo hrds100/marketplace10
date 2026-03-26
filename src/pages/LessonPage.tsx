@@ -3,6 +3,7 @@ import { getLessonById, modules as staticModules } from '@/data/universityData';
 import { useUniversityProgress } from '@/hooks/useUniversityProgress';
 import { useAuth } from '@/hooks/useAuth';
 import { callAIChat } from '@/hooks/useAIChat';
+import PaymentSheet from '@/components/PaymentSheet';
 import { useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft, ArrowRight, Zap, CheckSquare, AlertTriangle, MapPin, Copy, Code,
@@ -62,6 +63,7 @@ export default function LessonPage() {
   const staticResult = getLessonById(moduleId || '', lessonId || '');
   const result = dbResult ?? staticResult;
 
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -145,13 +147,14 @@ export default function LessonPage() {
           <h2 className="text-xl font-bold mb-2" style={{ color: '#111827' }}>Upgrade to {moduleTierRequired} to access this lesson</h2>
           <p className="text-sm mb-6" style={{ color: '#6B7280' }}>This lesson is part of the {moduleTierRequired} tier.</p>
           <button
-            onClick={() => { toast.info(`Upgrade to ${moduleTierRequired} to access this lesson`); navigate('/dashboard/settings'); }}
+            onClick={() => setPaymentOpen(true)}
             className="h-11 px-6 rounded-[10px] text-sm font-semibold inline-flex items-center gap-2"
             style={{ background: '#111827', color: '#FFFFFF' }}
           >
             Upgrade Plan <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+        <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => window.location.reload()} />
       </div>
     );
   }

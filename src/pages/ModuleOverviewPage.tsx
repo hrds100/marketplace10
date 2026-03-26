@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getModuleById } from '@/data/universityData';
 import { useUniversityProgress } from '@/hooks/useUniversityProgress';
+import PaymentSheet from '@/components/PaymentSheet';
 import { ArrowLeft, Zap, CheckCircle, Circle, Lock, ChevronRight } from 'lucide-react';
 
 function tierSatisfied(required: string, userTier: string): boolean {
@@ -29,6 +31,7 @@ export default function ModuleOverviewPage() {
   // Tier gating - get tier_required from DB module if available
   const dbModuleTierRequired = (dbMod as unknown as { tier_required?: string } | undefined)?.tier_required ?? 'free';
   const isGated = !tierSatisfied(dbModuleTierRequired, userTier);
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   return (
     <div data-feature="UNIVERSITY" className="max-w-[860px] mx-auto">
@@ -86,7 +89,7 @@ export default function ModuleOverviewPage() {
             </p>
             <p className="text-sm mb-4" style={{ color: '#6B7280' }}>Upgrade your plan to unlock all lessons.</p>
             <button
-              onClick={() => navigate('/dashboard/settings')}
+              onClick={() => setPaymentOpen(true)}
               className="h-11 px-6 rounded-[10px] text-sm font-semibold inline-flex items-center gap-2 hover:opacity-90"
               style={{ background: '#111827', color: '#FFFFFF' }}
             >
@@ -171,6 +174,8 @@ export default function ModuleOverviewPage() {
           );
         })}
       </div>
+
+      <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => window.location.reload()} />
     </div>
   );
 }
