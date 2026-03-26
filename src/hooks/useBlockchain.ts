@@ -779,6 +779,102 @@ export function useBlockchain() {
     [ensureConnected],
   );
 
+  // Admin: Get wallet balances for Manager (BNB + STAY) and Treasury (USDC)
+  const adminGetWalletBalances = useCallback(async () => {
+    try {
+      const ethers = await getEthers();
+      if (!ethers) return null;
+      const { WALLETS } = await import('@/lib/particle');
+
+      const provider = await getReadProvider();
+      if (!provider) return null;
+
+      const stayContract = await getContract(CONTRACTS.STAY, ERC20_ABI);
+      const usdcContract = await getContract(CONTRACTS.USDC, ERC20_ABI);
+      if (!stayContract || !usdcContract) return null;
+
+      const [bnbRaw, stayRaw, usdcRaw] = await Promise.all([
+        provider.getBalance(WALLETS.MANAGER),
+        stayContract.balanceOf(WALLETS.MANAGER),
+        usdcContract.balanceOf(WALLETS.TREASURY),
+      ]);
+
+      return {
+        managerBnb: parseFloat(ethers.utils.formatUnits(bnbRaw, 18)).toFixed(4),
+        managerStay: parseFloat(ethers.utils.formatUnits(stayRaw, 18)).toLocaleString(),
+        treasuryUsdc: parseFloat(ethers.utils.formatUnits(usdcRaw, 18)).toLocaleString(),
+      };
+    } catch (err) {
+      console.error('[adminGetWalletBalances] Failed:', err);
+      return null;
+    }
+  }, []);
+
+  // Admin: Distribute performance fees to agents
+  // Ported from legacy NfstayContext.jsx distributeFeesToAgents()
+  const adminDistributePerformanceFees = useCallback(
+    async (
+      distributions: Array<{ recipient: string; amount: string }>,
+      propertyId: number,
+      monthTimestamp: number,
+      totalAmountToSend: number,
+    ) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await ensureConnected();
+        const ethers = await getEthers();
+        if (!ethers || !address) throw new Error('Wallet not connected');
+
+        // 1. Check USDC allowance, approve if needed
+        const usdc = await getContract(CONTRACTS.USDC, ERC20_ABI, true);
+        if (!usdc) throw new Error('Could not connect to USDC contract');
+
+        const totalWei = ethers.utils.parseUnits(totalAmountToSend.toString(), 18);
+        const currentAllowance = await usdc.allowance(address, CONTRACTS.RWA_MARKETPLACE);
+
+        if (currentAllowance.lt(totalWei)) {
+          const approveTx = await usdc.approve(CONTRACTS.RWA_MARKETPLACE, totalWei);
+          await approveTx.wait();
+          console.log('[adminDistributePerformanceFees] USDC approved');
+        }
+
+        // 2. Call distributePerformanceFees on the marketplace contract
+        const marketplace = await getContract(CONTRACTS.RWA_MARKETPLACE, MARKETPLACE_ABI, true);
+        if (!marketplace) throw new Error('Could not connect to marketplace');
+
+        const tx = await marketplace.distributePerformanceFees(
+          distributions,
+          propertyId,
+          monthTimestamp,
+        );
+        const receipt = await tx.wait();
+
+        setLoading(false);
+        return { txHash: receipt.transactionHash, success: true };
+      } catch (err: any) {
+        console.error('[adminDistributePerformanceFees] Failed:', err);
+        const msg = err instanceof Error ? err.message : 'Distribution failed';
+        setError(msg);
+        setLoading(false);
+        throw err;
+      }
+    },
+    [address, ensureConnected],
+  );
+
+  // Admin: Get total property shares (for fee distribution calculation)
+  const adminGetTotalPropertyShares = useCallback(async (propertyId: number): Promise<number> => {
+    try {
+      const contract = await getContract(CONTRACTS.RWA_MARKETPLACE, MARKETPLACE_ABI);
+      if (!contract) return 0;
+      const details = await contract.getPropertyDetails(propertyId);
+      return details.totalShares.toNumber();
+    } catch {
+      return 0;
+    }
+  }, []);
+
   return {
     // State
     loading,
@@ -809,6 +905,9 @@ export function useBlockchain() {
     adminResetPropertyRent,
     adminGetRentDetails,
     adminBoostUser,
+    adminGetWalletBalances,
+    adminDistributePerformanceFees,
+    adminGetTotalPropertyShares,
 
     // Wallet
     connectWallet: connect,

@@ -4,7 +4,7 @@ import {
   ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap,
   CreditCard, HelpCircle, UserCheck, Settings, Bell, TrendingUp,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
-  LayoutGrid, Plug, Globe, CalendarCheck, Zap, Eye,
+  LayoutGrid, Plug, Globe, CalendarCheck, Zap, Eye, Receipt, History,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,6 +36,8 @@ const investLinks = [
   { to: '/admin/invest/proposals', label: 'Proposals', icon: Vote },
   { to: '/admin/invest/boost', label: 'Boost', icon: Rocket },
   { to: '/admin/invest/rent', label: 'Rent Distribution', icon: Banknote },
+  { to: '/admin/invest/performance-fees', label: 'Performance Fees', icon: Receipt },
+  { to: '/admin/invest/fee-history', label: 'Fee History', icon: History },
   { to: '/admin/invest/endpoints', label: 'Endpoints', icon: Plug },
 ];
 
