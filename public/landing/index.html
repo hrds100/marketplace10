@@ -119,25 +119,6 @@
     </nav>
   </div>
 
-  <script>
-    // Nav glass effect — triggers after scrolling past the hero section
-    (function() {
-      var nav = document.getElementById('navbar');
-      var hero = document.getElementById('hero');
-      if (!nav || !hero) return;
-      var scrolled = false;
-      window.addEventListener('scroll', function() {
-        var heroBottom = hero.offsetTop + hero.offsetHeight;
-        var shouldShrink = window.scrollY > heroBottom;
-        if (shouldShrink !== scrolled) {
-          scrolled = shouldShrink;
-          if (scrolled) { nav.classList.add('scrolled'); }
-          else { nav.classList.remove('scrolled'); }
-        }
-      }, { passive: true });
-    })();
-  </script>
-
   <!-- ========== HERO SECTION (nfstay) ========== -->
   <section class="section section_hero" data-feature="SHARED__LANDING_HERO" id="hero">
     <div class="hero-bg-clouds">
@@ -1581,6 +1562,26 @@
       return false;
     };
   });
+  </script>
+
+  <script>
+    // Nav glassmorphism — shrink to pill after scrolling past hero
+    (function() {
+      var nav = document.getElementById('navbar');
+      var hero = document.getElementById('hero');
+      if (!nav || !hero) return;
+      var isScrolled = false;
+      function onScroll() {
+        var heroBottom = hero.getBoundingClientRect().height + hero.offsetTop;
+        var past = window.scrollY > heroBottom;
+        if (past !== isScrolled) {
+          isScrolled = past;
+          nav.classList.toggle('scrolled', isScrolled);
+        }
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    })();
   </script>
 
 </body>

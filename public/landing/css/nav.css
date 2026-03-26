@@ -20,33 +20,28 @@
 .nav_component {
   pointer-events: auto;
   width: 100%;
-  max-width: 80rem;
+  max-width: 96rem;
   margin: 0 auto;
-  padding: 0.7rem 1.5rem;
+  padding: 0.7rem 2rem;
   border-radius: 1rem;
   background-color: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid transparent;
+  border: 1px solid rgba(0, 0, 0, 0.04);
   box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.02);
   position: relative;
   transition: max-width 0.6s cubic-bezier(0.22, 1, 0.36, 1),
               padding 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-              background-color 0.6s ease,
-              backdrop-filter 0.5s ease,
               border-color 0.6s ease,
               border-radius 0.6s ease,
               box-shadow 0.6s ease;
 }
 
-/* Scrolled state — shrink to pill with stronger glass */
+/* Scrolled state — shrink to compact pill, same frosted glass */
 .nav_fixed.scrolled .nav_component {
-  max-width: 56rem;
-  padding: 0.4rem 1.25rem;
-  background-color: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-color: rgba(0, 0, 0, 0.06);
+  max-width: 52rem;
+  padding: 0.45rem 1.25rem;
+  border-color: rgba(0, 0, 0, 0.08);
   border-radius: 1.25rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255,255,255,0.5) inset;
 }
