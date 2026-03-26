@@ -47,9 +47,9 @@ export default function BookingSitePreview({ branding, isMobile, onPayment }: Pr
     <nav className="sticky top-0 left-0 right-0 w-full h-14 sm:h-16 bg-white z-10 border-b border-gray-200/50">
       <div className="max-w-full mx-auto px-3 sm:px-4 h-full">
         <div className={`${showSearch ? 'flex justify-between items-center' : 'grid grid-cols-3'} h-full gap-2`}>
-          {/* LEFT: Logo */}
+          {/* LEFT: Logo — click to go home */}
           <div className={`flex items-center gap-2 ${showSearch && isMobile ? 'hidden' : 'flex'}`}>
-            <span className="text-base sm:text-lg font-bold" style={{ color: ac }}>{branding.brandName || 'Your Brand'}</span>
+            <button onClick={() => setPage('home')} className="text-base sm:text-lg font-bold hover:opacity-80 transition-opacity" style={{ color: ac }}>{branding.brandName || 'Your Brand'}</button>
           </div>
 
           {/* CENTER: Toggle pill or Search bar */}
@@ -65,10 +65,9 @@ export default function BookingSitePreview({ branding, isMobile, onPayment }: Pr
             </div>
           ) : !isMobile ? (
             <div className="flex items-center justify-center">
-              <div className="relative bg-white border border-gray-200/50 rounded-full p-1 shadow-lg shadow-emerald-500/5">
-                <div className="absolute top-1 left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] rounded-full transition-all duration-500" style={{ background: grad }} />
-                <button onClick={() => setPage('home')} className="relative z-10 px-4 py-1.5 rounded-full text-[11px] font-medium text-white">Find Stays</button>
-                <button onClick={onPayment} className="relative z-10 px-4 py-1.5 rounded-full text-[11px] font-medium text-gray-600">My Reservations</button>
+              <div className="relative bg-white border border-gray-200/50 rounded-full p-1.5 shadow-lg shadow-emerald-500/5 flex">
+                <button onClick={() => setPage('home')} className="relative z-10 px-5 py-2 rounded-full text-[11px] font-medium text-white min-w-[100px]" style={{ background: page !== 'property' ? grad : 'transparent', color: page !== 'property' ? 'white' : '#6B7280' }}>Find Stays</button>
+                <button onClick={onPayment} className="relative z-10 px-5 py-2 rounded-full text-[11px] font-medium min-w-[120px]" style={{ color: '#6B7280' }}>My Reservations</button>
               </div>
             </div>
           ) : (
@@ -86,10 +85,15 @@ export default function BookingSitePreview({ branding, isMobile, onPayment }: Pr
                   <>
                     <div className="fixed inset-0 z-10" onClick={close} />
                     <div className="absolute right-0 top-8 w-52 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20">
-                      {branding.contactWhatsapp && <button className="w-full px-3 py-2.5 text-[11px] text-foreground flex items-center gap-3 hover:bg-gray-50"><MessageCircle className="w-4 h-4 text-[#25D366]" />WhatsApp</button>}
-                      {branding.contactEmail && <button className="w-full px-3 py-2.5 text-[11px] text-foreground flex items-center gap-3 hover:bg-gray-50"><Mail className="w-4 h-4" />Email</button>}
-                      {branding.contactPhone && <button className="w-full px-3 py-2.5 text-[11px] text-foreground flex items-center gap-3 hover:bg-gray-50"><Phone className="w-4 h-4" />Call</button>}
-                      {!branding.contactWhatsapp && !branding.contactEmail && !branding.contactPhone && <span className="block px-3 py-2 text-[11px] text-muted-foreground">Add contact info</span>}
+                      <button className="w-full px-3 py-2.5 text-[11px] text-foreground flex items-center gap-3 hover:bg-gray-50 transition-colors">
+                        <MessageCircle className="w-4 h-4 text-[#25D366]" />{branding.contactWhatsapp || '+44 7xxx xxx xxx'}
+                      </button>
+                      <button className="w-full px-3 py-2.5 text-[11px] text-foreground flex items-center gap-3 hover:bg-gray-50 transition-colors">
+                        <Mail className="w-4 h-4" />{branding.contactEmail || 'hello@yourbrand.com'}
+                      </button>
+                      <button className="w-full px-3 py-2.5 text-[11px] text-foreground flex items-center gap-3 hover:bg-gray-50 transition-colors">
+                        <Phone className="w-4 h-4" />{branding.contactPhone || '+44 xxx xxx xxxx'}
+                      </button>
                     </div>
                   </>
                 )}
@@ -242,7 +246,7 @@ export default function BookingSitePreview({ branding, isMobile, onPayment }: Pr
         <div className={`grid gap-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-4'}`}>
           <div>
             <span className="text-base font-bold mb-3 block" style={{ color: ac }}>{branding.brandName || 'Your Brand'}</span>
-            <p className="text-sm text-gray-500 mb-3">Book your stay directly. No middlemen, no hidden fees.</p>
+            <p className="text-sm text-gray-500 mb-3">{branding.footerTagline || 'Book your stay directly. No middlemen, no hidden fees.'}</p>
             {(branding.socialInstagram || branding.socialFacebook || branding.socialTwitter || branding.socialTiktok) && (
               <div className="flex gap-3 text-xs text-gray-500">
                 {branding.socialInstagram && <span className="hover:text-white cursor-pointer transition-colors">Instagram</span>}
@@ -316,7 +320,7 @@ export default function BookingSitePreview({ branding, isMobile, onPayment }: Pr
           <SearchMap />
         </div>
       )}
-      <Footer />
+      {/* No footer on search page — matches real nfstay.app */}
       {/* Mobile bottom nav */}
       {isMobile && (
         <div className="sticky bottom-0 bg-white border-t border-gray-200 p-2 flex justify-center z-10">

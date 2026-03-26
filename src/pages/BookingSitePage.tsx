@@ -34,6 +34,7 @@ const defaultBranding = {
   socialFacebook: '',
   socialTwitter: '',
   socialTiktok: '',
+  footerTagline: 'Book your stay directly. No middlemen, no hidden fees.',
 };
 
 export default function BookingSitePage() {
@@ -221,9 +222,12 @@ export default function BookingSitePage() {
               ))}
 
               <div className="border-t border-border/30 pt-3 mt-3">
-                <p className="text-[11px] font-semibold text-foreground mb-1">Footer</p>
-                <p className="text-[10px] text-muted-foreground mb-2">Footer shows your brand name, contact info, and social links from the Contact tab.</p>
+                <p className="text-[11px] font-semibold text-foreground mb-2">Footer</p>
               </div>
+              <Field label="Footer Tagline">
+                <input type="text" value={branding.footerTagline || ''} onChange={e => update('footerTagline', e.target.value)} className="w-full px-3 py-1.5 text-[12px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 transition-all" placeholder="Book your stay directly. No middleman fees." />
+              </Field>
+              <p className="text-[10px] text-muted-foreground">Contact info and social links are pulled from the Contact tab.</p>
             </>
           )}
 
