@@ -166,7 +166,11 @@ export default function AdminNfsProperties() {
             const location = [p.city, p.country].filter(Boolean).join(', ');
 
             return (
-              <div key={p.id} className="bg-card border border-border rounded-2xl overflow-hidden">
+              <div
+                key={p.id}
+                onClick={() => window.open(`https://nfstay.app/property/${p.id}`, '_blank')}
+                className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+              >
                 {/* Image */}
                 <div className="h-36 bg-muted overflow-hidden">
                   {cover
@@ -212,9 +216,10 @@ export default function AdminNfsProperties() {
                       ))}
                     </select>
                     <a
-                      href={`/property/${p.id}`}
+                      href={`https://nfstay.app/property/${p.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
                       className="p-1.5 hover:bg-muted rounded-md transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />

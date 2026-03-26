@@ -88,7 +88,7 @@ export default function AdminLayout() {
   const workspaceLabel = workspace === 'invest' ? 'JV Partners' : workspace === 'booking' ? 'Booking Site' : 'Marketplace';
 
   return (
-    <div data-feature="NAV_LAYOUT" className="min-h-screen bg-background relative">
+    <div data-feature="NAV_LAYOUT" className="min-h-screen bg-background relative overflow-x-hidden">
       {/* Top nav */}
       <nav className="h-[64px] bg-card border-b border-border flex items-center px-6 gap-4">
         <Link to="/admin" className="flex-shrink-0">
