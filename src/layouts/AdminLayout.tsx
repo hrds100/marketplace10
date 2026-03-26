@@ -93,7 +93,7 @@ export default function AdminLayout() {
               <Link to="/admin/invest" className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors ${workspace === 'invest' ? 'bg-amber-500/10 text-amber-600' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
                 JV
               </Link>
-              <Link to="/admin/booking" className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors ${workspace === 'booking' ? 'bg-blue-500/10 text-blue-600' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
+              <Link to="/admin/nfstay" className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors ${workspace === 'booking' ? 'bg-blue-500/10 text-blue-600' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
                 Booking
               </Link>
             </div>

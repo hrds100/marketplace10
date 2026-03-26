@@ -80,6 +80,9 @@ export default function BookingSitePage() {
               <p className="text-[11px] text-muted-foreground leading-tight">Your branded booking platform, included for all members</p>
             </div>
           </div>
+          <a href="https://nfstay.app/admin/nfstay" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline font-medium">
+            Open Booking Site Admin →
+          </a>
         </div>
 
         {/* URL Bar + Domain toggle */}
