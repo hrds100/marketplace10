@@ -32,12 +32,27 @@ export default function AdminNfsOperators() {
     setError(null);
     try {
       const { data, error: dbError } = await (supabase.from('nfs_operators') as any)
-        .select('id, profile_id, brand_name, legal_name, contact_email, contact_phone, subdomain, custom_domain, listings_count, onboarding_step, created_at')
+        .select('id, profile_id, brand_name, legal_name, contact_email, contact_phone, subdomain, custom_domain, onboarding_step, created_at')
         .order('created_at', { ascending: false })
         .limit(200);
 
       if (dbError) { setError(dbError.message); return; }
-      setOperators(data || []);
+
+      // Count properties per operator dynamically
+      const ops = data || [];
+      const opIds = ops.map((o: any) => o.id);
+      if (opIds.length > 0) {
+        const { data: props } = await (supabase.from('nfs_properties') as any)
+          .select('operator_id')
+          .in('operator_id', opIds);
+        const counts: Record<string, number> = {};
+        (props || []).forEach((p: any) => { counts[p.operator_id] = (counts[p.operator_id] || 0) + 1; });
+        ops.forEach((o: any) => { o.listings_count = counts[o.id] || 0; });
+      } else {
+        ops.forEach((o: any) => { o.listings_count = 0; });
+      }
+
+      setOperators(ops);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load operators');
     } finally {
