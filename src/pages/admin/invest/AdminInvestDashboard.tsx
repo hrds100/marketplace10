@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
-import { DollarSign, Users, Building2, TrendingUp, Clock, Plus, Eye, CreditCard, Settings } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { DollarSign, Users, Building2, TrendingUp, Clock, Plus, Eye, CreditCard, Settings, Wallet, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useInvestProperties, useInvestOrders, useAllShareholders, useAllPayoutClaims } from '@/hooks/useInvestData';
+import { useBlockchain } from '@/hooks/useBlockchain';
 
 const quickActions = [
   { icon: Plus, label: 'Add Property', variant: 'default' as const },
@@ -24,6 +25,25 @@ function timeAgo(dateStr: string): string {
 
 export default function AdminInvestDashboard() {
   const [clickedAction, setClickedAction] = useState<string | null>(null);
+  const { adminGetWalletBalances } = useBlockchain();
+  const [balances, setBalances] = useState<{ managerBnb: string; managerStay: string; treasuryUsdc: string } | null>(null);
+  const [balancesLoading, setBalancesLoading] = useState(true);
+
+  const fetchBalances = useCallback(async () => {
+    setBalancesLoading(true);
+    try {
+      const result = await adminGetWalletBalances();
+      setBalances(result);
+    } catch {
+      // silent
+    } finally {
+      setBalancesLoading(false);
+    }
+  }, [adminGetWalletBalances]);
+
+  useEffect(() => {
+    fetchBalances();
+  }, [fetchBalances]);
 
   const { data: properties = [] } = useInvestProperties();
   const { data: orders = [] } = useInvestOrders();
@@ -83,6 +103,51 @@ export default function AdminInvestDashboard() {
   return (
     <div data-feature="ADMIN__INVEST">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Partnership Dashboard</h1>
+
+      {/* Wallet Balances */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <Card className="border-border">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground">Manager BNB</span>
+              <Wallet className="w-4 h-4 text-amber-500" />
+            </div>
+            {balancesLoading ? (
+              <div className="h-7 w-24 bg-muted animate-pulse rounded" />
+            ) : (
+              <div className="text-xl font-bold text-foreground">{balances?.managerBnb ?? '—'}</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="border-border">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground">Manager STAY</span>
+              <Wallet className="w-4 h-4 text-[#1E9A80]" />
+            </div>
+            {balancesLoading ? (
+              <div className="h-7 w-24 bg-muted animate-pulse rounded" />
+            ) : (
+              <div className="text-xl font-bold text-foreground">{balances?.managerStay ?? '—'}</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="border-border">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground">Treasury USDC</span>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchBalances} disabled={balancesLoading}>
+                <RefreshCw className={cn('w-3.5 h-3.5', balancesLoading && 'animate-spin')} />
+              </Button>
+            </div>
+            {balancesLoading ? (
+              <div className="h-7 w-24 bg-muted animate-pulse rounded" />
+            ) : (
+              <div className="text-xl font-bold text-foreground">${balances?.treasuryUsdc ?? '—'}</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Stat cards */}
       <div data-feature="ADMIN__INVEST_STATS" className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">

@@ -47,6 +47,8 @@ import AdminInvestBoost from "./pages/admin/invest/AdminInvestBoost";
 import AdminInvestRentDispersion from "./pages/admin/invest/AdminInvestRentDispersion";
 import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
 import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
+import AdminInvestPerformanceFees from "./pages/admin/invest/AdminInvestPerformanceFees";
+import AdminInvestFeeHistory from "./pages/admin/invest/AdminInvestFeeHistory";
 import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
 import AdminArchitecture from "./pages/admin/AdminArchitecture";
 import AdminObservatoryPage from "./pages/admin/AdminObservatoryPage";
@@ -204,6 +206,8 @@ const App = () => (
             <Route path="invest/rent" element={<AdminInvestRentDispersion />} />
             <Route path="invest/endpoints" element={<AdminEndpoints />} />
             <Route path="invest/test-console" element={<AdminTestConsole />} />
+            <Route path="invest/performance-fees" element={<AdminInvestPerformanceFees />} />
+            <Route path="invest/fee-history" element={<AdminInvestFeeHistory />} />
 
             {/* Booking Site (nfstay) workspace */}
             <Route path="nfstay" element={<AdminNfsReservations />} />

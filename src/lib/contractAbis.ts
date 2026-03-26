@@ -10,6 +10,8 @@ export const MARKETPLACE_ABI = [
   'function getPrimaryPropertyRemainingShares(uint256 propertyId) external view returns (uint256)',
   'function getMarketplaceFee() external view returns (uint256)',
   'function getPrimarySaleQuote(uint256 usdcAmount, uint256 sharePrice) external view returns (uint256 _sharesToBuy, uint256 _usdcQuotation, uint256 _marketFees)',
+  // Admin: distribute performance fees to agents — tuple[] input
+  'function distributePerformanceFees(tuple(address recipient, uint256 amount)[] distributions, uint256 _propertyId, uint256 _monthTimestamp) external',
 ];
 
 export const RWA_TOKEN_ABI = [
