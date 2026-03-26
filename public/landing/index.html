@@ -1073,7 +1073,7 @@
 
   <!-- TESTIMONIALS V2: VERTICAL SCROLLING COLUMNS -->
   <div class="s bg-cream sr" data-feature="SHARED__LANDING_TESTIMONIALS_V2" style="overflow:hidden;">
-    <div class="wrap">
+    <div class="wrap" style="max-width:1440px;">
       <div class="sh">
         <div style="display:inline-flex;justify-content:center;">
           <div style="border:1px solid rgba(0,0,0,0.08);padding:4px 16px;border-radius:10px;font-size:13px;font-weight:500;color:#1a1a1a;">Testimonials</div>
@@ -1204,7 +1204,7 @@
 
   <style>
     /* ── Testimonials Vertical Columns ── */
-    .tvc-col { width: 290px; overflow: hidden; }
+    .tvc-col { width: 320px; overflow: hidden; }
     .tvc-col-md { display: none; }
     .tvc-col-lg { display: none; }
     .tvc-col-xl { display: none; }
@@ -1225,7 +1225,7 @@
     .tvc-card {
       background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 20px;
       padding: 28px; box-shadow: 0 2px 12px rgba(30,154,128,0.04);
-      width: 100%; max-width: 290px;
+      width: 100%; max-width: 320px;
     }
     .tvc-text {
       font-size: 14px; color: #1a1a1a; line-height: 1.65; margin: 0;
@@ -1427,7 +1427,8 @@
   <!-- CTA BAND -->
   <div class="s bg-gradient sr" data-feature="SHARED__LANDING_CTA_BAND"><div class="wrap cta-band"><h2 style="font-size:48px;line-height:1.1;letter-spacing:-1px;" data-i18n="cta_h">Ready to find your first deal?</h2><p style="font-size:18px;margin-top:12px;">Join 300+ operators building their portfolio with nfstay.</p><div class="cta-btns" style="margin-top:28px;"><a href="/signup" class="btn btn-white" data-feature="SHARED__LANDING_CTA_BUTTON" style="padding:18px 48px;font-size:17px;border-radius:14px;" data-i18n="cta_btn">Get Started</a></div></div></div>
 
-<footer class="footer" data-feature="SHARED__LANDING_FOOTER">
+<!-- OLD FOOTER (hidden) -->
+<footer class="footer" data-feature="SHARED__LANDING_FOOTER_OLD" style="display:none;">
     <div class="wrap">
       <div class="footer-grid">
         <div><div class="footer-brand" data-feature="SHARED__LANDING_FOOTER_LOGO"><span class="box">nf</span><span class="text">stay</span></div><p class="footer-desc">The UK rent-to-rent marketplace. Find, analyse and close landlord-approved deals.</p></div>
@@ -1439,6 +1440,81 @@
       <div class="footer-bottom" data-feature="SHARED__LANDING_FOOTER_BOTTOM">&copy; 2026 nfstay. All rights reserved.</div>
     </div>
   </footer>
+
+<!-- NEW FOOTER V2 -->
+<footer data-feature="SHARED__LANDING_FOOTER" style="background:#fff;border-top:1px solid rgba(0,0,0,0.06);padding:64px 0 32px;">
+  <div class="wrap" style="max-width:1200px;">
+    <!-- Top: Logo+desc+socials LEFT | Link columns RIGHT -->
+    <div style="display:flex;flex-direction:row;justify-content:space-between;gap:48px;flex-wrap:wrap;">
+
+      <!-- Left: Brand block -->
+      <div style="max-width:320px;">
+        <div style="display:flex;align-items:center;gap:3px;margin-bottom:12px;font-family:'Sora',sans-serif;">
+          <a href="/" style="display:flex;align-items:center;gap:3px;text-decoration:none;">
+            <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:2px solid #0a0a0a;border-radius:6px;font-size:12px;font-weight:700;color:#0a0a0a;">nf</span>
+            <span style="font-size:18px;font-weight:400;letter-spacing:2px;color:#0a0a0a;">stay</span>
+          </a>
+        </div>
+        <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:20px;">The UK rent-to-rent marketplace. Find, analyse and close landlord-approved deals.</p>
+        <!-- Social icons -->
+        <div style="display:flex;align-items:center;gap:16px;">
+          <a href="https://instagram.com/nfstay" aria-label="Instagram" style="color:#6b7280;transition:color 150ms;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </a>
+          <a href="https://facebook.com/nfstay" aria-label="Facebook" style="color:#6b7280;transition:color 150ms;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          </a>
+          <a href="https://x.com/nfstay" aria-label="X / Twitter" style="color:#6b7280;transition:color 150ms;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+          </a>
+          <a href="https://linkedin.com/company/nfstay" aria-label="LinkedIn" style="color:#6b7280;transition:color 150ms;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: Link columns -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:48px;flex:1;min-width:0;">
+        <div>
+          <h4 style="font-size:12px;font-weight:700;color:#1a1a1a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Platform</h4>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Deals</a>
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">CRM Pipeline</a>
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Unified Inbox</a>
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Booking Site</a>
+          </div>
+        </div>
+        <div>
+          <h4 style="font-size:12px;font-weight:700;color:#1a1a1a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Learn</h4>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Academy</a>
+            <a href="#how-it-works" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">How It Works</a>
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Agent Programme</a>
+            <a href="#pricing" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Pricing</a>
+          </div>
+        </div>
+        <div>
+          <h4 style="font-size:12px;font-weight:700;color:#1a1a1a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Company</h4>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Contact</a>
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Blog</a>
+            <a href="/terms" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Terms and Conditions</a>
+            <a href="/privacy" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Privacy Policy</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div style="display:flex;flex-direction:row;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;border-top:1px solid rgba(0,0,0,0.06);padding-top:24px;margin-top:40px;">
+      <p style="font-size:12px;color:#9ca3af;">&copy; 2026 nfstay. All rights reserved.</p>
+      <div style="display:flex;gap:16px;">
+        <a href="/terms" style="font-size:12px;color:#9ca3af;text-decoration:none;transition:color 150ms;">Terms and Conditions</a>
+        <a href="/privacy" style="font-size:12px;color:#9ca3af;text-decoration:none;transition:color 150ms;">Privacy Policy</a>
+      </div>
+    </div>
+  </div>
+</footer>
   <script src="/landing/js/feature-inspector.js"></script>
   <script src="/landing/translations.js"></script>
   <script src="/landing/js/hero-demo.js"></script>
