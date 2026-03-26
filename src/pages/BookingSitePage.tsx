@@ -7,6 +7,7 @@ import { useNfsOperator } from '@/hooks/nfstay/use-nfs-operator';
 import { useNfsOperatorUpdate } from '@/hooks/nfstay/use-nfs-operator-update';
 import { useUserTier } from '@/hooks/useUserTier';
 import { isPaidTier } from '@/lib/ghl';
+import { useAuth } from '@/hooks/useAuth';
 
 const defaultBranding = {
   brandName: '',
@@ -37,6 +38,7 @@ export default function BookingSitePage() {
   const { operator, loading: opLoading, error: opError } = useNfsOperator();
   const { update: saveOperator, saving, error: saveError, success: saveSuccess } = useNfsOperatorUpdate();
   const { tier, loading: tierLoading } = useUserTier();
+  const { isAdmin } = useAuth();
 
   const [branding, setBranding] = useState(defaultBranding);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -80,7 +82,7 @@ export default function BookingSitePage() {
     setSeeded(true);
   }, [operator, seeded]);
 
-  const paid = isPaidTier(tier);
+  const paid = isPaidTier(tier) || isAdmin;
   const loading = opLoading || tierLoading;
 
   const siteUrl = domainMode === 'custom' && branding.customDomain
