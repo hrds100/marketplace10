@@ -21,6 +21,8 @@ export const RENT_ABI = [
   'function isEligibleForRent(uint256 propertyId, address userAddress) external view returns (bool)',
   'function getRentDetails(uint256 propertyId) external view returns (uint256 startTime, uint256 endTime, uint256 totalRent, uint256 rentRemaining, uint256 rentPerShare)',
   'function getRentHistory(address userAddress, uint256 propertyId) external view returns (uint256)',
+  'function addRent(uint256 propertyId, uint256 totalMonthRent) external',
+  'function resetPropertyDetails(uint256 propertyId) external',
   'event RentWithdrawn(address indexed _by, uint256 _propertyId, uint256 _rent)',
 ];
 
@@ -43,6 +45,7 @@ export const BOOSTER_ABI = [
   'function getEstimatedRewards(address _userAddress, uint256 _propertyId) external view returns (uint256 _totalRewards)',
   'function isBoosted(address _userAddress, uint256 _propertyId) external view returns (bool _status)',
   'function getBoostFeeBips() external view returns (uint256)',
+  'function boostOnBehalfOf(address recipient, uint256 propertyId) external payable',
 ];
 
 export const BUY_LP_ABI = [

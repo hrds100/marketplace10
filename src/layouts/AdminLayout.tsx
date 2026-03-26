@@ -35,6 +35,7 @@ const investLinks = [
   { to: '/admin/invest/payouts', label: 'Payouts', icon: Banknote },
   { to: '/admin/invest/proposals', label: 'Proposals', icon: Vote },
   { to: '/admin/invest/boost', label: 'Boost', icon: Rocket },
+  { to: '/admin/invest/rent', label: 'Rent Distribution', icon: Banknote },
   { to: '/admin/invest/endpoints', label: 'Endpoints', icon: Plug },
 ];
 
