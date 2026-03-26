@@ -262,7 +262,7 @@ function InvestModal({
             </p>
             <div className="rounded-xl bg-muted/50 p-4 w-full space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total invested</span>
+                <span className="text-muted-foreground">Total allocated</span>
                 <span className="font-bold">${total.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
@@ -291,7 +291,7 @@ function InvestModal({
       <DialogContent className="relative sm:max-w-md" data-feature="INVEST__MARKETPLACE_CHECKOUT">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {'Invest in ' + property.title}
+            {'Partner on ' + property.title}
           </DialogTitle>
         </DialogHeader>
 
@@ -392,7 +392,7 @@ function InvestModal({
                 }}
               >
                 <Shield className="h-4 w-4" />
-                {blockchainLoading ? 'Processing on-chain...' : 'Confirm Investment'}
+                {blockchainLoading ? 'Processing on-chain...' : 'Confirm Allocation'}
               </Button>
             </DialogFooter>
           </>
@@ -515,7 +515,7 @@ function PropertyBadges({ property }: { property: PropertyData }) {
             : 'bg-muted text-muted-foreground'
         )}
       >
-        {property.status === 'open' ? 'Open for Investment' : 'Fully Funded'}
+        {property.status === 'open' ? 'Open for Partnership' : 'Fully Funded'}
       </Badge>
     </div>
   );
@@ -623,7 +623,7 @@ function InvestCardContent({
         <div>
           <p className="text-sm font-semibold text-foreground">See how much you can earn</p>
           <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-            Slide to explore estimated returns. You will enter your investment amount once in the secure checkout.
+            Slide to explore estimated returns. You will enter your allocation amount once in the secure checkout.
           </p>
         </div>
         <div
@@ -651,7 +651,7 @@ function InvestCardContent({
             }}
             disabled={sliderDisabled}
             className="w-full py-2 [&_[class*=bg-primary]]:bg-[#1E9A80]"
-            aria-label="Explore estimated investment amount"
+            aria-label="Explore estimated allocation amount"
           />
           <div className="flex justify-between text-[10px] text-muted-foreground">
             <span>${minInvest.toLocaleString()}</span>
@@ -1008,7 +1008,7 @@ function ProfitCalculator({
     return (
       <div className="flex items-center justify-center gap-6 py-4">
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">You invest</p>
+          <p className="text-xs text-muted-foreground mb-1">You allocate</p>
           <p className="text-3xl font-bold">${(initialCalcAmount / 1000).toFixed(1)}k</p>
           <p className="text-xs text-muted-foreground mt-1">Today</p>
         </div>
@@ -1533,7 +1533,7 @@ function Version1({
                   </div>
                   <p className="text-base font-semibold mb-1.5">Your Role</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    When you invest in this property, you become part of the partnership and take part in important decisions.
+                    When you partner on this property, you become part of the partnership and take part in important decisions.
                   </p>
                 </div>
               </div>
@@ -1699,7 +1699,7 @@ function Version2({
       <div className="mb-10 rounded-2xl border-l-4 border-primary bg-primary/[0.03] p-6 sm:p-8">
         <h1 className="text-2xl font-bold sm:text-3xl">Join a Real Estate Partnership</h1>
         <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-          This isn't passive investing. You become an active partner with voting rights on
+          This isn't a passive allocation. You become an active partner with voting rights on
           every major property decision.
         </p>
 
@@ -1713,7 +1713,7 @@ function Version2({
               </div>
               <p className="text-sm font-semibold mb-1.5">Your Role</p>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                When you invest in this property, you become part of the partnership and take part in important decisions.
+                When you partner on this property, you become part of the partnership and take part in important decisions.
               </p>
             </div>
           </div>
@@ -2027,7 +2027,7 @@ export default function InvestMarketplacePage() {
         <div className="text-center space-y-3">
           <Home className="h-12 w-12 text-muted-foreground/40 mx-auto" />
           <p className="text-lg text-muted-foreground">No properties available yet</p>
-          <p className="text-sm text-muted-foreground">Check back soon for new investment opportunities.</p>
+          <p className="text-sm text-muted-foreground">Check back soon for new partnership opportunities.</p>
         </div>
       </div>
     );

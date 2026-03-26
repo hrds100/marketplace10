@@ -47,7 +47,7 @@ export default function AdminInvestDashboard() {
       .reduce((sum: number, c: any) => sum + Number(c.amount_entitled || 0), 0);
 
     return [
-      { icon: DollarSign, label: 'Total Invested', value: `$${totalInvested.toLocaleString()}`, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+      { icon: DollarSign, label: 'Total Allocated', value: `$${totalInvested.toLocaleString()}`, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
       { icon: Users, label: 'Total Shareholders', value: String(uniqueShareholders), color: 'text-blue-500', bg: 'bg-blue-500/10' },
       { icon: Building2, label: 'Active Properties', value: String(properties.length), color: 'text-amber-500', bg: 'bg-amber-500/10' },
       { icon: TrendingUp, label: 'Monthly Revenue', value: `$${monthlyRevenue.toLocaleString()}`, color: 'text-purple-500', bg: 'bg-purple-500/10' },
@@ -61,7 +61,7 @@ export default function AdminInvestDashboard() {
       .filter((o: any) => o.status === 'completed' || o.status === 'pending')
       .slice(0, 10)
       .map((o: any) => {
-        const name = o.user_name || o.user_email?.split('@')[0] || o.user_id?.slice(0, 8) || 'Investor';
+        const name = o.user_name || o.user_email?.split('@')[0] || o.user_id?.slice(0, 8) || 'Partner';
         const dateStr = o.created_at
           ? new Date(o.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
             ', ' +
@@ -82,7 +82,7 @@ export default function AdminInvestDashboard() {
 
   return (
     <div data-feature="ADMIN__INVEST">
-      <h1 className="text-[28px] font-bold text-foreground mb-6">Investment Dashboard</h1>
+      <h1 className="text-[28px] font-bold text-foreground mb-6">Partnership Dashboard</h1>
 
       {/* Stat cards */}
       <div data-feature="ADMIN__INVEST_STATS" className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -167,7 +167,7 @@ export default function AdminInvestDashboard() {
                 .reduce((sum: number, o: any) => sum + Number(o.shares_count || 0), 0);
               return (
                 <div className="mt-6 p-4 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground mb-2 font-medium">Investment Summary</p>
+                  <p className="text-xs text-muted-foreground mb-2 font-medium">Partnership Summary</p>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Properties</span>

@@ -176,7 +176,7 @@ export default function AdminInvestOrders() {
   return (
     <div data-feature="ADMIN__INVEST">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-[28px] font-bold text-foreground">Investment Orders</h1>
+        <h1 className="text-[28px] font-bold text-foreground">Allocation Orders</h1>
         <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered as any[], 'investment-orders')}>
           <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
         </Button>
@@ -215,7 +215,7 @@ export default function AdminInvestOrders() {
       </div>
 
       <p className="text-xs text-muted-foreground mb-4 max-w-3xl">
-        Rows are newest first. <strong>Investor wallet</strong> comes from the user&apos;s profile (same wallet used for JV).{' '}
+        Rows are newest first. <strong>Partner wallet</strong> comes from the user&apos;s profile (same wallet used for JV).{' '}
         On-chain shares are sent by the <strong>SamCart webhook</strong> when payment succeeds (see Tx Hash).{' '}
         <strong>Approve</strong> sends shares on-chain and marks the order as completed.
       </p>
@@ -227,7 +227,7 @@ export default function AdminInvestOrders() {
               <TableRow>
                 <TableHead>Order ID</TableHead>
                 <TableHead>User</TableHead>
-                <TableHead>Investor wallet</TableHead>
+                <TableHead>Partner wallet</TableHead>
                 <TableHead>Property</TableHead>
                 <TableHead className="text-right">Shares</TableHead>
                 <TableHead className="text-right">Amount</TableHead>

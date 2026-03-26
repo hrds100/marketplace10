@@ -224,12 +224,12 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'inv-purchase-buyer':
       return {
         to: String(data.email),
-        subject: `Investment confirmed — ${data.property || 'nfstay'}`,
-        html: layout('Your investment is confirmed', `
+        subject: `Partnership confirmed — ${data.property || 'nfstay'}`,
+        html: layout('Your partnership is confirmed', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-            Thank you for your investment! Your order has been received and is being processed.
+            Thank you for your allocation! Your order has been received and is being processed.
           </p>
-          ${row('Property', String(data.property || 'Investment Property'))}
+          ${row('Property', String(data.property || 'Partnership Property'))}
           ${row('Amount', `$${Number(data.amount || 0).toFixed(2)}`)}
           ${row('Shares', String(data.shares || '—'))}
           ${row('Status', 'Pending approval')}
@@ -248,7 +248,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             Someone purchased shares through your referral link. Your commission has been recorded.
           </p>
-          ${row('Property', String(data.property || 'Investment Property'))}
+          ${row('Property', String(data.property || 'Partnership Property'))}
           ${row('Sale Amount', `$${Number(data.amount || 0).toFixed(2)}`)}
           ${row('Your Commission', `$${Number(data.commission || 0).toFixed(2)}`)}
           ${row('Rate', `${Number(data.rate || 5)}%`)}
@@ -263,8 +263,8 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'inv-purchase-admin':
       return {
         to: ADMIN_EMAILS,
-        subject: `New investment — $${Number(data.amount || 0).toFixed(2)} from ${data.buyerName || data.buyerEmail || 'Unknown'}`,
-        html: layout('New investment purchase', `
+        subject: `New allocation — $${Number(data.amount || 0).toFixed(2)} from ${data.buyerName || data.buyerEmail || 'Unknown'}`,
+        html: layout('New allocation purchase', `
           ${row('Buyer', String(data.buyerName || data.buyerEmail || '—'))}
           ${row('Email', String(data.buyerEmail || '—'))}
           ${row('Property', String(data.property || '—'))}
@@ -282,9 +282,9 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
         subject: `Shares allocated — ${data.property || 'nfstay'}`,
         html: layout('Your shares have been allocated', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-            Great news! Your investment order has been approved and your shares are now in your portfolio.
+            Great news! Your allocation order has been approved and your shares are now in your portfolio.
           </p>
-          ${row('Property', String(data.property || 'Investment Property'))}
+          ${row('Property', String(data.property || 'Partnership Property'))}
           ${row('Shares', String(data.shares || '—'))}
           ${row('Amount', `$${Number(data.amount || 0).toFixed(2)}`)}
           ${row('Transaction', data.txHash ? `<a href="https://bscscan.com/tx/${data.txHash}" style="color:${BRAND.color};text-decoration:none;">${String(data.txHash).slice(0, 10)}…</a>` : 'Confirmed')}

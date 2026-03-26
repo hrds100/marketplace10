@@ -301,7 +301,7 @@ export default function AdminInvestProperties() {
   return (
     <div data-feature="ADMIN__INVEST">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-[28px] font-bold text-foreground">Investment Properties</h1>
+        <h1 className="text-[28px] font-bold text-foreground">Partnership Properties</h1>
         <Button onClick={openCreate} className="gap-2">
           <Plus className="w-4 h-4" /> Add Property
         </Button>
@@ -671,7 +671,7 @@ export default function AdminInvestProperties() {
                   <Badge variant="secondary" className="text-[10px]">{(form.area as number) || 0} m&sup2;</Badge>
                   <Badge variant="secondary" className="text-[10px]">Built {(form.year_built as number) || '-'}</Badge>
                   <Badge className={cn('text-[10px]', (form.status as string) === 'open' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>
-                    {(form.status as string) === 'open' ? 'Open for Investment' : 'Funded'}
+                    {(form.status as string) === 'open' ? 'Open for Partnership' : 'Funded'}
                   </Badge>
                 </div>
 

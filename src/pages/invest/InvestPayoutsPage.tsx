@@ -204,7 +204,7 @@ function ClaimModal({
         sendInvestNotification({
           type: 'rent_claimed',
           user_id: user?.id,
-          user_name: user?.email?.split('@')[0] || 'Investor',
+          user_name: user?.email?.split('@')[0] || 'Partner',
           amount: payout.amount || 0,
           property: payout.propertyTitle || '',
         });
@@ -378,7 +378,7 @@ function ClaimModal({
                     sendInvestNotification({
                       type: 'rent_claimed',
                       user_id: user?.id,
-                      user_name: user?.email?.split('@')[0] || 'Investor',
+                      user_name: user?.email?.split('@')[0] || 'Partner',
                       amount: payout.amount || 0,
                       property: payout.propertyTitle || '',
                     });

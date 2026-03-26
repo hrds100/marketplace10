@@ -197,7 +197,7 @@ export default function AdminEndpoints() {
         <div>
           <h1 className="text-[28px] font-bold text-foreground">Smart Contract Endpoints</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            All 6 smart contracts used by the investment module on BNB Chain.
+            All 6 smart contracts used by the partnership module on BNB Chain.
           </p>
         </div>
         <div className="flex items-center gap-3">

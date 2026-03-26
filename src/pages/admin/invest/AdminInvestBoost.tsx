@@ -28,13 +28,18 @@ interface BoostEntry {
 
 export default function AdminInvestBoost() {
   const { data: realProperties = [] } = useInvestProperties();
-  const { boostApr, claimBoostRewards, loading: blockchainLoading } = useBlockchain();
+  const { boostApr, claimBoostRewards, adminBoostUser, loading: blockchainLoading } = useBlockchain();
 
   const [boosts, setBoosts] = useState<BoostEntry[]>([]);
   const [walletAddress, setWalletAddress] = useState('');
   const [propertyId, setPropertyId] = useState('');
   const [boosting, setBoosting] = useState(false);
   const [claimingId, setClaimingId] = useState<string | null>(null);
+
+  // Admin boost on behalf of another user
+  const [adminAddress, setAdminAddress] = useState('');
+  const [adminPropertyId, setAdminPropertyId] = useState('');
+  const [adminBoosting, setAdminBoosting] = useState(false);
 
   // Load all boost statuses from Supabase
   useEffect(() => {
@@ -74,6 +79,22 @@ export default function AdminInvestBoost() {
     }
   };
 
+  const handleAdminBoost = async () => {
+    if (!adminAddress || !adminPropertyId) return;
+    setAdminBoosting(true);
+    try {
+      await adminBoostUser(adminAddress, adminPropertyId);
+      toast.success(`Property ${adminPropertyId} boosted for ${adminAddress.slice(0, 10)}...`);
+      setAdminAddress('');
+      setAdminPropertyId('');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Boost failed';
+      toast.error(msg);
+    } finally {
+      setAdminBoosting(false);
+    }
+  };
+
   const handleClaim = async (b: BoostEntry) => {
     setClaimingId(b.id);
     try {
@@ -105,7 +126,7 @@ export default function AdminInvestBoost() {
           </p>
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[200px]">
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Investor Wallet (reference only)</label>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Partner Wallet (reference only)</label>
               <input
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono"
                 placeholder="0x..."
@@ -130,6 +151,57 @@ export default function AdminInvestBoost() {
             >
               <Rocket className="w-4 h-4" />
               {boosting ? 'Boosting...' : 'Boost User'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Admin Boost On Behalf Of */}
+      <Card className="border-border mb-8">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Rocket className="w-5 h-5 text-amber-500" />
+            Boost On Behalf Of User
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Boost a user's property using the admin contract function (boostOnBehalfOf). This does not
+            require the user's wallet — only the admin wallet. No USDC cost to the user.
+          </p>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-sm font-medium text-foreground mb-1.5 block">User Wallet Address</label>
+              <input
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono"
+                placeholder="0x..."
+                value={adminAddress}
+                onChange={(e) => setAdminAddress(e.target.value)}
+                disabled={adminBoosting}
+              />
+            </div>
+            <div className="w-32">
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Property ID</label>
+              <input
+                type="number"
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                placeholder="1"
+                value={adminPropertyId}
+                onChange={(e) => setAdminPropertyId(e.target.value)}
+                disabled={adminBoosting}
+              />
+            </div>
+            <Button
+              onClick={handleAdminBoost}
+              disabled={!adminAddress || !adminPropertyId || adminBoosting || blockchainLoading}
+              className="gap-2 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-600 hover:to-amber-500 text-white h-10"
+            >
+              {adminBoosting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Rocket className="w-4 h-4" />
+              )}
+              {adminBoosting ? 'Boosting...' : 'Boost On Behalf'}
             </Button>
           </div>
         </CardContent>

@@ -1,4 +1,4 @@
-// Admin Test Console — Safe testing of all investment flows without real funds
+// Admin Test Console — Safe testing of all partnership flows without real funds
 // All blockchain calls use callStatic (dry-run, no gas, no state changes)
 // Bank claims create real payout_claims rows (can be deleted after testing)
 

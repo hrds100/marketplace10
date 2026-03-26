@@ -31,14 +31,14 @@ interface AgentOverride {
 
 const fallbackGlobalRates: GlobalRate[] = [
   { key: 'subscription', label: 'Subscription Commission', description: 'Percentage of subscription fee paid to the referring agent when their referral subscribes to any paid plan.', rate: 40 },
-  { key: 'investment_first', label: 'Investment First Purchase', description: 'One-time commission on the first share purchase made by a referred investor. Applied once per referred user per property.', rate: 5 },
-  { key: 'investment_recurring', label: 'Investment Recurring', description: 'Ongoing commission on subsequent share purchases by a referred investor. Applied on every purchase after the first.', rate: 2 },
+  { key: 'investment_first', label: 'Partnership First Purchase', description: 'One-time commission on the first share purchase made by a referred partner. Applied once per referred user per property.', rate: 5 },
+  { key: 'investment_recurring', label: 'Partnership Recurring', description: 'Ongoing commission on subsequent share purchases by a referred partner. Applied on every purchase after the first.', rate: 2 },
 ];
 
 const rateLabels: Record<string, { label: string; description: string }> = {
   subscription: { label: 'Subscription Commission', description: 'Percentage of subscription fee paid to the referring agent when their referral subscribes to any paid plan.' },
-  investment_first: { label: 'Investment First Purchase', description: 'One-time commission on the first share purchase made by a referred investor. Applied once per referred user per property.' },
-  investment_recurring: { label: 'Investment Recurring', description: 'Ongoing commission on subsequent share purchases by a referred investor. Applied on every purchase after the first.' },
+  investment_first: { label: 'Partnership First Purchase', description: 'One-time commission on the first share purchase made by a referred partner. Applied once per referred user per property.' },
+  investment_recurring: { label: 'Partnership Recurring', description: 'Ongoing commission on subsequent share purchases by a referred partner. Applied on every purchase after the first.' },
 };
 
 /* Per-agent overrides and user list are loaded from Supabase below (no hardcoded mock data) */
