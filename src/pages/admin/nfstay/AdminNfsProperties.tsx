@@ -89,12 +89,12 @@ export default function AdminNfsProperties() {
   });
 
   return (
-    <div data-feature="ADMIN__NFSTAY" className="p-6 space-y-6">
+    <div data-feature="ADMIN__NFSTAY" className="p-6 space-y-6 max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">nfstay Properties</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">All properties across all operators</p>
+          <h1 className="text-2xl font-bold tracking-tight">nfstay Properties</h1>
+          <p className="text-sm text-muted-foreground">All properties across all operators</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchProperties} disabled={loading}>
           <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
@@ -110,7 +110,7 @@ export default function AdminNfsProperties() {
           { label: 'Draft', value: filtered.filter(p => p.listing_status === 'draft').length },
           { label: 'Unlisted', value: filtered.filter(p => p.listing_status === 'unlisted').length },
         ].map(stat => (
-          <div key={stat.label} className="bg-white dark:bg-card border border-border/40 rounded-xl p-4">
+          <div key={stat.label} className="bg-card border border-border rounded-2xl p-4">
             <p className="text-xs text-muted-foreground">{stat.label}</p>
             <p className="text-2xl font-bold mt-1">{stat.value}</p>
           </div>
@@ -126,7 +126,7 @@ export default function AdminNfsProperties() {
             placeholder="Search by title, location, or operator..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 rounded-lg"
           />
         </div>
         <div data-feature="ADMIN__NFS_PROPERTIES_FILTER" className="flex gap-1.5 flex-wrap">
@@ -136,7 +136,7 @@ export default function AdminNfsProperties() {
               onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
                 statusFilter === s
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-muted hover:bg-muted/70 text-muted-foreground'
               }`}
             >
@@ -166,7 +166,7 @@ export default function AdminNfsProperties() {
             const location = [p.city, p.country].filter(Boolean).join(', ');
 
             return (
-              <div key={p.id} className="bg-white dark:bg-card border border-border/40 rounded-xl overflow-hidden shadow-sm">
+              <div key={p.id} className="bg-card border border-border rounded-2xl overflow-hidden">
                 {/* Image */}
                 <div className="h-36 bg-muted overflow-hidden">
                   {cover
@@ -187,7 +187,7 @@ export default function AdminNfsProperties() {
                     </p>
                   )}
                   {p.operator?.brand_name && (
-                    <p className="text-xs text-purple-600">by {p.operator.brand_name}</p>
+                    <p className="text-xs text-primary">by {p.operator.brand_name}</p>
                   )}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     {p.base_rate_amount && (
@@ -205,7 +205,7 @@ export default function AdminNfsProperties() {
                     <select
                       value={p.listing_status}
                       onChange={e => updateStatus(p.id, e.target.value)}
-                      className="flex-1 text-xs border border-border/40 rounded-md px-2 py-1 bg-background cursor-pointer"
+                      className="flex-1 text-xs border border-border rounded-md px-2 py-1 bg-background cursor-pointer"
                     >
                       {['draft', 'listed', 'unlisted', 'archived'].map(s => (
                         <option key={s} value={s}>{s}</option>

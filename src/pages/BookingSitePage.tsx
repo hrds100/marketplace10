@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Link2, Loader2, AlertCircle, CheckCircle2, LayoutDashboard, Building2, CalendarCheck, Paintbrush } from 'lucide-react';
+import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Link2, Loader2, AlertCircle, CheckCircle2, LayoutDashboard, Building2, CalendarCheck, Paintbrush, TrendingUp, Star, Eye } from 'lucide-react';
 import PaymentSheet from '@/components/PaymentSheet';
 import BookingSitePreview from './BookingSitePreview';
 import { getBridgeUrl } from '@/lib/authBridge';
@@ -254,7 +254,7 @@ export default function BookingSitePage() {
       )}
 
       {/* Top Tab Bar */}
-      <div className="border-b border-border/30 bg-white px-5 flex-shrink-0">
+      <div className="border-b border-border bg-card px-5 flex-shrink-0">
         <div className="flex gap-1 py-2">
           {([
             { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
@@ -276,26 +276,38 @@ export default function BookingSitePage() {
 
       {/* Dashboard Tab */}
       {topTab === 'dashboard' && (
-        <div className="flex-1 overflow-y-auto p-6">
-          <h2 className="text-lg font-bold text-foreground mb-4">Operator Dashboard</h2>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">
+              Welcome back{operator?.brand_name ? `, ${operator.brand_name}` : ''}! Here's your property overview.
+            </p>
+          </div>
           {statsLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl">
-              <div className="bg-white border border-border/50 rounded-xl p-5">
-                <div className="text-sm text-muted-foreground mb-1">Total Properties</div>
-                <div className="text-2xl font-bold text-foreground">{stats.properties}</div>
-              </div>
-              <div className="bg-white border border-border/50 rounded-xl p-5">
-                <div className="text-sm text-muted-foreground mb-1">Total Reservations</div>
-                <div className="text-2xl font-bold text-foreground">{stats.reservations}</div>
-              </div>
-              <div className="bg-white border border-border/50 rounded-xl p-5">
-                <div className="text-sm text-muted-foreground mb-1">Total Revenue</div>
-                <div className="text-2xl font-bold text-foreground">${stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: 'Total Revenue', value: `$${stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: TrendingUp, change: `${stats.reservations} bookings`, sub: 'all time' },
+                { label: 'Active Listings', value: stats.properties, icon: Building2, change: `${stats.properties} total`, sub: 'properties' },
+                { label: 'Reservations', value: stats.reservations, icon: CalendarCheck, change: `${stats.reservations} total`, sub: 'reservations' },
+                { label: 'Avg Rating', value: '-', icon: Star, change: '-', sub: 'coming soon' },
+              ].map((s) => (
+                <div key={s.label} className="bg-card border border-border rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium text-muted-foreground">{s.label}</span>
+                    <div className="w-8 h-8 rounded-lg bg-accent-light flex items-center justify-center">
+                      <s.icon className="w-4 h-4 text-primary" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold">{s.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <span className="text-primary font-medium">{s.change}</span> {s.sub}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -303,50 +315,80 @@ export default function BookingSitePage() {
 
       {/* Properties Tab */}
       {topTab === 'properties' && (
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-foreground">Properties</h2>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Properties</h1>
+              <p className="text-sm text-muted-foreground">{properties.length} properties managed</p>
+            </div>
             <button
               onClick={() => window.open(getBridgeUrl("https://nfstay.app", "/admin/nfstay/properties"), "_blank")}
-              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
             >
               Add Property
             </button>
           </div>
           {propsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : properties.length === 0 ? (
             <div className="text-center py-12">
               <Building2 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No properties yet. Add your first property to get started.</p>
+              <p className="text-sm font-medium text-foreground mb-1">No properties found</p>
+              <p className="text-sm text-muted-foreground">Add your first property to get started</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {properties.map((prop) => {
-                const images = (prop.images as string[]) || [];
-                return (
-                  <div key={String(prop.id)} className="bg-white border border-border/50 rounded-xl overflow-hidden">
-                    <div className="h-36 bg-gray-100">
-                      {images[0] ? (
-                        <img src={String(images[0])} alt={String(prop.name)} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                          <Building2 className="w-8 h-8" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="text-sm font-semibold text-foreground truncate">{String(prop.name || 'Unnamed')}</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">{String(prop.city || '-')}</p>
-                      <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-[11px] font-medium ${prop.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
-                        {String(prop.status || 'draft')}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left bg-muted/30">
+                      <th className="p-4 font-medium text-muted-foreground">Property</th>
+                      <th className="p-4 font-medium text-muted-foreground">Location</th>
+                      <th className="p-4 font-medium text-muted-foreground">Status</th>
+                      <th className="p-4 font-medium text-muted-foreground w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {properties.map((prop) => {
+                      const images = (prop.images as string[]) || [];
+                      return (
+                        <tr key={String(prop.id)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              {images[0] ? (
+                                <img src={String(images[0])} alt={String(prop.name)} className="w-12 h-12 rounded-lg object-cover" />
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+                                  <Building2 className="w-5 h-5 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium">{String(prop.name || 'Unnamed')}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4 text-muted-foreground">{String(prop.city || '-')}</td>
+                          <td className="p-4">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${prop.status === 'active' || prop.status === 'listed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                              {String(prop.status || 'draft')}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <button
+                              onClick={() => window.open(getBridgeUrl("https://nfstay.app", `/property/${String(prop.id)}`), "_blank")}
+                              className="p-1.5 rounded-lg hover:bg-secondary"
+                            >
+                              <Eye className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
@@ -354,46 +396,50 @@ export default function BookingSitePage() {
 
       {/* Reservations Tab */}
       {topTab === 'reservations' && (
-        <div className="flex-1 overflow-y-auto p-6">
-          <h2 className="text-lg font-bold text-foreground mb-4">Reservations</h2>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Reservations</h1>
+            <p className="text-sm text-muted-foreground">{reservations.length} total reservations</p>
+          </div>
           {resLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : reservations.length === 0 ? (
             <div className="text-center py-12">
               <CalendarCheck className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No reservations yet.</p>
+              <p className="text-sm font-medium text-foreground mb-1">No reservations found</p>
+              <p className="text-sm text-muted-foreground">Reservations will appear here once guests book your properties.</p>
             </div>
           ) : (
-            <div className="bg-white border border-border/50 rounded-xl overflow-hidden">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border/50 bg-gray-50/50">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Guest</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Property</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Check-in</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Check-out</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Status</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground">Amount</th>
+                    <tr className="border-b border-border text-left bg-muted/30">
+                      <th className="p-4 font-medium text-muted-foreground">Guest</th>
+                      <th className="p-4 font-medium text-muted-foreground">Property</th>
+                      <th className="p-4 font-medium text-muted-foreground">Check-in</th>
+                      <th className="p-4 font-medium text-muted-foreground">Check-out</th>
+                      <th className="p-4 font-medium text-muted-foreground">Amount</th>
+                      <th className="p-4 font-medium text-muted-foreground">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {reservations.map((res) => {
                       const propData = res.nfs_properties as Record<string, unknown> | null;
                       return (
-                        <tr key={String(res.id)} className="border-b border-border/30 last:border-0">
-                          <td className="px-4 py-3 text-foreground">{String(res.guest_name || '-')}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{propData ? String(propData.name) : '-'}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{res.check_in ? new Date(String(res.check_in)).toLocaleDateString() : '-'}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{res.check_out ? new Date(String(res.check_out)).toLocaleDateString() : '-'}</td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium ${res.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700' : res.status === 'cancelled' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
+                        <tr key={String(res.id)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                          <td className="p-4 font-medium">{String(res.guest_name || '-')}</td>
+                          <td className="p-4 text-muted-foreground truncate max-w-[160px]">{propData ? String(propData.name) : '-'}</td>
+                          <td className="p-4 text-muted-foreground whitespace-nowrap">{res.check_in ? new Date(String(res.check_in)).toLocaleDateString() : '-'}</td>
+                          <td className="p-4 text-muted-foreground whitespace-nowrap">{res.check_out ? new Date(String(res.check_out)).toLocaleDateString() : '-'}</td>
+                          <td className="p-4 font-medium">${Number(res.total_price || 0).toFixed(2)}</td>
+                          <td className="p-4">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${res.status === 'confirmed' ? 'bg-green-100 text-green-700' : res.status === 'cancelled' ? 'bg-red-100 text-red-700' : res.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
                               {String(res.status || 'pending')}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right font-medium text-foreground">${Number(res.total_price || 0).toFixed(2)}</td>
                         </tr>
                       );
                     })}

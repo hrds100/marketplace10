@@ -173,14 +173,14 @@ export default function AdminNfsDashboard() {
               <AreaChart data={monthlyData}>
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(145, 63%, 42%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(145, 63%, 42%)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="hsl(164, 73%, 34%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(164, 73%, 34%)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip />
-                <Area type="monotone" dataKey="revenue" stroke="hsl(145, 63%, 42%)" fill="url(#revGrad)" strokeWidth={2} />
+                <Area type="monotone" dataKey="revenue" stroke="hsl(164, 73%, 34%)" fill="url(#revGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           )}

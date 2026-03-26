@@ -113,12 +113,12 @@ export default function AdminNfsReservations() {
     .reduce((sum, r) => sum + (r.total_amount || 0), 0);
 
   return (
-    <div data-feature="ADMIN__NFSTAY" className="p-6 space-y-6">
+    <div data-feature="ADMIN__NFSTAY" className="p-6 space-y-6 max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">nfstay Reservations</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">All bookings across all operators</p>
+          <h1 className="text-2xl font-bold tracking-tight">nfstay Reservations</h1>
+          <p className="text-sm text-muted-foreground">All bookings across all operators</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchReservations} disabled={loading}>
           <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
@@ -134,7 +134,7 @@ export default function AdminNfsReservations() {
           { label: 'Pending', value: filtered.filter(r => r.status === 'pending').length, color: 'text-amber-600' },
           { label: 'Revenue', value: `£${confirmedRevenue.toFixed(0)}`, color: 'text-blue-600' },
         ].map(stat => (
-          <div key={stat.label} className="bg-white dark:bg-card border border-border/40 rounded-xl p-4">
+          <div key={stat.label} className="bg-card border border-border rounded-2xl p-4">
             <p className="text-xs text-muted-foreground">{stat.label}</p>
             <p className={`text-2xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
           </div>
@@ -149,7 +149,7 @@ export default function AdminNfsReservations() {
             placeholder="Search by guest, property, operator or ID..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 rounded-lg"
           />
         </div>
         <div data-feature="ADMIN__NFS_RESERVATIONS_FILTER" className="flex gap-1.5 flex-wrap">
@@ -159,7 +159,7 @@ export default function AdminNfsReservations() {
               onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
                 statusFilter === s
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-muted hover:bg-muted/70 text-muted-foreground'
               }`}
             >
@@ -186,18 +186,18 @@ export default function AdminNfsReservations() {
           No reservations found.
         </div>
       ) : (
-        <div data-feature="ADMIN__NFS_RESERVATIONS_TABLE" className="overflow-x-auto rounded-xl border border-border/40">
+        <div data-feature="ADMIN__NFS_RESERVATIONS_TABLE" className="bg-card border border-border rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-muted/30 border-b border-border/40">
+              <tr className="border-b border-border text-left bg-muted/30">
                 {['Guest', 'Property / Operator', 'Dates', 'Guests', 'Total', 'Status', 'Actions'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  <th key={h} className="p-4 font-medium text-muted-foreground">
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/40">
+            <tbody>
               {filtered.map(r => {
                 const statusCfg = STATUS_CONFIG[r.status] || { label: r.status, color: 'bg-gray-100 text-gray-600', icon: Clock };
                 const StatusIcon = statusCfg.icon;
@@ -206,7 +206,7 @@ export default function AdminNfsReservations() {
                 );
 
                 return (
-                  <tr key={r.id} className="bg-white dark:bg-card hover:bg-muted/20 transition-colors">
+                  <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                     {/* Guest */}
                     <td className="px-4 py-3">
                       <p className="font-medium">
@@ -220,7 +220,7 @@ export default function AdminNfsReservations() {
                       <p className="font-medium line-clamp-1">{r.property?.public_title || '—'}</p>
                       <p className="text-xs text-muted-foreground">{r.property?.city || ''}</p>
                       {r.operator?.brand_name && (
-                        <p className="text-xs text-purple-600">{r.operator.brand_name}</p>
+                        <p className="text-xs text-primary">{r.operator.brand_name}</p>
                       )}
                     </td>
                     {/* Dates */}
@@ -256,7 +256,7 @@ export default function AdminNfsReservations() {
                         value={r.status}
                         onChange={e => updateStatus(r.id, e.target.value)}
                         disabled={updatingId === r.id}
-                        className="text-xs border border-border/40 rounded-md px-2 py-1 bg-background disabled:opacity-50 cursor-pointer"
+                        className="text-xs border border-border rounded-md px-2 py-1 bg-background disabled:opacity-50 cursor-pointer"
                       >
                         {Object.keys(STATUS_CONFIG).map(s => (
                           <option key={s} value={s}>{s}</option>
