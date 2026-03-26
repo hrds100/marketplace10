@@ -1,9 +1,40 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ADMIN_EMAILS = (Deno.env.get('ADMIN_EMAIL') || 'hugo@nfstay.com,chris@nfstay.com').split(',').map(e => e.trim());
 const FROM_EMAIL = 'nfstay <notifications@hub.nfstay.com>';
 const BASE_URL = 'https://hub.nfstay.com';
+
+// Check user notification preferences before sending
+async function shouldSendEmail(email: string, prefColumn: string): Promise<boolean> {
+  try {
+    const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const { data } = await sb
+      .from('profiles')
+      .select(prefColumn)
+      .eq('email', email)
+      .single();
+    if (!data) return true; // Default to sending if profile not found
+    return (data as Record<string, unknown>)[prefColumn] !== false;
+  } catch {
+    return true; // Default to sending on error
+  }
+}
+
+// Map email types to the preference column they should check (null = always send)
+function getPreferenceColumn(type: string): string | null {
+  switch (type) {
+    case 'deal-approved-member':
+    case 'deal-rejected-member':
+    case 'deal-expired-member':
+      return 'notif_email_daily';
+    default:
+      return null; // Welcome, admin, payout, investment emails always send
+  }
+}
 
 const BRAND = {
   color: '#1E9A80',
@@ -304,6 +335,19 @@ serve(async (req) => {
   try {
     const { type, data } = await req.json();
     const { to, subject, html } = buildEmail(type, data);
+
+    // Check notification preferences for gated email types
+    const prefColumn = getPreferenceColumn(type);
+    if (prefColumn) {
+      const recipientEmail = Array.isArray(to) ? to[0] : to;
+      const allowed = await shouldSendEmail(recipientEmail, prefColumn);
+      if (!allowed) {
+        return new Response(JSON.stringify({ skipped: true, reason: 'User opted out', type }), {
+          headers: { 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+    }
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',

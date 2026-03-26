@@ -4,7 +4,8 @@ import {
   ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap,
   CreditCard, HelpCircle, UserCheck, Settings, Bell, TrendingUp,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
-  LayoutGrid, Plug, Globe, CalendarCheck, Zap, Eye,
+  LayoutGrid, Plug, Globe, CalendarCheck, Zap, Eye, Menu, X,
+  BarChart3, Calendar,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -38,8 +39,13 @@ const investLinks = [
 ];
 
 const bookingLinks = [
-  { to: '/admin/nfstay', label: 'Reservations', icon: CalendarCheck, exact: true },
-  { to: '/admin/nfstay/properties', label: 'Properties', icon: Globe },
+  { to: '/admin/nfstay/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/admin/nfstay', label: 'Reservations', icon: Calendar, exact: true },
+  { to: '/admin/nfstay/properties', label: 'Properties', icon: Building2 },
+  { to: '/admin/nfstay/users', label: 'Users', icon: Users },
+  { to: '/admin/nfstay/operators', label: 'Operators', icon: UserCheck },
+  { to: '/admin/nfstay/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/admin/nfstay/settings', label: 'Settings', icon: Settings },
 ];
 
 function getWorkspace(pathname: string): 'selector' | 'marketplace' | 'invest' | 'booking' {
@@ -56,7 +62,13 @@ export default function AdminLayout() {
   const location = useLocation();
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const workspace = getWorkspace(location.pathname);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!user) return;
@@ -72,11 +84,11 @@ export default function AdminLayout() {
     return () => clearInterval(interval);
   }, [user]);
 
-  const links = workspace === 'invest' ? investLinks : workspace === 'booking' ? bookingLinks : marketplaceLinks;
+  const currentLinks = workspace === 'invest' ? investLinks : workspace === 'booking' ? bookingLinks : marketplaceLinks;
   const workspaceLabel = workspace === 'invest' ? 'JV Partners' : workspace === 'booking' ? 'Booking Site' : 'Marketplace';
 
   return (
-    <div data-feature="NAV_LAYOUT" className="min-h-screen bg-background">
+    <div data-feature="NAV_LAYOUT" className="min-h-screen bg-background relative">
       {/* Top nav */}
       <nav className="h-[64px] bg-card border-b border-border flex items-center px-6 gap-4">
         <Link to="/admin" className="flex-shrink-0">
@@ -98,8 +110,8 @@ export default function AdminLayout() {
               </Link>
             </div>
 
-            <div className="flex gap-1 overflow-x-auto flex-1" style={{ scrollbarWidth: 'none' }}>
-              {links.map((l) => {
+            <div className="hidden md:flex gap-1 overflow-x-auto flex-1" style={{ scrollbarWidth: 'none' }}>
+              {currentLinks.map((l) => {
                 const isActive = l.exact
                   ? location.pathname === l.to
                   : location.pathname === l.to || location.pathname.startsWith(l.to + '/');
@@ -137,6 +149,10 @@ export default function AdminLayout() {
               >
                 <ArrowLeft className="w-3.5 h-3.5" /> App
               </Link>
+              {/* Mobile hamburger */}
+              <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
             </div>
           </>
         )}
@@ -153,6 +169,28 @@ export default function AdminLayout() {
           </div>
         )}
       </nav>
+
+      {/* Mobile menu dropdown */}
+      {mobileMenuOpen && (
+        <div className="absolute top-[64px] left-0 right-0 bg-white border-b shadow-lg md:hidden z-50 p-4">
+          {currentLinks.map((link) => {
+            const isActive = (link as { exact?: boolean }).exact
+              ? location.pathname === link.to
+              : location.pathname === link.to || location.pathname.startsWith(link.to + '/');
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-accent-light text-primary font-medium' : 'text-foreground hover:bg-gray-100'}`}
+              >
+                <link.icon className="w-4 h-4" />
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       <main className="max-w-[1400px] mx-auto p-6 md:p-8">
         <Outlet />

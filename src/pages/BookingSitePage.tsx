@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Link2, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Link2, Loader2, AlertCircle, CheckCircle2, LayoutDashboard, Building2, CalendarCheck, Paintbrush } from 'lucide-react';
 import PaymentSheet from '@/components/PaymentSheet';
 import BookingSitePreview from './BookingSitePreview';
 import { getBridgeUrl } from '@/lib/authBridge';
@@ -8,6 +8,8 @@ import { useNfsOperatorUpdate } from '@/hooks/nfstay/use-nfs-operator-update';
 import { useUserTier } from '@/hooks/useUserTier';
 import { isPaidTier } from '@/lib/ghl';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const defaultBranding = {
   brandName: '',
@@ -49,6 +51,63 @@ export default function BookingSitePage() {
   const [domainMode, setDomainMode] = useState<'subdomain' | 'custom'>('subdomain');
   const [hexInput, setHexInput] = useState(defaultBranding.accentColor);
   const [seeded, setSeeded] = useState(false);
+  const [topTab, setTopTab] = useState<'dashboard' | 'properties' | 'reservations' | 'branding'>('dashboard');
+
+  // Dashboard stats
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [stats, setStats] = useState({ properties: 0, reservations: 0, revenue: 0 });
+
+  // Properties list
+  const [properties, setProperties] = useState<Array<Record<string, unknown>>>([]);
+  const [propsLoading, setPropsLoading] = useState(false);
+
+  // Reservations list
+  const [reservations, setReservations] = useState<Array<Record<string, unknown>>>([]);
+  const [resLoading, setResLoading] = useState(false);
+
+  // Fetch dashboard stats
+  useEffect(() => {
+    if (!operator?.id || topTab !== 'dashboard') return;
+    setStatsLoading(true);
+    Promise.all([
+      (supabase.from('nfs_properties') as any).select('id', { count: 'exact', head: true }).eq('operator_id', operator.id),
+      (supabase.from('nfs_reservations') as any).select('id, total_price').eq('operator_id', operator.id),
+    ]).then(([propRes, resRes]) => {
+      const propCount = propRes.count || 0;
+      const resList = resRes.data || [];
+      const revenue = resList.reduce((sum: number, r: Record<string, unknown>) => sum + (Number(r.total_price) || 0), 0);
+      setStats({ properties: propCount, reservations: resList.length, revenue });
+      setStatsLoading(false);
+    });
+  }, [operator?.id, topTab]);
+
+  // Fetch properties
+  useEffect(() => {
+    if (!operator?.id || topTab !== 'properties') return;
+    setPropsLoading(true);
+    (supabase.from('nfs_properties') as any)
+      .select('id, name, city, status, images')
+      .eq('operator_id', operator.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }: { data: Array<Record<string, unknown>> | null }) => {
+        setProperties(data || []);
+        setPropsLoading(false);
+      });
+  }, [operator?.id, topTab]);
+
+  // Fetch reservations
+  useEffect(() => {
+    if (!operator?.id || topTab !== 'reservations') return;
+    setResLoading(true);
+    (supabase.from('nfs_reservations') as any)
+      .select('id, guest_name, check_in, check_out, status, total_price, nfs_properties(name)')
+      .eq('operator_id', operator.id)
+      .order('check_in', { ascending: false })
+      .then(({ data }: { data: Array<Record<string, unknown>> | null }) => {
+        setReservations(data || []);
+        setResLoading(false);
+      });
+  }, [operator?.id, topTab]);
 
   // Pre-fill branding from operator record
   useEffect(() => {
@@ -171,7 +230,7 @@ export default function BookingSitePage() {
   }
 
   return (
-    <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row overflow-hidden relative">
+    <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden relative">
       {/* Tier gate overlay for free users */}
       {!paid && (
         <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center">
@@ -194,6 +253,161 @@ export default function BookingSitePage() {
         </div>
       )}
 
+      {/* Top Tab Bar */}
+      <div className="border-b border-border/30 bg-white px-5 flex-shrink-0">
+        <div className="flex gap-1 py-2">
+          {([
+            { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'properties' as const, label: 'Properties', icon: Building2 },
+            { id: 'reservations' as const, label: 'Reservations', icon: CalendarCheck },
+            { id: 'branding' as const, label: 'Branding', icon: Paintbrush },
+          ]).map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setTopTab(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${topTab === tab.id ? 'bg-emerald-50 text-emerald-700' : 'text-muted-foreground hover:bg-gray-50'}`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Dashboard Tab */}
+      {topTab === 'dashboard' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <h2 className="text-lg font-bold text-foreground mb-4">Operator Dashboard</h2>
+          {statsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl">
+              <div className="bg-white border border-border/50 rounded-xl p-5">
+                <div className="text-sm text-muted-foreground mb-1">Total Properties</div>
+                <div className="text-2xl font-bold text-foreground">{stats.properties}</div>
+              </div>
+              <div className="bg-white border border-border/50 rounded-xl p-5">
+                <div className="text-sm text-muted-foreground mb-1">Total Reservations</div>
+                <div className="text-2xl font-bold text-foreground">{stats.reservations}</div>
+              </div>
+              <div className="bg-white border border-border/50 rounded-xl p-5">
+                <div className="text-sm text-muted-foreground mb-1">Total Revenue</div>
+                <div className="text-2xl font-bold text-foreground">${stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Properties Tab */}
+      {topTab === 'properties' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-foreground">Properties</h2>
+            <button
+              onClick={() => window.open(getBridgeUrl("https://nfstay.app", "/admin/nfstay/properties"), "_blank")}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
+            >
+              Add Property
+            </button>
+          </div>
+          {propsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : properties.length === 0 ? (
+            <div className="text-center py-12">
+              <Building2 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No properties yet. Add your first property to get started.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {properties.map((prop) => {
+                const images = (prop.images as string[]) || [];
+                return (
+                  <div key={String(prop.id)} className="bg-white border border-border/50 rounded-xl overflow-hidden">
+                    <div className="h-36 bg-gray-100">
+                      {images[0] ? (
+                        <img src={String(images[0])} alt={String(prop.name)} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <Building2 className="w-8 h-8" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-sm font-semibold text-foreground truncate">{String(prop.name || 'Unnamed')}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{String(prop.city || '-')}</p>
+                      <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-[11px] font-medium ${prop.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {String(prop.status || 'draft')}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Reservations Tab */}
+      {topTab === 'reservations' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <h2 className="text-lg font-bold text-foreground mb-4">Reservations</h2>
+          {resLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : reservations.length === 0 ? (
+            <div className="text-center py-12">
+              <CalendarCheck className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No reservations yet.</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-border/50 rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/50 bg-gray-50/50">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Guest</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Property</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Check-in</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Check-out</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Status</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reservations.map((res) => {
+                      const propData = res.nfs_properties as Record<string, unknown> | null;
+                      return (
+                        <tr key={String(res.id)} className="border-b border-border/30 last:border-0">
+                          <td className="px-4 py-3 text-foreground">{String(res.guest_name || '-')}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{propData ? String(propData.name) : '-'}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{res.check_in ? new Date(String(res.check_in)).toLocaleDateString() : '-'}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{res.check_out ? new Date(String(res.check_out)).toLocaleDateString() : '-'}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium ${res.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700' : res.status === 'cancelled' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
+                              {String(res.status || 'pending')}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right font-medium text-foreground">${Number(res.total_price || 0).toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Branding Tab — original content */}
+      {topTab === 'branding' && (
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
       {/* Left Panel — Controls */}
       <div className="w-full lg:w-[380px] xl:w-[420px] border-r border-border/30 bg-white flex flex-col overflow-hidden flex-shrink-0">
         {/* Header */}
@@ -471,6 +685,8 @@ export default function BookingSitePage() {
           </div>
         </div>
       </div>
+      </div>
+      )}
     </div>
   );
 }
