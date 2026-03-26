@@ -76,7 +76,7 @@ export default function BookingSitePage() {
               <Globe className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h1 className="text-[15px] font-bold text-foreground leading-tight">Booking Site <span className="text-[10px] font-medium text-muted-foreground">(demo)</span></h1>
+              <h1 className="text-[15px] font-bold text-foreground leading-tight">Booking Site</h1>
               <p className="text-[11px] text-muted-foreground leading-tight">Your branded booking platform, included for all members</p>
             </div>
           </div>
@@ -284,6 +284,7 @@ export default function BookingSitePage() {
         <div className="h-12 px-5 flex items-center justify-between border-b border-border/30 bg-white/60 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center gap-3">
             <span className="text-[12px] font-medium text-muted-foreground">Preview</span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Demo</span>
             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
               <button onClick={() => setPreviewMode('desktop')} className={`p-1.5 rounded-md transition-colors ${previewMode === 'desktop' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
                 <Monitor className="w-4 h-4" />
