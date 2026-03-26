@@ -22,8 +22,14 @@ const defaultBranding = {
   accentColor: '#10b981',
   heroHeadline: 'Find Your Perfect Stay',
   heroSubheadline: 'Book directly with us for the best rates and experience',
-  heroImage: heroImages[0],
   aboutBio: 'We offer carefully curated vacation rentals in the most beautiful locations.',
+  aboutPhoto: '',
+  faq1Q: 'How do I book a property?',
+  faq1A: 'Simply browse our listings, select your dates and guests, and complete checkout.',
+  faq2Q: 'What is your cancellation policy?',
+  faq2A: 'Free cancellation up to 48 hours before check-in.',
+  faq3Q: 'Is there a minimum stay?',
+  faq3A: 'Most properties have a 2-night minimum stay.',
   contactEmail: '',
   contactPhone: '',
   socialInstagram: '',
@@ -72,7 +78,6 @@ export default function BookingSitePage() {
       accentColor: 'accent_color',
       heroHeadline: 'hero_headline',
       heroSubheadline: 'hero_subheadline',
-      heroImage: 'hero_photo',
       aboutBio: 'about_bio',
       contactEmail: 'contact_email',
       contactPhone: 'contact_phone',
@@ -81,6 +86,15 @@ export default function BookingSitePage() {
     };
     if (dbMap[field]) {
       syncToDb({ [dbMap[field]]: value });
+    }
+    // Sync FAQ fields as JSON array
+    if (field.startsWith('faq')) {
+      const updated = { ...branding, [field]: value };
+      const faqs = [1, 2, 3].map(i => ({
+        question: (updated as Record<string, string>)[`faq${i}Q`] || '',
+        answer: (updated as Record<string, string>)[`faq${i}A`] || '',
+      })).filter(f => f.question);
+      syncToDb({ faqs });
     }
   };
 
@@ -217,28 +231,40 @@ export default function BookingSitePage() {
 
           {activeTab === 'content' && (
             <>
+              <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Edit your site's content sections. Changes appear in the live preview.</p>
+
               <Field label="Hero Headline">
                 <input data-feature="BOOKING_NFSTAY__CUSTOMIZER_HEADLINE" type="text" value={branding.heroHeadline} onChange={e => update('heroHeadline', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="Find Your Perfect Stay" />
               </Field>
               <Field label="Hero Subheadline">
                 <input type="text" value={branding.heroSubheadline} onChange={e => update('heroSubheadline', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="Book directly with us" />
               </Field>
+
+              <div className="border-t border-border/30 pt-3 mt-3">
+                <p className="text-[11px] font-semibold text-foreground mb-2">About Section</p>
+              </div>
               <Field label="About Your Business">
                 <textarea value={branding.aboutBio} onChange={e => update('aboutBio', e.target.value)} rows={3} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none" placeholder="Tell guests about your business..." />
               </Field>
-              <Field label="Hero Image">
-                <div className="grid grid-cols-5 gap-1.5">
-                  {heroImages.map((img, i) => (
-                    <button key={i} onClick={() => update('heroImage', img)} className={`aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all ${branding.heroImage === img ? 'border-emerald-500 ring-1 ring-emerald-500/30' : 'border-transparent hover:border-gray-300'}`}>
-                      <img src={img} alt={`Hero ${i + 1}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                  <div className="aspect-[4/3] rounded-lg border-2 border-dashed border-border/50 flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-50/30 transition-all">
-                    <Upload className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-[9px] text-muted-foreground mt-0.5">Upload</span>
-                  </div>
+
+              <div className="border-t border-border/30 pt-3 mt-3">
+                <p className="text-[11px] font-semibold text-foreground mb-2">FAQ Section</p>
+              </div>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="space-y-1.5">
+                  <Field label={`Question ${i}`}>
+                    <input type="text" value={(branding as Record<string, string>)[`faq${i}Q`] || ''} onChange={e => update(`faq${i}Q`, e.target.value)} className="w-full px-3 py-1.5 text-[12px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 transition-all" placeholder={`FAQ question ${i}`} />
+                  </Field>
+                  <Field label={`Answer ${i}`}>
+                    <textarea value={(branding as Record<string, string>)[`faq${i}A`] || ''} onChange={e => update(`faq${i}A`, e.target.value)} rows={2} className="w-full px-3 py-1.5 text-[12px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 transition-all resize-none" placeholder="Answer..." />
+                  </Field>
                 </div>
-              </Field>
+              ))}
+
+              <div className="border-t border-border/30 pt-3 mt-3">
+                <p className="text-[11px] font-semibold text-foreground mb-1">Footer</p>
+                <p className="text-[10px] text-muted-foreground mb-2">Footer shows your brand name, contact info, and social links from the Contact tab.</p>
+              </div>
             </>
           )}
 
@@ -295,8 +321,8 @@ export default function BookingSitePage() {
         </div>
 
         {/* Preview Frame — real nfstay.app iframe */}
-        <div className="flex-1 flex items-start justify-center p-6 overflow-hidden">
-          <div className={`bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-300 h-full ${previewMode === 'mobile' ? 'w-[375px]' : 'w-full max-w-[1100px]'}`}>
+        <div className="flex-1 flex items-start justify-center p-4 overflow-hidden">
+          <div className={`bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-300 h-full ${previewMode === 'mobile' ? 'w-[375px]' : 'w-full'}`}>
             {/* Mock Browser Chrome */}
             <div className="h-8 bg-gray-100 flex items-center px-3 gap-1.5 border-b border-gray-200 flex-shrink-0">
               <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
@@ -309,15 +335,27 @@ export default function BookingSitePage() {
               </div>
             </div>
 
-            {/* Real nfstay.app iframe */}
-            <iframe
-              key={iframeKey}
-              src={previewUrl}
-              className="w-full border-0"
-              style={{ height: 'calc(100% - 32px)' }}
-              title="Booking site preview"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
+            {/* Real nfstay.app iframe — scaled to always render at desktop width */}
+            <div className="relative overflow-hidden" style={{ height: 'calc(100% - 32px)' }}>
+              <iframe
+                key={iframeKey}
+                src={previewUrl}
+                className="border-0 origin-top-left"
+                style={previewMode === 'desktop' ? {
+                  width: '1440px',
+                  height: '200%',
+                  transform: 'scale(0.65)',
+                  transformOrigin: 'top left',
+                } : {
+                  width: '375px',
+                  height: '100%',
+                  margin: '0 auto',
+                  display: 'block',
+                }}
+                title="Booking site preview"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
           </div>
         </div>
       </div>
