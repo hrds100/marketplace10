@@ -119,6 +119,23 @@
     </nav>
   </div>
 
+  <script>
+    // Nav glass effect on scroll
+    (function() {
+      var nav = document.getElementById('navbar');
+      if (!nav) return;
+      var scrolled = false;
+      window.addEventListener('scroll', function() {
+        var shouldShrink = window.scrollY > 50;
+        if (shouldShrink !== scrolled) {
+          scrolled = shouldShrink;
+          if (scrolled) { nav.classList.add('scrolled'); }
+          else { nav.classList.remove('scrolled'); }
+        }
+      }, { passive: true });
+    })();
+  </script>
+
   <!-- ========== HERO SECTION (nfstay) ========== -->
   <section class="section section_hero" data-feature="SHARED__LANDING_HERO" id="hero">
     <div class="hero-bg-clouds">

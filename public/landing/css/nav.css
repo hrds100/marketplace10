@@ -2,12 +2,14 @@
    NAVBAR — 100% pixel-perfect from shipper.now source
    ==================================================== */
 
-/* Fixed outer wrapper — position:fixed, rounded, white card */
+/* Fixed outer wrapper — position:fixed, glass effect on scroll */
 .nav_fixed {
   z-index: 12;
-  background-color: #fff;
+  background-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-radius: 1rem;
-  margin: 1rem 1rem 0;
+  margin: 0.75rem 1rem 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -17,17 +19,47 @@
   right: 0;
   box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.02);
   overflow: visible;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Inner nav component — white bg, rounded, vertical padding */
+/* Scrolled state — narrower pill, stronger glass */
+.nav_fixed.scrolled {
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  left: 1rem;
+  right: 1rem;
+  background-color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border-radius: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+/* Inner nav component — transparent bg (glass comes from parent) */
 .nav_component {
-  background-color: #fff;
+  background-color: transparent;
   border-radius: 1rem;
   width: 100%;
   padding-top: 0.7rem;
   padding-bottom: 0.7rem;
   position: relative;
+  transition: padding 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* Tighten padding when scrolled */
+.nav_fixed.scrolled .nav_component {
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+/* Hide non-essential items when scrolled to keep it compact */
+.nav_fixed.scrolled .vertical-divider-navbar { opacity: 0; width: 0; margin: 0; transition: all 0.3s; }
+.nav_fixed.scrolled .lang-dropdown { display: none; }
+.nav_fixed.scrolled .nav_menu_link[data-feature="SHARED__LANDING_NAV_LOGIN"] { display: none; }
 
 /* Container row — flex between, centered, max-width 80rem */
 .nav_container {
