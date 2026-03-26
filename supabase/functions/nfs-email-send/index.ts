@@ -10,7 +10,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const NFS_RESEND_API_KEY = Deno.env.get('NFS_RESEND_API_KEY');
-const FROM_EMAIL = 'nfstay <onboarding@resend.dev>'; // Update to verified domain when available
+const FROM_EMAIL = 'nfstay <notifications@hub.nfstay.com>';
 
 const BRAND = {
   color: '#1E9A80',
