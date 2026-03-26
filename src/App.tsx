@@ -43,7 +43,6 @@ import AdminInvestCommissions from "./pages/admin/invest/AdminInvestCommissions"
 import AdminInvestCommissionSettings from "./pages/admin/invest/AdminInvestCommissionSettings";
 import AdminInvestPayouts from "./pages/admin/invest/AdminInvestPayouts";
 import AdminInvestProposals from "./pages/admin/invest/AdminInvestProposals";
-import AdminInvestBoost from "./pages/admin/invest/AdminInvestBoost";
 import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
 import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
 import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
@@ -199,7 +198,6 @@ const App = () => (
             <Route path="invest/commission-settings" element={<AdminInvestCommissionSettings />} />
             <Route path="invest/payouts" element={<AdminInvestPayouts />} />
             <Route path="invest/proposals" element={<AdminInvestProposals />} />
-            <Route path="invest/boost" element={<AdminInvestBoost />} />
             <Route path="invest/endpoints" element={<AdminEndpoints />} />
             <Route path="invest/test-console" element={<AdminTestConsole />} />
 
