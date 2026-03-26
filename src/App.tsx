@@ -77,6 +77,7 @@ import AdminNfsProperties from "./pages/admin/nfstay/AdminNfsProperties";
 import AdminNfsDashboard from "./pages/admin/nfstay/AdminNfsDashboard";
 import AdminNfsUsers from "./pages/admin/nfstay/AdminNfsUsers";
 import AdminNfsOperators from "./pages/admin/nfstay/AdminNfsOperators";
+import AdminNfsOperatorDetail from "./pages/admin/nfstay/AdminNfsOperatorDetail";
 import AdminNfsAnalytics from "./pages/admin/nfstay/AdminNfsAnalytics";
 import AdminNfsSettings from "./pages/admin/nfstay/AdminNfsSettings";
 import NfsTravelerReservations from "./pages/nfstay/NfsTravelerReservations";
@@ -208,6 +209,7 @@ const App = () => (
             <Route path="nfstay/dashboard" element={<AdminNfsDashboard />} />
             <Route path="nfstay/users" element={<AdminNfsUsers />} />
             <Route path="nfstay/operators" element={<AdminNfsOperators />} />
+            <Route path="nfstay/operators/:operatorId" element={<AdminNfsOperatorDetail />} />
             <Route path="nfstay/analytics" element={<AdminNfsAnalytics />} />
             <Route path="nfstay/settings" element={<AdminNfsSettings />} />
 
