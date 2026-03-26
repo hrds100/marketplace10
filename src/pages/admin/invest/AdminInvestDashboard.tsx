@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import { useInvestProperties, useInvestOrders, useAllShareholders, useAllPayoutClaims } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
+import { useAccount } from '@particle-network/connectkit';
 import {
   fetchCommissionEventsForPerformanceFees,
   prepareFeeDistributions,
@@ -65,8 +66,10 @@ export default function AdminInvestDashboard() {
     adminResetPropertyRent,
     adminGetRentDetails,
     adminBoostUser,
+    connectWallet,
     loading: blockchainLoading,
   } = useBlockchain();
+  const { address: walletAddress } = useAccount();
   const [balances, setBalances] = useState<{ managerBnb: string; managerStay: string; treasuryUsdc: string } | null>(null);
   const [balancesLoading, setBalancesLoading] = useState(true);
 
@@ -308,7 +311,19 @@ export default function AdminInvestDashboard() {
 
   return (
     <div data-feature="ADMIN__INVEST">
-      <h1 className="text-[28px] font-bold text-foreground mb-6">Partnership Dashboard</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-[28px] font-bold text-foreground">Partnership Dashboard</h1>
+        {walletAddress ? (
+          <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs font-mono">
+            <Wallet className="w-3 h-3 text-primary" />
+            {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+          </Badge>
+        ) : (
+          <Button variant="outline" size="sm" onClick={() => connectWallet()} className="gap-2">
+            <Wallet className="w-4 h-4" /> Connect Wallet
+          </Button>
+        )}
+      </div>
 
       {/* Wallet Balances */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
