@@ -288,7 +288,7 @@ function InvestModal({
     )}
 
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md" data-feature="INVEST__MARKETPLACE_CHECKOUT">
+      <DialogContent className="relative sm:max-w-md" data-feature="INVEST__MARKETPLACE_CHECKOUT">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {'Invest in ' + property.title}
@@ -296,6 +296,13 @@ function InvestModal({
         </DialogHeader>
 
         <>
+            {blockchainLoading && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-10">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                <p className="text-sm font-medium text-foreground">Confirming on blockchain...</p>
+                <p className="text-xs text-muted-foreground mt-1">This may take up to 30 seconds. Please don't close this window.</p>
+              </div>
+            )}
             <div className="space-y-5 py-2">
               <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3 dark:bg-muted/30">
                 <span className="text-sm text-muted-foreground">Allocation price</span>
