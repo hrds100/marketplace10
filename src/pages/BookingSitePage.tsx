@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Globe, Smartphone, Monitor, ExternalLink, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload, MapPin, Star, Bath, Bed, Users, ChevronDown, ChevronLeft, Search, Clock, MessageCircle, User } from 'lucide-react';
 import PaymentSheet from '@/components/PaymentSheet';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 
 const heroImages = [
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
@@ -12,8 +10,6 @@ const heroImages = [
   'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
 ];
 
-// Demo operator ID — used for live preview on nfstay.app
-const DEMO_OPERATOR_ID = '00000000-0000-0000-0000-000000000099';
 
 const defaultBranding = {
   brandName: 'Your Brand',
@@ -40,7 +36,6 @@ const defaultBranding = {
 };
 
 export default function BookingSitePage() {
-  const { user } = useAuth();
   const [branding, setBranding] = useState(defaultBranding);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [copied, setCopied] = useState(false);
@@ -48,24 +43,10 @@ export default function BookingSitePage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [domainMode, setDomainMode] = useState<'subdomain' | 'custom'>('subdomain');
   const [hexInput, setHexInput] = useState(defaultBranding.accentColor);
-  const [iframeKey, setIframeKey] = useState(0);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const siteUrl = domainMode === 'custom' && branding.customDomain
     ? branding.customDomain
     : `${branding.subdomain}.nfstay.app`;
-
-  // Sync branding changes to the demo operator in Supabase (debounced)
-  const syncToDb = useCallback((updates: Record<string, unknown>) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      await (supabase.from('nfs_operators') as any)
-        .update(updates)
-        .eq('id', DEMO_OPERATOR_ID);
-      // Refresh the iframe to show new branding
-      setIframeKey(k => k + 1);
-    }, 800);
-  }, []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(`https://${siteUrl}`);
@@ -75,41 +56,12 @@ export default function BookingSitePage() {
 
   const update = (field: string, value: string) => {
     setBranding(prev => ({ ...prev, [field]: value }));
-    // Map frontend fields to nfs_operators columns
-    const dbMap: Record<string, string> = {
-      brandName: 'brand_name',
-      accentColor: 'accent_color',
-      heroHeadline: 'hero_headline',
-      heroSubheadline: 'hero_subheadline',
-      aboutBio: 'about_bio',
-      contactEmail: 'contact_email',
-      contactPhone: 'contact_phone',
-      contactWhatsapp: 'contact_whatsapp',
-      socialInstagram: 'social_instagram',
-      socialFacebook: 'social_facebook',
-      socialTwitter: 'social_twitter',
-      socialTiktok: 'social_tiktok',
-    };
-    if (dbMap[field]) {
-      syncToDb({ [dbMap[field]]: value });
-    }
-    // Sync FAQ fields as JSON array
-    if (field.startsWith('faq')) {
-      const updated = { ...branding, [field]: value };
-      const faqs = [1, 2, 3].map(i => ({
-        question: (updated as Record<string, string>)[`faq${i}Q`] || '',
-        answer: (updated as Record<string, string>)[`faq${i}A`] || '',
-      })).filter(f => f.question);
-      syncToDb({ faqs });
-    }
   };
 
   const updateColor = (color: string) => {
     update('accentColor', color);
     setHexInput(color);
   };
-
-  const previewUrl = `https://nfstay.app?preview=${DEMO_OPERATOR_ID}`;
 
   return (
     <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row overflow-hidden">
@@ -321,12 +273,12 @@ export default function BookingSitePage() {
         <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); }} />
       </div>
 
-      {/* Right Panel — Live Preview (real nfstay.app with demo operator branding) */}
+      {/* Right Panel — Self-contained mockup preview */}
       <div data-feature="BOOKING_NFSTAY__CUSTOMIZER_PREVIEW" className="flex-1 bg-[hsl(210,20%,96%)] flex flex-col overflow-hidden">
         {/* Preview Toolbar */}
         <div className="h-12 px-5 flex items-center justify-between border-b border-border/30 bg-white/60 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center gap-3">
-            <span className="text-[12px] font-medium text-muted-foreground">Live Preview</span>
+            <span className="text-[12px] font-medium text-muted-foreground">Preview</span>
             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
               <button onClick={() => setPreviewMode('desktop')} className={`p-1.5 rounded-md transition-colors ${previewMode === 'desktop' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
                 <Monitor className="w-4 h-4" />
@@ -336,48 +288,22 @@ export default function BookingSitePage() {
               </button>
             </div>
           </div>
-          <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-gray-100 transition-colors">
-            <ExternalLink className="w-3.5 h-3.5" />
-            Open in new tab
-          </a>
         </div>
 
-        {/* Preview Frame — real nfstay.app iframe */}
-        <div className="flex-1 flex items-start justify-center p-4 overflow-hidden">
-          <div className={`bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-300 h-full ${previewMode === 'mobile' ? 'w-[375px]' : 'w-full'}`}>
-            {/* Mock Browser Chrome */}
-            <div className="h-8 bg-gray-100 flex items-center px-3 gap-1.5 border-b border-gray-200 flex-shrink-0">
+        {/* Preview Frame */}
+        <div className="flex-1 flex items-start justify-center p-4 overflow-y-auto">
+          <div className={`bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-300 ${previewMode === 'mobile' ? 'w-[375px]' : 'w-full max-w-[1100px]'}`}>
+            {/* Browser Chrome */}
+            <div className="h-8 bg-gray-100 flex items-center px-3 gap-1.5 border-b border-gray-200">
               <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
               <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
               <div className="flex-1 mx-8">
-                <div className="bg-white rounded-md px-3 py-0.5 text-[10px] text-muted-foreground text-center truncate">
-                  https://{siteUrl}
-                </div>
+                <div className="bg-white rounded-md px-3 py-0.5 text-[10px] text-muted-foreground text-center truncate">https://{siteUrl}</div>
               </div>
             </div>
 
-            {/* Real nfstay.app iframe — scaled to always render at desktop width */}
-            <div className="relative overflow-hidden" style={{ height: 'calc(100% - 32px)' }}>
-              <iframe
-                key={iframeKey}
-                src={previewUrl}
-                className="border-0 origin-top-left"
-                style={previewMode === 'desktop' ? {
-                  width: '1440px',
-                  height: '200%',
-                  transform: 'scale(0.65)',
-                  transformOrigin: 'top left',
-                } : {
-                  width: '375px',
-                  height: '100%',
-                  margin: '0 auto',
-                  display: 'block',
-                }}
-                title="Booking site preview"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              />
-            </div>
+            <MockPreview branding={branding} previewMode={previewMode} onPayment={() => setPaymentOpen(true)} />
           </div>
         </div>
       </div>
@@ -390,6 +316,204 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">{label}</label>
       {children}
+    </div>
+  );
+}
+
+// ── Mock Properties ──
+const MOCK_PROPS = [
+  { id: 1, img: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&q=80', title: 'Modern Shoreditch Loft', loc: 'London, UK', price: 145, beds: 2, baths: 1, guests: 4, type: 'Apartment', rating: 4.8, reviews: 24 },
+  { id: 2, img: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80', title: 'Chelsea Garden Flat', loc: 'London, UK', price: 195, beds: 3, baths: 2, guests: 6, type: 'Apartment', rating: 4.9, reviews: 31 },
+  { id: 3, img: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&q=80', title: 'Covent Garden Studio', loc: 'London, UK', price: 89, beds: 1, baths: 1, guests: 2, type: 'Studio', rating: 4.7, reviews: 18 },
+  { id: 4, img: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&q=80', title: 'Camden Townhouse', loc: 'London, UK', price: 250, beds: 4, baths: 3, guests: 8, type: 'House', rating: 4.6, reviews: 12 },
+  { id: 5, img: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&q=80', title: 'Notting Hill Mews', loc: 'London, UK', price: 175, beds: 2, baths: 1, guests: 4, type: 'Apartment', rating: 4.8, reviews: 42 },
+  { id: 6, img: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80', title: 'Canary Wharf Penthouse', loc: 'London, UK', price: 320, beds: 3, baths: 2, guests: 6, type: 'Penthouse', rating: 5.0, reviews: 8 },
+  { id: 7, img: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80', title: 'Brixton Artist Flat', loc: 'London, UK', price: 95, beds: 1, baths: 1, guests: 3, type: 'Apartment', rating: 4.5, reviews: 15 },
+  { id: 8, img: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&q=80', title: 'Greenwich Riverside Home', loc: 'London, UK', price: 165, beds: 3, baths: 2, guests: 5, type: 'House', rating: 4.9, reviews: 22 },
+];
+
+// ── Mock Preview Component ──
+function MockPreview({ branding, previewMode, onPayment }: { branding: typeof import('./BookingSitePage').default extends () => any ? never : Record<string, string>; previewMode: string; onPayment: () => void }) {
+  const [page, setPage] = useState<'home' | 'search' | 'property' | 'about' | 'contact'>('home');
+  const [contactOpen, setContactOpen] = useState(false);
+  const [selectedProp, setSelectedProp] = useState(MOCK_PROPS[0]);
+  const ac = branding.accentColor;
+  const isMobile = previewMode === 'mobile';
+
+  // Navbar
+  const Nav = () => (
+    <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 sticky top-0 bg-white z-10">
+      <span className="text-[14px] font-bold" style={{ color: ac }}>{branding.brandName}</span>
+      <div className="flex items-center gap-3">
+        {!isMobile && (
+          <>
+            <button onClick={() => setPage('home')} className={`text-[11px] font-medium ${page === 'home' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Properties</button>
+            <button onClick={() => setPage('about')} className={`text-[11px] font-medium ${page === 'about' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>About</button>
+            <div className="relative">
+              <button onClick={() => setContactOpen(!contactOpen)} className="text-[11px] font-medium text-muted-foreground hover:text-foreground flex items-center gap-0.5">
+                Contact <ChevronDown className="w-3 h-3" />
+              </button>
+              {contactOpen && (
+                <div className="absolute right-0 top-6 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
+                  {branding.contactEmail && <div className="px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-2 hover:bg-gray-50"><Mail className="w-3.5 h-3.5" />{branding.contactEmail || 'hello@yourbrand.com'}</div>}
+                  {branding.contactWhatsapp && <div className="px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-2 hover:bg-gray-50"><MessageCircle className="w-3.5 h-3.5 text-green-500" />{branding.contactWhatsapp}</div>}
+                  {branding.contactPhone && <div className="px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-2 hover:bg-gray-50"><Phone className="w-3.5 h-3.5" />{branding.contactPhone}</div>}
+                  {!branding.contactEmail && !branding.contactWhatsapp && !branding.contactPhone && <div className="px-3 py-2 text-[11px] text-muted-foreground">Add contact info in the Contact tab</div>}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+        <button onClick={onPayment} className="text-[11px] font-medium text-muted-foreground hover:text-foreground flex items-center gap-1"><Clock className="w-3 h-3" />My Reservations</button>
+        <button onClick={onPayment} className="px-2.5 py-1 text-[10px] font-semibold text-white rounded-full" style={{ backgroundColor: ac }}>Sign In</button>
+      </div>
+    </div>
+  );
+
+  // Property card
+  const PropCard = ({ p, small }: { p: typeof MOCK_PROPS[0]; small?: boolean }) => (
+    <div className="rounded-xl overflow-hidden border border-gray-100 hover:shadow-md transition-all cursor-pointer" onClick={() => { setSelectedProp(p); setPage('property'); }}>
+      <div className="relative">
+        <img src={p.img} alt={p.title} className={`w-full object-cover ${small ? 'h-[100px]' : 'h-[140px]'}`} />
+        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
+          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /><span className="text-[10px] font-semibold">{p.rating}</span>
+        </div>
+      </div>
+      <div className="p-2.5">
+        <h4 className={`font-semibold text-foreground truncate ${small ? 'text-[11px]' : 'text-[12px]'}`}>{p.title}</h4>
+        <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5"><MapPin className="w-3 h-3" />{p.loc}</p>
+        {!small && (
+          <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{p.guests}</span>
+            <span className="flex items-center gap-0.5"><Bed className="w-3 h-3" />{p.beds}</span>
+            <span className="flex items-center gap-0.5"><Bath className="w-3 h-3" />{p.baths}</span>
+          </div>
+        )}
+        <p className="text-[12px] font-bold mt-1.5" style={{ color: ac }}>£{p.price}<span className="text-[10px] font-normal text-muted-foreground"> / night</span></p>
+      </div>
+    </div>
+  );
+
+  // Footer
+  const Footer = () => (
+    <div className="px-4 py-4 bg-gray-900 text-white mt-4">
+      <div className={`${isMobile ? '' : 'flex justify-between'}`}>
+        <div>
+          <span className="text-[13px] font-bold" style={{ color: ac }}>{branding.brandName}</span>
+          <p className="text-[10px] text-gray-400 mt-1">Book directly with us. No middleman fees.</p>
+        </div>
+        <div className={`${isMobile ? 'mt-3' : ''} space-y-1`}>
+          {branding.contactEmail && <p className="text-[10px] text-gray-400 flex items-center gap-1.5"><Mail className="w-3 h-3" />{branding.contactEmail}</p>}
+          {branding.contactPhone && <p className="text-[10px] text-gray-400 flex items-center gap-1.5"><Phone className="w-3 h-3" />{branding.contactPhone}</p>}
+          {branding.contactWhatsapp && <p className="text-[10px] text-gray-400 flex items-center gap-1.5"><MessageCircle className="w-3 h-3" />{branding.contactWhatsapp}</p>}
+        </div>
+      </div>
+      {(branding.socialInstagram || branding.socialFacebook || branding.socialTwitter) && (
+        <div className="flex gap-3 mt-3 text-[10px] text-gray-500">
+          {branding.socialInstagram && <span>Instagram</span>}
+          {branding.socialFacebook && <span>Facebook</span>}
+          {branding.socialTwitter && <span>Twitter</span>}
+          {branding.socialTiktok && <span>TikTok</span>}
+        </div>
+      )}
+    </div>
+  );
+
+  if (page === 'property') return (
+    <div onClick={() => setContactOpen(false)}>
+      <Nav />
+      <div className="p-4">
+        <button onClick={() => setPage('home')} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground mb-3"><ChevronLeft className="w-3.5 h-3.5" />Back</button>
+        <div className={isMobile ? '' : 'flex gap-5'}>
+          <div className="flex-1">
+            <img src={selectedProp.img} alt="" className="w-full h-[200px] rounded-xl object-cover" />
+            <h2 className="text-lg font-bold text-foreground mt-3">{selectedProp.title}</h2>
+            <p className="text-[12px] text-muted-foreground flex items-center gap-1 mt-1"><MapPin className="w-3.5 h-3.5" />{selectedProp.loc}</p>
+            <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1"><Bed className="w-3.5 h-3.5" />{selectedProp.beds} beds</span>
+              <span className="flex items-center gap-1"><Bath className="w-3.5 h-3.5" />{selectedProp.baths} baths</span>
+              <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />{selectedProp.rating} ({selectedProp.reviews})</span>
+            </div>
+            <p className="text-[12px] text-muted-foreground mt-3 leading-relaxed">A beautifully designed {selectedProp.type.toLowerCase()} with modern amenities in {selectedProp.loc.split(',')[0]}. Perfect for short stays and holidays. Direct booking — no middleman fees.</p>
+          </div>
+          <div className={`${isMobile ? 'mt-3' : 'w-[240px]'} flex-shrink-0`}>
+            <div className="border border-gray-200 rounded-xl p-3 shadow-sm">
+              <p className="text-lg font-bold">£{selectedProp.price} <span className="text-[12px] font-normal text-muted-foreground">/ night</span></p>
+              <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden text-[10px]">
+                <div className="flex">
+                  <div className="flex-1 p-2 border-r border-gray-200"><p className="text-muted-foreground font-medium">Check in</p><p className="text-foreground">Add date</p></div>
+                  <div className="flex-1 p-2"><p className="text-muted-foreground font-medium">Check out</p><p className="text-foreground">Add date</p></div>
+                </div>
+                <div className="p-2 border-t border-gray-200"><p className="text-muted-foreground font-medium">Guests</p><p className="text-foreground">1 guest</p></div>
+              </div>
+              <button onClick={onPayment} className="w-full mt-2 py-2 text-white text-[12px] font-semibold rounded-lg" style={{ backgroundColor: ac }}>Book Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+
+  if (page === 'about') return (
+    <div onClick={() => setContactOpen(false)}>
+      <Nav />
+      <div className="p-6 max-w-[600px] mx-auto">
+        <h2 className="text-xl font-bold text-foreground mb-3">About {branding.brandName}</h2>
+        <p className="text-[13px] text-muted-foreground leading-relaxed">{branding.aboutBio || 'Tell guests about your business in the Content tab.'}</p>
+        {(branding.faq1Q || branding.faq2Q || branding.faq3Q) && (
+          <div className="mt-8">
+            <h3 className="text-base font-bold text-foreground mb-3">Frequently Asked Questions</h3>
+            {[1, 2, 3].map(i => {
+              const q = (branding as Record<string, string>)[`faq${i}Q`];
+              const a = (branding as Record<string, string>)[`faq${i}A`];
+              if (!q) return null;
+              return (
+                <div key={i} className="border-b border-gray-100 py-3">
+                  <p className="text-[13px] font-semibold text-foreground">{q}</p>
+                  <p className="text-[12px] text-muted-foreground mt-1">{a}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <Footer />
+    </div>
+  );
+
+  // Home page
+  return (
+    <div onClick={() => setContactOpen(false)}>
+      <Nav />
+      {/* Hero */}
+      <div className="px-6 py-10 text-center">
+        <h1 className={`font-bold text-foreground ${isMobile ? 'text-xl' : 'text-3xl'}`}>{branding.heroHeadline}</h1>
+        <p className={`text-muted-foreground mt-2 ${isMobile ? 'text-sm' : 'text-base'}`}>{branding.heroSubheadline}</p>
+      </div>
+      {/* Search bar */}
+      <div className="px-4 pb-6">
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 flex items-center gap-2">
+          <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <div className="flex-1 text-[12px] text-muted-foreground">Search by location or property name...</div>
+          <button className="px-4 py-2 text-white text-[12px] font-semibold rounded-lg flex-shrink-0" style={{ backgroundColor: ac }}>Search</button>
+        </div>
+      </div>
+      {/* Property grid */}
+      <div className="px-4">
+        <h3 className="text-[14px] font-semibold text-foreground mb-3">Featured Properties</h3>
+        <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
+          {MOCK_PROPS.slice(0, isMobile ? 4 : 6).map(p => <PropCard key={p.id} p={p} />)}
+        </div>
+      </div>
+      {/* Recently viewed */}
+      <div className="px-4 mt-6">
+        <h3 className="text-[14px] font-semibold text-foreground mb-3 flex items-center gap-1.5"><Clock className="w-4 h-4 text-muted-foreground" />Recently Viewed</h3>
+        <div className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-4'}`}>
+          {MOCK_PROPS.slice(4, 8).map(p => <PropCard key={p.id} p={p} small />)}
+        </div>
+      </div>
+      <Footer />
     </div>
   );
 }
