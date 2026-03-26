@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Globe, Smartphone, Monitor, ExternalLink, Copy, Check, Palette, Type, Image, MessageSquare, Mail, Phone, Link2 } from 'lucide-react';
+import { Globe, Smartphone, Monitor, ExternalLink, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload, MapPin, Star, Bath, Bed, ChevronLeft } from 'lucide-react';
 import PaymentSheet from '@/components/PaymentSheet';
 
 const heroImages = [
@@ -10,9 +10,19 @@ const heroImages = [
   'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
 ];
 
+const mockProperties = [
+  { id: 1, img: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&q=80', title: 'Modern City Apartment', loc: 'London, UK', price: 120, beds: 2, baths: 1, rating: 4.8, reviews: 24 },
+  { id: 2, img: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80', title: 'Luxury Penthouse Suite', loc: 'Manchester, UK', price: 185, beds: 3, baths: 2, rating: 4.9, reviews: 31 },
+  { id: 3, img: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&q=80', title: 'Cozy Studio Retreat', loc: 'Birmingham, UK', price: 85, beds: 1, baths: 1, rating: 4.7, reviews: 18 },
+  { id: 4, img: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80', title: 'Victorian Townhouse', loc: 'Bath, UK', price: 155, beds: 4, baths: 2, rating: 4.6, reviews: 12 },
+  { id: 5, img: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&q=80', title: 'Seaside Cottage', loc: 'Brighton, UK', price: 110, beds: 2, baths: 1, rating: 4.8, reviews: 42 },
+  { id: 6, img: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&q=80', title: 'Lakeside Villa', loc: 'Lake District, UK', price: 220, beds: 5, baths: 3, rating: 5.0, reviews: 8 },
+];
+
 const defaultBranding = {
   brandName: 'Your Brand',
   subdomain: 'yourbrand',
+  customDomain: '',
   accentColor: '#10b981',
   heroHeadline: 'Find Your Perfect Stay',
   heroSubheadline: 'Book directly with us for the best rates and experience',
@@ -30,8 +40,14 @@ export default function BookingSitePage() {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'brand' | 'content' | 'contact'>('brand');
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [domainMode, setDomainMode] = useState<'subdomain' | 'custom'>('subdomain');
+  const [previewPage, setPreviewPage] = useState<'home' | 'property'>('home');
+  const [selectedProperty, setSelectedProperty] = useState(mockProperties[0]);
+  const [hexInput, setHexInput] = useState(defaultBranding.accentColor);
 
-  const siteUrl = `${branding.subdomain}.nfstay.app`;
+  const siteUrl = domainMode === 'custom' && branding.customDomain
+    ? branding.customDomain
+    : `${branding.subdomain}.nfstay.app`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(`https://${siteUrl}`);
@@ -41,6 +57,11 @@ export default function BookingSitePage() {
 
   const update = (field: string, value: string) => {
     setBranding(prev => ({ ...prev, [field]: value }));
+  };
+
+  const updateColor = (color: string) => {
+    update('accentColor', color);
+    setHexInput(color);
   };
 
   return (
@@ -60,24 +81,65 @@ export default function BookingSitePage() {
           </div>
         </div>
 
-        {/* URL Bar */}
+        {/* URL Bar + Domain toggle */}
         <div className="px-5 py-3 border-b border-border/30 bg-gray-50/50">
-          <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Your site URL</label>
-          <div className="mt-1.5 flex items-center gap-2">
-            <div className="flex-1 flex items-center bg-white border border-border/50 rounded-lg overflow-hidden">
-              <span className="pl-3 text-[13px] text-muted-foreground select-none">https://</span>
-              <input
-                type="text"
-                value={branding.subdomain}
-                onChange={e => update('subdomain', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                className="flex-1 py-2 pr-1 text-[13px] font-medium text-foreground outline-none bg-transparent min-w-0"
-              />
-              <span className="pr-3 text-[13px] text-muted-foreground select-none">.nfstay.app</span>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Your site URL</label>
+            <div className="flex items-center bg-gray-100 rounded-md p-0.5">
+              <button
+                onClick={() => setDomainMode('subdomain')}
+                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${domainMode === 'subdomain' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'}`}
+              >
+                Subdomain
+              </button>
+              <button
+                onClick={() => setDomainMode('custom')}
+                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${domainMode === 'custom' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'}`}
+              >
+                Own domain
+              </button>
             </div>
-            <button onClick={handleCopy} className="p-2 rounded-lg border border-border/50 hover:bg-gray-50 transition-colors" title="Copy URL">
-              {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
-            </button>
           </div>
+
+          {domainMode === 'subdomain' ? (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center bg-white border border-border/50 rounded-lg overflow-hidden">
+                <span className="pl-3 text-[13px] text-muted-foreground select-none">https://</span>
+                <input
+                  type="text"
+                  value={branding.subdomain}
+                  onChange={e => update('subdomain', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                  className="flex-1 py-2 pr-1 text-[13px] font-medium text-foreground outline-none bg-transparent min-w-0"
+                />
+                <span className="pr-3 text-[13px] text-muted-foreground select-none">.nfstay.app</span>
+              </div>
+              <button onClick={handleCopy} className="p-2 rounded-lg border border-border/50 hover:bg-gray-50 transition-colors" title="Copy URL">
+                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center bg-white border border-border/50 rounded-lg overflow-hidden">
+                  <span className="pl-3 text-[13px] text-muted-foreground select-none">https://</span>
+                  <input
+                    type="text"
+                    value={branding.customDomain}
+                    onChange={e => update('customDomain', e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, ''))}
+                    className="flex-1 py-2 pr-3 text-[13px] font-medium text-foreground outline-none bg-transparent min-w-0"
+                    placeholder="yourdomain.com"
+                  />
+                </div>
+                <button onClick={() => setPaymentOpen(true)} className="p-2 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors" title="Connect domain">
+                  <Link2 className="w-4 h-4 text-emerald-600" />
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Custom domains require a paid plan. <button onClick={() => setPaymentOpen(true)} className="text-emerald-600 font-medium hover:underline">Subscribe to connect.</button></p>
+            </div>
+          )}
+          <p className="text-[10px] text-muted-foreground mt-1.5">
+            {domainMode === 'subdomain' ? 'Free subdomain included with every plan' : 'Point your DNS to cname.vercel-dns.com'}
+          </p>
         </div>
 
         {/* Tabs */}
@@ -112,23 +174,42 @@ export default function BookingSitePage() {
                 />
               </Field>
               <Field label="Accent Color">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={branding.accentColor}
-                    onChange={e => update('accentColor', e.target.value)}
-                    className="w-10 h-10 rounded-lg border border-border/50 cursor-pointer"
-                  />
+                <div className="space-y-2">
                   <div className="flex gap-1.5">
                     {['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#000000'].map(c => (
                       <button
                         key={c}
-                        onClick={() => update('accentColor', c)}
+                        onClick={() => updateColor(c)}
                         className={`w-7 h-7 rounded-full border-2 transition-all ${branding.accentColor === c ? 'border-foreground scale-110' : 'border-transparent hover:scale-105'}`}
                         style={{ backgroundColor: c }}
                       />
                     ))}
                   </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={branding.accentColor}
+                      onChange={e => updateColor(e.target.value)}
+                      className="w-8 h-8 rounded-lg border border-border/50 cursor-pointer flex-shrink-0"
+                    />
+                    <div className="flex-1 flex items-center bg-white border border-border/50 rounded-lg overflow-hidden">
+                      <span className="pl-2.5 text-[12px] text-muted-foreground select-none">#</span>
+                      <input
+                        type="text"
+                        value={hexInput.replace('#', '')}
+                        onChange={e => {
+                          const v = e.target.value.replace(/[^a-fA-F0-9]/g, '').slice(0, 6);
+                          setHexInput(`#${v}`);
+                          if (v.length === 6) updateColor(`#${v}`);
+                        }}
+                        className="flex-1 py-1.5 pr-2 text-[12px] font-mono text-foreground outline-none bg-transparent"
+                        placeholder="10b981"
+                        maxLength={6}
+                      />
+                    </div>
+                    <div className="w-8 h-8 rounded-lg border border-border/30 flex-shrink-0" style={{ backgroundColor: branding.accentColor }} />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Pick a preset, use the color picker, or type your hex code</p>
                 </div>
               </Field>
               <Field label="Logo">
@@ -182,6 +263,10 @@ export default function BookingSitePage() {
                       <img src={img} alt={`Hero ${i + 1}`} className="w-full h-full object-cover" />
                     </button>
                   ))}
+                  <div className="aspect-[4/3] rounded-lg border-2 border-dashed border-border/50 flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-50/30 transition-all">
+                    <Upload className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-[9px] text-muted-foreground mt-0.5">Upload</span>
+                  </div>
                 </div>
               </Field>
             </>
@@ -190,40 +275,16 @@ export default function BookingSitePage() {
           {activeTab === 'contact' && (
             <div data-feature="BOOKING_NFSTAY__CUSTOMIZER_CONTACT">
               <Field label="Email">
-                <input
-                  type="email"
-                  value={branding.contactEmail}
-                  onChange={e => update('contactEmail', e.target.value)}
-                  className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
-                  placeholder="hello@yourbrand.com"
-                />
+                <input type="email" value={branding.contactEmail} onChange={e => update('contactEmail', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="hello@yourbrand.com" />
               </Field>
               <Field label="Phone">
-                <input
-                  type="tel"
-                  value={branding.contactPhone}
-                  onChange={e => update('contactPhone', e.target.value)}
-                  className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
-                  placeholder="+44 7xxx xxx xxx"
-                />
+                <input type="tel" value={branding.contactPhone} onChange={e => update('contactPhone', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="+44 7xxx xxx xxx" />
               </Field>
               <Field label="Instagram">
-                <input
-                  type="text"
-                  value={branding.socialInstagram}
-                  onChange={e => update('socialInstagram', e.target.value)}
-                  className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
-                  placeholder="@yourbrand"
-                />
+                <input type="text" value={branding.socialInstagram} onChange={e => update('socialInstagram', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="@yourbrand" />
               </Field>
               <Field label="Facebook">
-                <input
-                  type="text"
-                  value={branding.socialFacebook}
-                  onChange={e => update('socialFacebook', e.target.value)}
-                  className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
-                  placeholder="facebook.com/yourbrand"
-                />
+                <input type="text" value={branding.socialFacebook} onChange={e => update('socialFacebook', e.target.value)} className="w-full px-3 py-2 text-[13px] border border-border/50 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" placeholder="facebook.com/yourbrand" />
               </Field>
             </div>
           )}
@@ -231,31 +292,15 @@ export default function BookingSitePage() {
 
         {/* Bottom Actions */}
         <div className="p-5 border-t border-border/30 bg-gray-50/50 space-y-2">
-          <button
-            data-feature="BOOKING_NFSTAY__CUSTOMIZER_SAVE"
-            onClick={() => setPaymentOpen(true)}
-            className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[13px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95"
-          >
+          <button data-feature="BOOKING_NFSTAY__CUSTOMIZER_SAVE" onClick={() => setPaymentOpen(true)} className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[13px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95">
             Publish Site
-          </button>
-          <button
-            onClick={() => setPaymentOpen(true)}
-            className="w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium text-muted-foreground hover:text-foreground rounded-lg border border-border/50 hover:bg-gray-50 transition-colors"
-          >
-            <Link2 className="w-3.5 h-3.5" />
-            Connect your own domain
           </button>
           <p className="text-[10px] text-center text-muted-foreground">
             Your site will be live at <span className="font-medium">{siteUrl}</span>
           </p>
         </div>
 
-        {/* GHL Payment iframe — same as subscription flow */}
-        <PaymentSheet
-          open={paymentOpen}
-          onOpenChange={setPaymentOpen}
-          onUnlocked={() => { setPaymentOpen(false); }}
-        />
+        <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); }} />
       </div>
 
       {/* Right Panel — Preview */}
@@ -265,16 +310,10 @@ export default function BookingSitePage() {
           <div className="flex items-center gap-3">
             <span className="text-[12px] font-medium text-muted-foreground">Preview</span>
             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-              <button
-                onClick={() => setPreviewMode('desktop')}
-                className={`p-1.5 rounded-md transition-colors ${previewMode === 'desktop' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              >
+              <button onClick={() => setPreviewMode('desktop')} className={`p-1.5 rounded-md transition-colors ${previewMode === 'desktop' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
                 <Monitor className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => setPreviewMode('mobile')}
-                className={`p-1.5 rounded-md transition-colors ${previewMode === 'mobile' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              >
+              <button onClick={() => setPreviewMode('mobile')} className={`p-1.5 rounded-md transition-colors ${previewMode === 'mobile' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
                 <Smartphone className="w-4 h-4" />
               </button>
             </div>
@@ -309,96 +348,124 @@ export default function BookingSitePage() {
                 {branding.brandName}
               </span>
               <div className="flex items-center gap-4">
-                <span className="text-[12px] text-muted-foreground cursor-pointer hover:text-foreground">Properties</span>
+                <button onClick={() => setPreviewPage('home')} className={`text-[12px] transition-colors ${previewPage === 'home' ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}>Properties</button>
                 <span className="text-[12px] text-muted-foreground cursor-pointer hover:text-foreground">About</span>
                 <span className="text-[12px] text-muted-foreground cursor-pointer hover:text-foreground">Contact</span>
+                <button className="px-3 py-1 text-[11px] font-semibold text-white rounded-full" style={{ backgroundColor: branding.accentColor }}>Sign In</button>
               </div>
             </div>
 
-            {/* Mock Hero */}
-            <div className="relative h-[280px] overflow-hidden">
-              <img
-                src={branding.heroImage}
-                alt="Hero"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-8">
-                <h2 className={`font-bold text-white mb-2 ${previewMode === 'mobile' ? 'text-xl' : 'text-3xl'}`}>
-                  {branding.heroHeadline}
-                </h2>
-                <p className={`text-white/80 ${previewMode === 'mobile' ? 'text-sm' : 'text-base'}`}>
-                  {branding.heroSubheadline}
-                </p>
-              </div>
-            </div>
+            {previewPage === 'home' ? (
+              <>
+                {/* Mock Hero */}
+                <div className="relative h-[280px] overflow-hidden">
+                  <img src={branding.heroImage} alt="Hero" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-8">
+                    <h2 className={`font-bold text-white mb-2 ${previewMode === 'mobile' ? 'text-xl' : 'text-3xl'}`}>{branding.heroHeadline}</h2>
+                    <p className={`text-white/80 ${previewMode === 'mobile' ? 'text-sm' : 'text-base'}`}>{branding.heroSubheadline}</p>
+                  </div>
+                </div>
 
-            {/* Mock Search Bar */}
-            <div className="px-6 -mt-5 relative z-10">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 flex items-center gap-3">
-                <div className="flex-1">
-                  <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Location</p>
-                  <p className="text-[13px] text-foreground">Where are you going?</p>
+                {/* Mock Search Bar */}
+                <div className="px-6 -mt-5 relative z-10">
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 flex items-center gap-3">
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Location</p>
+                      <p className="text-[13px] text-foreground">Where are you going?</p>
+                    </div>
+                    <div className="w-px h-8 bg-gray-200" />
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Check in — Check out</p>
+                      <p className="text-[13px] text-foreground">Add dates</p>
+                    </div>
+                    <div className="w-px h-8 bg-gray-200" />
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Guests</p>
+                      <p className="text-[13px] text-foreground">Add guests</p>
+                    </div>
+                    <button className="px-5 py-2.5 text-white text-[13px] font-semibold rounded-lg" style={{ backgroundColor: branding.accentColor }}>Search</button>
+                  </div>
                 </div>
-                <div className="w-px h-8 bg-gray-200" />
-                <div className="flex-1">
-                  <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Check in — Check out</p>
-                  <p className="text-[13px] text-foreground">Add dates</p>
+
+                {/* Mock Property Cards */}
+                <div className="p-6 pt-8">
+                  <h3 className="text-[15px] font-semibold text-foreground mb-4">Featured Properties</h3>
+                  <div className={`grid gap-4 ${previewMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-3'}`}>
+                    {mockProperties.slice(0, previewMode === 'mobile' ? 3 : 6).map(p => (
+                      <div
+                        key={p.id}
+                        className="rounded-xl overflow-hidden border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => { setSelectedProperty(p); setPreviewPage('property'); }}
+                      >
+                        <div className="relative">
+                          <img src={p.img} alt={p.title} className="w-full h-[140px] object-cover" />
+                          <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
+                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                            <span className="text-[10px] font-semibold">{p.rating}</span>
+                          </div>
+                        </div>
+                        <div className="p-3">
+                          <h4 className="text-[13px] font-semibold text-foreground">{p.title}</h4>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1"><MapPin className="w-3 h-3" />{p.loc}</p>
+                          <div className="flex items-center gap-2 mt-1.5 text-[10px] text-muted-foreground">
+                            <span className="flex items-center gap-0.5"><Bed className="w-3 h-3" />{p.beds}</span>
+                            <span className="flex items-center gap-0.5"><Bath className="w-3 h-3" />{p.baths}</span>
+                            <span>{p.reviews} reviews</span>
+                          </div>
+                          <p className="text-[13px] font-bold mt-2" style={{ color: branding.accentColor }}>
+                            £{p.price}<span className="text-[11px] font-normal text-muted-foreground"> / night</span>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="w-px h-8 bg-gray-200" />
-                <div className="flex-1">
-                  <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Guests</p>
-                  <p className="text-[13px] text-foreground">Add guests</p>
-                </div>
-                <button
-                  className="px-5 py-2.5 text-white text-[13px] font-semibold rounded-lg"
-                  style={{ backgroundColor: branding.accentColor }}
-                >
-                  Search
+              </>
+            ) : (
+              /* Mock Property Detail Page */
+              <div className="p-6">
+                <button onClick={() => setPreviewPage('home')} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground mb-4">
+                  <ChevronLeft className="w-4 h-4" /> Back to properties
                 </button>
-              </div>
-            </div>
-
-            {/* Mock Property Cards */}
-            <div className="p-6 pt-8">
-              <h3 className="text-[15px] font-semibold text-foreground mb-4">Featured Properties</h3>
-              <div className={`grid gap-4 ${previewMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-3'}`}>
-                {[
-                  { img: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&q=80', title: 'Modern City Apartment', loc: 'London, UK', price: '£120' },
-                  { img: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80', title: 'Luxury Penthouse Suite', loc: 'Manchester, UK', price: '£185' },
-                  { img: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&q=80', title: 'Cozy Studio Retreat', loc: 'Birmingham, UK', price: '£85' },
-                ].map((p, i) => (
-                  <div key={i} className="rounded-xl overflow-hidden border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-                    <img src={p.img} alt={p.title} className="w-full h-[140px] object-cover" />
-                    <div className="p-3">
-                      <h4 className="text-[13px] font-semibold text-foreground">{p.title}</h4>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{p.loc}</p>
-                      <p className="text-[13px] font-bold mt-2" style={{ color: branding.accentColor }}>
-                        {p.price}<span className="text-[11px] font-normal text-muted-foreground"> / night</span>
-                      </p>
+                <div className={`${previewMode === 'mobile' ? '' : 'flex gap-6'}`}>
+                  <div className={`${previewMode === 'mobile' ? 'w-full' : 'flex-1'}`}>
+                    <img src={selectedProperty.img} alt={selectedProperty.title} className="w-full h-[240px] rounded-xl object-cover" />
+                    <h2 className="text-xl font-bold text-foreground mt-4">{selectedProperty.title}</h2>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><MapPin className="w-4 h-4" />{selectedProperty.loc}</p>
+                    <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1"><Bed className="w-4 h-4" />{selectedProperty.beds} beds</span>
+                      <span className="flex items-center gap-1"><Bath className="w-4 h-4" />{selectedProperty.baths} baths</span>
+                      <span className="flex items-center gap-1"><Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />{selectedProperty.rating} ({selectedProperty.reviews})</span>
+                    </div>
+                    <div className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                      <p>A beautifully designed property with modern amenities, located in the heart of {selectedProperty.loc.split(',')[0]}. Perfect for short stays and holidays.</p>
                     </div>
                   </div>
-                ))}
+                  <div className={`${previewMode === 'mobile' ? 'mt-4' : 'w-[280px]'} flex-shrink-0`}>
+                    <div className="border border-gray-200 rounded-xl p-4 shadow-sm">
+                      <p className="text-xl font-bold text-foreground">£{selectedProperty.price} <span className="text-sm font-normal text-muted-foreground">/ night</span></p>
+                      <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="flex">
+                          <div className="flex-1 p-2 border-r border-gray-200"><p className="text-[10px] text-muted-foreground font-medium">Check in</p><p className="text-[12px] text-foreground">Add date</p></div>
+                          <div className="flex-1 p-2"><p className="text-[10px] text-muted-foreground font-medium">Check out</p><p className="text-[12px] text-foreground">Add date</p></div>
+                        </div>
+                        <div className="p-2 border-t border-gray-200"><p className="text-[10px] text-muted-foreground font-medium">Guests</p><p className="text-[12px] text-foreground">1 guest</p></div>
+                      </div>
+                      <button className="w-full mt-3 py-2.5 text-white text-[13px] font-semibold rounded-lg" style={{ backgroundColor: branding.accentColor }}>Book Now</button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Mock Footer */}
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 mt-4">
               <div className="flex items-center justify-between">
-                <span className="text-[12px] font-semibold" style={{ color: branding.accentColor }}>
-                  {branding.brandName}
-                </span>
+                <span className="text-[12px] font-semibold" style={{ color: branding.accentColor }}>{branding.brandName}</span>
                 <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-                  {branding.contactEmail && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="w-3 h-3" /> {branding.contactEmail}
-                    </span>
-                  )}
-                  {branding.contactPhone && (
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-3 h-3" /> {branding.contactPhone}
-                    </span>
-                  )}
+                  {branding.contactEmail && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {branding.contactEmail}</span>}
+                  {branding.contactPhone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {branding.contactPhone}</span>}
                 </div>
               </div>
             </div>
@@ -412,9 +479,7 @@ export default function BookingSitePage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
-        {label}
-      </label>
+      <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">{label}</label>
       {children}
     </div>
   );
