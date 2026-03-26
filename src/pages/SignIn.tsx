@@ -112,6 +112,8 @@ export default function SignIn() {
     });
   }, [redirectTo]);
 
+  useEffect(() => { document.title = 'nfstay - Sign In'; }, []);
+
   useEffect(() => {
     const saved = localStorage.getItem(REMEMBER_KEY);
     if (saved) setEmail(saved);

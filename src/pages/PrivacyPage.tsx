@@ -1,4 +1,8 @@
+import { useEffect } from 'react';
+
 export default function PrivacyPage() {
+  useEffect(() => { document.title = 'nfstay - Privacy Policy'; }, []);
+
   return (
     <div data-feature="SHARED" className="min-h-screen bg-background">
       <div className="max-w-[720px] mx-auto px-6 py-16">

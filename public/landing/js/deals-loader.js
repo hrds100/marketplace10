@@ -45,18 +45,23 @@
     return parts.join(' \u00B7 ');
   }
 
+  function safe(val, fallback) {
+    if (val === undefined || val === null || val === 'undefined') return fallback || '';
+    return String(val);
+  }
+
   function buildDealCard(p, index) {
     var photo = getPhoto(p, index);
     var listingBadge = p.listing_type === 'sale'
       ? '<span style="background:rgba(5,150,105,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px">Sale</span>'
       : '<span style="background:rgba(30,154,128,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px">Rental</span>';
     var badge = (p.featured ? '<div class="deal-badge">Featured</div>' : '<div class="deal-badge">Live</div>') + listingBadge;
-    var title = getTitle(p);
-    var location = getLocation(p);
+    var title = safe(getTitle(p), 'Property');
+    var location = safe(getLocation(p));
     var rent = formatCurrency(p.rent_monthly);
     var profit = formatCurrency(p.profit_est);
-    var typeLabel = p.type || '-';
-    var listingUrl = '/deals/' + p.id;
+    var typeLabel = safe(p.type, '-');
+    var listingUrl = '/deals/' + safe(p.id);
 
     return '<div class="deal-card sr-child" data-feature="SHARED__LANDING_DEAL_CARD">' +
       '<div class="deal-img" style="background-image:url(\'' + photo + '\')">' + badge + '</div>' +

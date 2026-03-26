@@ -270,10 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
         var cityEl = gallery.querySelector('[data-gal-city]');
         var rentEl = gallery.querySelector('[data-gal-rent]');
         var profitEl = gallery.querySelector('[data-gal-profit]');
-        if (nameEl) nameEl.textContent = card.getAttribute('data-deal-name');
-        if (cityEl) cityEl.textContent = card.getAttribute('data-deal-city');
-        if (rentEl) rentEl.textContent = '\u00A3' + parseInt(card.getAttribute('data-deal-rent')).toLocaleString();
-        if (profitEl) profitEl.textContent = '\u00A3' + parseInt(card.getAttribute('data-deal-profit')).toLocaleString() + '/mo';
+        if (nameEl) nameEl.textContent = card.getAttribute('data-deal-name') || '';
+        if (cityEl) cityEl.textContent = card.getAttribute('data-deal-city') || '';
+        var rentVal = parseInt(card.getAttribute('data-deal-rent'));
+        if (rentEl) rentEl.textContent = isNaN(rentVal) ? '-' : '\u00A3' + rentVal.toLocaleString();
+        var profitVal = parseInt(card.getAttribute('data-deal-profit'));
+        if (profitEl) profitEl.textContent = isNaN(profitVal) ? '-' : '\u00A3' + profitVal.toLocaleString() + '/mo';
       });
     });
   });

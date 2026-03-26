@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useInquiry } from '@/hooks/useInquiry';
 import { useDashboardContext } from '@/layouts/DashboardLayout';
+import { createMemberNotification } from '@/lib/memberNotifications';
 import type { Thread } from '@/components/inbox/types';
 
 const SUPPORT_THREAD: Thread = {
@@ -275,6 +276,17 @@ export default function InboxPage() {
     }).then(({ error: insertErr }: { error: unknown }) => {
       if (insertErr) console.error('Failed to log agreement acceptance:', insertErr);
     });
+    // In-app notification for the operator that the landlord signed the NDA (fire-and-forget)
+    if (thread?.operatorId) {
+      createMemberNotification({
+        userId: thread.operatorId,
+        type: 'nda_signed',
+        title: 'Agreement signed',
+        body: `The landlord signed the agreement for ${thread.propertyTitle || 'a property'}`,
+        propertyId: thread.propertyId,
+      });
+    }
+
     // Optimistic local update
     setDbThreads(prev => prev.map(t => t.id === selectedId ? { ...t, termsAccepted: true } : t));
   };

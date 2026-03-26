@@ -240,7 +240,6 @@
     "session": "FAVOURITES",
     "active": true,
     "files": [
-      "src/pages/FavouritesPage.tsx",
       "src/components/FavouritesDropdown.tsx",
       "src/hooks/useFavourites.ts"
     ]
@@ -295,8 +294,6 @@
     "session": "BOOKING_NFSTAY",
     "active": true,
     "files": [
-      "src/pages/nfstay/NfsMainLanding.tsx",
-      "src/pages/nfstay/NfsSearchPage.tsx",
       "src/pages/nfstay/NfsPropertyView.tsx",
       "src/pages/nfstay/NfsPropertyDetail.tsx",
       "src/pages/nfstay/NfsPropertyNew.tsx",
@@ -323,8 +320,6 @@
       "BOOKING_NFSTAY__MAIN_SITE": {
         "description": "Traveler-facing landing, search, property view",
         "files": [
-          "src/pages/nfstay/NfsMainLanding.tsx",
-          "src/pages/nfstay/NfsSearchPage.tsx",
           "src/pages/nfstay/NfsPropertyView.tsx",
           "src/components/nfstay/main-site/NfsHeroSearch.tsx",
           "src/components/nfstay/main-site/NfsPropertyCard.tsx",
@@ -416,19 +411,6 @@
           "src/components/nfstay/maps/NfsPlacesAutocomplete.tsx",
           "src/components/nfstay/maps/NfsPropertyMap.tsx",
           "src/components/nfstay/maps/NfsSearchMap.tsx"
-        ]
-      },
-      "BOOKING_NFSTAY__WHITE_LABEL": {
-        "description": "Operator-branded storefront: landing, search, property, payment",
-        "files": [
-          "src/pages/nfstay/white-label/NfsWlLanding.tsx",
-          "src/pages/nfstay/white-label/NfsWlSearch.tsx",
-          "src/pages/nfstay/white-label/NfsWlProperty.tsx",
-          "src/pages/nfstay/white-label/NfsWlPaymentSuccess.tsx",
-          "src/pages/nfstay/white-label/NfsWlPaymentCancel.tsx",
-          "src/components/nfstay/white-label/NfsWhiteLabelLayout.tsx",
-          "src/components/nfstay/white-label/NfsWhiteLabelProvider.tsx",
-          "src/components/nfstay/white-label/NfsWhiteLabelRouter.tsx"
         ]
       },
       "BOOKING_NFSTAY__CHECKOUT": {
@@ -615,7 +597,6 @@
       "src/components/nfstay/NfsLogo.tsx",
       "src/components/nfstay/NfsEmptyState.tsx",
       "src/components/nfstay/NfsStatusBadge.tsx",
-      "src/pages/Index.tsx",
       "src/pages/TermsPage.tsx",
       "src/pages/PrivacyPage.tsx",
       "src/pages/NotFound.tsx"
@@ -634,8 +615,7 @@
         "files": [
           "src/lib/nfstay/constants.ts",
           "src/lib/nfstay/pricing.ts",
-          "src/lib/nfstay/types.ts",
-          "src/lib/nfstay/white-label.ts"
+          "src/lib/nfstay/types.ts"
         ]
       },
       "SHARED__NFSTAY_DATA": {
