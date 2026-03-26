@@ -232,6 +232,9 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       });
       if (error) throw error;
 
+      // Mark that messages now exist so the payment gate doesn't re-trigger
+      setHasExistingMessages(true);
+
       // In-app notification for the OTHER party (fire-and-forget)
       const recipientId = user.id === thread.landlordId ? thread.operatorId : thread.landlordId;
       if (recipientId) {

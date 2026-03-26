@@ -287,8 +287,11 @@ export default function InboxPage() {
       });
     }
 
-    // Optimistic local update
+    // Optimistic local update — create a new object reference so ChatWindow re-renders
     setDbThreads(prev => prev.map(t => t.id === selectedId ? { ...t, termsAccepted: true } : t));
+    // Close NDA modal from here (after state update) so the ChatWindow has the
+    // updated termsAccepted prop when it next renders.
+    setShowNDAModal(false);
   };
 
   const handleArchiveThread = async (threadId: string) => {

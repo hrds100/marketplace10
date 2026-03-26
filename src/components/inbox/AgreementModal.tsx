@@ -7,7 +7,7 @@ interface Props {
   thread: Thread;
   isOperator: boolean;
   onClose: () => void;
-  onSign: () => void;
+  onSign: () => Promise<void> | void;
 }
 
 const NDA_TEXT = `
@@ -52,11 +52,10 @@ export default function AgreementModal({ thread, isOperator, onClose, onSign }: 
 
   const canSign = fullName.trim().length >= 2 && agreed;
 
-  const handleSign = () => {
+  const handleSign = async () => {
     if (!canSign) return;
-    onSign();
+    await onSign();
     toast.success('NDA signed — contact details are now unlocked');
-    onClose();
     // n8n notifies both parties that NDA was signed
     const n8nBase = (import.meta.env.VITE_N8N_WEBHOOK_URL || '').replace(/\/$/, '');
     if (n8nBase) {
