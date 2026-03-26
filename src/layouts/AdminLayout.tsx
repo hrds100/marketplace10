@@ -4,7 +4,7 @@ import {
   ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap,
   CreditCard, HelpCircle, UserCheck, Settings, Bell, TrendingUp,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
-  LayoutGrid, Plug, Globe, CalendarCheck, Zap,
+  LayoutGrid, Plug, Globe, CalendarCheck, Zap, Eye,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +22,7 @@ const marketplaceLinks = [
   { to: '/admin/marketplace/faq', label: 'FAQ', icon: HelpCircle },
   { to: '/admin/marketplace/affiliates', label: 'Affiliates', icon: UserCheck },
   { to: '/admin/marketplace/settings', label: 'Settings', icon: Settings },
+  { to: '/admin/observatory', label: 'Observatory', icon: Eye },
 ];
 
 const investLinks = [

@@ -48,6 +48,7 @@ import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
 import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
 import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
 import AdminArchitecture from "./pages/admin/AdminArchitecture";
+import AdminObservatoryPage from "./pages/admin/AdminObservatoryPage";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 import BrandPage from "./pages/BrandPage";
@@ -211,6 +212,9 @@ const App = () => (
             <Route path="nfstay/operators" element={<AdminNfsOperators />} />
             <Route path="nfstay/analytics" element={<AdminNfsAnalytics />} />
             <Route path="nfstay/settings" element={<AdminNfsSettings />} />
+
+            {/* Observatory */}
+            <Route path="observatory" element={<AdminObservatoryPage />} />
 
             {/* Architecture overview */}
             <Route path="architecture" element={<AdminArchitecture />} />
