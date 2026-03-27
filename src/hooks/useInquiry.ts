@@ -30,8 +30,42 @@ export function useInquiry(propertyId: string | null) {
 
     const findOrCreate = async () => {
       setIsCreating(true);
+
+      // First: look up who owns this property
+      const { data: prop } = await supabase
+        .from('properties')
+        .select('submitted_by, name, city, contact_phone, contact_whatsapp, landlord_whatsapp')
+        .eq('id', propertyId)
+        .single();
+
+      if (cancelled) return;
+
+      const landlordId = (prop?.submitted_by as string) || null;
+
+      // If the current user IS the landlord of this property,
+      // find their existing landlord thread — never create a new operator thread.
+      if (landlordId && landlordId === user.id) {
+        try {
+          const { data: landlordThread } = await supabase
+            .from('chat_threads')
+            .select('id')
+            .eq('landlord_id', user.id)
+            .eq('property_id', propertyId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          if (landlordThread && !cancelled) {
+            setThreadId(landlordThread.id);
+          }
+        } catch {
+          // No thread exists yet for this landlord — that's fine, nothing to show
+        }
+        if (!cancelled) setIsCreating(false);
+        return;
+      }
+
       try {
-        // Check for existing thread
+        // Check for existing operator thread
         const { data: existing } = await supabase
           .from('chat_threads')
           .select('id')
@@ -50,16 +84,6 @@ export function useInquiry(propertyId: string | null) {
       }
 
       try {
-        // Get property's contact info for landlord_id lookup
-        const { data: prop } = await supabase
-          .from('properties')
-          .select('submitted_by, name, city, contact_phone, contact_whatsapp, landlord_whatsapp')
-          .eq('id', propertyId)
-          .single();
-
-        if (cancelled) return;
-
-        const landlordId = (prop?.submitted_by as string) || null;
 
         const { data: created, error } = await supabase
           .from('chat_threads')
