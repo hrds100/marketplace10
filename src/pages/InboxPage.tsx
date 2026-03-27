@@ -340,13 +340,13 @@ export default function InboxPage() {
   if (isMobile) {
     if (selectedId && selectedThread) {
       return (
-        <div className="h-[calc(100vh-56px-60px)]">
+        <div className="flex-1 flex flex-col overflow-hidden pb-[60px]">
           <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={showDetails} isMobile onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => setShowDetails(true)} />
         </div>
       );
     }
     return (
-      <div className="h-[calc(100vh-56px-60px)]">
+      <div className="flex-1 flex flex-col overflow-hidden pb-[60px]">
         <ThreadList threads={allThreads} selectedId={selectedId} onSelect={handleSelectThread} onOpenSettings={() => setShowSettings(true)} onArchive={handleArchiveThread} />
         <MessagingSettingsModal open={showSettings} onClose={() => setShowSettings(false)} />
       </div>
