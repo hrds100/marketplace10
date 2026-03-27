@@ -77,6 +77,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
   const [hasExistingMessages, setHasExistingMessages] = useState(false);
   const [hasAttemptedSend, setHasAttemptedSend] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const initialMsgLoadDone = useRef(false);
@@ -178,7 +179,10 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
     return () => { stop(); document.removeEventListener('visibilitychange', onVisChange); };
   }, [thread.id, thread.isSupport, loadMessages]);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   // Auto-expand right details panel the moment the first message appears in the thread.
   // Fires regardless of how the message arrived (optimistic, Realtime, poll, DB insert).
@@ -382,7 +386,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       </div>
 
       {/* Messages */}
-      <div data-feature="CRM_INBOX__MESSAGES_LIST" className="flex-1 overflow-y-auto min-h-0">
+      <div ref={messagesContainerRef} data-feature="CRM_INBOX__MESSAGES_LIST" className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
           <div className="px-4 py-4 space-y-4">
             {[1, 2, 3].map(i => (

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -15,6 +16,7 @@ interface Notification {
 
 export default function NotificationBell() {
   const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -147,7 +149,18 @@ export default function NotificationBell() {
                 <button
                   key={n.id}
                   data-feature="NOTIFICATIONS__ITEM"
-                  onClick={() => { if (!n.read) markRead(n.id); }}
+                  onClick={() => {
+                    if (!n.read) markRead(n.id);
+                    const msgTypes = ['new_message', 'nda_signed'];
+                    if (msgTypes.includes(n.type)) {
+                      setOpen(false);
+                      if (n.property_id) {
+                        navigate(`/dashboard/inbox?deal=${n.property_id}`);
+                      } else {
+                        navigate('/dashboard/inbox');
+                      }
+                    }
+                  }}
                   className={`w-full text-left px-4 py-3 border-b border-border/20 hover:bg-gray-50 transition-colors ${!n.read ? 'bg-emerald-50/40' : ''}`}
                 >
                   <div className="flex gap-2.5">
