@@ -342,6 +342,14 @@ export default function InboxPage() {
       return (
         <div className="flex-1 overflow-hidden pb-[60px]">
           <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={showDetails} isMobile onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => setShowDetails(true)} />
+          {showNDAModal && !selectedThread.isSupport && (
+            <AgreementModal
+              thread={selectedThread}
+              isOperator={isOperator}
+              onClose={() => setShowNDAModal(false)}
+              onSign={handleSignNDA}
+            />
+          )}
         </div>
       );
     }
