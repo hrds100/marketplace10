@@ -110,6 +110,11 @@ export default function DealsPageV2() {
 
   const handleInquire = useCallback(
     (listing: ListingShape) => {
+      // JV properties (id starts with "inv-") → navigate to invest marketplace
+      if (listing.id.startsWith('inv-')) {
+        navigate('/dashboard/invest/marketplace');
+        return;
+      }
       navigate(`/dashboard/inbox?deal=${listing.id}`);
     },
     [navigate],
@@ -132,42 +137,82 @@ export default function DealsPageV2() {
       .filter(p => p.status === 'live' || p.status === 'on-offer')
       .map(toListingShape);
 
-    // Enrich prime/JV cards with real investment data from inv_properties
+    // Inject JV properties that have list_on_deals = true directly into the grid
+    const jvCards: ListingShape[] = [];
     if (investProperties && investProperties.length > 0) {
-      const inv = investProperties[0]; // Primary investment property (Pembroke Place)
-      const totalShares = inv.total_shares || 1;
-      const sharesSold = inv.shares_sold || 0;
-      const fundedPct = Math.round((sharesSold / totalShares) * 100);
-      const propertyValue = Number(inv.property_value) || 0;
-      const pricePerShare = Number(inv.price_per_share) || 1;
-      const minContribution = Math.max(pricePerShare * 500, 500); // Min 500 shares or £500
-      const annualYield = Number(inv.annual_yield) || 0;
-      const monthlyRent = Number(inv.monthly_rent) || 0;
-      // Monthly profit estimate: (monthlyRent * annualYield / 100) simplified
-      const monthlyProfit = Math.round((propertyValue * (annualYield / 100)) / 12);
+      for (const inv of investProperties) {
+        if (!(inv as any).list_on_deals) continue;
+        const totalShares = inv.total_shares || 1;
+        const sharesSold = inv.shares_sold || 0;
+        const fundedPct = Math.round((sharesSold / totalShares) * 100);
+        const propertyValue = Number(inv.property_value) || 0;
+        const pricePerShare = Number(inv.price_per_share) || 1;
+        const minContribution = Math.max(pricePerShare * 500, 500);
+        const annualYield = Number(inv.annual_yield) || 0;
+        const monthlyProfit = Math.round((propertyValue * (annualYield / 100)) / 12);
+        const invLocation = (inv.location as string) || '';
+        const invImage = (inv as any).photos?.[0] || (inv as any).images?.[0] || (inv.image as string) || '';
 
-      // Use inv_properties location (e.g. "Liverpool, United Kingdom") as the display location
-      const invLocation = (inv.location as string) || '';
-
-      return base.map(l => {
-        if (!l.prime) return l;
-        return {
-          ...l,
-          name: inv.title || l.name,
-          city: invLocation || l.city,
+        jvCards.push({
+          id: `inv-${inv.id}`,
+          name: inv.title || 'Investment Property',
+          city: invLocation,
           postcode: '',
-          image: (inv as any).photos?.[0] || (inv as any).images?.[0] || (inv.image as string) || l.image,
-          type: (inv.type as string) || l.type,
+          rent: Number(inv.monthly_rent) || 0,
+          profit: monthlyProfit,
+          type: (inv.type as string) || 'House',
+          status: 'live',
+          featured: true,
+          prime: true,
+          daysAgo: 0,
+          image: invImage || `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(invLocation || 'Property')}`,
+          landlordApproved: true,
+          landlordWhatsapp: null,
+          listing_type: 'rental',
+          slug: null,
+          bedrooms: inv.bedrooms || null,
           investTarget: propertyValue,
           investFundedPct: fundedPct,
           investMinContribution: minContribution,
           investMonthlyProfit: monthlyProfit,
           investReturns: annualYield,
-        };
-      });
+        });
+      }
+
+      // Also enrich any existing prime cards with JV data (legacy enrichment)
+      const firstInv = investProperties[0];
+      if (firstInv) {
+        const totalShares = firstInv.total_shares || 1;
+        const sharesSold = firstInv.shares_sold || 0;
+        const fundedPct = Math.round((sharesSold / totalShares) * 100);
+        const propertyValue = Number(firstInv.property_value) || 0;
+        const pricePerShare = Number(firstInv.price_per_share) || 1;
+        const minContribution = Math.max(pricePerShare * 500, 500);
+        const annualYield = Number(firstInv.annual_yield) || 0;
+        const monthlyProfit = Math.round((propertyValue * (annualYield / 100)) / 12);
+        const invLocation = (firstInv.location as string) || '';
+
+        const enriched = base.map(l => {
+          if (!l.prime) return l;
+          return {
+            ...l,
+            name: firstInv.title || l.name,
+            city: invLocation || l.city,
+            postcode: '',
+            image: (firstInv as any).photos?.[0] || (firstInv as any).images?.[0] || (firstInv.image as string) || l.image,
+            type: (firstInv.type as string) || l.type,
+            investTarget: propertyValue,
+            investFundedPct: fundedPct,
+            investMinContribution: minContribution,
+            investMonthlyProfit: monthlyProfit,
+            investReturns: annualYield,
+          };
+        });
+        return [...jvCards, ...enriched];
+      }
     }
 
-    return base;
+    return [...jvCards, ...base];
   }, [dbProperties, investProperties]);
 
   const liveCount = listings.filter(l => l.status === 'live').length;

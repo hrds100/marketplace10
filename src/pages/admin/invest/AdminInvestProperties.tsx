@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, Pencil, Loader2, Upload, X, ImageIcon, Link2, Trash2, Download, FileText, DollarSign } from 'lucide-react';
+import { Plus, Pencil, Loader2, Upload, X, ImageIcon, Link2, Trash2, Download, FileText, DollarSign, LayoutGrid } from 'lucide-react';
 import { useInvestProperties, useCreateProperty, useUpdateProperty } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,7 @@ interface Property {
     rental?: { label: string; value: string }[];
   };
   photos?: string[];
+  list_on_deals?: boolean;
 }
 
 async function uploadImage(file: File, propertyId: number): Promise<string> {
@@ -325,6 +326,7 @@ export default function AdminInvestProperties() {
                 <TableHead className="text-right">Yield %</TableHead>
                 <TableHead>Funded %</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-center">On Grid</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -349,6 +351,22 @@ export default function AdminInvestProperties() {
                       <Badge variant="outline" className={cn('text-xs capitalize', statusColors[p.status])}>
                         {p.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <button
+                        onClick={async () => {
+                          const next = !p.list_on_deals;
+                          try {
+                            await updateProperty.mutateAsync({ id: p.id, list_on_deals: next });
+                            toast.success(next ? 'Showing on Deals grid' : 'Removed from Deals grid');
+                          } catch { toast.error('Failed to update'); }
+                        }}
+                        className={cn('inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors', p.list_on_deals ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400 hover:bg-gray-200')}
+                        title={p.list_on_deals ? 'Visible on Deals grid' : 'Hidden from Deals grid'}
+                      >
+                        <LayoutGrid className="w-3 h-3" />
+                        {p.list_on_deals ? 'On' : 'Off'}
+                      </button>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">

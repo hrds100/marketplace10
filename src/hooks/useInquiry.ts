@@ -86,20 +86,8 @@ export function useInquiry(propertyId: string | null) {
           if (retry && !cancelled) setThreadId(retry.id);
         } else if (created && !cancelled) {
           setThreadId(created.id);
-          // Auto-send first inquiry message so landlord sees it immediately
-          const introBody = "Hi, is this property still available? I'm very interested.";
-          await supabase.from('chat_messages').insert({
-            thread_id: created.id,
-            sender_id: user.id,
-            body: introBody,
-            body_receiver: null,
-            is_masked: false,
-            mask_type: null,
-            message_type: 'text',
-          });
-          // n8n webhook is NOT fired here. It only fires from ChatWindow.tsx
-          // when a user manually types and sends a message. Auto-messages
-          // must not trigger WhatsApp notifications.
+          // No auto-message — operator lands on the ChatEmptyState promo
+          // screen ("You could earn £X/month") and writes their own first message.
         }
       } catch (err) {
         console.error('useInquiry error:', err);
