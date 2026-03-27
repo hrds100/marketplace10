@@ -23,12 +23,16 @@ interface ParsedListing {
   type: string | null;
   sa_approved: string | null;
   notes: string | null;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
 }
 
 const EMPTY_LISTING: ParsedListing = {
   name: null, city: null, postcode: null, bedrooms: null, bathrooms: null,
   rent_monthly: null, profit_est: null, property_category: null, furnished: null,
   garage: null, description: null, features: null, type: null, sa_approved: null, notes: null,
+  contact_name: null, contact_phone: null, contact_email: null,
 };
 
 export default function AdminQuickList() {
@@ -127,7 +131,7 @@ export default function AdminQuickList() {
   const parseSingleListing = async (text: string): Promise<ParsedListing> => {
     // Extract postcode
     const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
-    const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : null;
+    const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : 'N/A';
 
       // Extract bedrooms - check for "X bedroom" pattern, also "total: X flats/units"
       const bedsMatch = text.match(/(\d+)\s*(?:bed(?:room)?s?|double\s+bed)/i);
@@ -212,6 +216,8 @@ export default function AdminQuickList() {
       for (const [re, t, cat] of typeMap) {
         if (re.test(text)) { type = t; property_category = cat; break; }
       }
+      // Default to House if no type detected
+      if (!type) { type = 'House'; property_category = 'house'; }
 
       // Check SA approved
       const saMatch = text.match(/sa\s*(?:approved|compliant|complaint)/i);
@@ -246,11 +252,42 @@ export default function AdminQuickList() {
         features: [],
         sa_approved: 'yes',
         notes: null,
+        contact_name: null,
+        contact_phone: (() => {
+          const phoneMatch = text.match(/(?:\+44|0044|07)\d[\d\s]{8,12}/);
+          return phoneMatch ? phoneMatch[0].replace(/\s/g, '') : null;
+        })(),
+        contact_email: (() => {
+          const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+          return emailMatch ? emailMatch[0] : null;
+        })(),
       };
 
       // Extract profit if mentioned in text
       const profitMatch = text.match(/(?:monthly\s*)?profit[:\s]*[£]?\s*(\d[\d,]*)/i);
       parsed.profit_est = profitMatch ? parseInt(profitMatch[1].replace(/,/g, '')) : null;
+
+      // Auto-generate description via AI webhook
+      try {
+        const descRes = await fetch(`${N8N_BASE}/webhook/ai-generate-listing`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            city: parsed.city || '', postcode: parsed.postcode || '', bedrooms: parsed.bedrooms || 0,
+            bathrooms: parsed.bathrooms || 0, type: parsed.type || parsed.property_category || '',
+            rent: parsed.rent_monthly || 0, profit: parsed.profit_est || 0,
+            sa_approved: parsed.sa_approved || '', notes: '', existing_description: '',
+          }),
+        });
+        if (descRes.ok) {
+          const descData = await descRes.json();
+          if (descData?.description || descData?.text) {
+            parsed.description = descData.description || descData.text;
+          }
+        }
+      } catch {
+        // Description generation failed - not critical
+      }
 
       return parsed;
   };
@@ -338,10 +375,15 @@ export default function AdminQuickList() {
           description: item.description,
           notes: item.notes,
           sa_approved: 'yes',
-          garage: listing.garage || false,
+          garage: item.garage || false,
           status,
           submitted_by: user?.id || null,
           photos: [],
+          contact_name: item.contact_name || null,
+          contact_phone: item.contact_phone || null,
+          contact_whatsapp: item.contact_phone || null,
+          contact_email: item.contact_email || null,
+          landlord_whatsapp: item.contact_phone || null,
         })
         .select('id')
         .single();
@@ -712,6 +754,40 @@ export default function AdminQuickList() {
                     placeholder="Comma-separated"
                     className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
                   />
+                </div>
+                <div className="col-span-2 border-t border-border pt-3 mt-1">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Landlord Contact</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground block mb-1">Name</label>
+                      <input
+                        value={listing.contact_name || ''}
+                        onChange={e => updateField('contact_name', e.target.value)}
+                        placeholder="Contact name"
+                        className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground block mb-1">Phone / WhatsApp</label>
+                      <input
+                        type="tel"
+                        value={listing.contact_phone || ''}
+                        onChange={e => updateField('contact_phone', e.target.value)}
+                        placeholder="+44..."
+                        className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground block mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={listing.contact_email || ''}
+                        onChange={e => updateField('contact_email', e.target.value)}
+                        placeholder="email@..."
+                        className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

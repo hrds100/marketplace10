@@ -220,7 +220,7 @@ export default function ListADealPage() {
     'property-details': () => !!form.city && !!form.postcode,
     'property-type': () => !!form.type || form.propertyCategory === 'hmo',
     'property-features': () => !!form.bedrooms && !!form.bathrooms,
-    'financials': () => !!form.rent && !!form.profit && !!form.deposit,
+    'financials': () => !!form.rent && !!form.profit,
     'sa-approval': () => !!form.saApproved,
     'contact': () => !!form.contactName && !!form.contactEmail && (!!form.contactPhone || !!form.contactWhatsapp),
     'media': () => true,
@@ -272,7 +272,7 @@ export default function ListADealPage() {
 
       // Extract postcode
       const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
-      const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : '';
+      const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : 'N/A';
 
       // Extract bedrooms
       const bedsMatch = text.match(/(\d+)\s*(?:bed(?:room)?s?|double\s+bed)/i);
@@ -353,6 +353,11 @@ export default function ListADealPage() {
           break;
         }
       }
+      // Default to House if no type detected
+      if (!type) {
+        type = `${bedrooms ? bedrooms + '-bed ' : ''}House`;
+        propertyCategory = 'house';
+      }
 
       // Detect SA approved
       const saMatch = /sa\s*(?:approved|compliant)/i.test(text);
@@ -381,14 +386,12 @@ export default function ListADealPage() {
         profit: profit || prev.profit,
         propertyCategory: propertyCategory || prev.propertyCategory,
         type: type || prev.type,
-        saApproved: saMatch ? 'Yes' : prev.saApproved,
+        saApproved: saMatch ? 'Yes' : (prev.saApproved || 'Yes'),
         furnished: furnished || prev.furnished,
         garage: garage || prev.garage,
         deposit: deposit || prev.deposit,
       }));
 
-      // Switch back to manual form
-      setAiQuickMode(false);
       toast.success('Listing parsed - review the pre-filled fields below');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to parse listing');
@@ -410,7 +413,6 @@ export default function ListADealPage() {
     if (!form.bathrooms) missing.push('Bathrooms');
     if (!form.rent) missing.push(listingType === 'sale' ? 'Property price' : 'Monthly rent');
     if (!form.profit) missing.push('Est. monthly profit');
-    if (!form.deposit) missing.push('Deposit');
     if (!form.saApproved) missing.push('SA Approval');
     if (!form.contactName) missing.push('Contact name');
     if (!form.contactEmail) missing.push('Contact email');
@@ -711,7 +713,7 @@ export default function ListADealPage() {
                   <div><label className="text-xs font-semibold text-foreground block mb-1.5">Est. monthly profit (£) *</label><p className="text-[10px] text-muted-foreground mb-1">We will cross-check with Airbnb similar listings for accuracy.</p><input type="number" placeholder="600" value={form.profit} onChange={e => set('profit', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Deposit (£) *</label><input type="number" placeholder="2400" value={form.deposit} onChange={e => set('deposit', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Deposit (£)</label><input type="number" placeholder="2400" value={form.deposit} onChange={e => set('deposit', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                   <div><label className="text-xs font-semibold text-foreground block mb-1.5">Fee (£)</label><input type="number" placeholder="0" value={form.agentFee} onChange={e => set('agentFee', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                 </div>
               </div>

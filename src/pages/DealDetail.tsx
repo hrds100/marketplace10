@@ -307,7 +307,7 @@ export default function DealDetail() {
 
         {/* Info strip */}
         <div className="text-sm font-semibold text-foreground mb-6">
-          £{rent.toLocaleString()} / month · {type} · {postcode}
+          {listing?.listing_type === 'sale' ? `£${rent.toLocaleString()}` : `£${rent.toLocaleString()} / month`} · {type} · {postcode}
         </div>
 
         {/* Photo grid */}
@@ -332,7 +332,7 @@ export default function DealDetail() {
               </div>
               <div data-feature="DEALS__DETAIL_FINANCIALS" className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
                 {[
-                  { label: 'Monthly rent', value: `£${rent.toLocaleString()}` },
+                  { label: listing?.listing_type === 'sale' ? 'Sale price' : 'Monthly rent', value: `£${rent.toLocaleString()}` },
                   { label: 'Est. profit', value: `£${profit.toLocaleString()}`, green: true },
                   { label: 'Property type', value: type },
                   { label: 'Added', value: `${daysAgo} days ago` },
@@ -352,7 +352,7 @@ export default function DealDetail() {
               ) : (
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {name} is a {type} in {city} ({postcode}){landlordApproved ? ', fully approved by the landlord for short-term rental use' : ''}.
-                  With a monthly rent of £{rent.toLocaleString()} and estimated profit of £{profit.toLocaleString()}, this property offers strong returns in a high-demand area.
+                  With {listing?.listing_type === 'sale' ? `an asking price of £${rent.toLocaleString()}` : `a monthly rent of £${rent.toLocaleString()}`} and estimated profit of £{profit.toLocaleString()}, this property offers strong returns in a high-demand area.
                 </p>
               )}
               <div className="mt-6 space-y-2">
@@ -428,7 +428,7 @@ export default function DealDetail() {
               <div className="space-y-3 border-t border-border pt-4">
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Nightly rate</span><span className="font-medium text-foreground">£{nightlyRate}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Est. revenue</span><span className="font-medium text-foreground">£{estRevenue.toLocaleString()}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Monthly rent</span><span className="font-medium text-foreground">-£{rent.toLocaleString()}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{listing?.listing_type === 'sale' ? 'Sale price' : 'Monthly rent'}</span><span className="font-medium text-foreground">-£{rent.toLocaleString()}</span></div>
                 {showExtraCosts && totalExtraCosts > 0 && (
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Extra costs</span><span className="font-medium text-foreground">-£{totalExtraCosts}</span></div>
                 )}
