@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, ChevronRight, ChevronLeft, Plus, LayoutGrid, Send, LockKeyhole, FileText } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronLeft, Plus, LayoutGrid, Send, LockKeyhole, FileText, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -119,6 +119,8 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
       setLoading(false);
       return;
     }
+    // Guard: auth not yet resolved — wait for user?.id before mapping senderId
+    if (!user?.id) return;
     try {
       if (!initialMsgLoadDone.current) setLoading(true);
       const { data, error } = await supabase
@@ -372,6 +374,11 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
             {showDetailsOpen ? <ChevronRight className="w-5 h-5 text-muted-foreground" /> : <ChevronLeft className="w-5 h-5 text-muted-foreground" />}
           </button>
         )}
+        {!thread.isSupport && isMobile && (
+          <button onClick={() => onOpenDetails?.()} className="p-1.5 rounded-lg hover:bg-secondary" title="Property details">
+            <Info className="w-5 h-5 text-muted-foreground" />
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -483,7 +490,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => fileInputRef.current?.click()} title="Attach files"><Plus className="w-5 h-5 text-muted-foreground" /></button>
             <button data-feature="CRM_INBOX__QUICK_REPLIES_TRIGGER" className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
             <textarea data-feature="CRM_INBOX__MESSAGE_INPUT" ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
-              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] transition-all" style={{ minHeight: 36 }} />
+              className="flex-1 resize-none bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] transition-all" style={{ minHeight: 36 }} />
             <button data-feature="CRM_INBOX__SEND_BUTTON" onClick={() => { setHasAttemptedSend(true); setPaymentSheetOpen(true); }}
               className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
               <Send className="w-5 h-5" />
@@ -495,7 +502,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => fileInputRef.current?.click()} title="Attach files"><Plus className="w-5 h-5 text-muted-foreground" /></button>
             <button data-feature="CRM_INBOX__QUICK_REPLIES_TRIGGER" className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0" onClick={() => setShowQuickReplies(!showQuickReplies)}><LayoutGrid className="w-5 h-5 text-muted-foreground" /></button>
             <textarea data-feature="CRM_INBOX__MESSAGE_INPUT" ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Write a message..." rows={1}
-              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] transition-all" style={{ minHeight: 36 }} />
+              className="flex-1 resize-none bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none py-2 max-h-[120px] transition-all" style={{ minHeight: 36 }} />
             <button data-feature="CRM_INBOX__SEND_BUTTON" onClick={handleSend} disabled={!input.trim()}
               className={`p-2 rounded-lg transition-colors shrink-0 ${input.trim() ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground text-background opacity-40 cursor-not-allowed'}`}>
               <Send className="w-5 h-5" />

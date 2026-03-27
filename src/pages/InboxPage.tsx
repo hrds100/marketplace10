@@ -7,6 +7,7 @@ import ChatWindow from '@/components/inbox/ChatWindow';
 import InboxInquiryPanel from '@/components/inbox/InboxInquiryPanel';
 import MessagingSettingsModal from '@/components/inbox/MessagingSettingsModal';
 import AgreementModal from '@/components/inbox/AgreementModal';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useInquiry } from '@/hooks/useInquiry';
@@ -67,17 +68,18 @@ export default function InboxPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(true);
+  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
   const [liveEstimatedProfit, setLiveEstimatedProfit] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showNDAModal, setShowNDAModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
 
-  // Auto-select thread from Inquire Now — collapse ALL panels for focused inquiry entry
+  // Auto-select thread from Inquire Now — collapse left panel, show right details panel
   useEffect(() => {
     if (inquiryThreadId) {
       setSelectedId(inquiryThreadId);
-      setShowDetails(false);
+      setShowDetails(true);
       setLeftPanelCollapsed(true);
       dashCtx?.setSidebarCollapsed(true); // Collapse nfstay sidebar rail
       loadThreads();
@@ -341,7 +343,7 @@ export default function InboxPage() {
     if (selectedId && selectedThread) {
       return (
         <div className="flex-1 overflow-hidden pb-[60px]">
-          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={showDetails} isMobile onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => setShowDetails(true)} />
+          <ChatWindow thread={selectedThread} onBack={() => setSelectedId(null)} onToggleDetails={() => setShowDetails(!showDetails)} showDetailsOpen={showDetails} isMobile onOpenNDA={() => setShowNDAModal(true)} onOpenDetails={() => setMobileDetailsOpen(true)} />
           {showNDAModal && !selectedThread.isSupport && (
             <AgreementModal
               thread={selectedThread}
@@ -350,6 +352,18 @@ export default function InboxPage() {
               onSign={handleSignNDA}
             />
           )}
+          <Drawer open={mobileDetailsOpen} onOpenChange={setMobileDetailsOpen}>
+            <DrawerContent>
+              <InboxInquiryPanel
+                thread={selectedThread}
+                onClose={() => setMobileDetailsOpen(false)}
+                onSignNDA={handleSignNDA}
+                isOperator={isOperator}
+                onOpenAgreement={() => setShowNDAModal(true)}
+                onEstimatedProfitChange={(p) => setLiveEstimatedProfit(p)}
+              />
+            </DrawerContent>
+          </Drawer>
         </div>
       );
     }

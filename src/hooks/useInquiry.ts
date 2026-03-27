@@ -6,11 +6,11 @@ import { useAuth } from '@/hooks/useAuth';
  * Creates or finds a chat thread for the given property.
  * Idempotent: checks for existing thread before inserting.
  * Only operators/tenants may create inquiry threads.
- * Landlords and admins are blocked from creating inquiries.
+ * Landlords (@nfstay.internal magic-link accounts) are blocked from creating inquiries.
  * Returns { threadId, isCreating }.
  */
 export function useInquiry(propertyId: string | null) {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -20,9 +20,9 @@ export function useInquiry(propertyId: string | null) {
       return;
     }
 
-    // Role guard: landlords (magic-link users) and admins must not create inquiry threads
+    // Role guard: only landlords (magic-link @nfstay.internal accounts) are blocked
     const isLandlordAccount = !!user.email?.endsWith('@nfstay.internal');
-    if (isAdmin || isLandlordAccount) {
+    if (isLandlordAccount) {
       return;
     }
 
@@ -110,7 +110,7 @@ export function useInquiry(propertyId: string | null) {
 
     findOrCreate();
     return () => { cancelled = true; };
-  }, [propertyId, user?.id, isAdmin]);
+  }, [propertyId, user?.id]);
 
   return { threadId, isCreating };
 }
