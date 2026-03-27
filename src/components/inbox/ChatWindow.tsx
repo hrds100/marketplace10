@@ -256,17 +256,22 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         const ac = new AbortController();
         const timeout = setTimeout(() => ac.abort(), 5000);
         const isLandlord = user.id === thread.landlordId;
-        // Resolve recipient phone — fallback to DB lookup if thread.contactPhone is empty
+        // Resolve recipient phone via edge function (bypasses RLS with service role)
         let recipientPhone = thread.contactPhone || '';
         if (!recipientPhone) {
-          const otherId = isLandlord ? thread.operatorId : thread.landlordId;
-          if (otherId) {
-            const { data: otherProfile } = await (supabase.from('profiles') as any)
-              .select('whatsapp')
-              .eq('id', otherId)
-              .maybeSingle();
-            recipientPhone = (otherProfile?.whatsapp as string) || '';
-          }
+          try {
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+            const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+            const res = await fetch(`${supabaseUrl}/functions/v1/get-thread-phone`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
+              body: JSON.stringify({ thread_id: thread.id, requesting_user_id: user.id }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              recipientPhone = data.whatsapp || '';
+            }
+          } catch { /* edge function unavailable — n8n will do its own lookup */ }
         }
         const payload = JSON.stringify({
           thread_id: thread.id,
