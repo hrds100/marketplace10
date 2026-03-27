@@ -256,6 +256,18 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
         const ac = new AbortController();
         const timeout = setTimeout(() => ac.abort(), 5000);
         const isLandlord = user.id === thread.landlordId;
+        // Resolve recipient phone — fallback to DB lookup if thread.contactPhone is empty
+        let recipientPhone = thread.contactPhone || '';
+        if (!recipientPhone) {
+          const otherId = isLandlord ? thread.operatorId : thread.landlordId;
+          if (otherId) {
+            const { data: otherProfile } = await (supabase.from('profiles') as any)
+              .select('whatsapp')
+              .eq('id', otherId)
+              .maybeSingle();
+            recipientPhone = (otherProfile?.whatsapp as string) || '';
+          }
+        }
         const payload = JSON.stringify({
           thread_id: thread.id,
           property_title: thread.propertyTitle,
@@ -267,7 +279,7 @@ export default function ChatWindow({ thread, onBack, onToggleDetails, showDetail
           landlord_id: thread.landlordId ?? null,
           operator_id: thread.operatorId ?? null,
           // WhatsApp notification fields — other party's contact + property label for templates
-          recipient_phone: thread.contactPhone,
+          recipient_phone: recipientPhone,
           recipient_name: thread.contactName,
           property_label: thread.propertyCity || thread.propertyTitle,
         });
