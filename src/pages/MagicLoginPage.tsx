@@ -11,7 +11,7 @@ export default function MagicLoginPage() {
 
   useEffect(() => {
     if (!token) {
-      navigate('/signin', { replace: true });
+      navigate('/dashboard/inbox', { replace: true });
       return;
     }
 
