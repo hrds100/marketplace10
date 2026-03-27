@@ -5,16 +5,24 @@ import { useAuth } from '@/hooks/useAuth';
 /**
  * Creates or finds a chat thread for the given property.
  * Idempotent: checks for existing thread before inserting.
+ * Only operators/tenants may create inquiry threads.
+ * Landlords and admins are blocked from creating inquiries.
  * Returns { threadId, isCreating }.
  */
 export function useInquiry(propertyId: string | null) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     if (!propertyId || !user?.id) {
       setThreadId(null);
+      return;
+    }
+
+    // Role guard: landlords (magic-link users) and admins must not create inquiry threads
+    const isLandlordAccount = !!user.email?.endsWith('@nfstay.internal');
+    if (isAdmin || isLandlordAccount) {
       return;
     }
 
@@ -42,7 +50,7 @@ export function useInquiry(propertyId: string | null) {
       }
 
       try {
-        // Get property's contact info for landlord_id + notification fields
+        // Get property's contact info for landlord_id lookup
         const { data: prop } = await supabase
           .from('properties')
           .select('submitted_by, name, city, contact_phone, contact_whatsapp, landlord_whatsapp')
@@ -80,7 +88,6 @@ export function useInquiry(propertyId: string | null) {
           setThreadId(created.id);
           // Auto-send first inquiry message so landlord sees it immediately
           const introBody = "Hi, is this property still available? I'm very interested.";
-          const maskedBody = introBody; // No PII in auto-message, no masking needed
           await supabase.from('chat_messages').insert({
             thread_id: created.id,
             sender_id: user.id,
@@ -90,29 +97,9 @@ export function useInquiry(propertyId: string | null) {
             mask_type: null,
             message_type: 'text',
           });
-          // Fire n8n webhook to notify landlord via WhatsApp
-          const recipientPhone = (prop?.contact_phone || prop?.contact_whatsapp || prop?.landlord_whatsapp || '') as string;
-          const propertyTitle = (prop?.name || '') as string;
-          const propertyCity = (prop?.city || '') as string;
-          const n8nBase = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
-          fetch(`${n8nBase}/webhook/inbox-new-message`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              thread_id: created.id,
-              property_title: propertyTitle,
-              property_city: propertyCity,
-              sender_name: user.user_metadata?.name || 'Interested Tenant',
-              sender_role: 'operator',
-              is_masked: false,
-              mask_type: null,
-              landlord_id: landlordId,
-              operator_id: user.id,
-              recipient_phone: recipientPhone,
-              recipient_name: '',
-              property_label: propertyCity || propertyTitle,
-            }),
-          }).catch(() => {}); // fire-and-forget
+          // n8n webhook is NOT fired here. It only fires from ChatWindow.tsx
+          // when a user manually types and sends a message. Auto-messages
+          // must not trigger WhatsApp notifications.
         }
       } catch (err) {
         console.error('useInquiry error:', err);
@@ -123,7 +110,7 @@ export function useInquiry(propertyId: string | null) {
 
     findOrCreate();
     return () => { cancelled = true; };
-  }, [propertyId, user?.id]);
+  }, [propertyId, user?.id, isAdmin]);
 
   return { threadId, isCreating };
 }
