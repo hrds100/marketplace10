@@ -573,7 +573,9 @@ export default function AffiliatesPage() {
                       <div className="flex gap-2">
                         <input readOnly value={investReferralLink} className="input-nfstay flex-1 bg-secondary text-sm font-mono min-w-0" />
                         <button
-                          onClick={() => {
+                          onClick={async () => {
+                            const ok = await requireWallet('To get your partnership referral link, you must verify your email. Click continue and enter the email you used to register.');
+                            if (!ok) return;
                             navigator.clipboard.writeText(investReferralLink);
                             toast.success('Partnership referral link copied!');
                           }}
