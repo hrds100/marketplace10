@@ -126,6 +126,19 @@ export default function DashboardLayout() {
           <TopBar />
         </div>
 
+        {/* ── Claim banner — above content, offset to clear fixed sidebar ── */}
+        {claimBanner && (
+          <div className={cn(`hidden md:block ${marginClass} transition-all duration-300 ease-out`)}>
+            {claimBanner}
+          </div>
+        )}
+        {/* Mobile: no sidebar offset needed */}
+        {claimBanner && (
+          <div className="md:hidden">
+            {claimBanner}
+          </div>
+        )}
+
         {/* ── Content area — sidebar + main ─────────────────── */}
         <div className="flex-1 flex overflow-hidden relative">
 
@@ -142,8 +155,6 @@ export default function DashboardLayout() {
               investCheckoutFocus && 'blur-md pointer-events-none select-none md:ml-0',
             )}
           >
-
-            {claimBanner}
 
             {/* JV Partners sub-nav */}
             {isInvest && (
