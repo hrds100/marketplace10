@@ -75,7 +75,8 @@ test("Test 1 — Admin can Inquire Now, chat window appears", async ({ page }) =
   });
   await page.waitForTimeout(8000); // give useInquiry time to create thread + load
 
-  const chatWindow = page.locator('[data-feature="CRM_INBOX__CHAT_WINDOW"]');
+  // Use .first() — data-feature="CRM_INBOX__CHAT_WINDOW" also appears on individual MessageBubbles
+  const chatWindow = page.locator('[data-feature="CRM_INBOX__CHAT_WINDOW"]').first();
   const emptyState = page.getByText("Select a conversation to get started");
 
   await expect(chatWindow).toBeVisible({ timeout: 5000 });
@@ -169,8 +170,13 @@ test("Test 4 — Mobile info button opens property details drawer", async ({ pag
   const infoBtn = page.locator('button[title="Property details"]');
   await expect(infoBtn).toBeVisible({ timeout: 5000 });
 
-  // Tap the button
-  await infoBtn.click();
+  // The drawer may already be open (auto-triggered when first message appeared).
+  // Close it by pressing Escape so we can test the Info button explicitly.
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(500);
+
+  // Now tap the Info button — drawer should (re-)open
+  await infoBtn.click({ force: true });
   await page.waitForTimeout(1000);
 
   // Drawer should open with the inquiry details panel
