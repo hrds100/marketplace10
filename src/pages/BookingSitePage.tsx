@@ -229,18 +229,76 @@ export default function BookingSitePage() {
     );
   }
 
-  return (
-    <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden relative">
-      {/* Tier gate overlay for free users */}
-      {!paid && (
-        <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center">
-          <div className="text-center max-w-sm px-6">
+  // Free users see the preview/mock-up with upgrade prompt
+  if (!paid) {
+    return (
+      <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden relative">
+        {/* Preview mock-up for free users */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left panel: branding controls */}
+          <div className="w-[380px] border-r border-border bg-white flex flex-col overflow-y-auto p-5 space-y-5">
+            <div>
+              <h1 className="text-lg font-bold tracking-tight">Your Booking Site</h1>
+              <p className="text-sm text-muted-foreground">Customise and preview how your site will look</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Brand Name</label>
+                <input className="mt-1 w-full px-3 py-2 border border-border rounded-lg text-sm" value={branding.brandName} onChange={e => update('brandName', e.target.value)} placeholder="Your Brand" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Subdomain</label>
+                <div className="mt-1 flex items-center">
+                  <input className="flex-1 px-3 py-2 border border-border rounded-l-lg text-sm" value={branding.subdomain} onChange={e => update('subdomain', e.target.value)} placeholder="yourbrand" />
+                  <span className="px-3 py-2 border border-l-0 border-border rounded-r-lg bg-muted text-sm text-muted-foreground">.nfstay.app</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Brand Colour</label>
+                <div className="mt-1 flex gap-2">
+                  {['#10b981', '#f97316', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4'].map(c => (
+                    <button key={c} onClick={() => updateColor(c)} className={`w-8 h-8 rounded-full border-2 ${branding.accentColor === c ? 'border-foreground' : 'border-border'}`} style={{ backgroundColor: c }} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Hero Headline</label>
+                <input className="mt-1 w-full px-3 py-2 border border-border rounded-lg text-sm" value={branding.heroHeadline} onChange={e => update('heroHeadline', e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Hero Subheadline</label>
+                <input className="mt-1 w-full px-3 py-2 border border-border rounded-lg text-sm" value={branding.heroSubheadline} onChange={e => update('heroSubheadline', e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          {/* Right panel: live preview */}
+          <div className="flex-1 bg-[#f8f8f6] overflow-y-auto">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex gap-1.5">
+                  <button onClick={() => setPreviewMode('desktop')} className={`p-1.5 rounded ${previewMode === 'desktop' ? 'bg-white shadow-sm' : 'text-muted-foreground'}`}><Monitor className="w-4 h-4" /></button>
+                  <button onClick={() => setPreviewMode('mobile')} className={`p-1.5 rounded ${previewMode === 'mobile' ? 'bg-white shadow-sm' : 'text-muted-foreground'}`}><Smartphone className="w-4 h-4" /></button>
+                </div>
+                <span className="text-xs text-muted-foreground">Preview</span>
+              </div>
+              <div className={`mx-auto bg-white rounded-xl shadow-lg overflow-hidden transition-all ${previewMode === 'mobile' ? 'max-w-[375px]' : 'max-w-full'}`}>
+                <BookingSitePreview branding={branding} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Upgrade overlay */}
+        <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
+          <div className="text-center max-w-sm px-6 bg-white rounded-2xl shadow-xl p-8 border border-border">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4">
               <Globe className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-lg font-bold text-foreground mb-2">Upgrade to unlock your booking site</h2>
+            <h2 className="text-lg font-bold text-foreground mb-2">Subscribe to unlock your booking site</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Your branded booking site is included with any paid plan. Upgrade to start accepting direct bookings.
+              Play with the preview above to see how your branded site will look. Subscribe to go live and start accepting bookings.
             </p>
             <button
               onClick={() => setPaymentOpen(true)}
@@ -249,9 +307,14 @@ export default function BookingSitePage() {
               Upgrade Now
             </button>
           </div>
-          <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); }} />
+          <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); window.location.reload(); }} />
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden relative">
 
       {/* Top Tab Bar */}
       <div className="border-b border-border bg-card px-5 flex-shrink-0">
