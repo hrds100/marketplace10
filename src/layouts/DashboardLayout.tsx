@@ -126,15 +126,9 @@ export default function DashboardLayout() {
           <TopBar />
         </div>
 
-        {/* ── Claim banner — above content, offset to clear fixed sidebar ── */}
+        {/* ── Claim banner — offset to clear fixed sidebar on desktop ── */}
         {claimBanner && (
-          <div className={cn(`hidden md:block ${marginClass} transition-all duration-300 ease-out`)}>
-            {claimBanner}
-          </div>
-        )}
-        {/* Mobile: no sidebar offset needed */}
-        {claimBanner && (
-          <div className="md:hidden">
+          <div className={cn(`${marginClass} transition-all duration-300 ease-out`)}>
             {claimBanner}
           </div>
         )}
