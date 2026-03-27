@@ -23,13 +23,11 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // 1. Validate token — must exist and not older than 30 days
-    const expiryDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    // 1. Validate token — must exist (tokens never expire)
     const { data: invite, error: inviteErr } = await supabaseAdmin
       .from('landlord_invites')
       .select('id, thread_id, created_at')
       .eq('magic_token', token)
-      .gt('created_at', expiryDate)
       .maybeSingle()
 
     if (inviteErr || !invite) {
@@ -59,20 +57,44 @@ serve(async (req) => {
     const cleanPhone = phone.replace(/\D/g, '')
     const internalEmail = `landlord_${cleanPhone}@nfstay.internal`
 
-    // 3. Look up existing landlord by phone in profiles
+    // 3. Look up existing landlord by phone in profiles (try multiple formats)
     let userId = ''
     let loginEmail = internalEmail
 
     if (cleanPhone) {
+      const phoneVariants = [
+        phone,
+        '+' + cleanPhone,
+        cleanPhone,
+        '0' + cleanPhone.slice(2),
+      ].filter(Boolean)
+
       const { data: existingProfile } = await supabaseAdmin
         .from('profiles')
         .select('id')
-        .eq('whatsapp', phone)
+        .in('whatsapp', phoneVariants)
         .maybeSingle()
       if (existingProfile?.id) {
         userId = existingProfile.id
         const { data: { user: existingUser } } = await supabaseAdmin.auth.admin.getUserById(userId)
         if (existingUser?.email) loginEmail = existingUser.email
+      }
+    }
+
+    // Fallback: check if internal email already exists in auth
+    if (!userId) {
+      const lookupRes = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users?filter=${encodeURIComponent(internalEmail)}&page=1&per_page=1`,
+        { headers: { 'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}` } }
+      )
+      if (lookupRes.ok) {
+        const lookupData = await lookupRes.json()
+        const matchedUsers = lookupData.users || lookupData
+        const existing = Array.isArray(matchedUsers) ? matchedUsers.find((u: { email?: string }) => u.email === internalEmail) : null
+        if (existing) {
+          userId = existing.id
+          loginEmail = internalEmail
+        }
       }
     }
 
@@ -99,7 +121,7 @@ serve(async (req) => {
       }, { onConflict: 'id', ignoreDuplicates: false })
     } else {
       await supabaseAdmin.from('profiles')
-        .update({ whatsapp_verified: true })
+        .update({ whatsapp: phone, whatsapp_verified: true })
         .eq('id', userId)
     }
 

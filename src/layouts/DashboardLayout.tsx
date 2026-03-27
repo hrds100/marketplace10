@@ -125,7 +125,6 @@ export default function DashboardLayout() {
         <div className={cn(investCheckoutFocus && 'hidden')}>
           <TopBar />
         </div>
-        {claimBanner}
 
         {/* ── Content area — sidebar + main ─────────────────── */}
         <div className="flex-1 flex overflow-hidden relative">
@@ -143,6 +142,8 @@ export default function DashboardLayout() {
               investCheckoutFocus && 'blur-md pointer-events-none select-none md:ml-0',
             )}
           >
+
+            {claimBanner}
 
             {/* JV Partners sub-nav */}
             {isInvest && (
