@@ -218,18 +218,11 @@ export default function DealsPageV2() {
 
   const liveCount = listings.filter(l => l.status === 'live').length;
 
-  // Top section: Prime first, then Featured, fill remaining slots with regular
+  // Top section: only truly prime/featured properties (no random fillers)
   const highlighted = useMemo(() => {
     const prime = listings.filter(l => l.prime);
     const featured = listings.filter(l => l.featured && !l.prime);
-    const topIds = new Set([...prime, ...featured].map(l => l.id));
-    // If we have fewer than 2 highlighted, fill with regular properties
-    const regular = listings.filter(l => !topIds.has(l.id));
-    const combined = [...prime, ...featured];
-    while (combined.length < 2 && regular.length > 0) {
-      combined.push(regular.shift()!);
-    }
-    return combined;
+    return [...prime, ...featured];
   }, [listings]);
   const highlightedIds = new Set(highlighted.map(l => l.id));
 
