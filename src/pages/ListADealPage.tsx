@@ -303,6 +303,11 @@ export default function ListADealPage() {
         deposit: l.deposit ? String(l.deposit) : prev.deposit,
       }));
 
+      // AI detects rental vs sale automatically
+      if (l.listing_type === 'sale' || l.listing_type === 'rental') {
+        setListingType(l.listing_type as 'rental' | 'sale');
+      }
+
       if (l.description && typeof l.description === 'string') {
         setDescription(l.description);
       }
@@ -506,18 +511,20 @@ export default function ListADealPage() {
               />
             </div>
 
-            {/* ── Listing Type Radio ── */}
-            <div className="flex items-center gap-4 mb-2" data-feature="DEALS__LIST_TYPE_SELECT">
-              <span className="text-sm font-medium text-foreground">Listing type:</span>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="listingType" value="rental" checked={listingType === 'rental'} onChange={() => setListingType('rental')} className="accent-[#1E9A80]" />
-                <span className="text-sm">To Rent</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="listingType" value="sale" checked={listingType === 'sale'} onChange={() => setListingType('sale')} className="accent-[#1E9A80]" />
-                <span className="text-sm">For Sale</span>
-              </label>
-            </div>
+            {/* ── Listing Type Radio (hidden in AI mode - AI detects automatically) ── */}
+            {!aiQuickMode && (
+              <div className="flex items-center gap-4 mb-2" data-feature="DEALS__LIST_TYPE_SELECT">
+                <span className="text-sm font-medium text-foreground">Listing type:</span>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="listingType" value="rental" checked={listingType === 'rental'} onChange={() => setListingType('rental')} className="accent-[#1E9A80]" />
+                  <span className="text-sm">To Rent</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="listingType" value="sale" checked={listingType === 'sale'} onChange={() => setListingType('sale')} className="accent-[#1E9A80]" />
+                  <span className="text-sm">For Sale</span>
+                </label>
+              </div>
+            )}
 
             {/* ── AI Quick Listing Input ── */}
             {aiQuickMode && (
