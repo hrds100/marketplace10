@@ -1,15 +1,20 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus, Sparkles, X, Lock } from 'lucide-react';
+import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus, Sparkles, X, Lock, Mail } from 'lucide-react';
 import { faqItems } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserTier } from '@/hooks/useUserTier';
+import { isPaidTier } from '@/lib/ghl';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchPexelsPhotos } from '@/lib/pexels';
 import PropertyCard from '@/components/PropertyCard';
+import EmailInquiryModal from '@/components/EmailInquiryModal';
 import type { ListingShape } from '@/components/InquiryPanel';
+
+const NFSTAY_WHATSAPP = '447476368123';
 
 export default function DealDetail() {
   useEffect(() => { document.title = 'nfstay - Deal Detail'; }, []);
@@ -89,12 +94,43 @@ export default function DealDetail() {
     return () => clearTimeout(t);
   }, [justAddedToCrm]);
 
-  // Inquiry panel state
   const navigate = useNavigate();
+  const { tier } = useUserTier();
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
 
   const handleInquire = useCallback((l: ListingShape) => {
     navigate(`/dashboard/inbox?deal=${l.id}`);
   }, [navigate]);
+
+  const contactEmail = (listing?.contact_email as string) || null;
+  const contactPhone = landlordWhatsapp || (listing?.contact_phone as string) || null;
+  const listerType = (listing?.lister_type as string) || null;
+
+  const handleDetailWhatsApp = () => {
+    if (!user) { navigate('/signup'); return; }
+    if (!isPaidTier(tier)) { toast.error('Upgrade your plan to contact listers'); return; }
+    const propertyUrl = `https://hub.nfstay.com/deals/${(listing?.slug as string) || id}`;
+    const msg = encodeURIComponent(
+      `Hi, I am interested in your property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${id}\nPlease contact me at your earliest convenience.`,
+    );
+    supabase.functions.invoke('process-inquiry', {
+      body: {
+        property_id: id, channel: 'whatsapp',
+        message: `Interested in ${name} at ${city}`,
+        tenant_name: user?.user_metadata?.name || '',
+        tenant_email: user?.email || '',
+        tenant_phone: user?.user_metadata?.whatsapp || '',
+        property_url: propertyUrl,
+      },
+    }).catch(() => {});
+    window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${msg}`, '_blank');
+  };
+
+  const handleDetailEmail = () => {
+    if (!user) { navigate('/signup'); return; }
+    if (!isPaidTier(tier)) { toast.error('Upgrade your plan to contact listers'); return; }
+    setEmailModalOpen(true);
+  };
 
   // Build images: user photos first, Pexels fills remaining slots
   const userPhotos: string[] = Array.isArray(listing?.photos) ? (listing.photos as string[]) : [];
@@ -225,10 +261,13 @@ export default function DealDetail() {
     name, city, postcode, rent, profit, type,
     status: status as 'live' | 'on-offer' | 'inactive',
     featured: !!listing?.featured,
+    prime: false,
     daysAgo,
     image: images[0],
     landlordApproved,
     landlordWhatsapp,
+    slug: (listing?.slug as string) || null,
+    lister_type: listerType as any,
   };
 
   if (isLoading) {
@@ -448,10 +487,22 @@ export default function DealDetail() {
                   <span className={`font-bold text-lg ${finalProfit > 0 ? 'text-accent-foreground' : 'text-destructive'}`}>£{finalProfit.toLocaleString()}</span>
                 </div>
               </div>
-              <button data-feature="DEALS__DETAIL_INQUIRE" onClick={() => handleInquire(listingShape)} className="w-full h-12 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold mt-6 hover:opacity-90 transition-opacity">
-                Inquire Now
-              </button>
-              <p className="text-xs text-muted-foreground text-center mt-2">Contact via WhatsApp</p>
+              {/* Contact buttons */}
+              <div className="flex gap-2 mt-6">
+                <button data-feature="DEALS__DETAIL_WHATSAPP" onClick={handleDetailWhatsApp}
+                  className="flex-1 h-12 rounded-xl inline-flex items-center justify-center gap-2.5 text-[14px] font-semibold text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: '#1E9A80' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  WhatsApp
+                </button>
+                {contactEmail && (
+                  <button data-feature="DEALS__DETAIL_EMAIL" onClick={handleDetailEmail}
+                    className="flex-1 h-12 rounded-xl inline-flex items-center justify-center gap-2.5 text-[14px] font-semibold transition-all hover:brightness-[0.96]"
+                    style={{ backgroundColor: '#E8F0EF', color: '#2D6A5F' }}>
+                    <Mail className="w-[18px] h-[18px]" strokeWidth={1.8} /> Email
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -462,7 +513,7 @@ export default function DealDetail() {
             <h2 className="text-xl font-bold text-foreground mb-6">More deals near {city}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {nearbyDeals.map(l => (
-                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} />
+                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} onEmailInquire={(listing) => { setEmailModalOpen(true); }} />
               ))}
             </div>
           </div>
@@ -474,7 +525,7 @@ export default function DealDetail() {
             <h2 className="text-xl font-bold text-foreground mb-6">More deals near {city}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {moreDeals.map(l => (
-                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} />
+                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} onEmailInquire={(listing) => { setEmailModalOpen(true); }} />
               ))}
             </div>
           </section>
@@ -492,7 +543,8 @@ export default function DealDetail() {
         </div>
       )}
 
-      {/* InquiryPanel removed — Inquire Now navigates to inbox */}
+      {/* Email inquiry modal */}
+      <EmailInquiryModal open={emailModalOpen} listing={listingShape} onClose={() => setEmailModalOpen(false)} />
     </div>
   );
 }
