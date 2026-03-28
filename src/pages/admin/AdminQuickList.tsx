@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Upload, Image as ImageIcon, X, Settings2, Check, Save, Loader2, Lock } from 'lucide-react';
+import { Sparkles, Upload, Image as ImageIcon, X, Settings2, Check, Save, Loader2, Lock, CheckCircle, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { fetchPexelsPhotos } from '@/lib/pexels';
+import { normalizeUKPhone } from '@/lib/phoneValidation';
 
 const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
 
@@ -23,17 +24,31 @@ interface ParsedListing {
   type: string | null;
   sa_approved: string | null;
   notes: string | null;
-  contact_name: string | null;
   contact_phone: string | null;
+  contact_name: string | null;
   contact_email: string | null;
+  deposit: number | null;
+  sourcing_fee: number | null;
+  deal_type: string | null;
+  listing_type: string | null;
+  nightly_rate_projected: number | null;
+  purchase_price: number | null;
+  end_value: number | null;
+  refurb_cost: number | null;
 }
 
-const EMPTY_LISTING: ParsedListing = {
-  name: null, city: null, postcode: null, bedrooms: null, bathrooms: null,
-  rent_monthly: null, profit_est: null, property_category: null, furnished: null,
-  garage: null, description: null, features: null, type: null, sa_approved: null, notes: null,
-  contact_name: null, contact_phone: null, contact_email: null,
-};
+interface AIPricingResult {
+  estimated_nightly_rate: number;
+  estimated_monthly_revenue: number;
+  estimated_profit: number;
+  confidence: string;
+  notes: string;
+  airbnb_url_7d?: string;
+  airbnb_url_30d?: string;
+  airbnb_url_90d?: string;
+}
+
+type PublishPhase = 'idle' | 'publishing' | 'analysing' | 'reveal' | 'fallback';
 
 export default function AdminQuickList() {
   const { user } = useAuth();
@@ -44,10 +59,10 @@ export default function AdminQuickList() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
 
-  // Pexels fallback photos (URLs, not Files)
-  const [pexelsUrls, setPexelsUrls] = useState<string[]>([]);
+  // Pexels fallback photos per listing index
+  const [pexelsMap, setPexelsMap] = useState<Map<number, string[]>>(new Map());
 
-  // AI state - supports multiple listings from one paste
+  // AI state
   const [parsing, setParsing] = useState(false);
   const [listings, setListings] = useState<ParsedListing[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -60,8 +75,10 @@ export default function AdminQuickList() {
   const [promptSaving, setPromptSaving] = useState(false);
   const [aiSettingsId, setAiSettingsId] = useState<string | null>(null);
 
-  // Publishing
-  const [publishing, setPublishing] = useState(false);
+  // Publishing + Airbnb estimation phases
+  const [publishPhase, setPublishPhase] = useState<PublishPhase>('idle');
+  const [pricingResult, setPricingResult] = useState<AIPricingResult | null>(null);
+  const [lastPublishedListing, setLastPublishedListing] = useState<ParsedListing | null>(null);
 
   // Get next sequential property number from DB
   const getNextPropertyNumber = async (): Promise<number> => {
@@ -71,7 +88,7 @@ export default function AdminQuickList() {
   };
 
   // Update a field on the active listing
-  const updateField = (key: keyof ParsedListing, value: any) => {
+  const updateField = (key: keyof ParsedListing, value: unknown) => {
     setListings(prev => prev.map((l, i) => i === activeIdx ? { ...l, [key]: value } : l));
   };
 
@@ -117,182 +134,7 @@ export default function AdminQuickList() {
     setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
-  // Split text into individual listings if numbered (1. xxx 2. xxx)
-  const splitMultiListings = (text: string): string[] => {
-    // Check for numbered pattern: "1." or "1)" at start of line
-    const numbered = text.split(/\n(?=\d+[.)]\s*)/);
-    if (numbered.length > 1 && numbered.filter(s => s.trim()).length > 1) {
-      return numbered.map(s => s.replace(/^\d+[.)]\s*/, '').trim()).filter(s => s.length > 5);
-    }
-    return [text];
-  };
-
-  // Parse a single listing text into structured fields
-  const parseSingleListing = async (text: string): Promise<ParsedListing> => {
-    // Extract postcode
-    const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
-    const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : 'N/A';
-
-      // Extract bedrooms - check for "X bedroom" pattern, also "total: X flats/units"
-      const bedsMatch = text.match(/(\d+)\s*(?:bed(?:room)?s?|double\s+bed)/i);
-      const totalUnitsMatch = text.match(/total:?\s*(\d+)\s*(?:flat|unit|room)/i);
-      const unitCountMatch = text.match(/(\d+)[\s-]*unit/i);
-      const bedrooms = totalUnitsMatch ? parseInt(totalUnitsMatch[1])
-        : unitCountMatch ? parseInt(unitCountMatch[1])
-        : bedsMatch ? parseInt(bedsMatch[1])
-        : null;
-
-      // Extract bathrooms - but avoid matching "1 Bath Each" as 1 bathroom for the whole block
-      const allBathMatches = [...text.matchAll(/(\d+)\s*bath(?:room)?s?/gi)];
-      let bathrooms: number | null = null;
-      if (allBathMatches.length > 0) {
-        // Sum if multiple bathroom references, or take highest number
-        const nums = allBathMatches.map(m => parseInt(m[1]));
-        bathrooms = Math.max(...nums);
-      }
-
-      const rentMatch = text.match(/[£]?\s*(\d[\d,]*)\s*(?:pcm|pm|per\s*month)/i);
-      const rent_monthly = rentMatch ? parseInt(rentMatch[1].replace(/,/g, '')) : null;
-
-      // Resolve city from postcode using Google Maps Geocoding API
-      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-      let city: string | null = null;
-
-      if (postcode && apiKey) {
-        try {
-          const geoRes = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(postcode + ', UK')}&key=${apiKey}`
-          );
-          if (geoRes.ok) {
-            const geoData = await geoRes.json();
-            const result = geoData.results?.[0];
-            if (result) {
-              const components = result.address_components || [];
-              // Try postal_town first (most accurate for UK), then locality, then admin_area_level_2
-              const postalTown = components.find((c: any) => c.types.includes('postal_town'));
-              const locality = components.find((c: any) => c.types.includes('locality'));
-              const admin2 = components.find((c: any) => c.types.includes('administrative_area_level_2'));
-              city = postalTown?.long_name || locality?.long_name || admin2?.long_name || null;
-            }
-          }
-        } catch {
-          // Geocoding failed - fall through to text search
-        }
-      }
-
-      // Fallback: search for known city names in the text (word boundary match to avoid "Bath" in "Bathroom")
-      if (!city) {
-        const knownCities = [
-          'London', 'Manchester', 'Birmingham', 'Leeds', 'Liverpool', 'Sheffield',
-          'Bristol', 'Newcastle', 'Nottingham', 'Leicester', 'Coventry', 'Bradford',
-          'Cardiff', 'Edinburgh', 'Glasgow', 'Belfast', 'Wolverhampton', 'Walsall',
-          'Sunderland', 'Derby', 'Southampton', 'Portsmouth', 'Plymouth', 'Brighton',
-          'Hull', 'Stoke', 'Blackpool', 'Bolton', 'Oldham', 'Luton', 'Milton Keynes',
-          'Reading', 'Oxford', 'Cambridge', 'Ipswich', 'Norwich', 'Exeter', 'Gloucester',
-          'Bath', 'Bournemouth', 'Ilford', 'Croydon', 'Harrow', 'Romford', 'Bromley',
-          'Slough', 'Watford', 'Guildford', 'Canterbury', 'York', 'Lancaster', 'Preston',
-          'Blackburn', 'Carlisle', 'Darlington', 'Middlesbrough', 'Durham', 'Aberdeen',
-          'Dundee', 'Inverness', 'Perth', 'Swansea', 'Newport', 'Northampton', 'Lincoln',
-          'Peterborough', 'Chelmsford', 'Colchester', 'Swindon', 'Salisbury', 'Taunton',
-          'Worcester', 'Hereford', 'Shrewsbury', 'Telford', 'Chester', 'Crewe', 'Warrington',
-          'Stockport', 'Halifax', 'Huddersfield', 'Wakefield', 'Harrogate', 'Doncaster',
-        ];
-        // Use word boundaries to avoid matching "Bath" inside "Bathroom"
-        city = knownCities.find(c => new RegExp(`\\b${c}\\b`, 'i').test(text)) || null;
-      }
-
-      // Detect type
-      const typeMap: [RegExp, string, string][] = [
-        [/\bbungalow\b/i, 'Bungalow', 'house'],
-        [/\bhmo\b/i, 'HMO', 'hmo'],
-        [/\bstudio\b/i, 'Studio', 'flat'],
-        [/\bflat\b/i, 'Flat', 'flat'],
-        [/\bhouse\b/i, 'House', 'house'],
-        [/\broom\b/i, 'Room', 'flat'],
-        [/\bapartment\b/i, 'Flat', 'flat'],
-      ];
-      let type: string | null = null;
-      let property_category: string | null = null;
-      for (const [re, t, cat] of typeMap) {
-        if (re.test(text)) { type = t; property_category = cat; break; }
-      }
-      // Default to House if no type detected
-      if (!type) { type = 'House'; property_category = 'house'; }
-
-      // Check SA approved
-      const saMatch = text.match(/sa\s*(?:approved|compliant|complaint)/i);
-      const hmoMatch = text.match(/hmo\s*(?:compliant|complaint|licensed)/i);
-
-      // Generate name - detect multi-unit blocks
-      const isBlock = /\b(block|whole block|entire block)\b/i.test(text) || (unitCountMatch !== null);
-      const bedLabel = isBlock && unitCountMatch
-        ? `${unitCountMatch[1]}-Unit Block`
-        : bedrooms
-          ? `${bedrooms}-Bed`
-          : null;
-      const name = [
-        bedLabel,
-        isBlock ? null : (type || 'Property'),
-        city,
-      ].filter(Boolean).join(', ');
-
-      // Build parsed listing
-      const parsed: ParsedListing = {
-        name,
-        city,
-        postcode,
-        bedrooms,
-        bathrooms,
-        rent_monthly,
-        property_category,
-        type,
-        furnished: /\bfurnished\b/i.test(text) ? true : null,
-        garage: /\bgarage\b/i.test(text) || /\bparking\b/i.test(text) ? true : null,
-        description: null,
-        features: [],
-        sa_approved: 'yes',
-        notes: null,
-        contact_name: null,
-        contact_phone: (() => {
-          const phoneMatch = text.match(/(?:\+44|0044|07)\d[\d\s]{8,12}/);
-          return phoneMatch ? phoneMatch[0].replace(/\s/g, '') : null;
-        })(),
-        contact_email: (() => {
-          const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-          return emailMatch ? emailMatch[0] : null;
-        })(),
-      };
-
-      // Extract profit if mentioned in text
-      const profitMatch = text.match(/(?:monthly\s*)?profit[:\s]*[£]?\s*(\d[\d,]*)/i);
-      parsed.profit_est = profitMatch ? parseInt(profitMatch[1].replace(/,/g, '')) : null;
-
-      // Auto-generate description via AI webhook
-      try {
-        const descRes = await fetch(`${N8N_BASE}/webhook/ai-generate-listing`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            city: parsed.city || '', postcode: parsed.postcode || '', bedrooms: parsed.bedrooms || 0,
-            bathrooms: parsed.bathrooms || 0, type: parsed.type || parsed.property_category || '',
-            rent: parsed.rent_monthly || 0, profit: parsed.profit_est || 0,
-            sa_approved: parsed.sa_approved || '', notes: '', existing_description: '',
-          }),
-        });
-        if (descRes.ok) {
-          const descData = await descRes.json();
-          if (descData?.description || descData?.text) {
-            parsed.description = descData.description || descData.text;
-          }
-        }
-      } catch {
-        // Description generation failed - not critical
-      }
-
-      return parsed;
-  };
-
-  // Main generate handler - supports multi-listing text
+  // ── AI PARSING ─────────────────────────────────────────────────
   const handleGenerate = async () => {
     if (!rawText.trim()) {
       toast.error('Paste some listing text first');
@@ -300,33 +142,79 @@ export default function AdminQuickList() {
     }
     setParsing(true);
     try {
-      const chunks = splitMultiListings(rawText);
-      const parsed: ParsedListing[] = [];
+      // Call the AI edge function - handles all parsing, K suffix, emojis, small towns, description
+      const { data, error } = await supabase.functions.invoke('ai-parse-listing', {
+        body: { rawText, systemPrompt: systemPrompt || undefined },
+      });
 
-      for (const chunk of chunks) {
-        const listing = await parseSingleListing(chunk);
-        parsed.push(listing);
-      }
+      if (error) throw new Error(error.message || 'AI parsing failed');
+      if (data?.error) throw new Error(data.error);
 
-      setListings(parsed);
+      const aiListings: ParsedListing[] = (data?.listings || []).map((l: Record<string, unknown>) => ({
+        name: (l.name as string) || null,
+        city: (l.city as string) || null,
+        postcode: (l.postcode as string) || null,
+        bedrooms: typeof l.bedrooms === 'number' ? l.bedrooms : null,
+        bathrooms: typeof l.bathrooms === 'number' ? l.bathrooms : null,
+        rent_monthly: typeof l.rent_monthly === 'number' ? l.rent_monthly : null,
+        profit_est: typeof l.profit_est === 'number' ? l.profit_est : null,
+        property_category: (l.property_category as string) || null,
+        furnished: typeof l.furnished === 'boolean' ? l.furnished : null,
+        garage: typeof l.garage === 'boolean' ? l.garage : null,
+        description: (l.description as string) || null,
+        features: Array.isArray(l.features) ? l.features : null,
+        type: (l.type as string) || null,
+        sa_approved: (l.sa_approved as string) || 'yes',
+        notes: (l.notes as string) || null,
+        contact_phone: normalizeUKPhone((l.contact_phone as string) || '') || (l.contact_phone as string) || null,
+        contact_name: (l.contact_name as string) || null,
+        contact_email: (l.contact_email as string) || null,
+        deposit: typeof l.deposit === 'number' ? l.deposit : null,
+        sourcing_fee: typeof l.sourcing_fee === 'number' ? l.sourcing_fee : null,
+        deal_type: (l.deal_type as string) || null,
+        listing_type: (l.listing_type as string) || 'rental',
+        nightly_rate_projected: typeof l.nightly_rate_projected === 'number' ? l.nightly_rate_projected : null,
+        purchase_price: typeof l.purchase_price === 'number' ? l.purchase_price : null,
+        end_value: typeof l.end_value === 'number' ? l.end_value : null,
+        refurb_cost: typeof l.refurb_cost === 'number' ? l.refurb_cost : null,
+      }));
+
+      if (aiListings.length === 0) throw new Error('AI could not parse any listings from the text');
+
+      setListings(aiListings);
       setActiveIdx(0);
 
-      // Fetch Pexels city photos for the first listing if no photos uploaded
-      if (photos.length === 0 && parsed[0]?.city) {
-        const urls = await fetchPexelsPhotos(parsed[0].city, 'city skyline street', 4);
-        if (urls.length > 0) {
-          setPexelsUrls(urls);
-          setPhotoPreviews(urls);
+      // Fetch Pexels photos per listing (if no user photos uploaded)
+      if (photos.length === 0) {
+        const newMap = new Map<number, string[]>();
+        for (let i = 0; i < aiListings.length; i++) {
+          const city = aiListings[i].city;
+          if (city) {
+            const urls = await fetchPexelsPhotos(city, 'city skyline street', 4);
+            if (urls.length > 0) newMap.set(i, urls);
+          }
         }
+        setPexelsMap(newMap);
+        // Show first listing's Pexels previews
+        const firstUrls = newMap.get(0);
+        if (firstUrls) setPhotoPreviews(firstUrls);
       }
 
-      toast.success(parsed.length > 1 ? `${parsed.length} listings detected` : 'Listing generated');
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to parse listing');
+      toast.success(aiListings.length > 1 ? `${aiListings.length} listings detected` : 'Listing generated');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to parse listing');
     } finally {
       setParsing(false);
     }
   };
+
+  // Update photo previews when switching between listings
+  useEffect(() => {
+    if (photos.length > 0) return; // User uploaded photos take priority
+    const urls = pexelsMap.get(activeIdx);
+    if (urls) setPhotoPreviews(urls);
+    else if (pexelsMap.size > 0) setPhotoPreviews([]);
+  }, [activeIdx, pexelsMap, photos.length]);
 
   // Upload photos to Supabase Storage
   const uploadPhotos = async (propertyId: string): Promise<string[]> => {
@@ -345,124 +233,144 @@ export default function AdminQuickList() {
     return urls;
   };
 
-  // Publish one or all listings
+  // ── PUBLISH ────────────────────────────────────────────────────
   const handlePublish = async (status: 'live' | 'pending', publishAll = false) => {
     const toPublish = publishAll ? listings : listing ? [listing] : [];
     if (toPublish.length === 0) {
       toast.error('Generate a listing first');
       return;
     }
-    setPublishing(true);
+    setPublishPhase('publishing');
+    setLastPublishedListing(toPublish[0]);
     try {
       let nextNum = await getNextPropertyNumber();
+      let lastPropertyId: string | null = null;
 
-      for (const item of toPublish) {
+      for (let idx = 0; idx < toPublish.length; idx++) {
+        const item = toPublish[idx];
         const propName = `Property #${nextNum} - ${item.name || 'Untitled'}`;
         nextNum++;
 
-      // Insert property with all required fields
-      const { data: prop, error: insertErr } = await (supabase.from('properties') as any)
-        .insert({
-          name: propName,
-          city: item.city,
-          postcode: item.postcode,
-          bedrooms: item.bedrooms,
-          bathrooms: item.bathrooms,
-          rent_monthly: item.rent_monthly,
-          profit_est: item.profit_est || 0,
-          property_category: item.property_category,
-          type: item.type || 'Flat',
-          description: item.description,
-          notes: item.notes,
-          sa_approved: 'yes',
-          garage: item.garage || false,
-          status,
-          submitted_by: user?.id || null,
-          photos: [],
-          contact_name: item.contact_name || null,
-          contact_phone: item.contact_phone || null,
-          contact_whatsapp: item.contact_phone || null,
-          contact_email: item.contact_email || null,
-          landlord_whatsapp: item.contact_phone || null,
-        })
-        .select('id')
-        .single();
+        const { data: prop, error: insertErr } = await (supabase.from('properties') as any)
+          .insert({
+            name: propName,
+            city: item.city,
+            postcode: item.postcode,
+            bedrooms: item.bedrooms,
+            bathrooms: item.bathrooms,
+            rent_monthly: item.rent_monthly,
+            profit_est: item.profit_est || 0,
+            property_category: item.property_category,
+            type: item.type || 'Flat',
+            description: item.description,
+            notes: item.notes,
+            sa_approved: 'yes',
+            garage: item.garage || false,
+            status,
+            submitted_by: user?.id || null,
+            photos: [],
+            contact_phone: item.contact_phone,
+            contact_name: item.contact_name,
+            contact_email: item.contact_email,
+            landlord_whatsapp: item.contact_phone,
+            deposit: item.deposit,
+            sourcing_fee: item.sourcing_fee,
+            deal_type: item.deal_type,
+            listing_type: item.listing_type || 'rental',
+            nightly_rate_projected: item.nightly_rate_projected,
+            purchase_price: item.purchase_price,
+            end_value: item.end_value,
+            refurb_cost: item.refurb_cost,
+          })
+          .select('id')
+          .single();
 
-      if (insertErr) throw insertErr;
+        if (insertErr) throw insertErr;
+        if (prop?.id) lastPropertyId = prop.id;
 
-      // Upload photos or use Pexels URLs
-      if (prop?.id) {
-        let urls: string[] = [];
-        if (photos.length > 0) {
-          urls = await uploadPhotos(prop.id);
-        } else if (pexelsUrls.length > 0) {
-          urls = pexelsUrls;
-        }
-        if (urls.length > 0) {
-          await (supabase.from('properties') as any)
-            .update({ photos: urls })
-            .eq('id', prop.id);
-        }
-
-        // Run Airbnb pricing estimation (same as ListADealPage)
-        try {
-          const pricingRes = await fetch(`${N8N_BASE}/webhook/airbnb-pricing`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              city: item.city || '',
-              postcode: item.postcode || '',
-              bedrooms: item.bedrooms || 0,
-              bathrooms: item.bathrooms || 0,
-              type: item.type || item.property_category || 'Flat',
-              rent: item.rent_monthly || 0,
-              propertyId: prop.id,
-            }),
-          });
-          if (pricingRes.ok) {
-            const pricing = await pricingRes.json();
-            if (pricing?.estimated_nightly_rate) {
-              await (supabase.from('properties') as any)
-                .update({
-                  estimated_nightly_rate: pricing.estimated_nightly_rate,
-                  estimated_monthly_revenue: pricing.estimated_monthly_revenue,
-                  estimated_profit: pricing.estimated_profit,
-                  // Sync to profit_est and rent_monthly so CRM deals get real values
-                  profit_est: pricing.estimated_profit || 0,
-                  rent_monthly: pricing.estimated_monthly_revenue || 0,
-                  estimation_confidence: pricing.confidence,
-                  estimation_notes: pricing.notes,
-                  airbnb_search_url_7d: pricing.airbnb_url_7d || null,
-                  airbnb_search_url_30d: pricing.airbnb_url_30d || null,
-                  airbnb_search_url_90d: pricing.airbnb_url_90d || null,
-                  ai_model_used: 'gpt-4o-mini',
-                })
-                .eq('id', prop.id);
-            }
+        // Upload photos or use Pexels URLs
+        if (prop?.id) {
+          let urls: string[] = [];
+          if (photos.length > 0) {
+            urls = await uploadPhotos(prop.id);
+          } else {
+            const pexelUrls = pexelsMap.get(publishAll ? idx : activeIdx);
+            if (pexelUrls && pexelUrls.length > 0) urls = pexelUrls;
           }
-        } catch {
-          // Pricing estimation failed - not critical, listing still publishes
+          if (urls.length > 0) {
+            await (supabase.from('properties') as any)
+              .update({ photos: urls })
+              .eq('id', prop.id);
+          }
         }
       }
 
-      } // end for loop
+      // Show analysing phase while Airbnb pricing runs
+      setPublishPhase('analysing');
 
-      const count = toPublish.length;
-      toast.success(status === 'live'
-        ? `${count} listing${count > 1 ? 's' : ''} published!`
-        : `${count} listing${count > 1 ? 's' : ''} saved as draft`);
-      // Reset form
-      setRawText('');
-      setPhotos([]);
-      setPhotoPreviews([]);
-      setPexelsUrls([]);
-      setListings([]);
-      setActiveIdx(0);
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to publish');
-    } finally {
-      setPublishing(false);
+      // Run Airbnb pricing on the last property
+      if (lastPropertyId && toPublish[0]) {
+        const item = toPublish[0];
+        const minDelay = new Promise(r => setTimeout(r, 2500));
+        const pricingFetch = (async (): Promise<AIPricingResult | null> => {
+          const c = new AbortController(); const t = setTimeout(() => c.abort(), 15_000);
+          try {
+            const res = await fetch(`${N8N_BASE}/webhook/airbnb-pricing`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                city: item.city || '', postcode: item.postcode || '',
+                bedrooms: item.bedrooms || 0, bathrooms: item.bathrooms || 0,
+                type: item.type || item.property_category || 'Flat',
+                rent: item.rent_monthly || 0, propertyId: lastPropertyId,
+              }),
+              signal: c.signal,
+            });
+            clearTimeout(t);
+            if (!res.ok) return null;
+            const data = await res.json();
+            if (!data?.estimated_nightly_rate) return null;
+            return data as AIPricingResult;
+          } catch { clearTimeout(t); return null; }
+        })();
+
+        const [, result] = await Promise.all([minDelay, pricingFetch]);
+        if (result) {
+          setPricingResult(result);
+          setPublishPhase('reveal');
+          await (supabase.from('properties') as any).update({
+            estimated_nightly_rate: result.estimated_nightly_rate,
+            estimated_monthly_revenue: result.estimated_monthly_revenue,
+            estimated_profit: result.estimated_profit,
+            profit_est: result.estimated_profit || 0,
+            estimation_confidence: result.confidence,
+            estimation_notes: result.notes,
+            airbnb_search_url_7d: result.airbnb_url_7d || null,
+            airbnb_search_url_30d: result.airbnb_url_30d || null,
+            airbnb_search_url_90d: result.airbnb_url_90d || null,
+            ai_model_used: 'gpt-4o-mini',
+          }).eq('id', lastPropertyId);
+        } else {
+          setPublishPhase('fallback');
+        }
+      } else {
+        setPublishPhase('fallback');
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to publish');
+      setPublishPhase('idle');
     }
+  };
+
+  const resetAll = () => {
+    setRawText('');
+    setPhotos([]);
+    setPhotoPreviews([]);
+    setPexelsMap(new Map());
+    setListings([]);
+    setActiveIdx(0);
+    setPublishPhase('idle');
+    setPricingResult(null);
+    setLastPublishedListing(null);
   };
 
   // Save system prompt
@@ -488,8 +396,93 @@ export default function AdminQuickList() {
     }
   };
 
-  // (updateField defined above with listings array support)
+  // Active Pexels URLs for current listing
+  const activePexelsUrls = pexelsMap.get(activeIdx) || [];
 
+  // ── Phase: Analysing ──
+  if (publishPhase === 'analysing') {
+    const item = lastPublishedListing;
+    return (
+      <div data-feature="ADMIN__QUICK_LIST" className="max-w-[1200px]">
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="w-full max-w-lg border border-border rounded-2xl p-8 bg-card text-center">
+            <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto" />
+            <h2 className="text-[22px] font-bold text-foreground mt-5">We are preparing your listing</h2>
+            <p className="text-sm text-muted-foreground mt-1.5">Our AI is analysing Airbnb data and comparable listings in {item?.city || 'your area'}.</p>
+            <div className="mt-6 rounded-xl bg-secondary p-4 text-left">
+              <div className="text-sm font-bold text-foreground">{item?.name || 'Property'}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{item?.city}{item?.postcode ? ` - ${item.postcode}` : ''}</div>
+              <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                {item?.type && <span>{item.type}</span>}
+                {item?.bedrooms && <span>{item.bedrooms} bed</span>}
+                {item?.deal_type && <span className="font-medium">{item.deal_type}</span>}
+              </div>
+              {item?.rent_monthly ? (
+                <div className="text-sm font-semibold text-foreground mt-2">{'\u00A3'}{item.rent_monthly.toLocaleString()} / month</div>
+              ) : item?.purchase_price ? (
+                <div className="text-sm font-semibold text-foreground mt-2">Purchase: {'\u00A3'}{item.purchase_price.toLocaleString()}</div>
+              ) : null}
+            </div>
+            <div className="mt-6 w-full h-1.5 rounded-full overflow-hidden bg-border">
+              <div className="h-full rounded-full bg-primary" style={{ animation: 'analysingProgress 2.5s ease-out forwards' }} />
+            </div>
+            <style>{`@keyframes analysingProgress { from { width: 0% } to { width: 92% } }`}</style>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Phase: Reveal ──
+  if (publishPhase === 'reveal' && pricingResult) {
+    const item = lastPublishedListing;
+    const rent = item?.rent_monthly || 0;
+    const cc = pricingResult.confidence === 'High' ? 'bg-emerald-100 text-emerald-800' : pricingResult.confidence === 'Medium' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600';
+    return (
+      <div data-feature="ADMIN__QUICK_LIST" className="max-w-[1200px]">
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="w-full max-w-lg border border-border rounded-2xl p-8 bg-card text-center">
+            <div className="w-12 h-12 rounded-full bg-accent-light flex items-center justify-center mx-auto"><CheckCircle className="w-6 h-6 text-primary" /></div>
+            <h2 className="text-[22px] font-bold text-foreground mt-4">Published!</h2>
+            <p className="text-sm text-muted-foreground mt-1.5">Based on Airbnb comparable listings:</p>
+            <div className="mt-5 rounded-xl bg-accent-light p-6 text-left">
+              <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Estimated nightly rate</span><span className="text-sm font-semibold text-foreground">{'\u00A3'}{pricingResult.estimated_nightly_rate}/night</span></div>
+              <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Est. monthly revenue</span><span className="text-sm font-semibold text-foreground">{'\u00A3'}{pricingResult.estimated_monthly_revenue.toLocaleString()}</span></div>
+              {rent > 0 && <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Monthly rent</span><span className="text-sm font-semibold text-foreground">-{'\u00A3'}{rent.toLocaleString()}</span></div>}
+              <div className="flex justify-between items-center pt-3 mt-1"><span className="text-base font-bold text-foreground">Est. monthly profit</span><span className="text-2xl font-bold text-primary">{'\u00A3'}{pricingResult.estimated_profit.toLocaleString()}</span></div>
+            </div>
+            <div className="mt-4 flex items-center justify-center"><span className={`text-xs font-semibold px-3 py-1 rounded-full ${cc}`}>Confidence: {pricingResult.confidence}</span></div>
+            {pricingResult.notes && <p className="text-xs text-muted-foreground mt-3 max-w-[400px] mx-auto">{pricingResult.notes}</p>}
+            <div className="border-t border-border mt-6 pt-5">
+              <button onClick={resetAll} className="h-11 px-8 rounded-lg bg-foreground text-background font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
+                List another <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Phase: Fallback ──
+  if (publishPhase === 'fallback') {
+    return (
+      <div data-feature="ADMIN__QUICK_LIST" className="max-w-[1200px]">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+          <div className="w-12 h-12 rounded-full bg-accent-light flex items-center justify-center"><CheckCircle className="w-6 h-6 text-primary" /></div>
+          <h2 className="text-[22px] font-bold text-foreground mt-4">Published!</h2>
+          <p className="text-sm text-muted-foreground mt-1.5 max-w-[400px]">Your listing is live. AI is still analysing market data - estimated profitability will appear shortly.</p>
+          <div className="flex justify-center mt-6">
+            <button onClick={resetAll} className="h-11 px-8 rounded-lg bg-foreground text-background font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
+              List another <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Phase: Idle (main form) ──
   return (
     <div data-feature="ADMIN__QUICK_LIST" className="max-w-[1200px]">
       <div className="flex items-center justify-between mb-6">
@@ -530,7 +523,7 @@ export default function AdminQuickList() {
             placeholder="Instructions for how AI should parse raw listing text..."
             className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-none"
           />
-          <p className="text-[10px] text-muted-foreground mt-1.5">This prompt tells the AI what to extract and what to strip (contact info, fees, etc). Changes apply to all future listings.</p>
+          <p className="text-[10px] text-muted-foreground mt-1.5">This prompt tells the AI what to extract. Changes apply to all future listings.</p>
         </div>
       )}
 
@@ -556,7 +549,7 @@ export default function AdminQuickList() {
           {photoPreviews.length > 0 && (
             <div className="flex gap-2 flex-wrap">
               {photoPreviews.map((src, i) => {
-                const isPexels = pexelsUrls.includes(src);
+                const isPexels = activePexelsUrls.includes(src);
                 return (
                   <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
                     <img src={src} alt="" className={`w-full h-full object-cover ${isPexels ? 'blur-[8px] scale-110' : ''}`} />
@@ -586,7 +579,7 @@ export default function AdminQuickList() {
             rows={16}
             value={rawText}
             onChange={e => setRawText(e.target.value)}
-            placeholder={"Paste the WhatsApp listing here...\n\nExample:\n🔥 R2R Opportunity - 1 Bed Flat | Worthing (BN11)\n📍 Marine Parade, BN11 3QA\n🛏️ 1 Bedroom\n🛁 1 Bathroom\nRent: £1,400 pcm"}
+            placeholder={"Paste the WhatsApp listing here...\n\nExample:\n\uD83D\uDD25 R2R Opportunity - 1 Bed Flat | Worthing (BN11)\n\uD83D\uDCCD Marine Parade, BN11 3QA\n\uD83D\uDECF\uFE0F 1 Bedroom\n\uD83D\uDEC1 1 Bathroom\nRent: \u00A31,400 pcm"}
             className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
           />
 
@@ -598,7 +591,7 @@ export default function AdminQuickList() {
             className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 inline-flex items-center justify-center gap-2"
           >
             {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {parsing ? 'Generating...' : 'Generate Listing'}
+            {parsing ? 'AI is parsing...' : 'Generate Listing'}
           </button>
         </div>
 
@@ -634,7 +627,7 @@ export default function AdminQuickList() {
                 {listings.length > 1 && (
                   <button
                     onClick={() => handlePublish('live', true)}
-                    disabled={publishing}
+                    disabled={publishPhase !== 'idle'}
                     className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 disabled:opacity-50"
                   >
                     Publish All ({listings.length})
@@ -646,7 +639,7 @@ export default function AdminQuickList() {
               {photoPreviews.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {photoPreviews.map((src, i) => {
-                    const isPexels = pexelsUrls.includes(src);
+                    const isPexels = activePexelsUrls.includes(src);
                     return (
                       <div key={i} className="relative flex-shrink-0 w-28 h-20 rounded-lg overflow-hidden border border-border">
                         <img src={src} alt="" className={`w-full h-full object-cover ${isPexels ? 'blur-[8px] scale-110' : ''}`} />
@@ -666,71 +659,35 @@ export default function AdminQuickList() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Title</label>
-                  <input
-                    value={listing.name || ''}
-                    onChange={e => updateField('name', e.target.value)}
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm font-medium"
-                  />
+                  <input value={listing.name || ''} onChange={e => updateField('name', e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm font-medium" />
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">City</label>
-                  <input
-                    value={listing.city || ''}
-                    onChange={e => updateField('city', e.target.value)}
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                  />
+                  <input value={listing.city || ''} onChange={e => updateField('city', e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Postcode</label>
-                  <input
-                    value={listing.postcode || ''}
-                    onChange={e => updateField('postcode', e.target.value)}
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                  />
+                  <input value={listing.postcode || ''} onChange={e => updateField('postcode', e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Bedrooms</label>
-                  <input
-                    type="number"
-                    value={listing.bedrooms ?? ''}
-                    onChange={e => updateField('bedrooms', e.target.value ? Number(e.target.value) : null)}
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                  />
+                  <input type="number" value={listing.bedrooms ?? ''} onChange={e => updateField('bedrooms', e.target.value ? Number(e.target.value) : null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Bathrooms</label>
-                  <input
-                    type="number"
-                    value={listing.bathrooms ?? ''}
-                    onChange={e => updateField('bathrooms', e.target.value ? Number(e.target.value) : null)}
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                  />
+                  <input type="number" value={listing.bathrooms ?? ''} onChange={e => updateField('bathrooms', e.target.value ? Number(e.target.value) : null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Rent (pcm)</label>
-                  <input
-                    type="number"
-                    value={listing.rent_monthly ?? ''}
-                    onChange={e => updateField('rent_monthly', e.target.value ? Number(e.target.value) : null)}
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                  />
+                  <input type="number" value={listing.rent_monthly ?? ''} onChange={e => updateField('rent_monthly', e.target.value ? Number(e.target.value) : null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Profit (est.)</label>
-                  <input
-                    type="number"
-                    value={listing.profit_est ?? ''}
-                    onChange={e => updateField('profit_est', e.target.value ? Number(e.target.value) : null)}
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                  />
+                  <input type="number" value={listing.profit_est ?? ''} onChange={e => updateField('profit_est', e.target.value ? Number(e.target.value) : null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Type</label>
-                  <select
-                    value={listing.property_category || ''}
-                    onChange={e => updateField('property_category', e.target.value || null)}
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                  >
+                  <select value={listing.property_category || ''} onChange={e => updateField('property_category', e.target.value || null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm">
                     <option value="">Select</option>
                     <option value="flat">Flat</option>
                     <option value="house">House</option>
@@ -739,55 +696,86 @@ export default function AdminQuickList() {
                 </div>
                 <div className="col-span-2">
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Description</label>
-                  <textarea
-                    rows={4}
-                    value={listing.description || ''}
-                    onChange={e => updateField('description', e.target.value)}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none"
-                  />
+                  <textarea rows={4} value={listing.description || ''} onChange={e => updateField('description', e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none" />
                 </div>
                 <div className="col-span-2">
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Features</label>
-                  <input
-                    value={listing.features?.join(', ') || ''}
-                    onChange={e => updateField('features', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                    placeholder="Comma-separated"
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                  />
+                  <input value={listing.features?.join(', ') || ''} onChange={e => updateField('features', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))} placeholder="Comma-separated" className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
                 </div>
-                <div className="col-span-2 border-t border-border pt-3 mt-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Landlord Contact</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-[10px] text-muted-foreground block mb-1">Name</label>
-                      <input
-                        value={listing.contact_name || ''}
-                        onChange={e => updateField('contact_name', e.target.value)}
-                        placeholder="Contact name"
-                        className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-muted-foreground block mb-1">Phone / WhatsApp</label>
-                      <input
-                        type="tel"
-                        value={listing.contact_phone || ''}
-                        onChange={e => updateField('contact_phone', e.target.value)}
-                        placeholder="+44..."
-                        className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-muted-foreground block mb-1">Email</label>
-                      <input
-                        type="email"
-                        value={listing.contact_email || ''}
-                        onChange={e => updateField('contact_email', e.target.value)}
-                        placeholder="email@..."
-                        className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
-                      />
-                    </div>
+              </div>
+
+              {/* Contact fields */}
+              <div className="border-t border-border pt-3 mt-1">
+                <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Contact</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Phone</label>
+                    <input value={listing.contact_phone || ''} onChange={e => updateField('contact_phone', e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="N/A" />
                   </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Name</label>
+                    <input value={listing.contact_name || ''} onChange={e => updateField('contact_name', e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="N/A" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Email</label>
+                    <input value={listing.contact_email || ''} onChange={e => updateField('contact_email', e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="Optional" type="email" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Deal details */}
+              <div className="border-t border-border pt-3 mt-1">
+                <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Deal Details</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Deal Type</label>
+                    <select value={listing.deal_type || ''} onChange={e => updateField('deal_type', e.target.value || null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm">
+                      <option value="">Select</option>
+                      <option value="R2SA">R2SA</option>
+                      <option value="R2R">R2R</option>
+                      <option value="BRR">BRR</option>
+                      <option value="flip">Flip</option>
+                      <option value="block">Block</option>
+                      <option value="HMO">HMO</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Listing Type</label>
+                    <select value={listing.listing_type || 'rental'} onChange={e => updateField('listing_type', e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm">
+                      <option value="rental">Rental</option>
+                      <option value="sale">Sale</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Deposit</label>
+                    <input type="number" value={listing.deposit ?? ''} onChange={e => updateField('deposit', e.target.value ? Number(e.target.value) : null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="N/A" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Sourcing Fee</label>
+                    <input type="number" value={listing.sourcing_fee ?? ''} onChange={e => updateField('sourcing_fee', e.target.value ? Number(e.target.value) : null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="N/A" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Nightly Rate (proj.)</label>
+                    <input type="number" value={listing.nightly_rate_projected ?? ''} onChange={e => updateField('nightly_rate_projected', e.target.value ? Number(e.target.value) : null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="N/A" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Purchase Price</label>
+                    <input type="number" value={listing.purchase_price ?? ''} onChange={e => updateField('purchase_price', e.target.value ? Number(e.target.value) : null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="N/A" />
+                  </div>
+                  {/* BRR-specific fields */}
+                  {(listing.deal_type === 'BRR' || listing.deal_type === 'flip') && (
+                    <>
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">End Value (GDV)</label>
+                        <input type="number" value={listing.end_value ?? ''} onChange={e => updateField('end_value', e.target.value ? Number(e.target.value) : null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="After refurb value" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Refurb Cost</label>
+                        <input type="number" value={listing.refurb_cost ?? ''} onChange={e => updateField('refurb_cost', e.target.value ? Number(e.target.value) : null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="Renovation cost" />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -795,19 +783,19 @@ export default function AdminQuickList() {
               <div className="flex gap-3 pt-2">
                 <button
                   data-feature="ADMIN__QUICK_LIST_SUBMIT"
-                  onClick={() => handlePublish('live')}
-                  disabled={publishing}
+                  onClick={() => handlePublish('pending')}
+                  disabled={publishPhase !== 'idle'}
                   className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-50 inline-flex items-center justify-center gap-2"
                 >
-                  {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  Approve & Publish
+                  {publishPhase !== 'idle' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Submit for Approval
                 </button>
                 <button
-                  onClick={() => handlePublish('pending')}
-                  disabled={publishing}
+                  onClick={() => handlePublish('live')}
+                  disabled={publishPhase !== 'idle'}
                   className="h-11 px-5 rounded-xl border border-border text-foreground font-medium text-sm hover:bg-secondary disabled:opacity-50 inline-flex items-center justify-center gap-2"
                 >
-                  <Save className="w-4 h-4" /> Draft
+                  Skip &amp; Publish
                 </button>
               </div>
             </div>
