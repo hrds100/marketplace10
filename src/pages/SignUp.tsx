@@ -112,6 +112,7 @@ export default function SignUp() {
   const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
   const [view, setView] = useState<ViewState>('social');
+  const [roleStep, setRoleStep] = useState<'choose' | 'done'>('choose');
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
@@ -278,12 +279,113 @@ export default function SignUp() {
     finally { setEmailLoading(false); }
   };
 
+  // ── Role selection step (first thing user sees) ──────────────────────────
+
+  if (view === 'social' && roleStep === 'choose') {
+    return (
+      <AuthShell showTabs heading="Welcome to nfstay" subtitle="What brings you here?">
+        <div className="w-full flex flex-col" style={{ gap: 'clamp(12px, 2vh, 24px)' }}>
+          {/* Two main paths */}
+          <button
+            type="button"
+            onClick={() => { setSelectedRole('tenant'); setRoleStep('done'); }}
+            className="w-full p-4 rounded-xl border-2 text-left transition-all hover:border-[#1E9A80] hover:shadow-sm"
+            style={{ borderColor: '#E5E7EB', backgroundColor: '#fff' }}
+          >
+            <span className="text-base font-semibold block" style={{ color: '#1A1A1A' }}>I want to rent a property</span>
+            <span className="text-xs block mt-1" style={{ color: '#6B7280' }}>Browse deals, contact landlords, start your Airbnb business</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setSelectedRole(null); setRoleStep('done'); }}
+            className="w-full p-4 rounded-xl border-2 text-left transition-all hover:border-[#1E9A80] hover:shadow-sm"
+            style={{ borderColor: '#E5E7EB', backgroundColor: '#fff' }}
+          >
+            <span className="text-base font-semibold block" style={{ color: '#1A1A1A' }}>I want to list a property</span>
+            <span className="text-xs block mt-1" style={{ color: '#6B7280' }}>List your property and receive tenant leads</span>
+          </button>
+
+          <p className="text-sm text-[#737373] text-center mt-1">
+            Already have an account?{' '}
+            <Link to="/signin" className="text-[#1e9a80] font-semibold">Sign in</Link>
+          </p>
+        </div>
+      </AuthShell>
+    );
+  }
+
+  // ── Sub-role selection (if lister path chosen without a specific role) ───
+
+  if (view === 'social' && roleStep === 'done' && selectedRole === null) {
+    return (
+      <AuthShell showTabs={false} heading="What type of lister are you?" subtitle="This helps us tailor your experience">
+        <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 18px)' }}>
+          <button onClick={() => { setRoleStep('choose'); }} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a] mb-1">
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
+          {[
+            { value: 'landlord', label: 'Landlord', desc: 'I own the property' },
+            { value: 'agent', label: 'Letting Agent', desc: 'I manage properties for owners' },
+            { value: 'deal_sourcer', label: 'Deal Sourcer', desc: 'I find deals and introduce tenants' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { setSelectedRole(opt.value); localStorage.setItem('nfstay_signup_role', opt.value); }}
+              className={`w-full p-4 rounded-xl border-2 text-left transition-all hover:border-[#1E9A80] hover:shadow-sm ${
+                selectedRole === opt.value ? 'border-[#1E9A80] bg-[#ECFDF5]' : ''
+              }`}
+              style={{ borderColor: selectedRole === opt.value ? '#1E9A80' : '#E5E7EB', backgroundColor: selectedRole === opt.value ? '#ECFDF5' : '#fff' }}
+            >
+              <span className="text-sm font-semibold block" style={{ color: '#1A1A1A' }}>{opt.label}</span>
+              <span className="text-xs block mt-0.5" style={{ color: '#6B7280' }}>{opt.desc}</span>
+            </button>
+          ))}
+        </div>
+      </AuthShell>
+    );
+  }
+
+  // ── If tenant/operator path, save role to localStorage for social flow ──
+  if (selectedRole && roleStep === 'done') {
+    localStorage.setItem('nfstay_signup_role', selectedRole);
+  }
+
   // ── Social button view ───────────────────────────────────────────────────
 
   if (view === 'social') {
     return (
-      <AuthShell showTabs heading="Create your account" subtitle="Join thousands of operators building Airbnb portfolios">
+      <AuthShell showTabs={false} heading="Create your account" subtitle={selectedRole === 'tenant' || selectedRole === 'operator' ? 'Join thousands of operators building Airbnb portfolios' : `Sign up as ${ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'a lister'}`}>
         <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
+
+          {/* Role indicator + back */}
+          <div className="flex items-center justify-between mb-1">
+            <button onClick={() => { setRoleStep('choose'); setSelectedRole(null); }} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a]">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <span className="px-3 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
+              {ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'Tenant'}
+            </span>
+          </div>
+
+          {/* Tenant sub-choice: Tenant or Airbnb Operator */}
+          {(selectedRole === 'tenant') && (
+            <div className="flex gap-2 mb-1">
+              {[
+                { value: 'tenant', label: 'Tenant' },
+                { value: 'operator', label: 'Airbnb Operator' },
+              ].map(opt => (
+                <button key={opt.value} type="button" onClick={() => setSelectedRole(opt.value)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all ${
+                    selectedRole === opt.value ? 'bg-[#1E9A80] text-white border-[#1E9A80]' : 'bg-white text-[#1A1A1A] border-[#E5E7EB] hover:border-[#1E9A80]/40'
+                  }`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Social 2×2 grid */}
           <div className="grid grid-cols-2 gap-2 w-full">
             {PROVIDERS.map(({ id, label, icon }) => (
@@ -377,8 +479,17 @@ export default function SignUp() {
   // ── Email / password view ────────────────────────────────────────────────
 
   return (
-    <AuthShell data-feature="AUTH" showTabs heading="Create your account" subtitle="Join thousands of operators building Airbnb portfolios">
+    <AuthShell data-feature="AUTH" showTabs={false} heading="Create your account" subtitle={`Signing up as ${ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'Tenant'}`}>
       <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
+        {/* Back + role badge */}
+        <div className="flex items-center justify-between mb-1">
+          <button onClick={() => setView('social')} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a]">
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
+          <span className="px-3 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
+            {ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'Tenant'}
+          </span>
+        </div>
         {/* Social login buttons - 2×2 grid */}
         <div className="grid grid-cols-2 gap-2 w-full">
           {PROVIDERS.map(({ id, label, icon }) => (
@@ -481,28 +592,6 @@ export default function SignUp() {
             {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
           </div>
 
-          {/* Role selector */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[#525252] tracking-wide">What describes you? <span className="text-red-500">*</span></label>
-            <div className="flex flex-wrap gap-2">
-              {ROLE_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setSelectedRole(value)}
-                  className={`px-4 py-2 rounded-[12px] text-sm font-medium border transition-all duration-150 cursor-pointer ${
-                    selectedRole === value
-                      ? 'bg-[#1E9A80] text-white border-[#1E9A80]'
-                      : 'bg-white text-[#1A1A1A] border-[#E5E7EB] hover:border-[#1E9A80]/40'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            {!selectedRole && <p className="text-[11px] text-[#737373]">Select one to continue</p>}
-          </div>
-
           {/* Terms */}
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" {...register('terms')}
@@ -518,7 +607,7 @@ export default function SignUp() {
           {errors.terms && <p className="text-xs text-red-500 -mt-2">{errors.terms.message}</p>}
 
           {/* Submit */}
-          <button data-feature="AUTH__SIGNUP_SUBMIT" type="submit" disabled={emailLoading || !selectedRole}
+          <button data-feature="AUTH__SIGNUP_SUBMIT" type="submit" disabled={emailLoading}
             className="w-full rounded-lg font-medium text-white cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             style={{ height: 37, backgroundColor: '#1e9a80', fontSize: 16, padding: '8px 16px', border: 'none', boxShadow: '0 4px 8px -1px rgba(0,0,0,0.05)' }}>
             <AnimatePresence mode="wait">
