@@ -91,6 +91,7 @@ serve(async (req) => {
             { role: "user", content: rawText },
           ],
           temperature: 0.2,
+          response_format: { type: "json_object" },
         }),
       }
     );
@@ -110,17 +111,33 @@ serve(async (req) => {
     const data = await response.json();
     let text = data.choices?.[0]?.message?.content || "";
 
-    // Strip markdown code fences if present
-    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+    // Robust JSON extraction: strip fences, find outermost { } or [ ]
+    text = text.replace(/```(?:json)?\s*/gi, "").replace(/```/gi, "").trim();
+
+    // If text has extra content around JSON, extract just the JSON part
+    const jsonStart = text.search(/[\[{]/);
+    const jsonEndBracket = text.lastIndexOf(']');
+    const jsonEndBrace = text.lastIndexOf('}');
+    const jsonEnd = Math.max(jsonEndBracket, jsonEndBrace);
+    if (jsonStart >= 0 && jsonEnd > jsonStart) {
+      text = text.slice(jsonStart, jsonEnd + 1);
+    }
 
     let parsed;
     try {
       parsed = JSON.parse(text);
     } catch {
-      return new Response(
-        JSON.stringify({ error: "AI returned invalid JSON", raw: text }),
-        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // Try fixing common AI issues: trailing commas
+      const cleaned = text.replace(/,\s*([}\]])/g, '$1');
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        console.error("Failed to parse AI response:", text.slice(0, 500));
+        return new Response(
+          JSON.stringify({ error: "AI returned invalid JSON", raw: text.slice(0, 300) }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Normalize to array
