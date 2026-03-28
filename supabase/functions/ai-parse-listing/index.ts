@@ -74,7 +74,10 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
 
-    const prompt = systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT;
+    // Always use the default parsing prompt (it's JSON-structured).
+    // Custom prompts from ai_settings are for description style only - they don't
+    // produce JSON output and would break response_format: json_object.
+    const prompt = DEFAULT_SYSTEM_PROMPT;
 
     const response = await fetch(
       "https://api.openai.com/v1/chat/completions",
