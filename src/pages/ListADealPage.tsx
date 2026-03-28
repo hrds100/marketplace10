@@ -176,13 +176,18 @@ export default function ListADealPage() {
   useEffect(() => {
     if (!user?.id) return;
     (supabase.from('profiles') as any)
-      .select('whatsapp')
+      .select('whatsapp, name, email')
       .eq('id', user.id)
       .single()
-      .then(({ data }: { data: { whatsapp: string } | null }) => {
+      .then(({ data }: { data: { whatsapp: string; name: string; email: string } | null }) => {
         if (data?.whatsapp) {
           setProfileWhatsapp(data.whatsapp);
-          setForm(p => ({ ...p, contactWhatsapp: data.whatsapp }));
+          setForm(p => ({
+            ...p,
+            contactWhatsapp: data.whatsapp,
+            contactName: p.contactName || data.name || '',
+            contactEmail: p.contactEmail || data.email || '',
+          }));
         }
       });
   }, [user?.id]);
@@ -220,20 +225,18 @@ export default function ListADealPage() {
   const sectionComplete: Record<string, () => boolean> = {
     'property-details': () => !!form.city && !!form.postcode,
     'property-type': () => !!form.type || form.propertyCategory === 'hmo',
-    'property-features': () => !!form.bedrooms && !!form.bathrooms,
-    'financials': () => !!form.rent && !!form.profit && !!form.deposit,
-    'sa-approval': () => !!form.saApproved,
-    'contact': () => !!form.contactName && !!form.contactEmail && (!!form.contactPhone || !!form.contactWhatsapp),
+    'property-features': () => !!form.bedrooms,
+    'financials': () => !!form.rent,
+    'contact': () => !!form.contactWhatsapp,
     'media': () => true,
   };
 
   const summaries: Record<string, () => string> = {
     'property-details': () => [form.streetName, form.city, form.postcode].filter(Boolean).join(' · '),
     'property-type': () => form.type || 'HMO',
-    'property-features': () => `${form.bedrooms} bed · ${form.bathrooms} bath${form.furnished ? ` · ${form.furnished}` : ''}`,
-    'financials': () => `£${form.rent}/mo · £${form.profit} profit · £${form.deposit} deposit`,
-    'sa-approval': () => `SA Approved: ${form.saApproved}`,
-    'contact': () => form.contactName,
+    'property-features': () => `${form.bedrooms} bed${form.bathrooms ? ` · ${form.bathrooms} bath` : ''}${form.furnished ? ` · ${form.furnished}` : ''}`,
+    'financials': () => [form.rent ? `£${form.rent}/mo` : '', form.profit ? `£${form.profit} profit` : '', form.deposit ? `£${form.deposit} deposit` : ''].filter(Boolean).join(' · '),
+    'contact': () => form.contactName || form.contactWhatsapp || '',
     'media': () => `${photos.length} photo${photos.length !== 1 ? 's' : ''}${description ? ' · description added' : ''}`,
   };
 
@@ -404,18 +407,10 @@ export default function ListADealPage() {
     const resolvedType = form.type || (form.propertyCategory === 'hmo' ? 'HMO' : '');
 
     const missing: string[] = [];
-    if (!form.city) missing.push('City');
     if (!form.postcode) missing.push('Postcode');
+    if (!form.city) missing.push('City');
     if (!resolvedType) missing.push('Property type');
     if (!form.bedrooms) missing.push('Bedrooms');
-    if (!form.bathrooms) missing.push('Bathrooms');
-    if (!form.rent) missing.push(listingType === 'sale' ? 'Property price' : 'Monthly rent');
-    if (!form.profit) missing.push('Est. monthly profit');
-    if (!form.deposit) missing.push('Deposit');
-    if (!form.saApproved) missing.push('SA Approval');
-    if (!form.contactName) missing.push('Contact name');
-    if (!form.contactEmail) missing.push('Contact email');
-    if (!form.contactPhone && !form.contactWhatsapp) missing.push('Phone or WhatsApp');
 
     if (missing.length > 0) {
       toast.error(`Please fill in: ${missing.join(', ')}`);
@@ -444,7 +439,7 @@ export default function ListADealPage() {
         type: resolvedType, status: 'pending', submitted_by: user?.id || null, listing_type: listingType,
         property_category: form.propertyCategory || null, bedrooms: parseInt(form.bedrooms) || null, bathrooms: parseInt(form.bathrooms) || null,
         garage: form.garage === 'yes', deposit: parseInt(form.deposit) || null, agent_fee: parseInt(form.agentFee) || null,
-        sa_approved: form.saApproved.toLowerCase(), contact_name: form.contactName, contact_phone: form.contactPhone,
+        sa_approved: 'yes', contact_name: form.contactName, contact_phone: form.contactPhone,
         contact_whatsapp: form.contactWhatsapp, contact_email: form.contactEmail, landlord_whatsapp: form.contactWhatsapp || null,
         description: description || null, photos: photos.length > 0 ? photos : [],
         notes: [notes, form.furnished ? `Furnishing: ${form.furnished}` : ''].filter(Boolean).join(' | ') || null,
@@ -728,25 +723,12 @@ export default function ListADealPage() {
               </div>
             </AccordionSection>
 
-            {/* ── SA Approval ── */}
-            <AccordionSection id="sa-approval" title="SA Approval" description="Is the agent or landlord approved for Serviced Accommodation?"
-              isOpen={openSections.has('sa-approval')} isComplete={sectionComplete['sa-approval']()} onToggle={() => toggleSection('sa-approval')}
-              summary={summaries['sa-approval']()}>
-              <div className="flex gap-4">
-                {['Yes', 'No', 'Awaiting'].map(o => (
-                  <label key={o} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                    <input type="radio" name="saApproved" value={o} checked={form.saApproved === o} onChange={e => set('saApproved', e.target.value)} className="accent-primary" required /> {o}
-                  </label>
-                ))}
-              </div>
-            </AccordionSection>
-
             {/* ── Contact ── */}
             <AccordionSection id="contact" title="Contact Details" description="Landlord or agent contact information."
               isOpen={openSections.has('contact')} isComplete={sectionComplete['contact']()} onToggle={() => toggleSection('contact')}
               summary={summaries['contact']()}>
               <div className="space-y-4">
-                <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact name *</label><input type="text" placeholder="Landlord/Agent" value={form.contactName} onChange={e => set('contactName', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact name</label><input type="text" placeholder="From your profile" value={form.contactName} onChange={e => set('contactName', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold text-foreground block mb-1.5">Contact phone</label>
@@ -768,7 +750,7 @@ export default function ListADealPage() {
                     )}
                   </div>
                 </div>
-                <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact email *</label><input type="email" placeholder="landlord@example.com" value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact email</label><input type="email" placeholder="From your profile" value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
               </div>
             </AccordionSection>
 
