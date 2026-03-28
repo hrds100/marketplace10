@@ -288,6 +288,17 @@ export default function AdminQuickList() {
         if (insertErr) throw insertErr;
         if (prop?.id) lastPropertyId = prop.id;
 
+        // Generate friendly slug: city-type-shortid (e.g. skelton-brr-bf3f36da)
+        if (prop?.id) {
+          const slugParts = [item.city, item.deal_type || item.type, (prop.id as string).slice(0, 8)]
+            .filter(Boolean)
+            .join('-')
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/-+/g, '-');
+          (supabase.from('properties') as any).update({ slug: slugParts }).eq('id', prop.id).then(() => {});
+        }
+
         // Upload photos or use Pexels URLs
         if (prop?.id) {
           let urls: string[] = [];

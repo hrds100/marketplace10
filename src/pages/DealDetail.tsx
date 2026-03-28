@@ -42,7 +42,7 @@ export default function DealDetail() {
   const purchasePrice = (listing?.purchase_price as number) ?? 0;
   const displayPrice = isSale ? purchasePrice : rent;
   const profit = (listing?.profit_est as number) ?? 0;
-  const type = (listing?.type as string) || '';
+  const type = (listing?.type as string) || (listing?.deal_type as string) || 'Property';
   const status = (listing?.status as string) || 'inactive';
   const landlordApproved = listing?.sa_approved === 'yes';
   const daysAgo = listing?.created_at
@@ -403,11 +403,11 @@ export default function DealDetail() {
                   {aiNightlyRate > 0 && (
                     aiSearchUrl ? (
                       <a href={aiSearchUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-light text-accent-foreground inline-flex items-center gap-1 hover:opacity-75 transition-opacity">
-                        <Sparkles className="w-3 h-3" /> AI estimated
+                        <Sparkles className="w-3 h-3" /> AirDNA verified
                       </a>
                     ) : (
                       <span className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-light text-accent-foreground inline-flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> AI estimated
+                        <Sparkles className="w-3 h-3" /> AirDNA verified
                       </span>
                     )
                   )}
