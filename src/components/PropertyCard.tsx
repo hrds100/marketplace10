@@ -248,7 +248,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         <div className="mt-3 space-y-0">
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
             <span className="text-xs text-muted-foreground">{listing.listing_type === 'sale' ? 'Property price' : 'Monthly rent'}</span>
-            <span data-feature="DEALS__PROPERTY_CARD_RENT" className="text-[13px] font-medium text-foreground">£{listing.rent.toLocaleString()}</span>
+            <span data-feature="DEALS__PROPERTY_CARD_RENT" className="text-[13px] font-medium text-foreground">£{(listing.rent ?? 0).toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
             <span className="text-xs text-muted-foreground">Est. monthly profit</span>
