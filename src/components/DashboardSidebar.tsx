@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; highlight?: boolean }> = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
-  { to: '/dashboard/inbox', icon: MessageSquare, label: 'Inbox' },
+  // Inbox hidden — leads now show in CRM > My Leads tab
   { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
   { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
   { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', highlight: true },

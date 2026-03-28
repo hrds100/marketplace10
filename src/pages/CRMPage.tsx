@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore, Tag, ImagePlus, ChevronDown, ExternalLink } from 'lucide-react';
+import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore, Tag, ImagePlus, ChevronDown, ExternalLink, Users, Briefcase } from 'lucide-react';
 import { CRM_STAGES, type CRMDeal } from '@/data/mockData';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,12 +8,22 @@ import { useAuth } from '@/hooks/useAuth';
 import { notifyCrmStageMove } from '@/lib/n8n';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
+import LeadsTab from '@/components/crm/LeadsTab';
 
 type ExtendedDeal = CRMDeal & { photo_url?: string | null; property_id?: string | null };
 
 export default function CRMPage() {
   useEffect(() => { document.title = 'nfstay - CRM'; }, []);
   const { user } = useAuth();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('profiles').select('role').eq('id', user.id).single().then(({ data }) => {
+      if (data?.role) setUserRole(data.role);
+    });
+  }, [user]);
+  const isListerRole = userRole === 'landlord' || userRole === 'agent' || userRole === 'deal_sourcer';
+  const [activeTab, setActiveTab] = useState<'deals' | 'leads'>(isListerRole ? 'leads' : 'deals');
   const [deals, setDeals] = useState<ExtendedDeal[]>([]);
   const [archivedIds, setArchivedIds] = useState<string[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -151,6 +161,37 @@ export default function CRMPage() {
 
   return (
     <div data-feature="CRM_INBOX__CRM_PIPELINE">
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 p-1 rounded-xl mb-4" style={{ backgroundColor: '#F3F3EE' }}>
+        <button
+          onClick={() => setActiveTab('deals')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'deals'
+              ? 'bg-white shadow-sm'
+              : 'hover:bg-white/50'
+          }`}
+          style={{ color: activeTab === 'deals' ? '#1E9A80' : '#6B7280' }}
+        >
+          <Briefcase className="w-4 h-4" /> My Deals
+        </button>
+        <button
+          onClick={() => setActiveTab('leads')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'leads'
+              ? 'bg-white shadow-sm'
+              : 'hover:bg-white/50'
+          }`}
+          style={{ color: activeTab === 'leads' ? '#1E9A80' : '#6B7280' }}
+        >
+          <Users className="w-4 h-4" /> My Leads
+        </button>
+      </div>
+
+      {/* Leads tab */}
+      {activeTab === 'leads' && <LeadsTab />}
+
+      {/* Deals tab (existing Kanban) */}
+      {activeTab === 'deals' && <>
       <div className="flex items-center justify-between mb-2">
         <div data-feature="CRM_INBOX__PIPELINE_HEADER">
           <h1 className="text-[28px] font-bold text-foreground">CRM Pipeline</h1>
@@ -342,6 +383,7 @@ export default function CRMPage() {
       )}
 
       <InquiryPanel open={inquiryOpen} listing={inquiryListing} onClose={() => setInquiryOpen(false)} />
+      </>}
     </div>
   );
 }

@@ -31,6 +31,7 @@ export interface ListingShape {
   listing_type?: 'rental' | 'sale';
   bedrooms?: number | null;
   purchasePrice?: number | null;
+  lister_type?: 'landlord' | 'agent' | 'deal_sourcer' | null;
 }
 
 interface Props {

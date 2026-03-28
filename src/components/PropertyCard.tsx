@@ -1,9 +1,11 @@
-import { Heart, CheckCircle, Gem, Zap, Lock } from 'lucide-react';
+import { Heart, CheckCircle, Gem, Zap, Lock, MessageCircle, Mail } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserTier } from '@/hooks/useUserTier';
+import { isPaidTier } from '@/lib/ghl';
 import { toast } from 'sonner';
 import { usePropertyImage } from '@/hooks/usePropertyImage';
 import { fetchPexelsPhotos } from '@/lib/pexels';
@@ -16,6 +18,7 @@ interface Props {
   onToggleFav: () => void;
   onAddToCRM?: () => void;
   onInquire?: (listing: ListingShape) => void;
+  onEmailInquire?: (listing: ListingShape) => void;
   showSavedBadge?: boolean;
   forceSignUp?: boolean;
 }
@@ -42,9 +45,18 @@ const GOLD = {
   textLight: '#A67C00',
 };
 
-export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, showSavedBadge, forceSignUp }: Props) {
+const NFSTAY_WHATSAPP = '447476368123';
+
+const LISTER_LABELS: Record<string, string> = {
+  landlord: 'Direct Landlord',
+  agent: 'Letting Agent',
+  deal_sourcer: 'Deal Sourcer',
+};
+
+export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, onEmailInquire, showSavedBadge, forceSignUp }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { tier } = useUserTier();
   const [addedToCRM, setAddedToCRM] = useState(() => localStorage.getItem(`crm_${listing.id}`) === 'true');
 
   const statusDot = () => {
@@ -91,6 +103,44 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     e.stopPropagation();
     if (forceSignUp) { navigate('/signup'); return; }
     onInquire?.(listing);
+  };
+
+  const handleWhatsApp = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (forceSignUp) { navigate('/signup'); return; }
+    if (!isPaidTier(tier)) {
+      toast.error('Upgrade your plan to contact listers');
+      navigate('/dashboard/deals');
+      return;
+    }
+    const msg = encodeURIComponent(
+      `Hi, I am interested in ${listing.name} at ${listing.city}. Reference: ${listing.id}. Please contact me at your earliest convenience.`,
+    );
+    // Fire inquiry in background
+    supabase.functions.invoke('process-inquiry', {
+      body: {
+        property_id: listing.id,
+        channel: 'whatsapp',
+        message: `Interested in ${listing.name} at ${listing.city}`,
+        tenant_name: user?.user_metadata?.name || '',
+        tenant_email: user?.email || '',
+        tenant_phone: user?.user_metadata?.whatsapp || '',
+      },
+    }).catch(() => {});
+    window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${msg}`, '_blank');
+  };
+
+  const handleEmail = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (forceSignUp) { navigate('/signup'); return; }
+    if (!isPaidTier(tier)) {
+      toast.error('Upgrade your plan to contact listers');
+      navigate('/dashboard/deals');
+      return;
+    }
+    onEmailInquire?.(listing);
   };
 
   const airdnaUrl = `https://www.airdna.co`;
@@ -265,14 +315,32 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           </div>
         </div>
 
+        {/* Lister type badge */}
+        {listing.lister_type && LISTER_LABELS[listing.lister_type] && (
+          <div className="mt-2">
+            <span
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold"
+              style={{
+                backgroundColor: listing.lister_type === 'agent' ? '#F3F4F6' : '#ECFDF5',
+                color: listing.lister_type === 'agent' ? '#374151' : '#1E9A80',
+              }}
+            >
+              {LISTER_LABELS[listing.lister_type]}
+            </span>
+          </div>
+        )}
+
         <div className="flex gap-2 mt-3">
           {forceSignUp ? (
             <>
               <button data-feature="DEALS__PROPERTY_CARD_VIEW" onClick={handleAction} className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
                 Visit Listing
               </button>
-              <button data-feature="DEALS__PROPERTY_CARD_INQUIRE" onClick={handleAction} className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
-                Inquire Now
+              <button onClick={handleAction} className="flex-1 h-[38px] rounded-lg text-[13px] font-semibold text-white inline-flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity" style={{ backgroundColor: '#1E9A80' }}>
+                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+              </button>
+              <button onClick={handleAction} className="flex-1 border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center justify-center gap-1.5" style={{ borderColor: '#E5E7EB' }}>
+                <Mail className="w-3.5 h-3.5" /> Email
               </button>
             </>
           ) : (
@@ -280,8 +348,11 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               <Link data-feature="DEALS__PROPERTY_CARD_VIEW" to={`/deals/${listing.slug || listing.id}`} className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
                 Visit Listing
               </Link>
-              <button data-feature="DEALS__PROPERTY_CARD_INQUIRE" onClick={handleInquire} className="flex-1 border border-border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors">
-                Inquire Now
+              <button data-feature="DEALS__PROPERTY_CARD_WHATSAPP" onClick={handleWhatsApp} className="flex-1 h-[38px] rounded-lg text-[13px] font-semibold text-white inline-flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity" style={{ backgroundColor: '#1E9A80' }}>
+                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+              </button>
+              <button data-feature="DEALS__PROPERTY_CARD_EMAIL" onClick={handleEmail} className="flex-1 border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center justify-center gap-1.5" style={{ borderColor: '#E5E7EB' }}>
+                <Mail className="w-3.5 h-3.5" /> Email
               </button>
             </>
           )}

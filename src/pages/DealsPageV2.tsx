@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react
 import { useNavigate, useLocation } from 'react-router-dom';
 import PropertyCard from '@/components/PropertyCard';
 import type { ListingShape } from '@/components/InquiryPanel';
+import EmailInquiryModal from '@/components/EmailInquiryModal';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -52,6 +53,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     slug: ((p as Record<string, unknown>).slug as string) || null,
     bedrooms: p.bedrooms,
     purchasePrice: ((p as Record<string, unknown>).purchase_price as number) || null,
+    lister_type: ((p as Record<string, unknown>).lister_type as 'landlord' | 'agent' | 'deal_sourcer') || null,
   };
 }
 
@@ -88,7 +90,9 @@ export default function DealsPageV2() {
   const [sort, setSort] = useState('newest');
   const [listingTypeFilter, setListingTypeFilter] = useState('all');
   const [bedsFilter, setBedsFilter] = useState('');
+  const [listerTypeFilter, setListerTypeFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [emailListing, setEmailListing] = useState<ListingShape | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const perPage = 12;
   const navigate = useNavigate();
@@ -239,6 +243,7 @@ export default function DealsPageV2() {
     if (city) result = result.filter(l => l.city === city);
     if (type) result = result.filter(l => l.type === type);
     if (listingTypeFilter !== 'all') result = result.filter(l => (l.listing_type || 'rental') === listingTypeFilter);
+    if (listerTypeFilter !== 'all') result = result.filter(l => l.lister_type === listerTypeFilter);
     if (bedsFilter) {
       const beds = Number(bedsFilter);
       result = result.filter(l => beds >= 5 ? (l.bedrooms || 0) >= 5 : l.bedrooms === beds);
@@ -247,7 +252,7 @@ export default function DealsPageV2() {
     else if (sort === 'rent') result.sort((a, b) => a.rent - b.rent);
     else result.sort((a, b) => a.daysAgo - b.daysAgo);
     return result;
-  }, [activeTab, city, type, sort, listingTypeFilter, bedsFilter, listings, highlightedIds]);
+  }, [activeTab, city, type, sort, listingTypeFilter, listerTypeFilter, bedsFilter, listings, highlightedIds]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const pageListings = filtered.slice((page - 1) * perPage, page * perPage);
@@ -341,6 +346,17 @@ export default function DealsPageV2() {
                 <option value="sale">For Sale only</option>
               </select>
               <select
+                data-feature="DEALS__FILTER_LISTER_TYPE"
+                value={listerTypeFilter}
+                onChange={e => { setListerTypeFilter(e.target.value); setPage(1); }}
+                className="input-nfstay h-8 text-xs pr-7 bg-card"
+              >
+                <option value="all">All listers</option>
+                <option value="landlord">Direct Landlord</option>
+                <option value="agent">Letting Agent</option>
+                <option value="deal_sourcer">Deal Sourcer</option>
+              </select>
+              <select
                 data-feature="DEALS__FILTER_SORT"
                 value={sort}
                 onChange={e => setSort(e.target.value)}
@@ -375,6 +391,7 @@ export default function DealsPageV2() {
                       onToggleFav={() => toggle(l.id)}
                       onAddToCRM={handleAddToCRM}
                       onInquire={handleInquire}
+                      onEmailInquire={setEmailListing}
                     />
                   </div>
                 ))}
@@ -458,6 +475,13 @@ export default function DealsPageV2() {
           </div>
         </div>
       </div>
+
+      {/* Email inquiry modal */}
+      <EmailInquiryModal
+        open={!!emailListing}
+        listing={emailListing}
+        onClose={() => setEmailListing(null)}
+      />
     </div>
   );
 }
