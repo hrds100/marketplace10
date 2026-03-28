@@ -134,7 +134,7 @@ export default function DealsPageV2() {
   const listings = useMemo(() => {
     if (!dbProperties) return [];
     const base = dbProperties
-      .filter(p => p.status === 'live' || p.status === 'on-offer')
+      .filter(p => (p.status === 'live' || p.status === 'on-offer') && p.city)
       .map(toListingShape);
 
     // Inject JV properties that have list_on_deals = true directly into the grid
