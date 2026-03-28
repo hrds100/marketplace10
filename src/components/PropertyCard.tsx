@@ -277,9 +277,9 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         <button
           data-feature="DEALS__PROPERTY_CARD_FAVOURITE"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (forceSignUp) { navigate('/signup'); return; } onToggleFav(); }}
-          className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isFav ? 'bg-accent-light' : 'bg-black/30'}`}
+          className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-all z-[3] ${isFav ? 'bg-white shadow-md' : 'bg-white/80 shadow-sm hover:bg-white'}`}
         >
-          <Heart className={`w-4 h-4 ${isFav ? 'fill-primary text-primary' : 'text-white'}`} />
+          <Heart className={`w-4 h-4 ${isFav ? 'fill-[#1E9A80] text-[#1E9A80]' : 'text-[#6B7280]'}`} />
         </button>
       </div>
 
