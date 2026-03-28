@@ -8,6 +8,7 @@ import { useUserTier } from '@/hooks/useUserTier';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { isPaidTier, tierDisplayName, getFunnelUrl, getUpgradeUrl } from '@/lib/ghl';
+import { normalizeUKPhone } from '@/lib/phoneValidation';
 
 const settingsTabs = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -85,6 +86,14 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async () => {
     if (!user) return;
+    if (profile.whatsapp) {
+      const normalized = normalizeUKPhone(profile.whatsapp);
+      if (!normalized) {
+        toast.error('Enter a valid UK mobile number (e.g. 07839 925555 or +447839925555)');
+        return;
+      }
+      profile.whatsapp = normalized;
+    }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
       name: profile.name,
