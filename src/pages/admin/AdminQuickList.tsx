@@ -27,6 +27,7 @@ interface ParsedListing {
   contact_phone: string | null;
   contact_name: string | null;
   contact_email: string | null;
+  lister_type: string | null;
   deposit: number | null;
   sourcing_fee: number | null;
   deal_type: string | null;
@@ -169,6 +170,7 @@ export default function AdminQuickList() {
         contact_phone: normalizeUKPhone((l.contact_phone as string) || '') || (l.contact_phone as string) || null,
         contact_name: (l.contact_name as string) || null,
         contact_email: (l.contact_email as string) || null,
+        lister_type: (l.lister_type as string) || null,
         deposit: typeof l.deposit === 'number' ? l.deposit : null,
         sourcing_fee: typeof l.sourcing_fee === 'number' ? l.sourcing_fee : null,
         deal_type: (l.deal_type as string) || null,
@@ -272,6 +274,7 @@ export default function AdminQuickList() {
             contact_phone: item.contact_phone,
             contact_name: item.contact_name,
             contact_email: item.contact_email,
+            lister_type: item.lister_type,
             landlord_whatsapp: item.contact_phone,
             deposit: item.deposit,
             sourcing_fee: item.sourcing_fee,
@@ -727,9 +730,18 @@ export default function AdminQuickList() {
                     <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Name</label>
                     <input value={listing.contact_name || ''} onChange={e => updateField('contact_name', e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="N/A" />
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Email</label>
                     <input value={listing.contact_email || ''} onChange={e => updateField('contact_email', e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="Optional" type="email" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Lister Type</label>
+                    <select value={listing.lister_type || ''} onChange={e => updateField('lister_type', e.target.value || null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm">
+                      <option value="">Select</option>
+                      <option value="landlord">Landlord</option>
+                      <option value="agent">Letting Agent</option>
+                      <option value="deal_sourcer">Deal Sourcer</option>
+                    </select>
                   </div>
                 </div>
               </div>

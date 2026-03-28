@@ -120,6 +120,15 @@ export default function SignUp() {
   const [particleUser, setParticleUser] = useState<ParticleUserInfo | null>(null);
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+44');
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+
+  const ROLE_OPTIONS = [
+    { value: 'tenant', label: 'Tenant' },
+    { value: 'operator', label: 'Airbnb Operator' },
+    { value: 'landlord', label: 'Landlord' },
+    { value: 'agent', label: 'Letting Agent' },
+    { value: 'deal_sourcer', label: 'Deal Sourcer' },
+  ];
 
   useEffect(() => { document.title = 'nfstay - Sign Up'; }, []);
 
@@ -244,7 +253,7 @@ export default function SignUp() {
 
       if (userId) {
         await (supabase.from('profiles') as any)
-          .update({ name: cleanName, whatsapp: fullPhone, whatsapp_verified: false } as any)
+          .update({ name: cleanName, whatsapp: fullPhone, whatsapp_verified: false, ...(selectedRole ? { role: selectedRole } : {}) } as any)
           .eq('id', userId);
       }
 
@@ -472,6 +481,28 @@ export default function SignUp() {
             {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
           </div>
 
+          {/* Role selector */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-[#525252] tracking-wide">What describes you? <span className="text-red-500">*</span></label>
+            <div className="flex flex-wrap gap-2">
+              {ROLE_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSelectedRole(value)}
+                  className={`px-4 py-2 rounded-[12px] text-sm font-medium border transition-all duration-150 cursor-pointer ${
+                    selectedRole === value
+                      ? 'bg-[#1E9A80] text-white border-[#1E9A80]'
+                      : 'bg-white text-[#1A1A1A] border-[#E5E7EB] hover:border-[#1E9A80]/40'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {!selectedRole && <p className="text-[11px] text-[#737373]">Select one to continue</p>}
+          </div>
+
           {/* Terms */}
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" {...register('terms')}
@@ -487,7 +518,7 @@ export default function SignUp() {
           {errors.terms && <p className="text-xs text-red-500 -mt-2">{errors.terms.message}</p>}
 
           {/* Submit */}
-          <button data-feature="AUTH__SIGNUP_SUBMIT" type="submit" disabled={emailLoading}
+          <button data-feature="AUTH__SIGNUP_SUBMIT" type="submit" disabled={emailLoading || !selectedRole}
             className="w-full rounded-lg font-medium text-white cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             style={{ height: 37, backgroundColor: '#1e9a80', fontSize: 16, padding: '8px 16px', border: 'none', boxShadow: '0 4px 8px -1px rgba(0,0,0,0.05)' }}>
             <AnimatePresence mode="wait">
