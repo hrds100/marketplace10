@@ -162,7 +162,7 @@ export default function CRMPage() {
   return (
     <div data-feature="CRM_INBOX__CRM_PIPELINE">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 p-1 rounded-xl mb-4" style={{ backgroundColor: '#F3F3EE' }}>
+      <div className="inline-flex items-center gap-1 p-1 rounded-xl mb-4" style={{ backgroundColor: '#F3F3EE' }}>
         <button
           onClick={() => setActiveTab('deals')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
