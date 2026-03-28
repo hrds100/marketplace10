@@ -87,6 +87,8 @@ import NfsVerifyEmailPage from "./pages/NfsVerifyEmailPage";
 import NfsAuthCallbackPage from "./pages/NfsAuthCallbackPage";
 import ParticleAuthCallback from "./pages/ParticleAuthCallback";
 import AuthBridgePage from "./pages/AuthBridgePage";
+import LeadDetailsPage from "./pages/LeadDetailsPage";
+import LeadNDAPage from "./pages/LeadNDAPage";
 import { NfsCurrencyProvider } from "./contexts/NfsCurrencyContext";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
@@ -137,6 +139,9 @@ const App = () => (
           {/* Magic link entry — GHL WhatsApp button uses hub.nfstay.com/inbox?token=... */}
           <Route path="/inbox" element={<MagicLoginPage />} />
           <Route path="/deals/:id" element={<DealDetail />} />
+          {/* Lead details — token-based access, no login required */}
+          <Route path="/lead/:token" element={<LeadDetailsPage />} />
+          <Route path="/lead/:token/nda" element={<LeadNDAPage />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="deals" replace />} />
             <Route path="deals" element={<DealsPageV2 />} />

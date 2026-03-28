@@ -326,6 +326,45 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
         `),
       };
 
+    // ─── INQUIRY EMAILS ──────────────────────────────────
+    case 'inquiry-tenant-confirmation':
+      return {
+        to: String(data.tenant_email),
+        subject: 'Your inquiry has been sent!',
+        html: layout('Inquiry sent', `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            Hi ${data.tenant_name || 'there'}, your inquiry about <strong>${data.property_name}</strong> has been received. We've notified ${data.lister_name || 'the property lister'} and they will contact you shortly.
+          </p>
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0;">
+            Have a great day!
+          </p>
+        `),
+      };
+
+    case 'inquiry-lister-notification':
+      return {
+        to: String(data.lister_email),
+        subject: `New lead for ${data.property_name}`,
+        html: layout('New inquiry', `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            You have a new inquiry from <strong>${data.tenant_name}</strong> about <strong>${data.property_name}</strong>. Click below to view their contact details.
+          </p>
+          ${btn('View Tenant Details →', String(data.lead_url))}
+        `),
+      };
+
+    case 'inquiry-lister-nda':
+      return {
+        to: String(data.lister_email),
+        subject: 'New lead - quick agreement needed',
+        html: layout('New inquiry', `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            You have a new inquiry about <strong>${data.property_name}</strong>! Before we share the tenant's details, please review our quick partnership agreement.
+          </p>
+          ${btn('Review & Get Details →', String(data.nda_url))}
+        `),
+      };
+
     default:
       throw new Error(`Unknown email type: ${type}`);
   }
