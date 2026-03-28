@@ -51,6 +51,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     listing_type: ((p as Record<string, unknown>).listing_type as 'rental' | 'sale') || 'rental',
     slug: ((p as Record<string, unknown>).slug as string) || null,
     bedrooms: p.bedrooms,
+    purchasePrice: ((p as Record<string, unknown>).purchase_price as number) || null,
   };
 }
 

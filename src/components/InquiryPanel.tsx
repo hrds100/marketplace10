@@ -30,6 +30,7 @@ export interface ListingShape {
   investReturns?: number;
   listing_type?: 'rental' | 'sale';
   bedrooms?: number | null;
+  purchasePrice?: number | null;
 }
 
 interface Props {

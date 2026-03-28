@@ -261,7 +261,7 @@ export default function AdminQuickList() {
             rent_monthly: item.rent_monthly,
             profit_est: item.profit_est || 0,
             property_category: item.property_category,
-            type: item.type || 'Flat',
+            type: item.type || null,
             description: item.description,
             notes: item.notes,
             sa_approved: 'yes',

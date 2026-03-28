@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Heart, Share2, ChevronDown, MapPin, Home, CheckCircle, Plus, Sparkles, X, Lock } from 'lucide-react';
 import { faqItems } from '@/data/mockData';
 import { useFavourites } from '@/hooks/useFavourites';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,7 +37,10 @@ export default function DealDetail() {
   const name = (listing?.name as string) || '';
   const city = (listing?.city as string) || '';
   const postcode = (listing?.postcode as string) || '';
+  const isSale = listing?.listing_type === 'sale';
   const rent = (listing?.rent_monthly as number) ?? 0;
+  const purchasePrice = (listing?.purchase_price as number) ?? 0;
+  const displayPrice = isSale ? purchasePrice : rent;
   const profit = (listing?.profit_est as number) ?? 0;
   const type = (listing?.type as string) || '';
   const status = (listing?.status as string) || 'inactive';
@@ -114,6 +117,7 @@ export default function DealDetail() {
     ? pexelsImages
     : Array.from({ length: 5 }, (_, i) => `https://placehold.co/1200x900/1a1a2e/ffffff?text=${encodeURIComponent(city || 'Property')}-${i + 1}`);
   const images = [...userPhotos, ...stockImages.slice(0, 5 - userPhotos.length)].slice(0, 5);
+  const isPexelsImage = (url: string) => url.includes('pexels.com') || url.includes('placehold.co');
 
   // More deals (same city, excluding current)
   const { data: moreDeals = [] } = useQuery({
@@ -307,15 +311,22 @@ export default function DealDetail() {
 
         {/* Info strip */}
         <div className="text-sm font-semibold text-foreground mb-6">
-          {listing?.listing_type === 'sale' ? `£${rent.toLocaleString()}` : `£${rent.toLocaleString()} / month`} · {type} · {postcode}
+          {isSale ? `£${displayPrice.toLocaleString()}` : `£${rent.toLocaleString()} / month`} · {type} · {postcode}
         </div>
 
         {/* Photo grid */}
         <div data-feature="DEALS__DETAIL_PHOTOS" className="grid grid-cols-1 md:grid-cols-[2fr_1fr] md:grid-rows-2 gap-2 rounded-2xl overflow-hidden mb-8 md:h-[400px]">
-          <img src={images[0]} className="w-full h-[300px] md:h-full md:row-span-2 object-cover cursor-pointer" alt="" onClick={() => { setGalleryIdx(0); setShowGallery(true); }} />
-          <img src={images[1]} className="w-full h-full object-cover cursor-pointer hidden md:block" alt="" onClick={() => { setGalleryIdx(1); setShowGallery(true); }} />
-          <div className="relative hidden md:block">
-            <img src={images[2]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={() => { setGalleryIdx(2); setShowGallery(true); }} />
+          <div className="relative w-full h-[300px] md:h-full md:row-span-2 cursor-pointer overflow-hidden" onClick={() => { setGalleryIdx(0); setShowGallery(true); }}>
+            <img src={images[0]} className="w-full h-full object-cover" alt="" style={isPexelsImage(images[0]) ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined} />
+            {isPexelsImage(images[0]) && <div className="absolute inset-0 bg-black/35 flex flex-col items-center justify-center gap-2"><Lock className="w-8 h-8 text-white/90" /><span className="text-white text-sm font-medium">Photos on request</span></div>}
+          </div>
+          <div className="relative w-full h-full cursor-pointer overflow-hidden hidden md:block" onClick={() => { setGalleryIdx(1); setShowGallery(true); }}>
+            <img src={images[1]} className="w-full h-full object-cover" alt="" style={isPexelsImage(images[1]) ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined} />
+            {isPexelsImage(images[1]) && <div className="absolute inset-0 bg-black/35 flex items-center justify-center"><Lock className="w-5 h-5 text-white/90" /></div>}
+          </div>
+          <div className="relative hidden md:block overflow-hidden">
+            <img src={images[2]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={() => { setGalleryIdx(2); setShowGallery(true); }} style={isPexelsImage(images[2]) ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined} />
+            {isPexelsImage(images[2]) && <div className="absolute inset-0 bg-black/35 flex items-center justify-center"><Lock className="w-5 h-5 text-white/90" /></div>}
             <button onClick={() => setShowGallery(true)} className="absolute bottom-3 right-3 bg-card/90 backdrop-blur-sm text-sm font-medium px-3 py-1.5 rounded-lg border border-border">Show all photos</button>
           </div>
         </div>
@@ -332,7 +343,7 @@ export default function DealDetail() {
               </div>
               <div data-feature="DEALS__DETAIL_FINANCIALS" className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
                 {[
-                  { label: listing?.listing_type === 'sale' ? 'Sale price' : 'Monthly rent', value: `£${rent.toLocaleString()}` },
+                  { label: isSale ? 'Sale price' : 'Monthly rent', value: `£${displayPrice.toLocaleString()}` },
                   { label: 'Est. profit', value: `£${profit.toLocaleString()}`, green: true },
                   { label: 'Property type', value: type },
                   { label: 'Added', value: `${daysAgo} days ago` },
@@ -352,7 +363,7 @@ export default function DealDetail() {
               ) : (
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {name} is a {type} in {city} ({postcode}){landlordApproved ? ', fully approved by the landlord for short-term rental use' : ''}.
-                  With {listing?.listing_type === 'sale' ? `an asking price of £${rent.toLocaleString()}` : `a monthly rent of £${rent.toLocaleString()}`} and estimated profit of £{profit.toLocaleString()}, this property offers strong returns in a high-demand area.
+                  With {isSale ? `an asking price of £${displayPrice.toLocaleString()}` : `a monthly rent of £${rent.toLocaleString()}`} and estimated profit of £{profit.toLocaleString()}, this property offers strong returns in a high-demand area.
                 </p>
               )}
               <div className="mt-6 space-y-2">
@@ -428,7 +439,7 @@ export default function DealDetail() {
               <div className="space-y-3 border-t border-border pt-4">
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Nightly rate</span><span className="font-medium text-foreground">£{nightlyRate}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Est. revenue</span><span className="font-medium text-foreground">£{estRevenue.toLocaleString()}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{listing?.listing_type === 'sale' ? 'Sale price' : 'Monthly rent'}</span><span className="font-medium text-foreground">-£{rent.toLocaleString()}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{isSale ? 'Sale price' : 'Monthly rent'}</span><span className="font-medium text-foreground">-£{displayPrice.toLocaleString()}</span></div>
                 {showExtraCosts && totalExtraCosts > 0 && (
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Extra costs</span><span className="font-medium text-foreground">-£{totalExtraCosts}</span></div>
                 )}
