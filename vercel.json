@@ -51,6 +51,10 @@
       "destination": "/app.html"
     },
     {
+      "source": "/lead/:path*",
+      "destination": "/app.html"
+    },
+    {
       "source": "/dashboard/:path*",
       "destination": "/app.html"
     },
