@@ -148,7 +148,14 @@ async function fetchRecentPurchases(): Promise<Activity[]> {
     shares: p._sharesBought,
     from: 'Market',
     to: `${p._buyer.slice(0, 6)}...${p._buyer.slice(-4)}`,
-    date: new Date(parseInt(p.blockTimestamp) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    date: new Date(parseInt(p.blockTimestamp) * 1000).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }),
     txHash: p.transactionHash,
   }));
 }
@@ -1230,7 +1237,7 @@ function RecentActivityTable() {
                   <th className="pb-2 pr-4 font-medium">Price</th>
                   <th className="pb-2 pr-4 font-medium">From</th>
                   <th className="pb-2 pr-4 font-medium">To</th>
-                  <th className="pb-2 font-medium">Date</th>
+                  <th className="pb-2 font-medium">Date & time</th>
                 </tr>
               </thead>
               <tbody>
