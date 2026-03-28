@@ -272,124 +272,40 @@ export default function ListADealPage() {
     }
     setAiParsing(true);
     try {
-      const text = aiRawText;
+      // AI parsing via edge function (same as admin Quick List)
+      const { data, error } = await supabase.functions.invoke('ai-parse-listing', {
+        body: { rawText: aiRawText },
+      });
+      if (error) throw new Error(error.message || 'AI parsing failed');
+      if (data?.error) throw new Error(data.error);
 
-      // Extract postcode
-      const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d?[A-Z]{0,2})\b/i);
-      const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase().trim() : '';
+      const l = (data?.listings || [])[0] as Record<string, unknown> | undefined;
+      if (!l) throw new Error('Could not parse listing from text');
 
-      // Extract bedrooms
-      const bedsMatch = text.match(/(\d+)\s*(?:bed(?:room)?s?|double\s+bed)/i);
-      const totalUnitsMatch = text.match(/total:?\s*(\d+)\s*(?:flat|unit|room)/i);
-      const unitCountMatch = text.match(/(\d+)[\s-]*unit/i);
-      const bedrooms = totalUnitsMatch ? totalUnitsMatch[1]
-        : unitCountMatch ? unitCountMatch[1]
-        : bedsMatch ? bedsMatch[1]
-        : '';
+      const bedrooms = l.bedrooms ? String(l.bedrooms) : '';
+      const propertyCategory = (l.property_category as DealForm['propertyCategory']) || '';
+      const type = bedrooms && (l.type || propertyCategory)
+        ? `${bedrooms}-bed ${l.type || propertyCategory}`
+        : (l.type as string) || '';
 
-      // Extract bathrooms
-      const allBathMatches = [...text.matchAll(/(\d+)\s*bath(?:room)?s?/gi)];
-      let bathrooms = '';
-      if (allBathMatches.length > 0) {
-        const nums = allBathMatches.map(m => parseInt(m[1]));
-        bathrooms = String(Math.max(...nums));
-      }
-
-      // Extract rent
-      const rentMatch = text.match(/[£]?\s*(\d[\d,]*)\s*(?:pcm|pm|per\s*month)/i);
-      const rent = rentMatch ? rentMatch[1].replace(/,/g, '') : '';
-
-      // Extract profit
-      const profitMatch = text.match(/(?:monthly\s*)?profit[:\s]*[£]?\s*(\d[\d,]*)/i);
-      const profit = profitMatch ? profitMatch[1].replace(/,/g, '') : '';
-
-      // Resolve city from postcode
-      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-      let city = '';
-      if (postcode && apiKey) {
-        try {
-          const geoRes = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(postcode + ', UK')}&key=${apiKey}`
-          );
-          if (geoRes.ok) {
-            const geoData = await geoRes.json();
-            const result = geoData.results?.[0];
-            if (result) {
-              const components = result.address_components || [];
-              const postalTown = components.find((c: { types: string[] }) => c.types.includes('postal_town'));
-              const locality = components.find((c: { types: string[] }) => c.types.includes('locality'));
-              const admin2 = components.find((c: { types: string[] }) => c.types.includes('administrative_area_level_2'));
-              city = postalTown?.long_name || locality?.long_name || admin2?.long_name || '';
-            }
-          }
-        } catch {
-          // Geocoding failed - fall through to text search
-        }
-      }
-      if (!city) {
-        const knownCities = [
-          'London', 'Manchester', 'Birmingham', 'Leeds', 'Liverpool', 'Sheffield',
-          'Bristol', 'Newcastle', 'Nottingham', 'Leicester', 'Coventry', 'Bradford',
-          'Cardiff', 'Edinburgh', 'Glasgow', 'Belfast', 'Southampton', 'Portsmouth',
-          'Plymouth', 'Brighton', 'Hull', 'Stoke', 'Blackpool', 'Bolton', 'Luton',
-          'Milton Keynes', 'Reading', 'Oxford', 'Cambridge', 'Norwich', 'Exeter',
-          'Gloucester', 'Bath', 'Bournemouth', 'Croydon', 'Slough', 'York', 'Preston',
-        ];
-        city = knownCities.find(c => new RegExp(`\\b${c}\\b`, 'i').test(text)) || '';
-      }
-
-      // Detect property type
-      const typeMap: [RegExp, string, string][] = [
-        [/\bbungalow\b/i, 'Bungalow', 'house'],
-        [/\bhmo\b/i, 'HMO', 'hmo'],
-        [/\bstudio\b/i, 'Studio', 'flat'],
-        [/\bflat\b/i, 'Flat', 'flat'],
-        [/\bhouse\b/i, 'House', 'house'],
-        [/\broom\b/i, 'Room', 'flat'],
-        [/\bapartment\b/i, 'Flat', 'flat'],
-      ];
-      let type = '';
-      let propertyCategory: DealForm['propertyCategory'] = '';
-      for (const [re, t, cat] of typeMap) {
-        if (re.test(text)) {
-          type = `${bedrooms ? bedrooms + '-bed ' : ''}${t}`;
-          propertyCategory = cat as DealForm['propertyCategory'];
-          break;
-        }
-      }
-
-      // Detect SA approved
-      const saMatch = /sa\s*(?:approved|compliant)/i.test(text);
-
-      // Detect furnished
-      let furnished: DealForm['furnished'] = '';
-      if (/\bpart[\s-]*furnished\b/i.test(text)) furnished = 'part-furnished';
-      else if (/\bunfurnished\b/i.test(text)) furnished = 'unfurnished';
-      else if (/\bfurnished\b/i.test(text)) furnished = 'furnished';
-
-      // Detect garage
-      const garage = /\b(garage|parking)\b/i.test(text) ? 'yes' : '';
-
-      // Extract deposit
-      const depositMatch = text.match(/deposit[:\s]*[£]?\s*(\d[\d,]*)/i);
-      const deposit = depositMatch ? depositMatch[1].replace(/,/g, '') : '';
-
-      // Fill the form
       setForm(prev => ({
         ...prev,
-        city: city || prev.city,
-        postcode: postcode || prev.postcode,
+        city: (l.city as string) || prev.city,
+        postcode: (l.postcode as string) || prev.postcode,
         bedrooms: bedrooms || prev.bedrooms,
-        bathrooms: bathrooms || prev.bathrooms,
-        rent: rent || prev.rent,
-        profit: profit || prev.profit,
+        bathrooms: l.bathrooms ? String(l.bathrooms) : prev.bathrooms,
+        rent: l.rent_monthly ? String(l.rent_monthly) : prev.rent,
+        profit: l.profit_est ? String(l.profit_est) : prev.profit,
         propertyCategory: propertyCategory || prev.propertyCategory,
         type: type || prev.type,
-        saApproved: saMatch ? 'Yes' : prev.saApproved,
-        furnished: furnished || prev.furnished,
-        garage: garage || prev.garage,
-        deposit: deposit || prev.deposit,
+        furnished: (l.furnished === true ? 'furnished' : l.furnished === false ? 'unfurnished' : prev.furnished) as DealForm['furnished'],
+        garage: l.garage ? 'yes' : prev.garage,
+        deposit: l.deposit ? String(l.deposit) : prev.deposit,
       }));
+
+      if (l.description && typeof l.description === 'string') {
+        setDescription(l.description);
+      }
 
       // Switch back to manual form
       setAiQuickMode(false);

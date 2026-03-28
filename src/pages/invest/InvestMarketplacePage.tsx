@@ -526,7 +526,7 @@ function MetricPills({ property }: { property: PropertyData }) {
     { icon: TrendingUp, label: 'Yield', value: `${property.annualYield}%` },
     { icon: BarChart3, label: 'Occupancy', value: `${property.occupancyRate}%` },
     { icon: DollarSign, label: 'Rent Cost', value: `\u00A3${(property as any).rentCost?.toLocaleString() || '3,500'}` },
-    { icon: Star, label: 'Property Value', value: `$${(property.propertyValue / 1000).toFixed(0)}k` },
+    { icon: Star, label: 'Deal Value', value: `$${(property.propertyValue / 1000).toFixed(0)}k` },
   ];
 
   return (
