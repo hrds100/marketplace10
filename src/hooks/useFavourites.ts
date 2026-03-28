@@ -51,14 +51,9 @@ export function FavouritesProvider({ children }: { children: ReactNode }) {
         setFavourites(ids);
         saveLocal(ids);
       } else {
-        const local = loadLocal();
-        if (local.size > 0) {
-          const rows = [...local].map(pid => ({ user_id: user.id, property_id: pid }));
-          await supabase.from('user_favourites').upsert(rows, { onConflict: 'user_id,property_id' });
-          setFavourites(local);
-        } else {
-          setFavourites(new Set());
-        }
+        // DB is truth - if DB says no favourites, clear local stale IDs
+        setFavourites(new Set());
+        saveLocal(new Set());
       }
       setLoading(false);
     };

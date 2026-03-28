@@ -108,7 +108,7 @@ export default function DealDetail() {
 
   const handleDetailWhatsApp = () => {
     if (!user) { navigate('/signup'); return; }
-    if (!isPaidTier(tier)) { toast.error('Upgrade your plan to contact listers'); return; }
+    if (!isPaidTier(tier)) { handleInquire(listingShape); return; }
     const propertyUrl = `https://hub.nfstay.com/deals/${(listing?.slug as string) || id}`;
     const msg = encodeURIComponent(
       `Hi, I am interested in your property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${id}\nPlease contact me at your earliest convenience.`,
@@ -128,7 +128,7 @@ export default function DealDetail() {
 
   const handleDetailEmail = () => {
     if (!user) { navigate('/signup'); return; }
-    if (!isPaidTier(tier)) { toast.error('Upgrade your plan to contact listers'); return; }
+    if (!isPaidTier(tier)) { handleInquire(listingShape); return; }
     setEmailModalOpen(true);
   };
 

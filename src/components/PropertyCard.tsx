@@ -110,8 +110,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     e.stopPropagation();
     if (forceSignUp) { navigate('/signup'); return; }
     if (!isPaidTier(tier)) {
-      toast.error('Upgrade your plan to contact listers');
-      navigate('/dashboard/deals');
+      // Show GHL payment flow via InquiryPanel
+      onInquire?.(listing);
       return;
     }
     const propertyUrl = `https://hub.nfstay.com/deals/${listing.slug || listing.id}`;
@@ -138,8 +138,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     e.stopPropagation();
     if (forceSignUp) { navigate('/signup'); return; }
     if (!isPaidTier(tier)) {
-      toast.error('Upgrade your plan to contact listers');
-      navigate('/dashboard/deals');
+      onInquire?.(listing);
       return;
     }
     onEmailInquire?.(listing);
