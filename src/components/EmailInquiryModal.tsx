@@ -32,7 +32,7 @@ export default function EmailInquiryModal({ open, listing, onClose }: Props) {
     setPhone(user?.user_metadata?.whatsapp || '');
     setMessage(
       listing
-        ? `I would like to inquire about ${listing.name} - ${listing.id}. Please contact me at your earliest convenience.`
+        ? `I would like to inquire about your property on nfstay.\nLink: https://hub.nfstay.com/deals/${listing.slug || listing.id}\nReference no.: ${listing.id}\nPlease contact me at your earliest convenience.`
         : '',
     );
   }
@@ -55,6 +55,7 @@ export default function EmailInquiryModal({ open, listing, onClose }: Props) {
           tenant_name: name.trim(),
           tenant_email: email.trim(),
           tenant_phone: phone.trim(),
+          property_url: `https://hub.nfstay.com/deals/${listing!.slug || listing!.id}`,
         },
       });
       if (error) throw error;

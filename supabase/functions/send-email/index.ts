@@ -335,9 +335,10 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             Hi ${data.tenant_name || 'there'}, your inquiry about <strong>${data.property_name}</strong> has been received. We've notified ${data.lister_name || 'the property lister'} and they will contact you shortly.
           </p>
-          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0;">
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 20px;">
             Have a great day!
           </p>
+          ${data.property_url ? btn('View Property', String(data.property_url)) : ''}
         `),
       };
 
@@ -349,7 +350,8 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             You have a new inquiry from <strong>${data.tenant_name}</strong> about <strong>${data.property_name}</strong>. Click below to view their contact details.
           </p>
-          ${btn('View Tenant Details →', String(data.lead_url))}
+          ${btn('View Tenant Details', String(data.lead_url))}
+          ${data.property_url ? `<div style="text-align:center;margin-top:12px;"><a href="${data.property_url}" style="font-size:13px;color:#1E9A80;text-decoration:underline;">View Property</a></div>` : ''}
         `),
       };
 
@@ -361,7 +363,8 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
             You have a new inquiry about <strong>${data.property_name}</strong>! Before we share the tenant's details, please review our quick partnership agreement.
           </p>
-          ${btn('Review & Get Details →', String(data.nda_url))}
+          ${btn('Review & Get Details', String(data.nda_url))}
+          ${data.property_url ? `<div style="text-align:center;margin-top:12px;"><a href="${data.property_url}" style="font-size:13px;color:#1E9A80;text-decoration:underline;">View Property</a></div>` : ''}
         `),
       };
 

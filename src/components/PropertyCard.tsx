@@ -1,4 +1,4 @@
-import { Heart, CheckCircle, Gem, Zap, Lock, MessageCircle, Mail } from 'lucide-react';
+import { Heart, CheckCircle, Gem, Zap, Lock, MessageCircle, Mail, Phone } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { ListingShape } from '@/components/InquiryPanel';
@@ -114,8 +114,9 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       navigate('/dashboard/deals');
       return;
     }
+    const propertyUrl = `https://hub.nfstay.com/deals/${listing.slug || listing.id}`;
     const msg = encodeURIComponent(
-      `Hi, I am interested in ${listing.name} at ${listing.city}. Reference: ${listing.id}. Please contact me at your earliest convenience.`,
+      `Hi, I am interested in your property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${listing.id}\nPlease contact me at your earliest convenience.`,
     );
     // Fire inquiry in background
     supabase.functions.invoke('process-inquiry', {
@@ -126,6 +127,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         tenant_name: user?.user_metadata?.name || '',
         tenant_email: user?.email || '',
         tenant_phone: user?.user_metadata?.whatsapp || '',
+        property_url: propertyUrl,
       },
     }).catch(() => {});
     window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${msg}`, '_blank');
@@ -330,29 +332,42 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           </div>
         )}
 
-        <div className="flex gap-2 mt-3">
+        {/* Contact buttons - Bayut-style: 3 equal buttons, icon + label */}
+        <div className="grid grid-cols-3 gap-2 mt-3">
           {forceSignUp ? (
             <>
-              <button data-feature="DEALS__PROPERTY_CARD_VIEW" onClick={handleAction} className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
-                Visit Listing
+              <button data-feature="DEALS__PROPERTY_CARD_EMAIL" onClick={handleAction}
+                className="h-[42px] rounded-xl inline-flex items-center justify-center gap-2 text-[13px] font-semibold transition-all hover:opacity-90"
+                style={{ backgroundColor: '#1E9A80', color: '#fff' }}>
+                <Mail className="w-4 h-4" /> Email
               </button>
-              <button onClick={handleAction} className="flex-1 h-[38px] rounded-lg text-[13px] font-semibold text-white inline-flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity" style={{ backgroundColor: '#1E9A80' }}>
-                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+              <button onClick={handleAction}
+                className="h-[42px] rounded-xl border inline-flex items-center justify-center gap-2 text-[13px] font-semibold transition-all hover:bg-gray-50"
+                style={{ borderColor: '#E5E7EB', color: '#1A1A1A' }}>
+                <Phone className="w-4 h-4" /> Call
               </button>
-              <button onClick={handleAction} className="flex-1 border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center justify-center gap-1.5" style={{ borderColor: '#E5E7EB' }}>
-                <Mail className="w-3.5 h-3.5" /> Email
+              <button onClick={handleAction}
+                className="h-[42px] rounded-xl inline-flex items-center justify-center gap-2 text-[13px] font-semibold transition-all hover:opacity-90"
+                style={{ backgroundColor: '#25D366', color: '#fff' }}>
+                <MessageCircle className="w-4 h-4" /> WhatsApp
               </button>
             </>
           ) : (
             <>
-              <Link data-feature="DEALS__PROPERTY_CARD_VIEW" to={`/deals/${listing.slug || listing.id}`} className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm h-[38px] rounded-lg text-[13px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity">
-                Visit Listing
-              </Link>
-              <button data-feature="DEALS__PROPERTY_CARD_WHATSAPP" onClick={handleWhatsApp} className="flex-1 h-[38px] rounded-lg text-[13px] font-semibold text-white inline-flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity" style={{ backgroundColor: '#1E9A80' }}>
-                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+              <button data-feature="DEALS__PROPERTY_CARD_EMAIL" onClick={handleEmail}
+                className="h-[42px] rounded-xl inline-flex items-center justify-center gap-2 text-[13px] font-semibold transition-all hover:opacity-90"
+                style={{ backgroundColor: '#1E9A80', color: '#fff' }}>
+                <Mail className="w-4 h-4" /> Email
               </button>
-              <button data-feature="DEALS__PROPERTY_CARD_EMAIL" onClick={handleEmail} className="flex-1 border h-[38px] rounded-lg text-[13px] font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center justify-center gap-1.5" style={{ borderColor: '#E5E7EB' }}>
-                <Mail className="w-3.5 h-3.5" /> Email
+              <Link data-feature="DEALS__PROPERTY_CARD_VIEW" to={`/deals/${listing.slug || listing.id}`}
+                className="h-[42px] rounded-xl border inline-flex items-center justify-center gap-2 text-[13px] font-semibold transition-all hover:bg-gray-50"
+                style={{ borderColor: '#E5E7EB', color: '#1A1A1A' }}>
+                <Phone className="w-4 h-4" /> Call
+              </Link>
+              <button data-feature="DEALS__PROPERTY_CARD_WHATSAPP" onClick={handleWhatsApp}
+                className="h-[42px] rounded-xl inline-flex items-center justify-center gap-2 text-[13px] font-semibold transition-all hover:opacity-90"
+                style={{ backgroundColor: '#25D366', color: '#fff' }}>
+                <MessageCircle className="w-4 h-4" /> WhatsApp
               </button>
             </>
           )}

@@ -39,7 +39,7 @@ serve(async (req) => {
       })
     }
 
-    const { property_id, channel, message, tenant_name, tenant_email, tenant_phone } = await req.json()
+    const { property_id, channel, message, tenant_name, tenant_email, tenant_phone, property_url } = await req.json()
 
     if (!property_id || !channel) {
       return new Response(JSON.stringify({ error: 'Missing required fields: property_id, channel' }), {
@@ -108,9 +108,10 @@ serve(async (req) => {
     if (listerEmail) {
       try {
         const emailType = isNdaRequired ? 'inquiry-lister-nda' : 'inquiry-lister-notification'
+        const propUrl = property_url || `${BASE_URL}/deals/${property_id}`
         const emailData = isNdaRequired
-          ? { lister_name: listerName, lister_email: listerEmail, property_name: propertyName, nda_url: `${BASE_URL}/lead/${inquiryToken}/nda` }
-          : { lister_name: listerName, lister_email: listerEmail, tenant_name: tenant_name || 'A tenant', property_name: propertyName, lead_url: `${BASE_URL}/lead/${inquiryToken}` }
+          ? { lister_name: listerName, lister_email: listerEmail, property_name: propertyName, property_url: propUrl, nda_url: `${BASE_URL}/lead/${inquiryToken}/nda` }
+          : { lister_name: listerName, lister_email: listerEmail, tenant_name: tenant_name || 'A tenant', property_name: propertyName, property_url: propUrl, lead_url: `${BASE_URL}/lead/${inquiryToken}` }
 
         await supabaseAdmin.functions.invoke('send-email', {
           body: { type: emailType, data: emailData },
@@ -155,6 +156,7 @@ serve(async (req) => {
               tenant_name: tenant_name || 'there',
               tenant_email,
               property_name: propertyName,
+              property_url: property_url || `${BASE_URL}/deals/${property_id}`,
               lister_name: listerName,
             },
           },
