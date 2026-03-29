@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { fetchPexelsPhotos } from '@/lib/pexels';
 import PropertyCard from '@/components/PropertyCard';
 import EmailInquiryModal from '@/components/EmailInquiryModal';
+import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 
 const NFSTAY_WHATSAPP = '447476368123';
@@ -98,8 +99,13 @@ export default function DealDetail() {
   const { tier } = useUserTier();
   const [emailModalOpen, setEmailModalOpen] = useState(false);
 
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [inquiryTarget, setInquiryTarget] = useState<ListingShape | null>(null);
+
   const handleInquire = useCallback((l: ListingShape) => {
-    navigate(`/dashboard/inbox?deal=${l.id}`);
+    if (l.id.startsWith('inv-')) { navigate('/dashboard/invest/marketplace'); return; }
+    setInquiryTarget(l);
+    setInquiryOpen(true);
   }, [navigate]);
 
   const contactEmail = (listing?.contact_email as string) || null;
@@ -545,6 +551,8 @@ export default function DealDetail() {
 
       {/* Email inquiry modal */}
       <EmailInquiryModal open={emailModalOpen} listing={listingShape} onClose={() => setEmailModalOpen(false)} />
+      {/* GHL payment panel (free users) */}
+      <InquiryPanel open={inquiryOpen} listing={inquiryTarget} onClose={() => setInquiryOpen(false)} />
     </div>
   );
 }

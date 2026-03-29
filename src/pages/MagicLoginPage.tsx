@@ -11,9 +11,7 @@ export default function MagicLoginPage() {
 
   useEffect(() => {
     if (!token) {
-      const thread = searchParams.get('thread');
-      const dest = thread ? `/dashboard/inbox?thread=${thread}` : '/dashboard/inbox';
-      navigate(dest, { replace: true });
+      navigate('/dashboard/crm', { replace: true });
       return;
     }
 

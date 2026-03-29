@@ -104,7 +104,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
           }
           setTimeout(() => {
             handleClose();
-            window.location.href = '/dashboard/inbox';
+            window.location.href = '/dashboard/deals';
           }, 1500);
           return;
         }
@@ -115,7 +115,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
       if (attempts >= 15) {
         if (pollRef.current) clearInterval(pollRef.current);
         handleClose();
-        window.location.href = '/dashboard/inbox';
+        window.location.href = '/dashboard/deals';
       }
     }, 1000);
   }, [handleClose, user, paymentComplete, referredBy]);

@@ -154,11 +154,7 @@ export default function NotificationBell() {
                     const msgTypes = ['new_message', 'nda_signed'];
                     if (msgTypes.includes(n.type)) {
                       setOpen(false);
-                      if (n.property_id) {
-                        navigate(`/dashboard/inbox?deal=${n.property_id}`);
-                      } else {
-                        navigate('/dashboard/inbox');
-                      }
+                      navigate('/dashboard/crm');
                     }
                   }}
                   className={`w-full text-left px-4 py-3 border-b border-border/20 hover:bg-gray-50 transition-colors ${!n.read ? 'bg-emerald-50/40' : ''}`}
