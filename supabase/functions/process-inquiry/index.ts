@@ -28,7 +28,9 @@ serve(async (req) => {
       })
     }
 
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
 
     // Verify the JWT to get the user
     const token = authHeader.replace('Bearer ', '')
@@ -100,12 +102,21 @@ serve(async (req) => {
 
     // 4b. Create a landlord_invites entry for the magic link (never expires)
     // GHL "Open NFsTay" button uses /inbox?token=... which calls landlord-magic-login
-    const magicToken = crypto.randomUUID()
-    await supabaseAdmin.from('landlord_invites').insert({
-      magic_token: magicToken,
-      phone: whatsappPhone || listerPhone,
-      lister_type: listerType,
-    } as Record<string, unknown>)
+    let magicToken = crypto.randomUUID()
+    try {
+      const { error: inviteErr } = await supabaseAdmin.from('landlord_invites').insert({
+        magic_token: magicToken,
+        phone: whatsappPhone || listerPhone,
+        lister_type: listerType,
+      } as Record<string, unknown>)
+      if (inviteErr) {
+        console.error('Failed to create landlord invite:', inviteErr)
+        magicToken = '' // Continue without magic token
+      }
+    } catch (e) {
+      console.error('landlord_invites insert error:', e)
+      magicToken = ''
+    }
 
     // 5. Determine lister notification type and URL
     const isNdaRequired = listerType === 'deal_sourcer'
