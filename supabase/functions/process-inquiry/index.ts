@@ -124,10 +124,12 @@ serve(async (req) => {
     }
 
     // 7. Send WhatsApp to lister if they have a phone number
+    // Cold landlord = admin listed with phone only, no email → use 1-landlord_enquiry GHL workflow
+    // Registered landlord = has email → use 2-Tenant to Landlord GHL workflow
+    const isColdLandlord = !listerEmail
     const whatsappPhone = landlordWhatsapp || listerPhone
     if (whatsappPhone) {
       try {
-        const whatsappMessage = `You have a new lead for ${propertyName}! Click here to view their details: ${leadUrl}`
         await fetch(`${N8N_BASE}/webhook/inquiry-lister-whatsapp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -136,7 +138,7 @@ serve(async (req) => {
             lister_name: listerName,
             property_name: propertyName,
             lead_url: leadUrl,
-            message: whatsappMessage,
+            is_cold: isColdLandlord,
           }),
         })
         console.log(`WhatsApp notification sent to ${whatsappPhone}`)
