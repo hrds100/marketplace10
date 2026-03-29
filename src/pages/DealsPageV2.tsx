@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import PropertyCard from '@/components/PropertyCard';
+import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 import EmailInquiryModal from '@/components/EmailInquiryModal';
 import { useFavourites } from '@/hooks/useFavourites';
@@ -93,6 +94,8 @@ export default function DealsPageV2() {
   const [listerTypeFilter, setListerTypeFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [emailListing, setEmailListing] = useState<ListingShape | null>(null);
+  const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const perPage = 12;
   const navigate = useNavigate();
@@ -120,7 +123,9 @@ export default function DealsPageV2() {
         navigate('/dashboard/invest/marketplace');
         return;
       }
-      navigate(`/dashboard/inbox?deal=${listing.id}`);
+      // Open GHL payment panel for free users (paywall gate)
+      setInquiryListing(listing);
+      setInquiryOpen(true);
     },
     [navigate],
   );
@@ -482,6 +487,9 @@ export default function DealsPageV2() {
         listing={emailListing}
         onClose={() => setEmailListing(null)}
       />
+
+      {/* GHL payment panel (for free users) */}
+      <InquiryPanel open={inquiryOpen} listing={inquiryListing} onClose={() => setInquiryOpen(false)} />
     </div>
   );
 }
