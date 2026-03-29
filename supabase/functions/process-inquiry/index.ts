@@ -106,7 +106,7 @@ serve(async (req) => {
     try {
       const { error: inviteErr } = await supabaseAdmin.from('landlord_invites').insert({
         magic_token: magicToken,
-        phone: whatsappPhone || listerPhone,
+        phone: landlordWhatsapp || listerPhone,
         lister_type: listerType,
       } as Record<string, unknown>)
       if (inviteErr) {

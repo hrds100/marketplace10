@@ -112,7 +112,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
         console.error('Tier poll error:', e);
       }
 
-      if (attempts >= 15) {
+      if (attempts >= 45) {
         if (pollRef.current) clearInterval(pollRef.current);
         handleClose();
         window.location.href = '/dashboard/deals';
@@ -125,7 +125,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
     if (!open || paid) return;
     const handleMessage = (e: MessageEvent) => {
       // Allow messages from pay.nfstay.com and GHL domains
-      if (!e.origin.includes('pay.nfstay.com') && !e.origin.includes('leadconnectorhq.com')) return;
+      if (!e.origin.includes('pay.nfstay.com') && !e.origin.includes('leadconnectorhq.com') && !e.origin.includes('gohighlevel.com')) return;
       const data = e.data;
       const isSuccess =
         data?.event === 'order_success' ||
@@ -156,12 +156,21 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   if (!listing) return null;
 
   const handleSendWhatsApp = () => {
-    if (listing.landlordWhatsapp) {
-      const cleanNumber = listing.landlordWhatsapp.replace(/[^0-9]/g, '');
-      const encodedMsg = encodeURIComponent(message);
-      window.open(`https://wa.me/${cleanNumber}?text=${encodedMsg}`, '_blank');
-      handleClose();
-    }
+    const encodedMsg = encodeURIComponent(message);
+    // Record the inquiry and trigger landlord notification + tenant auto-reply
+    supabase.functions.invoke('process-inquiry', {
+      body: {
+        property_id: listing.id,
+        channel: 'whatsapp',
+        message,
+        tenant_name: user?.user_metadata?.name || user?.user_metadata?.full_name || null,
+        tenant_email: user?.email || null,
+        tenant_phone: user?.user_metadata?.whatsapp || user?.user_metadata?.phone || null,
+        property_url: `https://hub.nfstay.com/deals/${listing.slug || listing.id}`,
+      },
+    }).catch(() => {}); // non-blocking — WhatsApp still opens even if this fails
+    window.open(`https://wa.me/447476368123?text=${encodedMsg}`, '_blank');
+    handleClose();
   };
 
   // Iframe onLoad fallback — detect thank-you page URL
@@ -241,21 +250,13 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
                 rows={5}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               />
-              {listing.landlordWhatsapp ? (
-                <button
-                  data-feature="DEALS__INQUIRY_PANEL_CONTACT"
-                  onClick={handleSendWhatsApp}
-                  className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold mt-4 hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" /> Send on WhatsApp
-                </button>
-              ) : (
-                <div className="mt-4 p-4 rounded-lg bg-secondary/50 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Landlord WhatsApp not yet available for this property. We'll notify you when it's ready.
-                  </p>
-                </div>
-              )}
+              <button
+                data-feature="DEALS__INQUIRY_PANEL_CONTACT"
+                onClick={handleSendWhatsApp}
+                className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold mt-4 hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4" /> Send on WhatsApp
+              </button>
             </div>
           ) : !funnelUrl ? (
             /* ── FREE USER, NO FUNNEL URL → fallback ── */
