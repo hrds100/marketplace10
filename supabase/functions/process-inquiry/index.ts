@@ -98,6 +98,15 @@ serve(async (req) => {
       })
     }
 
+    // 4b. Create a landlord_invites entry for the magic link (never expires)
+    // GHL "Open NFsTay" button uses /inbox?token=... which calls landlord-magic-login
+    const magicToken = crypto.randomUUID()
+    await supabaseAdmin.from('landlord_invites').insert({
+      magic_token: magicToken,
+      phone: whatsappPhone || listerPhone,
+      lister_type: listerType,
+    } as Record<string, unknown>)
+
     // 5. Determine lister notification type and URL
     const isNdaRequired = listerType === 'deal_sourcer'
     const leadUrl = isNdaRequired
@@ -138,6 +147,7 @@ serve(async (req) => {
             lister_name: listerName,
             property_name: propertyName,
             lead_url: leadUrl,
+            magic_token: magicToken,
             is_cold: isColdLandlord,
           }),
         })

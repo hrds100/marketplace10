@@ -49,11 +49,8 @@ export default function MagicLoginPage() {
           return;
         }
 
-        // Navigate to inbox with the thread pre-selected
-        const dest = data.thread_id
-          ? `/dashboard/inbox?thread=${data.thread_id}`
-          : '/dashboard/inbox';
-        navigate(dest, { replace: true });
+        // Navigate to CRM (leads tab) — legacy inbox threads also land here now
+        navigate('/dashboard/crm', { replace: true });
       } catch {
         setError('Something went wrong. Please try again or contact support.');
       }

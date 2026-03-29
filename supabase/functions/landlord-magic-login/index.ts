@@ -26,7 +26,7 @@ serve(async (req) => {
     // 1. Validate token — must exist (tokens never expire)
     const { data: invite, error: inviteErr } = await supabaseAdmin
       .from('landlord_invites')
-      .select('id, thread_id, created_at')
+      .select('id, thread_id, created_at, phone, lister_type')
       .eq('magic_token', token)
       .maybeSingle()
 
@@ -37,21 +37,24 @@ serve(async (req) => {
       )
     }
 
-    // 2. Get phone from thread → property
-    const { data: thread } = await supabaseAdmin
-      .from('chat_threads')
-      .select('property_id')
-      .eq('id', invite.thread_id)
-      .maybeSingle()
+    // 2. Get phone - from invite directly (new lead flow) or from thread → property (legacy inbox flow)
+    let phone = ((invite as Record<string, unknown>).phone as string || '').trim()
 
-    let phone = ''
-    if (thread?.property_id) {
-      const { data: property } = await supabaseAdmin
-        .from('properties')
-        .select('contact_phone, contact_whatsapp, landlord_whatsapp')
-        .eq('id', thread.property_id)
+    if (!phone && invite.thread_id) {
+      const { data: thread } = await supabaseAdmin
+        .from('chat_threads')
+        .select('property_id')
+        .eq('id', invite.thread_id)
         .maybeSingle()
-      phone = (property?.contact_phone || property?.contact_whatsapp || property?.landlord_whatsapp || '').trim()
+
+      if (thread?.property_id) {
+        const { data: property } = await supabaseAdmin
+          .from('properties')
+          .select('contact_phone, contact_whatsapp, landlord_whatsapp')
+          .eq('id', thread.property_id)
+          .maybeSingle()
+        phone = (property?.contact_phone || property?.contact_whatsapp || property?.landlord_whatsapp || '').trim()
+      }
     }
 
     const cleanPhone = phone.replace(/\D/g, '')
@@ -115,13 +118,15 @@ serve(async (req) => {
     }
 
     // Ensure profile has whatsapp_verified:true (bypasses OTP gate)
+    const inviteRole = (invite as Record<string, unknown>).lister_type as string || null
     if (loginEmail === internalEmail) {
       await supabaseAdmin.from('profiles').upsert({
         id: userId, name: phone, whatsapp: phone, whatsapp_verified: true,
+        ...(inviteRole ? { role: inviteRole } : {}),
       }, { onConflict: 'id', ignoreDuplicates: false })
     } else {
       await supabaseAdmin.from('profiles')
-        .update({ whatsapp: phone, whatsapp_verified: true })
+        .update({ whatsapp: phone, whatsapp_verified: true, ...(inviteRole ? { role: inviteRole } : {}) })
         .eq('id', userId)
     }
 
