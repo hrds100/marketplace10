@@ -143,6 +143,25 @@ serve(async (req) => {
       }
     }
 
+    // 6b. Send WhatsApp courtesy reply to tenant (if they inquired via WhatsApp)
+    if (channel === 'whatsapp' && tenant_phone) {
+      try {
+        await fetch(`${N8N_BASE}/webhook/inquiry-tenant-reply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: tenant_phone,
+            tenant_name: tenant_name || 'there',
+            property_name: propertyName,
+            lister_type: listerType,
+          }),
+        })
+        console.log(`Tenant WhatsApp reply sent to ${tenant_phone}`)
+      } catch (e) {
+        console.error('Failed to send tenant WhatsApp reply:', e)
+      }
+    }
+
     // 7. Send WhatsApp to lister if they have a phone number
     // Cold landlord = admin listed with phone only, no email → use 1-landlord_enquiry GHL workflow
     // Registered landlord = has email → use 2-Tenant to Landlord GHL workflow
