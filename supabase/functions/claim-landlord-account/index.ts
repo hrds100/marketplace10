@@ -58,13 +58,13 @@ serve(async (req) => {
       )
     }
 
-    // 2. Update profile
+    // 2. Update profile (name + email)
     await supabaseAdmin
       .from('profiles')
-      .update({ name })
+      .update({ name, email })
       .eq('id', user.id)
 
-    // 3. Link ALL property threads matching this landlord's phone to their account
+    // 3. Link ALL property threads + inquiries matching this landlord's phone
     if (phone) {
       const { data: props } = await supabaseAdmin
         .from('properties')
@@ -72,11 +72,17 @@ serve(async (req) => {
         .or(`contact_phone.eq.${phone},contact_whatsapp.eq.${phone},landlord_whatsapp.eq.${phone}`)
       if (props && props.length > 0) {
         const ids = props.map((p: { id: string }) => p.id)
+        // Legacy chat threads
         await supabaseAdmin
           .from('chat_threads')
           .update({ landlord_id: user.id })
           .in('property_id', ids)
       }
+      // Also update lister_email on inquiries so leads match after claiming
+      await supabaseAdmin
+        .from('inquiries')
+        .update({ lister_email: email })
+        .eq('lister_phone', phone)
     }
 
     return new Response(JSON.stringify({ ok: true }), {
