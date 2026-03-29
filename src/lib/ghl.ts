@@ -11,32 +11,36 @@ export const GHL_LOCATION_ID = 'eFBsWXY3BmWDGIRez13x';
 
 export const GHL_PRODUCTS = {
   monthly: {
-    productId: '69b5b769081db66d1afbf145',
+    productId: '69b5c27da3434d4750457c80',
     priceId: '69b5d533d314dc23b8a6f918',
   },
   lifetime: {
-    productId: '69b5b777711f98f382f110ff',
+    productId: '69b5c2d26831635e6c3edb65',
     priceId: '69b5d535a0334430aa1f2eac',
   },
   annual: {
-    productId: '69b5b7791fe1a8f21eb651b5',
+    productId: '69b5cd925759e2ddcf750aa9',
     priceId: '69b5d5371fe1a88dbdba1590',
   },
 } as const;
 
-/** Map GHL product IDs → tier names (used by n8n webhook) */
+/** Map GHL product IDs -> tier names (used by n8n webhook) */
 export const PRODUCT_ID_TO_TIER: Record<string, string> = {
+  // Current funnel product IDs (from GHL dashboard 2026-03-29)
   [GHL_PRODUCTS.monthly.productId]: 'monthly',
   [GHL_PRODUCTS.lifetime.productId]: 'lifetime',
   [GHL_PRODUCTS.annual.productId]: 'yearly',
+  // Legacy product IDs (from GHL Products API - keep for backward compat)
+  '69b5b769081db66d1afbf145': 'monthly',
+  '69b5b777711f98f382f110ff': 'lifetime',
+  '69b5b7791fe1a8f21eb651b5': 'yearly',
 };
 
 export const PRICE_ID_TO_TIER: Record<string, string> = {
   [GHL_PRODUCTS.monthly.priceId]: 'monthly',
   [GHL_PRODUCTS.lifetime.priceId]: 'lifetime',
   [GHL_PRODUCTS.annual.priceId]: 'yearly',
-  // Legacy price IDs — wrong amounts (6700/99700/39700 pennies) from initial GHL setup.
-  // Keep mapped for backward compatibility with any existing webhook calls.
+  // Legacy price IDs
   '69b5b794c6731008d7ae723c': 'monthly',
   '69b5b7a8081db612f9fbfe60': 'lifetime',
   '69b5b7ab247cf6a48020f434': 'yearly',
