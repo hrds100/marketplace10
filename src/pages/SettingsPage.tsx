@@ -379,39 +379,16 @@ export default function SettingsPage() {
                 )}
               </div>
 
-              {/* Upgrade options for free/monthly users */}
-              {(!isPaidTier(tier) || tier === 'monthly') && (
-                <div className="mt-6 max-w-[480px] space-y-3">
-                  <h3 className="text-sm font-bold text-foreground">
-                    {isPaidTier(tier) ? 'Upgrade your plan' : 'Get started'}
-                  </h3>
-                  {!isPaidTier(tier) && (
-                    <button onClick={() => { const url = getFunnelUrl({ email: user?.email, ref: referredBy || undefined }); if (url) window.open(url, '_blank'); }}
-                      className="block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-bold text-foreground">£67</span>
-                        <span className="text-sm text-muted-foreground">/ month</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">Unlimited inquiries, full chat access · Cancel any time</p>
-                    </button>
-                  )}
-                  <button onClick={() => { const url = getUpgradeUrl('yearly', { email: user?.email, ref: referredBy || undefined }); if (url) window.open(url, '_blank'); }}
-                    className="block w-full text-left rounded-xl border border-border p-4 hover:bg-secondary/50 transition-colors">
+              {/* Upgrade option for free users only - upsell/downsell hidden (secret in funnel) */}
+              {!isPaidTier(tier) && (
+                <div className="mt-6 max-w-[480px]">
+                  <button onClick={() => { const url = getFunnelUrl({ email: user?.email, ref: referredBy || undefined }); if (url) window.open(url, '_blank'); }}
+                    className="block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-foreground">£397</span>
-                      <span className="text-sm text-muted-foreground">/ year</span>
-                      <span className="ml-2 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Save £407</span>
+                      <span className="text-lg font-bold text-foreground">£67</span>
+                      <span className="text-sm text-muted-foreground">/ month</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Everything + 2 months free</p>
-                  </button>
-                  <button onClick={() => { const url = getUpgradeUrl('lifetime', { email: user?.email, ref: referredBy || undefined }); if (url) window.open(url, '_blank'); }}
-                    className="block w-full text-left rounded-xl border border-border p-4 hover:bg-secondary/50 transition-colors">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-foreground">£997</span>
-                      <span className="text-sm text-muted-foreground">one-time</span>
-                      <span className="ml-2 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Best value</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Everything forever + priority support</p>
+                    <p className="text-xs text-muted-foreground mt-1">Unlimited access to all deals - Cancel any time</p>
                   </button>
                 </div>
               )}
