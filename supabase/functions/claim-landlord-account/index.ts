@@ -64,7 +64,7 @@ serve(async (req) => {
       .update({ name, email })
       .eq('id', user.id)
 
-    // 3. Link ALL property threads + inquiries matching this landlord's phone
+    // 3. Link ALL properties, threads, and inquiries matching this landlord's phone
     if (phone) {
       const { data: props } = await supabaseAdmin
         .from('properties')
@@ -72,16 +72,21 @@ serve(async (req) => {
         .or(`contact_phone.eq.${phone},contact_whatsapp.eq.${phone},landlord_whatsapp.eq.${phone}`)
       if (props && props.length > 0) {
         const ids = props.map((p: { id: string }) => p.id)
+        // Assign properties to this landlord (so they show under My Listings)
+        await supabaseAdmin
+          .from('properties')
+          .update({ submitted_by: user.id } as Record<string, unknown>)
+          .in('id', ids)
         // Legacy chat threads
         await supabaseAdmin
           .from('chat_threads')
           .update({ landlord_id: user.id })
           .in('property_id', ids)
       }
-      // Also update lister_email on inquiries so leads match after claiming
+      // Update lister_email on inquiries so leads match after claiming
       await supabaseAdmin
         .from('inquiries')
-        .update({ lister_email: email })
+        .update({ lister_email: email } as Record<string, unknown>)
         .eq('lister_phone', phone)
     }
 
