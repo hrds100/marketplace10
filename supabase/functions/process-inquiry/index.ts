@@ -180,9 +180,9 @@ serve(async (req) => {
     }
 
     // 7. Send WhatsApp to lister if they have a phone number
-    // Cold landlord = admin listed with phone only, no email → use 1-landlord_enquiry GHL workflow
-    // Registered landlord = has email → use 2-Tenant to Landlord GHL workflow
-    const isColdLandlord = !listerEmail
+    // Cold = deal_sourcer added by admin (no email) AND never contacted before
+    // Everyone else (landlords, agents, self-registered deal sourcers) always gets single message
+    const isColdLandlord = listerType === 'deal_sourcer' && !listerEmail
     const whatsappPhone = landlordWhatsapp || listerPhone
     if (whatsappPhone) {
       try {

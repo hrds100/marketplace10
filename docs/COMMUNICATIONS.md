@@ -1,7 +1,90 @@
 # NFsTay Messaging & Communication Architecture
-_Last updated: March 2026_
+_Last updated: 30 March 2026_
 
 > **MANDATORY: Any agent that adds, removes, or changes ANY email, WhatsApp, or in-app notification MUST update this document in the same commit. No exceptions.**
+
+---
+
+## THE COMPLETE COMMUNICATION FLOW (plain English)
+
+This is the single source of truth for how inquiries work from start to finish.
+
+### A tenant finds a property and wants to inquire
+
+**1. The tenant must be a paid subscriber first**
+
+- A free user clicks WhatsApp or Email on any property and a **paywall panel** opens instead.
+- The panel shows a GHL payment iframe (pay.nfstay.com) where the tenant enters card details.
+- Once payment is confirmed, their account tier upgrades from `free` to `monthly` (or `yearly`/`lifetime`).
+- The panel detects the tier change and redirects them back to the deals grid.
+- They can now inquire on any property, unlimited.
+
+**Admin notification:** Hugo and Chris receive an **email** and **bell notification** when a user subscribes ("User [name] upgraded to [tier]").
+
+**2. The tenant sends the inquiry**
+
+- **WhatsApp:** their WhatsApp opens to NFStay's company number (+44 7476 368123) with a pre-filled message about the property. They hit send.
+- **Email:** a box pops up, they type a message and hit send.
+
+**3. The tenant gets TWO confirmations back (always, regardless of how they inquired)**
+
+- A **WhatsApp message**: "Your inquiry has been received for property [property name] and we have notified the Landlord/Agent."
+- An **email confirmation**: same message.
+
+Both always fire. Not one or the other.
+
+**4a. Landlord or Agent gets notified (ALL inquiries)**
+
+- Landlords and agents ALWAYS get the single-message workflow, regardless of whether it's first contact or not.
+- The system searches GHL for the lister's phone. If not found, creates a new GHL contact.
+- Sets the magic link URL and property name on the contact.
+- Removes the contact from workflow `2-Tenant to Landlord` (0eb4395c), waits 3 seconds, re-enrolls.
+- GHL sends a single WhatsApp (template: `nfstay_tenant_new_message`): "You have a new message about [property name] on NFsTay.." with a **magic link button**.
+- The lister also receives an **email notification** via Resend (if they have an email on file).
+- Both WhatsApp AND email are sent every time, as long as we have the details.
+
+**4b. Deal Sourcer gets notified - FIRST TIME EVER (admin-added, no email)**
+
+- This only applies to deal sourcers added by admin via Quick List with phone only (no email, `@nfstay.internal`).
+- Self-registered deal sourcers with a real email follow the same path as landlords/agents (4a).
+- The system checks: `lister_type === 'deal_sourcer'` AND no real email AND never contacted before (no existing `landlord_invites` for this phone).
+- Creates a new GHL contact, sets magic link + property name.
+- Enrolls in GHL workflow `1-landlord_enquiry` (67250bfa).
+- GHL sends a multi-step WhatsApp sequence:
+  - **Message 1** (template: `landlord_enquiry`): "Hey, is your [property name] still available?"
+  - Waits for the deal sourcer to reply
+  - **Message 2** (free form): Introduction about NFStay
+  - **Message 3**: Audio message explaining NFStay
+  - **Message 4** (template: `new_inquiry`): "You have a new message about [property name] on NFsTay.." with a **magic link button**
+
+**4c. Deal Sourcer gets notified - HAS BEEN CONTACTED BEFORE**
+
+- Once a deal sourcer has been contacted at least once, they follow the same single-message path as landlords/agents (4a).
+- Removes from workflow `2-Tenant to Landlord`, waits 3s, re-enrolls.
+- Single WhatsApp + email with magic link.
+
+**5. The landlord taps the magic link**
+
+- Their browser opens hub.nfstay.com/inbox?token=XXX.
+- The system looks up the token, finds or creates their user account automatically (no password needed).
+- They land on the CRM leads page with the tenant's details visible.
+
+**6. New landlord claims their account**
+
+- Because the system created their account with an internal email (landlord_XXXX@nfstay.internal), a banner appears at the top: "Claim your account."
+- The landlord enters their real email and name.
+- The system links ALL properties that match their phone number (across contact_phone, contact_whatsapp, and landlord_whatsapp) to their account.
+- All chat threads and inquiries for those properties are also linked.
+- They now have a full account and can log in anytime with email and password.
+
+**7. Hugo and Chris get notified (admin)**
+
+- **New user registered**: bell notification + email ("New user: [name] ([email])").
+- **User subscribed**: bell notification + email ("User [name] upgraded to [tier]").
+- **New inquiry**: bell notification + email ("New inquiry on [property name] from [tenant name]").
+- **New deal submitted**: bell notification + email ("New deal submitted: [type] in [city]").
+
+All admin notifications go to hugo@nfstay.com and chris@nfstay.com.
 
 ---
 
@@ -279,12 +362,18 @@ Used for:
 
 ---
 
-## 10. Known Gaps (as of March 2026)
+## 10. Known Gaps (as of 30 March 2026)
 
-| # | Gap | Impact |
-|---|---|---|
-| 1 | `inbox-nda-signed` n8n workflow not built | No WhatsApp notification when NDA signed |
-| 2 | WhatsApp is outbound only - no inbound parsing | Both parties must use web inbox to reply |
+| # | Gap | Impact | Status |
+|---|---|---|---|
+| 1 | `inbox-nda-signed` n8n workflow not built | No WhatsApp notification when NDA signed | Not built |
+| 2 | WhatsApp is outbound only - no inbound parsing | Both parties must use web inbox to reply | By design |
+| 3 | Tenant auto-reply skips when user has no WhatsApp in profile | Auto-reply fires inconsistently | Fix planned |
+| 4 | Reference number in pre-filled message is full UUID (36 chars) | Ugly, needs max 5 chars | Fix planned |
+| 5 | DealDetail passes slug instead of UUID as property_id to process-inquiry | Silent backend failure | Fix planned |
+| 6 | Landlord notification (deals grid) sends direct message instead of GHL workflow enrollment | Wrong pattern - should use 67250bfa/0eb4395c like inbox | Fix planned |
+| 7 | New user registration admin notification | No email/bell when someone signs up | Not built |
+| 8 | User subscription admin notification | No email/bell when a user subscribes to a paid tier | Not built |
 
 ---
 
@@ -334,7 +423,29 @@ Used for:
 |-------------|---------|-------------|---------|
 | Edit notification | n8n | Hugo (admin) | Fires `/webhook/notify-admin-edit` |
 
-### Inbox Messaging
+### Deals Grid Inquiry (tenant contacts landlord via WhatsApp or email)
+
+| What happens | Channel | Who receives | Message |
+|-------------|---------|-------------|---------|
+| Inquiry submitted | DB | System | Row created in `inquiries` table |
+| Tenant auto-reply | WhatsApp | Tenant | "Your inquiry has been received for [property] and we have notified the Landlord/Agent" |
+| Tenant confirmation | Email | Tenant | Same confirmation message |
+| Landlord first contact | WhatsApp (GHL workflow 67250bfa) | Landlord | Multi-step: "Is your property still available?" -> audio -> magic link |
+| Landlord ongoing | WhatsApp (GHL workflow 0eb4395c) | Landlord | Single message: "You have a new message about [property]" + magic link |
+| Landlord email | Email | Landlord | "You have a new inquiry about [property]" |
+| Admin alert | Email + In-App | Hugo + Chris | "New inquiry on [property] from [tenant]" |
+
+**How it flows:**
+1. Tenant clicks WhatsApp/Email on PropertyCard, DealDetail, or InquiryPanel
+2. Frontend calls `process-inquiry` edge function
+3. Edge function creates inquiry record, generates magic token, fires n8n webhooks
+4. n8n `inquiry-tenant-reply` sends WhatsApp auto-reply to tenant
+5. n8n `inquiry-lister-whatsapp` searches/creates GHL contact, sets custom fields, enrolls in correct GHL workflow (67250bfa for first time, 0eb4395c for ongoing)
+6. GHL sends WhatsApp to landlord using template with magic link button
+7. Landlord taps link -> auto-login -> CRM leads page
+8. New landlord sees "Claim your account" banner -> enters email + name -> all matching properties linked
+
+### Inbox Messaging (operator uses web inbox to message landlord)
 
 | What happens | Channel | Who receives | Message |
 |-------------|---------|-------------|---------|
@@ -506,18 +617,21 @@ USER ACTION
 
 ## WHAT'S LIVE vs PLANNED
 
-| Area | Email | WhatsApp | Status |
-|------|:-----:|:--------:|--------|
-| Signup + OTP | Y | Y | **LIVE** |
-| Deal submission/approval | Y | - | **LIVE** |
-| Deal expiry | Y | - | **LIVE** |
-| Inbox messaging | - | Y | **LIVE** |
-| Payment/tier | Y | - | **LIVE** |
-| Affiliates | Y | - | **LIVE** |
-| Investment purchases | Y | Y | **PLANNED** |
-| Rent/payouts | Y | Y | **PLANNED** |
-| Proposals/voting | Y | Y | **PLANNED** |
-| Boost | Y | - | **PLANNED** |
+| Area | Email | WhatsApp | Bell | Status |
+|------|:-----:|:--------:|:----:|--------|
+| Signup + OTP | Y | Y | - | **LIVE** |
+| Deal submission/approval | Y | - | Y | **LIVE** |
+| Deal expiry | Y | - | Y | **LIVE** |
+| Inbox messaging | - | Y | - | **LIVE** |
+| Deals grid inquiry (tenant to landlord) | Y | Y | Y | **PARTIALLY BROKEN** (see gaps 3-6) |
+| Payment/tier | Y | - | - | **LIVE** |
+| Affiliates | Y | - | - | **LIVE** |
+| New user registration admin alert | - | - | - | **NOT BUILT** (gap 7) |
+| User subscription admin alert | - | - | - | **NOT BUILT** (gap 8) |
+| Investment purchases | Y | Y | - | **PLANNED** |
+| Rent/payouts | Y | Y | - | **PLANNED** |
+| Proposals/voting | Y | Y | - | **PLANNED** |
+| Boost | Y | - | - | **PLANNED** |
 
 ---
 
