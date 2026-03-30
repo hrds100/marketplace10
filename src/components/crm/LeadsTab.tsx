@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { GripVertical, ChevronDown, Mail, Phone, Copy, Check, Clock, User, MapPin, FileText, Loader2, Pencil, X } from 'lucide-react';
+import { GripVertical, ChevronDown, Mail, Phone, Copy, Check, Clock, User, MapPin, FileText, Loader2, Pencil, X, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -53,6 +53,7 @@ export default function LeadsTab() {
   const [claimName, setClaimName] = useState('');
   const [claimEmail, setClaimEmail] = useState('');
   const [claiming, setClaiming] = useState(false);
+  const [claimExpanded, setClaimExpanded] = useState(true);
 
   // Load profile
   useEffect(() => {
@@ -127,6 +128,7 @@ export default function LeadsTab() {
   async function handleExpand(lead: Inquiry) {
     if (expandedId === lead.id) { setExpandedId(null); return; }
     setExpandedId(lead.id);
+    setClaimExpanded(false);
     setNdaAgreed(false);
     if (lead.status === 'new') {
       await (supabase.from('inquiries') as any).update({ status: 'viewed', viewed_at: new Date().toISOString() }).eq('id', lead.id);
@@ -196,19 +198,7 @@ export default function LeadsTab() {
   return (
     <div className="mt-2">
       {/* Claim account */}
-      {isUnclaimed && (
-        <div className="mb-4 bg-white rounded-xl border p-4" style={{ borderColor: '#1E9A80', borderWidth: 1.5 }}>
-          <h3 className="text-sm font-bold mb-1" style={{ color: '#1A1A1A' }}>Claim your account</h3>
-          <p className="text-xs mb-3" style={{ color: '#6B7280' }}>Set your name and email so you can log in anytime at hub.nfstay.com</p>
-          <form onSubmit={handleClaim} className="flex flex-col sm:flex-row gap-2">
-            <input value={claimName} onChange={e => setClaimName(e.target.value)} placeholder="Your name" className="flex-1 h-9 rounded-lg border px-3 text-sm" style={{ borderColor: '#E5E7EB' }} required />
-            <input value={claimEmail} onChange={e => setClaimEmail(e.target.value)} placeholder="Your email" type="email" className="flex-1 h-9 rounded-lg border px-3 text-sm" style={{ borderColor: '#E5E7EB' }} required />
-            <button type="submit" disabled={claiming} className="h-9 px-4 rounded-lg text-xs font-semibold text-white disabled:opacity-50" style={{ backgroundColor: '#1E9A80' }}>
-              {claiming ? 'Claiming...' : 'Claim'}
-            </button>
-          </form>
-        </div>
-      )}
+      {/* Claim banner handled by DashboardLayout - no duplicate here */}
 
       {/* Stats */}
       <div className="flex gap-3 mb-4 flex-wrap items-center">
@@ -302,27 +292,32 @@ export default function LeadsTab() {
                     <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
                       <div className="px-3 pb-3 border-t" style={{ borderColor: '#F3F4F6' }}>
                         {/* NDA gate */}
-                        {needsNda ? (
-                          <div className="pt-3">
-                            <div className="flex items-center gap-2 mb-2">
-                              <FileText className="w-3.5 h-3.5" style={{ color: '#1E9A80' }} />
-                              <span className="text-xs font-semibold" style={{ color: '#1A1A1A' }}>Quick Partnership Agreement</span>
-                            </div>
-                            <div className="rounded-lg p-2.5 mb-2 text-[11px] leading-relaxed" style={{ backgroundColor: '#F9FAFB', color: '#374151' }}>
-                              If you close a deal with this tenant, a <strong>£250 introduction fee</strong> applies. Non-payment results in removal from the platform.
-                            </div>
-                            <label className="flex items-start gap-2 cursor-pointer mb-2">
-                              <input type="checkbox" checked={ndaAgreed} onChange={e => setNdaAgreed(e.target.checked)} className="mt-0.5 h-3.5 w-3.5 rounded" style={{ accentColor: '#1E9A80' }} />
-                              <span className="text-[11px]" style={{ color: '#374151' }}>I agree to the above terms</span>
-                            </label>
-                            <button onClick={() => handleSignNda(lead.id)} disabled={!ndaAgreed || signingNda}
-                              className="w-full h-8 rounded-lg text-xs font-semibold text-white disabled:opacity-50" style={{ backgroundColor: '#1E9A80' }}>
-                              {signingNda ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : 'Agree & View Lead'}
-                            </button>
-                          </div>
-                        ) : (
+                        {(() => {
+                          // NDA modal state for this lead
+                          const showNdaModal = needsNda && expandedId === lead.id;
+                          return (
                           <div className="pt-3 space-y-2.5">
-                            {/* Tenant name */}
+                            {/* NDA overlay modal */}
+                            {showNdaModal && ndaAgreed === false && (
+                              <div className="rounded-lg border p-3 mb-2" style={{ borderColor: '#1E9A80', backgroundColor: '#FAFFFE' }}>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <FileText className="w-3.5 h-3.5" style={{ color: '#1E9A80' }} />
+                                  <span className="text-xs font-semibold" style={{ color: '#1A1A1A' }}>Quick Partnership Agreement</span>
+                                </div>
+                                <div className="rounded-lg p-2.5 mb-2 text-[11px] leading-relaxed" style={{ backgroundColor: '#F9FAFB', color: '#374151' }}>
+                                  If you close a deal with this tenant, a <strong>£250 introduction fee</strong> applies. Non-payment results in removal from the platform.
+                                </div>
+                                <label className="flex items-start gap-2 cursor-pointer mb-2">
+                                  <input type="checkbox" checked={ndaAgreed} onChange={e => setNdaAgreed(e.target.checked)} className="mt-0.5 h-3.5 w-3.5 rounded" style={{ accentColor: '#1E9A80' }} />
+                                  <span className="text-[11px]" style={{ color: '#374151' }}>I agree to the above terms</span>
+                                </label>
+                                <button onClick={() => handleSignNda(lead.id)} disabled={!ndaAgreed || signingNda}
+                                  className="w-full h-8 rounded-lg text-xs font-semibold text-white disabled:opacity-50" style={{ backgroundColor: '#1E9A80' }}>
+                                  {signingNda ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : 'Agree & View Lead'}
+                                </button>
+                              </div>
+                            )}
+                            {/* Tenant name - always visible */}
                             {lead.tenant_name && (
                               <div className="flex items-center gap-2">
                                 <User className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#9CA3AF' }} />
@@ -334,14 +329,15 @@ export default function LeadsTab() {
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <Phone className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#9CA3AF' }} />
-                                  <span className="text-xs" style={{ color: '#1A1A1A' }}>{lead.tenant_phone}</span>
+                                  <span className={`text-xs ${needsNda ? 'select-none' : ''}`} style={{ color: '#1A1A1A', filter: needsNda ? 'blur(5px)' : 'none' }}>{lead.tenant_phone}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <button onClick={() => copyText(lead.tenant_phone!, `ph-${lead.id}`)} className="p-1 rounded hover:bg-gray-50">
-                                    {copiedField === `ph-${lead.id}` ? <Check className="w-3 h-3" style={{ color: '#1E9A80' }} /> : <Copy className="w-3 h-3" style={{ color: '#9CA3AF' }} />}
+                                  <button onClick={() => needsNda ? setNdaAgreed(false) : copyText(lead.tenant_phone!, `ph-${lead.id}`)} className="p-1 rounded hover:bg-gray-50">
+                                    {needsNda ? <Lock className="w-3 h-3" style={{ color: '#9CA3AF' }} /> : copiedField === `ph-${lead.id}` ? <Check className="w-3 h-3" style={{ color: '#1E9A80' }} /> : <Copy className="w-3 h-3" style={{ color: '#9CA3AF' }} />}
                                   </button>
-                                  <a href={`https://wa.me/${lead.tenant_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi ${lead.tenant_name || ''}, I saw your inquiry about ${lead.property_name || 'our property'} on nfstay. How can I help?`)}`}
-                                    target="_blank" rel="noopener noreferrer"
+                                  <a href={needsNda ? '#' : `https://wa.me/${lead.tenant_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi ${lead.tenant_name || ''}, I saw your inquiry about ${lead.property_name || 'our property'} on nfstay. How can I help?`)}`}
+                                    onClick={e => { if (needsNda) { e.preventDefault(); setNdaAgreed(false); } }}
+                                    target={needsNda ? undefined : '_blank'} rel="noopener noreferrer"
                                     className="h-7 px-2 rounded-lg inline-flex items-center gap-1 text-[10px] font-semibold hover:brightness-[0.96]"
                                     style={{ backgroundColor: '#E7F5EE', color: '#25D366' }}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -355,10 +351,10 @@ export default function LeadsTab() {
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <Mail className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#9CA3AF' }} />
-                                  <span className="text-xs" style={{ color: '#1A1A1A' }}>{lead.tenant_email}</span>
+                                  <span className={`text-xs ${needsNda ? 'select-none' : ''}`} style={{ color: '#1A1A1A', filter: needsNda ? 'blur(5px)' : 'none' }}>{lead.tenant_email}</span>
                                 </div>
-                                <button onClick={() => copyText(lead.tenant_email!, `em-${lead.id}`)} className="p-1 rounded hover:bg-gray-50">
-                                  {copiedField === `em-${lead.id}` ? <Check className="w-3 h-3" style={{ color: '#1E9A80' }} /> : <Copy className="w-3 h-3" style={{ color: '#9CA3AF' }} />}
+                                <button onClick={() => needsNda ? setNdaAgreed(false) : copyText(lead.tenant_email!, `em-${lead.id}`)} className="p-1 rounded hover:bg-gray-50">
+                                  {needsNda ? <Lock className="w-3 h-3" style={{ color: '#9CA3AF' }} /> : copiedField === `em-${lead.id}` ? <Check className="w-3 h-3" style={{ color: '#1E9A80' }} /> : <Copy className="w-3 h-3" style={{ color: '#9CA3AF' }} />}
                                 </button>
                               </div>
                             )}
@@ -381,7 +377,8 @@ export default function LeadsTab() {
                               </span>
                             </div>
                           </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>

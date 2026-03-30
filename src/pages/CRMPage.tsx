@@ -23,7 +23,8 @@ export default function CRMPage() {
     });
   }, [user]);
   const isListerRole = userRole === 'landlord' || userRole === 'agent' || userRole === 'deal_sourcer';
-  const [activeTab, setActiveTab] = useState<'deals' | 'leads'>(isListerRole ? 'leads' : 'deals');
+  const [activeTab, setActiveTab] = useState<'deals' | 'leads'>('deals');
+  useEffect(() => { if (isListerRole) setActiveTab('leads'); }, [isListerRole]);
   const [deals, setDeals] = useState<ExtendedDeal[]>([]);
   const [archivedIds, setArchivedIds] = useState<string[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
