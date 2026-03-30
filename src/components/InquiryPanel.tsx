@@ -156,29 +156,29 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   if (!listing) return null;
 
   const handleSendWhatsApp = async () => {
-    const encodedMsg = encodeURIComponent(message);
-    window.open(`https://wa.me/447476368123?text=${encodedMsg}`, '_blank');
-
-    // Create inquiry row so lead appears in My Leads pipeline
-    try {
-      const session = (await supabase.auth.getSession()).data.session;
-      if (session && listing) {
-        await supabase.functions.invoke('process-inquiry', {
+    // Create inquiry FIRST (before opening WhatsApp, so browser doesn't throttle the fetch)
+    if (user && listing) {
+      try {
+        const { data, error } = await supabase.functions.invoke('process-inquiry', {
           body: {
             property_id: listing.id,
             channel: 'whatsapp',
             message,
-            tenant_name: user?.user_metadata?.name || user?.user_metadata?.full_name || null,
-            tenant_email: user?.email || null,
-            tenant_phone: user?.user_metadata?.whatsapp || null,
+            tenant_name: user.user_metadata?.name || user.user_metadata?.full_name || null,
+            tenant_email: user.email || null,
+            tenant_phone: user.user_metadata?.whatsapp || null,
             property_url: `https://hub.nfstay.com/deals/${listing.slug || listing.id}`,
           },
         });
+        if (error) console.error('[InquiryPanel] process-inquiry error:', error);
+      } catch (err) {
+        console.error('[InquiryPanel] process-inquiry failed:', err);
       }
-    } catch {
-      // Non-blocking - WhatsApp still opens even if inquiry creation fails
     }
 
+    // Then open WhatsApp
+    const encodedMsg = encodeURIComponent(message);
+    window.open(`https://wa.me/447476368123?text=${encodedMsg}`, '_blank');
     handleClose();
   };
 
