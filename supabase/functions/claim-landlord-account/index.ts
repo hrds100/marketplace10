@@ -43,18 +43,7 @@ serve(async (req) => {
 
     const phone: string = user.user_metadata?.phone || user.user_metadata?.whatsapp || ''
 
-    // 1. Check email not taken by another user
-    const { data: existing } = await supabaseAdmin.rpc('', undefined) // dummy to get raw access
-      .catch(() => ({ data: null }))
-    // Use direct SQL via postgres connection for reliability (updateUserById has bugs with email changes)
-    const { error: dupeCheck } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .neq('id', user.id)
-      .maybeSingle()
-
-    // Update auth.users email + identity via admin API (try first, fall back to direct approach)
+    // 1. Update auth.users email + identity via admin API (try first, fall back to direct approach)
     let emailUpdateOk = false
     const { error: emailErr } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       email,
