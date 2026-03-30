@@ -47,7 +47,10 @@ export default function EmailInquiryModal({ open, listing, onClose }: Props) {
     }
     setSending(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
       const { data, error } = await supabase.functions.invoke('process-inquiry', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
         body: {
           property_id: listing!.id,
           channel: 'email',

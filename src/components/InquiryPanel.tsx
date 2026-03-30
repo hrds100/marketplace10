@@ -159,18 +159,22 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
     // Create inquiry FIRST (before opening WhatsApp, so browser doesn't throttle the fetch)
     if (user && listing) {
       try {
-        const { data, error } = await supabase.functions.invoke('process-inquiry', {
-          body: {
-            property_id: listing.id,
-            channel: 'whatsapp',
-            message,
-            tenant_name: user.user_metadata?.name || user.user_metadata?.full_name || null,
-            tenant_email: user.email || null,
-            tenant_phone: user.user_metadata?.whatsapp || null,
-            property_url: `https://hub.nfstay.com/deals/${listing.slug || listing.id}`,
-          },
-        });
-        if (error) console.error('[InquiryPanel] process-inquiry error:', error);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const { data, error } = await supabase.functions.invoke('process-inquiry', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+            body: {
+              property_id: listing.id,
+              channel: 'whatsapp',
+              message,
+              tenant_name: user.user_metadata?.name || user.user_metadata?.full_name || null,
+              tenant_email: user.email || null,
+              tenant_phone: user.user_metadata?.whatsapp || null,
+              property_url: `https://hub.nfstay.com/deals/${listing.slug || listing.id}`,
+            },
+          });
+          if (error) console.error('[InquiryPanel] process-inquiry error:', error);
+        }
       } catch (err) {
         console.error('[InquiryPanel] process-inquiry failed:', err);
       }
