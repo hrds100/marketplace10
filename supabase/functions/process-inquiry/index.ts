@@ -43,6 +43,23 @@ serve(async (req) => {
 
     const { property_id, channel, message, tenant_name, tenant_email, tenant_phone, property_url } = await req.json()
 
+    // Resolve tenant phone: prefer explicit value, fall back to profiles.whatsapp
+    let resolvedTenantPhone = tenant_phone || null
+    if (!resolvedTenantPhone && user.id) {
+      try {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('whatsapp')
+          .eq('id', user.id)
+          .single()
+        if (profile?.whatsapp) {
+          resolvedTenantPhone = profile.whatsapp
+        }
+      } catch {
+        // Non-blocking - continue without phone
+      }
+    }
+
     if (!property_id || !channel) {
       return new Response(JSON.stringify({ error: 'Missing required fields: property_id, channel' }), {
         status: 400, headers: corsHeaders,
@@ -86,7 +103,7 @@ serve(async (req) => {
         message: message || null,
         tenant_name: tenant_name || null,
         tenant_email: tenant_email || null,
-        tenant_phone: tenant_phone || null,
+        tenant_phone: resolvedTenantPhone,
         token: inquiryToken,
         status: 'new',
       } as Record<string, unknown>)
@@ -144,19 +161,19 @@ serve(async (req) => {
     }
 
     // 6b. Send WhatsApp courtesy reply to tenant (if they inquired via WhatsApp)
-    if (channel === 'whatsapp' && tenant_phone) {
+    if (channel === 'whatsapp' && resolvedTenantPhone) {
       try {
         await fetch(`${N8N_BASE}/webhook/inquiry-tenant-reply`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            phone: tenant_phone,
+            phone: resolvedTenantPhone,
             tenant_name: tenant_name || 'there',
             property_name: propertyName,
             lister_type: listerType,
           }),
         })
-        console.log(`Tenant WhatsApp reply sent to ${tenant_phone}`)
+        console.log(`Tenant WhatsApp reply sent to ${resolvedTenantPhone}`)
       } catch (e) {
         console.error('Failed to send tenant WhatsApp reply:', e)
       }

@@ -116,7 +116,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     }
     const propertyUrl = `https://hub.nfstay.com/deals/${listing.slug || listing.id}`;
     const msg = encodeURIComponent(
-      `Hi, I am interested in your property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${listing.id}\nPlease contact me at your earliest convenience.`,
+      `Hi, I am interested in your property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${listing.id.slice(0, 5).toUpperCase()}\nPlease contact me at your earliest convenience.`,
     );
     // Fire inquiry in background
     supabase.functions.invoke('process-inquiry', {
@@ -126,7 +126,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         message: `Interested in ${listing.name} at ${listing.city}`,
         tenant_name: user?.user_metadata?.name || '',
         tenant_email: user?.email || '',
-        tenant_phone: user?.user_metadata?.whatsapp || '',
+        tenant_phone: user?.user_metadata?.whatsapp || null,
         property_url: propertyUrl,
       },
     }).catch(() => {});

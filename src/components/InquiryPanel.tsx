@@ -60,7 +60,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
       setVisible(true);
       setPaymentComplete(false);
       setMessage(
-        `Hi, interested in ${listing.name} ref #${listing.id}. Could you share more details about availability and terms? Thanks!`
+        `Hi, interested in ${listing.name} ref #${listing.id.slice(0, 5).toUpperCase()}. Could you share more details about availability and terms? Thanks!`
       );
     }
   }, [open, listing?.id]);
