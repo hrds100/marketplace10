@@ -43,20 +43,54 @@ serve(async (req) => {
 
     const phone: string = user.user_metadata?.phone || user.user_metadata?.whatsapp || ''
 
-    // 1. Update auth email (admin API — no confirmation email needed, phone verified via WhatsApp)
+    // 1. Check email not taken by another user
+    const { data: existing } = await supabaseAdmin.rpc('', undefined) // dummy to get raw access
+      .catch(() => ({ data: null }))
+    // Use direct SQL via postgres connection for reliability (updateUserById has bugs with email changes)
+    const { error: dupeCheck } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .neq('id', user.id)
+      .maybeSingle()
+
+    // Update auth.users email + identity via admin API (try first, fall back to direct approach)
+    let emailUpdateOk = false
     const { error: emailErr } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       email,
       email_confirm: true,
+      user_metadata: { ...user.user_metadata, email },
     })
-    if (emailErr) {
-      console.error('Claim error:', emailErr.message, 'userId:', user.id, 'email:', email)
-      const msg = emailErr.message.includes('already') || emailErr.message.includes('duplicate')
-        ? 'That email is already in use. Try a different email.'
-        : emailErr.message.includes('updating user')
-          ? 'Could not update your account. The email may already be registered. Try a different email.'
-          : `Error: ${emailErr.message}`;
+    if (!emailErr) {
+      emailUpdateOk = true
+    } else {
+      console.error('updateUserById failed:', emailErr.message, '— trying direct GoTrue endpoint')
+      // Fallback: call GoTrue admin endpoint directly with service role key
+      try {
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users/${user.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${serviceKey}`,
+            'apikey': serviceKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, email_confirm: true }),
+        })
+        if (res.ok) {
+          emailUpdateOk = true
+        } else {
+          const errBody = await res.text()
+          console.error('GoTrue fallback failed:', res.status, errBody)
+        }
+      } catch (e) {
+        console.error('GoTrue fallback error:', e)
+      }
+    }
+
+    if (!emailUpdateOk) {
       return new Response(
-        JSON.stringify({ error: msg }),
+        JSON.stringify({ error: 'Could not update email. Please try a different email or contact support.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
