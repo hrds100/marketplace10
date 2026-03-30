@@ -30,15 +30,12 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // Verify the calling user's JWT
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-    )
-    const { data: { user }, error: userErr } = await supabaseClient.auth.getUser(
+    // Verify the calling user's JWT (use admin client for reliability with magic link sessions)
+    const { data: { user }, error: userErr } = await supabaseAdmin.auth.getUser(
       authHeader.replace('Bearer ', '')
     )
     if (userErr || !user) {
+      console.error('Auth failed:', userErr?.message)
       return new Response(JSON.stringify({ error: 'Invalid session' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
