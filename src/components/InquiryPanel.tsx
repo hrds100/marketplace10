@@ -155,10 +155,30 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   if (!open && !visible) return null;
   if (!listing) return null;
 
-  const handleSendWhatsApp = () => {
+  const handleSendWhatsApp = async () => {
     const encodedMsg = encodeURIComponent(message);
-    // WhatsApp inquiry is processed when the message arrives at GHL (not on button click)
     window.open(`https://wa.me/447476368123?text=${encodedMsg}`, '_blank');
+
+    // Create inquiry row so lead appears in My Leads pipeline
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (session && listing) {
+        await supabase.functions.invoke('process-inquiry', {
+          body: {
+            property_id: listing.id,
+            channel: 'whatsapp',
+            message,
+            tenant_name: user?.user_metadata?.name || user?.user_metadata?.full_name || null,
+            tenant_email: user?.email || null,
+            tenant_phone: user?.user_metadata?.whatsapp || null,
+            property_url: `https://hub.nfstay.com/deals/${listing.slug || listing.id}`,
+          },
+        });
+      }
+    } catch {
+      // Non-blocking - WhatsApp still opens even if inquiry creation fails
+    }
+
     handleClose();
   };
 
