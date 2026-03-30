@@ -360,7 +360,7 @@ function InvestModal({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Annual yield</span>
-                  <span className="font-semibold">{property.annualYield}%</span>
+                  <span className="font-semibold">{(property.annualYield * 12).toFixed(1)}%</span>
                 </div>
               </div>
             </div>
@@ -523,7 +523,7 @@ function PropertyBadges({ property }: { property: PropertyData }) {
 
 function MetricPills({ property }: { property: PropertyData }) {
   const metrics = [
-    { icon: TrendingUp, label: 'Yield', value: `${property.annualYield}%` },
+    { icon: TrendingUp, label: 'Yield', value: `${(property.annualYield * 12).toFixed(1)}%` },
     { icon: BarChart3, label: 'Occupancy', value: `${property.occupancyRate}%` },
     { icon: DollarSign, label: 'Rent Cost', value: `\u00A3${(property as any).rentCost?.toLocaleString() || '3,500'}` },
     { icon: Star, label: 'Deal Value', value: `$${(property.propertyValue / 1000).toFixed(0)}k` },
