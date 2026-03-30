@@ -15,7 +15,7 @@ export default function ClaimAccountBanner({ phone, onClaimed }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const expanded = true;
 
   if (!user) return null;
 
@@ -94,36 +94,12 @@ export default function ClaimAccountBanner({ phone, onClaimed }: Props) {
           </div>
         </div>
 
-        {/* Collapsed button */}
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="w-full h-12 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all hover:brightness-[0.96] active:scale-[0.98] claim-glow"
-          style={{ backgroundColor: '#1E9A80', boxShadow: 'rgba(30,154,128,0.4) 0 4px 20px' }}
-        >
-          {expanded ? (
-            <>
-              <ChevronUp className="w-4 h-4" />
-              Close
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              Claim your account
-            </>
-          )}
-        </button>
+        {/* Title bar */}
+        <div className="flex items-center justify-center gap-2 py-2">
+          <Sparkles className="w-4 h-4" style={{ color: '#1E9A80' }} />
+          <span className="text-xs font-semibold" style={{ color: '#1E9A80' }}>Claim your account</span>
+        </div>
       </div>
-
-      {/* Glow animation */}
-      {!expanded && (
-        <style>{`
-          @keyframes claim-pulse {
-            0%, 100% { box-shadow: rgba(30,154,128,0.4) 0 4px 20px; }
-            50% { box-shadow: rgba(30,154,128,0.6) 0 6px 28px; }
-          }
-          .claim-glow { animation: claim-pulse 2s ease-in-out infinite; }
-        `}</style>
-      )}
     </div>
   );
 }
