@@ -69,7 +69,7 @@ serve(async (req) => {
     // 2. Look up the property to get lister details
     const { data: property, error: propErr } = await supabaseAdmin
       .from('properties')
-      .select('name, contact_phone, contact_email, contact_name, lister_type, landlord_whatsapp, city')
+      .select('name, contact_phone, contact_email, contact_name, lister_type, landlord_whatsapp, city, nda_required, first_landlord_inquiry')
       .eq('id', property_id)
       .single()
 
@@ -85,6 +85,8 @@ serve(async (req) => {
     const listerName = (property as Record<string, unknown>).contact_name as string || 'Property Lister'
     const landlordWhatsapp = (property as Record<string, unknown>).landlord_whatsapp as string || null
     const propertyName = (property as Record<string, unknown>).name as string || 'Property'
+    const ndaRequired = (property as Record<string, unknown>).nda_required as boolean || false
+    const firstLandlordInquiry = (property as Record<string, unknown>).first_landlord_inquiry as boolean || false
 
     // 3. Generate a unique token
     const inquiryToken = crypto.randomUUID()
@@ -106,6 +108,7 @@ serve(async (req) => {
         tenant_phone: resolvedTenantPhone,
         token: inquiryToken,
         status: 'new',
+        nda_required: ndaRequired,
       } as Record<string, unknown>)
       .select('id')
       .single()
@@ -136,7 +139,8 @@ serve(async (req) => {
     }
 
     // 5. Determine lister notification type and URL
-    const isNdaRequired = listerType === 'deal_sourcer'
+    // NDA is now controlled by admin toggle on properties, not by lister_type
+    const isNdaRequired = ndaRequired
     const leadUrl = isNdaRequired
       ? `${BASE_URL}/lead/${inquiryToken}/nda`
       : `${BASE_URL}/lead/${inquiryToken}`
@@ -180,9 +184,17 @@ serve(async (req) => {
     }
 
     // 7. Send WhatsApp to lister if they have a phone number
-    // Cold = deal_sourcer added by admin (no email) AND never contacted before
-    // Everyone else (landlords, agents, self-registered deal sourcers) always gets single message
-    const isColdLandlord = listerType === 'deal_sourcer' && !listerEmail
+    // Cold = admin toggled "First Landlord Inquiry" AND this is the first inquiry for this property
+    // Checks if any prior inquiries exist for this property (excluding current one)
+    let isColdLandlord = false
+    if (firstLandlordInquiry) {
+      const { count } = await supabaseAdmin
+        .from('inquiries')
+        .select('id', { count: 'exact', head: true })
+        .eq('property_id', property_id)
+        .neq('id', (inquiry as Record<string, unknown>).id)
+      isColdLandlord = (count || 0) === 0
+    }
     const whatsappPhone = landlordWhatsapp || listerPhone
     if (whatsappPhone) {
       try {

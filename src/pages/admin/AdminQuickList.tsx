@@ -275,6 +275,7 @@ export default function AdminQuickList() {
             contact_name: item.contact_name,
             contact_email: item.contact_email,
             lister_type: item.lister_type,
+            source: 'quick_list',
             landlord_whatsapp: item.contact_phone,
             deposit: item.deposit,
             sourcing_fee: item.sourcing_fee,
@@ -736,12 +737,16 @@ export default function AdminQuickList() {
                   </div>
                   <div>
                     <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Lister Type</label>
-                    <select value={listing.lister_type || ''} onChange={e => updateField('lister_type', e.target.value || null)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm">
-                      <option value="">Select</option>
-                      <option value="landlord">Landlord</option>
-                      <option value="agent">Letting Agent</option>
-                      <option value="deal_sourcer">Deal Sourcer</option>
-                    </select>
+                    <div className="flex gap-3 mt-1">
+                      {([['landlord', 'Landlord'], ['agent', 'Agent'], ['deal_sourcer', 'Deal Sourcer']] as const).map(([val, label]) => (
+                        <label key={val} className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="radio" name={`lister_type_${activeIdx}`} value={val} checked={listing.lister_type === val}
+                            onChange={() => updateField('lister_type', val)}
+                            className="w-4 h-4 accent-[#1E9A80]" />
+                          <span className="text-sm">{label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

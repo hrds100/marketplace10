@@ -18,6 +18,7 @@ interface Inquiry {
   stage: string;
   token: string;
   nda_signed: boolean;
+  nda_required: boolean;
   created_at: string;
   property_name?: string;
   property_city?: string;
@@ -131,8 +132,8 @@ export default function LeadsTab() {
     setExpandedId(lead.id);
     setClaimExpanded(false);
     setNdaAgreed(false);
-    // Trigger agreement for deal sourcer leads that haven't signed
-    if (lead.lister_type === 'deal_sourcer' && !lead.nda_signed) {
+    // Trigger agreement for leads that require NDA and haven't signed
+    if (lead.nda_required && !lead.nda_signed) {
       setAgreementLeadId(lead.id);
     }
     if (lead.status === 'new') {
@@ -258,7 +259,7 @@ export default function LeadsTab() {
             <div className="space-y-2 flex-1">
               {stageLeads(stage).map(lead => {
                 const isExpanded = expandedId === lead.id;
-                const needsNda = lead.lister_type === 'deal_sourcer' && !lead.nda_signed;
+                const needsNda = lead.nda_required && !lead.nda_signed;
 
                 return (
                   <div

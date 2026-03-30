@@ -51,6 +51,7 @@ interface DealForm {
   contactPhone: string;
   contactWhatsapp: string;
   contactEmail: string;
+  listerType: 'landlord' | 'agent' | 'deal_sourcer' | '';
 }
 
 interface AIPricingResult {
@@ -72,6 +73,7 @@ const INITIAL_FORM: DealForm = {
   rent: '', profit: '', deposit: '', agentFee: '',
   saApproved: '',
   contactName: '', contactPhone: '', contactWhatsapp: '', contactEmail: '',
+  listerType: '',
 };
 
 function Counter({ value, onChange, min = 1, max = 10, label }: { value: string; onChange: (v: string) => void; min?: number; max?: number; label: string }) {
@@ -362,6 +364,7 @@ export default function ListADealPage() {
         garage: form.garage === 'yes', deposit: parseInt(form.deposit) || null, agent_fee: parseInt(form.agentFee) || null,
         sa_approved: 'yes', contact_name: form.contactName, contact_phone: form.contactPhone,
         contact_whatsapp: form.contactWhatsapp, contact_email: form.contactEmail, landlord_whatsapp: form.contactWhatsapp || null,
+        lister_type: form.listerType || null, source: 'self_submitted',
         description: description || null, photos: photos.length > 0 ? photos : [],
         notes: [notes, form.furnished ? `Furnishing: ${form.furnished}` : ''].filter(Boolean).join(' | ') || null,
       }).select('id').single();
@@ -674,6 +677,19 @@ export default function ListADealPage() {
                   </div>
                 </div>
                 <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact email</label><input type="email" placeholder="From your profile" value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">I am a</label>
+                  <div className="flex gap-4">
+                    {([['landlord', 'Landlord'], ['agent', 'Agent'], ['deal_sourcer', 'Deal Sourcer']] as const).map(([val, label]) => (
+                      <label key={val} className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="radio" name="lister_type" value={val} checked={form.listerType === val}
+                          onChange={() => set('listerType', val)}
+                          className="w-4 h-4 accent-[#1E9A80]" />
+                        <span className="text-sm">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
             </AccordionSection>
 

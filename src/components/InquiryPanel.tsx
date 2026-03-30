@@ -271,6 +271,15 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
                   onLoad={handleIframeLoad}
                 />
               </div>
+              {/* Persistent back button - always visible outside iframe so user is never stuck */}
+              <div className="flex-shrink-0 border-t border-border p-3 bg-card">
+                <button
+                  onClick={() => { handleClose(); window.location.href = '/dashboard/deals'; }}
+                  className="w-full h-10 rounded-lg bg-secondary text-foreground text-sm font-semibold hover:bg-secondary/80 transition-colors"
+                >
+                  Back to Deals
+                </button>
+              </div>
             </div>
           )}
         </div>

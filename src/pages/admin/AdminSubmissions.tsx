@@ -104,6 +104,16 @@ export default function AdminSubmissions() {
     return <span className="badge-gray">{status}</span>;
   };
 
+  const LISTER_LABELS: Record<string, string> = { landlord: 'Landlord', agent: 'Agent', deal_sourcer: 'Deal Sourcer' };
+  const SOURCE_LABELS: Record<string, string> = { quick_list: 'Quick List', self_submitted: 'Self-submitted' };
+
+  const sourceTag = (s: Record<string, unknown>) => {
+    const src = SOURCE_LABELS[(s.source as string) || 'self_submitted'] || 'Self-submitted';
+    const lister = LISTER_LABELS[(s.lister_type as string) || ''] || '';
+    const label = lister ? `${src} - ${lister}` : src;
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-secondary text-muted-foreground border border-border">{label}</span>;
+  };
+
   const saLabel = (sa: string | null) => {
     if (sa === 'yes') return <span className="text-emerald-600 font-medium">Yes</span>;
     if (sa === 'no') return <span className="text-red-500 font-medium">No</span>;
@@ -138,12 +148,51 @@ export default function AdminSubmissions() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-foreground truncate">{s.name}</span>
                   {statusLabel(s.status)}
+                  {sourceTag(s as Record<string, unknown>)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">{s.city} · {s.postcode} · £{s.rent_monthly?.toLocaleString()}/mo</p>
               </div>
               <div className="flex items-center gap-2">
                 {(s.status === 'pending' || s.status === 'inactive') && (
-                  <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                    {/* First Landlord Inquiry toggle */}
+                    <label className="flex items-center gap-1.5 cursor-pointer" title="Send multi-step WhatsApp on first tenant inquiry">
+                      <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">1st Inquiry</span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={(s as Record<string, unknown>).first_landlord_inquiry as boolean || false}
+                        onClick={async () => {
+                          const newVal = !(s as Record<string, unknown>).first_landlord_inquiry;
+                          await supabase.from('properties').update({ first_landlord_inquiry: newVal } as any).eq('id', s.id);
+                          queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
+                          toast.success(newVal ? '1st inquiry flow ON' : '1st inquiry flow OFF');
+                          if (user) logAdminAction(user.id, { action: newVal ? 'enable_first_inquiry' : 'disable_first_inquiry', target_table: 'properties', target_id: s.id, metadata: { name: s.name } });
+                        }}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${(s as Record<string, unknown>).first_landlord_inquiry ? 'bg-[#1E9A80]' : 'bg-gray-300'}`}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${(s as Record<string, unknown>).first_landlord_inquiry ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                      </button>
+                    </label>
+                    {/* NDA Required toggle */}
+                    <label className="flex items-center gap-1.5 cursor-pointer" title="Require NDA before showing contact details">
+                      <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">NDA</span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={(s as Record<string, unknown>).nda_required as boolean || false}
+                        onClick={async () => {
+                          const newVal = !(s as Record<string, unknown>).nda_required;
+                          await supabase.from('properties').update({ nda_required: newVal } as any).eq('id', s.id);
+                          queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
+                          toast.success(newVal ? 'NDA required ON' : 'NDA required OFF');
+                          if (user) logAdminAction(user.id, { action: newVal ? 'enable_nda' : 'disable_nda', target_table: 'properties', target_id: s.id, metadata: { name: s.name } });
+                        }}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${(s as Record<string, unknown>).nda_required ? 'bg-[#1E9A80]' : 'bg-gray-300'}`}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${(s as Record<string, unknown>).nda_required ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                      </button>
+                    </label>
                     <button data-feature="ADMIN__SUBMISSIONS_APPROVE" onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Approve</button>
                     <button data-feature="ADMIN__SUBMISSIONS_REJECT" onClick={() => reject(s.id)} className="text-xs text-destructive font-medium px-2">Reject</button>
                   </div>
