@@ -43,43 +43,21 @@ serve(async (req) => {
 
     const phone: string = user.user_metadata?.phone || user.user_metadata?.whatsapp || ''
 
-    // 1. Update auth.users email + identity via admin API (try first, fall back to direct approach)
-    let emailUpdateOk = false
-    const { error: emailErr } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      email,
-      email_confirm: true,
-      user_metadata: { ...user.user_metadata, email },
+    // 1. Update email via SQL function (GoTrue admin API has a known 500 bug on email changes)
+    const { data: claimResult, error: claimErr } = await supabaseAdmin.rpc('claim_landlord_email', {
+      p_user_id: user.id,
+      p_new_email: email,
     })
-    if (!emailErr) {
-      emailUpdateOk = true
-    } else {
-      console.error('updateUserById failed:', emailErr.message, '— trying direct GoTrue endpoint')
-      // Fallback: call GoTrue admin endpoint directly with service role key
-      try {
-        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-        const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users/${user.id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${serviceKey}`,
-            'apikey': serviceKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, email_confirm: true }),
-        })
-        if (res.ok) {
-          emailUpdateOk = true
-        } else {
-          const errBody = await res.text()
-          console.error('GoTrue fallback failed:', res.status, errBody)
-        }
-      } catch (e) {
-        console.error('GoTrue fallback error:', e)
-      }
-    }
-
-    if (!emailUpdateOk) {
+    if (claimErr) {
+      console.error('claim_landlord_email failed:', claimErr.message)
       return new Response(
-        JSON.stringify({ error: 'Could not update email. Please try a different email or contact support.' }),
+        JSON.stringify({ error: 'Could not update email. Please try again or contact support.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    if (claimResult === false) {
+      return new Response(
+        JSON.stringify({ error: 'This email is already registered. Try a different email.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
