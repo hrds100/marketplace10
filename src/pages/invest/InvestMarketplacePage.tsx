@@ -1871,6 +1871,10 @@ export default function InvestMarketplacePage() {
   } : null;
 
   // Fetch blockchain stats: Owners, Total Shares, APR (aprBips), Shares Remaining
+  // Reads from two contracts every page load (same as legacy app):
+  //   RWA contract: totalShares (minted tokens), totalOwners, aprBips
+  //   Marketplace contract: sharesRemaining (unsold primary shares)
+  // sold = totalShares - sharesRemaining (legacy calculation)
   const [totalOwners, setTotalOwners] = useState(0);
   const [bcTotalShares, setBcTotalShares] = useState(0);
   const [bcSharesRemaining, setBcSharesRemaining] = useState(0);
@@ -1880,25 +1884,35 @@ export default function InvestMarketplacePage() {
       try {
         const ethers = await import('ethers');
         const provider = new ethers.providers.JsonRpcProvider('https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T');
-        // RWA Token: owners, totalShares, aprBips (yield in basis points)
-        const rwa = new ethers.Contract('0xA588E7dC42a956cc6c412925dE99240cc329157b', [
-          'function getProperty(uint256) view returns (tuple(uint256 totalShares, uint256 totalOwners, uint256 pricePerShare, uint256 aprBips, string uri))',
-        ], provider);
-        const prop = await rwa.getProperty(1);
-        setTotalOwners(prop.totalOwners.toNumber());
-        setBcTotalShares(prop.totalShares.toNumber());
-        setBcAprBips(prop.aprBips.toNumber()); // yield in basis points (e.g. 3000 = 30%)
 
-        // Marketplace: shares remaining
-        const mktIface = new ethers.utils.Interface([
-          'function getPrimarySale(uint256) view returns (tuple(uint256 totalShares, uint256 sharesRemaining, uint8 status, uint256 pricePerShare))',
-        ]);
-        const calldata = mktIface.encodeFunctionData('getPrimarySale', [1]);
-        const raw = await provider.call({ to: '0xDD22fDC50062F49a460E5a6bADF96Cbec85ac128', data: calldata });
+        // RWA Token: getProperty returns (pricePerShare, totalOwners, aprBips, totalShares, uri)
+        // IMPORTANT: field order must match the actual Solidity struct, not renamed
+        const rwaData = await provider.call({
+          to: '0xA588E7dC42a956cc6c412925dE99240cc329157b',
+          data: new ethers.utils.Interface([
+            'function getProperty(uint256) view returns (tuple(uint256 pricePerShare, uint256 totalOwners, uint256 aprBips, uint256 totalShares, string uri))',
+          ]).encodeFunctionData('getProperty', [1]),
+        });
+        const rwaDecoded = ethers.utils.defaultAbiCoder.decode(
+          ['tuple(uint256 pricePerShare, uint256 totalOwners, uint256 aprBips, uint256 totalShares, string uri)'],
+          rwaData,
+        )[0];
+        setTotalOwners(Number(rwaDecoded.totalOwners));
+        setBcTotalShares(Number(rwaDecoded.totalShares));
+        setBcAprBips(Number(rwaDecoded.aprBips));
+
+        // Marketplace: getPrimarySale returns 3 slots (totalShares, sharesRemaining, status)
+        // Decode raw because ethers struct decoding fails on this contract's return format
+        const mktCalldata = new ethers.utils.Interface([
+          'function getPrimarySale(uint256)',
+        ]).encodeFunctionData('getPrimarySale', [1]);
+        const raw = await provider.call({ to: '0xDD22fDC50062F49a460E5a6bADF96Cbec85ac128', data: mktCalldata });
         const hex = raw.slice(2);
         const remaining = parseInt(hex.slice(64, 128), 16);
         setBcSharesRemaining(remaining);
-      } catch { /* silent */ }
+      } catch (e) {
+        console.error('[InvestMarketplace] blockchain fetch failed:', e);
+      }
     }
     fetchBlockchainStats();
     // Refresh after purchase
