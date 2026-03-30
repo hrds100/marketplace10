@@ -32,6 +32,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPricing from "./pages/admin/AdminPricing";
 import AdminFAQ from "./pages/admin/AdminFAQ";
 import AdminAffiliates from "./pages/admin/AdminAffiliates";
+import AdminDealSourcers from "./pages/admin/AdminDealSourcers";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminUniversity from "./pages/admin/AdminUniversity";
@@ -177,6 +178,7 @@ const App = () => (
             <Route path="marketplace/pricing" element={<AdminPricing />} />
             <Route path="marketplace/faq" element={<AdminFAQ />} />
             <Route path="marketplace/affiliates" element={<AdminAffiliates />} />
+            <Route path="marketplace/deal-sourcers" element={<AdminDealSourcers />} />
             <Route path="marketplace/settings" element={<AdminSettings />} />
             <Route path="marketplace/notifications" element={<AdminNotifications />} />
 

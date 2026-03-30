@@ -37,6 +37,9 @@ serve(async (req) => {
       )
     }
 
+    // 1b. Track magic link click timestamp
+    await supabaseAdmin.from('landlord_invites').update({ used: true, used_at: new Date().toISOString() }).eq('id', invite.id)
+
     // 2. Get phone - from invite directly (new lead flow) or from thread → property (legacy inbox flow)
     let phone = ((invite as Record<string, unknown>).phone as string || '').trim()
 

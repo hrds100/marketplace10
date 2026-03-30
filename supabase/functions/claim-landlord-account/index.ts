@@ -52,8 +52,14 @@ serve(async (req) => {
       email_confirm: true,
     })
     if (emailErr) {
+      console.error('Claim error:', emailErr.message, 'userId:', user.id, 'email:', email)
+      const msg = emailErr.message.includes('already') || emailErr.message.includes('duplicate')
+        ? 'That email is already in use. Try a different email.'
+        : emailErr.message.includes('updating user')
+          ? 'Could not update your account. The email may already be registered. Try a different email.'
+          : `Error: ${emailErr.message}`;
       return new Response(
-        JSON.stringify({ error: emailErr.message.includes('already') ? 'That email is already in use.' : emailErr.message }),
+        JSON.stringify({ error: msg }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
