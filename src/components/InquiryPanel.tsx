@@ -156,27 +156,74 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   if (!listing) return null;
 
   const handleSendWhatsApp = async () => {
-    // Create inquiry FIRST (before opening WhatsApp, so browser doesn't throttle the fetch)
+    // Create inquiry row directly via Supabase client (bypasses edge function JWT issues)
     if (user && listing) {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          const { data, error } = await supabase.functions.invoke('process-inquiry', {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-            body: {
-              property_id: listing.id,
-              channel: 'whatsapp',
-              message,
-              tenant_name: user.user_metadata?.name || user.user_metadata?.full_name || null,
-              tenant_email: user.email || null,
-              tenant_phone: user.user_metadata?.whatsapp || null,
-              property_url: `https://hub.nfstay.com/deals/${listing.slug || listing.id}`,
-            },
-          });
-          if (error) console.error('[InquiryPanel] process-inquiry error:', error);
+        // 1. Get property details for lister info
+        const { data: prop } = await (supabase.from('properties') as any)
+          .select('contact_phone, contact_email, contact_name, lister_type, landlord_whatsapp, name, nda_required')
+          .eq('id', listing.id)
+          .single();
+
+        const token = crypto.randomUUID();
+        const tenantName = user.user_metadata?.name || user.user_metadata?.full_name || null;
+        const tenantEmail = user.email || null;
+        const tenantPhone = user.user_metadata?.whatsapp || null;
+
+        // 2. Insert inquiry directly
+        const { error: insertErr } = await (supabase.from('inquiries') as any).insert({
+          tenant_id: user.id,
+          property_id: listing.id,
+          lister_type: prop?.lister_type || 'landlord',
+          lister_phone: prop?.contact_phone || null,
+          lister_email: prop?.contact_email || null,
+          lister_name: prop?.contact_name || null,
+          channel: 'whatsapp',
+          message,
+          tenant_name: tenantName,
+          tenant_email: tenantEmail,
+          tenant_phone: tenantPhone,
+          token,
+          status: 'new',
+          nda_required: prop?.nda_required || false,
+        });
+
+        if (insertErr) {
+          console.error('[InquiryPanel] inquiry insert error:', insertErr);
+        } else {
+          // 3. Fire n8n webhook for landlord notification (non-blocking)
+          const whatsappPhone = prop?.landlord_whatsapp || prop?.contact_phone;
+          if (whatsappPhone) {
+            fetch('https://n8n.srv886554.hstgr.cloud/webhook/inquiry-lister-whatsapp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phone: whatsappPhone,
+                lister_name: prop?.contact_name || 'Property Lister',
+                property_name: prop?.name || listing.name,
+                lead_url: `https://hub.nfstay.com/lead/${token}`,
+                magic_token: '',
+                is_cold: false,
+              }),
+            }).catch(() => {});
+          }
+
+          // 4. Fire tenant confirmation webhook (non-blocking)
+          if (tenantPhone) {
+            fetch('https://n8n.srv886554.hstgr.cloud/webhook/inquiry-tenant-reply', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phone: tenantPhone,
+                tenant_name: tenantName || 'there',
+                property_name: prop?.name || listing.name,
+                lister_type: prop?.lister_type || 'landlord',
+              }),
+            }).catch(() => {});
+          }
         }
       } catch (err) {
-        console.error('[InquiryPanel] process-inquiry failed:', err);
+        console.error('[InquiryPanel] inquiry failed:', err);
       }
     }
 
