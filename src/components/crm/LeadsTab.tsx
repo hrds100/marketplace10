@@ -3,6 +3,7 @@ import { GripVertical, ChevronDown, Mail, Phone, Copy, Check, Clock, User, MapPi
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import LeadAccessAgreement from './LeadAccessAgreement';
 
 interface Inquiry {
   id: string;
@@ -130,6 +131,10 @@ export default function LeadsTab() {
     setExpandedId(lead.id);
     setClaimExpanded(false);
     setNdaAgreed(false);
+    // Trigger agreement for deal sourcer leads that haven't signed
+    if (lead.lister_type === 'deal_sourcer' && !lead.nda_signed) {
+      setAgreementLeadId(lead.id);
+    }
     if (lead.status === 'new') {
       await (supabase.from('inquiries') as any).update({ status: 'viewed', viewed_at: new Date().toISOString() }).eq('id', lead.id);
       setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: 'viewed' } : l));
@@ -177,7 +182,8 @@ export default function LeadsTab() {
     } catch { toast.error('Something went wrong'); } finally { setClaiming(false); }
   }
 
-  const isDealSourcer = profileData?.role === 'deal_sourcer';
+  // NDA is per-lead based on lister_type, not user role
+  const [agreementLeadId, setAgreementLeadId] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -252,7 +258,7 @@ export default function LeadsTab() {
             <div className="space-y-2 flex-1">
               {stageLeads(stage).map(lead => {
                 const isExpanded = expandedId === lead.id;
-                const needsNda = isDealSourcer && !lead.nda_signed;
+                const needsNda = lead.lister_type === 'deal_sourcer' && !lead.nda_signed;
 
                 return (
                   <div
@@ -294,29 +300,8 @@ export default function LeadsTab() {
                         {/* NDA gate */}
                         {(() => {
                           // NDA modal state for this lead
-                          const showNdaModal = needsNda && expandedId === lead.id;
                           return (
                           <div className="pt-3 space-y-2.5">
-                            {/* NDA overlay modal */}
-                            {showNdaModal && ndaAgreed === false && (
-                              <div className="rounded-lg border p-3 mb-2" style={{ borderColor: '#1E9A80', backgroundColor: '#FAFFFE' }}>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <FileText className="w-3.5 h-3.5" style={{ color: '#1E9A80' }} />
-                                  <span className="text-xs font-semibold" style={{ color: '#1A1A1A' }}>Quick Partnership Agreement</span>
-                                </div>
-                                <div className="rounded-lg p-2.5 mb-2 text-[11px] leading-relaxed" style={{ backgroundColor: '#F9FAFB', color: '#374151' }}>
-                                  If you close a deal with this tenant, a <strong>£250 introduction fee</strong> applies. Non-payment results in removal from the platform.
-                                </div>
-                                <label className="flex items-start gap-2 cursor-pointer mb-2">
-                                  <input type="checkbox" checked={ndaAgreed} onChange={e => setNdaAgreed(e.target.checked)} className="mt-0.5 h-3.5 w-3.5 rounded" style={{ accentColor: '#1E9A80' }} />
-                                  <span className="text-[11px]" style={{ color: '#374151' }}>I agree to the above terms</span>
-                                </label>
-                                <button onClick={() => handleSignNda(lead.id)} disabled={!ndaAgreed || signingNda}
-                                  className="w-full h-8 rounded-lg text-xs font-semibold text-white disabled:opacity-50" style={{ backgroundColor: '#1E9A80' }}>
-                                  {signingNda ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : 'Agree & View Lead'}
-                                </button>
-                              </div>
-                            )}
                             {/* Tenant name - always visible */}
                             {lead.tenant_name && (
                               <div className="flex items-center gap-2">
@@ -332,11 +317,11 @@ export default function LeadsTab() {
                                   <span className={`text-xs ${needsNda ? 'select-none' : ''}`} style={{ color: '#1A1A1A', filter: needsNda ? 'blur(5px)' : 'none' }}>{lead.tenant_phone}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <button onClick={() => needsNda ? setNdaAgreed(false) : copyText(lead.tenant_phone!, `ph-${lead.id}`)} className="p-1 rounded hover:bg-gray-50">
+                                  <button onClick={() => needsNda ? setAgreementLeadId(lead.id) : copyText(lead.tenant_phone!, `ph-${lead.id}`)} className="p-1 rounded hover:bg-gray-50">
                                     {needsNda ? <Lock className="w-3 h-3" style={{ color: '#9CA3AF' }} /> : copiedField === `ph-${lead.id}` ? <Check className="w-3 h-3" style={{ color: '#1E9A80' }} /> : <Copy className="w-3 h-3" style={{ color: '#9CA3AF' }} />}
                                   </button>
                                   <a href={needsNda ? '#' : `https://wa.me/${lead.tenant_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi ${lead.tenant_name || ''}, I saw your inquiry about ${lead.property_name || 'our property'} on nfstay. How can I help?`)}`}
-                                    onClick={e => { if (needsNda) { e.preventDefault(); setNdaAgreed(false); } }}
+                                    onClick={e => { if (needsNda) { e.preventDefault(); setAgreementLeadId(lead.id); } }}
                                     target={needsNda ? undefined : '_blank'} rel="noopener noreferrer"
                                     className="h-7 px-2 rounded-lg inline-flex items-center gap-1 text-[10px] font-semibold hover:brightness-[0.96]"
                                     style={{ backgroundColor: '#E7F5EE', color: '#25D366' }}>
@@ -353,7 +338,7 @@ export default function LeadsTab() {
                                   <Mail className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#9CA3AF' }} />
                                   <span className={`text-xs ${needsNda ? 'select-none' : ''}`} style={{ color: '#1A1A1A', filter: needsNda ? 'blur(5px)' : 'none' }}>{lead.tenant_email}</span>
                                 </div>
-                                <button onClick={() => needsNda ? setNdaAgreed(false) : copyText(lead.tenant_email!, `em-${lead.id}`)} className="p-1 rounded hover:bg-gray-50">
+                                <button onClick={() => needsNda ? setAgreementLeadId(lead.id) : copyText(lead.tenant_email!, `em-${lead.id}`)} className="p-1 rounded hover:bg-gray-50">
                                   {needsNda ? <Lock className="w-3 h-3" style={{ color: '#9CA3AF' }} /> : copiedField === `em-${lead.id}` ? <Check className="w-3 h-3" style={{ color: '#1E9A80' }} /> : <Copy className="w-3 h-3" style={{ color: '#9CA3AF' }} />}
                                 </button>
                               </div>
@@ -394,6 +379,16 @@ export default function LeadsTab() {
           </div>
         ))}
       </div>
+
+      {/* Lead Access Agreement modal */}
+      <LeadAccessAgreement
+        open={!!agreementLeadId}
+        onClose={() => setAgreementLeadId(null)}
+        onAgree={() => {
+          if (agreementLeadId) handleSignNda(agreementLeadId);
+          setAgreementLeadId(null);
+        }}
+      />
     </div>
   );
 }

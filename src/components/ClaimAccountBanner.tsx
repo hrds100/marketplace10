@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Mail, Phone } from 'lucide-react';
+import { User, Mail, ChevronUp, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -15,15 +15,18 @@ export default function ClaimAccountBanner({ phone, onClaimed }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   if (!user) return null;
 
   if (done) {
     return (
-      <div className="bg-green-50 border-b border-green-100 px-4 py-3">
-        <p className="text-sm text-green-700 font-medium">
-          Account claimed! You can now log in anytime at hub.nfstay.com with your email and password.
-        </p>
+      <div className="fixed bottom-0 inset-x-0 z-40 px-4 pb-[env(safe-area-inset-bottom)] sm:pb-0">
+        <div className="max-w-md mx-auto mb-4 rounded-xl bg-white border px-4 py-3 shadow-lg" style={{ borderColor: '#1E9A80' }}>
+          <p className="text-sm font-medium text-center" style={{ color: '#1E9A80' }}>
+            Account claimed! You can now log in anytime at hub.nfstay.com
+          </p>
+        </div>
       </div>
     );
   }
@@ -33,7 +36,6 @@ export default function ClaimAccountBanner({ phone, onClaimed }: Props) {
     if (!email.trim() || !name.trim()) return;
     setLoading(true);
     setError('');
-
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const res = await fetch(`${supabaseUrl}/functions/v1/claim-landlord-account`, {
@@ -44,13 +46,8 @@ export default function ClaimAccountBanner({ phone, onClaimed }: Props) {
         },
         body: JSON.stringify({ email: email.trim().toLowerCase(), name: name.trim() }),
       });
-
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Something went wrong. Try again.');
-        return;
-      }
-
+      if (!res.ok) { setError(data.error || 'Something went wrong.'); return; }
       await supabase.auth.refreshSession();
       setDone(true);
       onClaimed();
@@ -62,44 +59,71 @@ export default function ClaimAccountBanner({ phone, onClaimed }: Props) {
   };
 
   return (
-    <div className="bg-amber-50 border-b border-amber-100">
-      <div className="px-4 py-4">
-        <h3 className="text-sm font-semibold text-amber-900 mb-3">Claim your account</h3>
-        <p className="text-xs text-amber-700 mb-3">Add your email and name to take full ownership of your property listings and set up your login.</p>
-        <form onSubmit={handleClaim} className="space-y-3">
-          <div>
-            <label className="text-xs font-medium text-amber-700 flex items-center gap-1.5 mb-1">
-              <Phone className="w-3 h-3" /> Phone (verified via WhatsApp)
-            </label>
-            <input type="text" value={phone} disabled
-              className="w-full h-9 px-3 rounded-md border border-amber-200 bg-amber-50 text-sm text-amber-600 cursor-not-allowed" />
+    <div className="fixed bottom-0 inset-x-0 z-40 px-4 pb-[env(safe-area-inset-bottom)] sm:pb-0">
+      <div className="max-w-md mx-auto mb-4">
+        {/* Expanded form */}
+        <div className={`overflow-hidden transition-all duration-300 ease-out ${expanded ? 'max-h-80 opacity-100 mb-2' : 'max-h-0 opacity-0'}`}>
+          <div className="bg-white rounded-xl border shadow-lg p-4" style={{ borderColor: '#E5E7EB' }}>
+            <p className="text-xs mb-3" style={{ color: '#6B7280' }}>
+              Set your name and email to take full ownership of your listings and log in anytime.
+            </p>
+            <form onSubmit={handleClaim} className="space-y-2.5">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <div className="relative">
+                    <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: '#9CA3AF' }} />
+                    <input type="text" placeholder="Your name" value={name} onChange={e => setName(e.target.value)}
+                      className="w-full h-9 pl-8 pr-3 rounded-lg border text-sm focus:outline-none focus:ring-2" style={{ borderColor: '#E5E7EB', focusRingColor: '#1E9A80' } as any} required />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="relative">
+                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: '#9CA3AF' }} />
+                    <input type="email" placeholder="Your email" value={email} onChange={e => setEmail(e.target.value)}
+                      className="w-full h-9 pl-8 pr-3 rounded-lg border text-sm focus:outline-none focus:ring-2" style={{ borderColor: '#E5E7EB' }} required />
+                  </div>
+                </div>
+              </div>
+              {error && <p className="text-xs text-red-500">{error}</p>}
+              <button type="submit" disabled={loading || !email.trim() || !name.trim()}
+                className="w-full h-10 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all hover:brightness-[0.96]"
+                style={{ backgroundColor: '#1E9A80' }}>
+                {loading ? 'Claiming...' : 'Claim account'}
+              </button>
+            </form>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-amber-700 flex items-center gap-1.5 mb-1">
-                <User className="w-3 h-3" /> Your name
-              </label>
-              <input type="text" placeholder="John Smith" value={name} onChange={e => setName(e.target.value)}
-                className="w-full h-9 px-3 rounded-md border border-amber-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" required />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-amber-700 flex items-center gap-1.5 mb-1">
-                <Mail className="w-3 h-3" /> Email address
-              </label>
-              <input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)}
-                className="w-full h-9 px-3 rounded-md border border-amber-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" required />
-            </div>
-          </div>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-          <button type="submit" disabled={loading || !email.trim() || !name.trim()}
-            className="w-full h-9 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold disabled:opacity-50 transition-colors">
-            {loading ? 'Claiming...' : 'Claim account'}
-          </button>
-          <p className="text-xs text-amber-600 text-center">
-            Once claimed, you can log in anytime with your email. Use "Forgot Password" to set your password.
-          </p>
-        </form>
+        </div>
+
+        {/* Collapsed button */}
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full h-12 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all hover:brightness-[0.96] active:scale-[0.98] claim-glow"
+          style={{ backgroundColor: '#1E9A80', boxShadow: 'rgba(30,154,128,0.4) 0 4px 20px' }}
+        >
+          {expanded ? (
+            <>
+              <ChevronUp className="w-4 h-4" />
+              Close
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              Claim your account
+            </>
+          )}
+        </button>
       </div>
+
+      {/* Glow animation */}
+      {!expanded && (
+        <style>{`
+          @keyframes claim-pulse {
+            0%, 100% { box-shadow: rgba(30,154,128,0.4) 0 4px 20px; }
+            50% { box-shadow: rgba(30,154,128,0.6) 0 6px 28px; }
+          }
+          .claim-glow { animation: claim-pulse 2s ease-in-out infinite; }
+        `}</style>
+      )}
     </div>
   );
 }
