@@ -118,18 +118,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     const msg = encodeURIComponent(
       `Hi, I am interested in your property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${listing.id.slice(0, 5).toUpperCase()}\nPlease contact me at your earliest convenience.`,
     );
-    // Fire inquiry in background
-    supabase.functions.invoke('process-inquiry', {
-      body: {
-        property_id: listing.id,
-        channel: 'whatsapp',
-        message: `Interested in ${listing.name} at ${listing.city}`,
-        tenant_name: user?.user_metadata?.name || '',
-        tenant_email: user?.email || '',
-        tenant_phone: user?.user_metadata?.whatsapp || null,
-        property_url: propertyUrl,
-      },
-    }).catch(() => {});
+    // WhatsApp inquiry is processed when the message arrives at GHL (not on button click)
     window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${msg}`, '_blank');
   };
 

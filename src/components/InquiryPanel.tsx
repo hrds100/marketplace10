@@ -157,18 +157,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
   const handleSendWhatsApp = () => {
     const encodedMsg = encodeURIComponent(message);
-    // Record the inquiry and trigger landlord notification + tenant auto-reply
-    supabase.functions.invoke('process-inquiry', {
-      body: {
-        property_id: listing.id,
-        channel: 'whatsapp',
-        message,
-        tenant_name: user?.user_metadata?.name || user?.user_metadata?.full_name || null,
-        tenant_email: user?.email || null,
-        tenant_phone: user?.user_metadata?.whatsapp || user?.user_metadata?.phone || null,
-        property_url: `https://hub.nfstay.com/deals/${listing.slug || listing.id}`,
-      },
-    }).catch(() => {}); // non-blocking — WhatsApp still opens even if this fails
+    // WhatsApp inquiry is processed when the message arrives at GHL (not on button click)
     window.open(`https://wa.me/447476368123?text=${encodedMsg}`, '_blank');
     handleClose();
   };
