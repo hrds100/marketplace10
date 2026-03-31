@@ -129,6 +129,7 @@ export default function DealDetail() {
         lister_phone: (listing.contact_phone as string) || null,
         lister_email: (listing.contact_email as string) || null,
         lister_name: (listing.contact_name as string) || null,
+        lister_id: (listing.submitted_by as string) || null,
         channel: 'whatsapp',
         message: plainMsg,
         tenant_name: user.user_metadata?.name || user.user_metadata?.full_name || null,

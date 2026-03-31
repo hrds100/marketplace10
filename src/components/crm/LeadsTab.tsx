@@ -81,9 +81,9 @@ export default function LeadsTab() {
         const phone = profileData?.whatsapp || '';
         const email = profileData?.email || user!.email || '';
         const filters: string[] = [];
+        filters.push(`lister_id.eq.${user!.id}`);
         if (phone) filters.push(`lister_phone.eq.${phone}`);
         if (email) filters.push(`lister_email.eq.${email}`);
-        if (filters.length === 0) { setLeads([]); setLoading(false); return; }
 
         const { data, error } = await (supabase.from('inquiries') as any)
           .select('*').or(filters.join(',')).order('created_at', { ascending: false });
