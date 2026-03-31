@@ -147,7 +147,8 @@ export default function DealDetail() {
       const tenantEmail = user.email || null;
       const tenantPhone = user.user_metadata?.whatsapp || null;
 
-      const { error: insertErr } = await (supabase.from('inquiries') as any).insert({
+      console.log('[DealDetail] insert attempt:', { userId: user.id, propertyId: listing.id, tier });
+      const { data: insertedRow, error: insertErr } = await (supabase.from('inquiries') as any).insert({
         tenant_id: user.id,
         property_id: listing.id as string,
         lister_type: (listing.lister_type as string) || 'landlord',
@@ -163,11 +164,12 @@ export default function DealDetail() {
         token: inquiryToken,
         status: 'new',
         nda_required: !!(listing.nda_required),
-      });
+      }).select().single();
       if (insertErr) {
-        console.error('[DealDetail] inquiry insert failed:', insertErr.message, insertErr);
+        console.error('[DealDetail] insert FAILED:', insertErr.message, insertErr.code, insertErr.details);
         toast.error('Could not save your inquiry. Please try again.');
       } else {
+        console.log('[DealDetail] inquiry saved:', insertedRow);
         // Removed: landlord auto-notify now handled via AdminOutreach page
         // Fire tenant confirmation webhook (non-blocking)
         if (tenantPhone) {
