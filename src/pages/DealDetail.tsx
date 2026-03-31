@@ -164,6 +164,7 @@ export default function DealDetail() {
         token: inquiryToken,
         status: 'new',
         nda_required: !!(listing.nda_required),
+        authorized: false,
       }).select().single();
       if (insertErr) {
         console.error('[DealDetail] insert FAILED:', insertErr.message, insertErr.code, insertErr.details);

@@ -116,7 +116,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     }
     const propertyUrl = `https://hub.nfstay.com/deals/${listing.slug || listing.id}`;
     const msg = encodeURIComponent(
-      `Hi, I am interested in your property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${listing.id.slice(0, 5).toUpperCase()}\nPlease contact me at your earliest convenience.`,
+      `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nRef: ${listing.id.slice(0, 5).toUpperCase()}\nID: ${listing.id}\nPlease contact me at your earliest convenience.`,
     );
     // WhatsApp inquiry is processed when the message arrives at GHL (not on button click)
     window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${msg}`, '_blank');

@@ -209,6 +209,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
           token,
           status: 'new',
           nda_required: prop?.nda_required || false,
+          authorized: false,
         }).select().single();
 
         if (insertErr) {

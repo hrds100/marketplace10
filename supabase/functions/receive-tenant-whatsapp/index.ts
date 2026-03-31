@@ -1,0 +1,140 @@
+// receive-tenant-whatsapp -- Create inquiry from inbound tenant WhatsApp via GHL
+// Input: { tenant_phone, tenant_name, message_body, property_ref, property_id }
+// Output: { success, inquiry_id } or { error }
+// Inquiry appears in Admin > Outreach > Tenant Requests. Nothing sent to landlord.
+
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  try {
+    const body = await req.json()
+    const { tenant_phone, tenant_name, message_body, property_ref, property_id } = body
+
+    if (!tenant_phone) {
+      return new Response(JSON.stringify({ error: 'Missing tenant_phone' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+    // 1. Find property via multiple strategies
+    let property: any = null
+
+    // A: Direct property_id (full UUID)
+    if (property_id) {
+      const { data } = await supabase.from('properties').select('*').eq('id', property_id).single()
+      if (data) property = data
+    }
+
+    // B: Extract UUID from message body (ID: line)
+    if (!property && message_body) {
+      const idMatch = message_body.match(/ID:\s*([0-9a-f-]{36})/i)
+      if (idMatch) {
+        const { data } = await supabase.from('properties').select('*').eq('id', idMatch[1]).single()
+        if (data) property = data
+      }
+    }
+
+    // C: Extract from /deals/ link in message
+    if (!property && message_body) {
+      const slugMatch = message_body.match(/\/deals\/([^\s\n]+)/i)
+      if (slugMatch) {
+        const slugOrId = slugMatch[1]
+        const { data: bySlug } = await supabase.from('properties').select('*').eq('slug', slugOrId).single()
+        if (bySlug) {
+          property = bySlug
+        } else {
+          const { data: byId } = await supabase.from('properties').select('*').eq('id', slugOrId).single()
+          if (byId) property = byId
+        }
+      }
+    }
+
+    // D: property_ref as short ref (first 5 chars of UUID)
+    if (!property && property_ref) {
+      const { data: candidates } = await supabase.from('properties').select('*').ilike('id', `${property_ref}%`)
+      if (candidates && candidates.length === 1) property = candidates[0]
+    }
+
+    if (!property) {
+      return new Response(JSON.stringify({
+        error: 'Could not identify property from message',
+        hint: 'Include ID: {uuid} or a /deals/ link in the message',
+        received: { property_ref, property_id, message_preview: (message_body || '').slice(0, 200) },
+      }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // 2. Check if always_authorised for this lister phone
+    const listerPhone = property.landlord_whatsapp || property.contact_phone || null
+    let autoAuth = false
+    let autoAuthType: string | null = null
+
+    if (listerPhone) {
+      const { data: existing } = await supabase
+        .from('inquiries')
+        .select('always_authorised, authorisation_type')
+        .eq('lister_phone', listerPhone)
+        .eq('always_authorised', true)
+        .limit(1)
+      if (existing && existing.length > 0) {
+        autoAuth = true
+        autoAuthType = existing[0].authorisation_type || null
+      }
+    }
+
+    // 3. Insert inquiry -- authorized = false unless auto-authorised
+    const token = crypto.randomUUID()
+    const { data: inquiry, error: insertErr } = await supabase
+      .from('inquiries')
+      .insert({
+        property_id: property.id,
+        lister_type: property.lister_type || 'landlord',
+        lister_phone: listerPhone,
+        lister_email: property.contact_email || null,
+        lister_name: property.contact_name || null,
+        channel: 'whatsapp',
+        message: message_body || '',
+        tenant_name: tenant_name || null,
+        tenant_phone: tenant_phone,
+        token,
+        status: 'new',
+        nda_required: property.nda_required || false,
+        authorized: autoAuth,
+        always_authorised: autoAuth,
+        authorisation_type: autoAuthType,
+      })
+      .select('id')
+      .single()
+
+    if (insertErr) {
+      return new Response(JSON.stringify({ error: 'Failed to create inquiry', detail: insertErr.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      inquiry_id: inquiry.id,
+      property_name: property.name,
+      auto_authorised: autoAuth,
+    }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: 'Internal error', detail: String(err) }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+})
