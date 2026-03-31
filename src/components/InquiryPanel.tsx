@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useUserTier } from '@/hooks/useUserTier';
 import { getFunnelUrl, isPaidTier } from '@/lib/ghl';
 import { useAuth } from '@/hooks/useAuth';
@@ -209,6 +210,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
         if (insertErr) {
           console.error('[InquiryPanel] inquiry insert error:', insertErr);
+          toast.error('Could not save your inquiry. Please try again.');
         } else {
           // 3. Fire n8n webhook for landlord notification (non-blocking)
           const whatsappPhone = prop?.landlord_whatsapp || prop?.contact_phone;
@@ -243,6 +245,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
         }
       } catch (err) {
         console.error('[InquiryPanel] inquiry failed:', err);
+        toast.error('Could not save your inquiry. Please try again.');
       }
     }
 
