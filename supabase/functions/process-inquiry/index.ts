@@ -41,7 +41,8 @@ serve(async (req) => {
       })
     }
 
-    const { property_id, channel, message, tenant_name, tenant_email, tenant_phone, property_url } = await req.json()
+    const { property_id, channel: rawChannel, message, tenant_name, tenant_email, tenant_phone, property_url } = await req.json()
+    const channel = rawChannel || 'whatsapp'
 
     // Resolve tenant phone: prefer explicit value, fall back to profiles.whatsapp
     let resolvedTenantPhone = tenant_phone || null
@@ -60,8 +61,8 @@ serve(async (req) => {
       }
     }
 
-    if (!property_id || !channel) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: property_id, channel' }), {
+    if (!property_id) {
+      return new Response(JSON.stringify({ error: 'Missing required field: property_id' }), {
         status: 400, headers: corsHeaders,
       })
     }
