@@ -18,6 +18,11 @@ ALTER TABLE public.inquiries ADD COLUMN IF NOT EXISTS nda_required BOOLEAN DEFAU
 -- Drop the broken policy
 DROP POLICY IF EXISTS "Anyone can read by token" ON public.inquiries;
 
+-- Fix INSERT: allow any authenticated user to insert (tenant_id enforced by frontend)
+DROP POLICY IF EXISTS "Tenants can insert inquiries" ON public.inquiries;
+CREATE POLICY "Anyone authenticated can insert inquiries" ON public.inquiries
+  FOR INSERT TO authenticated WITH CHECK (true);
+
 -- Listers can read inquiries for their properties (matched by phone or email)
 CREATE POLICY "Listers can read their inquiries" ON public.inquiries
   FOR SELECT USING (
