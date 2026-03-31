@@ -75,8 +75,8 @@ export default function AdminOutreachV2() {
   const removeLoading = (key: string) => setLoadingActions(prev => { const n = new Set(prev); n.delete(key); return n; });
 
   const tabs: { key: TabKey; label: string; icon: typeof Rocket }[] = [
-    { key: 'listings', label: 'First-Contact Outreach', icon: Send },
-    { key: 'pending', label: 'Pending Inquiries', icon: MessageSquare },
+    { key: 'listings', label: 'Landlord Activation', icon: Send },
+    { key: 'pending', label: 'Tenant Requests', icon: MessageSquare },
     { key: 'metrics', label: 'Metrics', icon: BarChart3 },
   ];
 
@@ -87,7 +87,7 @@ export default function AdminOutreachV2() {
         <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Outreach</h1>
       </div>
       <p className="text-sm mb-6" style={{ color: '#6B7280' }}>
-        Activate landlords, authorise inquiries, and track lister engagement.
+        Activate landlords, control tenant lead release, and track lister engagement.
       </p>
 
       {/* Tab bar */}
@@ -115,7 +115,7 @@ export default function AdminOutreachV2() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// TAB 1 -- First-Contact Outreach
+// TAB 1 -- Landlord Activation
 // ══════════════════════════════════════════════════════════════
 
 interface TabProps {
@@ -139,14 +139,16 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
 
       const propIds = (properties as PropertyRow[]).map(p => p.id);
       const { data: inquiries } = await (supabase.from('inquiries') as any)
-        .select('property_id, nda_signed, always_authorised')
+        .select('property_id, nda_signed, always_authorised, authorized')
         .in('property_id', propIds);
 
-      const inqMap = new Map<string, { ndaCount: number; autoAuth: boolean }>();
+      const inqMap = new Map<string, { ndaCount: number; autoAuth: boolean; pendingCount: number; totalCount: number }>();
       for (const inq of (inquiries || [])) {
-        const existing = inqMap.get(inq.property_id) || { ndaCount: 0, autoAuth: false };
+        const existing = inqMap.get(inq.property_id) || { ndaCount: 0, autoAuth: false, pendingCount: 0, totalCount: 0 };
+        existing.totalCount++;
         if (inq.nda_signed) existing.ndaCount++;
         if (inq.always_authorised) existing.autoAuth = true;
+        if (!inq.authorized) existing.pendingCount++;
         inqMap.set(inq.property_id, existing);
       }
 
@@ -154,6 +156,8 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
         ...p,
         ndaCount: inqMap.get(p.id)?.ndaCount || 0,
         autoAuth: inqMap.get(p.id)?.autoAuth || false,
+        pendingCount: inqMap.get(p.id)?.pendingCount || 0,
+        totalCount: inqMap.get(p.id)?.totalCount || 0,
       }));
     },
   });
@@ -200,10 +204,10 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
   return (
     <div>
       <p className="text-xs mb-4" style={{ color: '#9CA3AF' }}>
-        Send the first WhatsApp to landlords who listed a property but haven't been contacted yet. This is NFsTay's activation outreach - not a lead inbox.
+        Send the first WhatsApp to landlords who listed a property but haven't been contacted yet. This activates the landlord - tenant leads are managed in Tenant Requests.
       </p>
       <div className="space-y-3">
-        {listings.map((listing: PropertyRow & { ndaCount: number; autoAuth: boolean }) => (
+        {listings.map((listing: PropertyRow & { ndaCount: number; autoAuth: boolean; pendingCount: number; totalCount: number }) => (
           <div key={listing.id} className="rounded-2xl border p-4" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -235,7 +239,17 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                   )}
                   {listing.outreach_sent && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
-                      Sent {listing.outreach_sent_at ? new Date(listing.outreach_sent_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
+                      Outreach sent
+                    </span>
+                  )}
+                  {listing.totalCount === 0 && (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#9CA3AF' }}>
+                      Waiting for tenant
+                    </span>
+                  )}
+                  {listing.pendingCount > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+                      Pending requests ({listing.pendingCount})
                     </span>
                   )}
                 </div>
@@ -261,7 +275,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
 }
 
 // ══════════════════════════════════════════════════════════════
-// TAB 2 -- Pending Inquiries
+// TAB 2 -- Tenant Requests
 // ══════════════════════════════════════════════════════════════
 
 function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
@@ -348,8 +362,8 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
   if (pendingInquiries.length === 0) {
     return (
       <EmptyState
-        title="No pending inquiries"
-        subtitle="Inquiries waiting for admin authorisation will appear here. When a tenant sends an inquiry, it shows up for you to approve."
+        title="No tenant messages yet"
+        subtitle="When someone messages your number, they will appear here."
       />
     );
   }
@@ -357,7 +371,11 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
   const seenPhones = new Set<string>();
 
   return (
-    <div className="space-y-3">
+    <div>
+      <p className="text-xs mb-4" style={{ color: '#9CA3AF' }}>
+        Tenants message NFsTay first. You control when the lead is released.
+      </p>
+      <div className="space-y-3">
       {pendingInquiries.map((inq: InquiryRow & { propertyName: string; landlordPhone: string }) => {
         const phone = inq.lister_phone || '';
         const showAlwaysToggle = phone && !seenPhones.has(phone);
@@ -431,6 +449,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
