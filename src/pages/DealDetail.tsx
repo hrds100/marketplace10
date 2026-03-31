@@ -142,6 +142,11 @@ export default function DealDetail() {
         console.warn('[DealDetail] lister_id is null — landlord profile not found for phone:', listerPhone, 'email:', listerEmail);
       }
 
+      const inquiryToken = crypto.randomUUID();
+      const tenantName = user.user_metadata?.name || user.user_metadata?.full_name || null;
+      const tenantEmail = user.email || null;
+      const tenantPhone = user.user_metadata?.whatsapp || null;
+
       const { error: insertErr } = await (supabase.from('inquiries') as any).insert({
         tenant_id: user.id,
         property_id: listing.id as string,
@@ -152,19 +157,52 @@ export default function DealDetail() {
         lister_id: listerId,
         channel: 'whatsapp',
         message: plainMsg,
-        tenant_name: user.user_metadata?.name || user.user_metadata?.full_name || null,
-        tenant_email: user.email || null,
-        tenant_phone: user.user_metadata?.whatsapp || null,
-        token: crypto.randomUUID(),
+        tenant_name: tenantName,
+        tenant_email: tenantEmail,
+        tenant_phone: tenantPhone,
+        token: inquiryToken,
         status: 'new',
         nda_required: !!(listing.nda_required),
       });
-      if (insertErr) console.error('[DealDetail] inquiry insert failed:', insertErr.message, insertErr);
+      if (insertErr) {
+        console.error('[DealDetail] inquiry insert failed:', insertErr.message, insertErr);
+        toast.error('Could not save your inquiry. Please try again.');
+      } else {
+        // Fire n8n webhook for landlord notification (non-blocking)
+        const whatsappPhone = (listing.landlord_whatsapp as string) || (listing.contact_phone as string);
+        if (whatsappPhone) {
+          fetch('https://n8n.srv886554.hstgr.cloud/webhook/inquiry-lister-whatsapp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: whatsappPhone,
+              lister_name: (listing.contact_name as string) || 'Property Lister',
+              property_name: (listing.name as string) || '',
+              lead_url: `https://hub.nfstay.com/lead/${inquiryToken}`,
+              magic_token: '',
+              is_cold: false,
+            }),
+          }).catch(() => {});
+        }
+        // Fire tenant confirmation webhook (non-blocking)
+        if (tenantPhone) {
+          fetch('https://n8n.srv886554.hstgr.cloud/webhook/inquiry-tenant-reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: tenantPhone,
+              tenant_name: tenantName || 'there',
+              property_name: (listing.name as string) || '',
+              lister_type: (listing.lister_type as string) || 'landlord',
+            }),
+          }).catch(() => {});
+        }
+      }
     } catch (err) {
       console.error('[DealDetail] inquiry insert error:', err);
+      toast.error('Could not save your inquiry. Please try again.');
     }
 
-    // n8n still handles landlord/tenant notifications in parallel
     window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${encodeURIComponent(plainMsg)}`, '_blank');
   };
 
