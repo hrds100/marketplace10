@@ -1,0 +1,230 @@
+{
+  "name": "NFsTay - Inbound WhatsApp Inquiry",
+  "id": "IvXzbcqzv5bKtu01",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inbox-new-inquiry",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "wh1",
+      "name": "Receive GHL Inbound",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "webhookId": "3e96296f-6d6b-443b-b3f4-c14248d144d6"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Extract data from GHL inbound message webhook\nconst body = $input.item.json.body || $input.item.json;\nconst messageBody = body.message || body.body || body.text || '';\nconst senderPhone = body.phone || body.contactPhone || body.from || '';\nconst contactId = body.contactId || body.contact_id || '';\nconst contactName = body.contactName || body.contact_name || '';\nconst contactEmail = body.contactEmail || body.contact_email || '';\n\n// Parse property reference from message (e.g. \"Reference no.: 1BFBD\")\nconst refMatch = messageBody.match(/Reference no\\.?:\\s*([A-Z0-9]{5})/i);\nconst propertyRef = refMatch ? refMatch[1].toUpperCase() : null;\n\n// Parse property link from message\nconst linkMatch = messageBody.match(/Link:\\s*(https:\\/\\/hub\\.nfstay\\.com\\/deals\\/([^\\s]+))/);\nconst propertyUrl = linkMatch ? linkMatch[1] : null;\nconst propertySlug = linkMatch ? linkMatch[2] : null;\n\n// Parse UUID from ID: line\nconst idMatch = messageBody.match(/ID:\\s*([0-9a-f-]{36})/i);\nconst propertyId = idMatch ? idMatch[1] : null;\n\n// Check if this is actually an nfstay inquiry\nconst isInquiry = messageBody.toLowerCase().includes('nfstay') || propertyRef || propertyUrl || propertyId;\n\nif (!isInquiry) {\n  return { json: { skip: true, reason: 'Not an nfstay inquiry' } };\n}\n\nreturn {\n  json: {\n    skip: false,\n    senderPhone: senderPhone.replace(/[^0-9+]/g, ''),\n    contactId,\n    contactName,\n    contactEmail,\n    propertyRef,\n    propertyUrl,\n    propertySlug,\n    propertyId,\n    messageBody,\n    channel: 'whatsapp'\n  }\n};\n"
+      },
+      "id": "parse1",
+      "name": "Parse Inquiry Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": "false",
+              "operator": {
+                "type": "boolean",
+                "operation": "false"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if_inquiry",
+      "name": "Is Inquiry?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/receive-tenant-whatsapp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tenant_phone: $json.senderPhone, tenant_name: $json.contactName || null, message_body: $json.messageBody, property_ref: $json.propertyRef || null, property_id: $json.propertyId || null }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "call_edge_fn",
+      "name": "Create Inquiry (Edge Fn)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/conversations/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer REDACTED_GHL_PIT_TOKEN"
+            },
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: 'WhatsApp', contactId: $('Parse Inquiry Message').item.json.contactId, message: 'Hello! Thanks for contacting NFsTay. Your inquiry has been received and is being reviewed. We will get back to you shortly. Have a great day!' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "auto_reply",
+      "name": "Send Tenant Auto-Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ghl-inbound-whatsapp",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "wh2",
+      "name": "Receive Direct Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        500
+      ],
+      "webhookId": "9a07fd64-bf64-42db-adff-fafac96cdc9f"
+    }
+  ],
+  "connections": {
+    "Receive GHL Inbound": {
+      "main": [
+        [
+          {
+            "node": "Parse Inquiry Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Inquiry Message": {
+      "main": [
+        [
+          {
+            "node": "Is Inquiry?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Inquiry?": {
+      "main": [
+        [
+          {
+            "node": "Create Inquiry (Edge Fn)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Create Inquiry (Edge Fn)": {
+      "main": [
+        [
+          {
+            "node": "Send Tenant Auto-Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Tenant Auto-Reply": {
+      "main": [
+        []
+      ]
+    },
+    "Receive Direct Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Inquiry Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "updatedAt": "2026-03-31T23:07:16.260Z"
+}
