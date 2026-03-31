@@ -1,5 +1,5 @@
 # NFsTay Messaging & Communication Architecture
-_Last updated: 30 March 2026_
+_Last updated: 31 March 2026_
 
 > **MANDATORY: Any agent that adds, removes, or changes ANY email, WhatsApp, or in-app notification MUST update this document in the same commit. No exceptions.**
 
@@ -365,18 +365,19 @@ Used for:
 
 ---
 
-## 10. Known Gaps (as of 30 March 2026)
+## 10. Known Gaps (as of 31 March 2026)
 
 | # | Gap | Impact | Status |
 |---|---|---|---|
 | 1 | `inbox-nda-signed` n8n workflow not built | No WhatsApp notification when NDA signed | Not built |
 | 2 | WhatsApp is outbound only - no inbound parsing | Both parties must use web inbox to reply | By design |
 | 3 | Tenant auto-reply skips when user has no WhatsApp in profile | Auto-reply fires inconsistently | Fix planned |
-| 4 | Reference number in pre-filled message is full UUID (36 chars) | Ugly, needs max 5 chars | Fix planned |
-| 5 | DealDetail passes slug instead of UUID as property_id to process-inquiry | Silent backend failure | Fix planned |
-| 6 | Landlord notification (deals grid) sends direct message instead of GHL workflow enrollment | Wrong pattern - should use 67250bfa/0eb4395c like inbox | Fix planned |
-| 7 | New user registration admin notification | No email/bell when someone signs up | Not built |
-| 8 | User subscription admin notification | No email/bell when a user subscribes to a paid tier | Not built |
+| 4 | Reference number in pre-filled message is full UUID (36 chars) | Ugly, needs max 5 chars | Fixed 31 March 2026 (PR #146) |
+| 5 | DealDetail passes slug instead of UUID as property_id | Silent backend failure | Fixed 31 March 2026 (PR #146) |
+| 6 | n8n poll workflow used old lister_type logic for nda_required | Admin NDA toggle had no effect | Fixed 31 March 2026 - n8n Prepare Data now reads property.nda_required directly |
+| 7 | n8n poll workflow used old lister_type logic for first_landlord_inquiry | Admin first inquiry toggle had no effect | Fixed 31 March 2026 - n8n Prepare Data now reads property.first_landlord_inquiry + checks prior inquiry count. Polling window widened from 5 to 10 minutes. |
+| 8 | New user registration admin notification | No email/bell when someone signs up | Not built |
+| 9 | User subscription admin notification | No email/bell when a user subscribes to a paid tier | Not built |
 
 ---
 
