@@ -153,9 +153,8 @@ export default function AdminSubmissions() {
                 <p className="text-xs text-muted-foreground mt-0.5">{s.city} · {s.postcode} · £{s.rent_monthly?.toLocaleString()}/mo</p>
               </div>
               <div className="flex items-center gap-2">
-                {(s.status === 'pending' || s.status === 'inactive') && (
-                  <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
-                    {/* First Landlord Inquiry toggle */}
+                <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                    {/* First Landlord Inquiry toggle — always visible */}
                     <label className="flex items-center gap-1.5 cursor-pointer" title="Send multi-step WhatsApp on first tenant inquiry">
                       <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">1st Inquiry</span>
                       <button
@@ -174,7 +173,7 @@ export default function AdminSubmissions() {
                         <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${(s as Record<string, unknown>).first_landlord_inquiry ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
                       </button>
                     </label>
-                    {/* NDA Required toggle */}
+                    {/* NDA Required toggle — always visible */}
                     <label className="flex items-center gap-1.5 cursor-pointer" title="Require NDA before showing contact details">
                       <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">NDA</span>
                       <button
@@ -193,10 +192,14 @@ export default function AdminSubmissions() {
                         <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${(s as Record<string, unknown>).nda_required ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
                       </button>
                     </label>
-                    <button data-feature="ADMIN__SUBMISSIONS_APPROVE" onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Approve</button>
-                    <button data-feature="ADMIN__SUBMISSIONS_REJECT" onClick={() => reject(s.id)} className="text-xs text-destructive font-medium px-2">Reject</button>
+                    {/* Approve/Reject — only when pending or inactive */}
+                    {(s.status === 'pending' || s.status === 'inactive') && (
+                      <>
+                        <button data-feature="ADMIN__SUBMISSIONS_APPROVE" onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Approve</button>
+                        <button data-feature="ADMIN__SUBMISSIONS_REJECT" onClick={() => reject(s.id)} className="text-xs text-destructive font-medium px-2">Reject</button>
+                      </>
+                    )}
                   </div>
-                )}
                 {expandedId === s.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
               </div>
             </div>
