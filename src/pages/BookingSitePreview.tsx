@@ -36,8 +36,8 @@ export default function BookingSitePreview({ branding, isMobile, onPayment }: Pr
   const grad = `linear-gradient(270deg, ${ac}cc 0%, ${ac} 100%)`;
 
   const toggleFav = (id: string, e?: React.MouseEvent) => {
-    e?.preventDefault(); e?.stopPropagation();
-    setFavs(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    setFavs(prev => { const n = new Set(prev); if (n.has(id)) { n.delete(id); } else { n.add(id); } return n; });
   };
   const openProp = (p: Prop) => { setSelectedProp(p); setPage('property'); };
   const close = () => setContactOpen(false);

@@ -90,7 +90,7 @@ export default function LeadsTab() {
         if (error) { setLoading(false); return; }
 
         const propertyIds = [...new Set((data || []).map((d: any) => d.property_id).filter(Boolean))];
-        let propertyMap: Record<string, { name: string; city: string }> = {};
+        const propertyMap: Record<string, { name: string; city: string }> = {};
         if (propertyIds.length > 0) {
           const { data: props } = await (supabase.from('properties') as any)
             .select('id, name, city').in('id', propertyIds);

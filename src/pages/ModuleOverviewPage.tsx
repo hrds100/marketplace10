@@ -20,18 +20,20 @@ export default function ModuleOverviewPage() {
     isLessonComplete, getModuleCompletedLessons, getLessonStatus, curriculumModules, userTier,
   } = useUniversityProgress();
 
+  const [paymentOpen, setPaymentOpen] = useState(false);
+
   // Try DB-driven modules first, fallback to static
   const dbMod = curriculumModules.find(m => m.id === (moduleId || ''));
   const mod = dbMod ?? getModuleById(moduleId || '');
-  if (!mod) return <div className="p-8 text-center" style={{ color: '#6B7280' }}>Module not found</div>;
 
-  const completedCount = getModuleCompletedLessons(mod.id, mod.lessons);
-  const pct = (completedCount / mod.lessons.length) * 100;
+  const completedCount = mod ? getModuleCompletedLessons(mod.id, mod.lessons) : 0;
+  const pct = mod ? (completedCount / mod.lessons.length) * 100 : 0;
 
   // Tier gating - get tier_required from DB module if available
   const dbModuleTierRequired = (dbMod as unknown as { tier_required?: string } | undefined)?.tier_required ?? 'free';
-  const isGated = !tierSatisfied(dbModuleTierRequired, userTier);
-  const [paymentOpen, setPaymentOpen] = useState(false);
+  const isGated = mod ? !tierSatisfied(dbModuleTierRequired, userTier) : false;
+
+  if (!mod) return <div className="p-8 text-center" style={{ color: '#6B7280' }}>Module not found</div>;
 
   return (
     <div data-feature="UNIVERSITY" className="max-w-[860px] mx-auto">
