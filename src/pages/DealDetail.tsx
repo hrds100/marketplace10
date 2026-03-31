@@ -125,11 +125,21 @@ export default function DealDetail() {
       // Resolve lister_id: find the landlord's user ID by their WhatsApp number
       // submitted_by is the admin who posted via Quick List - NOT the landlord
       const listerPhone = (listing.landlord_whatsapp as string) || (listing.contact_phone as string) || null;
+      const listerEmail = (listing.contact_email as string) || null;
       let listerId: string | null = null;
       if (listerPhone) {
         const { data: listerProfile } = await (supabase.from('profiles') as any)
           .select('id').eq('whatsapp', listerPhone).maybeSingle();
         if (listerProfile?.id) listerId = listerProfile.id;
+      }
+      // Fallback: try matching by email if WhatsApp lookup missed
+      if (!listerId && listerEmail) {
+        const { data: emailProfile } = await (supabase.from('profiles') as any)
+          .select('id').eq('email', listerEmail).maybeSingle();
+        if (emailProfile?.id) listerId = emailProfile.id;
+      }
+      if (!listerId) {
+        console.warn('[DealDetail] lister_id is null — landlord profile not found for phone:', listerPhone, 'email:', listerEmail);
       }
 
       const { error: insertErr } = await (supabase.from('inquiries') as any).insert({

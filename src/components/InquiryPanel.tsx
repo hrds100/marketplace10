@@ -178,6 +178,15 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
             .select('id').eq('whatsapp', listerPhone).maybeSingle();
           if (listerProfile?.id) listerId = listerProfile.id;
         }
+        // Fallback: try matching by email if WhatsApp lookup missed
+        if (!listerId && prop?.contact_email) {
+          const { data: emailProfile } = await (supabase.from('profiles') as any)
+            .select('id').eq('email', prop.contact_email).maybeSingle();
+          if (emailProfile?.id) listerId = emailProfile.id;
+        }
+        if (!listerId) {
+          console.warn('[InquiryPanel] lister_id is null — landlord profile not found for phone:', listerPhone, 'email:', prop?.contact_email);
+        }
 
         // 2. Insert inquiry directly
         const { error: insertErr } = await (supabase.from('inquiries') as any).insert({
