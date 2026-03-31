@@ -52,33 +52,43 @@ serve(async (req) => {
     const normalized = normalizeUKPhone(phone)
     const searchPhone = normalized || phone.replace(/[^0-9+]/g, '')
 
-    // 1. Search for GHL contact by phone
-    const searchUrl = `${GHL_BASE}/contacts/search?query=${encodeURIComponent(searchPhone)}&locationId=${GHL_LOCATION_ID}`
-    const searchRes = await fetch(searchUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${GHL_TOKEN}`,
-        'Version': '2021-07-28',
-      },
-    })
-
-    if (!searchRes.ok) {
-      const body = await searchRes.text()
-      return new Response(JSON.stringify({ error: 'GHL contact search failed', detail: body }), {
-        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    // 1. Search for GHL contact by phone (try normalized first, then raw variants)
+    const searchVariants = [searchPhone]
+    // Add fallback variants if normalized
+    if (normalized) {
+      const digits = normalized.slice(1) // strip leading +
+      const local = '0' + digits.slice(2) // 07...
+      if (!searchVariants.includes(digits)) searchVariants.push(digits)
+      if (!searchVariants.includes(local)) searchVariants.push(local)
     }
 
-    const searchData = await searchRes.json()
-    const contacts = searchData.contacts || []
+    let contactId: string | null = null
 
-    if (contacts.length === 0) {
-      return new Response(JSON.stringify({ error: 'No GHL contact found for this phone number', phone: searchPhone }), {
+    for (const variant of searchVariants) {
+      const searchUrl = `${GHL_BASE}/contacts/?query=${encodeURIComponent(variant)}&locationId=${GHL_LOCATION_ID}`
+      const searchRes = await fetch(searchUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${GHL_TOKEN}`,
+          'Version': '2021-07-28',
+        },
+      })
+
+      if (!searchRes.ok) continue
+
+      const searchData = await searchRes.json()
+      const contacts = searchData.contacts || []
+      if (contacts.length > 0) {
+        contactId = contacts[0].id
+        break
+      }
+    }
+
+    if (!contactId) {
+      return new Response(JSON.stringify({ error: 'No GHL contact found for this landlord phone', phone: searchPhone, tried: searchVariants }), {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-
-    const contactId = contacts[0].id
 
     // 2. Enroll contact in workflow
     const enrollUrl = `${GHL_BASE}/contacts/${contactId}/workflow/${workflowId}`
