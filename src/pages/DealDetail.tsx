@@ -168,22 +168,7 @@ export default function DealDetail() {
         console.error('[DealDetail] inquiry insert failed:', insertErr.message, insertErr);
         toast.error('Could not save your inquiry. Please try again.');
       } else {
-        // Fire n8n webhook for landlord notification (non-blocking)
-        const whatsappPhone = (listing.landlord_whatsapp as string) || (listing.contact_phone as string);
-        if (whatsappPhone) {
-          fetch('https://n8n.srv886554.hstgr.cloud/webhook/inquiry-lister-whatsapp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              phone: whatsappPhone,
-              lister_name: (listing.contact_name as string) || 'Property Lister',
-              property_name: (listing.name as string) || '',
-              lead_url: `https://hub.nfstay.com/lead/${inquiryToken}`,
-              magic_token: '',
-              is_cold: false,
-            }),
-          }).catch(() => {});
-        }
+        // Removed: landlord auto-notify now handled via AdminOutreach page
         // Fire tenant confirmation webhook (non-blocking)
         if (tenantPhone) {
           fetch('https://n8n.srv886554.hstgr.cloud/webhook/inquiry-tenant-reply', {
