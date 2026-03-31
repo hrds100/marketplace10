@@ -122,7 +122,7 @@ export default function DealDetail() {
 
     // Insert inquiry row so lead appears in My Leads immediately
     try {
-      await (supabase.from('inquiries') as any).insert({
+      const { error: insertErr } = await (supabase.from('inquiries') as any).insert({
         tenant_id: user.id,
         property_id: listing.id as string,
         lister_type: (listing.lister_type as string) || 'landlord',
@@ -138,6 +138,7 @@ export default function DealDetail() {
         status: 'new',
         nda_required: !!(listing.nda_required),
       });
+      if (insertErr) console.error('[DealDetail] inquiry insert failed:', insertErr.message, insertErr);
     } catch (err) {
       console.error('[DealDetail] inquiry insert error:', err);
     }
