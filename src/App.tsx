@@ -33,8 +33,7 @@ import AdminPricing from "./pages/admin/AdminPricing";
 import AdminFAQ from "./pages/admin/AdminFAQ";
 import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import AdminDealSourcers from "./pages/admin/AdminDealSourcers";
-import AdminOutreach from "./pages/admin/AdminOutreach";
-import AdminOutreachV2 from "./pages/admin/AdminOutreachV2";
+import AdminOutreach from "./pages/admin/AdminOutreachV2";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminUniversity from "./pages/admin/AdminUniversity";
@@ -176,7 +175,6 @@ const App = () => (
             <Route path="marketplace/properties" element={<AdminListings />} />
             <Route path="marketplace/submissions" element={<AdminSubmissions />} />
             <Route path="marketplace/outreach" element={<AdminOutreach />} />
-            <Route path="marketplace/outreach-v2" element={<AdminOutreachV2 />} />
             <Route path="marketplace/users" element={<AdminUsers />} />
             <Route path="marketplace/university" element={<AdminUniversity />} />
             <Route path="marketplace/pricing" element={<AdminPricing />} />

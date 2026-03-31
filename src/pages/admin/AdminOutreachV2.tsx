@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Rocket, Send, Check, X, Shield, ToggleLeft, ToggleRight, Inbox, MessageSquare, Users } from 'lucide-react';
+import { Rocket, Send, Check, X, Shield, ToggleLeft, ToggleRight, Inbox, MessageSquare, BarChart3, Phone, Home, FileCheck, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { logAdminAction } from '@/lib/auditLog';
-import AdminDealSourcers from './AdminDealSourcers';
 
 // ── GHL workflow IDs ──
 const GHL_WORKFLOW_COLD = '67250bfa-e1fc-4201-8bca-08c384a4a31d';
@@ -39,7 +38,17 @@ interface InquiryRow {
   created_at: string;
 }
 
-type TabKey = 'listings' | 'pending' | 'deal-sourcers';
+interface ListerMetric {
+  phone: string;
+  name: string | null;
+  listerType: string;
+  properties: number;
+  totalLeads: number;
+  ndaSigned: number;
+  claimed: boolean;
+}
+
+type TabKey = 'listings' | 'pending' | 'metrics';
 
 // ── Edge function caller ──
 async function callGhlEnroll(phone: string, workflowId: string): Promise<{ success: boolean; error?: string }> {
@@ -65,19 +74,21 @@ export default function AdminOutreachV2() {
   const addLoading = (key: string) => setLoadingActions(prev => new Set(prev).add(key));
   const removeLoading = (key: string) => setLoadingActions(prev => { const n = new Set(prev); n.delete(key); return n; });
 
-  // ── Tab header ──
   const tabs: { key: TabKey; label: string; icon: typeof Rocket }[] = [
-    { key: 'listings', label: 'Listings & Outreach', icon: Send },
+    { key: 'listings', label: 'First-Contact Outreach', icon: Send },
     { key: 'pending', label: 'Pending Inquiries', icon: MessageSquare },
-    { key: 'deal-sourcers', label: 'Deal Sourcers', icon: Users },
+    { key: 'metrics', label: 'Metrics', icon: BarChart3 },
   ];
 
   return (
     <div data-feature="ADMIN">
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-1">
         <Rocket className="w-6 h-6" style={{ color: '#1E9A80' }} />
-        <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Outreach V2</h1>
+        <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Outreach</h1>
       </div>
+      <p className="text-sm mb-6" style={{ color: '#6B7280' }}>
+        Activate landlords, authorise inquiries, and track lister engagement.
+      </p>
 
       {/* Tab bar */}
       <div className="flex gap-1 p-1 rounded-xl mb-6" style={{ backgroundColor: '#F3F3EE' }}>
@@ -96,16 +107,15 @@ export default function AdminOutreachV2() {
         ))}
       </div>
 
-      {/* Tab content */}
       {activeTab === 'listings' && <ListingsTab user={user} queryClient={queryClient} loadingActions={loadingActions} addLoading={addLoading} removeLoading={removeLoading} />}
       {activeTab === 'pending' && <PendingTab user={user} queryClient={queryClient} loadingActions={loadingActions} addLoading={addLoading} removeLoading={removeLoading} />}
-      {activeTab === 'deal-sourcers' && <AdminDealSourcers />}
+      {activeTab === 'metrics' && <MetricsTab />}
     </div>
   );
 }
 
 // ══════════════════════════════════════════════════════════════
-// TAB 1 — Listings & Outreach
+// TAB 1 -- First-Contact Outreach
 // ══════════════════════════════════════════════════════════════
 
 interface TabProps {
@@ -118,7 +128,7 @@ interface TabProps {
 
 function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
   const { data: listings = [], isLoading } = useQuery({
-    queryKey: ['outreach-v2-listings'],
+    queryKey: ['outreach-listings'],
     queryFn: async () => {
       const { data: properties, error } = await (supabase.from('properties') as any)
         .select('id, name, city, slug, landlord_whatsapp, contact_phone, contact_name, outreach_sent, outreach_sent_at, submitted_by')
@@ -127,7 +137,6 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       if (error) throw error;
       if (!properties || properties.length === 0) return [];
 
-      // Fetch inquiries for NDA + always_authorised badges
       const propIds = (properties as PropertyRow[]).map(p => p.id);
       const { data: inquiries } = await (supabase.from('inquiries') as any)
         .select('property_id, nda_signed, always_authorised')
@@ -167,9 +176,9 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
         .eq('id', property.id);
       if (error) throw error;
 
-      if (user) logAdminAction(user.id, { action: 'outreach_v2_sent', target_table: 'properties', target_id: property.id, metadata: { phone } });
+      if (user) logAdminAction(user.id, { action: 'outreach_sent', target_table: 'properties', target_id: property.id, metadata: { phone } });
       toast.success('First outreach sent to ' + (property.contact_name || phone));
-      queryClient.invalidateQueries({ queryKey: ['outreach-v2-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-listings'] });
     } catch {
       toast.error('Failed to send outreach');
     } finally {
@@ -181,91 +190,92 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
 
   if (listings.length === 0) {
     return (
-      <div className="rounded-2xl border p-12 text-center" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
-        <Inbox className="w-12 h-12 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
-        <p className="text-sm" style={{ color: '#9CA3AF' }}>No published listings found</p>
-      </div>
+      <EmptyState
+        title="No published listings"
+        subtitle="Properties with status 'live' will appear here for first-contact activation."
+      />
     );
   }
 
   return (
-    <div className="space-y-3">
-      {listings.map((listing: PropertyRow & { ndaCount: number; autoAuth: boolean }) => (
-        <div key={listing.id} className="rounded-2xl border p-4" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{listing.name}</span>
-                <span className="text-xs" style={{ color: '#6B7280' }}>{listing.city}</span>
-                {listing.slug && (
-                  <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
-                    {listing.slug}
+    <div>
+      <p className="text-xs mb-4" style={{ color: '#9CA3AF' }}>
+        Send the first WhatsApp to landlords who listed a property but haven't been contacted yet. This is NFsTay's activation outreach - not a lead inbox.
+      </p>
+      <div className="space-y-3">
+        {listings.map((listing: PropertyRow & { ndaCount: number; autoAuth: boolean }) => (
+          <div key={listing.id} className="rounded-2xl border p-4" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{listing.name}</span>
+                  <span className="text-xs" style={{ color: '#6B7280' }}>{listing.city}</span>
+                  {listing.slug && (
+                    <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
+                      {listing.slug}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                  <span className="text-xs" style={{ color: '#9CA3AF' }}>{listing.landlord_whatsapp || listing.contact_phone || 'No phone'}</span>
+                  <span className="inline-flex items-center gap-1 text-xs font-medium">
+                    {listing.ndaCount > 0
+                      ? <><Check className="w-3 h-3" style={{ color: '#1E9A80' }} /><span style={{ color: '#1E9A80' }}>NDA ({listing.ndaCount})</span></>
+                      : <><X className="w-3 h-3" style={{ color: '#9CA3AF' }} /><span style={{ color: '#9CA3AF' }}>No NDA</span></>}
                   </span>
-                )}
+                  <span className="inline-flex items-center gap-1 text-xs font-medium">
+                    {listing.submitted_by
+                      ? <><Check className="w-3 h-3" style={{ color: '#1E9A80' }} /><span style={{ color: '#1E9A80' }}>Claimed</span></>
+                      : <><X className="w-3 h-3" style={{ color: '#9CA3AF' }} /><span style={{ color: '#9CA3AF' }}>Unclaimed</span></>}
+                  </span>
+                  {listing.autoAuth && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
+                      Auto-Authorised
+                    </span>
+                  )}
+                  {listing.outreach_sent && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
+                      Sent {listing.outreach_sent_at ? new Date(listing.outreach_sent_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                <span className="text-xs" style={{ color: '#9CA3AF' }}>{listing.landlord_whatsapp || listing.contact_phone || 'No phone'}</span>
-                {/* NDA badge */}
-                <span className="inline-flex items-center gap-1 text-xs font-medium">
-                  {listing.ndaCount > 0
-                    ? <><Check className="w-3 h-3" style={{ color: '#1E9A80' }} /><span style={{ color: '#1E9A80' }}>NDA ({listing.ndaCount})</span></>
-                    : <><X className="w-3 h-3" style={{ color: '#9CA3AF' }} /><span style={{ color: '#9CA3AF' }}>No NDA</span></>}
-                </span>
-                {/* Account claimed badge */}
-                <span className="inline-flex items-center gap-1 text-xs font-medium">
-                  {listing.submitted_by
-                    ? <><Check className="w-3 h-3" style={{ color: '#1E9A80' }} /><span style={{ color: '#1E9A80' }}>Claimed</span></>
-                    : <><X className="w-3 h-3" style={{ color: '#9CA3AF' }} /><span style={{ color: '#9CA3AF' }}>Unclaimed</span></>}
-                </span>
-                {/* Auto-authorised badge */}
-                {listing.autoAuth && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
-                    Auto-Authorised
-                  </span>
-                )}
-                {/* Outreach sent badge */}
-                {listing.outreach_sent && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
-                    Outreach sent {listing.outreach_sent_at ? new Date(listing.outreach_sent_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
-                  </span>
-                )}
-              </div>
-            </div>
 
-            {!listing.outreach_sent && (
-              <button
-                onClick={() => sendOutreach(listing)}
-                disabled={loadingActions.has(`outreach-${listing.id}`)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50 flex-shrink-0"
-                style={{ backgroundColor: '#1E9A80' }}
-              >
-                <Send className="w-3 h-3" />
-                {loadingActions.has(`outreach-${listing.id}`) ? 'Sending...' : 'Send First Outreach'}
-              </button>
-            )}
+              {!listing.outreach_sent && (
+                <button
+                  onClick={() => sendOutreach(listing)}
+                  disabled={loadingActions.has(`outreach-${listing.id}`)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50 flex-shrink-0"
+                  style={{ backgroundColor: '#1E9A80' }}
+                >
+                  <Send className="w-3 h-3" />
+                  {loadingActions.has(`outreach-${listing.id}`) ? 'Sending...' : 'Send First Outreach'}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
 
 // ══════════════════════════════════════════════════════════════
-// TAB 2 — Pending Inquiries
+// TAB 2 -- Pending Inquiries
 // ══════════════════════════════════════════════════════════════
 
 function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
   const { data: pendingInquiries = [], isLoading } = useQuery({
-    queryKey: ['outreach-v2-pending'],
+    queryKey: ['outreach-pending'],
     queryFn: async () => {
+      // Use .or() to catch both false AND null (rows created before migration)
       const { data: inquiries, error } = await (supabase.from('inquiries') as any)
         .select('id, property_id, tenant_name, lister_phone, lister_type, lister_name, nda_signed, authorized, always_authorised, authorisation_type, created_at')
-        .eq('authorized', false)
+        .or('authorized.eq.false,authorized.is.null')
         .order('created_at', { ascending: false });
       if (error) throw error;
       if (!inquiries || inquiries.length === 0) return [];
 
-      // Fetch property names
       const propIds = [...new Set((inquiries as InquiryRow[]).map(i => i.property_id))];
       const { data: properties } = await (supabase.from('properties') as any)
         .select('id, name, landlord_whatsapp, contact_phone')
@@ -284,32 +294,28 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     },
   });
 
-  // Authorise with type
   const authorise = async (inquiry: InquiryRow & { landlordPhone: string }, type: 'nda' | 'nda_and_claim' | 'direct') => {
     const key = `auth-${inquiry.id}-${type}`;
     addLoading(key);
     try {
-      // 1. Update DB
       const { error } = await (supabase.from('inquiries') as any)
         .update({ authorized: true, authorisation_type: type })
         .eq('id', inquiry.id);
       if (error) throw error;
 
-      // 2. Call GHL for NDA and Claim types (warm workflow)
       if (type === 'nda' || type === 'nda_and_claim') {
         const phone = inquiry.lister_phone || inquiry.landlordPhone;
         if (phone) {
           const result = await callGhlEnroll(phone, GHL_WORKFLOW_WARM);
           if (!result.success) {
             toast.error('Authorised in DB but GHL enrollment failed: ' + (result.error || 'Unknown'));
-            // DB update succeeded, so we don't roll back
           }
         }
       }
 
-      if (user) logAdminAction(user.id, { action: 'inquiry_authorised_v2', target_table: 'inquiries', target_id: inquiry.id, metadata: { type } });
+      if (user) logAdminAction(user.id, { action: 'inquiry_authorised', target_table: 'inquiries', target_id: inquiry.id, metadata: { type } });
       toast.success('Inquiry authorised (' + type.replace('_', ' + ') + ')');
-      queryClient.invalidateQueries({ queryKey: ['outreach-v2-pending'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-pending'] });
     } catch {
       toast.error('Failed to authorise inquiry');
     } finally {
@@ -317,7 +323,6 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     }
   };
 
-  // Always authorise toggle
   const toggleAlwaysAuthorised = async (listerPhone: string, currentValue: boolean) => {
     const key = `always-${listerPhone}`;
     addLoading(key);
@@ -330,7 +335,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
 
       if (user) logAdminAction(user.id, { action: newValue ? 'always_authorised_on' : 'always_authorised_off', target_table: 'inquiries', target_id: listerPhone });
       toast.success(newValue ? 'Always Authorise enabled for this contact' : 'Always Authorise disabled');
-      queryClient.invalidateQueries({ queryKey: ['outreach-v2-pending'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-pending'] });
     } catch {
       toast.error('Failed to update always authorise');
     } finally {
@@ -342,14 +347,13 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
 
   if (pendingInquiries.length === 0) {
     return (
-      <div className="rounded-2xl border p-12 text-center" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
-        <Inbox className="w-12 h-12 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
-        <p className="text-sm" style={{ color: '#9CA3AF' }}>No pending inquiries</p>
-      </div>
+      <EmptyState
+        title="No pending inquiries"
+        subtitle="Inquiries waiting for admin authorisation will appear here. When a tenant sends an inquiry, it shows up for you to approve."
+      />
     );
   }
 
-  // Group by lister_phone for the always-authorise toggle
   const seenPhones = new Set<string>();
 
   return (
@@ -379,7 +383,6 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                {/* Authorise + NDA */}
                 <button
                   onClick={() => authorise(inq, 'nda')}
                   disabled={loadingActions.has(`auth-${inq.id}-nda`)}
@@ -388,7 +391,6 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
                 >
                   {loadingActions.has(`auth-${inq.id}-nda`) ? '...' : 'NDA'}
                 </button>
-                {/* Authorise + Claim */}
                 <button
                   onClick={() => authorise(inq, 'nda_and_claim')}
                   disabled={loadingActions.has(`auth-${inq.id}-nda_and_claim`)}
@@ -397,7 +399,6 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
                 >
                   {loadingActions.has(`auth-${inq.id}-nda_and_claim`) ? '...' : 'NDA + Claim'}
                 </button>
-                {/* Authorise Direct */}
                 <button
                   onClick={() => authorise(inq, 'direct')}
                   disabled={loadingActions.has(`auth-${inq.id}-direct`)}
@@ -409,7 +410,6 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
               </div>
             </div>
 
-            {/* Always Authorise toggle - show once per lister_phone */}
             {showAlwaysToggle && (
               <div className="flex items-center gap-2 mt-3 pt-3" style={{ borderTop: '1px solid #E5E7EB' }}>
                 <button
@@ -435,7 +435,241 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
   );
 }
 
-// ── Loading skeleton ──
+// ══════════════════════════════════════════════════════════════
+// TAB 3 -- Metrics (all lister types)
+// ══════════════════════════════════════════════════════════════
+
+function MetricsTab() {
+  const [filterType, setFilterType] = useState<string>('all');
+
+  const { data: metrics, isLoading } = useQuery({
+    queryKey: ['outreach-metrics'],
+    queryFn: async () => {
+      // 1. All properties with a lister_type
+      const { data: properties } = await (supabase.from('properties') as any)
+        .select('id, landlord_whatsapp, contact_phone, contact_name, contact_email, lister_type, created_at');
+
+      // 2. Inquiries for those properties
+      const propIds = (properties || []).map((p: any) => p.id);
+      let inquiries: any[] = [];
+      if (propIds.length > 0) {
+        const { data } = await (supabase.from('inquiries') as any)
+          .select('id, property_id, lister_phone, nda_signed, created_at')
+          .in('property_id', propIds);
+        inquiries = data || [];
+      }
+
+      // 3. Magic link clicks
+      const phones = [...new Set((properties || []).map((p: any) => p.landlord_whatsapp || p.contact_phone).filter(Boolean))];
+      let invites: any[] = [];
+      if (phones.length > 0) {
+        const { data } = await (supabase.from('landlord_invites') as any)
+          .select('id, phone, used, used_at, created_at')
+          .in('phone', phones);
+        invites = data || [];
+      }
+
+      // 4. Profiles for claimed status
+      let profiles: any[] = [];
+      if (phones.length > 0) {
+        const { data } = await (supabase.from('profiles') as any)
+          .select('id, name, whatsapp, role, created_at')
+          .in('whatsapp', phones);
+        profiles = data || [];
+      }
+
+      // 5. Aggregate by phone
+      const phoneMap = new Map<string, ListerMetric & { clicks: number }>();
+
+      for (const prop of (properties || [])) {
+        const phone = prop.landlord_whatsapp || prop.contact_phone || '';
+        if (!phone) continue;
+        const type = prop.lister_type || 'landlord';
+
+        if (!phoneMap.has(phone)) {
+          phoneMap.set(phone, {
+            phone,
+            name: prop.contact_name || null,
+            listerType: type,
+            properties: 0,
+            totalLeads: 0,
+            ndaSigned: 0,
+            claimed: false,
+            clicks: 0,
+          });
+        }
+        phoneMap.get(phone)!.properties++;
+      }
+
+      // Clicks
+      for (const inv of invites) {
+        const s = phoneMap.get(inv.phone);
+        if (s && inv.used) s.clicks++;
+      }
+
+      // Leads + NDA
+      for (const inq of inquiries) {
+        const prop = (properties || []).find((p: any) => p.id === inq.property_id);
+        if (!prop) continue;
+        const phone = prop.landlord_whatsapp || prop.contact_phone || '';
+        const s = phoneMap.get(phone);
+        if (!s) continue;
+        s.totalLeads++;
+        if (inq.nda_signed) s.ndaSigned++;
+      }
+
+      // Claimed
+      for (const profile of profiles) {
+        const s = phoneMap.get(profile.whatsapp);
+        if (!s) continue;
+        if (profile.name && profile.name !== profile.whatsapp && !profile.name.includes('+')) {
+          s.claimed = true;
+          s.name = profile.name;
+        }
+      }
+
+      return Array.from(phoneMap.values()).sort((a, b) => b.totalLeads - a.totalLeads);
+    },
+  });
+
+  if (isLoading) return <LoadingSkeleton />;
+
+  const allMetrics = metrics || [];
+  const filtered = filterType === 'all' ? allMetrics : allMetrics.filter(m => m.listerType === filterType);
+
+  // Summary counts by type
+  const typeCounts = new Map<string, number>();
+  for (const m of allMetrics) {
+    typeCounts.set(m.listerType, (typeCounts.get(m.listerType) || 0) + 1);
+  }
+
+  const totalListers = filtered.length;
+  const totalProperties = filtered.reduce((s, m) => s + m.properties, 0);
+  const totalLeads = filtered.reduce((s, m) => s + m.totalLeads, 0);
+  const totalNda = filtered.reduce((s, m) => s + m.ndaSigned, 0);
+  const totalClaimed = filtered.filter(m => m.claimed).length;
+  const totalClicks = filtered.reduce((s, m) => s + (m as any).clicks, 0);
+
+  const typeLabel = (t: string) => {
+    if (t === 'deal_sourcer') return 'Deal Sourcer';
+    if (t === 'landlord') return 'Landlord';
+    if (t === 'agent') return 'Agent';
+    return t.charAt(0).toUpperCase() + t.slice(1).replace('_', ' ');
+  };
+
+  return (
+    <div>
+      {/* Type filter */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <button
+          onClick={() => setFilterType('all')}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+          style={filterType === 'all'
+            ? { backgroundColor: '#1E9A80', color: '#FFFFFF' }
+            : { backgroundColor: '#F3F3EE', color: '#6B7280' }}
+        >
+          All ({allMetrics.length})
+        </button>
+        {Array.from(typeCounts.entries()).map(([type, count]) => (
+          <button
+            key={type}
+            onClick={() => setFilterType(type)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+            style={filterType === type
+              ? { backgroundColor: '#1E9A80', color: '#FFFFFF' }
+              : { backgroundColor: '#F3F3EE', color: '#6B7280' }}
+          >
+            {typeLabel(type)} ({count})
+          </button>
+        ))}
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-6">
+        {[
+          { label: 'Listers', value: totalListers, icon: Phone },
+          { label: 'Properties', value: totalProperties, icon: Home },
+          { label: 'Leads', value: totalLeads, icon: FileCheck },
+          { label: 'NDAs Signed', value: totalNda, icon: FileCheck },
+          { label: 'Claimed', value: `${totalClaimed}/${totalListers}`, icon: UserCheck },
+          { label: 'Link Clicks', value: totalClicks, icon: Send },
+        ].map(({ label, value, icon: Icon }) => (
+          <div key={label} className="rounded-xl border p-3" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+            <div className="flex items-center gap-2 mb-1">
+              <Icon className="w-3.5 h-3.5" style={{ color: '#1E9A80' }} />
+              <span className="text-xs font-medium uppercase tracking-wide" style={{ color: '#6B7280' }}>{label}</span>
+            </div>
+            <span className="text-lg font-bold" style={{ color: '#1A1A1A' }}>{value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      {filtered.length === 0 ? (
+        <EmptyState title="No listers found" subtitle="Properties with listers will appear here." />
+      ) : (
+        <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ borderBottom: '1px solid #F3F4F6', backgroundColor: '#FAFAFA' }}>
+                <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>Lister</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>Type</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>Properties</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>Clicks</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>Leads</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>NDAs</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>Claimed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((m: ListerMetric & { clicks: number }) => (
+                <tr key={m.phone} style={{ borderBottom: '1px solid #F3F4F6' }} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <p className="text-sm font-medium" style={{ color: '#1A1A1A' }}>{m.name || m.phone}</p>
+                    <p className="text-xs" style={{ color: '#9CA3AF' }}>{m.phone}</p>
+                  </td>
+                  <td className="text-center px-3 py-3">
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
+                      {typeLabel(m.listerType)}
+                    </span>
+                  </td>
+                  <td className="text-center px-3 py-3 font-medium" style={{ color: '#1A1A1A' }}>{m.properties}</td>
+                  <td className="text-center px-3 py-3 font-medium" style={{ color: '#1A1A1A' }}>{m.clicks}</td>
+                  <td className="text-center px-3 py-3 font-medium" style={{ color: '#1A1A1A' }}>{m.totalLeads}</td>
+                  <td className="text-center px-3 py-3">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+                      style={{ backgroundColor: m.ndaSigned > 0 ? '#ECFDF5' : '#F3F4F6', color: m.ndaSigned > 0 ? '#1E9A80' : '#9CA3AF' }}>
+                      {m.ndaSigned}
+                    </span>
+                  </td>
+                  <td className="text-center px-3 py-3">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+                      style={{ backgroundColor: m.claimed ? '#ECFDF5' : '#FEE2E2', color: m.claimed ? '#1E9A80' : '#DC2626' }}>
+                      {m.claimed ? 'Yes' : 'No'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Shared components ──
+
+function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="rounded-2xl border p-12 text-center" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+      <Inbox className="w-12 h-12 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
+      <p className="text-sm font-medium mb-1" style={{ color: '#1A1A1A' }}>{title}</p>
+      <p className="text-xs" style={{ color: '#9CA3AF' }}>{subtitle}</p>
+    </div>
+  );
+}
+
 function LoadingSkeleton() {
   return (
     <div className="space-y-3">
