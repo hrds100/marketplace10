@@ -157,8 +157,11 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   if (!listing) return null;
 
   const handleSendWhatsApp = async () => {
+    const encodedMsg = encodeURIComponent(message);
+
     // Create inquiry row directly via Supabase client (bypasses edge function JWT issues)
     if (user && listing) {
+      console.log('[InquiryPanel] insert attempt:', { userId: user?.id, propertyId: listing?.id, tier });
       try {
         // 1. Get property details for lister info
         const { data: prop } = await (supabase.from('properties') as any)
@@ -190,7 +193,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
         }
 
         // 2. Insert inquiry directly
-        const { error: insertErr } = await (supabase.from('inquiries') as any).insert({
+        const { data: insertedRow, error: insertErr } = await (supabase.from('inquiries') as any).insert({
           tenant_id: user.id,
           property_id: listing.id,
           lister_type: prop?.lister_type || 'landlord',
@@ -206,12 +209,13 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
           token,
           status: 'new',
           nda_required: prop?.nda_required || false,
-        });
+        }).select().single();
 
         if (insertErr) {
-          console.error('[InquiryPanel] inquiry insert error:', insertErr);
+          console.error('[InquiryPanel] insert FAILED:', insertErr.message, insertErr.code, insertErr.details);
           toast.error('Could not save your inquiry. Please try again.');
         } else {
+          console.log('[InquiryPanel] inquiry saved:', insertedRow);
           // Removed: landlord auto-notify now handled via AdminOutreach page
 
           // 3. Fire tenant confirmation webhook (non-blocking)
@@ -234,8 +238,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
       }
     }
 
-    // Then open WhatsApp
-    const encodedMsg = encodeURIComponent(message);
+    // Open WhatsApp and close panel after insert attempt completes
     window.open(`https://wa.me/447476368123?text=${encodedMsg}`, '_blank');
     handleClose();
   };
