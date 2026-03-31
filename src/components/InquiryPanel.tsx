@@ -212,24 +212,9 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
           console.error('[InquiryPanel] inquiry insert error:', insertErr);
           toast.error('Could not save your inquiry. Please try again.');
         } else {
-          // 3. Fire n8n webhook for landlord notification (non-blocking)
-          const whatsappPhone = prop?.landlord_whatsapp || prop?.contact_phone;
-          if (whatsappPhone) {
-            fetch('https://n8n.srv886554.hstgr.cloud/webhook/inquiry-lister-whatsapp', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                phone: whatsappPhone,
-                lister_name: prop?.contact_name || 'Property Lister',
-                property_name: prop?.name || listing.name,
-                lead_url: `https://hub.nfstay.com/lead/${token}`,
-                magic_token: '',
-                is_cold: false,
-              }),
-            }).catch(() => {});
-          }
+          // Removed: landlord auto-notify now handled via AdminOutreach page
 
-          // 4. Fire tenant confirmation webhook (non-blocking)
+          // 3. Fire tenant confirmation webhook (non-blocking)
           if (tenantPhone) {
             fetch('https://n8n.srv886554.hstgr.cloud/webhook/inquiry-tenant-reply', {
               method: 'POST',
