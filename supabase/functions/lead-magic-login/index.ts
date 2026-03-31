@@ -124,6 +124,15 @@ serve(async (req) => {
         .eq('id', userId)
     }
 
+    // 4b. Backfill lister_id on this inquiry and all matching inquiries for this phone
+    await supabaseAdmin.from('inquiries').update({ lister_id: userId }).eq('id', inquiry.id)
+    if (phone) {
+      await supabaseAdmin.from('inquiries')
+        .update({ lister_id: userId })
+        .eq('lister_phone', phone)
+        .is('lister_id', null)
+    }
+
     // 5. Generate session (same pattern as landlord-magic-login)
     const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',

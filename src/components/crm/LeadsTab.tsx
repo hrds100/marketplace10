@@ -73,9 +73,9 @@ export default function LeadsTab() {
     });
   }, [user]);
 
-  // Load leads
+  // Load leads — runs as soon as user is available; re-runs when profileData loads for phone/email filters
   useEffect(() => {
-    if (!user || !profileData) return;
+    if (!user) return;
     async function fetchLeads() {
       try {
         const phone = profileData?.whatsapp || '';
