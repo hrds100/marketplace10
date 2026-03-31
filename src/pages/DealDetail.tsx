@@ -112,17 +112,38 @@ export default function DealDetail() {
   const contactPhone = landlordWhatsapp || (listing?.contact_phone as string) || null;
   const listerType = (listing?.lister_type as string) || null;
 
-  const handleDetailWhatsApp = () => {
+  const handleDetailWhatsApp = async () => {
     if (!listing || isLoading) return;
     if (!user) { navigate('/signup'); return; }
     if (!isPaidTier(tier)) { handleInquire(listingShape); return; }
     const propertyUrl = `https://hub.nfstay.com/deals/${(listing.slug as string) || (listing.id as string)}`;
     const refId = ((listing.id as string) || '').slice(0, 5).toUpperCase();
-    const msg = encodeURIComponent(
-      `Hi, I am interested in your property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${refId}\nPlease contact me at your earliest convenience.`,
-    );
-    // WhatsApp inquiry is processed by n8n when the message arrives at GHL
-    window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${msg}`, '_blank');
+    const plainMsg = `Hi, I am interested in your property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${refId}\nPlease contact me at your earliest convenience.`;
+
+    // Insert inquiry row so lead appears in My Leads immediately
+    try {
+      await (supabase.from('inquiries') as any).insert({
+        tenant_id: user.id,
+        property_id: listing.id as string,
+        lister_type: (listing.lister_type as string) || 'landlord',
+        lister_phone: (listing.contact_phone as string) || null,
+        lister_email: (listing.contact_email as string) || null,
+        lister_name: (listing.contact_name as string) || null,
+        channel: 'whatsapp',
+        message: plainMsg,
+        tenant_name: user.user_metadata?.name || user.user_metadata?.full_name || null,
+        tenant_email: user.email || null,
+        tenant_phone: user.user_metadata?.whatsapp || null,
+        token: crypto.randomUUID(),
+        status: 'new',
+        nda_required: !!(listing.nda_required),
+      });
+    } catch (err) {
+      console.error('[DealDetail] inquiry insert error:', err);
+    }
+
+    // n8n still handles landlord/tenant notifications in parallel
+    window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${encodeURIComponent(plainMsg)}`, '_blank');
   };
 
   const handleDetailEmail = () => {
