@@ -76,29 +76,31 @@ export default function LessonPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, typing]);
 
-  if (!result) return <div className="p-8 text-center" style={{ color: '#6B7280' }}>Lesson not found</div>;
-
-  const { module: mod, lesson } = result;
+  const mod = result?.module ?? null;
+  const lesson = result?.lesson ?? null;
 
   // Tier gating
-  const dbMod = curriculumModules.find(m => m.id === (moduleId || ''));
-  const moduleTierRequired = (dbMod as unknown as { tier_required?: string } | undefined)?.tier_required ?? 'free';
-  const isGated = !tierSatisfied(moduleTierRequired, userTier);
-  const lessonIndex = mod.lessons.findIndex(l => l.id === lesson.id);
-  const prevLesson = lessonIndex > 0 ? mod.lessons[lessonIndex - 1] : null;
-  const nextLesson = lessonIndex < mod.lessons.length - 1 ? mod.lessons[lessonIndex + 1] : null;
-  const completed = countCompletedSteps(mod.id, lesson.id, lesson.steps.length);
-  const allStepsDone = completed === lesson.steps.length;
-  const lessonDone = isLessonComplete(mod.id, lesson.id);
+  const dbMod2 = curriculumModules.find(m => m.id === (moduleId || ''));
+  const moduleTierRequired = (dbMod2 as unknown as { tier_required?: string } | undefined)?.tier_required ?? 'free';
+  const isGated = mod ? !tierSatisfied(moduleTierRequired, userTier) : false;
+  const lessonIndex = mod && lesson ? mod.lessons.findIndex(l => l.id === lesson.id) : -1;
+  const prevLesson = mod && lessonIndex > 0 ? mod.lessons[lessonIndex - 1] : null;
+  const nextLesson = mod && lessonIndex >= 0 && lessonIndex < mod.lessons.length - 1 ? mod.lessons[lessonIndex + 1] : null;
+  const completed = mod && lesson ? countCompletedSteps(mod.id, lesson.id, lesson.steps.length) : 0;
+  const allStepsDone = lesson ? completed === lesson.steps.length : false;
+  const lessonDone = mod && lesson ? isLessonComplete(mod.id, lesson.id) : false;
 
   // Auto-complete lesson when all steps are done (fire once)
   useEffect(() => {
+    if (!mod || !lesson) return;
     if (allStepsDone && !lessonDone && !autoCompletedRef.current) {
       autoCompletedRef.current = true;
       completeLesson(mod.id, lesson.id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allStepsDone, lessonDone]);
+
+  if (!result || !mod || !lesson) return <div className="p-8 text-center" style={{ color: '#6B7280' }}>Lesson not found</div>;
 
   const handleCopyScript = async () => {
     if (lesson.script) {
