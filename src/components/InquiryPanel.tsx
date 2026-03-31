@@ -170,14 +170,24 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
         const tenantEmail = user.email || null;
         const tenantPhone = user.user_metadata?.whatsapp || null;
 
+        // Resolve lister_id: find landlord's user ID by their WhatsApp number
+        const listerPhone = prop?.landlord_whatsapp || prop?.contact_phone || null;
+        let listerId: string | null = null;
+        if (listerPhone) {
+          const { data: listerProfile } = await (supabase.from('profiles') as any)
+            .select('id').eq('whatsapp', listerPhone).maybeSingle();
+          if (listerProfile?.id) listerId = listerProfile.id;
+        }
+
         // 2. Insert inquiry directly
         const { error: insertErr } = await (supabase.from('inquiries') as any).insert({
           tenant_id: user.id,
           property_id: listing.id,
           lister_type: prop?.lister_type || 'landlord',
-          lister_phone: prop?.contact_phone || null,
+          lister_phone: listerPhone,
           lister_email: prop?.contact_email || null,
           lister_name: prop?.contact_name || null,
+          lister_id: listerId,
           channel: 'whatsapp',
           message,
           tenant_name: tenantName,

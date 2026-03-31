@@ -122,14 +122,24 @@ export default function DealDetail() {
 
     // Insert inquiry row so lead appears in My Leads immediately
     try {
+      // Resolve lister_id: find the landlord's user ID by their WhatsApp number
+      // submitted_by is the admin who posted via Quick List - NOT the landlord
+      const listerPhone = (listing.landlord_whatsapp as string) || (listing.contact_phone as string) || null;
+      let listerId: string | null = null;
+      if (listerPhone) {
+        const { data: listerProfile } = await (supabase.from('profiles') as any)
+          .select('id').eq('whatsapp', listerPhone).maybeSingle();
+        if (listerProfile?.id) listerId = listerProfile.id;
+      }
+
       const { error: insertErr } = await (supabase.from('inquiries') as any).insert({
         tenant_id: user.id,
         property_id: listing.id as string,
         lister_type: (listing.lister_type as string) || 'landlord',
-        lister_phone: (listing.contact_phone as string) || null,
+        lister_phone: listerPhone,
         lister_email: (listing.contact_email as string) || null,
         lister_name: (listing.contact_name as string) || null,
-        lister_id: (listing.submitted_by as string) || null,
+        lister_id: listerId,
         channel: 'whatsapp',
         message: plainMsg,
         tenant_name: user.user_metadata?.name || user.user_metadata?.full_name || null,
