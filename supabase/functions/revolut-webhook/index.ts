@@ -48,7 +48,7 @@ serve(async (req) => {
           .from('payout_claims')
           .update({ status: 'paid', paid_at: new Date().toISOString() })
           .eq('revolut_transaction_id', txId)
-          .select('id, user_id, amount_entitled')
+          .select('id, user_id, user_type, amount_entitled')
           .maybeSingle()
 
         if (claim) {
@@ -61,6 +61,29 @@ serve(async (req) => {
             performed_by: 'revolut_webhook',
             metadata: { amount: claim.amount_entitled, transaction_id: txId },
           })
+
+          // Cascade to source rows based on user_type
+          if (claim.user_type === 'affiliate') {
+            const { data: affProfile } = await supabase
+              .from('aff_profiles')
+              .select('id')
+              .eq('user_id', claim.user_id)
+              .maybeSingle()
+            if (affProfile) {
+              await supabase
+                .from('aff_commissions')
+                .update({ status: 'paid', paid_at: new Date().toISOString(), claim_method: 'bank_transfer' })
+                .eq('affiliate_id', affProfile.id)
+                .eq('status', 'claimed')
+            }
+          } else {
+            // investor (default) — cascade to inv_payouts
+            await supabase
+              .from('inv_payouts')
+              .update({ status: 'paid', paid_at: new Date().toISOString(), claim_method: 'bank_transfer' })
+              .eq('user_id', claim.user_id)
+              .eq('status', 'claimed')
+          }
 
           // TODO: Send WhatsApp notification via n8n webhook
           // await fetch(N8N_WEBHOOK_URL + '/inv-notify-whatsapp', { ... })
