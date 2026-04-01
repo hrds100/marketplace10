@@ -32,7 +32,11 @@ _Last updated: 2026-03-16_
 - **Inquire via WhatsApp (admin-gated flow)**
   - Given I am a paid tenant and I click WhatsApp on a deal card, panel, or detail page, When the message opens, Then it contains the deal link and short reference only and does NOT include any internal UUID.
   - Given a tenant sends a WhatsApp inquiry, When the inbound flow runs (GHL -> n8n -> receive-tenant-whatsapp), Then exactly one inquiry row appears in Admin > Outreach > Tenant Requests and no landlord message is sent yet.
+  - Given two or more inquiries share the same landlord phone, When I open Admin > Outreach > Tenant Requests, Then I see one grouped landlord row and can expand it to manage each inquiry.
   - Given an admin reviews Tenant Requests, When the admin chooses Direct, NDA, or NDA + Claim, Then and only then is the landlord contacted via the selected release path.
+  - Given a landlord has a released lead with authorisation_type = nda, When they open CRM leads, Then only NDA is required and claim is not mandatory to unlock that lead.
+  - Given a landlord has a released lead with authorisation_type = nda_and_claim, When they open CRM leads, Then they must complete NDA and claim account before lead details unlock.
+  - Given a landlord has a released lead with authorisation_type = direct, When they open CRM leads, Then lead details are visible without NDA or claim gating.
   - Given a webhook retry fires for the same tenant + property within 5 minutes, When receive-tenant-whatsapp runs, Then no duplicate inquiry is created (idempotency).
 
 - **Landlord Activation (grouped by landlord)**

@@ -102,13 +102,39 @@ export default function DashboardLayout() {
       setLandlordPhone(null);
       return;
     }
-    (supabase.from('profiles') as any)
-      .select('whatsapp')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }: { data: Record<string, unknown> | null }) => {
-        setLandlordPhone((data?.whatsapp as string) || '');
-      });
+
+    let cancelled = false;
+
+    (async () => {
+      const { data: profile } = await (supabase.from('profiles') as any)
+        .select('whatsapp, email')
+        .eq('id', user.id)
+        .single();
+
+      if (cancelled) return;
+
+      const whatsapp = (profile?.whatsapp as string | undefined) || '';
+      const email = (profile?.email as string | undefined) || user.email || '';
+      const filters: string[] = [`lister_id.eq.${user.id}`];
+      if (whatsapp) filters.push(`lister_phone.eq.${whatsapp}`);
+      if (email) filters.push(`lister_email.eq.${email}`);
+
+      const { data: claimRequiredLeads } = await (supabase.from('inquiries') as any)
+        .select('id')
+        .or(filters.join(','))
+        .eq('authorized', true)
+        .eq('authorisation_type', 'nda_and_claim')
+        .limit(1);
+
+      if (cancelled) return;
+
+      // Claim banner is shown only when at least one released lead requires mandatory claim.
+      setLandlordPhone(claimRequiredLeads && claimRequiredLeads.length > 0 ? whatsapp : null);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id, user?.email]);
 
   const claimBanner = landlordPhone !== null && !investCheckoutFocus ? (

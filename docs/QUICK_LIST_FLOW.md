@@ -73,7 +73,8 @@ PART 4 - ADMIN REVIEWS AND RELEASES
 
 Admin opens /admin/marketplace/outreach -> Tenant Requests tab.
 
-Each row shows: tenant name, property name, lister phone, date.
+Tenant Requests are grouped by landlord phone (one landlord group row).
+Expanding a group shows each tenant inquiry/property underneath.
 
 Admin chooses one of three release paths:
   - NDA: enrolls lister in GHL NDA workflow (via ghl-enroll edge function)
@@ -84,6 +85,10 @@ GHL enrollment must succeed before DB is updated to authorized=true.
 If GHL fails, the inquiry stays unauthorized and admin sees an error toast.
 
 Only after admin release does the landlord receive any message.
+Lead unlock behavior in landlord CRM:
+  - NDA -> landlord must complete Lead Access Agreement (NDA), claim is not forced
+  - NDA + Claim -> landlord must complete NDA and then claim account before lead unlock
+  - Direct -> lead is visible without NDA/claim gate
 
 
 PART 5 - LANDLORD ACTIVATION (grouped by landlord)
