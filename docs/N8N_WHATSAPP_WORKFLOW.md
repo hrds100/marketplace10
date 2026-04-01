@@ -1,125 +1,77 @@
-# n8n WhatsApp Notification Workflows
+# n8n WhatsApp Workflows - Marketplace Lead Flow
 
-## WORKFLOW 1: inbox-new-inquiry
-**Webhook path:** `/webhook/inbox-new-inquiry`
-**Trigger:** POST from nfstay when operator sends FIRST message in a thread
+> Last updated: 2026-04-01. The old automatic landlord-notification flow
+> (inbox-new-inquiry, inbox-new-message triggering landlord WhatsApp on every
+> tenant message) is replaced by the admin-gated flow described here.
 
-### Payload received:
-```json
-{
-  "thread_id": "uuid",
-  "property_title": "Manchester · 2-bed flat",
-  "property_city": "Manchester",
-  "sender_name": "Hugo Souza",
-  "is_masked": false,
-  "mask_type": "none",
-  "landlord_id": "uuid"
-}
+## Current flow: admin-gated tenant inquiry
+
+```
+Tenant clicks WhatsApp on deal card/detail/panel
+  -> wa.me opens with short message (link + 5-char ref, NO UUID)
+  -> Message sent to NFsTay WhatsApp (+44 7476 368123)
+  -> GHL receives inbound message
+  -> n8n webhook fires (inbox-new-inquiry or ghl-inbound-whatsapp)
+  -> n8n calls receive-tenant-whatsapp edge function
+  -> Edge function creates exactly one inquiry row (idempotent: dedup by tenant_phone + property_id within 5 min)
+  -> Inquiry appears in Admin > Outreach > Tenant Requests
+  -> Landlord receives NOTHING yet
+  -> Admin chooses: NDA, NDA + Claim, or Direct
+  -> Only then is the landlord contacted via GHL workflow
 ```
 
-### Nodes:
-1. **Webhook (POST)** - receives payload above
-2. **GHL - Update Contact**: set custom field `contact.property_reference` = `{{property_title}}` on the landlord contact (lookup by landlord_id → profiles → phone → GHL contact)
-3. **GHL - Send WhatsApp Template**: template name = `nfstay_new_inquiry`, to = landlord phone number, variables: `{{1}}` = First Name, button URL variable = `contact.magic_link_url`
-4. **End**
+## WORKFLOW: Inbound WhatsApp Inquiry (n8n)
 
----
+**n8n workflow ID:** `IvXzbcqzv5bKtu01`
+**Webhook paths:** `/webhook/inbox-new-inquiry` and `/webhook/ghl-inbound-whatsapp`
 
-## WORKFLOW 2: inbox-new-message
-**Webhook path:** `/webhook/inbox-new-message`
-**Trigger:** POST from nfstay on every SUBSEQUENT message (not the first)
+### What it does:
+1. Receives inbound tenant WhatsApp message from GHL
+2. Parses property link, reference number, and contact details
+3. Calls `receive-tenant-whatsapp` edge function to create inquiry
+4. Sends tenant auto-reply confirmation via GHL
 
-### Payload received:
-```json
-{
-  "thread_id": "uuid",
-  "property_title": "Manchester · 2-bed flat",
-  "property_city": "Manchester",
-  "sender_name": "Hugo Souza",
-  "is_masked": true,
-  "mask_type": "phone",
-  "landlord_id": "uuid"
-}
-```
+### What it does NOT do:
+- Does NOT notify the landlord
+- Does NOT enroll the landlord in any GHL workflow
+- Does NOT send any WhatsApp to the lister
 
-### Nodes:
-1. **Webhook (POST)** - receives payload above
-2. **GHL - Update Contact**: set `contact.property_reference` = `{{property_title}}`
-3. **GHL - Send WhatsApp Template**: template name = `nfstay_new_message`, variables: `{{1}}` = First Name, button URL variable = `contact.magic_link_url`
-4. **End**
+## WORKFLOW: Landlord Outreach (admin-triggered via ghl-enroll)
 
----
+**Edge function:** `ghl-enroll`
+**Triggered by:** Admin clicking NDA/NDA+Claim in Outreach > Tenant Requests
 
-## WORKFLOW 3: inbox-landlord-replied
-**Webhook path:** `/webhook/inbox-landlord-replied`
-**Trigger:** POST from nfstay when the LANDLORD sends a reply
-**Sends to:** Tenant (operator) - they already have an account, no magic link needed
+### What it does:
+1. Searches GHL for landlord contact by phone (multiple format variants)
+2. Creates GHL contact if not found
+3. Removes contact from workflow (if already enrolled), waits 1.5s
+4. Re-enrolls in the selected GHL workflow
 
-### Payload received:
-```json
-{
-  "thread_id": "uuid",
-  "property_title": "Manchester · 2-bed flat",
-  "property_city": "Manchester",
-  "sender_name": "Test Landlord",
-  "sender_role": "landlord",
-  "landlord_id": "uuid",
-  "is_masked": false,
-  "mask_type": "none"
-}
-```
+### GHL Workflow IDs:
+| Workflow | ID | Use |
+|----------|-----|-----|
+| Cold outreach (first contact) | `67250bfa-e1fc-4201-8bca-08c384a4a31d` | Landlord Activation tab |
+| NDA/warm (tenant lead release) | `0eb4395c-e493-43dc-be97-6c4455b5c7c4` | Tenant Requests NDA/NDA+Claim |
 
-### Nodes:
-1. **Webhook (POST)** - receives payload above
-2. **GHL - Look up tenant contact** by thread_id → get operator phone from profiles table via Supabase HTTP node
-3. **GHL - Update Contact**: set `contact.property_reference` = `{{property_title}}` on TENANT contact
-4. **GHL - Send WhatsApp Template**: template name = `nfstay_landlord_replied`, to = tenant phone, variables: `{{1}}` = `contact.property_reference`
-5. **End**
+## WORKFLOW: Inbox messaging (post-claim, ongoing)
 
----
+These workflows handle in-app messaging notifications AFTER a landlord has claimed their account and a conversation thread exists. They are separate from the marketplace lead flow.
 
-## WORKFLOW 4: inbox-tenant-message
-**Webhook path:** `/webhook/inbox-tenant-message`
-**Trigger:** POST from nfstay for any general new message to tenant
-**Template:** `nfstay_tenant_new_message`
+| Webhook | Purpose | Notifies |
+|---------|---------|----------|
+| `/webhook/inbox-new-message` | Operator sends message in thread | Landlord (WhatsApp) |
+| `/webhook/inbox-landlord-replied` | Landlord sends reply in thread | Tenant (WhatsApp) |
 
-### Nodes:
-1. **Webhook (POST)**
-2. **GHL - Update Contact**: set `contact.property_reference` on tenant contact
-3. **GHL - Send WhatsApp Template**: `nfstay_tenant_new_message`, `{{1}}` = `contact.property_reference`
-4. **End**
+These are NOT part of the marketplace inquiry flow. They fire only from ChatWindow.tsx for existing threads.
 
----
-
-## Webhook Routing Logic
-
-| Sender | First message? | Webhook fired | Template | Notifies |
-|--------|---------------|---------------|----------|----------|
-| Tenant | Yes | `inbox-new-inquiry` | `nfstay_new_inquiry` | Landlord |
-| Tenant | No | `inbox-new-message` | `nfstay_new_message` | Landlord |
-| Landlord | Any | `inbox-landlord-replied` | `nfstay_landlord_replied` | Tenant |
-
----
-
-## Test Accounts
-
-| Account | Email | Password | Role |
-|---------|-------|----------|------|
-| Hugo (operator) | hugo@nfstay.com | (existing) | operator |
-| Test Landlord | landlord-test@nfstay.com | TestLandlord123! | landlord |
-
----
-
-## Quick Test Setup
-Clone the existing OTP verification workflow in n8n. Replace the OTP send node with a GHL Send WhatsApp Template node. Point it at `nfstay_new_inquiry`. This lets you test the full pipeline immediately without building from scratch.
-
-## GHL Custom Fields (already created)
+## GHL Custom Fields
 | Field | ID | Key |
 |-------|-----|-----|
 | Property Reference | `Z0thvOTyoO2KxTMt5sP8` | `contact.property_reference` |
 | Magic Link URL | `gWb4evAKLWCK0y8RHp32` | `contact.magic_link_url` |
+| First Contact Sent | `QIc7FR6U3OGNEhdk7LoY` | `contact.first_contact_sent` |
 
 ## GHL WhatsApp Number
-- Phone: `07676 368123`
+- Phone: `07676 368123` (+44 7476 368123)
 - Name: nfstay
 - Quality: Green

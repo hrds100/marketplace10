@@ -1,5 +1,6 @@
 QUICK LIST FLOW - Admin to Tenant to Landlord
-Last updated: 2026-03-27
+Last updated: 2026-04-01
+
 
 PART 1 - ADMIN CREATES A LISTING
 
@@ -9,41 +10,34 @@ Admin pastes WhatsApp text (any format)
 
 Admin clicks "Parse with AI"
 
-Client-side parser extracts all fields:
-  - Phone number (contact_phone / landlord_whatsapp)
-  - Contact name
-  - Postcode -> city (via Google Maps geocoding)
-  - Bedrooms, bathrooms
-  - Rent (PCM), deposit, sourcing fee
-  - Profit estimate
-  - Property type (flat / house / HMO / block / BRR / sale)
-  - Deal type (SA / R2R / BRR / care home / block)
-  - Furnished status
-  - Nightly rate (projected)
-  - Purchase price (for BRR/sale deals)
-  - Unknown fields -> "N/A"
+Edge function ai-parse-listing processes text:
+  -> gpt-4o-mini extracts structured data
+  -> contact_phone normalized to +44 format
+  -> postcode resolved to city (if missing)
+  -> Returns JSON with: name, city, postcode,
+     bedrooms, bathrooms, rent, deposit, type,
+     deal_type, listing_type, description, features,
+     nightly_rate_projected, purchase_price, sourcing_fee
 
-n8n /webhook/ai-generate-listing -> generates professional description
+Form auto-fills. Admin reviews + edits fields.
 
-Form fills automatically
-Admin reviews, edits if needed
-Only required field: contact_email
+Only contact_email is required. Phone is optional
+but recommended for GHL/WhatsApp outreach.
 
-Admin clicks "Submit for Approval"
+Admin clicks "Submit for Approval" -> status = pending
+Admin clicks "Skip & Publish" -> status = live
 
-n8n Airbnb pricing webhook fires
--> estimated nightly rate, monthly revenue, profit fill in
+n8n Airbnb pricing webhook fires ->
+  returns estimated rates + profit ->
+  saved to property row
 
-Listing saved to Supabase:
-  status = pending
-  landlord_whatsapp = parsed phone number
-
-Listing appears in /admin/submissions queue
+Photos uploaded to Supabase Storage (deals-photos bucket)
+or Pexels fallback images shown blurred with "On request" label.
 
 
-PART 2 - ADMIN APPROVES
+PART 2 - ADMIN APPROVES (if submitted for approval)
 
-Admin opens /admin/submissions
+Admin opens /admin/marketplace/submissions
 
 Reviews listing -> clicks "Approve"
 
@@ -55,82 +49,81 @@ PART 3 - TENANT ENQUIRES (canonical path)
 
 Tenant browses /dashboard/deals
 
-Tenant clicks listing -> clicks "WhatsApp" on DealDetail
+Tenant clicks WhatsApp on PropertyCard, InquiryPanel, or DealDetail.
 
-DealDetail opens wa.me link with structured message containing:
-  - Property link (hub.nfstay.com/deals/{slug})
-  - Reference no. (first 5 chars of UUID)
-  - ID: {full UUID}
-Message goes to NFsTay WhatsApp number via GHL.
+wa.me opens with a short, human-readable message:
+  "Hi, I am interested in a property on nfstay.
+   Link: hub.nfstay.com/deals/{slug}
+   Reference no.: {short ref}
+   Please contact me at your earliest convenience."
 
-No inquiry is created on the frontend. The single canonical path:
-  GHL inbound -> n8n webhook -> receive-tenant-whatsapp edge function -> inquiry row created
+The message contains ONLY the deal link and short reference.
+No internal UUID. No database insert on the frontend.
 
-Inquiry appears in Admin > Outreach > Tenant Requests for admin authorization.
+The message goes to NFsTay WhatsApp (+44 7476 368123) via GHL.
 
-n8n fires -> checks: has this landlord number
-been contacted before? (first_contact_sent flag)
+GHL receives the inbound message -> n8n webhook fires ->
+receive-tenant-whatsapp edge function creates one inquiry row.
 
-
-PART 4A - FIRST TIME CONTACT (3-message sequence)
-
-IF first_contact_sent = false:
-
-MESSAGE 1 (WhatsApp Template - pre-approved):
-"Someone is interested in your property
-[listing title + address]. Is it still available?"
-
-Landlord replies "Yes" (or positive response)
-
-n8n detects reply -> short delay -> sends:
-
-MESSAGE 2 (free text):
-"Hi! Just to introduce ourselves - we help
-landlords connect with tenants and SA operators
-interested in Airbnb and rent-to-rent.
-We're handling this enquiry for you.
-Please see the next message to reply directly."
-
-Short delay -> sends:
-
-MESSAGE 3 (free text + magic link):
-"Here's your direct link to read the message
-and reply: hub.nfstay.com/inbox?token=abc123"
-
-Set first_contact_sent = true on listing/contact
+The inquiry appears in Admin > Outreach > Tenant Requests.
+The landlord receives NOTHING at this point.
 
 
-PART 4B - RETURNING LANDLORD (already has account)
+PART 4 - ADMIN REVIEWS AND RELEASES
 
-IF first_contact_sent = true:
+Admin opens /admin/marketplace/outreach -> Tenant Requests tab.
 
-Single WhatsApp message:
-"You have a new message about your property
-[title]. Reply here: hub.nfstay.com/inbox"
+Each row shows: tenant name, property name, lister phone, date.
 
+Admin chooses one of three release paths:
+  - NDA: enrolls lister in GHL NDA workflow (via ghl-enroll edge function)
+  - NDA + Claim: enrolls in NDA workflow + prompts landlord to claim
+  - Direct: marks authorized immediately, no GHL workflow
 
-PART 5 - LANDLORD LOGS IN
+GHL enrollment must succeed before DB is updated to authorized=true.
+If GHL fails, the inquiry stays unauthorized and admin sees an error toast.
 
-Landlord clicks magic link
-
-MagicLoginPage -> auto-logged in
-
-Lands on inbox -> sees tenant message -> replies
-
-IF listings exist with matching landlord_whatsapp:
-  ClaimAccountBanner appears:
-  "We found listings posted with your number.
-   Claim them to manage everything from here."
-
-Landlord clicks "Claim my listings"
-
-All properties where landlord_whatsapp =
-their phone -> linked via chat_threads
-
-Listings now in landlord's dashboard
+Only after admin release does the landlord receive any message.
 
 
-PART 6 - ONGOING
+PART 5 - LANDLORD ACTIVATION (grouped by landlord)
 
-Landlord and tenant message inside platform
-Deal agreed -> managed from landlord dashboard
+Admin opens /admin/marketplace/outreach -> Landlord Activation tab.
+
+Landlords are grouped by phone number, not by property.
+One row per landlord phone shows:
+  - Landlord name (if claimed) or phone number
+  - Email (if claimed)
+  - Property count (e.g. "3 properties")
+  - Expand arrow to see nested property list
+
+"Send Outreach" sends the first WhatsApp to the landlord via GHL.
+This marks ALL properties in that landlord group as outreach_sent.
+ghl-enroll creates the GHL contact if it does not exist.
+
+
+PART 6 - LANDLORD LOGS IN AND CLAIMS
+
+Landlord clicks magic link in GHL message.
+
+landlord-magic-login edge function:
+  - Looks up landlord_invites by token
+  - Finds or creates user (landlord_{phone}@nfstay.internal)
+  - Auto-logs in, lands on inbox
+
+IF landlord has unclaimed listings:
+  ClaimAccountBanner appears.
+  Landlord enters real name + email.
+
+claim-landlord-account edge function:
+  - Updates auth email and profile
+  - Links ALL properties matching landlord phone
+    (contact_phone, contact_whatsapp, landlord_whatsapp)
+  - Links all chat threads and inquiries for those properties
+  - Landlord now owns the full group of properties
+
+
+PART 7 - ONGOING
+
+Landlord and tenant message inside platform.
+Deal agreed -> managed from landlord dashboard.

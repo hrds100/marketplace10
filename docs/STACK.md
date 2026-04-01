@@ -60,9 +60,11 @@ _Last updated: 2026-03-24_
 | POST /webhook/notify-admin-edit | Deal edited by member | MyListingsPanel.tsx handleSaveEdit | `X93UQismVkONON2h` |
 | POST /webhook/send-otp | Phone verification | SignUp.tsx | `CJzp4FAb2YX5uHqO` |
 | POST /webhook/verify-otp | OTP code check | VerifyOtp.tsx | `Zp9rlVCp4EJvrFMV` |
-| POST /webhook/inbox-new-message | Operator sends message → WhatsApp to landlord | ChatWindow.tsx handleSend | `J6hWjodwJlqXHme1` |
-| POST /webhook/inbox-landlord-replied | Landlord sends message → WhatsApp to operator | ChatWindow.tsx handleSend | `BrwfLUE2LPj9jovR` |
-| POST /webhook/inbox-tenant-message | Tenant sends message | ChatWindow.tsx handleSend | `UBuNLDn0mO0md39Y` |
+| POST /webhook/inbox-new-message | Operator sends message in thread → WhatsApp to landlord (post-claim only) | ChatWindow.tsx handleSend | `J6hWjodwJlqXHme1` |
+| POST /webhook/inbox-landlord-replied | Landlord replies in thread → WhatsApp to operator (post-claim only) | ChatWindow.tsx handleSend | `BrwfLUE2LPj9jovR` |
+| POST /webhook/inbox-tenant-message | Tenant sends message in thread | ChatWindow.tsx handleSend | `UBuNLDn0mO0md39Y` |
+| POST /webhook/inbox-new-inquiry | Inbound tenant WhatsApp → n8n → receive-tenant-whatsapp edge function | GHL inbound | `IvXzbcqzv5bKtu01` |
+| POST /webhook/inquiry-tenant-reply | Tenant auto-reply confirmation | n8n (after inquiry created) | - |
 | POST /webhook/signup-welcome | New user registered | Auth flow | `bI0vzTqncMjCs5jO` |
 | POST /webhook/estimate-profit | AI profit estimation | ListADealPage.tsx | `3EDIQKRea9nGzxve` |
 | POST /webhook/samcart | Payment tier update | SamCart/GHL | `rFFWUhp5PvgGEIHV` |

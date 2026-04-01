@@ -117,7 +117,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
 
     const propertyUrl = `https://hub.nfstay.com/deals/${listing.slug || listing.id}`;
     const ref = listing.id.slice(0, 5).toUpperCase();
-    const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${ref}\nID: ${listing.id}\nPlease contact me at your earliest convenience.`;
+    const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${ref}\nPlease contact me at your earliest convenience.`;
 
     // Inquiry created by n8n -> receive-tenant-whatsapp when inbound message arrives via GHL
     window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${encodeURIComponent(plainMsg)}`, '_blank');

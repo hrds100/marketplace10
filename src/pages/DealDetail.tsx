@@ -118,7 +118,7 @@ export default function DealDetail() {
     if (!isPaidTier(tier)) { handleInquire(listingShape); return; }
     const propertyUrl = `https://hub.nfstay.com/deals/${(listing.slug as string) || (listing.id as string)}`;
     const refId = ((listing.id as string) || '').slice(0, 5).toUpperCase();
-    const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${refId}\nID: ${listing.id as string}\nPlease contact me at your earliest convenience.`;
+    const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${refId}\nPlease contact me at your earliest convenience.`;
 
     // Inquiry is created by n8n -> receive-tenant-whatsapp edge function
     // when the inbound WhatsApp message arrives via GHL. No duplicate insert here.

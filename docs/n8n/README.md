@@ -1,62 +1,51 @@
-# n8n Workflow Import Guide
+# n8n Workflow Reference
 
-## Files
-| File | Workflow | Webhook Path | Notifies |
-|------|----------|-------------|----------|
-| workflow-1-new-inquiry.json | nfstay - New Inquiry | /webhook/inbox-new-inquiry | Landlord |
-| workflow-2-new-message.json | nfstay - New Message | /webhook/inbox-new-message | Landlord |
-| workflow-3-landlord-replied.json | nfstay - Landlord Replied | /webhook/inbox-landlord-replied | Tenant |
-| workflow-4-tenant-message.json | nfstay - Tenant New Message | /webhook/inbox-tenant-message | Tenant |
-| **workflow-test-echo.json** | **Test Echo (all 4)** | All 4 paths | Logs only |
+> Last updated: 2026-04-01.
+> The marketplace inquiry flow is admin-gated. See `docs/QUICK_LIST_FLOW.md` for the canonical lead flow
+> and `docs/N8N_WHATSAPP_WORKFLOW.md` for workflow details.
 
-## Quick Start - Test First
-1. Import `workflow-test-echo.json` into n8n
-2. Activate it
-3. Send a message in the nfstay inbox
-4. Check n8n execution log - you should see the payload logged with `status: ok`
-5. Check browser console - you should see `[nfstay webhook] ✅ fired successfully`
-6. Once confirmed working, deactivate test workflow and import the real 4 workflows
+## Marketplace Inquiry (admin-gated)
 
-## How to Import
+Tenant WhatsApp inquiries go to Admin > Outreach > Tenant Requests first.
+The landlord is NOT contacted automatically. Admin releases the lead.
 
-1. Open n8n at https://n8n.srv886554.hstgr.cloud
-2. Click **+ New Workflow**
-3. Click the **three-dot menu** (top right) → **Import from JSON**
-4. Paste the contents of each JSON file
-5. The GHL API key (`pit-ad222803-150e-48db-b907-4508ac46f2e5`) is already embedded in the HTTP Request headers
-6. **Activate** each workflow (toggle at the top)
-7. Test by sending a message in the nfstay inbox and watching the n8n execution log
+| Workflow | n8n ID | Webhook | Purpose |
+|----------|--------|---------|---------|
+| Inbound WhatsApp Inquiry | `IvXzbcqzv5bKtu01` | /webhook/inbox-new-inquiry | Parses inbound tenant message, calls receive-tenant-whatsapp edge function |
 
-## GHL WhatsApp Templates Required
-These templates must exist in GHL before the workflows will send messages:
+## Inbox Messaging (post-claim, existing threads only)
 
-| Template ID | Purpose |
-|-------------|---------|
-| `nfstay_new_inquiry` | First message from tenant to landlord |
-| `nfstay_new_message` | Follow-up message from tenant |
-| `nfstay_landlord_replied` | Landlord replied - notify tenant |
+These fire from ChatWindow.tsx for conversations that already exist. Not part of the marketplace lead flow.
+
+| Workflow | n8n ID | Webhook | Purpose |
+|----------|--------|---------|---------|
+| New Message | `J6hWjodwJlqXHme1` | /webhook/inbox-new-message | Operator sends message in thread -> WhatsApp to landlord |
+| Landlord Replied | `BrwfLUE2LPj9jovR` | /webhook/inbox-landlord-replied | Landlord replies in thread -> WhatsApp to tenant |
+| Tenant Message | `UBuNLDn0mO0md39Y` | /webhook/inbox-tenant-message | General tenant notification |
+| Tier Update | `wsDjAdpWnjqnO7ML` | /webhook/ghl-payment-success | GHL payment -> tier upgrade |
+
+## GHL Setup
+
+- **API key:** stored in n8n credential store (never in repo)
+- **Location ID:** `eFBsWXY3BmWDGIRez13x`
+
+### WhatsApp Templates
+| Template | Purpose |
+|----------|---------|
+| `nfstay_new_inquiry` | Tenant auto-reply confirmation |
+| `nfstay_new_message` | Follow-up message notification |
+| `nfstay_landlord_replied` | Landlord replied notification |
 | `nfstay_tenant_new_message` | General tenant notification |
 
-## GHL Custom Fields
+### Custom Fields
 | Field | Key | ID |
 |-------|-----|-----|
 | Property Reference | `contact.property_reference` | `Z0thvOTyoO2KxTMt5sP8` |
 | Magic Link URL | `contact.magic_link_url` | `gWb4evAKLWCK0y8RHp32` |
-
-## Deployed Workflow IDs
-| Workflow | n8n ID | Webhook URL | Status |
-|----------|--------|-------------|--------|
-| Test Echo | `KV9cGIEfFd3mtDWr` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-new-inquiry | ✅ Active |
-| New Inquiry | `IvXzbcqzv5bKtu01` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-new-inquiry | ⏳ Inactive (pending Meta) |
-| New Message | `J6hWjodwJlqXHme1` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-new-message | ✅ Active |
-| Landlord Replied | `BrwfLUE2LPj9jovR` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-landlord-replied | ✅ Active |
-| Tenant Message | `UBuNLDn0mO0md39Y` | https://n8n.srv886554.hstgr.cloud/webhook/inbox-tenant-message | ✅ Active |
-| Tier Update | `wsDjAdpWnjqnO7ML` | https://n8n.srv886554.hstgr.cloud/webhook/ghl-payment-success | ✅ Active |
-
-**Note:** Test Echo and New Inquiry share the same webhook path (`inbox-new-inquiry`). When New Inquiry is activated (after Meta approves the template), deactivate the Test Echo workflow to avoid conflicts.
+| First Contact Sent | `contact.first_contact_sent` | `QIc7FR6U3OGNEhdk7LoY` |
 
 ## Troubleshooting
-- **Webhook returns 404**: workflow is not activated - toggle it on
-- **GHL returns 401**: API key expired or invalid
+- **Webhook returns 404**: workflow is not activated in n8n
+- **GHL returns 401**: API key expired - update in n8n credential store
 - **WhatsApp not received**: check GHL template is approved by Meta
-- **Contact not found**: landlord_id/operator_id must match a GHL contact ID
+- **Contact not found**: phone must be in GHL contacts (ghl-enroll creates it automatically now)

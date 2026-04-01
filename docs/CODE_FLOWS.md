@@ -1,5 +1,7 @@
 # NFStay Code Flows — hub.nfstay.com
 > Auto-generated 2026-03-29. Maps every user action to the files and services that handle it.
+> **Note (2026-04-01):** The inquiry flow described here uses the OLD automatic landlord notification.
+> The current flow is admin-gated. See `docs/QUICK_LIST_FLOW.md` for the canonical lead flow.
 
 ---
 

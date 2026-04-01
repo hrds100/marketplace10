@@ -2,6 +2,34 @@
 
 ## [Unreleased]
 
+## [2026-04-01] - Admin-Gated Inquiry Flow, Landlord Grouping, Docs Correction
+
+### Changed - Marketplace Lead Flow
+- **Tenant WhatsApp message cleaned up**: removed internal UUID (ID: line) from all tenant-facing WhatsApp messages. Message now contains only deal link and 5-char reference number.
+- **Inquiry flow is admin-gated**: tenant WhatsApp inquiries stop in Admin > Outreach > Tenant Requests. Landlord receives NOTHING until admin chooses Direct, NDA, or NDA + Claim.
+- **Landlord Activation grouped by identity**: one row per landlord phone (not per property). Shows property count, claimed profile name/email. Expand to see nested properties. Outreach sent from the grouped row marks all properties at once.
+- **Idempotency on inbound WhatsApp**: receive-tenant-whatsapp deduplicates by tenant_phone + property_id within 5 minutes.
+- **GHL-first authorization**: outreach only marks DB after GHL enrollment succeeds.
+- **ghl-enroll creates contacts**: auto-creates GHL contact if not found, remove-then-re-enroll for repeat sends.
+- **Claiming links full landlord group**: claim-landlord-account already linked all properties matching landlord phone - docs now clearly state this.
+
+### Fixed - Docs
+- **QUICK_LIST_FLOW.md**: rewrote Parts 3-7 to match admin-gated flow, removed old automatic landlord contact sequences.
+- **COMMUNICATIONS.md**: rewrote sections 2-4 to match admin gate, removed UUID from message format, fixed "PARTIALLY BROKEN" status.
+- **ACCEPTANCE.md**: added Given/When/Then for short-reference WhatsApp, admin gate, landlord grouping, and claiming.
+- **DATABASE.md**: inquiries table fully documented (was missing from docs).
+- **N8N_WHATSAPP_WORKFLOW.md**: complete rewrite separating marketplace inquiry (admin-gated) from inbox messaging (post-claim).
+- **INTEGRATIONS.md**: replaced old auto-notification section with admin-gated lead flow.
+- **n8n/README.md**: removed old landlord-auto-notification language, removed plaintext GHL API key.
+- **EMAIL_NOTIFICATIONS.md**: clarified inbox WhatsApp webhooks are post-claim only.
+- **STACK.md**: added inbound WhatsApp webhook, clarified inbox webhooks are post-claim.
+- **Redacted plaintext GHL API keys** from 8 files across repo (docs, workflows, agent configs).
+
+### Fixed - Infrastructure
+- **CI deploy auth**: updated expired SUPABASE_ACCESS_TOKEN, added 3 new edge functions to deploy list.
+- **Synthetic tests**: fixed wrong marketplace10/ path prefix, corrected auth route and SPA redirect assertions.
+- **Hardcoded service role key removed** from e2e test (use env vars).
+
 ## [2026-03-24b] - SamCart Auto-Approve, Affiliate Fix, Wallet Verification
 
 ### Fixed - SamCart Order Processing

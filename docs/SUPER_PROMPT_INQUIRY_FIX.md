@@ -1,6 +1,10 @@
 # SUPER PROMPT: Fix Inquiry Pipeline — Deals Grid WhatsApp + Email Flow
 
-> Paste this entire file into a fresh Claude Code session. It contains everything the AI needs to understand, plan, and fix the inquiry pipeline using TDD.
+> **DEPRECATED (2026-04-01):** This prompt describes the OLD automatic landlord notification flow.
+> The current flow is ADMIN-GATED: tenant inquiries stop in Outreach > Tenant Requests.
+> The landlord is NOT contacted until admin chooses NDA, NDA + Claim, or Direct.
+> See `docs/QUICK_LIST_FLOW.md` and `docs/N8N_WHATSAPP_WORKFLOW.md` for the current flow.
+> Do NOT use this prompt to build or restore the old auto-notification behavior.
 
 ---
 
@@ -192,7 +196,7 @@ process-inquiry/polling POSTs to /webhook/inquiry-lister-whatsapp with:
 | Supabase service role | In memory: supabase_credentials.md |
 | n8n API key | In memory: n8n_credentials.md |
 | n8n base URL | https://n8n.srv886554.hstgr.cloud |
-| GHL PIT token | pit-ad222803-150e-48db-b907-4508ac46f2e5 |
+| GHL PIT token | REDACTED_GHL_PIT_TOKEN |
 | GHL location ID | eFBsWXY3BmWDGIRez13x |
 | Resend API key | In memory: reference_resend.md |
 | Test user (paid) | hugords100+15@gmail.com / TestNfstay2026! |

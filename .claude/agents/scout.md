@@ -20,7 +20,7 @@ Never write or edit code or files. Never make changes. Read only.
 
 ## Known credentials (use these directly)
 - n8n: https://n8n.srv886554.hstgr.cloud | API key in project memory at n8n_credentials.md
-- GHL: https://services.leadconnectorhq.com | token: pit-ad222803-150e-48db-b907-4508ac46f2e5 | location: eFBsWXY3BmWDGIRez13x
+- GHL: https://services.leadconnectorhq.com | token: REDACTED_GHL_PIT_TOKEN | location: eFBsWXY3BmWDGIRez13x
 - Supabase: project asazddtvjvmckouxcmmo | credentials in project memory at supabase_credentials.md
 
 ## How to report

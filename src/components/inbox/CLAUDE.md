@@ -44,7 +44,7 @@ ChatWindow.handleSend()
 ### GHL Location
 - Location ID: `eFBsWXY3BmWDGIRez13x`
 - WhatsApp from: `+44 7476 368123`
-- PIT token: `pit-ad222803-150e-48db-b907-4508ac46f2e5`
+- PIT token: `REDACTED_GHL_PIT_TOKEN`
 
 ## What Breaks WhatsApp
 - Invalid phone number format (not E.164, wrong digit count)

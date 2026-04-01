@@ -67,7 +67,7 @@ Admin workspace selector at `/admin` - 3 workspaces: Marketplace / Investments /
 
 | Table | Status | Seed Data |
 |-------|--------|-----------|
-| `inv_properties` | ✅ Created + RLS | 1 property (Seseh Beachfront Villa) |
+| `inv_properties` | ✅ Created + RLS | Empty - seed via Admin UI from on-chain data |
 | `inv_orders` | ✅ Created + RLS | 1 test order ($100, Hugo) |
 | `inv_shareholdings` | ✅ Created + RLS | 1 holding (Hugo, 1 share) |
 | `inv_payouts` | ✅ Created + RLS | Empty (no rent deposited yet) |
@@ -138,7 +138,7 @@ Admin workspace selector at `/admin` - 3 workspaces: Marketplace / Investments /
 
 ### GHL (GoHighLevel) ✅ CONNECTED
 - Location: `eFBsWXY3BmWDGIRez13x` (nfstay)
-- PIT token: `pit-28d63a20-4d9f-46bc-aaa3-26556d8b518f`
+- PIT token: `REDACTED_GHL_PIT_TOKEN`
 - Investment workflow: `75b14201-f492-44e9-a6e8-4423842fa07e`
 - WhatsApp notifications working (tested with Hugo's contact)
 - Hugo's GHL contact ID: `bXRhraG8yIBwrmCtzfyB`
