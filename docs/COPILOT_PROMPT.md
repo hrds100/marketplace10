@@ -308,7 +308,29 @@ marketplace10/docs/COPILOT_PROMPT.md   <-- YOU ARE HERE (tracked canonical maste
 
 ---
 
-## 12. WHEN THINGS GET STUCK
+## 12. LIVING DOCS - update the right doc after every task
+
+Some docs must stay current. When a task changes product behavior, the relevant doc gets updated in the same commit - not later, not "when we get to it".
+
+| What changed | Update this doc |
+|-------------|----------------|
+| Routes, folder structure, auth flow, data patterns | `docs/ARCHITECTURE.md` |
+| n8n workflows, GHL config, env vars, webhook endpoints, commission logic | `docs/INTEGRATIONS.md` |
+| Email, WhatsApp, in-app notifications, messaging flows | `docs/COMMUNICATIONS.md` |
+| New service, library, tool, or integration added | `docs/STACK.md` |
+| Any user-facing behavior shipped (feature, fix, UX change) | `docs/CHANGELOG.md` |
+| Root cause discovered, recurring mistake, "don't do this again" | `docs/LESSONS_LEARNED.md` |
+
+**Rules:**
+- Update in-place. Change existing sections to reflect the new reality. Do not append "Updated on..." notes.
+- Remove outdated info. If something was replaced, delete the old version.
+- CHANGELOG is additive (newest at top). Everything else is update-in-place.
+- If nothing in the table matches, no doc update is needed.
+- The `docs-keeper` agent can be spun to check which docs need updating after a task.
+
+---
+
+## 13. WHEN THINGS GET STUCK
 
 If the same fix has been attempted twice and it still fails:
 
