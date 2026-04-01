@@ -5,7 +5,6 @@ import { useProposals, useCreateProposal, useCastVote } from '@/hooks/useInvestD
 import { useProposalsFromGraph } from '@/hooks/useProposalsFromGraph';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -160,8 +159,14 @@ export default function InvestProposalsPage() {
   const { data: realProposals = [] } = useProposals();
   const { proposals: graphProposals } = useProposalsFromGraph();
   const { data: realProperties = [] } = useInvestProperties();
-  const { castVote: castBlockchainVote, loading: voteLoading, walletConnected } = useBlockchain();
-  const createProposal = useCreateProposal();
+  const {
+    castVote: castBlockchainVote,
+    createProposal: createBlockchainProposal,
+    getProposalFee,
+    loading: voteLoading,
+    walletConnected,
+  } = useBlockchain();
+  const createSupabaseProposal = useCreateProposal();
   const castVoteMutation = useCastVote();
 
   // Map real proposals from Supabase
@@ -209,8 +214,17 @@ export default function InvestProposalsPage() {
   const [activeProposals, setActiveProposals] = useState<ActiveProposalWithVote[]>([]);
 
   // Sync active proposals when real data or graph data arrives
+  // Dedup: skip Graph proposals that already have a matching Supabase row by blockchain_proposal_id
   useEffect(() => {
-    const merged = [...mappedActive, ...graphActive];
+    const supabaseChainIds = new Set(
+      mappedActive
+        .map((p: any) => p.blockchain_proposal_id)
+        .filter((id: any) => id != null)
+    );
+    const dedupedGraph = graphActive.filter(
+      (g) => !supabaseChainIds.has(g.blockchainProposalId)
+    );
+    const merged = [...mappedActive, ...dedupedGraph];
     if (merged.length > 0) {
       setActiveProposals(merged);
     }
@@ -267,7 +281,16 @@ export default function InvestProposalsPage() {
       result: g.result as 'approved' | 'rejected',
     }));
 
-  const pastProposals: PastProposal[] = [...supabasePast, ...graphPast];
+  // Dedup past proposals same as active
+  const supabasePastChainIds = new Set(
+    supabasePast
+      .map((p: any) => p.blockchain_proposal_id)
+      .filter((id: any) => id != null)
+  );
+  const dedupedGraphPast = graphPast.filter(
+    (g: any) => !supabasePastChainIds.has(g.blockchainProposalId)
+  );
+  const pastProposals: PastProposal[] = [...supabasePast, ...dedupedGraphPast];
 
   // Submit proposal state
   const [submitOpen, setSubmitOpen] = useState(false);
@@ -275,7 +298,13 @@ export default function InvestProposalsPage() {
   const [submitPropertyId, setSubmitPropertyId] = useState<number | null>(null);
   const [submitDescription, setSubmitDescription] = useState('');
   const [propertyDropdownOpen, setPropertyDropdownOpen] = useState(false);
-  const proposalFee = 10; // ~10 USDC in STAY tokens
+
+  // Live fee from contract (replaces hardcoded proposalFee = 10)
+  const [liveFee, setLiveFee] = useState<{ feeUsdc: number; feeStay: number } | null>(null);
+  useEffect(() => {
+    getProposalFee().then((f) => { if (f) setLiveFee(f); });
+  }, [getProposalFee]);
+  const proposalFee = liveFee?.feeUsdc ?? 0;
 
   const selectedProperty = realProperties.find((p: any) => p.id === submitPropertyId);
 
@@ -291,66 +320,46 @@ export default function InvestProposalsPage() {
 
   async function handleSubmitProposal() {
     if (!submitPropertyId || !submitDescription.trim()) return;
+
+    const selectedProp = (realProperties as any[]).find((p: any) => p.id === submitPropertyId);
+    const blockchainPropertyId = selectedProp?.blockchain_property_id;
+
+    if (blockchainPropertyId == null) {
+      toast.error('This property has no blockchain ID. Cannot create on-chain proposal.');
+      return;
+    }
+
+    if (!walletConnected) {
+      toast.error('Please connect your wallet first.');
+      return;
+    }
+
     setSubmitStep('approving');
     try {
-      const title = submitDescription.trim().slice(0, 80);
       const description = submitDescription.trim();
+      const title = description.slice(0, 80);
       const endsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-      // 1. Write to Supabase first
-      const newProposal = await createProposal.mutateAsync({
+      // 1. On-chain FIRST (mirrors legacy: fee check, STAY approval, balance check, addProposal)
+      setSubmitStep('submitting');
+      const result = await createBlockchainProposal(blockchainPropertyId, description);
+      setProposalTxHash(result.txHash);
+
+      // 2. Only AFTER on-chain success: write to Supabase with real blockchain_proposal_id
+      await createSupabaseProposal.mutateAsync({
         property_id: submitPropertyId,
+        proposer_id: user?.id || null,
         title,
         description,
         type: 'General',
         ends_at: endsAt,
-        created_by: user?.id || null,
+        blockchain_proposal_id: result.blockchainProposalId,
       });
 
-      // 2. Get blockchain_property_id for this property
-      const selectedProp = (realProperties as any[]).find((p: any) => p.id === submitPropertyId);
-      const blockchainPropertyId = selectedProp?.blockchain_property_id;
-
-      // 3. Submit on-chain if wallet connected and property has blockchain ID
-      if (walletConnected && blockchainPropertyId != null) {
-        setSubmitStep('submitting');
-        try {
-          const ethers = await import('ethers').catch(() => null);
-          if (ethers) {
-            const { VOTING_ABI } = await import('@/lib/contractAbis');
-            const { CONTRACTS } = await import('@/lib/particle');
-            // Use Particle provider from useEthereum (via ConnectKit) — not window.ethereum
-            const { particleAuth } = await import('@particle-network/auth-core');
-            const pa = particleAuth as any;
-            if (pa?.ethereum) {
-              const provider = new ethers.providers.Web3Provider(pa.ethereum);
-              const signer = provider.getSigner();
-              const votingContract = new ethers.Contract(CONTRACTS.VOTING, VOTING_ABI, signer);
-              const startTimestamp = Math.floor(Date.now() / 1000);
-              const endTimestamp = Math.floor(new Date(endsAt).getTime() / 1000);
-              // Encode description to bytes first (contract expects bytes, not string)
-              const encodedDescription = await votingContract.encodeString(description);
-              const tx = await votingContract.addProposal(blockchainPropertyId, encodedDescription);
-              const receipt = await tx.wait();
-              setProposalTxHash(receipt.transactionHash);
-
-              // 4. Update Supabase row with tx hash as blockchain_proposal_id placeholder
-              if (newProposal?.id) {
-                await (supabase.from('inv_proposals') as any)
-                  .update({ blockchain_proposal_id: null }) // TODO: parse proposal ID from contract event logs when event schema is known
-                  .eq('id', newProposal.id);
-              }
-            }
-          }
-        } catch (onChainErr) {
-          // Non-blocking: on-chain submission failed but Supabase record exists
-          console.error('On-chain proposal submission failed (Supabase record saved):', onChainErr);
-        }
-      }
-
       setSubmitStep('success');
-    } catch (err) {
-      toast.error('Failed to submit proposal. Please try again.');
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to submit proposal';
+      toast.error(msg.length > 120 ? msg.slice(0, 120) + '...' : msg);
       setSubmitStep('form');
     }
   }
@@ -652,7 +661,7 @@ export default function InvestProposalsPage() {
               </Button>
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Coins className="h-3 w-3" />
-                <span>Fee: ~{proposalFee} USDC in STAY tokens</span>
+                <span>Fee: ~${proposalFee} USDC{liveFee?.feeStay ? ` (~${liveFee.feeStay.toFixed(1)} STAY)` : ' in STAY tokens'}</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 You must own allocations in a property to submit a proposal. Proposals are open for 30 days.
@@ -952,7 +961,7 @@ export default function InvestProposalsPage() {
                 <Coins className="h-4 w-4 text-amber-500 flex-shrink-0" />
                 <div className="text-xs">
                   <p className="font-medium text-amber-600 dark:text-amber-400">
-                    Proposal fee: ~{proposalFee} USDC in STAY tokens
+                    Proposal fee: ~${proposalFee} USDC{liveFee?.feeStay ? ` (~${liveFee.feeStay.toFixed(1)} STAY)` : ' in STAY tokens'}
                   </p>
                   <p className="text-muted-foreground mt-0.5">
                     STAY tokens will be deducted from your wallet to prevent spam proposals.
