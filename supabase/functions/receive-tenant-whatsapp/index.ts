@@ -29,22 +29,13 @@ serve(async (req) => {
     // 1. Find property via multiple strategies
     let property: any = null
 
-    // A: Direct property_id (full UUID)
+    // A: Direct property_id (full UUID from n8n)
     if (property_id) {
       const { data } = await supabase.from('properties').select('*').eq('id', property_id).single()
       if (data) property = data
     }
 
-    // B: Extract UUID from message body (ID: line)
-    if (!property && message_body) {
-      const idMatch = message_body.match(/ID:\s*([0-9a-f-]{36})/i)
-      if (idMatch) {
-        const { data } = await supabase.from('properties').select('*').eq('id', idMatch[1]).single()
-        if (data) property = data
-      }
-    }
-
-    // C: Extract from /deals/ link in message
+    // B: Extract from /deals/ link in message (primary - tenant message always has this)
     if (!property && message_body) {
       const slugMatch = message_body.match(/\/deals\/([^\s\n]+)/i)
       if (slugMatch) {
@@ -59,7 +50,17 @@ serve(async (req) => {
       }
     }
 
-    // D: property_ref as short ref (first 5 chars of UUID)
+    // C: Extract short reference from message (e.g. "Reference no.: A1B2C")
+    if (!property && message_body) {
+      const refMatch = message_body.match(/Ref(?:erence)?\s*(?:no\.)?[:#]?\s*([A-Z0-9]{5})/i)
+      if (refMatch) {
+        const shortRef = refMatch[1].toLowerCase()
+        const { data: candidates } = await supabase.from('properties').select('*').ilike('id', `${shortRef}%`)
+        if (candidates && candidates.length === 1) property = candidates[0]
+      }
+    }
+
+    // D: property_ref from n8n payload (short ref fallback)
     if (!property && property_ref) {
       const { data: candidates } = await supabase.from('properties').select('*').ilike('id', `${property_ref}%`)
       if (candidates && candidates.length === 1) property = candidates[0]
@@ -68,7 +69,7 @@ serve(async (req) => {
     if (!property) {
       return new Response(JSON.stringify({
         error: 'Could not identify property from message',
-        hint: 'Include ID: {uuid} or a /deals/ link in the message',
+        hint: 'Include a /deals/ link or reference number in the message',
         received: { property_ref, property_id, message_preview: (message_body || '').slice(0, 200) },
       }), {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

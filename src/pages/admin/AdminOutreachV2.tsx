@@ -125,74 +125,102 @@ interface TabProps {
   removeLoading: (key: string) => void;
 }
 
+interface LandlordGroup {
+  phone: string;
+  name: string | null;
+  email: string | null;
+  claimed: boolean;
+  outreachSent: boolean;
+  properties: (PropertyRow & { ndaCount: number; pendingCount: number; totalCount: number })[];
+}
+
 function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
-  const { data: listings = [], isLoading } = useQuery({
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const { data: groups = [], isLoading } = useQuery({
     queryKey: ['outreach-listings'],
     queryFn: async () => {
-      const { data: properties, error } = await (supabase.from('properties') as any)
+      const { data: properties, error } = await supabase.from('properties')
         .select('id, name, city, slug, landlord_whatsapp, contact_phone, contact_name, outreach_sent, outreach_sent_at')
         .eq('status', 'live')
         .order('created_at', { ascending: false });
       if (error) throw error;
       if (!properties || properties.length === 0) return [];
 
-      const propIds = (properties as PropertyRow[]).map(p => p.id);
+      const propIds = properties.map(p => p.id);
       const { data: inquiries } = await supabase.from('inquiries')
         .select('property_id, nda_signed, always_authorised, authorized')
         .in('property_id', propIds);
 
-      const inqMap = new Map<string, { ndaCount: number; autoAuth: boolean; pendingCount: number; totalCount: number }>();
+      const inqMap = new Map<string, { ndaCount: number; pendingCount: number; totalCount: number }>();
       for (const inq of (inquiries || [])) {
-        const existing = inqMap.get(inq.property_id!) || { ndaCount: 0, autoAuth: false, pendingCount: 0, totalCount: 0 };
+        const existing = inqMap.get(inq.property_id!) || { ndaCount: 0, pendingCount: 0, totalCount: 0 };
         existing.totalCount++;
         if (inq.nda_signed) existing.ndaCount++;
-        if (inq.always_authorised) existing.autoAuth = true;
         if (!inq.authorized) existing.pendingCount++;
         inqMap.set(inq.property_id!, existing);
       }
 
-      // Check which lister phones have a claimed profile
-      const phones = [...new Set((properties as PropertyRow[]).map(p => p.landlord_whatsapp || p.contact_phone).filter(Boolean))] as string[];
-      const claimedPhones = new Set<string>();
+      // Look up claimed profiles by phone
+      const phones = [...new Set(properties.map(p => p.landlord_whatsapp || p.contact_phone).filter(Boolean))] as string[];
+      const profileMap = new Map<string, { name: string | null; email: string | null }>();
       if (phones.length > 0) {
         const { data: profiles } = await (supabase.from('profiles') as any)
-          .select('whatsapp').in('whatsapp', phones);
+          .select('whatsapp, name, email').in('whatsapp', phones);
         for (const p of (profiles || [])) {
-          if (p.whatsapp) claimedPhones.add(p.whatsapp);
+          if (p.whatsapp) profileMap.set(p.whatsapp, { name: p.name, email: p.email });
         }
       }
 
-      return (properties as PropertyRow[]).map(p => ({
-        ...p,
-        ndaCount: inqMap.get(p.id)?.ndaCount || 0,
-        autoAuth: inqMap.get(p.id)?.autoAuth || false,
-        pendingCount: inqMap.get(p.id)?.pendingCount || 0,
-        totalCount: inqMap.get(p.id)?.totalCount || 0,
-        claimed: claimedPhones.has(p.landlord_whatsapp || p.contact_phone || ''),
-      }));
+      // Group properties by landlord phone
+      const groupMap = new Map<string, LandlordGroup>();
+      for (const prop of properties) {
+        const phone = prop.landlord_whatsapp || prop.contact_phone || '';
+        if (!phone) continue;
+        if (!groupMap.has(phone)) {
+          const profile = profileMap.get(phone);
+          groupMap.set(phone, {
+            phone,
+            name: profile?.name || prop.contact_name || null,
+            email: profile?.email || null,
+            claimed: profileMap.has(phone),
+            outreachSent: false,
+            properties: [],
+          });
+        }
+        const group = groupMap.get(phone)!;
+        group.properties.push({
+          ...prop,
+          ndaCount: inqMap.get(prop.id)?.ndaCount || 0,
+          pendingCount: inqMap.get(prop.id)?.pendingCount || 0,
+          totalCount: inqMap.get(prop.id)?.totalCount || 0,
+        });
+        if (prop.outreach_sent) group.outreachSent = true;
+      }
+
+      return Array.from(groupMap.values()).sort((a, b) => b.properties.length - a.properties.length);
     },
   });
 
-  const sendOutreach = async (property: PropertyRow) => {
-    const phone = property.landlord_whatsapp || property.contact_phone;
-    if (!phone) { toast.error('No landlord phone on this property'); return; }
-
-    const key = `outreach-${property.id}`;
+  const sendOutreach = async (group: LandlordGroup) => {
+    const key = `outreach-${group.phone}`;
     addLoading(key);
     try {
-      const result = await callGhlEnroll(phone, GHL_WORKFLOW_COLD);
+      const result = await callGhlEnroll(group.phone, GHL_WORKFLOW_COLD);
       if (!result.success) {
         toast.error(result.error || 'GHL enrollment failed');
         return;
       }
 
+      // Mark all properties in this group as outreach_sent
+      const ids = group.properties.map(p => p.id);
       const { error } = await supabase.from('properties')
         .update({ outreach_sent: true, outreach_sent_at: new Date().toISOString() })
-        .eq('id', property.id);
+        .in('id', ids);
       if (error) throw error;
 
-      if (user) logAdminAction(user.id, { action: 'outreach_sent', target_table: 'properties', target_id: property.id, metadata: { phone } });
-      toast.success('First outreach sent to ' + (property.contact_name || phone));
+      if (user) logAdminAction(user.id, { action: 'outreach_sent', target_table: 'properties', target_id: ids.join(','), metadata: { phone: group.phone, count: ids.length } });
+      toast.success('Outreach sent to ' + (group.name || group.phone));
       queryClient.invalidateQueries({ queryKey: ['outreach-listings'] });
     } catch {
       toast.error('Failed to send outreach');
@@ -201,9 +229,17 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
     }
   };
 
+  const toggleExpand = (phone: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(phone)) next.delete(phone); else next.add(phone);
+      return next;
+    });
+  };
+
   if (isLoading) return <LoadingSkeleton />;
 
-  if (listings.length === 0) {
+  if (groups.length === 0) {
     return (
       <EmptyState
         title="No published listings"
@@ -215,71 +251,94 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
   return (
     <div>
       <p className="text-xs mb-4" style={{ color: '#9CA3AF' }}>
-        Send the first WhatsApp to landlords who listed a property but haven't been contacted yet. This activates the landlord - tenant leads are managed in Tenant Requests.
+        Send the first WhatsApp to landlords. Each row is one landlord - expand to see their properties.
       </p>
       <div className="space-y-3">
-        {listings.map((listing: PropertyRow & { ndaCount: number; autoAuth: boolean; pendingCount: number; totalCount: number }) => (
-          <div key={listing.id} className="rounded-2xl border p-4" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
-            <div className="flex items-center justify-between gap-4">
+        {groups.map((group: LandlordGroup) => {
+          const isOpen = expanded.has(group.phone);
+          const totalPending = group.properties.reduce((s, p) => s + p.pendingCount, 0);
+          const totalLeads = group.properties.reduce((s, p) => s + p.totalCount, 0);
+          return (
+          <div key={group.phone} className="rounded-2xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+            <div className="flex items-center justify-between gap-4 p-4 cursor-pointer" onClick={() => toggleExpand(group.phone)}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{listing.name}</span>
-                  <span className="text-xs" style={{ color: '#6B7280' }}>{listing.city}</span>
-                  {listing.slug && (
-                    <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
-                      {listing.slug}
-                    </span>
-                  )}
+                  <Phone className="w-3.5 h-3.5" style={{ color: '#1E9A80' }} />
+                  <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{group.name || group.phone}</span>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
+                    {group.properties.length} {group.properties.length === 1 ? 'property' : 'properties'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                  <span className="text-xs" style={{ color: '#9CA3AF' }}>{listing.landlord_whatsapp || listing.contact_phone || 'No phone'}</span>
+                  <span className="text-xs" style={{ color: '#9CA3AF' }}>{group.phone}</span>
+                  {group.claimed && group.email && (
+                    <span className="text-xs" style={{ color: '#9CA3AF' }}>{group.email}</span>
+                  )}
                   <span className="inline-flex items-center gap-1 text-xs font-medium">
-                    {listing.ndaCount > 0
-                      ? <><Check className="w-3 h-3" style={{ color: '#1E9A80' }} /><span style={{ color: '#1E9A80' }}>NDA ({listing.ndaCount})</span></>
-                      : <><X className="w-3 h-3" style={{ color: '#9CA3AF' }} /><span style={{ color: '#9CA3AF' }}>No NDA</span></>}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-xs font-medium">
-                    {(listing as any).claimed
+                    {group.claimed
                       ? <><Check className="w-3 h-3" style={{ color: '#1E9A80' }} /><span style={{ color: '#1E9A80' }}>Claimed</span></>
                       : <><X className="w-3 h-3" style={{ color: '#9CA3AF' }} /><span style={{ color: '#9CA3AF' }}>Unclaimed</span></>}
                   </span>
-                  {listing.autoAuth && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
-                      Auto-Authorised
-                    </span>
-                  )}
-                  {listing.outreach_sent && (
+                  {group.outreachSent && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
                       Outreach sent
                     </span>
                   )}
-                  {listing.totalCount === 0 && (
+                  {totalPending > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+                      Pending requests ({totalPending})
+                    </span>
+                  )}
+                  {totalLeads === 0 && !group.outreachSent && (
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#9CA3AF' }}>
                       Waiting for tenant
                     </span>
                   )}
-                  {listing.pendingCount > 0 && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
-                      Pending requests ({listing.pendingCount})
-                    </span>
-                  )}
                 </div>
               </div>
-
-              {!listing.outreach_sent && (
-                <button
-                  onClick={() => sendOutreach(listing)}
-                  disabled={loadingActions.has(`outreach-${listing.id}`)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50 flex-shrink-0"
-                  style={{ backgroundColor: '#1E9A80' }}
-                >
-                  <Send className="w-3 h-3" />
-                  {loadingActions.has(`outreach-${listing.id}`) ? 'Sending...' : 'Send First Outreach'}
-                </button>
-              )}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {!group.outreachSent && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); sendOutreach(group); }}
+                    disabled={loadingActions.has(`outreach-${group.phone}`)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                    style={{ backgroundColor: '#1E9A80' }}
+                  >
+                    <Send className="w-3 h-3" />
+                    {loadingActions.has(`outreach-${group.phone}`) ? 'Sending...' : 'Send Outreach'}
+                  </button>
+                )}
+                <span className="text-xs" style={{ color: '#9CA3AF' }}>{isOpen ? '▼' : '▶'}</span>
+              </div>
             </div>
+
+            {/* Expanded property list */}
+            {isOpen && (
+              <div className="border-t px-4 pb-3 pt-2 space-y-2" style={{ borderColor: '#F3F4F6', backgroundColor: '#FAFAFA' }}>
+                {group.properties.map(prop => (
+                  <div key={prop.id} className="flex items-center justify-between gap-3 py-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Home className="w-3 h-3 flex-shrink-0" style={{ color: '#9CA3AF' }} />
+                      <span className="text-xs font-medium truncate" style={{ color: '#1A1A1A' }}>{prop.name}</span>
+                      <span className="text-xs" style={{ color: '#9CA3AF' }}>{prop.city}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {prop.totalCount > 0 && (
+                        <span className="text-xs" style={{ color: '#6B7280' }}>{prop.totalCount} lead{prop.totalCount !== 1 ? 's' : ''}</span>
+                      )}
+                      {prop.pendingCount > 0 && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+                          {prop.pendingCount} pending
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -29,8 +29,15 @@ _Last updated: 2026-03-16_
 - **List a deal**
   - Given I am signed in, When I submit the list-a-deal form with required fields, Then a property row is created, admin is notified via n8n, and I see my listing in My Listings.
 
-- **Inquire (start conversation)**
-  - Given I am a tenant and I am on a deal page, When I click "Inquire Now", Then I am taken to the inbox with a thread created or selected for that property (deal query param).
+- **Inquire via WhatsApp (admin-gated flow)**
+  - Given I am a paid tenant and I click WhatsApp on a deal card, panel, or detail page, When the message opens, Then it contains the deal link and short reference only and does NOT include any internal UUID.
+  - Given a tenant sends a WhatsApp inquiry, When the inbound flow runs (GHL -> n8n -> receive-tenant-whatsapp), Then exactly one inquiry row appears in Admin > Outreach > Tenant Requests and no landlord message is sent yet.
+  - Given an admin reviews Tenant Requests, When the admin chooses Direct, NDA, or NDA + Claim, Then and only then is the landlord contacted via the selected release path.
+  - Given a webhook retry fires for the same tenant + property within 5 minutes, When receive-tenant-whatsapp runs, Then no duplicate inquiry is created (idempotency).
+
+- **Landlord Activation (grouped by landlord)**
+  - Given two or more properties share the same landlord phone, When I open Landlord Activation, Then I see one grouped landlord row with the property count and all properties nested underneath.
+  - Given a landlord claims their account, When the claim completes, Then the claimed profile shows the landlord name and email and all properties in that landlord group belong to the same account.
 
 ---
 

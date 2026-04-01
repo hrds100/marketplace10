@@ -60,7 +60,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
       setVisible(true);
       setPaymentComplete(false);
       setMessage(
-        `Hi, I am interested in a property on nfstay.\nLink: https://hub.nfstay.com/deals/${listing.slug || listing.id}\nReference no.: ${listing.id.slice(0, 5).toUpperCase()}\nID: ${listing.id}\nPlease contact me at your earliest convenience.`
+        `Hi, I am interested in a property on nfstay.\nLink: https://hub.nfstay.com/deals/${listing.slug || listing.id}\nReference no.: ${listing.id.slice(0, 5).toUpperCase()}\nPlease contact me at your earliest convenience.`
       );
     }
   }, [open, listing?.id]);

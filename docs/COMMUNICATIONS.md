@@ -23,48 +23,40 @@ This is the single source of truth for how inquiries work from start to finish.
 
 **2. The tenant sends the inquiry**
 
-- **WhatsApp:** their WhatsApp opens to NFStay's company number (+44 7476 368123) with a pre-filled message about the property. They hit send.
-- **Email:** a box pops up, they type a message and hit send.
+- **WhatsApp:** wa.me opens with a short, human-readable pre-filled message containing the deal link and a 5-character reference number. No internal UUID. The tenant hits send.
+- **Email:** a modal pops up, they type a message and hit send. This goes through the `process-inquiry` edge function.
 
-**3. The tenant gets TWO confirmations back (always, regardless of how they inquired)**
+**WhatsApp message format (tenant-facing):**
+```
+Hi, I am interested in a property on nfstay.
+Link: hub.nfstay.com/deals/{slug}
+Reference no.: {5-char ref}
+Please contact me at your earliest convenience.
+```
+This message must stay short and readable. Do not add internal IDs, UUIDs, or system fields.
 
-- A **WhatsApp message**: "Your inquiry has been received for property [property name] and we have notified the Landlord/Agent."
-- An **email confirmation**: same message.
+**3. The inquiry stops in Admin > Outreach > Tenant Requests**
 
-Both always fire. Not one or the other.
+- WhatsApp inquiries are created by the `receive-tenant-whatsapp` edge function (called by n8n when GHL receives the inbound message). The frontend does NOT insert any inquiry row.
+- Email inquiries are created by the `process-inquiry` edge function (called from EmailInquiryModal).
+- The inquiry appears in Admin > Outreach > Tenant Requests with `authorized = false`.
+- **The landlord receives NOTHING at this point.** No WhatsApp, no email, no notification.
 
-**4a. Lister gets notified (standard - single message)**
+**4. Admin releases the lead**
 
-- By default, ALL listers (landlord, agent, deal sourcer) get the single-message workflow.
-- The system searches GHL for the lister's phone. If not found, creates a new GHL contact.
-- Sets the magic link URL and property name on the contact.
-- Removes the contact from workflow `2-Tenant to Landlord` (0eb4395c), waits 3 seconds, re-enrolls.
-- GHL sends a single WhatsApp (template: `nfstay_tenant_new_message`): "You have a new message about [property name] on NFsTay.." with a **magic link button**.
-- The lister also receives an **email notification** via Resend (if they have an email on file).
-- Both WhatsApp AND email are sent every time, as long as we have the details.
+- Admin opens Tenant Requests and chooses one of three release paths per inquiry:
+  - **NDA:** enrolls lister in GHL NDA workflow (workflow `0eb4395c` via `ghl-enroll` edge function). Only then does the landlord receive a WhatsApp message.
+  - **NDA + Claim:** same as NDA, plus prompts landlord to claim their account.
+  - **Direct:** marks authorized immediately in DB. No GHL workflow triggered.
+- GHL enrollment must succeed before the DB is updated to `authorized = true`. If GHL fails, the inquiry stays unauthorized.
+- **This is the single admin gate.** No inquiry reaches a landlord without admin approval.
 
-**4b. First Landlord Inquiry flow (admin toggle)**
-
-- This applies to ANY lister type (landlord, agent, deal sourcer) when admin has toggled "First Landlord Inquiry" ON for the property.
-- Controlled by `properties.first_landlord_inquiry` boolean (set on admin submissions page).
-- The system checks: `first_landlord_inquiry === true` AND no prior inquiries exist for this property.
-- If both conditions are met (`is_cold = true`), creates a new GHL contact, sets magic link + property name.
-- Enrolls in GHL workflow `1-landlord_enquiry` (67250bfa).
-- GHL sends a multi-step WhatsApp sequence:
-  - **Message 1** (template: `landlord_enquiry`): "Hey, is your [property name] still available?"
-  - Waits for the lister to reply
-  - **Message 2** (free form): Introduction about NFStay
-  - **Message 3**: Audio message explaining NFStay
-  - **Message 4** (template: `new_inquiry`): "You have a new message about [property name] on NFsTay.." with a **magic link button**
-- After the first inquiry, all subsequent inquiries follow the standard path (4a).
-
-**4c. NDA required (admin toggle)**
+**4b. NDA required (admin toggle)**
 
 - When admin toggles "NDA Required" ON for a property, ALL leads for that property require the NDA agreement before the lister can see tenant contact details.
 - Controlled by `properties.nda_required` boolean (set on admin submissions page).
-- This applies regardless of lister type (landlord, agent, deal sourcer are treated equally).
 - The `nda_required` flag is stamped onto each inquiry at creation time.
-- In the CRM leads view, contact fields (phone, email) are blurred until the lister signs the 5-step Lead Access Agreement.
+- In the CRM leads view, contact fields (phone, email) are blurred until the lister signs the Lead Access Agreement.
 
 **5. The landlord taps the magic link**
 
@@ -483,7 +475,7 @@ Used for:
 
 | What happens | Channel | Who receives | Message |
 |-------------|---------|-------------|---------|
-| Purchase confirmed | Email + WhatsApp | Buyer | "Your investment of $500 in Seseh Villa is confirmed" |
+| Purchase confirmed | Email + WhatsApp | Buyer | "Your investment of $500 in Pembroke Place is confirmed" |
 | Purchase confirmed | Email + WhatsApp | Agent (if referred) | "Commission earned" |
 | New order pending | WhatsApp + In-App | Hugo (admin) | Alert about new order |
 
