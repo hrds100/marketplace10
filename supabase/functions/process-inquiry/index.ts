@@ -138,33 +138,7 @@ serve(async (req) => {
       magicToken = ''
     }
 
-    // 5. Determine lister notification type and URL
-    // NDA is now controlled by admin toggle on properties, not by lister_type
-    const isNdaRequired = ndaRequired
-    const leadUrl = isNdaRequired
-      ? `${BASE_URL}/lead/${inquiryToken}/nda`
-      : `${BASE_URL}/lead/${inquiryToken}`
-
-    // 6. Send email to lister if they have an email address
-    if (listerEmail) {
-      try {
-        const emailType = isNdaRequired ? 'inquiry-lister-nda' : 'inquiry-lister-notification'
-        const propUrl = property_url || `${BASE_URL}/deals/${property_id}`
-        const emailData = isNdaRequired
-          ? { lister_name: listerName, lister_email: listerEmail, property_name: propertyName, property_url: propUrl, nda_url: `${BASE_URL}/lead/${inquiryToken}/nda` }
-          : { lister_name: listerName, lister_email: listerEmail, tenant_name: tenant_name || 'A tenant', property_name: propertyName, property_url: propUrl, lead_url: `${BASE_URL}/lead/${inquiryToken}` }
-
-        await supabaseAdmin.functions.invoke('send-email', {
-          body: { type: emailType, data: emailData },
-        })
-        console.log(`Lister email sent: ${emailType} to ${listerEmail}`)
-      } catch (emailErr) {
-        console.error('Failed to send lister email:', emailErr)
-        // Non-blocking - continue even if email fails
-      }
-    }
-
-    // 6b. Send WhatsApp courtesy reply to tenant (if they inquired via WhatsApp)
+    // 5. Send WhatsApp courtesy reply to tenant (if they inquired via WhatsApp)
     if (channel === 'whatsapp' && resolvedTenantPhone) {
       try {
         await fetch(`${N8N_BASE}/webhook/inquiry-tenant-reply`, {
@@ -183,41 +157,7 @@ serve(async (req) => {
       }
     }
 
-    // 7. Send WhatsApp to lister if they have a phone number
-    // Cold = admin toggled "First Landlord Inquiry" AND this is the first inquiry for this property
-    // Checks if any prior inquiries exist for this property (excluding current one)
-    let isColdLandlord = false
-    if (firstLandlordInquiry) {
-      const { count } = await supabaseAdmin
-        .from('inquiries')
-        .select('id', { count: 'exact', head: true })
-        .eq('property_id', property_id)
-        .neq('id', (inquiry as Record<string, unknown>).id)
-      isColdLandlord = (count || 0) === 0
-    }
-    const whatsappPhone = landlordWhatsapp || listerPhone
-    if (whatsappPhone) {
-      try {
-        await fetch(`${N8N_BASE}/webhook/inquiry-lister-whatsapp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: whatsappPhone,
-            lister_name: listerName,
-            property_name: propertyName,
-            lead_url: leadUrl,
-            magic_token: magicToken,
-            is_cold: isColdLandlord,
-          }),
-        })
-        console.log(`WhatsApp notification sent to ${whatsappPhone}`)
-      } catch (waErr) {
-        console.error('Failed to send WhatsApp notification:', waErr)
-        // Non-blocking - continue even if WhatsApp fails
-      }
-    }
-
-    // 9. Send confirmation email to tenant
+    // 6. Send confirmation email to tenant
     if (tenant_email) {
       try {
         await supabaseAdmin.functions.invoke('send-email', {

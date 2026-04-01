@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\n// Extract data from GHL inbound message webhook\nconst body = $input.item.json.body || $input.item.json;\nconst messageBody = body.message || body.body || body.text || '';\nconst senderPhone = body.phone || body.contactPhone || body.from || '';\nconst contactId = body.contactId || body.contact_id || '';\nconst contactName = body.contactName || body.contact_name || '';\nconst contactEmail = body.contactEmail || body.contact_email || '';\n\n// Parse property reference from message (e.g. \"Reference no.: 1BFBD\")\nconst refMatch = messageBody.match(/Reference no\\.?:\\s*([A-Z0-9]{5})/i);\nconst propertyRef = refMatch ? refMatch[1].toUpperCase() : null;\n\n// Parse property link from message\nconst linkMatch = messageBody.match(/Link:\\s*(https:\\/\\/hub\\.nfstay\\.com\\/deals\\/([^\\s]+))/);\nconst propertyUrl = linkMatch ? linkMatch[1] : null;\nconst propertySlug = linkMatch ? linkMatch[2] : null;\n\n// Parse UUID from ID: line\nconst idMatch = messageBody.match(/ID:\\s*([0-9a-f-]{36})/i);\nconst propertyId = idMatch ? idMatch[1] : null;\n\n// Check if this is actually an nfstay inquiry\nconst isInquiry = messageBody.toLowerCase().includes('nfstay') || propertyRef || propertyUrl || propertyId;\n\nif (!isInquiry) {\n  return { json: { skip: true, reason: 'Not an nfstay inquiry' } };\n}\n\nreturn {\n  json: {\n    skip: false,\n    senderPhone: senderPhone.replace(/[^0-9+]/g, ''),\n    contactId,\n    contactName,\n    contactEmail,\n    propertyRef,\n    propertyUrl,\n    propertySlug,\n    propertyId,\n    messageBody,\n    channel: 'whatsapp'\n  }\n};\n"
+        "jsCode": "\n// Extract data from GHL inbound message webhook\nconst body = $input.item.json.body || $input.item.json;\nconst messageBody = body.message || body.body || body.text || '';\nconst senderPhone = body.phone || body.contactPhone || body.from || '';\nconst contactId = body.contactId || body.contact_id || '';\nconst contactName = body.contactName || body.contact_name || '';\nconst contactEmail = body.contactEmail || body.contact_email || '';\n\n// Parse property reference from message (e.g. \"Reference no.: 1BFBD\")\nconst refMatch = messageBody.match(/Ref(?:erence)?\\s*(?:no\\.)?[:#]?\\s*([A-Z0-9]{5})/i);\nconst propertyRef = refMatch ? refMatch[1].toUpperCase() : null;\n\n// Parse property link from message\nconst linkMatch = messageBody.match(/Link:\\s*(https:\\/\\/hub\\.nfstay\\.com\\/deals\\/([^\\s]+))/);\nconst propertyUrl = linkMatch ? linkMatch[1] : null;\nconst propertySlug = linkMatch ? linkMatch[2] : null;\n\n// Parse UUID from ID: line\nconst idMatch = messageBody.match(/ID:\\s*([0-9a-f-]{36})/i);\nconst propertyId = idMatch ? idMatch[1] : null;\n\n// Check if this is actually an nfstay inquiry\nconst isInquiry = messageBody.toLowerCase().includes('nfstay') || propertyRef || propertyUrl || propertyId;\n\nif (!isInquiry) {\n  return { json: { skip: true, reason: 'Not an nfstay inquiry' } };\n}\n\nreturn {\n  json: {\n    skip: false,\n    senderPhone: senderPhone.replace(/[^0-9+]/g, ''),\n    contactId,\n    contactName,\n    contactEmail,\n    propertyRef,\n    propertyUrl,\n    propertySlug,\n    propertyId,\n    messageBody,\n    channel: 'whatsapp'\n  }\n};\n"
       },
       "id": "parse1",
       "name": "Parse Inquiry Message",
@@ -80,14 +80,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ tenant_phone: $json.senderPhone, tenant_name: $json.contactName || null, message_body: $json.messageBody, property_ref: $json.propertyRef || null, property_id: $json.propertyId || null }) }}",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true
-            }
-          }
-        }
+        "jsonBody": "={{ JSON.stringify({ tenant_phone: $json.senderPhone, tenant_name: $json.contactName || null, message_body: $json.messageBody, property_ref: $json.propertyRef || null, property_id: $json.propertyId || null }) }}"
       },
       "id": "call_edge_fn",
       "name": "Create Inquiry (Edge Fn)",
