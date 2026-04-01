@@ -171,7 +171,7 @@ export default function DealsPageV2() {
         setChainStats(stats);
       } catch { /* chain unavailable - fall back to DB */ }
     })();
-  }, [investProperties]);
+  }, [investProperties?.length]);
 
   const listings = useMemo(() => {
     if (!dbProperties) return [];
