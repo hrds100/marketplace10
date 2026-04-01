@@ -35,7 +35,7 @@ test.describe("Marketplace10 Synthetic Health Checks", () => {
   });
 
   test("Auth page loads", async ({ page }) => {
-    const response = await page.goto(`${BASE_URL}/auth`, {
+    const response = await page.goto(`${BASE_URL}/signin`, {
       waitUntil: "domcontentloaded",
     });
     expect(response?.status()).toBeLessThan(500);
@@ -56,7 +56,7 @@ test.describe("Marketplace10 Synthetic Health Checks", () => {
 
     // Should redirect to auth or show login prompt — either is acceptable
     const url = page.url();
-    const isRedirectedToAuth = url.includes("/auth");
+    const isRedirectedToAuth = url.includes("/signin") || url.includes("/signup") || url.includes("/auth");
     const hasLoginPrompt = await page
       .locator('button:has-text("Sign"), button:has-text("Log"), input[type="email"]')
       .first()
@@ -87,7 +87,7 @@ test.describe("Marketplace10 Synthetic Health Checks", () => {
     const anonKey = process.env.SUPABASE_ANON_KEY;
     test.skip(!anonKey, "SUPABASE_ANON_KEY not set — skipping Supabase check");
 
-    const response = await request.get(`${SUPABASE_URL}/rest/v1/`, {
+    const response = await request.get(`${SUPABASE_URL}/rest/v1/properties?select=id&limit=0`, {
       headers: {
         apikey: anonKey!,
         Authorization: `Bearer ${anonKey!}`,
