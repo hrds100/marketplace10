@@ -141,6 +141,37 @@ export default function DealsPageV2() {
 
   const { data: investProperties } = useInvestProperties();
 
+  // Fetch chain stats for JV properties (APR, shares sold/remaining)
+  const [chainStats, setChainStats] = useState<Record<number, { aprPct: number; totalShares: number; sold: number }>>({});
+  useEffect(() => {
+    if (!investProperties?.length) return;
+    (async () => {
+      try {
+        const ethers = await import('ethers');
+        const provider = new ethers.providers.JsonRpcProvider('https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T');
+        const stats: Record<number, { aprPct: number; totalShares: number; sold: number }> = {};
+        for (const inv of investProperties) {
+          const bcId = (inv as any).blockchain_property_id;
+          if (!bcId) continue;
+          const iface = new ethers.utils.Interface([
+            'function getProperty(uint256) view returns (tuple(uint256 pricePerShare, uint256 totalOwners, uint256 aprBips, uint256 totalShares, string uri))',
+          ]);
+          const data = await provider.call({ to: '0xA588E7dC42a956cc6c412925dE99240cc329157b', data: iface.encodeFunctionData('getProperty', [bcId]) });
+          const d = ethers.utils.defaultAbiCoder.decode(['tuple(uint256 pricePerShare, uint256 totalOwners, uint256 aprBips, uint256 totalShares, string uri)'], data)[0];
+          const mktIface = new ethers.utils.Interface(['function getPrimarySale(uint256)']);
+          const raw = await provider.call({ to: '0xDD22fDC50062F49a460E5a6bADF96Cbec85ac128', data: mktIface.encodeFunctionData('getPrimarySale', [bcId]) });
+          const remaining = parseInt(raw.slice(2).slice(64, 128), 16);
+          stats[inv.id] = {
+            aprPct: (d.aprBips.toNumber() / 10000) * 100,
+            totalShares: d.totalShares.toNumber(),
+            sold: d.totalShares.toNumber() - remaining,
+          };
+        }
+        setChainStats(stats);
+      } catch { /* chain unavailable - fall back to DB */ }
+    })();
+  }, [investProperties]);
+
   const listings = useMemo(() => {
     if (!dbProperties) return [];
     const base = dbProperties
@@ -152,13 +183,14 @@ export default function DealsPageV2() {
     if (investProperties && investProperties.length > 0) {
       for (const inv of investProperties) {
         if (!(inv as any).list_on_deals) continue;
-        const totalShares = inv.total_shares || 1;
-        const sharesSold = inv.shares_sold || 0;
+        const cs = chainStats[inv.id];
+        const totalShares = cs?.totalShares || inv.total_shares || 1;
+        const sharesSold = cs?.sold ?? (inv.shares_sold || 0);
         const fundedPct = Math.round((sharesSold / totalShares) * 100);
         const propertyValue = Number(inv.property_value) || 0;
         const pricePerShare = Number(inv.price_per_share) || 1;
         const minContribution = Math.max(pricePerShare * 500, 500);
-        const annualYield = Number(inv.annual_yield) || 0;
+        const annualYield = cs?.aprPct || Number(inv.annual_yield) || 0;
         const monthlyProfit = Math.round((propertyValue * (annualYield / 100)) / 12);
         const invLocation = (inv.location as string) || '';
         const invImage = (inv as any).photos?.[0] || (inv as any).images?.[0] || (inv.image as string) || '';
@@ -192,13 +224,14 @@ export default function DealsPageV2() {
       // Also enrich any existing prime cards with JV data (legacy enrichment)
       const firstInv = investProperties[0];
       if (firstInv) {
-        const totalShares = firstInv.total_shares || 1;
-        const sharesSold = firstInv.shares_sold || 0;
+        const cs = chainStats[firstInv.id];
+        const totalShares = cs?.totalShares || firstInv.total_shares || 1;
+        const sharesSold = cs?.sold ?? (firstInv.shares_sold || 0);
         const fundedPct = Math.round((sharesSold / totalShares) * 100);
         const propertyValue = Number(firstInv.property_value) || 0;
         const pricePerShare = Number(firstInv.price_per_share) || 1;
         const minContribution = Math.max(pricePerShare * 500, 500);
-        const annualYield = Number(firstInv.annual_yield) || 0;
+        const annualYield = cs?.aprPct || Number(firstInv.annual_yield) || 0;
         const monthlyProfit = Math.round((propertyValue * (annualYield / 100)) / 12);
         const invLocation = (firstInv.location as string) || '';
 
@@ -223,7 +256,7 @@ export default function DealsPageV2() {
     }
 
     return [...jvCards, ...base];
-  }, [dbProperties, investProperties]);
+  }, [dbProperties, investProperties, chainStats]);
 
   const liveCount = listings.filter(l => l.status === 'live').length;
 

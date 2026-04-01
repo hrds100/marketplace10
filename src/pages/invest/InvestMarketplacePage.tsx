@@ -210,8 +210,8 @@ function InvestModal({
   const { buyShares, loading: blockchainLoading } = useBlockchain();
 
   const total = shares * property.pricePerShare;
-  const monthlyIncome = (total * (property.annualYield / 100)).toFixed(2);
-  const annualReturn = (parseFloat(monthlyIncome) * 12).toFixed(2);
+  const monthlyIncome = (total * (property.annualYield / 100) / 12).toFixed(2);
+  const annualReturn = (total * (property.annualYield / 100)).toFixed(2);
 
   const handleClose = (v: boolean) => {
     if (!v) {
@@ -360,7 +360,7 @@ function InvestModal({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Annual yield</span>
-                  <span className="font-semibold">{(property.annualYield * 12).toFixed(1)}%</span>
+                  <span className="font-semibold">{property.annualYield.toFixed(1)}%</span>
                 </div>
               </div>
             </div>
@@ -495,18 +495,22 @@ function PropertyBadges({ property }: { property: PropertyData }) {
         <Bed className="h-3 w-3" />
         {property.bedrooms} Bed
       </Badge>
-      <Badge variant="secondary" className="gap-1">
-        <Bath className="h-3 w-3" />
-        {property.bathrooms} Bath
-      </Badge>
+      {property.bathrooms > 0 && (
+        <Badge variant="secondary" className="gap-1">
+          <Bath className="h-3 w-3" />
+          {property.bathrooms} Bath
+        </Badge>
+      )}
       <Badge variant="secondary" className="gap-1">
         <Maximize2 className="h-3 w-3" />
         {property.area} m&sup2;
       </Badge>
-      <Badge variant="secondary" className="gap-1">
-        <Calendar className="h-3 w-3" />
-        Built {property.yearBuilt}
-      </Badge>
+      {property.yearBuilt > 0 && (
+        <Badge variant="secondary" className="gap-1">
+          <Calendar className="h-3 w-3" />
+          Built {property.yearBuilt}
+        </Badge>
+      )}
       <Badge
         className={cn(
           'gap-1',
@@ -523,7 +527,7 @@ function PropertyBadges({ property }: { property: PropertyData }) {
 
 function MetricPills({ property }: { property: PropertyData }) {
   const metrics = [
-    { icon: TrendingUp, label: 'Yield', value: `${(property.annualYield * 12).toFixed(1)}%` },
+    { icon: TrendingUp, label: 'Yield', value: `${property.annualYield.toFixed(1)}%` },
     { icon: BarChart3, label: 'Occupancy', value: `${property.occupancyRate}%` },
     { icon: DollarSign, label: 'Rent Cost', value: `\u00A3${(property as any).rentCost?.toLocaleString() || '3,500'}` },
     { icon: Star, label: 'Deal Value', value: `$${(property.propertyValue / 1000).toFixed(0)}k` },
@@ -582,8 +586,8 @@ function InvestCardContent({
   const maxInvest = Math.max(minInvest, sharesRemaining * pps);
   const shares = Math.floor(investAmount / pps);
   const investTotal = shares * pps;
-  const monthlyIncome = (investTotal * (property.annualYield / 100)).toFixed(2);
-  const annualReturn = (parseFloat(monthlyIncome) * 12).toFixed(2);
+  const monthlyIncome = (investTotal * (property.annualYield / 100) / 12).toFixed(2);
+  const annualReturn = (investTotal * (property.annualYield / 100)).toFixed(2);
   const sliderDisabled = maxInvest <= minInvest;
 
   return (
@@ -598,7 +602,7 @@ function InvestCardContent({
       <div className="space-y-1.5" data-feature="INVEST__MARKETPLACE_PROGRESS">
         <Progress value={fundedPercent} className="h-2.5" />
         <p className="text-xs text-muted-foreground">
-          {property.sharesSold.toLocaleString()} allocations sold<BlockchainDot tooltip="Allocations sold from blockchain" /> &middot; {sharesRemaining.toLocaleString()} remaining
+          {(property.totalShares - sharesRemaining).toLocaleString()} allocations sold<BlockchainDot tooltip="Allocations sold from blockchain" /> &middot; {sharesRemaining.toLocaleString()} remaining
         </p>
       </div>
 
@@ -897,8 +901,8 @@ function ProfitCalculator({
   setInitialCalcAmount: (v: number) => void;
 }) {
   const [chartVersion, setChartVersion] = useState(1);
-  const monthlyYield = property.annualYield; // DB field stores monthly yield % (e.g. 9.63)
-  const annualizedYield = monthlyYield * 12; // e.g. 115.56%
+  const annualizedYield = property.annualYield; // Chain APR (e.g. 115.56%)
+  const monthlyYield = parseFloat((annualizedYield / 12).toFixed(2)); // e.g. 9.63%
   const holdingYears = 6;
 
   // Legacy-style linear projection (not compound)
@@ -1921,14 +1925,18 @@ export default function InvestMarketplacePage() {
     return () => window.removeEventListener('invest-purchase-complete', handler);
   }, []);
 
-  const displayTotalShares = bcTotalShares || (property?.totalShares ?? 0);
+  // Override property with chain values when available (chain is source of truth)
+  if (property && bcTotalShares > 0) {
+    property.totalShares = bcTotalShares;
+  }
   const displaySharesRemaining = bcSharesRemaining || (property ? property.totalShares - property.sharesSold : 0);
-  const displaySharesSold = displayTotalShares - displaySharesRemaining;
-  const fundedPercent = displayTotalShares > 0 ? Math.round((displaySharesSold / displayTotalShares) * 100) : 0;
+  const displaySharesSold = (property?.totalShares ?? 0) - displaySharesRemaining;
+  const fundedPercent = (property?.totalShares ?? 0) > 0 ? Math.round((displaySharesSold / (property?.totalShares ?? 1)) * 100) : 0;
   const sharesRemaining = displaySharesRemaining;
 
-  // If admin hasn't set annual_yield, fall back to blockchain aprBips
-  if (property && property.annualYield === 0 && bcAprBips > 0) {
+  // Chain APR is the primary source of truth for yield (matches legacy).
+  // Admin annual_yield is fallback only.
+  if (property && bcAprBips > 0) {
     property.annualYield = (bcAprBips / 10000) * 100;
   }
 
