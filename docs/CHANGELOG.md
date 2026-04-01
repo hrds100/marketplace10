@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [2026-04-01b] - Deactivate Old n8n Landlord Auto-Notification Workflows
+
+### Fixed - Live n8n (external, not in repo)
+- **ROOT CAUSE FOUND**: Two old n8n workflows were bypassing the admin gate and auto-contacting the landlord on every tenant inquiry.
+- **Deactivated `ydrMC0qsOeaFxbsL` (Poll Inbound WhatsApp Inquiries)**: polled GHL every 30s, created duplicate inquiry rows via REST, sent old auto-reply ("We've passed your enquiry to the Landlord"), and called landlord notification workflow.
+- **Deactivated `pZ6EOZ1fkj1WcDXs` (Inquiry Lister WhatsApp v5)**: auto-enrolled landlord in GHL workflow on every inquiry.
+- Correct path is now: GHL inbound -> n8n `IvXzbcqzv5bKtu01` -> receive-tenant-whatsapp edge function -> Tenant Requests. Landlord receives nothing until admin release.
+
+### Verified
+- Admin (`admin@hub.nfstay.com`) can read inquiries via RLS policy
+- Inquiry `3f54f0a0` visible in admin query with `authorized=false`
+- Idempotency: retry within 5min returns same inquiry (`deduplicated=true`)
+
 ## [2026-04-01] - Investment Reseed (Pembroke Place)
 
 ### Added
