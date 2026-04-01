@@ -1927,12 +1927,11 @@ export default function InvestMarketplacePage() {
     const handler = () => fetchBlockchainStats();
     window.addEventListener('invest-purchase-complete', handler);
     return () => window.removeEventListener('invest-purchase-complete', handler);
-  }, []);
+  }, [bcPropertyId]);
 
   // Override property with chain values when available (chain is source of truth)
-  if (property && bcTotalShares > 0) {
-    property.totalShares = bcTotalShares;
-  }
+  if (property && bcTotalShares > 0) property.totalShares = bcTotalShares;
+  if (property && bcPricePerShare > 0) property.pricePerShare = bcPricePerShare;
   const displaySharesRemaining = bcSharesRemaining || (property ? property.totalShares - property.sharesSold : 0);
   const displaySharesSold = (property?.totalShares ?? 0) - displaySharesRemaining;
   const fundedPercent = (property?.totalShares ?? 0) > 0 ? Math.round((displaySharesSold / (property?.totalShares ?? 1)) * 100) : 0;
