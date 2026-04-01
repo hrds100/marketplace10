@@ -49,7 +49,7 @@ _Last updated: 2026-03-24_
 > **WARNING:** The n8n instance is shared with the nfstay booking module.
 > nfstay booking workflows use the `nfs-` prefix. Never create workflows without that prefix.
 > Never modify the workflows below - they power the live site.
-> Full protection rules: `docs/nfstay/BOUNDARIES.md`
+> Full booking-module protection rules: `../../bookingsite/docs/BOUNDARIES.md`
 
 | Endpoint | Trigger | Called From | Workflow ID |
 |----------|---------|------------|-------------|

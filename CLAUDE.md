@@ -1,5 +1,7 @@
 # nfstay - hub.nfstay.com
 
+> **Master copilot standard:** [docs/COPILOT_PROMPT.md](docs/COPILOT_PROMPT.md) - the tracked source of truth for how all AI agents behave across this workspace. Every repo-specific doc extends it.
+
 UK rent-to-rent property marketplace. React + Vite + TypeScript + Supabase + n8n + GoHighLevel.
 
 ## Priority Order

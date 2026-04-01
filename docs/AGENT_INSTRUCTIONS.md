@@ -1,7 +1,9 @@
-# nfstay - AI Agent Instructions
+# nfstay - AI Agent Instructions (marketplace10)
 
-> **Single source of truth for all AI operating rules.** Read FIRST. Every session. No exceptions.
-> The hotkey header Hugo uses is intentionally minimal. All operational rules live in this document.
+> **Single source of truth for marketplace10 operating rules.** Read FIRST. Every session. No exceptions.
+> This file extends the tracked master copilot standard at [COPILOT_PROMPT.md](COPILOT_PROMPT.md).
+> The master standard defines shared behaviors (two-phase workflow, hard rules, reporting format).
+> This file adds marketplace10-specific rules, integrations, and procedures.
 
 ---
 
@@ -103,10 +105,10 @@ Claude then:
 | DB schema / RLS / new tables | + `docs/DATABASE.md` (+ `docs/MESSAGING.md` if chat-related) |
 | Roles / actors / who pays / who signs | + `docs/DOMAIN.md` |
 | Feature or flow work | + `docs/ACCEPTANCE.md` |
-| Bug / "X not working" | + `docs/runbooks/DIAGNOSE_BEFORE_FIX.md` |
+| Bug / "X not working" | + `docs/runbooks/FIX_SOMETHING_WENT_WRONG.md` |
 | Unknown / cross-cutting | + `docs/ARCHITECTURE.md` + `docs/DATABASE.md` + `docs/INTEGRATIONS.md` + `docs/CHANGELOG.md` |
 | Notifications / emails / WhatsApp / OTP | + `docs/COMMUNICATIONS.md` + `docs/INTEGRATIONS.md` |
-| **nfstay module** (any `/nfstay` route, `nfs_` table, `nfs-` function) | + `docs/nfstay/AGENT_INSTRUCTIONS.md` + `docs/nfstay/BOUNDARIES.md` + task-specific nfstay docs (see `docs/nfstay/README.md`) |
+| **nfstay module** (any `/nfstay` route, `nfs_` table, `nfs-` function) | + `../../bookingsite/docs/AGENT_INSTRUCTIONS.md` + `../../bookingsite/docs/BOUNDARIES.md` |
 
 ### 3b. Mandatory pre-task steps
 
@@ -136,7 +138,7 @@ For every bug report or "X not working" task:
 
 The Section 11 report **must** include `ROOT CAUSE:` for every bug task. No guess-and-fix.
 
-Read `docs/runbooks/DIAGNOSE_BEFORE_FIX.md` for the full checklist.
+Read `docs/runbooks/FIX_SOMETHING_WENT_WRONG.md` for the full checklist.
 
 ---
 
@@ -238,22 +240,25 @@ After every `git push`, Claude must output this block before anything else:
 🌿 BRANCH:   feat/[branch-name]
 📦 COMMIT:   [short hash] - [commit message]
 🔁 CI:       running → github.com/hrds100/marketplace10/actions
-🔗 PREVIEW:  https://marketplace10-git-[branch-name]-hugos-projects-f8cc36a8.vercel.app
+🔗 PREVIEW:  [real Vercel preview URL fetched from GitHub PR comments or the Vercel deployment]
 ```
 
 Hugo uses the preview URL to test. Claude does not merge until Hugo confirms the preview looks correct.
 
-### Preview URL format
+### Preview URL retrieval
 
-Vercel generates preview URLs automatically for every branch push:
+Do **not** construct or guess the preview URL from the branch name.
+
+Always fetch the real preview URL from one of:
+1. The Vercel bot comment on the GitHub PR
+2. The Vercel deployment attached to the PR or commit
+3. The GitHub Checks / Vercel status target URL
+
+If no real preview URL exists yet, report:
 
 ```
-https://marketplace10-git-[branch-name]-hugos-projects-f8cc36a8.vercel.app
+🔗 PREVIEW:  pending - Vercel preview not published yet
 ```
-
-Dashes replace slashes in branch names (e.g. `feat/inbox-fix` → `feat-inbox-fix`).
-
-The exact URL is also posted by the Vercel bot as a comment on the GitHub PR within ~60 seconds of pushing.
 
 ### Merge to main
 

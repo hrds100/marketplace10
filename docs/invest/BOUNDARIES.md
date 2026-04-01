@@ -88,4 +88,4 @@ All admin mutations log to `admin_audit_log`.
 ---
 
 *For the full project boundaries, see `docs/AGENT_INSTRUCTIONS.md`.*
-*For nfstay booking boundaries, see `docs/nfstay/BOUNDARIES.md`.*
+*For nfstay booking boundaries, see `../../../bookingsite/docs/BOUNDARIES.md`.*
