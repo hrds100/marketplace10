@@ -903,7 +903,7 @@ function ProfitCalculator({
   const [chartVersion, setChartVersion] = useState(1);
   const annualizedYield = property.annualYield; // Chain APR (e.g. 115.56%)
   const monthlyYield = parseFloat((annualizedYield / 12).toFixed(2)); // e.g. 9.63%
-  const holdingYears = 6;
+  const holdingYears = 5;
 
   // Legacy-style linear projection (not compound)
   const sharesCalc = Math.floor(initialCalcAmount / property.pricePerShare);
@@ -1114,7 +1114,7 @@ function ProfitCalculator({
           {/* Left — Chart (3 cols) */}
           <div className="lg:col-span-3 rounded-xl border bg-muted/10 dark:bg-muted/5 p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold">6-Year Projection</p>
+              <p className="text-sm font-semibold">5-Year Projection</p>
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -1198,7 +1198,7 @@ function RecentActivityTable() {
       .then(setActivity)
       .catch(() => setActivity([]))
       .finally(() => setActivityLoading(false));
-  }, []);
+  }, [bcPropertyId]);
 
   useEffect(() => {
     loadActivity();
@@ -1883,7 +1883,10 @@ export default function InvestMarketplacePage() {
   const [bcTotalShares, setBcTotalShares] = useState(0);
   const [bcSharesRemaining, setBcSharesRemaining] = useState(0);
   const [bcAprBips, setBcAprBips] = useState(0);
+  const [bcPricePerShare, setBcPricePerShare] = useState(0);
+  const bcPropertyId = property?.blockchain_property_id;
   useEffect(() => {
+    if (!bcPropertyId) return;
     async function fetchBlockchainStats() {
       try {
         const ethers = await import('ethers');
@@ -1895,7 +1898,7 @@ export default function InvestMarketplacePage() {
           to: '0xA588E7dC42a956cc6c412925dE99240cc329157b',
           data: new ethers.utils.Interface([
             'function getProperty(uint256) view returns (tuple(uint256 pricePerShare, uint256 totalOwners, uint256 aprBips, uint256 totalShares, string uri))',
-          ]).encodeFunctionData('getProperty', [1]),
+          ]).encodeFunctionData('getProperty', [bcPropertyId]),
         });
         const rwaDecoded = ethers.utils.defaultAbiCoder.decode(
           ['tuple(uint256 pricePerShare, uint256 totalOwners, uint256 aprBips, uint256 totalShares, string uri)'],
@@ -1904,12 +1907,13 @@ export default function InvestMarketplacePage() {
         setTotalOwners(Number(rwaDecoded.totalOwners));
         setBcTotalShares(Number(rwaDecoded.totalShares));
         setBcAprBips(Number(rwaDecoded.aprBips));
+        setBcPricePerShare(parseFloat(rwaDecoded.pricePerShare.toString()) / 1e18);
 
         // Marketplace: getPrimarySale returns 3 slots (totalShares, sharesRemaining, status)
         // Decode raw because ethers struct decoding fails on this contract's return format
         const mktCalldata = new ethers.utils.Interface([
           'function getPrimarySale(uint256)',
-        ]).encodeFunctionData('getPrimarySale', [1]);
+        ]).encodeFunctionData('getPrimarySale', [bcPropertyId]);
         const raw = await provider.call({ to: '0xDD22fDC50062F49a460E5a6bADF96Cbec85ac128', data: mktCalldata });
         const hex = raw.slice(2);
         const remaining = parseInt(hex.slice(64, 128), 16);

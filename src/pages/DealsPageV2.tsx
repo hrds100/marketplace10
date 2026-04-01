@@ -142,14 +142,14 @@ export default function DealsPageV2() {
   const { data: investProperties } = useInvestProperties();
 
   // Fetch chain stats for JV properties (APR, shares sold/remaining)
-  const [chainStats, setChainStats] = useState<Record<number, { aprPct: number; totalShares: number; sold: number }>>({});
+  const [chainStats, setChainStats] = useState<Record<number, { aprPct: number; totalShares: number; sold: number; pricePerShare: number }>>({});
   useEffect(() => {
     if (!investProperties?.length) return;
     (async () => {
       try {
         const ethers = await import('ethers');
         const provider = new ethers.providers.JsonRpcProvider('https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T');
-        const stats: Record<number, { aprPct: number; totalShares: number; sold: number }> = {};
+        const stats: Record<number, { aprPct: number; totalShares: number; sold: number; pricePerShare: number }> = {};
         for (const inv of investProperties) {
           const bcId = (inv as any).blockchain_property_id;
           if (!bcId) continue;
@@ -165,6 +165,7 @@ export default function DealsPageV2() {
             aprPct: (d.aprBips.toNumber() / 10000) * 100,
             totalShares: d.totalShares.toNumber(),
             sold: d.totalShares.toNumber() - remaining,
+            pricePerShare: parseFloat(d.pricePerShare.toString()) / 1e18,
           };
         }
         setChainStats(stats);
@@ -188,7 +189,7 @@ export default function DealsPageV2() {
         const sharesSold = cs?.sold ?? (inv.shares_sold || 0);
         const fundedPct = Math.round((sharesSold / totalShares) * 100);
         const propertyValue = Number(inv.property_value) || 0;
-        const pricePerShare = Number(inv.price_per_share) || 1;
+        const pricePerShare = cs?.pricePerShare || Number(inv.price_per_share) || 1;
         const minContribution = Math.max(pricePerShare * 500, 500);
         const annualYield = cs?.aprPct || Number(inv.annual_yield) || 0;
         const monthlyProfit = Math.round((propertyValue * (annualYield / 100)) / 12);
@@ -229,7 +230,7 @@ export default function DealsPageV2() {
         const sharesSold = cs?.sold ?? (firstInv.shares_sold || 0);
         const fundedPct = Math.round((sharesSold / totalShares) * 100);
         const propertyValue = Number(firstInv.property_value) || 0;
-        const pricePerShare = Number(firstInv.price_per_share) || 1;
+        const pricePerShare = cs?.pricePerShare || Number(firstInv.price_per_share) || 1;
         const minContribution = Math.max(pricePerShare * 500, 500);
         const annualYield = cs?.aprPct || Number(firstInv.annual_yield) || 0;
         const monthlyProfit = Math.round((propertyValue * (annualYield / 100)) / 12);
