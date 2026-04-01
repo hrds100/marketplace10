@@ -118,79 +118,10 @@ export default function DealDetail() {
     if (!isPaidTier(tier)) { handleInquire(listingShape); return; }
     const propertyUrl = `https://hub.nfstay.com/deals/${(listing.slug as string) || (listing.id as string)}`;
     const refId = ((listing.id as string) || '').slice(0, 5).toUpperCase();
-    const plainMsg = `Hi, I am interested in your property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${refId}\nPlease contact me at your earliest convenience.`;
+    const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${refId}\nID: ${listing.id as string}\nPlease contact me at your earliest convenience.`;
 
-    // Insert inquiry row so lead appears in My Leads immediately
-    try {
-      // Resolve lister_id: find the landlord's user ID by their WhatsApp number
-      // submitted_by is the admin who posted via Quick List - NOT the landlord
-      const listerPhone = (listing.landlord_whatsapp as string) || (listing.contact_phone as string) || null;
-      const listerEmail = (listing.contact_email as string) || null;
-      let listerId: string | null = null;
-      if (listerPhone) {
-        const { data: listerProfile } = await (supabase.from('profiles') as any)
-          .select('id').eq('whatsapp', listerPhone).maybeSingle();
-        if (listerProfile?.id) listerId = listerProfile.id;
-      }
-      // Fallback: try matching by email if WhatsApp lookup missed
-      if (!listerId && listerEmail) {
-        const { data: emailProfile } = await (supabase.from('profiles') as any)
-          .select('id').eq('email', listerEmail).maybeSingle();
-        if (emailProfile?.id) listerId = emailProfile.id;
-      }
-      if (!listerId) {
-        console.warn('[DealDetail] lister_id is null — landlord profile not found for phone:', listerPhone, 'email:', listerEmail);
-      }
-
-      const inquiryToken = crypto.randomUUID();
-      const tenantName = user.user_metadata?.name || user.user_metadata?.full_name || null;
-      const tenantEmail = user.email || null;
-      const tenantPhone = user.user_metadata?.whatsapp || null;
-
-      console.log('[DealDetail] insert attempt:', { userId: user.id, propertyId: listing.id, tier });
-      const { data: insertedRow, error: insertErr } = await (supabase.from('inquiries') as any).insert({
-        tenant_id: user.id,
-        property_id: listing.id as string,
-        lister_type: (listing.lister_type as string) || 'landlord',
-        lister_phone: listerPhone,
-        lister_email: (listing.contact_email as string) || null,
-        lister_name: (listing.contact_name as string) || null,
-        lister_id: listerId,
-        channel: 'whatsapp',
-        message: plainMsg,
-        tenant_name: tenantName,
-        tenant_email: tenantEmail,
-        tenant_phone: tenantPhone,
-        token: inquiryToken,
-        status: 'new',
-        nda_required: !!(listing.nda_required),
-        authorized: false,
-      }).select().single();
-      if (insertErr) {
-        console.error('[DealDetail] insert FAILED:', insertErr.message, insertErr.code, insertErr.details);
-        toast.error('Could not save your inquiry. Please try again.');
-      } else {
-        console.log('[DealDetail] inquiry saved:', insertedRow);
-        // Removed: landlord auto-notify now handled via AdminOutreach page
-        // Fire tenant confirmation webhook (non-blocking)
-        if (tenantPhone) {
-          fetch('https://n8n.srv886554.hstgr.cloud/webhook/inquiry-tenant-reply', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              phone: tenantPhone,
-              tenant_name: tenantName || 'there',
-              property_name: (listing.name as string) || '',
-              lister_type: (listing.lister_type as string) || 'landlord',
-            }),
-          }).catch(() => {});
-        }
-      }
-    } catch (err) {
-      console.error('[DealDetail] inquiry insert error:', err);
-      toast.error('Could not save your inquiry. Please try again.');
-    }
-
+    // Inquiry is created by n8n -> receive-tenant-whatsapp edge function
+    // when the inbound WhatsApp message arrives via GHL. No duplicate insert here.
     window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${encodeURIComponent(plainMsg)}`, '_blank');
   };
 

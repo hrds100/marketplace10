@@ -169,3 +169,35 @@ Append-only log of all admin actions. Immutable - no UPDATE or DELETE policies.
 
 **RLS**: Admin emails can INSERT and SELECT only. No UPDATE or DELETE.
 **Note**: Not in generated TypeScript types - accessed via `as any` casts in `src/lib/auditLog.ts`.
+
+## inquiries
+Tenant inquiry records. Created by `receive-tenant-whatsapp` edge function (WhatsApp channel) or `process-inquiry` edge function (email channel). Admin authorizes leads in Outreach before any landlord contact.
+
+| Column | Type | Default | Notes |
+|--------|------|---------|-------|
+| id | uuid | gen_random_uuid() | PK |
+| tenant_id | uuid | null | References auth.users |
+| property_id | uuid | null | References properties |
+| lister_type | text | null | landlord / agent / deal_sourcer |
+| lister_phone | text | null | Landlord/agent phone |
+| lister_email | text | null | Landlord/agent email |
+| lister_name | text | null | Landlord/agent name |
+| lister_id | uuid | null | Landlord user ID (if profile exists) |
+| channel | text | 'whatsapp' | whatsapp / email |
+| message | text | null | Inquiry message body |
+| tenant_name | text | null | |
+| tenant_email | text | null | |
+| tenant_phone | text | null | |
+| token | text | NOT NULL, UNIQUE | For magic link access |
+| nda_signed | boolean | false | |
+| nda_signed_at | timestamptz | null | |
+| nda_required | boolean | false | Copied from property at creation |
+| authorized | boolean | false | Admin must authorize before landlord contact |
+| always_authorised | boolean | false | Auto-authorize future inquiries for this lister |
+| authorisation_type | text | null | nda / direct / nda_and_claim |
+| stage | text | 'New Leads' | Pipeline stage |
+| status | text | 'new' | new / viewed / contacted |
+| viewed_at | timestamptz | null | |
+| created_at | timestamptz | now() | |
+
+**RLS**: Tenants can read own. Listers can read/update by phone/email/lister_id. Admins can read all. Service role can read/update all.

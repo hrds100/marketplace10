@@ -8,11 +8,12 @@ import { test, expect } from '@playwright/test';
 //   3. Cleanup removes the test row
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const SUPABASE_URL = 'https://asazddtvjvmckouxcmmo.supabase.co';
-const SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzYXpkZHR2anZtY2tvdXhjbW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQxODQ2NCwiZXhwIjoyMDg4OTk0NDY0fQ.B7nmKCji4LEDU5JozanHl9PjNXzYuIpav6B8KR3BNV0';
-const ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzYXpkZHR2anZtY2tvdXhjbW1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTg0NjQsImV4cCI6MjA4ODk5NDQ2NH0.15ushgp1bOe04pyOYmsZ7wavQ_JWTj4xEB6Ga-3FX_A';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const ANON_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+
+if (!SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY env var required for e2e tests');
+if (!ANON_KEY) throw new Error('VITE_SUPABASE_PUBLISHABLE_KEY env var required for e2e tests');
 
 const EDGE_FN_URL = `${SUPABASE_URL}/functions/v1/receive-tenant-whatsapp`;
 

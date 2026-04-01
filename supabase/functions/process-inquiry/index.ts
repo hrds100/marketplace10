@@ -1,7 +1,8 @@
-// process-inquiry — Handle tenant inquiry submission
-// Trigger: POST from frontend when tenant submits inquiry (WhatsApp or Email)
-// Input: { property_id, channel, message, tenant_name, tenant_email, tenant_phone }
+// process-inquiry — Handle tenant EMAIL inquiry submission
+// Trigger: POST from frontend when tenant submits inquiry via email
+// Input: { property_id, channel: 'email', message, tenant_name, tenant_email, tenant_phone }
 // Output: { success, inquiry_id }
+// NOTE: WhatsApp inquiries are handled by receive-tenant-whatsapp (inbound route via n8n/GHL)
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -42,6 +43,14 @@ serve(async (req) => {
     }
 
     const { property_id, channel, message, tenant_name, tenant_email, tenant_phone, property_url } = await req.json()
+
+    // WhatsApp inquiries are created by the inbound route (receive-tenant-whatsapp).
+    // This edge function handles email inquiries only.
+    if (channel === 'whatsapp') {
+      return new Response(JSON.stringify({ error: 'WhatsApp inquiries use the inbound route, not process-inquiry' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     // Resolve tenant phone: prefer explicit value, fall back to profiles.whatsapp
     let resolvedTenantPhone = tenant_phone || null

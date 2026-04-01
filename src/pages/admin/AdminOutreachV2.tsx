@@ -21,7 +21,6 @@ interface PropertyRow {
   contact_name: string | null;
   outreach_sent: boolean;
   outreach_sent_at: string | null;
-  submitted_by: string | null;
 }
 
 interface InquiryRow {
@@ -131,25 +130,36 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
     queryKey: ['outreach-listings'],
     queryFn: async () => {
       const { data: properties, error } = await (supabase.from('properties') as any)
-        .select('id, name, city, slug, landlord_whatsapp, contact_phone, contact_name, outreach_sent, outreach_sent_at, submitted_by')
+        .select('id, name, city, slug, landlord_whatsapp, contact_phone, contact_name, outreach_sent, outreach_sent_at')
         .eq('status', 'live')
         .order('created_at', { ascending: false });
       if (error) throw error;
       if (!properties || properties.length === 0) return [];
 
       const propIds = (properties as PropertyRow[]).map(p => p.id);
-      const { data: inquiries } = await (supabase.from('inquiries') as any)
+      const { data: inquiries } = await supabase.from('inquiries')
         .select('property_id, nda_signed, always_authorised, authorized')
         .in('property_id', propIds);
 
       const inqMap = new Map<string, { ndaCount: number; autoAuth: boolean; pendingCount: number; totalCount: number }>();
       for (const inq of (inquiries || [])) {
-        const existing = inqMap.get(inq.property_id) || { ndaCount: 0, autoAuth: false, pendingCount: 0, totalCount: 0 };
+        const existing = inqMap.get(inq.property_id!) || { ndaCount: 0, autoAuth: false, pendingCount: 0, totalCount: 0 };
         existing.totalCount++;
         if (inq.nda_signed) existing.ndaCount++;
         if (inq.always_authorised) existing.autoAuth = true;
         if (!inq.authorized) existing.pendingCount++;
-        inqMap.set(inq.property_id, existing);
+        inqMap.set(inq.property_id!, existing);
+      }
+
+      // Check which lister phones have a claimed profile
+      const phones = [...new Set((properties as PropertyRow[]).map(p => p.landlord_whatsapp || p.contact_phone).filter(Boolean))] as string[];
+      const claimedPhones = new Set<string>();
+      if (phones.length > 0) {
+        const { data: profiles } = await (supabase.from('profiles') as any)
+          .select('whatsapp').in('whatsapp', phones);
+        for (const p of (profiles || [])) {
+          if (p.whatsapp) claimedPhones.add(p.whatsapp);
+        }
       }
 
       return (properties as PropertyRow[]).map(p => ({
@@ -158,6 +168,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
         autoAuth: inqMap.get(p.id)?.autoAuth || false,
         pendingCount: inqMap.get(p.id)?.pendingCount || 0,
         totalCount: inqMap.get(p.id)?.totalCount || 0,
+        claimed: claimedPhones.has(p.landlord_whatsapp || p.contact_phone || ''),
       }));
     },
   });
@@ -175,7 +186,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
         return;
       }
 
-      const { error } = await (supabase.from('properties') as any)
+      const { error } = await supabase.from('properties')
         .update({ outreach_sent: true, outreach_sent_at: new Date().toISOString() })
         .eq('id', property.id);
       if (error) throw error;
@@ -228,7 +239,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                       : <><X className="w-3 h-3" style={{ color: '#9CA3AF' }} /><span style={{ color: '#9CA3AF' }}>No NDA</span></>}
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs font-medium">
-                    {listing.submitted_by
+                    {(listing as any).claimed
                       ? <><Check className="w-3 h-3" style={{ color: '#1E9A80' }} /><span style={{ color: '#1E9A80' }}>Claimed</span></>
                       : <><X className="w-3 h-3" style={{ color: '#9CA3AF' }} /><span style={{ color: '#9CA3AF' }}>Unclaimed</span></>}
                   </span>
@@ -283,7 +294,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     queryKey: ['outreach-pending'],
     queryFn: async () => {
       // Show ALL inquiries -- pending first, then authorized with their sent status
-      const { data: inquiries, error } = await (supabase.from('inquiries') as any)
+      const { data: inquiries, error } = await supabase.from('inquiries')
         .select('id, property_id, tenant_name, lister_phone, lister_type, lister_name, nda_signed, authorized, always_authorised, authorisation_type, created_at')
         .order('authorized', { ascending: true })
         .order('created_at', { ascending: false });
@@ -291,7 +302,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
       if (!inquiries || inquiries.length === 0) return [];
 
       const propIds = [...new Set((inquiries as InquiryRow[]).map(i => i.property_id))];
-      const { data: properties } = await (supabase.from('properties') as any)
+      const { data: properties } = await supabase.from('properties')
         .select('id, name, landlord_whatsapp, contact_phone')
         .in('id', propIds);
 
@@ -312,20 +323,25 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     const key = `auth-${inquiry.id}-${type}`;
     addLoading(key);
     try {
-      const { error } = await (supabase.from('inquiries') as any)
+      // For NDA flows, call GHL FIRST - only mark authorized if GHL succeeds
+      if (type === 'nda' || type === 'nda_and_claim') {
+        const phone = inquiry.lister_phone || inquiry.landlordPhone;
+        if (!phone) {
+          toast.error('No landlord phone found for this inquiry');
+          return;
+        }
+        const result = await callGhlEnroll(phone, GHL_WORKFLOW_WARM);
+        if (!result.success) {
+          toast.error('GHL enrollment failed: ' + (result.error || 'Unknown') + ' - inquiry NOT authorised');
+          return;
+        }
+      }
+
+      // GHL succeeded (or direct) - now update DB
+      const { error } = await supabase.from('inquiries')
         .update({ authorized: true, authorisation_type: type })
         .eq('id', inquiry.id);
       if (error) throw error;
-
-      if (type === 'nda' || type === 'nda_and_claim') {
-        const phone = inquiry.lister_phone || inquiry.landlordPhone;
-        if (phone) {
-          const result = await callGhlEnroll(phone, GHL_WORKFLOW_WARM);
-          if (!result.success) {
-            toast.error('Authorised in DB but GHL enrollment failed: ' + (result.error || 'Unknown'));
-          }
-        }
-      }
 
       if (user) logAdminAction(user.id, { action: 'inquiry_authorised', target_table: 'inquiries', target_id: inquiry.id, metadata: { type } });
       toast.success('Inquiry authorised (' + type.replace('_', ' + ') + ')');
@@ -342,7 +358,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     addLoading(key);
     try {
       const newValue = !currentValue;
-      const { error } = await (supabase.from('inquiries') as any)
+      const { error } = await supabase.from('inquiries')
         .update({ always_authorised: newValue })
         .eq('lister_phone', listerPhone);
       if (error) throw error;

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, MessageCircle, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useUserTier } from '@/hooks/useUserTier';
 import { getFunnelUrl, isPaidTier } from '@/lib/ghl';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,7 +60,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
       setVisible(true);
       setPaymentComplete(false);
       setMessage(
-        `Hi, interested in ${listing.name}.\nLink: https://hub.nfstay.com/deals/${listing.slug || listing.id}\nReference no.: ${listing.id.slice(0, 5).toUpperCase()}\nCould you share more details about availability and terms? Thanks!`
+        `Hi, I am interested in a property on nfstay.\nLink: https://hub.nfstay.com/deals/${listing.slug || listing.id}\nReference no.: ${listing.id.slice(0, 5).toUpperCase()}\nID: ${listing.id}\nPlease contact me at your earliest convenience.`
       );
     }
   }, [open, listing?.id]);
@@ -156,91 +155,9 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   if (!open && !visible) return null;
   if (!listing) return null;
 
-  const handleSendWhatsApp = async () => {
-    const encodedMsg = encodeURIComponent(message);
-
-    // Create inquiry row directly via Supabase client (bypasses edge function JWT issues)
-    if (user && listing) {
-      console.log('[InquiryPanel] insert attempt:', { userId: user?.id, propertyId: listing?.id, tier });
-      try {
-        // 1. Get property details for lister info
-        const { data: prop } = await (supabase.from('properties') as any)
-          .select('contact_phone, contact_email, contact_name, lister_type, landlord_whatsapp, name, nda_required')
-          .eq('id', listing.id)
-          .single();
-
-        const token = crypto.randomUUID();
-        const tenantName = user.user_metadata?.name || user.user_metadata?.full_name || null;
-        const tenantEmail = user.email || null;
-        const tenantPhone = user.user_metadata?.whatsapp || null;
-
-        // Resolve lister_id: find landlord's user ID by their WhatsApp number
-        const listerPhone = prop?.landlord_whatsapp || prop?.contact_phone || null;
-        let listerId: string | null = null;
-        if (listerPhone) {
-          const { data: listerProfile } = await (supabase.from('profiles') as any)
-            .select('id').eq('whatsapp', listerPhone).maybeSingle();
-          if (listerProfile?.id) listerId = listerProfile.id;
-        }
-        // Fallback: try matching by email if WhatsApp lookup missed
-        if (!listerId && prop?.contact_email) {
-          const { data: emailProfile } = await (supabase.from('profiles') as any)
-            .select('id').eq('email', prop.contact_email).maybeSingle();
-          if (emailProfile?.id) listerId = emailProfile.id;
-        }
-        if (!listerId) {
-          console.warn('[InquiryPanel] lister_id is null — landlord profile not found for phone:', listerPhone, 'email:', prop?.contact_email);
-        }
-
-        // 2. Insert inquiry directly
-        const { data: insertedRow, error: insertErr } = await (supabase.from('inquiries') as any).insert({
-          tenant_id: user.id,
-          property_id: listing.id,
-          lister_type: prop?.lister_type || 'landlord',
-          lister_phone: listerPhone,
-          lister_email: prop?.contact_email || null,
-          lister_name: prop?.contact_name || null,
-          lister_id: listerId,
-          channel: 'whatsapp',
-          message,
-          tenant_name: tenantName,
-          tenant_email: tenantEmail,
-          tenant_phone: tenantPhone,
-          token,
-          status: 'new',
-          nda_required: prop?.nda_required || false,
-          authorized: false,
-        }).select().single();
-
-        if (insertErr) {
-          console.error('[InquiryPanel] insert FAILED:', insertErr.message, insertErr.code, insertErr.details);
-          toast.error('Could not save your inquiry. Please try again.');
-        } else {
-          console.log('[InquiryPanel] inquiry saved:', insertedRow);
-          // Removed: landlord auto-notify now handled via AdminOutreach page
-
-          // 3. Fire tenant confirmation webhook (non-blocking)
-          if (tenantPhone) {
-            fetch('https://n8n.srv886554.hstgr.cloud/webhook/inquiry-tenant-reply', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                phone: tenantPhone,
-                tenant_name: tenantName || 'there',
-                property_name: prop?.name || listing.name,
-                lister_type: prop?.lister_type || 'landlord',
-              }),
-            }).catch(() => {});
-          }
-        }
-      } catch (err) {
-        console.error('[InquiryPanel] inquiry failed:', err);
-        toast.error('Could not save your inquiry. Please try again.');
-      }
-    }
-
-    // Open WhatsApp and close panel after insert attempt completes
-    window.open(`https://wa.me/447476368123?text=${encodedMsg}`, '_blank');
+  const handleSendWhatsApp = () => {
+    // Inquiry created by n8n -> receive-tenant-whatsapp when inbound message arrives via GHL
+    window.open(`https://wa.me/447476368123?text=${encodeURIComponent(message)}`, '_blank');
     handleClose();
   };
 
