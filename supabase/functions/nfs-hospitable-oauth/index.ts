@@ -23,6 +23,23 @@ const N8N_INIT_SYNC_PATH = '/webhook/nfs-hospitable-init-sync';
 const HOSPITABLE_OAUTH_URL = 'https://connect.hospitable.com';
 const HOSPITABLE_API_URL = 'https://api.connect.hospitable.com';
 
+// Whitelist of allowed redirect origins for OAuth callback
+const ALLOWED_ORIGINS = ['https://hub.nfstay.com', 'https://nfstay.app'];
+const DEFAULT_ORIGIN = 'https://hub.nfstay.com';
+
+function resolveOrigin(raw: string | null): string {
+  if (raw && ALLOWED_ORIGINS.includes(raw)) return raw;
+  return DEFAULT_ORIGIN;
+}
+
+function buildRedirectUrl(origin: string, params: Record<string, string>): string {
+  // hub uses /operator/settings?tab=hospitable, bookingsite uses /nfstay/oauth-callback?provider=hospitable
+  const isHub = origin === 'https://hub.nfstay.com';
+  const basePath = isHub ? '/operator/settings' : '/nfstay/oauth-callback';
+  const qs = new URLSearchParams(isHub ? { tab: 'hospitable', ...params } : { provider: 'hospitable', ...params });
+  return `${origin}${basePath}?${qs.toString()}`;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -53,6 +70,7 @@ serve(async (req) => {
       if (action === 'authorize') {
         const operatorId = url.searchParams.get('operator_id');
         const profileId = url.searchParams.get('profile_id');
+        const origin = resolveOrigin(url.searchParams.get('origin'));
 
         if (!operatorId || !profileId) {
           return new Response(
@@ -65,6 +83,7 @@ serve(async (req) => {
         const state = crypto.randomUUID();
 
         // Upsert nfs_hospitable_connections with pending state
+        // Store redirect_origin in user_metadata so callback knows where to send the user
         await supabase
           .from('nfs_hospitable_connections')
           .upsert({
@@ -75,6 +94,7 @@ serve(async (req) => {
             auth_code_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 min expiry
             status: 'pending',
             sync_status: 'pending',
+            user_metadata: { redirect_origin: origin },
           }, { onConflict: 'operator_id' });
 
         const redirectUri = `${SUPABASE_URL}/functions/v1/nfs-hospitable-oauth?action=callback`;
@@ -95,31 +115,51 @@ serve(async (req) => {
         const state = url.searchParams.get('state');
         const errorParam = url.searchParams.get('error');
 
+        // For early errors (before we can look up connection row), try to resolve origin from state
+        // If state is missing, fall back to DEFAULT_ORIGIN
+        const resolveRedirectOrigin = (meta: Record<string, unknown> | null): string => {
+          const stored = meta && typeof meta === 'object' ? (meta as Record<string, string>).redirect_origin : null;
+          return resolveOrigin(stored || null);
+        };
+
         if (errorParam) {
+          // Try to look up origin from connection row if state is available
+          let redirectOrigin = DEFAULT_ORIGIN;
+          if (state) {
+            const { data: errRow } = await supabase
+              .from('nfs_hospitable_connections')
+              .select('user_metadata')
+              .eq('auth_code', state)
+              .single();
+            redirectOrigin = resolveRedirectOrigin(errRow?.user_metadata);
+          }
           return new Response(null, {
             status: 302,
-            headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&error=${encodeURIComponent(errorParam)}` },
+            headers: { Location: buildRedirectUrl(redirectOrigin, { error: errorParam }) },
           });
         }
 
         if (!code || !state) {
           return new Response(null, {
             status: 302,
-            headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&error=missing_params` },
+            headers: { Location: buildRedirectUrl(DEFAULT_ORIGIN, { error: 'missing_params' }) },
           });
         }
 
         // Verify state matches (CSRF protection)
         const { data: connectionRow } = await supabase
           .from('nfs_hospitable_connections')
-          .select('id, operator_id, profile_id, auth_code_expires_at')
+          .select('id, operator_id, profile_id, auth_code_expires_at, user_metadata')
           .eq('auth_code', state)
           .single();
+
+        // Resolve redirect origin from the stored connection metadata
+        const redirectOrigin = resolveRedirectOrigin(connectionRow?.user_metadata);
 
         if (!connectionRow) {
           return new Response(null, {
             status: 302,
-            headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&error=invalid_state` },
+            headers: { Location: buildRedirectUrl(DEFAULT_ORIGIN, { error: 'invalid_state' }) },
           });
         }
 
@@ -127,7 +167,7 @@ serve(async (req) => {
         if (connectionRow.auth_code_expires_at && new Date(connectionRow.auth_code_expires_at) < new Date()) {
           return new Response(null, {
             status: 302,
-            headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&error=state_expired` },
+            headers: { Location: buildRedirectUrl(redirectOrigin, { error: 'state_expired' }) },
           });
         }
 
@@ -158,7 +198,7 @@ serve(async (req) => {
 
           return new Response(null, {
             status: 302,
-            headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&error=token_exchange_failed` },
+            headers: { Location: buildRedirectUrl(redirectOrigin, { error: 'token_exchange_failed' }) },
           });
         }
 
@@ -170,6 +210,12 @@ serve(async (req) => {
         const connectedPlatforms = tokenData.connected_platforms || tokenData.data?.connected_platforms || [];
         const userMetadata = tokenData.user || tokenData.data?.user || {};
 
+        // Merge redirect_origin into user_metadata so it persists alongside Hospitable data
+        const existingMeta = (connectionRow.user_metadata && typeof connectionRow.user_metadata === 'object')
+          ? connectionRow.user_metadata as Record<string, unknown>
+          : {};
+        const mergedMetadata = { ...existingMeta, ...userMetadata };
+
         // Update nfs_hospitable_connections with successful connection
         await supabase
           .from('nfs_hospitable_connections')
@@ -180,7 +226,7 @@ serve(async (req) => {
             is_active: true,
             connected_at: new Date().toISOString(),
             connected_platforms: connectedPlatforms,
-            user_metadata: userMetadata,
+            user_metadata: mergedMetadata,
             auth_code: null, // Clear CSRF state
             auth_code_expires_at: null,
             last_error: null,
@@ -211,10 +257,10 @@ serve(async (req) => {
             .eq('id', connectionRow.id);
         }
 
-        // Redirect back to settings with success
+        // Redirect back to the originating app with success
         return new Response(null, {
           status: 302,
-          headers: { Location: `https://hub.nfstay.com/operator/settings?tab=hospitable&success=connected` },
+          headers: { Location: buildRedirectUrl(redirectOrigin, { status: 'success', success: 'connected' }) },
         });
       }
     }
