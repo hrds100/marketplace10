@@ -54,7 +54,8 @@ test.describe("Marketplace10 Synthetic Health Checks", () => {
     });
     expect(response?.status()).toBeLessThan(500);
 
-    // Should redirect to auth or show login prompt — either is acceptable
+    // SPA redirect happens client-side; wait for either URL change or login prompt
+    await page.waitForTimeout(3000);
     const url = page.url();
     const isRedirectedToAuth = url.includes("/signin") || url.includes("/signup") || url.includes("/auth");
     const hasLoginPrompt = await page
