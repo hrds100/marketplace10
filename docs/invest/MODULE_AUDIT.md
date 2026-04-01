@@ -5,7 +5,7 @@
 
 ---
 
-## Last Updated: 2026-03-20 UTC
+## Last Updated: 2026-04-01 UTC
 
 ---
 
@@ -276,6 +276,11 @@ Rates stored in `aff_commission_settings` - never hardcoded. Admin can change gl
 - Revolut sends payments (UK Faster Payments / SEPA)
 - Revolut webhook updates claim to "paid"
 - WhatsApp notification sent to user
+
+### Status Cascade Fix (PR #161 - 2026-04-01)
+- **Fixed:** `revolut-check-status` and `revolut-webhook` now cascade `paid` status to source rows (`inv_payouts` for investors, `aff_commissions` for affiliates). Previously source rows stayed as `claimed` forever.
+- **Deployed:** Both edge functions live, `verify_jwt = false` confirmed.
+- **Pending:** Manual live verification (create test claims, approve, confirm source rows reach `paid`).
 
 ---
 

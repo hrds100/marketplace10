@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [2026-04-01c] - Payout Status Cascade Fix (PR #161)
+
+### Fixed - Bank Payout Status Propagation
+- **`revolut-check-status`**: Now reads `user_type` from `payout_claims`. Investor claims cascade `claimed` -> `paid` in `inv_payouts`. Affiliate claims resolve `aff_profiles.id` and cascade `claimed` -> `paid` in `aff_commissions`.
+- **`revolut-webhook`**: Same cascade added to the webhook path. Previously only updated `payout_claims` without touching source rows.
+- Money flow was never affected - this was a status/history display issue only.
+- Both edge functions deployed and `verify_jwt = false` confirmed.
+
+### Pending
+- Manual live verification still needed: create test investor + affiliate bank claims, approve, confirm source rows reach `paid`.
+
+### Files Changed
+- `supabase/functions/revolut-check-status/index.ts`
+- `supabase/functions/revolut-webhook/index.ts`
+
 ## [2026-04-01b] - Deactivate Old n8n Landlord Auto-Notification Workflows
 
 ### Fixed - Live n8n (external, not in repo)

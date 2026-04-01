@@ -192,6 +192,31 @@ Investment rental income has **no holdback** - claimable as soon as rent is depo
 
 ---
 
+---
+
+## Status Cascade Fix (PR #161 - 2026-04-01)
+
+Both `revolut-check-status` and `revolut-webhook` now cascade completed bank payouts to source rows:
+
+| User type | Source table | Cascade |
+|-----------|-------------|---------|
+| Investor | `inv_payouts` | `claimed` -> `paid` + `paid_at` + `claim_method = bank_transfer` |
+| Affiliate | `aff_commissions` | `claimed` -> `paid` + `paid_at` + `claim_method = bank_transfer` |
+
+Previously, only `payout_claims` was updated to `paid`. Source rows stayed as `claimed` forever, causing history display to show the wrong status.
+
+Money flow was never affected. The fix is deployed. Manual live verification is still pending - see test plan below.
+
+### Live verification (pending)
+1. Credit test rent to a user via Admin > Payouts > "Credit Test Rent"
+2. Claim as bank transfer from the Payouts page
+3. Approve in Admin > Payouts
+4. Click "Check Status" - confirm `inv_payouts` row ends at `paid`
+5. Create a test affiliate bank claim (Affiliates page > "Request Payout")
+6. Approve and check status - confirm `aff_commissions` rows end at `paid`
+
+---
+
 *For database schema details, see `docs/invest/DATABASE.md`.*
 *For n8n workflow specs, see `docs/invest/INTEGRATIONS.md`.*
 *For system architecture, see `docs/invest/ARCHITECTURE.md`.*
