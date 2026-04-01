@@ -45,11 +45,16 @@ This message must stay short and readable. Do not add internal IDs, UUIDs, or sy
 **4. Admin releases the lead**
 
 - Admin opens Tenant Requests and chooses one of three release paths per inquiry:
-  - **NDA:** enrolls lister in GHL NDA workflow (workflow `0eb4395c` via `ghl-enroll` edge function). Only then does the landlord receive a WhatsApp message.
-  - **NDA + Claim:** same as NDA, plus prompts landlord to claim their account.
-  - **Direct:** marks authorized immediately in DB. No GHL workflow triggered.
+  - **NDA:** enrolls lister in GHL NDA workflow (workflow `0eb4395c` via `ghl-enroll` edge function). Landlord must complete Lead Access Agreement (NDA) to unlock contact details.
+  - **NDA + Claim:** same NDA flow, plus landlord must claim account before lead details unlock.
+  - **Direct:** marks authorized immediately in DB. No NDA/claim lock is applied in landlord CRM.
 - GHL enrollment must succeed before the DB is updated to `authorized = true`. If GHL fails, the inquiry stays unauthorized.
 - **This is the single admin gate.** No inquiry reaches a landlord without admin approval.
+
+**Tenant Requests UI structure**
+- Tenant Requests are grouped by landlord phone/identity first.
+- Expanding a landlord group shows each tenant inquiry (property, tenant, release state) as child rows.
+- Always Authorise is set at landlord phone level from the grouped row.
 
 **4b. NDA required (admin toggle)**
 

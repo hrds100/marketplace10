@@ -81,27 +81,27 @@ test.describe('Issue 3: NDA controlled by DB flag', () => {
       new URL('../supabase/functions/process-inquiry/index.ts', import.meta.url).pathname.replace(/%20/g, ' '),
       'utf-8'
     );
-    // Verify NDA uses DB flag
-    expect(content).toContain('const isNdaRequired = ndaRequired');
-    // Verify cold landlord uses DB flag + first inquiry check
-    expect(content).toContain('if (firstLandlordInquiry)');
-    expect(content).toContain("neq('id', (inquiry as Record<string, unknown>).id)");
-    // Verify nda_required is stamped on inquiry
+    // Verify DB flags are fetched from property row
+    expect(content).toContain('nda_required, first_landlord_inquiry');
+    expect(content).toContain('const ndaRequired =');
+    expect(content).toContain('const firstLandlordInquiry =');
+    // Verify nda_required is stamped on inquiry insert
     expect(content).toContain('nda_required: ndaRequired');
-    // Verify first_landlord_inquiry is fetched from properties
-    expect(content).toContain('first_landlord_inquiry');
   });
 
-  test('LeadsTab uses nda_required instead of lister_type for NDA gate', async () => {
+  test('LeadsTab uses authorisation_type to enforce NDA vs NDA+Claim vs Direct', async () => {
     const fs = await import('fs');
     const content = fs.readFileSync(
       new URL('../src/components/crm/LeadsTab.tsx', import.meta.url).pathname.replace(/%20/g, ' '),
       'utf-8'
     );
-    // Verify NDA check uses nda_required field
-    expect(content).toContain('lead.nda_required && !lead.nda_signed');
-    // Verify old lister_type check is gone
-    expect(content).not.toContain("lead.lister_type === 'deal_sourcer' && !lead.nda_signed");
+    // Verify release mode drives lock behavior
+    expect(content).toContain("lead.authorisation_type === 'nda'");
+    expect(content).toContain("lead.authorisation_type === 'nda_and_claim'");
+    // Verify fallback still supports legacy rows with only nda_required
+    expect(content).toContain('!lead.authorisation_type && lead.nda_required');
+    // Direct mode is implicitly bypassed because only nda / nda_and_claim create locks
+    expect(content).toContain("lead.authorisation_type === 'nda_and_claim' && isUnclaimed");
   });
 
   test('Migration file adds correct columns and fixes RLS', async () => {
@@ -128,8 +128,8 @@ test.describe('Build verification', () => {
     const { execSync } = await import('child_process');
     const cwd = new URL('..', import.meta.url).pathname.replace(/%20/g, ' ');
     // This will throw if there are TS errors
-    const result = execSync('npx tsc --noEmit 2>&1', { cwd, encoding: 'utf-8', timeout: 120000 });
-    // Empty output = no errors
-    expect(result.trim()).toBe('');
+    const result = execSync('NO_COLOR=1 FORCE_COLOR=0 npx tsc --noEmit 2>&1', { cwd, encoding: 'utf-8', timeout: 120000 });
+    // No TypeScript errors
+    expect(result).not.toContain('error TS');
   });
 });

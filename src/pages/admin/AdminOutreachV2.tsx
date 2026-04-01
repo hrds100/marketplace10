@@ -37,6 +37,24 @@ interface InquiryRow {
   created_at: string;
 }
 
+interface PendingInquiryRow extends InquiryRow {
+  propertyName: string;
+  landlordPhone: string;
+  landlordName: string | null;
+  landlordEmail: string | null;
+  claimed: boolean;
+}
+
+interface PendingInquiryGroup {
+  key: string;
+  phone: string;
+  displayName: string;
+  email: string | null;
+  listerType: string | null;
+  claimed: boolean;
+  inquiries: PendingInquiryRow[];
+}
+
 interface ListerMetric {
   phone: string;
   name: string | null;
@@ -284,6 +302,11 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                       Outreach sent
                     </span>
                   )}
+                  {totalLeads > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#EEF2FF', color: '#4F46E5' }}>
+                      Leads ({totalLeads})
+                    </span>
+                  )}
                   {totalPending > 0 && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
                       Pending requests ({totalPending})
@@ -349,6 +372,8 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
 // ══════════════════════════════════════════════════════════════
 
 function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
   const { data: allInquiries = [], isLoading } = useQuery({
     queryKey: ['outreach-pending'],
     queryFn: async () => {
@@ -370,15 +395,40 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
         propMap.set(p.id, { name: p.name, phone: p.landlord_whatsapp || p.contact_phone || '' });
       }
 
-      return (inquiries as InquiryRow[]).map(inq => ({
+      const phoneCandidates = [
+        ...(inquiries as InquiryRow[]).map(inq => inq.lister_phone).filter(Boolean),
+        ...(properties || []).map(p => p.landlord_whatsapp || p.contact_phone).filter(Boolean),
+      ] as string[];
+
+      const profileMap = new Map<string, { name: string | null; email: string | null }>();
+      const uniquePhones = [...new Set(phoneCandidates)];
+      if (uniquePhones.length > 0) {
+        const { data: profiles } = await (supabase.from('profiles') as any)
+          .select('whatsapp, name, email')
+          .in('whatsapp', uniquePhones);
+        for (const profile of (profiles || [])) {
+          if (profile.whatsapp) {
+            profileMap.set(profile.whatsapp, { name: profile.name || null, email: profile.email || null });
+          }
+        }
+      }
+
+      return (inquiries as InquiryRow[]).map((inq): PendingInquiryRow => {
+        const landlordPhone = inq.lister_phone || propMap.get(inq.property_id)?.phone || '';
+        const profile = landlordPhone ? profileMap.get(landlordPhone) : null;
+        return {
         ...inq,
         propertyName: propMap.get(inq.property_id)?.name || 'Unknown',
-        landlordPhone: propMap.get(inq.property_id)?.phone || '',
-      }));
+          landlordPhone,
+          landlordName: profile?.name || inq.lister_name || null,
+          landlordEmail: profile?.email || null,
+          claimed: !!profile,
+        };
+      });
     },
   });
 
-  const authorise = async (inquiry: InquiryRow & { landlordPhone: string }, type: 'nda' | 'nda_and_claim' | 'direct') => {
+  const authorise = async (inquiry: PendingInquiryRow, type: 'nda' | 'nda_and_claim' | 'direct') => {
     const key = `auth-${inquiry.id}-${type}`;
     addLoading(key);
     try {
@@ -443,7 +493,55 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     );
   }
 
-  const seenPhones = new Set<string>();
+  const groupMap = new Map<string, PendingInquiryGroup>();
+  for (const inquiry of allInquiries as PendingInquiryRow[]) {
+    const groupPhone = inquiry.lister_phone || inquiry.landlordPhone || '';
+    const groupKey = groupPhone ? `phone:${groupPhone}` : `fallback:${inquiry.id}`;
+
+    if (!groupMap.has(groupKey)) {
+      groupMap.set(groupKey, {
+        key: groupKey,
+        phone: groupPhone,
+        displayName: inquiry.landlordName || inquiry.lister_name || groupPhone || 'Unknown landlord',
+        email: inquiry.landlordEmail || null,
+        listerType: inquiry.lister_type || null,
+        claimed: inquiry.claimed,
+        inquiries: [],
+      });
+    }
+
+    const group = groupMap.get(groupKey)!;
+    group.inquiries.push(inquiry);
+    if (!group.email && inquiry.landlordEmail) group.email = inquiry.landlordEmail;
+    if (!group.claimed && inquiry.claimed) group.claimed = true;
+    if ((!group.displayName || group.displayName === group.phone) && (inquiry.landlordName || inquiry.lister_name)) {
+      group.displayName = inquiry.landlordName || inquiry.lister_name || group.displayName;
+    }
+    if (!group.listerType && inquiry.lister_type) group.listerType = inquiry.lister_type;
+  }
+
+  const grouped = Array.from(groupMap.values())
+    .map(group => ({
+      ...group,
+      inquiries: group.inquiries.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    }))
+    .sort((a, b) => {
+      const aPending = a.inquiries.filter(i => !i.authorized).length;
+      const bPending = b.inquiries.filter(i => !i.authorized).length;
+      if (bPending !== aPending) return bPending - aPending;
+      const aLatest = new Date(a.inquiries[0]?.created_at || 0).getTime();
+      const bLatest = new Date(b.inquiries[0]?.created_at || 0).getTime();
+      return bLatest - aLatest;
+    });
+
+  const toggleGroup = (key: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   return (
     <div>
@@ -451,89 +549,130 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
         Tenants message NFsTay first. You control when the lead is released.
       </p>
       <div className="space-y-3">
-      {allInquiries.map((inq: InquiryRow & { propertyName: string; landlordPhone: string }) => {
-        const phone = inq.lister_phone || '';
-        const showAlwaysToggle = phone && !seenPhones.has(phone);
-        if (phone) seenPhones.add(phone);
-
+      {grouped.map(group => {
+        const pendingCount = group.inquiries.filter(inq => !inq.authorized).length;
+        const sentCount = group.inquiries.length - pendingCount;
+        const isOpen = !collapsedGroups.has(group.key);
+        const alwaysAuthorised = group.inquiries.some(i => i.always_authorised);
         return (
-          <div key={inq.id} className="rounded-2xl border p-4" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
-            <div className="flex items-start justify-between gap-4">
+          <div key={group.key} className="rounded-2xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+            <div className="flex items-start justify-between gap-4 p-4 cursor-pointer" onClick={() => toggleGroup(group.key)}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{inq.tenant_name || 'Unknown tenant'}</span>
-                  <span className="text-xs" style={{ color: '#6B7280' }}>{inq.propertyName}</span>
+                  <Phone className="w-3.5 h-3.5" style={{ color: '#1E9A80' }} />
+                  <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{group.displayName}</span>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
+                    {group.inquiries.length} {group.inquiries.length === 1 ? 'request' : 'requests'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 mt-1 flex-wrap">
-                  <span className="text-xs" style={{ color: '#9CA3AF' }}>{new Date(inq.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                  {inq.lister_type && (
+                  {group.phone && <span className="text-xs" style={{ color: '#9CA3AF' }}>{group.phone}</span>}
+                  {group.claimed && group.email && (
+                    <span className="text-xs" style={{ color: '#9CA3AF' }}>{group.email}</span>
+                  )}
+                  {group.listerType && (
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
-                      {inq.lister_type}
+                      {group.listerType}
                     </span>
                   )}
-                  {phone && <span className="text-xs" style={{ color: '#9CA3AF' }}>{phone}</span>}
+                  {pendingCount > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+                      Pending ({pendingCount})
+                    </span>
+                  )}
+                  {sentCount > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
+                      Sent ({sentCount})
+                    </span>
+                  )}
                 </div>
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                {inq.authorized ? (
-                  <span
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
-                    style={{
-                      backgroundColor: inq.authorisation_type === 'direct' ? '#F3F3EE' : '#ECFDF5',
-                      color: inq.authorisation_type === 'direct' ? '#6B7280' : '#1E9A80',
-                    }}
+                {group.phone && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleAlwaysAuthorised(group.phone, alwaysAuthorised); }}
+                    disabled={loadingActions.has(`always-${group.phone}`)}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+                    style={{ color: alwaysAuthorised ? '#1E9A80' : '#9CA3AF', backgroundColor: '#F9FAFB' }}
                   >
-                    <Check className="w-3 h-3" />
-                    Sent as {inq.authorisation_type === 'nda' ? 'NDA' : inq.authorisation_type === 'nda_and_claim' ? 'NDA + Claim' : 'Direct'}
-                  </span>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => authorise(inq, 'nda')}
-                      disabled={loadingActions.has(`auth-${inq.id}-nda`)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                      style={{ backgroundColor: '#1E9A80' }}
-                    >
-                      {loadingActions.has(`auth-${inq.id}-nda`) ? '...' : 'NDA'}
-                    </button>
-                    <button
-                      onClick={() => authorise(inq, 'nda_and_claim')}
-                      disabled={loadingActions.has(`auth-${inq.id}-nda_and_claim`)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                      style={{ backgroundColor: '#111111' }}
-                    >
-                      {loadingActions.has(`auth-${inq.id}-nda_and_claim`) ? '...' : 'NDA + Claim'}
-                    </button>
-                    <button
-                      onClick={() => authorise(inq, 'direct')}
-                      disabled={loadingActions.has(`auth-${inq.id}-direct`)}
-                      className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
-                      style={{ borderColor: '#E5E7EB', color: '#1A1A1A', backgroundColor: '#FFFFFF' }}
-                    >
-                      {loadingActions.has(`auth-${inq.id}-direct`) ? '...' : 'Direct'}
-                    </button>
-                  </>
+                    {alwaysAuthorised
+                      ? <ToggleRight className="w-4 h-4" style={{ color: '#1E9A80' }} />
+                      : <ToggleLeft className="w-4 h-4" style={{ color: '#9CA3AF' }} />}
+                    Always Authorise
+                    {alwaysAuthorised && <Shield className="w-3 h-3" style={{ color: '#1E9A80' }} />}
+                  </button>
                 )}
+                <span className="text-xs" style={{ color: '#9CA3AF' }}>{isOpen ? '▼' : '▶'}</span>
               </div>
             </div>
 
-            {showAlwaysToggle && (
-              <div className="flex items-center gap-2 mt-3 pt-3" style={{ borderTop: '1px solid #E5E7EB' }}>
-                <button
-                  onClick={() => toggleAlwaysAuthorised(phone, inq.always_authorised)}
-                  disabled={loadingActions.has(`always-${phone}`)}
-                  className="flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-                  style={{ color: inq.always_authorised ? '#1E9A80' : '#9CA3AF' }}
-                >
-                  {inq.always_authorised
-                    ? <ToggleRight className="w-5 h-5" style={{ color: '#1E9A80' }} />
-                    : <ToggleLeft className="w-5 h-5" style={{ color: '#9CA3AF' }} />}
-                  Always Authorise ({phone})
-                </button>
-                {inq.always_authorised && (
-                  <Shield className="w-3.5 h-3.5" style={{ color: '#1E9A80' }} />
-                )}
+            {isOpen && (
+              <div className="border-t px-4 pb-3 pt-2 space-y-2" style={{ borderColor: '#F3F4F6', backgroundColor: '#FAFAFA' }}>
+                {group.inquiries.map(inq => (
+                  <div key={inq.id} className="rounded-xl border p-3" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{inq.tenant_name || 'Unknown tenant'}</span>
+                          <span className="text-xs" style={{ color: '#6B7280' }}>{inq.propertyName}</span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          <span className="text-xs" style={{ color: '#9CA3AF' }}>
+                            {new Date(inq.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                          {inq.lister_type && (
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
+                              {inq.lister_type}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                        {inq.authorized ? (
+                          <span
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                            style={{
+                              backgroundColor: inq.authorisation_type === 'direct' ? '#F3F3EE' : '#ECFDF5',
+                              color: inq.authorisation_type === 'direct' ? '#6B7280' : '#1E9A80',
+                            }}
+                          >
+                            <Check className="w-3 h-3" />
+                            Sent as {inq.authorisation_type === 'nda' ? 'NDA' : inq.authorisation_type === 'nda_and_claim' ? 'NDA + Claim' : 'Direct'}
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => authorise(inq, 'nda')}
+                              disabled={loadingActions.has(`auth-${inq.id}-nda`)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                              style={{ backgroundColor: '#1E9A80' }}
+                            >
+                              {loadingActions.has(`auth-${inq.id}-nda`) ? '...' : 'NDA'}
+                            </button>
+                            <button
+                              onClick={() => authorise(inq, 'nda_and_claim')}
+                              disabled={loadingActions.has(`auth-${inq.id}-nda_and_claim`)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                              style={{ backgroundColor: '#111111' }}
+                            >
+                              {loadingActions.has(`auth-${inq.id}-nda_and_claim`) ? '...' : 'NDA + Claim'}
+                            </button>
+                            <button
+                              onClick={() => authorise(inq, 'direct')}
+                              disabled={loadingActions.has(`auth-${inq.id}-direct`)}
+                              className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+                              style={{ borderColor: '#E5E7EB', color: '#1A1A1A', backgroundColor: '#FFFFFF' }}
+                            >
+                              {loadingActions.has(`auth-${inq.id}-direct`) ? '...' : 'Direct'}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
