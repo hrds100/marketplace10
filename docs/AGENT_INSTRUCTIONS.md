@@ -532,6 +532,8 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 23. **Always try to access tools before asking Hugo.** GitHub API, Vercel API, Supabase API, n8n API, GHL API - attempt access first. If credentials are missing, ask Hugo for them with a single clear sentence, then save them to memory.
 24. **Always update `docs/COMMUNICATIONS.md`** when adding, removing, or changing any email, WhatsApp, or in-app notification. Same commit. No exceptions.
 25. **Playwright e2e test is mandatory before marking DONE.** After every fix or feature, write a Playwright test that verifies the change works, run it with `npx playwright test`, and include the pass/fail result in the report. No exceptions. Do not claim something is "working" or "fixed" without a passing Playwright test. Use the existing `playwright-fixture.ts` for imports (`test`, `expect`). Config is in `playwright.config.ts`.
+26. **Keep living docs current.** When a task changes product behavior, update the relevant doc in the same commit. See the "Living Docs" section in `docs/COPILOT_PROMPT.md` for the full mapping. At minimum: architecture changes go to `ARCHITECTURE.md`, integration changes go to `INTEGRATIONS.md`, notification changes go to `COMMUNICATIONS.md`, new tools go to `STACK.md`, shipped features go to `CHANGELOG.md`, and root causes go to `LESSONS_LEARNED.md`.
+27. **Capture root causes in `docs/LESSONS_LEARNED.md`.** When a bug is diagnosed, add what happened, why, and the rule to prevent it from happening again. This is the team's institutional memory.
 
 ---
 
