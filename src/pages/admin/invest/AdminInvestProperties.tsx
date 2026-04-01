@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Plus, Pencil, Loader2, Upload, X, ImageIcon, Link2, Trash2, Download, FileText, DollarSign, LayoutGrid } from 'lucide-react';
 import { useInvestProperties, useCreateProperty, useUpdateProperty } from '@/hooks/useInvestData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,6 +104,32 @@ export default function AdminInvestProperties() {
   const [docFiles, setDocFiles] = useState<File[]>([]);
   const [highlightInput, setHighlightInput] = useState('');
   const [uploading, setUploading] = useState(false);
+  // Live blockchain stats for the editing property
+  const [bcStats, setBcStats] = useState<{ totalShares: number; sold: number; remaining: number; aprPct: number; monthlyYield: number; pricePerShare: number } | null>(null);
+  useEffect(() => {
+    const bcId = editing?.blockchain_property_id;
+    if (!bcId) { setBcStats(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const ethers = await import('ethers');
+        const provider = new ethers.providers.JsonRpcProvider('https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T');
+        const iface = new ethers.utils.Interface(['function getProperty(uint256) view returns (tuple(uint256 pricePerShare, uint256 totalOwners, uint256 aprBips, uint256 totalShares, string uri))']);
+        const data = await provider.call({ to: '0xA588E7dC42a956cc6c412925dE99240cc329157b', data: iface.encodeFunctionData('getProperty', [bcId]) });
+        const d = ethers.utils.defaultAbiCoder.decode(['tuple(uint256 pricePerShare, uint256 totalOwners, uint256 aprBips, uint256 totalShares, string uri)'], data)[0];
+        const mktIface = new ethers.utils.Interface(['function getPrimarySale(uint256)']);
+        const raw = await provider.call({ to: '0xDD22fDC50062F49a460E5a6bADF96Cbec85ac128', data: mktIface.encodeFunctionData('getPrimarySale', [bcId]) });
+        const remaining = parseInt(raw.slice(2).slice(64, 128), 16);
+        const totalShares = d.totalShares.toNumber();
+        const aprPct = (d.aprBips.toNumber() / 10000) * 100;
+        if (!cancelled) {
+          setBcStats({ totalShares, sold: totalShares - remaining, remaining, aprPct, monthlyYield: parseFloat((aprPct / 12).toFixed(2)), pricePerShare: parseFloat(d.pricePerShare.toString()) / 1e18 });
+        }
+      } catch { if (!cancelled) setBcStats(null); }
+    })();
+    return () => { cancelled = true; };
+  }, [editing?.blockchain_property_id]);
+
   // Financials edit state
   const [finModalOpen, setFinModalOpen] = useState(false);
   const [finProperty, setFinProperty] = useState<Property | null>(null);
@@ -394,36 +420,42 @@ export default function AdminInvestProperties() {
             <DialogTitle>{editing ? 'Edit Property' : 'Add Property'}</DialogTitle>
           </DialogHeader>
 
-          {/* ── Blockchain Data (read-only) ─────────────────────── */}
+          {/* ── Blockchain Data (live read-only) ─────────────────── */}
           {editing && (
             <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 mb-2">
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
-                  From Blockchain — read only
+                  Live from Blockchain — read only
                 </span>
                 <Link2 className="w-3 h-3 text-emerald-500 ml-auto" />
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: 'Total Shares', value: (form.total_shares as number)?.toLocaleString() ?? '—' },
-                  { label: 'Shares Sold', value: (form.shares_sold as number)?.toLocaleString() ?? '—' },
-                  {
-                    label: 'Remaining',
-                    value: ((form.total_shares as number) - (form.shares_sold as number))?.toLocaleString() ?? '—',
-                  },
-                ].map(({ label, value }) => (
-                  <div key={label} className="rounded-lg bg-background/60 border border-emerald-500/20 px-3 py-2">
-                    <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-emerald-500 inline-block" />
-                      {label}
-                    </p>
-                    <p className="text-sm font-semibold text-foreground">{value}</p>
-                  </div>
-                ))}
-              </div>
+              {bcStats ? (
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Total Shares', value: bcStats.totalShares.toLocaleString() },
+                    { label: 'Shares Sold', value: bcStats.sold.toLocaleString() },
+                    { label: 'Remaining', value: bcStats.remaining.toLocaleString() },
+                    { label: 'Price/Share', value: `$${bcStats.pricePerShare}` },
+                    { label: 'Annual APR', value: `${bcStats.aprPct.toFixed(1)}%` },
+                    { label: 'Monthly Yield', value: `${bcStats.monthlyYield}%` },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="rounded-lg bg-background/60 border border-emerald-500/20 px-3 py-2">
+                      <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-emerald-500 inline-block" />
+                        {label}
+                      </p>
+                      <p className="text-sm font-semibold text-foreground">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {editing.blockchain_property_id ? 'Loading chain data...' : 'No blockchain property ID set'}
+                </p>
+              )}
               <p className="text-[10px] text-muted-foreground mt-2">
-                These values are sourced directly from the smart contract and cannot be edited here.
+                These values are read live from the smart contract. The marketplace page uses these, not the admin fields below.
               </p>
             </div>
           )}
@@ -447,8 +479,9 @@ export default function AdminInvestProperties() {
               <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.price_per_share as number} onChange={(e) => updateField('price_per_share', Number(e.target.value))} />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Monthly Yield (%)</label>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">Net Monthly Yield (%) - fallback only</label>
               <input type="number" step="0.1" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" value={form.annual_yield as number} onChange={(e) => updateField('annual_yield', Number(e.target.value))} />
+              <p className="text-[11px] text-muted-foreground mt-1">Marketplace uses chain APR when available</p>
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Appreciation Rate (%)</label>
