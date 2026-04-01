@@ -1,7 +1,11 @@
 // ghl-enroll -- Enroll a GHL contact into a workflow by phone number
 // Trigger: POST from admin frontend
-// Input: { phone, workflowId }
-// Output: { success, contactId } or { error }
+// Input: { phone, workflowId, contactName? }
+// Output: { success, contactId, created? } or { error }
+//
+// If no GHL contact exists for the phone, one is created automatically.
+// For repeat enrollments, the contact is removed from the workflow first
+// (with a short delay) before re-enrolling, so GHL re-triggers all steps.
 //
 // The GHL bearer token is stored as a Supabase secret (GHL_BEARER_TOKEN),
 // never exposed to the frontend.
@@ -30,6 +34,11 @@ function normalizeUKPhone(raw: string): string | null {
   return '+' + digits
 }
 
+/** Small delay to let GHL process the removal before re-enrollment */
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -40,7 +49,7 @@ serve(async (req) => {
       })
     }
 
-    const { phone, workflowId } = await req.json()
+    const { phone, workflowId, contactName } = await req.json()
 
     if (!phone || !workflowId) {
       return new Response(JSON.stringify({ error: 'Missing phone or workflowId' }), {
@@ -54,10 +63,9 @@ serve(async (req) => {
 
     // 1. Search for GHL contact by phone (try normalized first, then raw variants)
     const searchVariants = [searchPhone]
-    // Add fallback variants if normalized
     if (normalized) {
-      const digits = normalized.slice(1) // strip leading +
-      const local = '0' + digits.slice(2) // 07...
+      const digits = normalized.slice(1)
+      const local = '0' + digits.slice(2)
       if (!searchVariants.includes(digits)) searchVariants.push(digits)
       if (!searchVariants.includes(local)) searchVariants.push(local)
     }
@@ -84,13 +92,61 @@ serve(async (req) => {
       }
     }
 
+    // 2. If no contact found, create one
+    let created = false
     if (!contactId) {
-      return new Response(JSON.stringify({ error: 'No GHL contact found for this landlord phone', phone: searchPhone, tried: searchVariants }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      const createRes = await fetch(`${GHL_BASE}/contacts/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GHL_TOKEN}`,
+          'Version': '2021-07-28',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          locationId: GHL_LOCATION_ID,
+          phone: normalized || searchPhone,
+          name: contactName || undefined,
+          source: 'nfstay-outreach',
+        }),
       })
+
+      if (!createRes.ok) {
+        const body = await createRes.text()
+        return new Response(JSON.stringify({ error: 'Failed to create GHL contact', detail: body }), {
+          status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const createData = await createRes.json()
+      contactId = createData.contact?.id || null
+      if (!contactId) {
+        return new Response(JSON.stringify({ error: 'GHL contact creation returned no ID', detail: JSON.stringify(createData) }), {
+          status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      created = true
     }
 
-    // 2. Enroll contact in workflow
+    // 3. Remove from workflow first (idempotent - ignores 404/errors)
+    //    This ensures repeat enrollments re-trigger all workflow steps.
+    if (!created) {
+      const removeUrl = `${GHL_BASE}/contacts/${contactId}/workflow/${workflowId}`
+      try {
+        await fetch(removeUrl, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${GHL_TOKEN}`,
+            'Version': '2021-07-28',
+          },
+        })
+        // Wait for GHL to process the removal before re-enrolling
+        await delay(1500)
+      } catch {
+        // Non-blocking - removal failure shouldn't prevent enrollment
+      }
+    }
+
+    // 4. Enroll contact in workflow
     const enrollUrl = `${GHL_BASE}/contacts/${contactId}/workflow/${workflowId}`
     const enrollRes = await fetch(enrollUrl, {
       method: 'POST',
@@ -109,7 +165,7 @@ serve(async (req) => {
       })
     }
 
-    return new Response(JSON.stringify({ success: true, contactId }), {
+    return new Response(JSON.stringify({ success: true, contactId, created }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 

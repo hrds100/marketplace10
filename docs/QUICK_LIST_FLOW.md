@@ -51,14 +51,22 @@ status -> live
 Listing visible on /dashboard/deals marketplace
 
 
-PART 3 - TENANT ENQUIRES
+PART 3 - TENANT ENQUIRES (canonical path)
 
 Tenant browses /dashboard/deals
 
-Tenant clicks listing -> clicks "Enquire"
+Tenant clicks listing -> clicks "WhatsApp" on DealDetail
 
-Message saved to Supabase threads/messages
-Linked to listing + landlord_whatsapp
+DealDetail opens wa.me link with structured message containing:
+  - Property link (hub.nfstay.com/deals/{slug})
+  - Reference no. (first 5 chars of UUID)
+  - ID: {full UUID}
+Message goes to NFsTay WhatsApp number via GHL.
+
+No inquiry is created on the frontend. The single canonical path:
+  GHL inbound -> n8n webhook -> receive-tenant-whatsapp edge function -> inquiry row created
+
+Inquiry appears in Admin > Outreach > Tenant Requests for admin authorization.
 
 n8n fires -> checks: has this landlord number
 been contacted before? (first_contact_sent flag)

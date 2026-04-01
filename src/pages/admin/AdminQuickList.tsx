@@ -83,7 +83,7 @@ export default function AdminQuickList() {
 
   // Get next sequential property number from DB
   const getNextPropertyNumber = async (): Promise<number> => {
-    const { count } = await (supabase.from('properties') as any)
+    const { count } = await supabase.from('properties')
       .select('id', { count: 'exact', head: true });
     return 1001 + (count || 0);
   };
@@ -224,12 +224,12 @@ export default function AdminQuickList() {
     for (const file of photos) {
       const ext = file.name.split('.').pop() || 'jpg';
       const path = `properties/${propertyId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from('nfs-images').upload(path, file);
+      const { error } = await supabase.storage.from('deals-photos').upload(path, file);
       if (error) {
         console.error('Photo upload failed:', error);
         continue;
       }
-      const { data: urlData } = supabase.storage.from('nfs-images').getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from('deals-photos').getPublicUrl(path);
       if (urlData?.publicUrl) urls.push(urlData.publicUrl);
     }
     return urls;
@@ -253,11 +253,11 @@ export default function AdminQuickList() {
         const propName = `Property #${nextNum} - ${item.name || 'Untitled'}`;
         nextNum++;
 
-        const { data: prop, error: insertErr } = await (supabase.from('properties') as any)
+        const { data: prop, error: insertErr } = await supabase.from('properties')
           .insert({
             name: propName,
-            city: item.city,
-            postcode: item.postcode,
+            city: item.city || '',
+            postcode: item.postcode || '',
             bedrooms: item.bedrooms,
             bathrooms: item.bathrooms,
             rent_monthly: item.rent_monthly,
@@ -274,13 +274,13 @@ export default function AdminQuickList() {
             contact_phone: item.contact_phone,
             contact_name: item.contact_name,
             contact_email: item.contact_email,
-            lister_type: item.lister_type,
-            source: 'quick_list',
+            lister_type: item.lister_type as 'landlord' | 'agent' | 'deal_sourcer' | null,
+            source: 'quick_list' as const,
             landlord_whatsapp: item.contact_phone,
             deposit: item.deposit,
             sourcing_fee: item.sourcing_fee,
             deal_type: item.deal_type,
-            listing_type: item.listing_type || 'rental',
+            listing_type: (item.listing_type || 'rental') as 'rental' | 'sale',
             nightly_rate_projected: item.nightly_rate_projected,
             purchase_price: item.purchase_price,
             end_value: item.end_value,
@@ -289,7 +289,7 @@ export default function AdminQuickList() {
           .select('id')
           .single();
 
-        if (insertErr) throw insertErr;
+        if (insertErr) throw new Error(insertErr.message);
         if (prop?.id) lastPropertyId = prop.id;
 
         // Generate friendly slug: city-type-shortid (e.g. skelton-brr-bf3f36da)
@@ -300,7 +300,7 @@ export default function AdminQuickList() {
             .toLowerCase()
             .replace(/[^a-z0-9-]/g, '')
             .replace(/-+/g, '-');
-          (supabase.from('properties') as any).update({ slug: slugParts }).eq('id', prop.id).then(() => {});
+          supabase.from('properties').update({ slug: slugParts }).eq('id', prop.id).then(() => {});
         }
 
         // Upload photos or use Pexels URLs
@@ -313,7 +313,7 @@ export default function AdminQuickList() {
             if (pexelUrls && pexelUrls.length > 0) urls = pexelUrls;
           }
           if (urls.length > 0) {
-            await (supabase.from('properties') as any)
+            await supabase.from('properties')
               .update({ photos: urls })
               .eq('id', prop.id);
           }
@@ -352,7 +352,7 @@ export default function AdminQuickList() {
         if (result) {
           setPricingResult(result);
           setPublishPhase('reveal');
-          await (supabase.from('properties') as any).update({
+          await supabase.from('properties').update({
             estimated_nightly_rate: result.estimated_nightly_rate,
             estimated_monthly_revenue: result.estimated_monthly_revenue,
             estimated_profit: result.estimated_profit,
