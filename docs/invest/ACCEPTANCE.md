@@ -92,7 +92,7 @@ And all other agents still use the default 40%
 
 ### Scenario: Shareholder creates proposal
 ```
-Given I own shares in "Seseh Beachfront Villa"
+Given I own shares in "Pembroke Place"
 When I click "Submit Proposal" on my Portfolio card
 Then a modal opens with property pre-selected
 When I enter a title and description

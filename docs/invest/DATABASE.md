@@ -12,8 +12,8 @@ Investment property listings managed by admin.
 | Column | Type | Notes |
 |--------|------|-------|
 | id | SERIAL PRIMARY KEY | |
-| title | TEXT NOT NULL | e.g. "Seseh Beachfront Villa" |
-| location | TEXT NOT NULL | e.g. "Seseh, Bali" |
+| title | TEXT NOT NULL | e.g. "Pembroke Place" |
+| location | TEXT NOT NULL | e.g. "Liverpool, United Kingdom" |
 | country | TEXT | |
 | image | TEXT | Primary image URL |
 | images | TEXT[] | Additional image URLs |
