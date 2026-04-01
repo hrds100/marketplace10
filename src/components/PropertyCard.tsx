@@ -105,7 +105,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     onInquire?.(listing);
   };
 
-  const handleWhatsApp = (e: React.MouseEvent) => {
+  const handleWhatsApp = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (forceSignUp) { navigate('/signup'); return; }
@@ -114,11 +114,41 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       onInquire?.(listing);
       return;
     }
+    if (!user) { navigate('/signup'); return; }
+
     const propertyUrl = `https://hub.nfstay.com/deals/${listing.slug || listing.id}`;
-    const msg = encodeURIComponent(
-      `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nRef: ${listing.id.slice(0, 5).toUpperCase()}\nID: ${listing.id}\nPlease contact me at your earliest convenience.`,
-    );
-    // WhatsApp inquiry is processed when the message arrives at GHL (not on button click)
+    const ref = listing.id.slice(0, 5).toUpperCase();
+    const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${ref}\nPlease contact me at your earliest convenience.`;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Please sign in to send an inquiry.');
+        return;
+      }
+      const { error } = await supabase.functions.invoke('process-inquiry', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: {
+          property_id: listing.id,
+          channel: 'whatsapp',
+          message: plainMsg,
+          tenant_name: user.user_metadata?.name || user.user_metadata?.full_name || null,
+          tenant_email: user.email || null,
+          tenant_phone: user.user_metadata?.whatsapp || null,
+          property_url: propertyUrl,
+        },
+      });
+      if (error) {
+        toast.error('Could not save your inquiry. Please try again.');
+        return;
+      }
+    } catch (err) {
+      console.error('[PropertyCard] process-inquiry failed:', err);
+      toast.error('Could not save your inquiry. Please try again.');
+      return;
+    }
+
+    const msg = encodeURIComponent(plainMsg);
     window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${msg}`, '_blank');
   };
 

@@ -279,13 +279,13 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
 // ══════════════════════════════════════════════════════════════
 
 function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
-  const { data: pendingInquiries = [], isLoading } = useQuery({
+  const { data: allInquiries = [], isLoading } = useQuery({
     queryKey: ['outreach-pending'],
     queryFn: async () => {
-      // Use .or() to catch both false AND null (rows created before migration)
+      // Show ALL inquiries -- pending first, then authorized with their sent status
       const { data: inquiries, error } = await (supabase.from('inquiries') as any)
         .select('id, property_id, tenant_name, lister_phone, lister_type, lister_name, nda_signed, authorized, always_authorised, authorisation_type, created_at')
-        .or('authorized.eq.false,authorized.is.null')
+        .order('authorized', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
       if (!inquiries || inquiries.length === 0) return [];
@@ -359,7 +359,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
 
   if (isLoading) return <LoadingSkeleton />;
 
-  if (pendingInquiries.length === 0) {
+  if (allInquiries.length === 0) {
     return (
       <EmptyState
         title="No tenant messages yet"
@@ -376,7 +376,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
         Tenants message NFsTay first. You control when the lead is released.
       </p>
       <div className="space-y-3">
-      {pendingInquiries.map((inq: InquiryRow & { propertyName: string; landlordPhone: string }) => {
+      {allInquiries.map((inq: InquiryRow & { propertyName: string; landlordPhone: string }) => {
         const phone = inq.lister_phone || '';
         const showAlwaysToggle = phone && !seenPhones.has(phone);
         if (phone) seenPhones.add(phone);
@@ -401,30 +401,45 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                <button
-                  onClick={() => authorise(inq, 'nda')}
-                  disabled={loadingActions.has(`auth-${inq.id}-nda`)}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                  style={{ backgroundColor: '#1E9A80' }}
-                >
-                  {loadingActions.has(`auth-${inq.id}-nda`) ? '...' : 'NDA'}
-                </button>
-                <button
-                  onClick={() => authorise(inq, 'nda_and_claim')}
-                  disabled={loadingActions.has(`auth-${inq.id}-nda_and_claim`)}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                  style={{ backgroundColor: '#111111' }}
-                >
-                  {loadingActions.has(`auth-${inq.id}-nda_and_claim`) ? '...' : 'NDA + Claim'}
-                </button>
-                <button
-                  onClick={() => authorise(inq, 'direct')}
-                  disabled={loadingActions.has(`auth-${inq.id}-direct`)}
-                  className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
-                  style={{ borderColor: '#E5E7EB', color: '#1A1A1A', backgroundColor: '#FFFFFF' }}
-                >
-                  {loadingActions.has(`auth-${inq.id}-direct`) ? '...' : 'Direct'}
-                </button>
+                {inq.authorized ? (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                    style={{
+                      backgroundColor: inq.authorisation_type === 'direct' ? '#F3F3EE' : '#ECFDF5',
+                      color: inq.authorisation_type === 'direct' ? '#6B7280' : '#1E9A80',
+                    }}
+                  >
+                    <Check className="w-3 h-3" />
+                    Sent as {inq.authorisation_type === 'nda' ? 'NDA' : inq.authorisation_type === 'nda_and_claim' ? 'NDA + Claim' : 'Direct'}
+                  </span>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => authorise(inq, 'nda')}
+                      disabled={loadingActions.has(`auth-${inq.id}-nda`)}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                      style={{ backgroundColor: '#1E9A80' }}
+                    >
+                      {loadingActions.has(`auth-${inq.id}-nda`) ? '...' : 'NDA'}
+                    </button>
+                    <button
+                      onClick={() => authorise(inq, 'nda_and_claim')}
+                      disabled={loadingActions.has(`auth-${inq.id}-nda_and_claim`)}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                      style={{ backgroundColor: '#111111' }}
+                    >
+                      {loadingActions.has(`auth-${inq.id}-nda_and_claim`) ? '...' : 'NDA + Claim'}
+                    </button>
+                    <button
+                      onClick={() => authorise(inq, 'direct')}
+                      disabled={loadingActions.has(`auth-${inq.id}-direct`)}
+                      className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+                      style={{ borderColor: '#E5E7EB', color: '#1A1A1A', backgroundColor: '#FFFFFF' }}
+                    >
+                      {loadingActions.has(`auth-${inq.id}-direct`) ? '...' : 'Direct'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
