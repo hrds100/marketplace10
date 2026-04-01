@@ -202,7 +202,15 @@ All unhandled errors are captured and sent to Sentry automatically.
 | Date | Error | Root Cause | Fix |
 |------|-------|-----------|-----|
 | 2026-03-19 | `ReferenceError: property is not defined` | 8 sub-components in InvestMarketplacePage referenced `property` from parent scope after mock data was removed and `property` became a local variable | Pass `property` as prop to all sub-components. Commits: `0cf91ba`, `a3652b4` |
+| 2026-04-01 | `ReferenceError: bcPropertyId is not defined` | `RecentActivityTable` (module-scope component) had `bcPropertyId` in its `useCallback` dependency array, but `bcPropertyId` is only declared inside `InvestMarketplacePage`. TypeScript/lint did not catch it because dependency arrays are typed as `any[]`. | Removed the out-of-scope dependency. PR #168. |
+| 2026-04-01 | Infinite re-render loop (no visible error, but page hangs) | `DealsPageV2.tsx` `useEffect` had `[investProperties]` as dependency. React Query returns a new array reference every render, causing infinite fetch/setState loop. | Changed to `[investProperties?.length]`. PR #167. |
+
+### Lesson from 2026-04-01 incident
+
+**Out-of-scope variables in React hook dependency arrays pass TypeScript and lint but crash at runtime.** This is a blind spot in the current toolchain. Always browser-verify after any change that adds variables to `useCallback`/`useEffect`/`useMemo` dependency arrays, especially when the hook is in a different function component than where the variable is declared.
+
+**Unstable React Query references in useEffect dependencies cause infinite loops.** Always use a stable primitive (`.length`, a specific field) instead of the full array/object from React Query.
 
 ---
 
-*Last updated: 2026-03-19*
+*Last updated: 2026-04-01*
