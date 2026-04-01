@@ -2,6 +2,40 @@
 
 ## [Unreleased]
 
+## [2026-04-01g] - Marketplace Crash Fix: bcPropertyId ReferenceError (PR #168)
+
+### Fixed
+- **ROOT CAUSE:** `RecentActivityTable` (standalone component at module scope) had `bcPropertyId` in its `useCallback` dependency array, but `bcPropertyId` is only declared inside `InvestMarketplacePage`. This caused `ReferenceError: bcPropertyId is not defined` on every page load. TypeScript and lint did not catch it because dependency arrays are typed as `any[]`.
+- Fix: removed the out-of-scope dependency (the callback doesn't use it).
+- Browser-verified on both preview and production: marketplace loads, Pembroke Place visible, no crash.
+
+### Lesson
+- Out-of-scope variables in React hook dependency arrays pass TypeScript/lint but crash at runtime. Browser verification is mandatory before claiming "fixed."
+
+## [2026-04-01f] - Marketplace Crash Fix: Infinite Re-Render Loop (PR #167)
+
+### Fixed
+- `useEffect` in `DealsPageV2.tsx` had `[investProperties]` as dependency. React Query returns a new array reference every render, causing infinite fetch loop. Changed to `[investProperties?.length]`.
+- This fixed the DealsPageV2 infinite loop but did not fix the separate `bcPropertyId` crash on the marketplace page (fixed in PR #168).
+
+## [2026-04-01e] - Marketplace Source-of-Truth Fix (PR #164)
+
+### Fixed - Chain as primary source for marketplace numbers
+- Chain APR now always overrides admin `annual_yield` (was showing 99.6%, now correct ~115.6%)
+- Monthly yield = APR / 12 (~9.6%), matching legacy
+- `totalShares`, `sharesSold`, `sharesRemaining` from chain when available
+- `pricePerShare` from chain when available
+- Chain reads use `blockchain_property_id` instead of hardcoded property 1
+- Calculator uses 5 years (matching legacy, was 6)
+- "Built 0" and "0 Bath" badges hidden when zero
+- JV card on deals grid fetches chain stats
+- Admin blockchain box shows live chain values (was showing DB form values)
+- Admin yield field relabeled "Net Monthly Yield (%) - fallback only"
+- Pembroke Place `rent_cost` corrected from 4400 to 3500 (matches legacy)
+
+### Known issue introduced
+- Two runtime crashes were introduced and fixed in PR #167 and PR #168 (see above)
+
 ## [2026-04-01d] - Outreach Grouping + Release Mode + WhatsApp Inquiry Fix (PR #163)
 
 ### Fixed - Tenant Requests grouping
