@@ -63,6 +63,9 @@ jobs:
           supabase functions deploy claim-landlord-account --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
           supabase functions deploy n8n-health --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
           supabase functions deploy uptimerobot-health --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
+          supabase functions deploy receive-tenant-whatsapp --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
+          supabase functions deploy ghl-enroll --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
+          supabase functions deploy process-inquiry --project-ref asazddtvjvmckouxcmmo
           supabase secrets set N8N_API_KEY=${{ secrets.N8N_API_KEY }} --project-ref asazddtvjvmckouxcmmo
           supabase secrets set UPTIMEROBOT_API_KEY=${{ secrets.UPTIMEROBOT_API_KEY }} --project-ref asazddtvjvmckouxcmmo
         env:
