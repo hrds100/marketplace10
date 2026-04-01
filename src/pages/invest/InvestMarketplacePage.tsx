@@ -1198,7 +1198,7 @@ function RecentActivityTable() {
       .then(setActivity)
       .catch(() => setActivity([]))
       .finally(() => setActivityLoading(false));
-  }, [bcPropertyId]);
+  }, []);
 
   useEffect(() => {
     loadActivity();
