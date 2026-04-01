@@ -5,7 +5,13 @@
 
 ---
 
-## Last Updated: 2026-04-01 UTC
+## Last Updated: 2026-04-01 UTC (post PR #164 + #167 + #168)
+
+---
+
+## April 1, 2026 - Marketplace Number Fix Round
+
+PR #164 fixed marketplace source-of-truth wiring (chain APR, shares, pricePerShare, 5yr calculator, rent cost). Two runtime crashes were introduced and fixed in PR #167 (infinite re-render loop in DealsPageV2) and PR #168 (out-of-scope `bcPropertyId` in RecentActivityTable). All three PRs are merged. Production browser-verified: marketplace loads, Pembroke Place visible, no crash.
 
 ---
 

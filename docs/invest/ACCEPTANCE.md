@@ -75,6 +75,19 @@ And paid_at is set on both tables
 ```
 **Status:** Code fix deployed. Manual live verification pending.
 
+### Scenario: Marketplace page loads without crash (PR #164 + #167 + #168)
+```
+Given I open /dashboard/invest/marketplace
+Then the page loads without "Something went wrong"
+And Pembroke Place is visible
+And annual yield shows ~115.6% (chain APR, not 99.6%)
+And monthly yield shows ~9.6%
+And total shares, sold, remaining come from chain
+And no "Built 0" or "0 Bath" badges appear
+And the 5-year calculator projection renders
+```
+**Status:** All three PRs merged. Production browser-verified 2026-04-01.
+
 ---
 
 ## Commissions

@@ -195,6 +195,7 @@ The historic `feature/invest-wiring` branch was used for earlier wiring work - i
 | 2026-03-18 | Added USER_JOURNEY.md - simple English overview of every flow | USER_JOURNEY.md |
 | 2026-03-18 | Updated document index to list all 14 docs + added legacy reference codebase section | AGENT_INVESTMENT_INSTRUCTIONS.md |
 | 2026-04-01 | PR #161: Fixed payout status cascade - revolut-check-status and revolut-webhook now propagate paid to inv_payouts (investor) and aff_commissions (affiliate). Manual live verification pending. | PAYOUT_FLOW.md, MODULE_AUDIT.md, ACCEPTANCE.md, CHANGELOG.md |
+| 2026-04-01 | PR #164: Marketplace source-of-truth fix (chain APR/shares/pricePerShare, 5yr calc, rent cost). PR #167: fixed infinite re-render in DealsPageV2. PR #168: fixed bcPropertyId ReferenceError crash. All merged, production browser-verified. | CHANGELOG.md, MODULE_AUDIT.md, ACCEPTANCE.md, FIX_SOMETHING_WENT_WRONG.md |
 
 ---
 
