@@ -83,16 +83,17 @@ workflow internals, so this polling workflow bypasses the broken trigger entirel
 
 ### What it does NOT do:
 - Does NOT notify the landlord
-- Does NOT send any auto-reply (GHL sends its own - see "Remaining GHL issue" below)
+- Does NOT send any auto-reply (GHL handles this via its trigger workflow)
 - Does NOT enroll anyone in GHL workflows
 
-## Remaining GHL issue (needs manual fix)
+## Known GHL auto-reply text issue
 
-GHL workflow `11117c1a` ("inbox-new-inquiry") auto-replies with the OLD text:
+GHL workflow `11117c1a` ("inbox-new-inquiry") auto-replies with:
 "We've passed your enquiry to the Landlord or Agent, they'll reach out to you shortly."
-This text is misleading because the landlord is NOT contacted until admin release.
-Fix in GHL dashboard: Automation > Workflows > inbox-new-inquiry > edit the reply step
-to say: "Thanks for contacting NFsTay! Your inquiry has been received and is being reviewed."
+This is slightly misleading (landlord is NOT contacted until admin release).
+A second GHL workflow `cf089a15` ("5 - inbox-new-inquiry") was created 2026-04-01
+as a potential replacement. To fix: disable the old 11117c1a in GHL dashboard,
+or edit its reply text.
 
 ## Deactivated workflows (2026-04-01)
 
