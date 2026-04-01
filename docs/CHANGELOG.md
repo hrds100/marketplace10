@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [2026-04-01i] - Restore Tenant WhatsApp Auto-Reply
+
+### Fixed - Tenant auto-reply not sending
+- ROOT CAUSE: n8n webhook workflow `IvXzbcqzv5bKtu01` had a stale GHL token
+  (literal "REDACTED_GHL_PIT_TOKEN" instead of real PIT token) in the
+  "Send Tenant Auto-Reply" node. Fixed via n8n API.
+- Tenant now receives: "Thanks for contacting NFsTay! Your inquiry for
+  [property] has been received and is being reviewed by our team."
+- Reply fires from n8n webhook workflow (canonical source), not from GHL trigger.
+- Old GHL workflow `11117c1a` disabled (draft) by Hugo.
+- Poll workflow `ReoIHnniLpB632Ir` is backup inquiry creator only (no reply).
+- Verified with tagged test: one reply, one inquiry, no landlord contact.
+
 ## [2026-04-01g] - Marketplace Crash Fix: bcPropertyId ReferenceError (PR #168)
 
 ### Fixed

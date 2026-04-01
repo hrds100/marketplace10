@@ -83,17 +83,26 @@ workflow internals, so this polling workflow bypasses the broken trigger entirel
 
 ### What it does NOT do:
 - Does NOT notify the landlord
-- Does NOT send any auto-reply (GHL handles this via its trigger workflow)
+- Does NOT send any auto-reply (the webhook workflow handles replies)
 - Does NOT enroll anyone in GHL workflows
 
-## Known GHL auto-reply text issue
+## Tenant auto-reply (fixed 2026-04-01)
 
-GHL workflow `11117c1a` ("inbox-new-inquiry") auto-replies with:
-"We've passed your enquiry to the Landlord or Agent, they'll reach out to you shortly."
-This is slightly misleading (landlord is NOT contacted until admin release).
-A second GHL workflow `cf089a15` ("5 - inbox-new-inquiry") was created 2026-04-01
-as a potential replacement. To fix: disable the old 11117c1a in GHL dashboard,
-or edit its reply text.
+**Source:** n8n webhook workflow `IvXzbcqzv5bKtu01`, "Send Tenant Auto-Reply" node.
+**Text:** "Thanks for contacting NFsTay! Your inquiry for [property] has been received
+and is being reviewed by our team. We will be in touch shortly."
+**Trigger:** Fires immediately after `receive-tenant-whatsapp` creates/deduplicates the inquiry.
+**Sends via:** GHL conversations API (PIT token).
+
+### Root cause of the broken reply (2026-04-01)
+The "Send Tenant Auto-Reply" node had a stale GHL token (`REDACTED_GHL_PIT_TOKEN` literal string
+instead of the real PIT token). Fixed by replacing with the correct `pit-ad222803-...` token via
+n8n API PUT.
+
+### GHL trigger workflows
+- `11117c1a` ("inbox-new-inquiry"): **DRAFT** (disabled by Hugo). Sent wrong auto-reply text.
+- `cf089a15` ("5 - inbox-new-inquiry"): **PUBLISHED**. Triggers n8n webhook but sends empty message
+  body. The n8n Parse node handles this by checking the message for "nfstay" keyword.
 
 ## Deactivated workflows (2026-04-01)
 
