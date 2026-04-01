@@ -35,6 +35,8 @@ export const VOTING_ABI = [
   'function getProposalFees() external view returns (uint256)',
   'function getProposal(uint256 proposalId) external view returns (uint256 _propertyId, address _proposer, uint256 _endTime, uint256 _votesInFavour, uint256 _votesInAgainst, bytes _description, uint8 _status)',
   'function decodeString(bytes encodedDescription) external pure returns (string)',
+  'event ProposalStatus(address indexed _by, uint256 _proposalId, uint256 _endTime)',
+  'event Voted(address indexed _by, uint256 _proposalId, bool _inFavor)',
 ];
 
 // Booster ABI — exact match of legacy abis.js boosterABI
@@ -67,6 +69,10 @@ export const FARM_ABI = [
   'function claimRewards() external',
   'function getStayPerSecond() external view returns (uint256)',
   'event RewardsClaimed(address indexed user, uint256 amount)',
+];
+
+export const ROUTER_ABI = [
+  'function getAmountsIn(uint256 amountOut, address[] memory path) external view returns (uint256[] memory amounts)',
 ];
 
 export const ERC20_ABI = [

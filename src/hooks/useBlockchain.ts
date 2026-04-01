@@ -13,6 +13,7 @@ import {
   ERC20_ABI,
   BUY_LP_ABI,
   FARM_ABI,
+  ROUTER_ABI,
 } from '@/lib/contractAbis';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -763,6 +764,130 @@ export function useBlockchain() {
     [ensureConnected],
   );
 
+  // ── PROPOSAL FUNCTIONS ──
+
+  // Read the live proposal fee from Voting contract (USDC amount)
+  // and convert to required STAY amount via PancakeSwap Router
+  const getProposalFee = useCallback(async (): Promise<{ feeUsdc: number; feeStay: number } | null> => {
+    try {
+      const ethers = await getEthers();
+      if (!ethers) return null;
+      const votingContract = await getContract(CONTRACTS.VOTING, VOTING_ABI);
+      if (!votingContract) return null;
+      const feeRaw = await votingContract.getProposalFees();
+      const feeUsdc = parseFloat(ethers.utils.formatUnits(feeRaw, 18));
+      if (feeUsdc <= 0) return { feeUsdc: 0, feeStay: 0 };
+      // Convert USDC fee to STAY amount via Router
+      const routerContract = await getContract(CONTRACTS.ROUTER, ROUTER_ABI);
+      if (!routerContract) return { feeUsdc, feeStay: 0 };
+      const path = [CONTRACTS.STAY, CONTRACTS.USDC];
+      const amounts = await routerContract.getAmountsIn(feeRaw, path);
+      const feeStay = parseFloat(ethers.utils.formatUnits(amounts[0], 18));
+      return { feeUsdc, feeStay };
+    } catch (err) {
+      console.error('[getProposalFee] Failed:', err);
+      return null;
+    }
+  }, []);
+
+  // Create proposal on-chain — mirrors legacy proposalModel.js exactly:
+  // 1. Read fee via getProposalFees()
+  // 2. Convert USDC fee to STAY via Router.getAmountsIn
+  // 3. Approve STAY spending to Voting contract
+  // 4. Check STAY balance
+  // 5. Encode description
+  // 6. callStatic.addProposal (dry-run)
+  // 7. addProposal (real tx)
+  // 8. Parse ProposalStatus event for blockchain proposal ID
+  const createProposal = useCallback(
+    async (blockchainPropertyId: number, description: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await ensureConnected();
+        const ethers = await getEthers();
+        if (!ethers || !address) throw new Error('Wallet not connected');
+
+        // 1. Read live proposal fee (USDC)
+        const votingRead = await getContract(CONTRACTS.VOTING, VOTING_ABI);
+        if (!votingRead) throw new Error('Could not read voting contract');
+        const feeRaw = await votingRead.getProposalFees();
+        const feeUsdc = parseFloat(ethers.utils.formatUnits(feeRaw, 18));
+
+        // 2. Convert to STAY via Router (legacy proposalModel.js line 44-49)
+        const routerContract = await getContract(CONTRACTS.ROUTER, ROUTER_ABI);
+        if (!routerContract) throw new Error('Could not read router contract');
+        const path = [CONTRACTS.STAY, CONTRACTS.USDC];
+        const amounts = await routerContract.getAmountsIn(feeRaw, path);
+        const stayAmountRequired = amounts[0]; // BigNumber in wei
+        const stayReadable = parseFloat(ethers.utils.formatUnits(stayAmountRequired, 18));
+
+        // 3. Approve STAY to Voting contract (legacy: checkForApproval('STAY', amount, voting))
+        const stayContract = await getContract(CONTRACTS.STAY, ERC20_ABI, true);
+        if (!stayContract) throw new Error('Could not connect to STAY token');
+        const currentAllowance = await stayContract.allowance(address, CONTRACTS.VOTING);
+        if (currentAllowance.lt(stayAmountRequired)) {
+          await stayContract.callStatic.approve(CONTRACTS.VOTING, stayAmountRequired);
+          const approveTx = await stayContract.approve(CONTRACTS.VOTING, stayAmountRequired);
+          await approveTx.wait();
+        }
+
+        // 4. Balance check (legacy: balanceChecker(address, amount, STAY))
+        const stayRead = await getContract(CONTRACTS.STAY, ERC20_ABI);
+        if (stayRead) {
+          const balance = await stayRead.balanceOf(address);
+          if (balance.lt(stayAmountRequired)) {
+            throw new Error(
+              `Insufficient STAY tokens. Need ~${stayReadable.toFixed(2)} STAY ($${feeUsdc} USDC equivalent). You have ${parseFloat(ethers.utils.formatUnits(balance, 18)).toFixed(2)} STAY.`
+            );
+          }
+        }
+
+        // 5. Encode description (legacy: encodeString)
+        const votingWrite = await getContract(CONTRACTS.VOTING, VOTING_ABI, true);
+        if (!votingWrite) throw new Error('Could not connect to voting contract');
+        const encodedDescription = await votingWrite.encodeString(description);
+
+        // 6. callStatic dry-run (legacy: contract.callStatic.addProposal)
+        await votingWrite.callStatic.addProposal(blockchainPropertyId, encodedDescription);
+
+        // 7. Real transaction (legacy: contract.addProposal)
+        const tx = await votingWrite.addProposal(blockchainPropertyId, encodedDescription);
+        const receipt = await tx.wait();
+
+        // 8. Parse ProposalStatus event for blockchain proposal ID
+        const votingInterface = new ethers.utils.Interface(VOTING_ABI);
+        let blockchainProposalId: number | null = null;
+        for (const log of receipt.logs) {
+          try {
+            const parsed = votingInterface.parseLog(log);
+            if (parsed.name === 'ProposalStatus') {
+              blockchainProposalId = parsed.args._proposalId.toNumber();
+              break;
+            }
+          } catch {
+            // Not a matching log, skip
+          }
+        }
+
+        setLoading(false);
+        queryClient.invalidateQueries();
+        return {
+          txHash: receipt.transactionHash,
+          blockchainProposalId,
+          success: true,
+        };
+      } catch (err: any) {
+        console.error('[createProposal] FAILED:', err);
+        const msg = err instanceof Error ? err.message : 'Proposal creation failed';
+        setError(msg);
+        setLoading(false);
+        throw err;
+      }
+    },
+    [address, ensureConnected, getSignerProvider],
+  );
+
   // Admin: Get wallet balances for Manager (BNB + STAY) and Treasury (USDC)
   const adminGetWalletBalances = useCallback(async () => {
     try {
@@ -882,6 +1007,10 @@ export function useBlockchain() {
     claimBoostRewards,
     buyStayTokens,
     buyLpTokens,
+    createProposal,
+
+    // Proposal reads
+    getProposalFee,
 
     // Admin
     adminAddRent,
