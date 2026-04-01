@@ -419,37 +419,35 @@ Used for:
 |-------------|---------|-------------|---------|
 | Edit notification | n8n | Hugo (admin) | Fires `/webhook/notify-admin-edit` |
 
-### Deals Grid Inquiry (tenant contacts landlord via WhatsApp or email)
+### Deals Grid Inquiry (admin-gated - tenant does NOT contact landlord directly)
 
 | What happens | Channel | Who receives | Message |
 |-------------|---------|-------------|---------|
-| Inquiry submitted | DB | System | Row created in `inquiries` table |
-| Tenant auto-reply | WhatsApp | Tenant | "Your inquiry has been received for [property] and we have notified the Landlord/Agent" |
-| Tenant confirmation | Email | Tenant | Same confirmation message |
-| Landlord first contact | WhatsApp (GHL workflow 67250bfa) | Landlord | Multi-step: "Is your property still available?" -> audio -> magic link |
-| Landlord ongoing | WhatsApp (GHL workflow 0eb4395c) | Landlord | Single message: "You have a new message about [property]" + magic link |
-| Landlord email | Email | Landlord | "You have a new inquiry about [property]" |
-| Admin alert | Email + In-App | Hugo + Chris | "New inquiry on [property] from [tenant]" |
+| Inquiry submitted | DB | System | Row created in `inquiries` (authorized=false) |
+| Tenant auto-reply | WhatsApp | Tenant | "Your inquiry has been received for [property]" |
+| Inquiry appears in admin dashboard | In-App | Admin | Visible in Outreach > Tenant Requests |
+
+**The landlord receives NOTHING at this point.** The inquiry waits for admin release.
 
 **How it flows:**
-1. Tenant clicks WhatsApp/Email on PropertyCard, DealDetail, or InquiryPanel
-2. Frontend calls `process-inquiry` edge function
-3. Edge function creates inquiry record, generates magic token, fires n8n webhooks
-4. n8n `inquiry-tenant-reply` sends WhatsApp auto-reply to tenant
-5. n8n `inquiry-lister-whatsapp` searches/creates GHL contact, sets custom fields, enrolls in correct GHL workflow (67250bfa for first time, 0eb4395c for ongoing)
-6. GHL sends WhatsApp to landlord using template with magic link button
-7. Landlord taps link -> auto-login -> CRM leads page
-8. New landlord sees "Claim your account" banner -> enters email + name -> all matching properties linked
+1. Tenant clicks WhatsApp on PropertyCard, DealDetail, or InquiryPanel
+2. wa.me opens with short message (deal link + 5-char reference, no UUID)
+3. Message goes to NFsTay WhatsApp via GHL
+4. GHL -> n8n -> `receive-tenant-whatsapp` edge function creates one inquiry
+5. n8n sends tenant auto-reply confirmation
+6. Inquiry appears in Admin > Outreach > Tenant Requests
+7. Admin chooses NDA, NDA + Claim, or Direct -> `ghl-enroll` contacts landlord
+8. Landlord taps magic link -> auto-login -> CRM leads page
+9. New landlord sees "Claim your account" banner -> enters email + name -> all matching properties linked
 
-### Inbox Messaging (operator uses web inbox to message landlord)
+### Inbox Messaging (post-claim, ongoing conversations)
+
+These fire only from ChatWindow.tsx for existing threads. Not part of the marketplace inquiry flow.
 
 | What happens | Channel | Who receives | Message |
 |-------------|---------|-------------|---------|
-| First contact enquiry | WhatsApp | Landlord | "Hey, is your [property] still available?" + magic link |
-| Follow-up message | WhatsApp | Landlord | "You have a new message about [property] on nfstay" |
-| Landlord replied | WhatsApp | Operator | "You have a new message about [property] on nfstay" |
-
-**How it flows:** See sections 1-6 above for full flow details.
+| Operator sends message in thread | WhatsApp | Landlord | "You have a new message about [property] on nfstay" |
+| Landlord replies in thread | WhatsApp | Operator | "You have a new message about [property] on nfstay" |
 
 ### Payment Confirmed (GHL)
 
@@ -619,7 +617,7 @@ USER ACTION
 | Deal submission/approval | Y | - | Y | **LIVE** |
 | Deal expiry | Y | - | Y | **LIVE** |
 | Inbox messaging | - | Y | - | **LIVE** |
-| Deals grid inquiry (tenant to landlord) | Y | Y | Y | **PARTIALLY BROKEN** (see gaps 3-6) |
+| Deals grid inquiry (admin-gated) | Y | Y | Y | **LIVE** (admin releases leads via Outreach) |
 | Payment/tier | Y | - | - | **LIVE** |
 | Affiliates | Y | - | - | **LIVE** |
 | New user registration admin alert | - | - | - | **NOT BUILT** (gap 7) |

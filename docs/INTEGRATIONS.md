@@ -90,52 +90,44 @@ Flow: GHL Order Submitted → n8n webhook → maps product_id to tier → PATCH 
   }
   ```
 
-### WhatsApp Messaging Workflows (Inbox → GHL)
+### Marketplace Lead Flow (admin-gated)
 
-Three GHL automation workflows handle WhatsApp notifications for inbox messaging. The n8n webhooks (`inbox-new-message` and `inbox-landlord-replied`) detect the scenario and enroll the GHL contact in the correct workflow.
+Tenant WhatsApp inquiries do NOT trigger automatic landlord notifications.
+The flow is:
 
-| Scenario | GHL Workflow ID | Template | When |
-|----------|----------------|----------|------|
-| **First contact** - operator messages landlord for the first time | `67250bfa-e1fc-4201-8bca-08c384a4a31d` | Landlord enquiry + magic link | No prior landlord messages in thread |
-| **Subsequent message** - operator messages landlord who has replied before | `0eb4395c-e493-43dc-be97-6c4455b5c7c4` | Follow-up message | Landlord has ≥1 message in thread |
-| **Landlord replies** - landlord sends message to operator | `9b826037-0562-4e10-9bd8-d9d488b719b6` | Landlord replied notification | Always (every landlord message) |
+1. Tenant sends WhatsApp → GHL → n8n → `receive-tenant-whatsapp` edge function → inquiry row created
+2. Inquiry appears in Admin > Outreach > Tenant Requests. **Landlord gets nothing yet.**
+3. Admin chooses NDA, NDA + Claim, or Direct → `ghl-enroll` edge function fires
+4. Only then is the landlord contacted via GHL workflow
 
-**How n8n routes to the correct workflow:**
+See `docs/N8N_WHATSAPP_WORKFLOW.md` for full workflow details.
 
-1. Frontend calls n8n webhook (`inbox-new-message` or `inbox-landlord-replied`)
-2. n8n searches GHL for the contact by `recipient_phone`
-3. For `inbox-new-message`: n8n queries Supabase `chat_messages` to check if the landlord has ever replied in this thread
-   - No replies → enrolls in workflow `67250bfa` (first contact)
-   - Has replies → enrolls in workflow `0eb4395c` (subsequent)
-4. For `inbox-landlord-replied`: always enrolls in workflow `9b826037`
+### GHL Workflow IDs
 
-**Critical: re-enrollment rule.**
-GHL will NOT re-trigger a workflow for a contact that's already enrolled. The n8n workflow must DELETE the contact from the workflow first, then POST to re-enroll:
+| Workflow | ID | Use |
+|----------|-----|-----|
+| Cold outreach (Landlord Activation) | `67250bfa-e1fc-4201-8bca-08c384a4a31d` | Admin sends first contact to landlord |
+| NDA/warm (Tenant lead release) | `0eb4395c-e493-43dc-be97-6c4455b5c7c4` | Admin releases tenant lead with NDA |
+| Landlord replied (inbox) | `9b826037-0562-4e10-9bd8-d9d488b719b6` | In-app messaging notification (post-claim only) |
 
-```
-# Step 1: Remove from workflow
-DELETE /contacts/{contactId}/workflow/{workflowId}
+**Re-enrollment rule:** GHL will not re-trigger a workflow for an already-enrolled contact. The `ghl-enroll` edge function handles this by removing the contact from the workflow, waiting 1.5s, then re-enrolling.
 
-# Step 2: Wait 2-3 seconds
-
-# Step 3: Re-enroll
-POST /contacts/{contactId}/workflow/{workflowId}
-```
-
-Without this remove-then-add pattern, repeat messages to the same landlord will silently fail to send WhatsApp.
-
-**GHL contact custom fields used:**
+### GHL Contact Custom Fields
 
 | Field ID | Field Name | Purpose |
 |----------|-----------|---------|
 | `Z0thvOTyoO2KxTMt5sP8` | property_reference | Property title shown in WhatsApp template |
 | `gWb4evAKLWCK0y8RHp32` | magic_link_url | Auto-login URL for landlord (`hub.nfstay.com/inbox?token=...`) |
+| `QIc7FR6U3OGNEhdk7LoY` | first_contact_sent | Tracks if landlord was contacted before |
 
-**Magic link flow:**
-1. n8n generates UUID token → inserts into `landlord_invites` table
-2. Sets `magic_link_url` on GHL contact: `https://hub.nfstay.com/inbox?token={uuid}`
-3. Enrolls in GHL workflow → GHL sends WhatsApp with `{{contact.magic_link_url}}`
-4. Landlord clicks → auto-login → opens chat thread
+### Inbox Messaging Webhooks (post-claim, ongoing)
+
+These fire from ChatWindow.tsx for existing conversation threads only. They are NOT part of the marketplace inquiry flow.
+
+| Webhook | n8n ID | Purpose |
+|---------|--------|---------|
+| `/webhook/inbox-new-message` | `J6hWjodwJlqXHme1` | Operator sends message → WhatsApp to landlord |
+| `/webhook/inbox-landlord-replied` | `BrwfLUE2LPj9jovR` | Landlord replies → WhatsApp to tenant |
 
 ### Post-Payment Detection (Frontend)
 InquiryPanel.tsx detects payment success via 3 methods:

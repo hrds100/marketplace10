@@ -1,6 +1,10 @@
 # SUPER PROMPT: Fix Inquiry Pipeline — Deals Grid WhatsApp + Email Flow
 
-> Paste this entire file into a fresh Claude Code session. It contains everything the AI needs to understand, plan, and fix the inquiry pipeline using TDD.
+> **DEPRECATED (2026-04-01):** This prompt describes the OLD automatic landlord notification flow.
+> The current flow is ADMIN-GATED: tenant inquiries stop in Outreach > Tenant Requests.
+> The landlord is NOT contacted until admin chooses NDA, NDA + Claim, or Direct.
+> See `docs/QUICK_LIST_FLOW.md` and `docs/N8N_WHATSAPP_WORKFLOW.md` for the current flow.
+> Do NOT use this prompt to build or restore the old auto-notification behavior.
 
 ---
 
