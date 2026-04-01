@@ -53,6 +53,28 @@ And I receive a confirmation email
 And admin sees the payout request
 ```
 
+### Scenario: Investor bank payout completes (PR #161)
+```
+Given I claimed rental income via Bank Transfer
+And the payout_claims status is "processing"
+When Revolut completes the payment (webhook or admin check-status)
+Then payout_claims status changes to "paid"
+And inv_payouts rows for my user change from "claimed" to "paid"
+And paid_at is set on both tables
+```
+**Status:** Code fix deployed. Manual live verification pending.
+
+### Scenario: Affiliate bank payout completes (PR #161)
+```
+Given I am an affiliate and claimed commissions via Bank Transfer
+And the payout_claims status is "processing"
+When Revolut completes the payment (webhook or admin check-status)
+Then payout_claims status changes to "paid"
+And aff_commissions rows for my affiliate profile change from "claimed" to "paid"
+And paid_at is set on both tables
+```
+**Status:** Code fix deployed. Manual live verification pending.
+
 ---
 
 ## Commissions

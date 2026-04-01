@@ -186,6 +186,7 @@ Never push directly to main. Hugo merges when ready.
 | 2026-03-18 | Added PAYOUT_FLOW.md - complete crypto + bank payout documentation | PAYOUT_FLOW.md |
 | 2026-03-18 | Added USER_JOURNEY.md - simple English overview of every flow | USER_JOURNEY.md |
 | 2026-03-18 | Updated document index to list all 14 docs + added legacy reference codebase section | AGENT_INVESTMENT_INSTRUCTIONS.md |
+| 2026-04-01 | PR #161: Fixed payout status cascade - revolut-check-status and revolut-webhook now propagate paid to inv_payouts (investor) and aff_commissions (affiliate). Manual live verification pending. | PAYOUT_FLOW.md, MODULE_AUDIT.md, ACCEPTANCE.md, CHANGELOG.md |
 
 ---
 
