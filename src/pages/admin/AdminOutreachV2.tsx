@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Rocket, Send, Check, X, Shield, ToggleLeft, ToggleRight, Inbox, MessageSquare, BarChart3, Phone, Home, FileCheck, UserCheck } from 'lucide-react';
+import { Rocket, Send, Check, X, Shield, ChevronDown, Clock, Inbox, MessageSquare, BarChart3, Phone, Home, FileCheck, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -149,6 +149,8 @@ interface LandlordGroup {
   email: string | null;
   claimed: boolean;
   outreachSent: boolean;
+  outreachSentAt: string | null;
+  hasClaimLeads: boolean;
   properties: (PropertyRow & { ndaCount: number; pendingCount: number; totalCount: number })[];
 }
 
@@ -167,15 +169,16 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
 
       const propIds = properties.map(p => p.id);
       const { data: inquiries } = await supabase.from('inquiries')
-        .select('property_id, nda_signed, always_authorised, authorized')
+        .select('property_id, nda_signed, always_authorised, authorized, authorisation_type')
         .in('property_id', propIds);
 
-      const inqMap = new Map<string, { ndaCount: number; pendingCount: number; totalCount: number }>();
+      const inqMap = new Map<string, { ndaCount: number; pendingCount: number; totalCount: number; hasClaimLeads: boolean }>();
       for (const inq of (inquiries || [])) {
-        const existing = inqMap.get(inq.property_id!) || { ndaCount: 0, pendingCount: 0, totalCount: 0 };
+        const existing = inqMap.get(inq.property_id!) || { ndaCount: 0, pendingCount: 0, totalCount: 0, hasClaimLeads: false };
         existing.totalCount++;
         if (inq.nda_signed) existing.ndaCount++;
         if (!inq.authorized) existing.pendingCount++;
+        if ((inq as any).authorisation_type === 'nda_and_claim') existing.hasClaimLeads = true;
         inqMap.set(inq.property_id!, existing);
       }
 
@@ -203,17 +206,26 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
             email: profile?.email || null,
             claimed: profileMap.has(phone),
             outreachSent: false,
+            outreachSentAt: null,
+            hasClaimLeads: false,
             properties: [],
           });
         }
         const group = groupMap.get(phone)!;
+        const propInq = inqMap.get(prop.id);
         group.properties.push({
           ...prop,
-          ndaCount: inqMap.get(prop.id)?.ndaCount || 0,
-          pendingCount: inqMap.get(prop.id)?.pendingCount || 0,
-          totalCount: inqMap.get(prop.id)?.totalCount || 0,
+          ndaCount: propInq?.ndaCount || 0,
+          pendingCount: propInq?.pendingCount || 0,
+          totalCount: propInq?.totalCount || 0,
         });
-        if (prop.outreach_sent) group.outreachSent = true;
+        if (prop.outreach_sent) {
+          group.outreachSent = true;
+          if (prop.outreach_sent_at && (!group.outreachSentAt || prop.outreach_sent_at > group.outreachSentAt)) {
+            group.outreachSentAt = prop.outreach_sent_at;
+          }
+        }
+        if (propInq?.hasClaimLeads) group.hasClaimLeads = true;
       }
 
       return Array.from(groupMap.values()).sort((a, b) => b.properties.length - a.properties.length);
@@ -298,8 +310,15 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                       : <><X className="w-3 h-3" style={{ color: '#9CA3AF' }} /><span style={{ color: '#9CA3AF' }}>Unclaimed</span></>}
                   </span>
                   {group.outreachSent && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
-                      Outreach sent
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
+                      <Check className="w-3 h-3" />
+                      Sent{group.outreachSentAt ? ` ${new Date(group.outreachSentAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${new Date(group.outreachSentAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                    </span>
+                  )}
+                  {group.hasClaimLeads && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+                      <Shield className="w-3 h-3" />
+                      Claim required
                     </span>
                   )}
                   {totalLeads > 0 && (
@@ -373,6 +392,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
 
 function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const { data: allInquiries = [], isLoading } = useQuery({
     queryKey: ['outreach-pending'],
@@ -462,18 +482,21 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     }
   };
 
-  const toggleAlwaysAuthorised = async (listerPhone: string, currentValue: boolean) => {
+  const setAlwaysAuthoriseMode = async (listerPhone: string, mode: 'off' | 'direct' | 'nda' | 'nda_and_claim') => {
     const key = `always-${listerPhone}`;
     addLoading(key);
     try {
-      const newValue = !currentValue;
+      const isOff = mode === 'off';
+      const update: Record<string, unknown> = { always_authorised: !isOff };
+      if (!isOff) update.authorisation_type = mode;
       const { error } = await supabase.from('inquiries')
-        .update({ always_authorised: newValue })
+        .update(update)
         .eq('lister_phone', listerPhone);
       if (error) throw error;
 
-      if (user) logAdminAction(user.id, { action: newValue ? 'always_authorised_on' : 'always_authorised_off', target_table: 'inquiries', target_id: listerPhone });
-      toast.success(newValue ? 'Always Authorise enabled for this contact' : 'Always Authorise disabled');
+      const label = isOff ? 'Off' : mode === 'nda' ? 'NDA' : mode === 'nda_and_claim' ? 'NDA + Claim' : 'Direct';
+      if (user) logAdminAction(user.id, { action: `always_authorise_${mode}`, target_table: 'inquiries', target_id: listerPhone });
+      toast.success(`Always Authorise set to ${label} for this contact`);
       queryClient.invalidateQueries({ queryKey: ['outreach-pending'] });
     } catch {
       toast.error('Failed to update always authorise');
@@ -589,20 +612,46 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                {group.phone && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleAlwaysAuthorised(group.phone, alwaysAuthorised); }}
-                    disabled={loadingActions.has(`always-${group.phone}`)}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-                    style={{ color: alwaysAuthorised ? '#1E9A80' : '#9CA3AF', backgroundColor: '#F9FAFB' }}
-                  >
-                    {alwaysAuthorised
-                      ? <ToggleRight className="w-4 h-4" style={{ color: '#1E9A80' }} />
-                      : <ToggleLeft className="w-4 h-4" style={{ color: '#9CA3AF' }} />}
-                    Always Authorise
-                    {alwaysAuthorised && <Shield className="w-3 h-3" style={{ color: '#1E9A80' }} />}
-                  </button>
-                )}
+                {group.phone && (() => {
+                  const currentMode = alwaysAuthorised
+                    ? (group.inquiries.find(i => i.always_authorised)?.authorisation_type || 'direct')
+                    : 'off';
+                  const modeLabel = currentMode === 'off' ? 'Off' : currentMode === 'nda' ? 'NDA' : currentMode === 'nda_and_claim' ? 'NDA + Claim' : 'Direct';
+                  const isDropOpen = openDropdown === group.key;
+                  return (
+                    <div className="relative">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setOpenDropdown(isDropOpen ? null : group.key); }}
+                        disabled={loadingActions.has(`always-${group.phone}`)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+                        style={{ color: alwaysAuthorised ? '#1E9A80' : '#9CA3AF', backgroundColor: '#F9FAFB' }}
+                      >
+                        {alwaysAuthorised && <Shield className="w-3 h-3" style={{ color: '#1E9A80' }} />}
+                        Auto: {modeLabel}
+                        <ChevronDown className={`w-3 h-3 transition-transform ${isDropOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {isDropOpen && (
+                        <div
+                          className="absolute right-0 top-full mt-1 z-50 rounded-lg border shadow-lg py-1 min-w-[140px]"
+                          style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {([['off', 'Off'], ['direct', 'Direct'], ['nda', 'NDA'], ['nda_and_claim', 'NDA + Claim']] as const).map(([value, label]) => (
+                            <button
+                              key={value}
+                              onClick={() => { setAlwaysAuthoriseMode(group.phone, value); setOpenDropdown(null); }}
+                              className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-gray-50 transition-colors flex items-center justify-between"
+                              style={{ color: currentMode === value ? '#1E9A80' : '#1A1A1A' }}
+                            >
+                              {label}
+                              {currentMode === value && <Check className="w-3 h-3" style={{ color: '#1E9A80' }} />}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 <span className="text-xs" style={{ color: '#9CA3AF' }}>{isOpen ? '▼' : '▶'}</span>
               </div>
             </div>
@@ -618,8 +667,10 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
                           <span className="text-xs" style={{ color: '#6B7280' }}>{inq.propertyName}</span>
                         </div>
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
-                          <span className="text-xs" style={{ color: '#9CA3AF' }}>
-                            {new Date(inq.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          <span className="inline-flex items-center gap-1 text-xs" style={{ color: '#9CA3AF' }}>
+                            <Clock className="w-3 h-3" />
+                            {new Date(inq.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}{' '}
+                            {new Date(inq.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           {inq.lister_type && (
                             <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>

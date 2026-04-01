@@ -15,6 +15,18 @@
 - Poll workflow `ReoIHnniLpB632Ir` is backup inquiry creator only (no reply).
 - Verified with tagged test: one reply, one inquiry, no landlord contact.
 
+## [2026-04-01h] - Outreach V3: Timestamps, Auto-Authorise Modes, Landlord Badges
+
+### Enhanced - Tenant Requests
+- Inquiry cards now show date + time (clock icon) instead of date only.
+- Always Authorise replaced with 4-mode dropdown: Off / Direct / NDA / NDA + Claim.
+- Mode persists per landlord phone across all their inquiries.
+
+### Enhanced - Landlord Activation
+- Outreach sent badge now shows the sent date and time.
+- New "Claim required" badge appears when landlord has nda_and_claim leads.
+- Leads (N) badge already present from PR #163; no change needed.
+
 ## [2026-04-01g] - Marketplace Crash Fix: bcPropertyId ReferenceError (PR #168)
 
 ### Fixed
