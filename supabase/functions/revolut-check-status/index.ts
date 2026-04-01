@@ -25,7 +25,7 @@ serve(async (req) => {
     // Get processing claims (with draft IDs)
     let query = supabase
       .from('payout_claims')
-      .select('id, user_id, revolut_payment_draft_id, status')
+      .select('id, user_id, user_type, revolut_payment_draft_id, status')
       .eq('status', 'processing')
       .not('revolut_payment_draft_id', 'is', null)
 
@@ -74,12 +74,28 @@ serve(async (req) => {
             .update({ status: 'paid', paid_at: new Date().toISOString() })
             .eq('id', claim.id)
 
-          // Also update inv_payouts for this user so user sees "paid" not "claimed"
-          await supabase
-            .from('inv_payouts')
-            .update({ status: 'paid', paid_at: new Date().toISOString(), claim_method: 'bank_transfer' })
-            .eq('user_id', claim.user_id)
-            .eq('status', 'claimed')
+          // Cascade to source rows based on user_type
+          if (claim.user_type === 'affiliate') {
+            const { data: affProfile } = await supabase
+              .from('aff_profiles')
+              .select('id')
+              .eq('user_id', claim.user_id)
+              .maybeSingle()
+            if (affProfile) {
+              await supabase
+                .from('aff_commissions')
+                .update({ status: 'paid', paid_at: new Date().toISOString(), claim_method: 'bank_transfer' })
+                .eq('affiliate_id', affProfile.id)
+                .eq('status', 'claimed')
+            }
+          } else {
+            // investor (default) — update inv_payouts so user sees "paid" not "claimed"
+            await supabase
+              .from('inv_payouts')
+              .update({ status: 'paid', paid_at: new Date().toISOString(), claim_method: 'bank_transfer' })
+              .eq('user_id', claim.user_id)
+              .eq('status', 'claimed')
+          }
 
           await supabase.from('payout_audit_log').insert({
             claim_id: claim.id,
