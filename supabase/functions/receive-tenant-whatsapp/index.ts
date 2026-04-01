@@ -75,7 +75,29 @@ serve(async (req) => {
       })
     }
 
-    // 2. Check if always_authorised for this lister phone
+    // 2. Idempotency: if the same tenant_phone + property_id was created within 5 minutes, return existing
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const { data: recentDup } = await supabase
+      .from('inquiries')
+      .select('id')
+      .eq('tenant_phone', tenant_phone)
+      .eq('property_id', property.id)
+      .gte('created_at', fiveMinAgo)
+      .limit(1)
+
+    if (recentDup && recentDup.length > 0) {
+      return new Response(JSON.stringify({
+        success: true,
+        inquiry_id: recentDup[0].id,
+        property_name: property.name,
+        auto_authorised: false,
+        deduplicated: true,
+      }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // 3. Check if always_authorised for this lister phone
     const listerPhone = property.landlord_whatsapp || property.contact_phone || null
     let autoAuth = false
     let autoAuthType: string | null = null
@@ -93,7 +115,7 @@ serve(async (req) => {
       }
     }
 
-    // 3. Insert inquiry -- authorized = false unless auto-authorised
+    // 4. Insert inquiry -- authorized = false unless auto-authorised
     const token = crypto.randomUUID()
     const { data: inquiry, error: insertErr } = await supabase
       .from('inquiries')

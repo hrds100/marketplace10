@@ -28,3 +28,28 @@ CREATE INDEX IF NOT EXISTS idx_properties_slug ON properties(slug);
 -- ═══════════════════════════════════════════════════════════════
 
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS stage TEXT DEFAULT 'New Leads';
+
+-- ═══════════════════════════════════════════════════════════════
+-- PROPERTIES.STATUS: was property_status enum (live|on-offer|inactive),
+-- converted to TEXT via dashboard to support 'pending' for quick-list.
+-- The enum type no longer exists. This documents the schema as-is.
+-- ═══════════════════════════════════════════════════════════════
+
+-- Drop enum type if it still exists (idempotent)
+DO $$
+BEGIN
+  -- Convert column from enum to text if needed (already done in live DB)
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'properties' AND column_name = 'status' AND udt_name = 'property_status'
+  ) THEN
+    ALTER TABLE properties ALTER COLUMN status TYPE TEXT USING status::TEXT;
+    ALTER TABLE properties ALTER COLUMN status SET DEFAULT 'live';
+    ALTER TABLE properties ALTER COLUMN status DROP NOT NULL;
+  END IF;
+
+  -- Drop the old enum type if it exists
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'property_status') THEN
+    DROP TYPE property_status;
+  END IF;
+END $$;
