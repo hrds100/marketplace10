@@ -26,7 +26,7 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "Bearer pit-28d63a20-4d9f-46bc-aaa3-26556d8b518f" },
+            { "name": "Authorization", "value": "Bearer REDACTED_GHL_PIT_TOKEN" },
             { "name": "Version", "value": "2021-07-28" }
           ]
         },

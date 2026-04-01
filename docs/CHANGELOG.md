@@ -15,9 +15,15 @@
 
 ### Fixed - Docs
 - **QUICK_LIST_FLOW.md**: rewrote Parts 3-7 to match admin-gated flow, removed old automatic landlord contact sequences.
-- **COMMUNICATIONS.md**: rewrote sections 2-4 to match admin gate, removed UUID from message format.
+- **COMMUNICATIONS.md**: rewrote sections 2-4 to match admin gate, removed UUID from message format, fixed "PARTIALLY BROKEN" status.
 - **ACCEPTANCE.md**: added Given/When/Then for short-reference WhatsApp, admin gate, landlord grouping, and claiming.
 - **DATABASE.md**: inquiries table fully documented (was missing from docs).
+- **N8N_WHATSAPP_WORKFLOW.md**: complete rewrite separating marketplace inquiry (admin-gated) from inbox messaging (post-claim).
+- **INTEGRATIONS.md**: replaced old auto-notification section with admin-gated lead flow.
+- **n8n/README.md**: removed old landlord-auto-notification language, removed plaintext GHL API key.
+- **EMAIL_NOTIFICATIONS.md**: clarified inbox WhatsApp webhooks are post-claim only.
+- **STACK.md**: added inbound WhatsApp webhook, clarified inbox webhooks are post-claim.
+- **Redacted plaintext GHL API keys** from 8 files across repo (docs, workflows, agent configs).
 
 ### Fixed - Infrastructure
 - **CI deploy auth**: updated expired SUPABASE_ACCESS_TOKEN, added 3 new edge functions to deploy list.

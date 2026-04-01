@@ -165,7 +165,7 @@ Missing: None - this is a reference/status page
 
 3. **AdminInvestPayouts.tsx - Incorrect useState usage** (line 78): `useState(() => { ... })` with an async side effect is not the correct pattern. The profile fetch for the credit dropdown may not execute. Should be `useEffect`.
 
-4. **notifications.ts - Hardcoded GHL bearer token** (line 29): `pit-28d63a20-4d9f-46bc-aaa3-26556d8b518f` is hardcoded instead of using an env var.
+4. **notifications.ts - Hardcoded GHL bearer token** (line 29): `REDACTED_GHL_PIT_TOKEN` is hardcoded instead of using an env var.
 
 ## Medium Issues
 

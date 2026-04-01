@@ -130,7 +130,7 @@ admitting I need Hugo's eyes on it. Only ask Hugo as absolute last resort.
 
 Known environments I can access directly:
 - n8n: https://n8n.srv886554.hstgr.cloud (API key in memory)
-- GHL: https://services.leadconnectorhq.com (token: pit-ad222803-150e-48db-b907-4508ac46f2e5, location: eFBsWXY3BmWDGIRez13x)
+- GHL: https://services.leadconnectorhq.com (token: REDACTED_GHL_PIT_TOKEN, location: eFBsWXY3BmWDGIRez13x)
 - Supabase: project asazddtvjvmckouxcmmo (credentials in memory)
 - Vercel: team hugos-projects-f8cc36a8 (token in memory)
 - GitHub: hrds100/marketplace10 (token in memory)

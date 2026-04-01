@@ -196,7 +196,7 @@ process-inquiry/polling POSTs to /webhook/inquiry-lister-whatsapp with:
 | Supabase service role | In memory: supabase_credentials.md |
 | n8n API key | In memory: n8n_credentials.md |
 | n8n base URL | https://n8n.srv886554.hstgr.cloud |
-| GHL PIT token | pit-ad222803-150e-48db-b907-4508ac46f2e5 |
+| GHL PIT token | REDACTED_GHL_PIT_TOKEN |
 | GHL location ID | eFBsWXY3BmWDGIRez13x |
 | Resend API key | In memory: reference_resend.md |
 | Test user (paid) | hugords100+15@gmail.com / TestNfstay2026! |

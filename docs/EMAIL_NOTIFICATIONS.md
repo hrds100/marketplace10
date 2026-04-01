@@ -51,13 +51,25 @@
 
 ---
 
-## 3. WHATSAPP NOTIFICATIONS (via n8n → GHL)
+## 3. WHATSAPP NOTIFICATIONS (via n8n -> GHL)
+
+### Marketplace inquiry (admin-gated)
+Tenant WhatsApp inquiries create an inquiry row and stop in Admin > Outreach > Tenant Requests.
+The landlord is NOT notified automatically. Admin releases the lead via NDA, NDA + Claim, or Direct.
+See `docs/QUICK_LIST_FLOW.md` for the full flow.
+
+### Inbox messaging (post-claim, existing threads only)
+These fire from ChatWindow.tsx for conversations that already exist. Not part of the marketplace lead flow.
 
 | Webhook | When triggered | Recipient | Called from | Status |
 |---------|---------------|-----------|-------------|--------|
-| `inbox-new-message` | Operator sends chat message | Landlord (WhatsApp) | `ChatWindow.tsx` | **Working** |
-| `inbox-landlord-replied` | Landlord sends chat message | Operator (WhatsApp) | `ChatWindow.tsx` | **Working** |
+| `inbox-new-message` | Operator sends message in existing thread | Landlord (WhatsApp) | `ChatWindow.tsx` | **Working** |
+| `inbox-landlord-replied` | Landlord replies in existing thread | Operator (WhatsApp) | `ChatWindow.tsx` | **Working** |
 | `inbox-tenant-message` | Tenant sends message | Operator (WhatsApp) | **NEVER CALLED** | Dead code |
+
+### Other WhatsApp
+| Webhook | When triggered | Recipient | Called from | Status |
+|---------|---------------|-----------|-------------|--------|
 | `send-otp` | User signs up | User (SMS/WhatsApp) | `SignUp.tsx` | **Working** |
 | `signup-welcome` | User registers | User (WhatsApp) | **NEVER CALLED** | Dead code |
 
