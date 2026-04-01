@@ -16,6 +16,7 @@
 - Properties / deals
 - CRM data
 - Admin audit log
+- **Investment tables (inv_properties, inv_orders, inv_shareholdings, inv_payouts, inv_proposals, aff_commission_settings)** — do **not** wipe these for inbox testing. If they are wiped, you must immediately reseed using `supabase/migrations/20260401_reseed_pembroke_place.sql` or the investment UI will be blank and purchases will fail.
 
 ---
 

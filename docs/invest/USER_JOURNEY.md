@@ -75,7 +75,7 @@
 
    ↓
 📧 Email sent: "Your investment is confirmed! You own 5 shares."
-📱 WhatsApp sent: "Welcome to the Seseh Villa partnership! 🎉"
+📱 WhatsApp sent: "Welcome to the Pembroke Place partnership! 🎉"
 🔔 In-app notification appears
 
    ↓
@@ -130,7 +130,7 @@
    ↓
 ✅ Payout appears on your Payouts page as "Claimable"
    ↓
-📧 Email: "You have $42.50 ready to claim from Seseh Villa!"
+📧 Email: "You have $42.50 ready to claim from Pembroke Place!"
 📱 WhatsApp: "Your rental income is ready! 💰"
 ```
 
@@ -187,7 +187,7 @@
 📋 Someone proposes: "Let's renovate the pool to increase nightly rates"
    ↓
 📧 All shareholders get email notification
-📱 WhatsApp: "New proposal for Seseh Villa - tap to vote"
+📱 WhatsApp: "New proposal for Pembroke Place - tap to vote"
    ↓
 🗳️ User opens Proposals page → sees the active proposal
    ↓
