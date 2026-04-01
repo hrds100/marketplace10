@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [2026-04-01d] - Outreach Grouping + Release Mode Consistency
+## [2026-04-01d] - Outreach Grouping + Release Mode + WhatsApp Inquiry Fix (PR #163)
 
 ### Fixed - Tenant Requests grouping
 - `AdminOutreachV2` Tenant Requests now groups by landlord phone/identity (expandable), matching Landlord Activation behavior.
@@ -14,6 +14,12 @@
   - `nda_and_claim` -> NDA + mandatory account claim before lead details unlock.
   - `direct` -> no NDA/claim gate.
 - Global claim banner is now shown only when the landlord has at least one authorized `nda_and_claim` lead.
+
+### Fixed - Inbound WhatsApp pipeline
+- ROOT CAUSE: GHL inbox-new-inquiry sends empty message bodies to n8n.
+- Fix: n8n poll workflow ReoIHnniLpB632Ir checks GHL every 2 min, creates inquiry rows, sends correct auto-reply.
+- Admin UPDATE RLS policy on inquiries table.
+- Playwright e2e test (secrets via env vars).
 
 ### Updated docs
 - `docs/COMMUNICATIONS.md` updated with grouped Tenant Requests and explicit release-mode unlock rules.
