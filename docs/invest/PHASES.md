@@ -12,7 +12,7 @@
 - [ ] Wire Marketplace page to Supabase (replace mockProperties)
 - [ ] Wire Portfolio page to real inv_shareholdings (read-only)
 - [ ] Admin: Investment Properties CRUD page
-- [ ] Create feature/invest-wiring branch
+- [ ] Create a feature branch for this investment task
 
 **Acceptance:** Properties load from Supabase. Admin can add/edit. Portfolio shows real holdings (empty for now).
 

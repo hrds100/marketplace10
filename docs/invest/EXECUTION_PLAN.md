@@ -7,7 +7,7 @@
 ## Pre-Requisites
 
 Before Phase 1:
-1. Create branch: `feature/invest-wiring`
+1. Create a feature branch for the task (for example `feat/invest-wallet-claim` or `fix/invest-payout-status`)
 2. All 12 docs in `docs/invest/` committed
 3. Hugo confirms database schema (docs/invest/DATABASE.md)
 4. Hugo confirms commission rates (40% sub, 5% first, 2% recurring)

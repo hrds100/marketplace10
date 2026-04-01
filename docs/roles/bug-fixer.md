@@ -12,7 +12,7 @@ You are diagnosing and fixing bugs in hub.nfstay.com.
 
 ## Rules
 1. Never guess-and-fix. Find the root cause first.
-2. Read `docs/runbooks/DIAGNOSE_BEFORE_FIX.md` before starting
+2. Read `docs/runbooks/FIX_SOMETHING_WENT_WRONG.md` before starting
 3. Never change more code than necessary to fix the bug
 4. Never "improve" or refactor surrounding code while fixing
 5. Always include ROOT CAUSE in your report

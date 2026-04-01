@@ -14,7 +14,7 @@ Every contract call, every subgraph query, every wallet interaction comes from l
 
 ## Hard Rules (learned from 2026-03-20 incident)
 
-1. **All work on `feature/invest-wiring` branch** - never push to main
+1. **All work happens on an investment feature branch** - never push to main
 2. **Vercel preview URL for every push** - verify before merge
 3. **One phase at a time** - test each before starting next
 4. **Do not touch `vite.config.ts`** - `@particle-network/authkit@2.1.1` ships React 19 internally; bundler config changes expose the conflict and crash the app
@@ -180,7 +180,7 @@ For each phase:
   1. Audit legacy implementation (read, don't copy)
   2. Write adapted code for our stack (TypeScript, Supabase, shadcn/ui)
   3. Build locally - must pass
-  4. Push to feature/invest-wiring
+  4. Push to your active investment feature branch
   5. Get Vercel preview URL
   6. Test on preview URL
   7. Hugo confirms
