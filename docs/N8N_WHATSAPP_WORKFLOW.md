@@ -64,6 +64,36 @@ These workflows handle in-app messaging notifications AFTER a landlord has claim
 
 These are NOT part of the marketplace inquiry flow. They fire only from ChatWindow.tsx for existing threads.
 
+## WORKFLOW: Poll GHL for Inbound Inquiries (admin-gated)
+
+**n8n workflow ID:** `ReoIHnniLpB632Ir`
+**Schedule:** Every 2 minutes
+**Created:** 2026-04-01
+
+### Why this exists
+The GHL trigger workflow (`11117c1a` "inbox-new-inquiry") is published but does NOT
+forward inbound WhatsApp message bodies to n8n. The GHL API does not support editing
+workflow internals, so this polling workflow bypasses the broken trigger entirely.
+
+### What it does:
+1. Polls GHL conversations API every 2 minutes
+2. Filters for inbound WhatsApp messages from the last 3 minutes containing "nfstay"
+3. Calls `receive-tenant-whatsapp` edge function for each match
+4. Edge function handles dedup (5-min window) and creates inquiry row
+
+### What it does NOT do:
+- Does NOT notify the landlord
+- Does NOT send any auto-reply (GHL sends its own - see "Remaining GHL issue" below)
+- Does NOT enroll anyone in GHL workflows
+
+## Remaining GHL issue (needs manual fix)
+
+GHL workflow `11117c1a` ("inbox-new-inquiry") auto-replies with the OLD text:
+"We've passed your enquiry to the Landlord or Agent, they'll reach out to you shortly."
+This text is misleading because the landlord is NOT contacted until admin release.
+Fix in GHL dashboard: Automation > Workflows > inbox-new-inquiry > edit the reply step
+to say: "Thanks for contacting NFsTay! Your inquiry has been received and is being reviewed."
+
 ## Deactivated workflows (2026-04-01)
 
 These old workflows bypassed the admin gate and auto-contacted the landlord.
@@ -74,13 +104,16 @@ They were deactivated on 2026-04-01. Do NOT reactivate them.
 | `ydrMC0qsOeaFxbsL` | Poll Inbound WhatsApp Inquiries | Polled GHL every 30s, created duplicate inquiries via REST API, auto-sent landlord WhatsApp, auto-sent old tenant reply ("We've passed your enquiry to the Landlord") |
 | `pZ6EOZ1fkj1WcDXs` | Inquiry Lister WhatsApp v5 | Auto-enrolled landlord in GHL workflow on every inquiry. Called by the poll workflow above. |
 
-## Remaining issue: Tenant Inquiry Auto-Reply text
+## Tenant Inquiry Auto-Reply text (verified 2026-04-01)
 
-Workflow `YMjVISVnUb7AxqXU` (webhook: `/inquiry-tenant-reply`) still says
-"we have notified the Landlord/Agent" in its auto-reply. This workflow only fires
-for email inquiries via `process-inquiry` (not for WhatsApp). The text should be
-updated to "Your inquiry is being reviewed" in the n8n dashboard (the n8n API PUT
-did not take effect - manual edit needed).
+Workflow `YMjVISVnUb7AxqXU` (webhook: `/inquiry-tenant-reply`) sends:
+"Your inquiry has been received and is being reviewed by the NFsTay team.
+The [Landlord/Agent] will be in touch once the review is complete."
+This text is correct for the admin-gated flow. This workflow only fires
+for email inquiries via `process-inquiry` (not for WhatsApp).
+
+The main inbound WhatsApp workflow (`IvXzbcqzv5bKtu01`) has its own auto-reply:
+"Your inquiry has been received and is being reviewed. We will get back to you shortly."
 
 ## GHL Custom Fields
 | Field | ID | Key |

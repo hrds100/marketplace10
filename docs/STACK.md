@@ -64,6 +64,7 @@ _Last updated: 2026-03-24_
 | POST /webhook/inbox-landlord-replied | Landlord replies in thread → WhatsApp to operator (post-claim only) | ChatWindow.tsx handleSend | `BrwfLUE2LPj9jovR` |
 | POST /webhook/inbox-tenant-message | Tenant sends message in thread | ChatWindow.tsx handleSend | `UBuNLDn0mO0md39Y` |
 | POST /webhook/inbox-new-inquiry | Inbound tenant WhatsApp → n8n → receive-tenant-whatsapp edge function | GHL inbound | `IvXzbcqzv5bKtu01` |
+| (schedule: every 2min) | Poll GHL for inbound WhatsApp inquiries → receive-tenant-whatsapp | GHL conversations API | `ReoIHnniLpB632Ir` |
 | POST /webhook/inquiry-tenant-reply | Tenant auto-reply confirmation | n8n (after inquiry created) | - |
 | POST /webhook/signup-welcome | New user registered | Auth flow | `bI0vzTqncMjCs5jO` |
 | POST /webhook/estimate-profit | AI profit estimation | ListADealPage.tsx | `3EDIQKRea9nGzxve` |
