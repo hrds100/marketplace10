@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Rocket, Send, Check, X, Shield, ChevronDown, Clock, Inbox, MessageSquare, BarChart3, Phone, Home, FileCheck, UserCheck } from 'lucide-react';
+import { Rocket, Send, Check, X, Shield, ChevronDown, Clock, Inbox, MessageSquare, BarChart3, Phone, Home, FileCheck, UserCheck, AlertTriangle, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,9 +87,36 @@ export default function AdminOutreachV2() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabKey>('listings');
   const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetPin, setResetPin] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   const addLoading = (key: string) => setLoadingActions(prev => new Set(prev).add(key));
   const removeLoading = (key: string) => setLoadingActions(prev => { const n = new Set(prev); n.delete(key); return n; });
+
+  const handleReset = async () => {
+    if (resetPin !== '1234') { toast.error('Wrong PIN'); return; }
+    setResetting(true);
+    try {
+      // Delete all inquiries
+      const { error: delErr } = await (supabase.from('inquiries') as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (delErr) throw delErr;
+      // Reset outreach_sent on all properties
+      const { error: patchErr } = await supabase.from('properties').update({ outreach_sent: false, outreach_sent_at: null } as any).eq('outreach_sent', true);
+      if (patchErr) throw patchErr;
+      if (user) logAdminAction(user.id, { action: 'outreach_reset', target_table: 'inquiries', target_id: 'all', metadata: { scope: 'full_reset' } });
+      queryClient.invalidateQueries({ queryKey: ['outreach-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-pending'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-metrics'] });
+      toast.success('All outreach data cleared');
+      setShowResetDialog(false);
+      setResetPin('');
+    } catch (err) {
+      toast.error('Reset failed: ' + String(err));
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const tabs: { key: TabKey; label: string; icon: typeof Rocket }[] = [
     { key: 'listings', label: 'Landlord Activation', icon: Send },
@@ -99,13 +126,62 @@ export default function AdminOutreachV2() {
 
   return (
     <div data-feature="ADMIN">
-      <div className="flex items-center gap-3 mb-1">
-        <Rocket className="w-6 h-6" style={{ color: '#1E9A80' }} />
-        <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Outreach</h1>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-3">
+          <Rocket className="w-6 h-6" style={{ color: '#1E9A80' }} />
+          <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Outreach</h1>
+        </div>
+        <button
+          onClick={() => setShowResetDialog(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Reset Test Data
+        </button>
       </div>
       <p className="text-sm mb-6" style={{ color: '#6B7280' }}>
         Activate landlords, control tenant lead release, and track lister engagement.
       </p>
+
+      {/* Reset confirmation dialog */}
+      {showResetDialog && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => { setShowResetDialog(false); setResetPin(''); }}>
+          <div className="bg-white rounded-2xl border p-6 w-full max-w-[400px]" style={{ borderColor: '#E5E7EB' }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold" style={{ color: '#1A1A1A' }}>Reset All Outreach Data</h3>
+                <p className="text-xs text-red-600 font-semibold">Deletes all inquiries + resets outreach flags</p>
+              </div>
+            </div>
+            <p className="text-sm mb-4" style={{ color: '#6B7280' }}>
+              This will delete all tenant requests, reset all "outreach sent" flags on properties, and clear metrics. This cannot be undone.
+            </p>
+            <div className="mb-4">
+              <label className="text-xs font-semibold block mb-1.5" style={{ color: '#1A1A1A' }}>Enter PIN to confirm</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={resetPin}
+                onChange={e => setResetPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="----"
+                className="w-full h-11 px-3 rounded-lg border bg-white text-center text-lg font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-red-500"
+                style={{ borderColor: '#E5E7EB' }}
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setShowResetDialog(false); setResetPin(''); }} className="flex-1 h-11 rounded-lg border text-sm font-medium hover:bg-gray-50 transition-colors" style={{ borderColor: '#E5E7EB', color: '#1A1A1A' }}>Cancel</button>
+              <button onClick={handleReset} disabled={resetting || resetPin.length !== 4} className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">
+                {resetting ? 'Clearing...' : 'Reset Everything'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab bar */}
       <div className="flex gap-1 p-1 rounded-xl mb-6" style={{ backgroundColor: '#F3F3EE' }}>
