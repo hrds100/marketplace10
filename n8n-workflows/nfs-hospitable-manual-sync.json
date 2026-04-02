@@ -53,12 +53,13 @@
     },
     {
       "parameters": {
-        "url": "=https://api.connect.hospitable.com/v1/customers/{{ $('Parse Manual Sync Payload').first().json.hospitableCustomerId }}/listings?per_page=100",
+        "url": "=https://connect.hospitable.com/api/v1/customers/{{ $('Parse Manual Sync Payload').first().json.hospitableCustomerId }}/listings?per_page=100",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             { "name": "Authorization", "value": "=Bearer {{ $env.NFS_HOSPITABLE_BEARER_TOKEN }}" },
-            { "name": "Accept", "value": "application/json" }
+            { "name": "Accept", "value": "application/json" },
+            { "name": "Connect-Version", "value": "2024-01-01" }
           ]
         }
       },
