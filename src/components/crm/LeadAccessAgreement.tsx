@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Shield, X } from 'lucide-react';
+import { Shield, X, User, Mail } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const STEPS = [
   {
@@ -39,28 +41,65 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onAgree: () => void;
+  requiresClaim?: boolean;
+  onClaimComplete?: () => void;
 }
 
-export default function LeadAccessAgreement({ open, onClose, onAgree }: Props) {
+export default function LeadAccessAgreement({ open, onClose, onAgree, requiresClaim, onClaimComplete }: Props) {
   const [step, setStep] = useState(0);
+  const [showClaimForm, setShowClaimForm] = useState(false);
+  const [claimName, setClaimName] = useState('');
+  const [claimEmail, setClaimEmail] = useState('');
+  const [claiming, setClaiming] = useState(false);
 
   if (!open) return null;
 
   const isLastStep = step === STEPS.length - 1;
   const current = STEPS[step];
-  const progress = ((step + 1) / STEPS.length) * 100;
+  const totalSteps = STEPS.length + (requiresClaim ? 1 : 0);
+  const currentStep = showClaimForm ? STEPS.length + 1 : step + 1;
+  const progress = (currentStep / totalSteps) * 100;
 
   function handleNext() {
     if (isLastStep) {
-      setStep(0);
       onAgree();
+      if (requiresClaim) {
+        setShowClaimForm(true);
+      } else {
+        setStep(0);
+      }
     } else {
       setStep(step + 1);
     }
   }
 
+  async function handleClaim(e: React.FormEvent) {
+    e.preventDefault();
+    if (!claimName.trim() || !claimEmail.trim()) return;
+    setClaiming(true);
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session) { toast.error('Not signed in'); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/claim-landlord-account`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: claimEmail.trim().toLowerCase(), name: claimName.trim() }),
+      });
+      if (!res.ok) { toast.error('Failed to claim account'); return; }
+      toast.success('Account claimed! You can now log in anytime.');
+      setShowClaimForm(false);
+      setStep(0);
+      setClaimName('');
+      setClaimEmail('');
+      onClaimComplete?.();
+    } catch { toast.error('Something went wrong'); } finally { setClaiming(false); }
+  }
+
   function handleClose() {
     setStep(0);
+    setShowClaimForm(false);
+    setClaimName('');
+    setClaimEmail('');
     onClose();
   }
 
@@ -99,30 +138,63 @@ export default function LeadAccessAgreement({ open, onClose, onAgree }: Props) {
             />
           </div>
 
-          {/* Content */}
-          <div className="px-5 py-6" key={step}>
-            <h3 className="text-base font-bold mb-3" style={{ color: '#1A1A1A' }}>{current.title}</h3>
-            <p className="text-sm leading-relaxed" style={{ color: '#374151' }}>
-              {renderText(current.text)}
-            </p>
-          </div>
+          {showClaimForm ? (
+            <>
+              {/* Claim form */}
+              <div className="px-5 py-6">
+                <h3 className="text-base font-bold mb-2" style={{ color: '#1A1A1A' }}>Claim your account</h3>
+                <p className="text-sm mb-4" style={{ color: '#6B7280' }}>
+                  Enter your real name and email to complete your account. You can then log in anytime.
+                </p>
+                <form onSubmit={handleClaim} className="space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold mb-1 block" style={{ color: '#525252' }}>Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                      <input value={claimName} onChange={e => setClaimName(e.target.value)} placeholder="Your full name" required className="w-full h-10 pl-10 pr-3 rounded-lg border text-sm" style={{ borderColor: '#E5E5E5' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold mb-1 block" style={{ color: '#525252' }}>Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                      <input type="email" value={claimEmail} onChange={e => setClaimEmail(e.target.value)} placeholder="your@email.com" required className="w-full h-10 pl-10 pr-3 rounded-lg border text-sm" style={{ borderColor: '#E5E5E5' }} />
+                    </div>
+                  </div>
+                  <button type="submit" disabled={claiming || !claimName.trim() || !claimEmail.trim()} className="w-full h-11 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-[0.96] disabled:opacity-50" style={{ backgroundColor: '#1E9A80', boxShadow: 'rgba(30,154,128,0.35) 0 4px 16px' }}>
+                    {claiming ? 'Claiming...' : 'Claim Account & View Lead'}
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* NDA Content */}
+              <div className="px-5 py-6" key={step}>
+                <h3 className="text-base font-bold mb-3" style={{ color: '#1A1A1A' }}>{current.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: '#374151' }}>
+                  {renderText(current.text)}
+                </p>
+              </div>
 
-          {/* Action */}
-          <div className="px-5 pb-5">
-            <button
-              onClick={handleNext}
-              className="w-full h-11 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-[0.96] active:scale-[0.98]"
-              style={{
-                backgroundColor: '#1E9A80',
-                boxShadow: isLastStep ? 'rgba(30,154,128,0.35) 0 4px 16px' : undefined,
-              }}
-            >
-              {isLastStep ? 'I Agree & View Lead' : current.button}
-            </button>
-            <p className="text-center text-[10px] mt-3" style={{ color: '#9CA3AF' }}>
-              This protects lead quality and ensures we can continue supplying high-quality tenant enquiries.
-            </p>
-          </div>
+              {/* Action */}
+              <div className="px-5 pb-5">
+                <button
+                  onClick={handleNext}
+                  className="w-full h-11 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-[0.96] active:scale-[0.98]"
+                  style={{
+                    backgroundColor: '#1E9A80',
+                    boxShadow: isLastStep ? 'rgba(30,154,128,0.35) 0 4px 16px' : undefined,
+                  }}
+                >
+                  {isLastStep ? (requiresClaim ? 'I Agree & Continue to Claim' : 'I Agree & View Lead') : current.button}
+                </button>
+                <p className="text-center text-[10px] mt-3" style={{ color: '#9CA3AF' }}>
+                  This protects lead quality and ensures we can continue supplying high-quality tenant enquiries.
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </>

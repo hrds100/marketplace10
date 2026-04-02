@@ -128,8 +128,9 @@ export default function DashboardLayout() {
 
       if (cancelled) return;
 
-      // Claim banner is shown only when at least one released lead requires mandatory claim.
-      setLandlordPhone(claimRequiredLeads && claimRequiredLeads.length > 0 ? whatsapp : null);
+      // Claim banner disabled - NDA+Claim flow now forces claim inline in the LeadAccessAgreement modal.
+      // setLandlordPhone(claimRequiredLeads && claimRequiredLeads.length > 0 ? whatsapp : null);
+      setLandlordPhone(null);
     })();
 
     return () => {
