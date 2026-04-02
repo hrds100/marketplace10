@@ -46,7 +46,7 @@ export default function AdminListings() {
 
   const startEdit = (p: typeof listings[0]) => {
     setEditingId(p.id);
-    setEditForm({ name: p.name, city: p.city, rent: p.rent_monthly, profit: p.profit_est, status: p.status });
+    setEditForm({ name: p.name || '', city: p.city || '', rent: p.rent_monthly ?? 0, profit: p.profit_est ?? 0, status: p.status || 'live' });
   };
 
   const saveEdit = async () => {
@@ -205,15 +205,15 @@ export default function AdminListings() {
           <tbody>
             {listings.map((l, i) => (
               <tr key={l.id} className={i % 2 === 1 ? 'bg-secondary' : ''}>
-                <td className="p-3.5 font-medium text-foreground">{l.name}</td>
-                <td className="p-3.5 text-muted-foreground">{l.city}</td>
+                <td className="p-3.5 font-medium text-foreground">{l.name || '—'}</td>
+                <td className="p-3.5 text-muted-foreground">{l.city || '—'}</td>
                 <td className="p-3.5">
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full text-white ${(l as Record<string, unknown>).listing_type === 'sale' ? 'bg-emerald-600' : 'bg-[#1E9A80]'}`}>
                     {(l as Record<string, unknown>).listing_type === 'sale' ? 'Sale' : 'Rental'}
                   </span>
                 </td>
-                <td className="p-3.5 text-foreground">£{l.rent_monthly.toLocaleString()}</td>
-                <td className="p-3.5 text-accent-foreground font-medium">£{l.profit_est}</td>
+                <td className="p-3.5 text-foreground">£{(l.rent_monthly ?? 0).toLocaleString()}</td>
+                <td className="p-3.5 text-accent-foreground font-medium">£{(l.profit_est ?? 0).toLocaleString()}</td>
                 <td className="p-3.5">
                   <select value={l.status} onChange={e => changeStatus(l.id, e.target.value)} className="input-nfstay h-8 text-xs bg-card pr-6">
                     <option value="live">Live</option>
