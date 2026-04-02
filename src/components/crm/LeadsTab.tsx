@@ -139,7 +139,8 @@ export default function LeadsTab() {
       setAgreementLeadId(lead.id);
       return;
     }
-    toast.error('This lead requires account claim before details can be opened.');
+    // Claim needed — open claim modal (NDA already signed, skip NDA steps)
+    setAgreementLeadId(lead.id);
   }
 
   async function handleExpand(lead: Inquiry) {
@@ -147,8 +148,11 @@ export default function LeadsTab() {
     setExpandedId(lead.id);
     setClaimExpanded(false);
     setNdaAgreed(false);
-    // Trigger agreement for leads that require NDA and haven't signed
+    // Trigger agreement for leads that require NDA and haven't signed,
+    // OR claim modal for leads where NDA is signed but claim is still needed
     if (requiresNdaForLead(lead) && !lead.nda_signed) {
+      setAgreementLeadId(lead.id);
+    } else if (requiresClaimForLead(lead)) {
       setAgreementLeadId(lead.id);
     }
     if (lead.status === 'new') {
@@ -183,6 +187,7 @@ export default function LeadsTab() {
     toast.success('Stage renamed');
   }
 
+  // Inline claim handler (legacy - claim now handled via LeadAccessAgreement modal)
   async function handleClaim(e: React.FormEvent) {
     e.preventDefault();
     if (!claimName.trim() || !claimEmail.trim() || !user) return;
@@ -193,8 +198,14 @@ export default function LeadsTab() {
         headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: claimEmail.trim().toLowerCase(), name: claimName.trim() }),
       });
-      if (!res.ok) { toast.error('Failed to claim account'); setClaiming(false); return; }
-      toast.success('Account claimed! You can now log in at hub.nfstay.com');
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        toast.error(body?.error || 'Failed to claim account');
+        setClaiming(false);
+        return;
+      }
+      await supabase.auth.refreshSession();
+      toast.success('Account claimed! Log in anytime with your email and password.');
     } catch { toast.error('Something went wrong'); } finally { setClaiming(false); }
   }
 
@@ -363,9 +374,13 @@ export default function LeadsTab() {
                               </div>
                             )}
                             {needsClaim && (
-                              <div className="rounded-lg border px-2.5 py-2 text-[11px] font-medium" style={{ borderColor: '#FDE68A', backgroundColor: '#FFFBEB', color: '#92400E' }}>
-                                Claim required: complete account claim to unlock this lead.
-                              </div>
+                              <button
+                                onClick={() => setAgreementLeadId(lead.id)}
+                                className="w-full rounded-lg border px-2.5 py-2 text-[11px] font-medium text-left hover:brightness-[0.97] transition-all"
+                                style={{ borderColor: '#FDE68A', backgroundColor: '#FFFBEB', color: '#92400E' }}
+                              >
+                                Claim required: tap here to complete your account and unlock this lead.
+                              </button>
                             )}
                             {/* Property */}
                             {lead.property_name && (
@@ -411,6 +426,10 @@ export default function LeadsTab() {
         requiresClaim={(() => {
           const lead = leads.find(l => l.id === agreementLeadId);
           return lead?.authorisation_type === 'nda_and_claim' && isUnclaimed;
+        })()}
+        ndaAlreadySigned={(() => {
+          const lead = leads.find(l => l.id === agreementLeadId);
+          return !!lead?.nda_signed;
         })()}
         onAgree={() => {
           if (agreementLeadId) handleSignNda(agreementLeadId);

@@ -17,7 +17,7 @@ serve(async (req) => {
       })
     }
 
-    const { email, name } = await req.json()
+    const { email, name, password } = await req.json()
     if (!email || !name) {
       return new Response(JSON.stringify({ error: 'Email and name are required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -62,13 +62,35 @@ serve(async (req) => {
       )
     }
 
-    // 2. Update profile (name + email)
+    // 2. Set password so the user can log in with email + password
+    //    Uses raw GoTrue admin API — the JS client's auth.admin.updateUser() silently fails
+    //    in Deno edge functions after an RPC email change.
+    if (password && typeof password === 'string' && password.length >= 6) {
+      const pwRes = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users/${user.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ password }),
+        }
+      )
+      if (!pwRes.ok) {
+        const pwBody = await pwRes.text()
+        console.error('Failed to set password:', pwRes.status, pwBody)
+      }
+    }
+
+    // 3. Update profile (name + email)
     await supabaseAdmin
       .from('profiles')
       .update({ name, email })
       .eq('id', user.id)
 
-    // 3. Link ALL properties, threads, and inquiries matching this landlord's phone
+    // 4. Link ALL properties, threads, and inquiries matching this landlord's phone
     if (phone) {
       const { data: props } = await supabaseAdmin
         .from('properties')
