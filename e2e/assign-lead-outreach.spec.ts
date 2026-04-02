@@ -52,7 +52,8 @@ test.describe('Assign a Lead - Landlord Activation', () => {
     expect(content).toContain("tenant_email: formData.email.trim()");
     expect(content).toContain("tenant_phone: formData.phone.trim()");
     expect(content).toContain("lister_phone: group.phone");
-    expect(content).toContain("channel: 'admin_manual'");
+    // channel must be 'email' (DB check constraint only allows 'whatsapp' | 'email')
+    expect(content).toContain("channel: 'email'");
     expect(content).toContain("authorized: true");
     expect(content).toContain("authorisation_type: formData.mode");
     expect(content).toContain("stage: 'New Leads'");
