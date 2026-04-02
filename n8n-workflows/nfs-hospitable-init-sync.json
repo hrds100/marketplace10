@@ -53,12 +53,13 @@
     },
     {
       "parameters": {
-        "url": "=https://api.connect.hospitable.com/v1/customers/{{ $('Parse Trigger Payload').first().json.hospitableCustomerId }}/listings?page={{ $('Parse Trigger Payload').first().json.page }}&per_page={{ $('Parse Trigger Payload').first().json.perPage }}",
+        "url": "=https://connect.hospitable.com/api/v1/customers/{{ $('Parse Trigger Payload').first().json.hospitableCustomerId }}/listings?page={{ $('Parse Trigger Payload').first().json.page }}&per_page={{ $('Parse Trigger Payload').first().json.perPage }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             { "name": "Authorization", "value": "=Bearer {{ $env.NFS_HOSPITABLE_BEARER_TOKEN }}" },
-            { "name": "Accept", "value": "application/json" }
+            { "name": "Accept", "value": "application/json" },
+            { "name": "Connect-Version", "value": "2024-01-01" }
           ]
         }
       },
@@ -90,12 +91,13 @@
     },
     {
       "parameters": {
-        "url": "=https://api.connect.hospitable.com/v1/customers/{{ $('Parse Trigger Payload').first().json.hospitableCustomerId }}/reservations?page=1&per_page=50",
+        "url": "=https://connect.hospitable.com/api/v1/customers/{{ $('Parse Trigger Payload').first().json.hospitableCustomerId }}/reservations?page=1&per_page=50",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             { "name": "Authorization", "value": "=Bearer {{ $env.NFS_HOSPITABLE_BEARER_TOKEN }}" },
-            { "name": "Accept", "value": "application/json" }
+            { "name": "Accept", "value": "application/json" },
+            { "name": "Connect-Version", "value": "2024-01-01" }
           ]
         }
       },
