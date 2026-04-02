@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [2026-04-02d] - Outreach Metadata Enrichment (Pass 1/3)
+
+### Added
+- `authorized_at` column on inquiries (migration + live applied).
+- Tenant Requests: group header shows Claimed/Unclaimed badge + NDA count.
+- Tenant Requests: released leads show sent timestamp and NDA signed timestamp.
+- Landlord Activation: Leads (N) badge is now clickable/expandable with inline lead history.
+- Lead history shows: tenant name, received time, release mode, NDA signed state.
+
+### Changed
+- `authorise()` now stamps `authorized_at` when admin releases a lead.
+
 ## [2026-04-02c] - Single Reply Source for WhatsApp Inquiries
 
 ### Fixed

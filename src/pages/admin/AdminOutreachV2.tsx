@@ -31,9 +31,11 @@ interface InquiryRow {
   lister_type: string | null;
   lister_name: string | null;
   nda_signed: boolean;
+  nda_signed_at: string | null;
   authorized: boolean;
   always_authorised: boolean;
   authorisation_type: string | null;
+  authorized_at: string | null;
   created_at: string;
 }
 
@@ -157,7 +159,7 @@ interface LandlordGroup {
   outreachSent: boolean;
   outreachSentAt: string | null;
   hasClaimLeads: boolean;
-  properties: (PropertyRow & { ndaCount: number; pendingCount: number; totalCount: number })[];
+  properties: (PropertyRow & { ndaCount: number; pendingCount: number; totalCount: number; leads: any[] })[];
 }
 
 function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
@@ -175,16 +177,17 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
 
       const propIds = properties.map(p => p.id);
       const { data: inquiries } = await supabase.from('inquiries')
-        .select('property_id, nda_signed, always_authorised, authorized, authorisation_type')
+        .select('id, property_id, tenant_name, nda_signed, nda_signed_at, always_authorised, authorized, authorisation_type, authorized_at, created_at')
         .in('property_id', propIds);
 
-      const inqMap = new Map<string, { ndaCount: number; pendingCount: number; totalCount: number; hasClaimLeads: boolean }>();
+      const inqMap = new Map<string, { ndaCount: number; pendingCount: number; totalCount: number; hasClaimLeads: boolean; leads: typeof inquiries }>();
       for (const inq of (inquiries || [])) {
-        const existing = inqMap.get(inq.property_id!) || { ndaCount: 0, pendingCount: 0, totalCount: 0, hasClaimLeads: false };
+        const existing = inqMap.get(inq.property_id!) || { ndaCount: 0, pendingCount: 0, totalCount: 0, hasClaimLeads: false, leads: [] as typeof inquiries };
         existing.totalCount++;
         if (inq.nda_signed) existing.ndaCount++;
         if (!inq.authorized) existing.pendingCount++;
         if ((inq as any).authorisation_type === 'nda_and_claim') existing.hasClaimLeads = true;
+        existing.leads!.push(inq);
         inqMap.set(inq.property_id!, existing);
       }
 
@@ -224,6 +227,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
           ndaCount: propInq?.ndaCount || 0,
           pendingCount: propInq?.pendingCount || 0,
           totalCount: propInq?.totalCount || 0,
+          leads: propInq?.leads || [],
         });
         if (prop.outreach_sent) {
           group.outreachSent = true;
@@ -364,22 +368,52 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
             {isOpen && (
               <div className="border-t px-4 pb-3 pt-2 space-y-2" style={{ borderColor: '#F3F4F6', backgroundColor: '#FAFAFA' }}>
                 {group.properties.map(prop => (
-                  <div key={prop.id} className="flex items-center justify-between gap-3 py-1.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Home className="w-3 h-3 flex-shrink-0" style={{ color: '#9CA3AF' }} />
-                      <span className="text-xs font-medium truncate" style={{ color: '#1A1A1A' }}>{prop.name}</span>
-                      <span className="text-xs" style={{ color: '#9CA3AF' }}>{prop.city}</span>
+                  <div key={prop.id}>
+                    <div className="flex items-center justify-between gap-3 py-1.5 cursor-pointer" onClick={() => { const k = `lead-${prop.id}`; setExpanded(prev => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; }); }}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Home className="w-3 h-3 flex-shrink-0" style={{ color: '#9CA3AF' }} />
+                        <span className="text-xs font-medium truncate" style={{ color: '#1A1A1A' }}>{prop.name}</span>
+                        <span className="text-xs" style={{ color: '#9CA3AF' }}>{prop.city}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {prop.totalCount > 0 && (
+                          <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full cursor-pointer" style={{ backgroundColor: '#EEF2FF', color: '#4F46E5' }}>
+                            {prop.totalCount} lead{prop.totalCount !== 1 ? 's' : ''} {expanded.has(`lead-${prop.id}`) ? '▼' : '▶'}
+                          </span>
+                        )}
+                        {prop.pendingCount > 0 && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+                            {prop.pendingCount} pending
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {prop.totalCount > 0 && (
-                        <span className="text-xs" style={{ color: '#6B7280' }}>{prop.totalCount} lead{prop.totalCount !== 1 ? 's' : ''}</span>
-                      )}
-                      {prop.pendingCount > 0 && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
-                          {prop.pendingCount} pending
-                        </span>
-                      )}
-                    </div>
+                    {expanded.has(`lead-${prop.id}`) && prop.leads.length > 0 && (
+                      <div className="ml-5 mb-2 space-y-1.5">
+                        {prop.leads.map((lead: any) => (
+                          <div key={lead.id} className="flex items-center justify-between gap-3 py-1 px-2.5 rounded-lg text-[11px]" style={{ backgroundColor: '#F9FAFB' }}>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-medium" style={{ color: '#1A1A1A' }}>{lead.tenant_name || 'Unknown'}</span>
+                              <span className="inline-flex items-center gap-1" style={{ color: '#9CA3AF' }}>
+                                <Clock className="w-2.5 h-2.5" />
+                                {new Date(lead.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}{' '}
+                                {new Date(lead.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {lead.authorized ? (
+                                <span className="font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
+                                  {lead.authorisation_type === 'nda' ? 'NDA' : lead.authorisation_type === 'nda_and_claim' ? 'NDA+Claim' : 'Direct'}
+                                </span>
+                              ) : (
+                                <span className="font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>Pending</span>
+                              )}
+                              {lead.nda_signed && <span style={{ color: '#4F46E5' }}>NDA signed</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -405,7 +439,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     queryFn: async () => {
       // Show ALL inquiries -- pending first, then authorized with their sent status
       const { data: inquiries, error } = await supabase.from('inquiries')
-        .select('id, property_id, tenant_name, lister_phone, lister_type, lister_name, nda_signed, authorized, always_authorised, authorisation_type, created_at')
+        .select('id, property_id, tenant_name, lister_phone, lister_type, lister_name, nda_signed, nda_signed_at, authorized, always_authorised, authorisation_type, authorized_at, created_at')
         .order('authorized', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -474,7 +508,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
 
       // GHL succeeded (or direct) - now update DB
       const { error } = await supabase.from('inquiries')
-        .update({ authorized: true, authorisation_type: type })
+        .update({ authorized: true, authorisation_type: type, authorized_at: new Date().toISOString() } as any)
         .eq('id', inquiry.id);
       if (error) throw error;
 
@@ -614,6 +648,16 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
                       Sent ({sentCount})
                     </span>
                   )}
+                  {(() => { const ndaCount = group.inquiries.filter(i => i.nda_signed).length; return ndaCount > 0 ? (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#EEF2FF', color: '#4F46E5' }}>
+                      NDA ({ndaCount})
+                    </span>
+                  ) : null; })()}
+                  <span className="inline-flex items-center gap-1 text-xs font-medium">
+                    {group.claimed
+                      ? <><Check className="w-3 h-3" style={{ color: '#1E9A80' }} /><span style={{ color: '#1E9A80' }}>Claimed</span></>
+                      : <><X className="w-3 h-3" style={{ color: '#9CA3AF' }} /><span style={{ color: '#9CA3AF' }}>Unclaimed</span></>}
+                  </span>
                 </div>
               </div>
 
@@ -690,16 +734,30 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
 
                       <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                         {inq.authorized ? (
-                          <span
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
-                            style={{
-                              backgroundColor: inq.authorisation_type === 'direct' ? '#F3F3EE' : '#ECFDF5',
-                              color: inq.authorisation_type === 'direct' ? '#6B7280' : '#1E9A80',
-                            }}
-                          >
-                            <Check className="w-3 h-3" />
-                            Sent as {inq.authorisation_type === 'nda' ? 'NDA' : inq.authorisation_type === 'nda_and_claim' ? 'NDA + Claim' : 'Direct'}
-                          </span>
+                          <div className="flex flex-col items-end gap-1">
+                            <span
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                              style={{
+                                backgroundColor: inq.authorisation_type === 'direct' ? '#F3F3EE' : '#ECFDF5',
+                                color: inq.authorisation_type === 'direct' ? '#6B7280' : '#1E9A80',
+                              }}
+                            >
+                              <Check className="w-3 h-3" />
+                              {inq.authorisation_type === 'nda' ? 'NDA' : inq.authorisation_type === 'nda_and_claim' ? 'NDA + Claim' : 'Direct'}
+                            </span>
+                            {(inq as any).authorized_at && (
+                              <span className="text-[10px]" style={{ color: '#9CA3AF' }}>
+                                Sent {new Date((inq as any).authorized_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}{' '}
+                                {new Date((inq as any).authorized_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                            {inq.nda_signed && (inq as any).nda_signed_at && (
+                              <span className="text-[10px]" style={{ color: '#4F46E5' }}>
+                                NDA signed {new Date((inq as any).nda_signed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}{' '}
+                                {new Date((inq as any).nda_signed_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <>
                             <button
