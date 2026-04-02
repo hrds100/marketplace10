@@ -544,7 +544,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                     style={{ backgroundColor: '#1E9A80' }}
                   >
                     <Send className="w-3 h-3" />
-                    {loadingActions.has(`outreach-${group.phone}`) ? 'Sending...' : 'Send Activation'}
+                    {loadingActions.has(`outreach-${group.phone}`) ? 'Sending...' : 'Send Outreach'}
                   </button>
                 )}
                 <span className="text-xs" style={{ color: '#9CA3AF' }}>{isOpen ? '▼' : '▶'}</span>
@@ -606,7 +606,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Activation Workflow</label>
+                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Outreach Workflow</label>
                         <select
                           value={assignLeadForms[group.phone].workflow}
                           onChange={e => updateAssignForm(group.phone, 'workflow', e.target.value)}
@@ -632,7 +632,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                         style={{ backgroundColor: '#1E9A80' }}
                       >
                         <Send className="w-3 h-3" />
-                        {loadingActions.has(`assign-${group.phone}`) ? 'Sending...' : 'Assign Lead & Activate'}
+                        {loadingActions.has(`assign-${group.phone}`) ? 'Sending...' : 'Assign Lead & Send Outreach'}
                       </button>
                     </div>
                   </div>

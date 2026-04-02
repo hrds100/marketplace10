@@ -35,7 +35,7 @@ test.describe('Assign a Lead - Landlord Activation', () => {
     expect(content).toContain('workflow: GHL_WORKFLOW_COLD');
 
     // Selector label
-    expect(content).toContain('Activation Workflow');
+    expect(content).toContain('Outreach Workflow');
 
     // Two options with human-readable labels
     expect(content).toContain('Landlord Activation (default)');
@@ -100,18 +100,18 @@ test.describe('Assign a Lead - Landlord Activation', () => {
     expect(content).toContain("queryClient.invalidateQueries");
   });
 
-  test('Assign & Activate button in form', () => {
+  test('Assign & Send Outreach button in form', () => {
     const content = readSource('src/pages/admin/AdminOutreachV2.tsx');
 
     // Combined action button
-    expect(content).toContain('Assign Lead & Activate');
+    expect(content).toContain('Assign Lead & Send Outreach');
     expect(content).toContain('assignLeadAndSendOutreach(group)');
   });
 
-  test('Send Activation button hidden when assign form is open', () => {
+  test('Send Outreach button hidden when assign form is open', () => {
     const content = readSource('src/pages/admin/AdminOutreachV2.tsx');
 
-    // The Send Activation button is conditionally hidden when assign form is open
+    // The Send Outreach button is conditionally hidden when assign form is open
     expect(content).toContain('!showAssignForm.has(group.phone)');
   });
 
@@ -251,8 +251,8 @@ test.describe('Assign a Lead - Browser Flow', () => {
     expect(options).toContain('NDA + Claim');
     expect(options).toContain('Direct');
 
-    // 10. Confirm "Assign Lead & Activate" button is visible
-    const submitBtn = page.locator('button:has-text("Assign Lead & Activate")');
+    // 10. Confirm "Assign Lead & Send Outreach" button is visible
+    const submitBtn = page.locator('button:has-text("Assign Lead & Send Outreach")');
     await expect(submitBtn).toBeVisible();
     await expect(submitBtn).toBeEnabled();
 
@@ -287,7 +287,7 @@ test.describe('Assign a Lead - Browser Flow', () => {
     const nameInputAgain = page.locator('input[placeholder="e.g. James Walker"]');
     await expect(nameInputAgain).toBeVisible({ timeout: 3_000 });
 
-    // NOTE: We do NOT click "Assign Lead & Activate" because that
+    // NOTE: We do NOT click "Assign Lead & Send Outreach" because that
     // would create a real inquiry in the live DB and trigger a real GHL call.
     // The code-level tests above verify the handler logic; this browser test
     // verifies the UI renders, accepts input, and wires up correctly.

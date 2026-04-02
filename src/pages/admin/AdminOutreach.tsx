@@ -309,7 +309,7 @@ export default function AdminOutreach() {
                     {statusBadge(status)}
                     {awaitingOutreach > 0 && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                        {awaitingOutreach} awaiting activation
+                        {awaitingOutreach} awaiting outreach
                       </span>
                     )}
                   </div>
@@ -335,7 +335,7 @@ export default function AdminOutreach() {
                       className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 inline-flex items-center gap-1.5"
                     >
                       <Send className="w-3 h-3" />
-                      {loadingActions.has(`outreach-${group.landlordWhatsapp}`) ? 'Sending...' : 'Send First Activation'}
+                      {loadingActions.has(`outreach-${group.landlordWhatsapp}`) ? 'Sending...' : 'Send First Outreach'}
                     </button>
                   )}
                 </div>
