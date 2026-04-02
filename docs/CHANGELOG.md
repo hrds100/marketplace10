@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [2026-04-02e] - Admin Deals Consolidation
+
+### Changed
+- Merged Submissions + Listings into one "Deals" page with 3 tabs: Pending Review, Live, Inactive.
+- Pending tab supports full property editing before approval, including Airbnb pricing display and re-fetch.
+- Live tab preserves all Listings features: table view, CSV import/export, featured toggle (3-max), status dropdown, hard delete with PIN.
+- Inactive tab adds Reactivate button to move deals back to pending.
+
+### Removed
+- Deal Sourcers page (read-only metrics, already available in The Gates > Metrics tab).
+- Observatory page (read-only chat monitor, chat system no longer active).
+- 1st Inquiry toggle (dead code, field fetched but never consumed).
+- NDA toggle from submissions UI (NDA now controlled per-inquiry in The Gates).
+- Old nav links: Submissions, Listings, Deal Sourcers, Observatory replaced by single "Deals" link.
+- Old URLs (/admin/marketplace/submissions, /listings, /deal-sourcers) redirect to /admin/marketplace/deals.
+
+### Preserved
+- Approval workflow: audit log, email notifications, in-app notifications all intact.
+- properties.nda_required column remains in DB (used as fallback by LeadsTab and process-inquiry edge function).
+
 ## [2026-04-02d] - Outreach Metadata Enrichment (Pass 1/3)
 
 ### Added
