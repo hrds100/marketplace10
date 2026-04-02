@@ -408,9 +408,22 @@ export default function LeadsTab() {
       <LeadAccessAgreement
         open={!!agreementLeadId}
         onClose={() => setAgreementLeadId(null)}
+        requiresClaim={(() => {
+          const lead = leads.find(l => l.id === agreementLeadId);
+          return lead?.authorisation_type === 'nda_and_claim' && isUnclaimed;
+        })()}
         onAgree={() => {
           if (agreementLeadId) handleSignNda(agreementLeadId);
+          // Don't close modal yet if claim is needed - LeadAccessAgreement handles the flow
+          const lead = leads.find(l => l.id === agreementLeadId);
+          if (lead?.authorisation_type !== 'nda_and_claim' || !isUnclaimed) {
+            setAgreementLeadId(null);
+          }
+        }}
+        onClaimComplete={() => {
           setAgreementLeadId(null);
+          // Reload to reflect claimed state
+          window.location.reload();
         }}
       />
     </div>
