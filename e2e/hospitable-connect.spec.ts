@@ -137,4 +137,22 @@ test.describe("Hospitable Connect Flow", () => {
     const body = await res.json();
     expect(body.error).toContain("operator_id");
   });
+
+  // ── Existing customer retry ──
+  // Hugo's operator already has a Hospitable customer from earlier tests.
+  // Retrying authorize should NOT fail with 422 - it should reuse the
+  // existing customer and still return an auth-code URL.
+
+  test("Authorize with existing Hospitable customer returns Connect URL", async ({
+    request,
+  }) => {
+    // Hugo's real operator (already has a Hospitable customer from earlier)
+    const res = await request.get(
+      `${SUPABASE_FN_URL}?action=authorize&operator_id=b5e985b9-9e33-4c9e-8464-485bede7e931&profile_id=50f8d1bf-bcb5-47a8-92b2-faf5982f3dbb&origin=https://hub.nfstay.com`
+    );
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.url).toBeTruthy();
+    expect(body.url).toContain("connect.hospitable.com");
+  });
 });
