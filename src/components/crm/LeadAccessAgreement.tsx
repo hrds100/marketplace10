@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Shield, X, User, Mail } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Shield, X, User, Mail, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -42,22 +42,33 @@ interface Props {
   onClose: () => void;
   onAgree: () => void;
   requiresClaim?: boolean;
+  ndaAlreadySigned?: boolean;
   onClaimComplete?: () => void;
 }
 
-export default function LeadAccessAgreement({ open, onClose, onAgree, requiresClaim, onClaimComplete }: Props) {
+export default function LeadAccessAgreement({ open, onClose, onAgree, requiresClaim, ndaAlreadySigned, onClaimComplete }: Props) {
   const [step, setStep] = useState(0);
   const [showClaimForm, setShowClaimForm] = useState(false);
   const [claimName, setClaimName] = useState('');
   const [claimEmail, setClaimEmail] = useState('');
+  const [claimPassword, setClaimPassword] = useState('');
   const [claiming, setClaiming] = useState(false);
+
+  // If NDA already signed and claim is required, skip NDA steps and show claim form directly
+  useEffect(() => {
+    if (open && ndaAlreadySigned && requiresClaim) {
+      setShowClaimForm(true);
+    }
+  }, [open, ndaAlreadySigned, requiresClaim]);
 
   if (!open) return null;
 
+  // When NDA is already signed, only show the claim step
+  const skipNda = ndaAlreadySigned && requiresClaim;
   const isLastStep = step === STEPS.length - 1;
   const current = STEPS[step];
-  const totalSteps = STEPS.length + (requiresClaim ? 1 : 0);
-  const currentStep = showClaimForm ? STEPS.length + 1 : step + 1;
+  const totalSteps = skipNda ? 1 : STEPS.length + (requiresClaim ? 1 : 0);
+  const currentStep = skipNda ? 1 : showClaimForm ? STEPS.length + 1 : step + 1;
   const progress = (currentStep / totalSteps) * 100;
 
   function handleNext() {
@@ -75,7 +86,8 @@ export default function LeadAccessAgreement({ open, onClose, onAgree, requiresCl
 
   async function handleClaim(e: React.FormEvent) {
     e.preventDefault();
-    if (!claimName.trim() || !claimEmail.trim()) return;
+    if (!claimName.trim() || !claimEmail.trim() || !claimPassword.trim()) return;
+    if (claimPassword.trim().length < 6) { toast.error('Password must be at least 6 characters'); return; }
     setClaiming(true);
     try {
       const session = (await supabase.auth.getSession()).data.session;
@@ -83,14 +95,21 @@ export default function LeadAccessAgreement({ open, onClose, onAgree, requiresCl
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/claim-landlord-account`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: claimEmail.trim().toLowerCase(), name: claimName.trim() }),
+        body: JSON.stringify({ email: claimEmail.trim().toLowerCase(), name: claimName.trim(), password: claimPassword.trim() }),
       });
-      if (!res.ok) { toast.error('Failed to claim account'); return; }
-      toast.success('Account claimed! You can now log in anytime.');
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        toast.error(body?.error || 'Failed to claim account');
+        return;
+      }
+      // Refresh session so JWT reflects new email (clears isUnclaimed)
+      await supabase.auth.refreshSession();
+      toast.success('Account claimed! Log in anytime with your email and password.');
       setShowClaimForm(false);
       setStep(0);
       setClaimName('');
       setClaimEmail('');
+      setClaimPassword('');
       onClaimComplete?.();
     } catch { toast.error('Something went wrong'); } finally { setClaiming(false); }
   }
@@ -100,6 +119,7 @@ export default function LeadAccessAgreement({ open, onClose, onAgree, requiresCl
     setShowClaimForm(false);
     setClaimName('');
     setClaimEmail('');
+    setClaimPassword('');
     onClose();
   }
 
@@ -161,7 +181,15 @@ export default function LeadAccessAgreement({ open, onClose, onAgree, requiresCl
                       <input type="email" value={claimEmail} onChange={e => setClaimEmail(e.target.value)} placeholder="your@email.com" required className="w-full h-10 pl-10 pr-3 rounded-lg border text-sm" style={{ borderColor: '#E5E5E5' }} />
                     </div>
                   </div>
-                  <button type="submit" disabled={claiming || !claimName.trim() || !claimEmail.trim()} className="w-full h-11 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-[0.96] disabled:opacity-50" style={{ backgroundColor: '#1E9A80', boxShadow: 'rgba(30,154,128,0.35) 0 4px 16px' }}>
+                  <div>
+                    <label className="text-xs font-semibold mb-1 block" style={{ color: '#525252' }}>Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                      <input type="password" value={claimPassword} onChange={e => setClaimPassword(e.target.value)} placeholder="Choose a password (min 6 chars)" required minLength={6} className="w-full h-10 pl-10 pr-3 rounded-lg border text-sm" style={{ borderColor: '#E5E5E5' }} />
+                    </div>
+                    <p className="text-[10px] mt-1" style={{ color: '#9CA3AF' }}>Use this to log in at hub.nfstay.com anytime</p>
+                  </div>
+                  <button type="submit" disabled={claiming || !claimName.trim() || !claimEmail.trim() || claimPassword.trim().length < 6} className="w-full h-11 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-[0.96] disabled:opacity-50" style={{ backgroundColor: '#1E9A80', boxShadow: 'rgba(30,154,128,0.35) 0 4px 16px' }}>
                     {claiming ? 'Claiming...' : 'Claim Account & View Lead'}
                   </button>
                 </form>
