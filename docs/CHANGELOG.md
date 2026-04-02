@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [2026-04-02c] - Single Reply Source for WhatsApp Inquiries
+
+### Fixed
+- Stripped reply nodes from poll workflow. Poll is now inquiry-only backup.
+- Webhook workflow is the single canonical reply sender.
+- Proven: 1 test = 1 inquiry + 1 reply + 0 duplicates (before=8, after=9 replies).
+- Architecture: webhook (instant reply) + poll (backup inquiry creation, no reply).
+
 ## [2026-04-02b] - Restore Poll Workflow Tenant Reply
 
 ### Fixed
