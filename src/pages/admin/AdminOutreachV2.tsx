@@ -791,28 +791,61 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     const key = `auth-${inquiry.id}-${type}`;
     addLoading(key);
     try {
-      // For NDA flows, call GHL FIRST - only mark authorized if GHL succeeds
+      const phone = inquiry.lister_phone || inquiry.landlordPhone;
+      const email = inquiry.landlordEmail;
+      const channels: string[] = [];
+
+      // Contact landlord on available channels (NDA/NDA+Claim only -- Direct skips outreach)
       if (type === 'nda' || type === 'nda_and_claim') {
-        const phone = inquiry.lister_phone || inquiry.landlordPhone;
-        if (!phone) {
-          toast.error('No landlord phone found for this inquiry');
-          return;
+        // WhatsApp via GHL if phone exists
+        if (phone) {
+          const result = await callGhlEnroll(phone, GHL_WORKFLOW_WARM);
+          if (result.success) {
+            channels.push('whatsapp');
+          } else {
+            // Log but don't block -- email may still work
+            console.error('GHL enrollment failed:', result.error);
+          }
         }
-        const result = await callGhlEnroll(phone, GHL_WORKFLOW_WARM);
-        if (!result.success) {
-          toast.error('GHL enrollment failed: ' + (result.error || 'Unknown') + ' - inquiry NOT authorised');
-          return;
+
+        // Email via send-email edge function if email exists
+        if (email) {
+          try {
+            await supabase.functions.invoke('send-email', {
+              body: {
+                type: 'landlord-lead-released',
+                data: {
+                  email,
+                  landlord_name: inquiry.landlordName || 'Landlord',
+                  tenant_name: inquiry.tenant_name || 'A tenant',
+                  property_name: inquiry.propertyName,
+                  login_url: 'https://hub.nfstay.com/signin',
+                },
+              },
+            });
+            channels.push('email');
+          } catch {
+            console.error('Landlord release email failed');
+          }
+        }
+
+        // If neither channel succeeded, warn but still allow authorization
+        if (channels.length === 0 && !phone && !email) {
+          toast.error('No landlord contact info found -- inquiry authorized but landlord not contacted');
+        } else if (channels.length === 0) {
+          toast.error('Landlord contact failed on all channels -- inquiry authorized but delivery unconfirmed');
         }
       }
 
-      // GHL succeeded (or direct) - now update DB
+      // Update DB -- authorized regardless of delivery success
       const { error } = await supabase.from('inquiries')
         .update({ authorized: true, authorisation_type: type, authorized_at: new Date().toISOString() } as any)
         .eq('id', inquiry.id);
       if (error) throw error;
 
-      if (user) logAdminAction(user.id, { action: 'inquiry_authorised', target_table: 'inquiries', target_id: inquiry.id, metadata: { type } });
-      toast.success('Inquiry authorised (' + type.replace('_', ' + ') + ')');
+      if (user) logAdminAction(user.id, { action: 'inquiry_authorised', target_table: 'inquiries', target_id: inquiry.id, metadata: { type, channels } });
+      const channelLabel = channels.length > 0 ? ` via ${channels.join(' + ')}` : '';
+      toast.success(`Inquiry authorised (${type.replace(/_/g, ' + ')})${channelLabel}`);
       queryClient.invalidateQueries({ queryKey: ['outreach-pending'] });
     } catch {
       toast.error('Failed to authorise inquiry');
