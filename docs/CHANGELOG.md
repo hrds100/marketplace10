@@ -11,6 +11,25 @@
 ### Changed
 - Documented n8n workflow change needed: include `tenant_email` from GHL contact data in webhook payload.
 
+## [2026-04-02e] - Admin Deals Consolidation
+
+### Changed
+- Merged Submissions + Listings into one "Deals" page with 3 tabs: Pending Review, Live, Inactive.
+- Pending tab supports full property editing before approval, including Airbnb pricing display and re-fetch.
+- Live tab preserves all Listings features: table view, CSV import/export, featured toggle (3-max), status dropdown, hard delete with PIN.
+- Inactive tab adds Reactivate button to move deals back to pending.
+
+### Removed
+- Deal Sourcers page (read-only metrics, already available in The Gate > Metrics tab).
+- Observatory page (read-only chat monitor, chat system no longer active).
+- Old nav links: Submissions, Listings, Deal Sourcers, Observatory replaced by single "Deals" link.
+- Old URLs (/admin/marketplace/submissions, /listings, /deal-sourcers) redirect to /admin/marketplace/deals.
+
+### Preserved
+- 1st Inquiry and NDA toggles remain on Pending Review tab (both fields read by process-inquiry edge function).
+- Approval workflow: audit log, email notifications, in-app notifications all intact.
+- Approve/Reject buttons only visible on pending/inactive items (matches original Submissions behavior).
+
 ## [2026-04-02d] - Outreach Metadata Enrichment (Pass 1/3)
 
 ### Added

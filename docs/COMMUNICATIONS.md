@@ -59,7 +59,7 @@ This message must stay short and readable. Do not add internal IDs, UUIDs, or sy
 **4b. NDA required (admin toggle)**
 
 - When admin toggles "NDA Required" ON for a property, ALL leads for that property require the NDA agreement before the lister can see tenant contact details.
-- Controlled by `properties.nda_required` boolean (set on admin submissions page).
+- Controlled by `properties.nda_required` boolean (toggle on admin Deals page, Pending Review tab). Sets the default NDA requirement for new inquiries. Per-inquiry NDA authorization is also available in The Gates.
 - The `nda_required` flag is stamped onto each inquiry at creation time.
 - In the CRM leads view, contact fields (phone, email) are blurred until the lister signs the Lead Access Agreement.
 

@@ -25,14 +25,12 @@ import SettingsPage from "./pages/SettingsPage";
 import BookingSitePage from "./pages/BookingSitePage";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminListings from "./pages/admin/AdminListings";
 import AdminQuickList from "./pages/admin/AdminQuickList";
-import AdminSubmissions from "./pages/admin/AdminSubmissions";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPricing from "./pages/admin/AdminPricing";
 import AdminFAQ from "./pages/admin/AdminFAQ";
 import AdminAffiliates from "./pages/admin/AdminAffiliates";
-import AdminDealSourcers from "./pages/admin/AdminDealSourcers";
+import AdminDeals from "./pages/admin/AdminDeals";
 import AdminOutreach from "./pages/admin/AdminOutreachV2";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNotifications from "./pages/admin/AdminNotifications";
@@ -49,7 +47,6 @@ import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
 import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
 import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
 import AdminArchitecture from "./pages/admin/AdminArchitecture";
-import AdminObservatoryPage from "./pages/admin/AdminObservatoryPage";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 import BrandPage from "./pages/BrandPage";
@@ -171,25 +168,26 @@ const App = () => (
             {/* Marketplace workspace */}
             <Route path="marketplace" element={<AdminDashboard />} />
             <Route path="marketplace/quick-list" element={<AdminQuickList />} />
-            <Route path="marketplace/listings" element={<AdminListings />} />
-            <Route path="marketplace/properties" element={<AdminListings />} />
-            <Route path="marketplace/submissions" element={<AdminSubmissions />} />
+            <Route path="marketplace/deals" element={<AdminDeals />} />
+            <Route path="marketplace/listings" element={<Navigate to="/admin/marketplace/deals" replace />} />
+            <Route path="marketplace/properties" element={<Navigate to="/admin/marketplace/deals" replace />} />
+            <Route path="marketplace/submissions" element={<Navigate to="/admin/marketplace/deals" replace />} />
             <Route path="marketplace/outreach" element={<AdminOutreach />} />
             <Route path="marketplace/users" element={<AdminUsers />} />
             <Route path="marketplace/university" element={<AdminUniversity />} />
             <Route path="marketplace/pricing" element={<AdminPricing />} />
             <Route path="marketplace/faq" element={<AdminFAQ />} />
             <Route path="marketplace/affiliates" element={<AdminAffiliates />} />
-            <Route path="marketplace/deal-sourcers" element={<AdminDealSourcers />} />
+            <Route path="marketplace/deal-sourcers" element={<Navigate to="/admin/marketplace/deals" replace />} />
             <Route path="marketplace/settings" element={<AdminSettings />} />
             <Route path="marketplace/notifications" element={<AdminNotifications />} />
 
             {/* Legacy routes (without /marketplace/) -- keep working */}
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="quick-list" element={<AdminQuickList />} />
-            <Route path="listings" element={<AdminListings />} />
-            <Route path="properties" element={<AdminListings />} />
-            <Route path="submissions" element={<AdminSubmissions />} />
+            <Route path="listings" element={<Navigate to="/admin/marketplace/deals" replace />} />
+            <Route path="properties" element={<Navigate to="/admin/marketplace/deals" replace />} />
+            <Route path="submissions" element={<Navigate to="/admin/marketplace/deals" replace />} />
             <Route path="outreach" element={<AdminOutreach />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="university" element={<AdminUniversity />} />
@@ -222,8 +220,7 @@ const App = () => (
             <Route path="nfstay/analytics" element={<AdminNfsAnalytics />} />
             <Route path="nfstay/settings" element={<AdminNfsSettings />} />
 
-            {/* Observatory */}
-            <Route path="observatory" element={<AdminObservatoryPage />} />
+            {/* Observatory removed — chat system no longer active */}
 
             {/* Architecture overview */}
             <Route path="architecture" element={<AdminArchitecture />} />

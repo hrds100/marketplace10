@@ -61,7 +61,7 @@ Tier is stored in `profiles.tier`. Checked via `useUserTier()` hook + `isPaidTie
 - `/dashboard/affiliates` - Referral program
 
 ### Admin (isAdmin required)
-- `/admin/*` - Dashboard, Listings, Users, Submissions, Notifications, University, Pricing, FAQ, Affiliates, Settings
+- `/admin/*` - Dashboard, Deals (Pending/Live/Inactive), Quick List, The Gates, Users, Notifications, University, Pricing, FAQ, Affiliates, Settings
 
 ## Key Patterns
 - **Single InquiryPanel**: rendered once per page via `createPortal` to `document.body`, never inside cards
