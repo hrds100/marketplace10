@@ -61,6 +61,7 @@ function buildRedirectUrl(origin: string, params: Record<string, string>): strin
 function connectHeaders(): Record<string, string> {
   return {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
     'Authorization': `Bearer ${NFS_HOSPITABLE_PARTNER_SECRET}`,
     'Connect-Version': CONNECT_VERSION,
   };
@@ -109,15 +110,38 @@ serve(async (req) => {
           );
         }
 
+        // Look up operator details for Hospitable customer creation
+        // Hospitable requires: id, email, name
+        const { data: operatorRow } = await supabase
+          .from('nfs_operators')
+          .select('contact_email, first_name, last_name, brand_name')
+          .eq('id', operatorId)
+          .single();
+
+        // Fall back to auth email if operator has no contact_email
+        let operatorEmail = operatorRow?.contact_email || '';
+        if (!operatorEmail) {
+          const { data: profileRow } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', profileId)
+            .single();
+          operatorEmail = profileRow?.email || `operator-${operatorId}@nfstay.com`;
+        }
+
+        const operatorName = operatorRow?.brand_name
+          || [operatorRow?.first_name, operatorRow?.last_name].filter(Boolean).join(' ')
+          || `NFStay Operator`;
+
         // Step 1: Create (or retrieve) a Hospitable Connect customer
-        // The customer represents the operator in Hospitable's system
+        // Hospitable Connect requires: id (unique), email, name
         const customerRes = await fetch(`${HOSPITABLE_CONNECT_BASE}/customers`, {
           method: 'POST',
           headers: connectHeaders(),
           body: JSON.stringify({
-            // Use operator_id as a unique external reference so Hospitable can deduplicate
-            external_id: operatorId,
-            name: `nfstay-operator-${operatorId}`,
+            id: operatorId,
+            email: operatorEmail,
+            name: operatorName,
           }),
         });
 
