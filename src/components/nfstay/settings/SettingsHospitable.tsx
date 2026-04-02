@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useNfsHospitableConnection, useNfsHospitableConnect } from '@/hooks/nfstay/use-nfs-hospitable';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,7 +27,16 @@ const healthLabels: Record<string, { label: string; color: string }> = {
   error: { label: 'Error', color: 'text-red-600' },
 };
 
+const callbackErrorMessages: Record<string, string> = {
+  auth_failed: 'Authorization was denied or failed at Hospitable.',
+  state_expired: 'The connection request expired. Please try again.',
+  no_pending_connection: 'No pending connection found. Please start the connect flow again.',
+  missing_params: 'Missing required parameters from Hospitable.',
+  token_exchange_failed: 'Failed to verify connection with Hospitable.',
+};
+
 export default function SettingsHospitable() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { connection, loading, error: fetchError, refetch } = useNfsHospitableConnection();
   const {
     connecting,
@@ -36,6 +47,31 @@ export default function SettingsHospitable() {
     disconnect,
     triggerResync,
   } = useNfsHospitableConnect();
+
+  // Handle return from Hospitable Connect callback
+  const [callbackMessage, setCallbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const successParam = searchParams.get('success');
+    const errorParam = searchParams.get('error');
+
+    if (status === 'success' || successParam === 'connected') {
+      setCallbackMessage({ type: 'success', text: 'Hospitable connected successfully! Syncing your properties...' });
+      refetch();
+      // Clean up query params
+      const cleaned = new URLSearchParams(searchParams);
+      cleaned.delete('status');
+      cleaned.delete('success');
+      setSearchParams(cleaned, { replace: true });
+    } else if (errorParam) {
+      setCallbackMessage({ type: 'error', text: callbackErrorMessages[errorParam] || `Connection error: ${errorParam}` });
+      refetch();
+      const cleaned = new URLSearchParams(searchParams);
+      cleaned.delete('error');
+      setSearchParams(cleaned, { replace: true });
+    }
+  }, []); // Run once on mount
 
   const error = fetchError || connectError;
   const isConnected = connection?.status === 'connected' && connection?.is_active;
@@ -69,6 +105,19 @@ export default function SettingsHospitable() {
           Connect your Hospitable account to sync properties and reservations from Airbnb, VRBO, and Booking.com.
         </p>
       </div>
+
+      {callbackMessage && (
+        <div className={`flex items-center gap-2 text-sm px-4 py-3 rounded-lg ${
+          callbackMessage.type === 'success'
+            ? 'text-green-700 bg-green-50 dark:bg-green-950/20'
+            : 'text-red-600 bg-red-50 dark:bg-red-950/20'
+        }`}>
+          {callbackMessage.type === 'success'
+            ? <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+          {callbackMessage.text}
+        </div>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/20 px-4 py-3 rounded-lg">
