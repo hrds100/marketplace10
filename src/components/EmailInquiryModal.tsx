@@ -48,8 +48,17 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
     }
     setSending(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Not authenticated');
+      // Get session, refresh if expired
+      let { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        session = refreshed.session;
+      }
+      if (!session?.access_token) {
+        toast.error('Your session expired. Please refresh the page and try again.');
+        setSending(false);
+        return;
+      }
       const { data, error } = await supabase.functions.invoke('process-inquiry', {
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: {

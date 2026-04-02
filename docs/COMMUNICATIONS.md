@@ -439,6 +439,8 @@ Used for:
 2. wa.me opens with short message (deal link + 5-char reference, no UUID)
 3. Message goes to NFsTay WhatsApp via GHL
 4. GHL -> n8n -> `receive-tenant-whatsapp` edge function creates one inquiry
+   - Function now accepts optional `tenant_email` field (added 2026-04-02)
+   - n8n workflow must include `tenant_email` from GHL contact data if available
 5. n8n sends tenant auto-reply confirmation
 6. Inquiry appears in Admin > Outreach > Tenant Requests
 7. Admin chooses NDA, NDA + Claim, or Direct -> `ghl-enroll` contacts landlord
