@@ -87,11 +87,14 @@ test.describe("Admin Deals Consolidation", () => {
     await pendingTab.click();
     await page.waitForTimeout(500);
 
-    // NDA and 1st Inquiry toggles should NOT be visible
-    await expect(page.locator("text=1st Inquiry")).toHaveCount(0);
-    // NDA text should not appear as a toggle label
-    const ndaToggles = page.locator('span:text-is("NDA")');
-    await expect(ndaToggles).toHaveCount(0);
+    // NDA and 1st Inquiry toggles MUST be visible (read by process-inquiry edge function)
+    // They appear per-row, so count depends on pending items. Just verify at least the labels exist if there are pending items.
+    const pendingCards = page.locator('[data-feature="ADMIN"] .bg-card');
+    const cardCount = await pendingCards.count();
+    if (cardCount > 0) {
+      await expect(page.locator("text=1st Inquiry").first()).toBeVisible();
+      await expect(page.locator('span:text-is("NDA")').first()).toBeVisible();
+    }
   });
 
   test("Live tab shows table with expected columns", async ({ page }) => {

@@ -374,9 +374,47 @@ export default function AdminDeals() {
                   <p className="text-xs text-muted-foreground mt-0.5">{s.city} · {(s as Record<string, unknown>).postcode as string} · £{s.rent_monthly?.toLocaleString()}/mo</p>
                 </div>
                 <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                  {/* 1st Inquiry toggle */}
+                  <label className="flex items-center gap-1.5 cursor-pointer" title="Send multi-step WhatsApp on first tenant inquiry">
+                    <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">1st Inquiry</span>
+                    <button type="button" role="switch"
+                      aria-checked={(s as Record<string, unknown>).first_landlord_inquiry as boolean || false}
+                      onClick={async () => {
+                        const newVal = !(s as Record<string, unknown>).first_landlord_inquiry;
+                        await supabase.from('properties').update({ first_landlord_inquiry: newVal } as any).eq('id', s.id);
+                        queryClient.invalidateQueries({ queryKey: ['admin-deals'] });
+                        toast.success(newVal ? '1st inquiry flow ON' : '1st inquiry flow OFF');
+                        if (user) logAdminAction(user.id, { action: newVal ? 'enable_first_inquiry' : 'disable_first_inquiry', target_table: 'properties', target_id: s.id, metadata: { name: s.name } });
+                      }}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${(s as Record<string, unknown>).first_landlord_inquiry ? 'bg-[#1E9A80]' : 'bg-gray-300'}`}
+                    >
+                      <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${(s as Record<string, unknown>).first_landlord_inquiry ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                    </button>
+                  </label>
+                  {/* NDA Required toggle */}
+                  <label className="flex items-center gap-1.5 cursor-pointer" title="Require NDA before showing contact details">
+                    <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">NDA</span>
+                    <button type="button" role="switch"
+                      aria-checked={(s as Record<string, unknown>).nda_required as boolean || false}
+                      onClick={async () => {
+                        const newVal = !(s as Record<string, unknown>).nda_required;
+                        await supabase.from('properties').update({ nda_required: newVal } as any).eq('id', s.id);
+                        queryClient.invalidateQueries({ queryKey: ['admin-deals'] });
+                        toast.success(newVal ? 'NDA required ON' : 'NDA required OFF');
+                        if (user) logAdminAction(user.id, { action: newVal ? 'enable_nda' : 'disable_nda', target_table: 'properties', target_id: s.id, metadata: { name: s.name } });
+                      }}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${(s as Record<string, unknown>).nda_required ? 'bg-[#1E9A80]' : 'bg-gray-300'}`}
+                    >
+                      <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${(s as Record<string, unknown>).nda_required ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                    </button>
+                  </label>
                   <button onClick={() => startEdit(s)} className="text-xs text-primary font-medium inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-secondary"><Edit2 className="w-3 h-3" /> Edit</button>
-                  <button onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Approve</button>
-                  <button onClick={() => reject(s.id)} className="text-xs text-destructive font-medium px-2">Reject</button>
+                  {(s.status === 'pending' || s.status === 'inactive') && (
+                    <>
+                      <button onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Approve</button>
+                      <button onClick={() => reject(s.id)} className="text-xs text-destructive font-medium px-2">Reject</button>
+                    </>
+                  )}
                 </div>
                 {expandedId === s.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
               </div>

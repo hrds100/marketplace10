@@ -13,14 +13,13 @@
 ### Removed
 - Deal Sourcers page (read-only metrics, already available in The Gates > Metrics tab).
 - Observatory page (read-only chat monitor, chat system no longer active).
-- 1st Inquiry toggle (dead code, field fetched but never consumed).
-- NDA toggle from submissions UI (NDA now controlled per-inquiry in The Gates).
 - Old nav links: Submissions, Listings, Deal Sourcers, Observatory replaced by single "Deals" link.
 - Old URLs (/admin/marketplace/submissions, /listings, /deal-sourcers) redirect to /admin/marketplace/deals.
 
 ### Preserved
+- 1st Inquiry and NDA toggles remain on Pending Review tab (both fields read by process-inquiry edge function).
 - Approval workflow: audit log, email notifications, in-app notifications all intact.
-- properties.nda_required column remains in DB (used as fallback by LeadsTab and process-inquiry edge function).
+- Approve/Reject buttons only visible on pending/inactive items (matches original Submissions behavior).
 
 ## [2026-04-02d] - Outreach Metadata Enrichment (Pass 1/3)
 
