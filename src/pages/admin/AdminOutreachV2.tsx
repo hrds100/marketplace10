@@ -613,9 +613,11 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
 
               <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                 {group.phone && (() => {
-                  const currentMode = alwaysAuthorised
+                  let currentMode = alwaysAuthorised
                     ? (group.inquiries.find(i => i.always_authorised)?.authorisation_type || 'direct')
                     : 'off';
+                  // Normalize: claimed landlords can't be in nda_and_claim mode
+                  if (group.claimed && currentMode === 'nda_and_claim') currentMode = 'nda';
                   const modeLabel = currentMode === 'off' ? 'Off' : currentMode === 'nda' ? 'NDA' : currentMode === 'nda_and_claim' ? 'NDA + Claim' : 'Direct';
                   const isDropOpen = openDropdown === group.key;
                   return (
@@ -636,10 +638,10 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
                           style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {([['off', 'Off'], ['direct', 'Direct'], ['nda', 'NDA'], ['nda_and_claim', 'NDA + Claim']] as const).map(([value, label]) => (
+                          {([['off', 'Off'], ['direct', 'Direct'], ['nda', 'NDA'], ...(!group.claimed ? [['nda_and_claim', 'NDA + Claim'] as const] : [])] as Array<readonly [string, string]>).map(([value, label]) => (
                             <button
                               key={value}
-                              onClick={() => { setAlwaysAuthoriseMode(group.phone, value); setOpenDropdown(null); }}
+                              onClick={() => { setAlwaysAuthoriseMode(group.phone, value as 'off' | 'direct' | 'nda' | 'nda_and_claim'); setOpenDropdown(null); }}
                               className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-gray-50 transition-colors flex items-center justify-between"
                               style={{ color: currentMode === value ? '#1E9A80' : '#1A1A1A' }}
                             >
@@ -702,14 +704,16 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
                             >
                               {loadingActions.has(`auth-${inq.id}-nda`) ? '...' : 'NDA'}
                             </button>
-                            <button
-                              onClick={() => authorise(inq, 'nda_and_claim')}
-                              disabled={loadingActions.has(`auth-${inq.id}-nda_and_claim`)}
-                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                              style={{ backgroundColor: '#111111' }}
-                            >
-                              {loadingActions.has(`auth-${inq.id}-nda_and_claim`) ? '...' : 'NDA + Claim'}
-                            </button>
+                            {!group.claimed && (
+                              <button
+                                onClick={() => authorise(inq, 'nda_and_claim')}
+                                disabled={loadingActions.has(`auth-${inq.id}-nda_and_claim`)}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                                style={{ backgroundColor: '#111111' }}
+                              >
+                                {loadingActions.has(`auth-${inq.id}-nda_and_claim`) ? '...' : 'NDA + Claim'}
+                              </button>
+                            )}
                             <button
                               onClick={() => authorise(inq, 'direct')}
                               disabled={loadingActions.has(`auth-${inq.id}-direct`)}

@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [2026-04-02a] - Hide NDA + Claim for Already-Claimed Landlords
+
+### Fixed
+- Tenant Requests: `NDA + Claim` button hidden when landlord is already claimed.
+- Always Authorise dropdown: `NDA + Claim` option removed for claimed landlords.
+- If saved mode was `nda_and_claim` for a claimed landlord, display normalizes to `NDA`.
+- Claimed landlords can only be released via `NDA` or `Direct`.
+
 ## [2026-04-01i] - Restore Tenant WhatsApp Auto-Reply
 
 ### Fixed - Tenant auto-reply not sending
