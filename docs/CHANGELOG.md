@@ -2,13 +2,15 @@
 
 ## [Unreleased]
 
-## [2026-04-02a] - Hide NDA + Claim for Already-Claimed Landlords
+## [2026-04-02a] - Fix Claimed Detection + Hide NDA + Claim for Claimed Landlords
 
 ### Fixed
-- Tenant Requests: `NDA + Claim` button hidden when landlord is already claimed.
+- `isReallyClaimed()` helper: profiles with `@nfstay.internal` email are treated as unclaimed.
+- Landlord Activation, Tenant Requests, and Metrics all use the same claimed check.
+- `NDA + Claim` button hidden for truly claimed landlords (real email, not internal).
 - Always Authorise dropdown: `NDA + Claim` option removed for claimed landlords.
-- If saved mode was `nda_and_claim` for a claimed landlord, display normalizes to `NDA`.
-- Claimed landlords can only be released via `NDA` or `Direct`.
+- Saved `nda_and_claim` mode normalizes to `NDA` display for claimed landlords.
+- Internal placeholder accounts (`landlord_xxx@nfstay.internal`) correctly show as Unclaimed.
 
 ## [2026-04-01i] - Restore Tenant WhatsApp Auto-Reply
 

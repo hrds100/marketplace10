@@ -67,6 +67,12 @@ interface ListerMetric {
 
 type TabKey = 'listings' | 'pending' | 'metrics';
 
+/** A profile is truly claimed only when it has a real email (not @nfstay.internal placeholder). */
+function isReallyClaimed(profile: { email: string | null } | null | undefined): boolean {
+  if (!profile?.email) return false;
+  return !profile.email.endsWith('@nfstay.internal');
+}
+
 // ── Edge function caller ──
 async function callGhlEnroll(phone: string, workflowId: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -204,7 +210,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
             phone,
             name: profile?.name || prop.contact_name || null,
             email: profile?.email || null,
-            claimed: profileMap.has(phone),
+            claimed: isReallyClaimed(profileMap.get(phone)),
             outreachSent: false,
             outreachSentAt: null,
             hasClaimLeads: false,
@@ -442,7 +448,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
           landlordPhone,
           landlordName: profile?.name || inq.lister_name || null,
           landlordEmail: profile?.email || null,
-          claimed: !!profile,
+          claimed: isReallyClaimed(profile),
         };
       });
     },
@@ -821,13 +827,13 @@ function MetricsTab() {
         if (inq.nda_signed) s.ndaSigned++;
       }
 
-      // Claimed
+      // Claimed - only if real email (not @nfstay.internal placeholder)
       for (const profile of profiles) {
         const s = phoneMap.get(profile.whatsapp);
         if (!s) continue;
-        if (profile.name && profile.name !== profile.whatsapp && !profile.name.includes('+')) {
+        if (isReallyClaimed(profile)) {
           s.claimed = true;
-          s.name = profile.name;
+          if (profile.name) s.name = profile.name;
         }
       }
 
