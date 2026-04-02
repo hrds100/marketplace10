@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [2026-04-02b] - Restore Poll Workflow Tenant Reply
+
+### Fixed
+- ROOT CAUSE: Poll workflow had reply nodes stripped (to avoid duplicates with webhook).
+  But GHL trigger stopped firing to the webhook, so the poll was the only path creating
+  inquiries - and it had no reply step. Tenant got no confirmation.
+- Fix: Reply nodes restored to poll workflow (Prepare Reply -> Should Reply? -> Send Tenant Reply).
+- Both paths now send replies: webhook (instant, when GHL triggers) and poll (every 2 min, backup).
+- Edge function dedup prevents duplicate inquiries; reply fires for both new and dedup'd results.
+
 ## [2026-04-02a] - Fix Claimed Detection + Hide NDA + Claim for Claimed Landlords
 
 ### Fixed

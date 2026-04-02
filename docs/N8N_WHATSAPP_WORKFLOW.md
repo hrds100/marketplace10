@@ -83,12 +83,20 @@ workflow internals, so this polling workflow bypasses the broken trigger entirel
 
 ### What it does NOT do:
 - Does NOT notify the landlord
-- Does NOT send any auto-reply (the webhook workflow handles replies)
 - Does NOT enroll anyone in GHL workflows
 
-## Tenant auto-reply (fixed 2026-04-01)
+### Tenant auto-reply (restored 2026-04-02):
+After creating the inquiry, the poll sends a confirmation reply via GHL conversations API.
+Fires for both new and deduplicated inquiries (dedup means webhook already created it).
 
-**Source:** n8n webhook workflow `IvXzbcqzv5bKtu01`, "Send Tenant Auto-Reply" node.
+## Tenant auto-reply (dual-path, fixed 2026-04-02)
+
+Both the webhook and poll workflows send the reply. The edge function dedup prevents
+duplicate inquiries, but the reply fires from whichever path runs.
+
+**Sources:**
+- n8n webhook workflow `IvXzbcqzv5bKtu01` (instant, when GHL triggers it)
+- n8n poll workflow `ReoIHnniLpB632Ir` (every 2 min, backup)
 **Text:** "Thanks for contacting NFsTay! Your inquiry for [property] has been received
 and is being reviewed by our team. We will be in touch shortly."
 **Trigger:** Fires immediately after `receive-tenant-whatsapp` creates/deduplicates the inquiry.
