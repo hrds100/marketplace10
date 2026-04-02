@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Rocket, Send, Check, X, Shield, ChevronDown, Clock, Inbox, MessageSquare, BarChart3, Phone, Home, FileCheck, UserCheck, Trash2 } from 'lucide-react';
+import { Rocket, Send, Check, X, Shield, ChevronDown, Clock, Inbox, MessageSquare, BarChart3, Phone, Home, FileCheck, UserCheck, Trash2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -160,10 +160,35 @@ interface LandlordGroup {
   outreachSentAt: string | null;
   hasClaimLeads: boolean;
   properties: (PropertyRow & { ndaCount: number; pendingCount: number; totalCount: number; leads: any[] })[];
+  manualLeads?: any[];
 }
 
 function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [showAssignForm, setShowAssignForm] = useState<Set<string>>(new Set());
+  const [assignLeadForms, setAssignLeadForms] = useState<Record<string, { name: string; email: string; phone: string; mode: 'direct' | 'nda' | 'nda_and_claim'; workflow: string }>>({});
+
+  const toggleAssignForm = (phone: string) => {
+    setShowAssignForm(prev => {
+      const next = new Set(prev);
+      if (next.has(phone)) {
+        next.delete(phone);
+      } else {
+        next.add(phone);
+        if (!assignLeadForms[phone]) {
+          setAssignLeadForms(p => ({ ...p, [phone]: { name: '', email: '', phone: '', mode: 'nda_and_claim', workflow: GHL_WORKFLOW_COLD } }));
+        }
+      }
+      return next;
+    });
+  };
+
+  const updateAssignForm = (phone: string, field: string, value: string) => {
+    setAssignLeadForms(prev => ({
+      ...prev,
+      [phone]: { ...prev[phone], [field]: value },
+    }));
+  };
 
   const { data: groups = [], isLoading } = useQuery({
     queryKey: ['outreach-listings'],
@@ -177,9 +202,21 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
 
       const propIds = properties.map(p => p.id);
       const { data: inquiries } = await supabase.from('inquiries')
-        .select('id, property_id, tenant_name, nda_signed, nda_signed_at, always_authorised, authorized, authorisation_type, authorized_at, created_at')
+        .select('id, property_id, lister_phone, tenant_name, nda_signed, nda_signed_at, always_authorised, authorized, authorisation_type, authorized_at, created_at')
         .in('property_id', propIds);
 
+      // Also fetch propertyless inquiries (admin-assigned leads) by lister phone
+      const allPhones = [...new Set(properties.map(p => p.landlord_whatsapp || p.contact_phone).filter(Boolean))] as string[];
+      let propertylessInquiries: typeof inquiries = [];
+      if (allPhones.length > 0) {
+        const { data: pless } = await supabase.from('inquiries')
+          .select('id, property_id, lister_phone, tenant_name, nda_signed, nda_signed_at, always_authorised, authorized, authorisation_type, authorized_at, created_at')
+          .is('property_id', null)
+          .in('lister_phone', allPhones);
+        propertylessInquiries = pless || [];
+      }
+
+      // Merge: property-linked inquiries keyed by property_id, propertyless keyed by phone
       const inqMap = new Map<string, { ndaCount: number; pendingCount: number; totalCount: number; hasClaimLeads: boolean; leads: typeof inquiries }>();
       for (const inq of (inquiries || [])) {
         const existing = inqMap.get(inq.property_id!) || { ndaCount: 0, pendingCount: 0, totalCount: 0, hasClaimLeads: false, leads: [] as typeof inquiries };
@@ -189,6 +226,18 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
         if ((inq as any).authorisation_type === 'nda_and_claim') existing.hasClaimLeads = true;
         existing.leads!.push(inq);
         inqMap.set(inq.property_id!, existing);
+      }
+
+      // Track propertyless leads per phone for group-level display
+      const phonelessLeadMap = new Map<string, { totalCount: number; hasClaimLeads: boolean; leads: typeof inquiries }>();
+      for (const inq of (propertylessInquiries || [])) {
+        const phone = (inq as any).lister_phone || '';
+        if (!phone) continue;
+        const existing = phonelessLeadMap.get(phone) || { totalCount: 0, hasClaimLeads: false, leads: [] as typeof inquiries };
+        existing.totalCount++;
+        if ((inq as any).authorisation_type === 'nda_and_claim') existing.hasClaimLeads = true;
+        existing.leads!.push(inq);
+        phonelessLeadMap.set(phone, existing);
       }
 
       // Look up claimed profiles by phone
@@ -238,6 +287,16 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
         if (propInq?.hasClaimLeads) group.hasClaimLeads = true;
       }
 
+      // Merge propertyless lead counts into groups
+      for (const [phone, plData] of phonelessLeadMap) {
+        const group = groupMap.get(phone);
+        if (group) {
+          if (plData.hasClaimLeads) group.hasClaimLeads = true;
+          // Attach propertyless leads to a virtual row so they display in the expanded section
+          (group as any).manualLeads = plData.leads || [];
+        }
+      }
+
       return Array.from(groupMap.values()).sort((a, b) => b.properties.length - a.properties.length);
     },
   });
@@ -264,6 +323,66 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       queryClient.invalidateQueries({ queryKey: ['outreach-listings'] });
     } catch {
       toast.error('Failed to send outreach');
+    } finally {
+      removeLoading(key);
+    }
+  };
+
+  const assignLeadAndSendOutreach = async (group: LandlordGroup) => {
+    const formData = assignLeadForms[group.phone];
+    if (!formData?.name?.trim() || !formData?.email?.trim() || !formData?.phone?.trim()) {
+      toast.error('Fill in lead name, email, and phone');
+      return;
+    }
+
+    const key = `assign-${group.phone}`;
+    addLoading(key);
+    try {
+      // 1. Create inquiry row (authorized immediately - admin is seeding this lead)
+      const token = crypto.randomUUID();
+      const { error: inqError } = await supabase.from('inquiries').insert({
+        tenant_name: formData.name.trim(),
+        tenant_email: formData.email.trim(),
+        tenant_phone: formData.phone.trim(),
+        lister_phone: group.phone,
+        lister_name: group.name || null,
+        channel: 'email',
+        message: 'Admin-assigned lead via Landlord Activation outreach',
+        authorized: true,
+        authorisation_type: formData.mode,
+        token,
+        status: 'new',
+        stage: 'New Leads',
+      } as any);
+      if (inqError) throw inqError;
+
+      // 2. Send GHL outreach using the workflow Hugo selected in the form
+      const ghlResult = await callGhlEnroll(group.phone, formData.workflow);
+      if (!ghlResult.success) {
+        toast.error('Lead saved but GHL outreach failed: ' + (ghlResult.error || 'Unknown'));
+      }
+
+      // 3. Mark properties as outreach_sent
+      const ids = group.properties.map(p => p.id);
+      await supabase.from('properties')
+        .update({ outreach_sent: true, outreach_sent_at: new Date().toISOString() })
+        .in('id', ids);
+
+      if (user) logAdminAction(user.id, {
+        action: 'assign_lead_and_outreach',
+        target_table: 'inquiries',
+        target_id: group.phone,
+        metadata: { tenant_name: formData.name, mode: formData.mode, properties: ids.length },
+      });
+
+      toast.success(`Lead assigned (${formData.mode.replace(/_/g, ' + ')}) and outreach sent to ${group.name || group.phone}`);
+
+      // Clear form
+      setAssignLeadForms(prev => { const next = { ...prev }; delete next[group.phone]; return next; });
+      setShowAssignForm(prev => { const next = new Set(prev); next.delete(group.phone); return next; });
+      queryClient.invalidateQueries({ queryKey: ['outreach-listings'] });
+    } catch (err) {
+      toast.error('Failed: ' + (err instanceof Error ? err.message : 'unknown error'));
     } finally {
       removeLoading(key);
     }
@@ -347,7 +466,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
         {groups.map((group: LandlordGroup) => {
           const isOpen = expanded.has(group.phone);
           const totalPending = group.properties.reduce((s, p) => s + p.pendingCount, 0);
-          const totalLeads = group.properties.reduce((s, p) => s + p.totalCount, 0);
+          const totalLeads = group.properties.reduce((s, p) => s + p.totalCount, 0) + (group.manualLeads?.length || 0);
           return (
           <div key={group.phone} className="rounded-2xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
             <div className="flex items-center justify-between gap-4 p-4 cursor-pointer" onClick={() => toggleExpand(group.phone)}>
@@ -409,7 +528,15 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                   <Trash2 className="w-3 h-3" />
                   {loadingActions.has(`reset-${group.phone}`) ? 'Resetting...' : 'Reset'}
                 </button>
-                {!group.outreachSent && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleAssignForm(group.phone); if (!expanded.has(group.phone)) toggleExpand(group.phone); }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-opacity hover:opacity-80"
+                  style={{ backgroundColor: showAssignForm.has(group.phone) ? '#ECFDF5' : '#F3F3EE', color: showAssignForm.has(group.phone) ? '#1E9A80' : '#6B7280' }}
+                >
+                  <UserPlus className="w-3 h-3" />
+                  Assign Lead
+                </button>
+                {!group.outreachSent && !showAssignForm.has(group.phone) && (
                   <button
                     onClick={(e) => { e.stopPropagation(); sendOutreach(group); }}
                     disabled={loadingActions.has(`outreach-${group.phone}`)}
@@ -427,6 +554,89 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
             {/* Expanded property list */}
             {isOpen && (
               <div className="border-t px-4 pb-3 pt-2 space-y-2" style={{ borderColor: '#F3F4F6', backgroundColor: '#FAFAFA' }}>
+                {/* Assign a lead form */}
+                {showAssignForm.has(group.phone) && assignLeadForms[group.phone] && (
+                  <div className="rounded-xl border p-4 mb-1" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+                    <p className="text-xs font-bold mb-3" style={{ color: '#1A1A1A' }}>Assign a lead for this landlord</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                      <div>
+                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Lead Name *</label>
+                        <input
+                          value={assignLeadForms[group.phone].name}
+                          onChange={e => updateAssignForm(group.phone, 'name', e.target.value)}
+                          placeholder="e.g. James Walker"
+                          className="w-full h-9 rounded-lg border px-3 text-xs"
+                          style={{ borderColor: '#E5E5E5' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Lead Email *</label>
+                        <input
+                          type="email"
+                          value={assignLeadForms[group.phone].email}
+                          onChange={e => updateAssignForm(group.phone, 'email', e.target.value)}
+                          placeholder="james@example.com"
+                          className="w-full h-9 rounded-lg border px-3 text-xs"
+                          style={{ borderColor: '#E5E5E5' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Lead Phone *</label>
+                        <input
+                          value={assignLeadForms[group.phone].phone}
+                          onChange={e => updateAssignForm(group.phone, 'phone', e.target.value)}
+                          placeholder="+447911123456"
+                          className="w-full h-9 rounded-lg border px-3 text-xs"
+                          style={{ borderColor: '#E5E5E5' }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Release Mode</label>
+                        <select
+                          value={assignLeadForms[group.phone].mode}
+                          onChange={e => updateAssignForm(group.phone, 'mode', e.target.value)}
+                          className="h-9 rounded-lg border px-2 text-xs font-medium"
+                          style={{ borderColor: '#E5E5E5', color: '#1A1A1A' }}
+                        >
+                          <option value="nda">NDA</option>
+                          <option value="nda_and_claim">NDA + Claim</option>
+                          <option value="direct">Direct</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Outreach Workflow</label>
+                        <select
+                          value={assignLeadForms[group.phone].workflow}
+                          onChange={e => updateAssignForm(group.phone, 'workflow', e.target.value)}
+                          className="h-9 rounded-lg border px-2 text-xs font-medium"
+                          style={{ borderColor: '#E5E5E5', color: '#1A1A1A' }}
+                        >
+                          <option value={GHL_WORKFLOW_COLD}>Landlord Activation (default)</option>
+                          <option value={GHL_WORKFLOW_WARM}>Tenant Lead Release (NDA)</option>
+                        </select>
+                      </div>
+                      <div className="flex-1" />
+                      <button
+                        onClick={() => { setShowAssignForm(prev => { const next = new Set(prev); next.delete(group.phone); return next; }); }}
+                        className="h-9 px-3 rounded-lg border text-xs font-medium transition-opacity hover:opacity-80"
+                        style={{ borderColor: '#E5E7EB', color: '#6B7280' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => assignLeadAndSendOutreach(group)}
+                        disabled={loadingActions.has(`assign-${group.phone}`)}
+                        className="h-9 px-4 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5"
+                        style={{ backgroundColor: '#1E9A80' }}
+                      >
+                        <Send className="w-3 h-3" />
+                        {loadingActions.has(`assign-${group.phone}`) ? 'Sending...' : 'Assign Lead & Send Outreach'}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {group.properties.map(prop => (
                   <div key={prop.id}>
                     <div className="flex items-center justify-between gap-3 py-1.5 cursor-pointer" onClick={() => { const k = `lead-${prop.id}`; setExpanded(prev => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; }); }}>
@@ -476,6 +686,35 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                     )}
                   </div>
                 ))}
+                {/* Manually assigned leads (propertyless) */}
+                {group.manualLeads && group.manualLeads.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 py-1.5">
+                      <UserPlus className="w-3 h-3 flex-shrink-0" style={{ color: '#1E9A80' }} />
+                      <span className="text-xs font-medium" style={{ color: '#1A1A1A' }}>Assigned leads</span>
+                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
+                        {group.manualLeads.length}
+                      </span>
+                    </div>
+                    <div className="ml-5 mb-2 space-y-1.5">
+                      {group.manualLeads.map((lead: any) => (
+                        <div key={lead.id} className="flex items-center justify-between gap-3 py-1 px-2.5 rounded-lg text-[11px]" style={{ backgroundColor: '#F9FAFB' }}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-medium" style={{ color: '#1A1A1A' }}>{lead.tenant_name || 'Unknown'}</span>
+                            <span className="inline-flex items-center gap-1" style={{ color: '#9CA3AF' }}>
+                              <Clock className="w-2.5 h-2.5" />
+                              {new Date(lead.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}{' '}
+                              {new Date(lead.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <span className="font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
+                            {lead.authorisation_type === 'nda' ? 'NDA' : lead.authorisation_type === 'nda_and_claim' ? 'NDA+Claim' : 'Direct'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
