@@ -10,9 +10,10 @@ interface Props {
   open: boolean;
   listing: ListingShape | null;
   onClose: () => void;
+  onContactSuccess?: (propertyId: string) => void;
 }
 
-export default function EmailInquiryModal({ open, listing, onClose }: Props) {
+export default function EmailInquiryModal({ open, listing, onClose, onContactSuccess }: Props) {
   const { user } = useAuth();
   const [name, setName] = useState(user?.user_metadata?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -63,6 +64,7 @@ export default function EmailInquiryModal({ open, listing, onClose }: Props) {
       });
       if (error) throw error;
       setSent(true);
+      onContactSuccess?.(listing!.id);
     } catch (err) {
       toast.error('Failed to send inquiry. Please try again.');
     } finally {

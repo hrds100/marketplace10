@@ -35,7 +35,7 @@ test.describe('Assign a Lead - Landlord Activation', () => {
     expect(content).toContain('workflow: GHL_WORKFLOW_COLD');
 
     // Selector label
-    expect(content).toContain('Outreach Workflow');
+    expect(content).toContain('Activation Workflow');
 
     // Two options with human-readable labels
     expect(content).toContain('Landlord Activation (default)');
@@ -100,18 +100,18 @@ test.describe('Assign a Lead - Landlord Activation', () => {
     expect(content).toContain("queryClient.invalidateQueries");
   });
 
-  test('Assign & Send Outreach button in form', () => {
+  test('Assign & Activate button in form', () => {
     const content = readSource('src/pages/admin/AdminOutreachV2.tsx');
 
     // Combined action button
-    expect(content).toContain('Assign Lead & Send Outreach');
+    expect(content).toContain('Assign Lead & Activate');
     expect(content).toContain('assignLeadAndSendOutreach(group)');
   });
 
-  test('Send Outreach button hidden when assign form is open', () => {
+  test('Send Activation button hidden when assign form is open', () => {
     const content = readSource('src/pages/admin/AdminOutreachV2.tsx');
 
-    // The Send Outreach button is conditionally hidden when assign form is open
+    // The Send Activation button is conditionally hidden when assign form is open
     expect(content).toContain('!showAssignForm.has(group.phone)');
   });
 
@@ -202,15 +202,15 @@ async function adminLogin(page: import('@playwright/test').Page) {
 test.describe('Assign a Lead - Browser Flow', () => {
   test.setTimeout(90_000);
 
-  test('Admin can open Outreach, see Assign Lead button, fill form, and verify mode selector', async ({ page }) => {
+  test('Admin can open The Gates, see Assign Lead button, fill form, and verify mode selector', async ({ page }) => {
     // 1. Login as admin
     await adminLogin(page);
 
-    // 2. Navigate to Admin > Outreach
+    // 2. Navigate to Admin > The Gates
     await page.goto(`${BASE}/admin/outreach`, { waitUntil: 'networkidle' });
 
-    // 3. Confirm we are on the Outreach page
-    await expect(page.locator('h1:has-text("Outreach")')).toBeVisible({ timeout: 15_000 });
+    // 3. Confirm we are on The Gates page
+    await expect(page.locator('h1:has-text("The Gates")')).toBeVisible({ timeout: 15_000 });
 
     // 4. Confirm Landlord Activation tab is active by default
     const activationTab = page.locator('button:has-text("Landlord Activation")');
@@ -251,8 +251,8 @@ test.describe('Assign a Lead - Browser Flow', () => {
     expect(options).toContain('NDA + Claim');
     expect(options).toContain('Direct');
 
-    // 10. Confirm "Assign Lead & Send Outreach" button is visible
-    const submitBtn = page.locator('button:has-text("Assign Lead & Send Outreach")');
+    // 10. Confirm "Assign Lead & Activate" button is visible
+    const submitBtn = page.locator('button:has-text("Assign Lead & Activate")');
     await expect(submitBtn).toBeVisible();
     await expect(submitBtn).toBeEnabled();
 
@@ -287,7 +287,7 @@ test.describe('Assign a Lead - Browser Flow', () => {
     const nameInputAgain = page.locator('input[placeholder="e.g. James Walker"]');
     await expect(nameInputAgain).toBeVisible({ timeout: 3_000 });
 
-    // NOTE: We do NOT click "Assign Lead & Send Outreach" because that
+    // NOTE: We do NOT click "Assign Lead & Activate" because that
     // would create a real inquiry in the live DB and trigger a real GHL call.
     // The code-level tests above verify the handler logic; this browser test
     // verifies the UI renders, accepts input, and wires up correctly.

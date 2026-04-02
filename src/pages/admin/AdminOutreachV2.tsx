@@ -109,7 +109,7 @@ export default function AdminOutreachV2() {
     <div data-feature="ADMIN">
       <div className="flex items-center gap-3 mb-1">
         <Rocket className="w-6 h-6" style={{ color: '#1E9A80' }} />
-        <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Outreach</h1>
+        <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>The Gates</h1>
       </div>
       <p className="text-sm mb-6" style={{ color: '#6B7280' }}>
         Activate landlords, control tenant lead release, and track lister engagement.
@@ -544,7 +544,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                     style={{ backgroundColor: '#1E9A80' }}
                   >
                     <Send className="w-3 h-3" />
-                    {loadingActions.has(`outreach-${group.phone}`) ? 'Sending...' : 'Send Outreach'}
+                    {loadingActions.has(`outreach-${group.phone}`) ? 'Sending...' : 'Send Activation'}
                   </button>
                 )}
                 <span className="text-xs" style={{ color: '#9CA3AF' }}>{isOpen ? '▼' : '▶'}</span>
@@ -606,7 +606,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Outreach Workflow</label>
+                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Activation Workflow</label>
                         <select
                           value={assignLeadForms[group.phone].workflow}
                           onChange={e => updateAssignForm(group.phone, 'workflow', e.target.value)}
@@ -632,7 +632,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                         style={{ backgroundColor: '#1E9A80' }}
                       >
                         <Send className="w-3 h-3" />
-                        {loadingActions.has(`assign-${group.phone}`) ? 'Sending...' : 'Assign Lead & Send Outreach'}
+                        {loadingActions.has(`assign-${group.phone}`) ? 'Sending...' : 'Assign Lead & Activate'}
                       </button>
                     </div>
                   </div>

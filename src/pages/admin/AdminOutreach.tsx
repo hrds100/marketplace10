@@ -244,7 +244,7 @@ export default function AdminOutreach() {
       <div data-feature="ADMIN">
         <div className="flex items-center gap-3 mb-6">
           <Rocket className="w-6 h-6 text-primary" />
-          <h1 className="text-[28px] font-bold text-foreground">Landlord Outreach</h1>
+          <h1 className="text-[28px] font-bold text-foreground">The Gates</h1>
         </div>
         <div className="space-y-4">
           {[1, 2, 3].map(i => (
@@ -269,7 +269,7 @@ export default function AdminOutreach() {
       <div data-feature="ADMIN">
         <div className="flex items-center gap-3 mb-6">
           <Rocket className="w-6 h-6 text-primary" />
-          <h1 className="text-[28px] font-bold text-foreground">Landlord Outreach</h1>
+          <h1 className="text-[28px] font-bold text-foreground">The Gates</h1>
         </div>
         <div className="bg-card border border-border rounded-2xl p-12 text-center">
           <Inbox className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -283,7 +283,7 @@ export default function AdminOutreach() {
     <div data-feature="ADMIN">
       <div className="flex items-center gap-3 mb-6">
         <Rocket className="w-6 h-6 text-primary" />
-        <h1 className="text-[28px] font-bold text-foreground">Landlord Outreach</h1>
+        <h1 className="text-[28px] font-bold text-foreground">The Gates</h1>
         <span className="text-xs text-muted-foreground ml-2">{landlordGroups.length} landlords</span>
       </div>
 
@@ -309,7 +309,7 @@ export default function AdminOutreach() {
                     {statusBadge(status)}
                     {awaitingOutreach > 0 && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                        {awaitingOutreach} awaiting outreach
+                        {awaitingOutreach} awaiting activation
                       </span>
                     )}
                   </div>
@@ -335,7 +335,7 @@ export default function AdminOutreach() {
                       className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 inline-flex items-center gap-1.5"
                     >
                       <Send className="w-3 h-3" />
-                      {loadingActions.has(`outreach-${group.landlordWhatsapp}`) ? 'Sending...' : 'Send First Outreach'}
+                      {loadingActions.has(`outreach-${group.landlordWhatsapp}`) ? 'Sending...' : 'Send First Activation'}
                     </button>
                   )}
                 </div>
