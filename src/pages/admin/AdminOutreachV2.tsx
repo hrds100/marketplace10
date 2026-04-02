@@ -109,7 +109,7 @@ export default function AdminOutreachV2() {
     <div data-feature="ADMIN">
       <div className="flex items-center gap-3 mb-1">
         <Rocket className="w-6 h-6" style={{ color: '#1E9A80' }} />
-        <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Outreach</h1>
+        <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>The Gates</h1>
       </div>
       <p className="text-sm mb-6" style={{ color: '#6B7280' }}>
         Activate landlords, control tenant lead release, and track lister engagement.

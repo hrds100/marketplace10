@@ -202,15 +202,15 @@ async function adminLogin(page: import('@playwright/test').Page) {
 test.describe('Assign a Lead - Browser Flow', () => {
   test.setTimeout(90_000);
 
-  test('Admin can open Outreach, see Assign Lead button, fill form, and verify mode selector', async ({ page }) => {
+  test('Admin can open The Gates, see Assign Lead button, fill form, and verify mode selector', async ({ page }) => {
     // 1. Login as admin
     await adminLogin(page);
 
-    // 2. Navigate to Admin > Outreach
+    // 2. Navigate to Admin > The Gates
     await page.goto(`${BASE}/admin/outreach`, { waitUntil: 'networkidle' });
 
-    // 3. Confirm we are on the Outreach page
-    await expect(page.locator('h1:has-text("Outreach")')).toBeVisible({ timeout: 15_000 });
+    // 3. Confirm we are on The Gates page
+    await expect(page.locator('h1:has-text("The Gates")')).toBeVisible({ timeout: 15_000 });
 
     // 4. Confirm Landlord Activation tab is active by default
     const activationTab = page.locator('button:has-text("Landlord Activation")');
