@@ -107,12 +107,12 @@ serve(async (req) => {
         results.push('Auth email reverted to ' + internalEmail)
       }
 
-      // Revert profile email
+      // Revert profile email + clear name
       await supabaseAdmin
         .from('profiles')
-        .update({ email: internalEmail })
+        .update({ email: internalEmail, name: null })
         .eq('id', profile.id)
-      results.push('Profile email reverted')
+      results.push('Profile email + name reverted')
     } else {
       results.push('No profile found for phone')
     }
