@@ -131,8 +131,8 @@ export default function LeadAccessAgreement({ open, onClose, onAgree, requiresCl
       {/* Modal - bottom sheet on mobile, centered on desktop */}
       <div className="fixed z-50 inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-md sm:w-full">
         <div
-          className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-y-auto animate-in slide-in-from-bottom duration-300 sm:slide-in-from-bottom-0 sm:fade-in"
-          style={{ maxHeight: '85dvh', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-y-auto animate-in slide-in-from-bottom duration-300 sm:slide-in-from-bottom-0 sm:fade-in pb-[70px] sm:pb-0"
+          style={{ maxHeight: '85dvh' }}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
