@@ -270,12 +270,14 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
   };
 
   const resetLandlord = async (group: LandlordGroup) => {
+    const totalLeads = group.properties.reduce((s, p) => s + p.totalCount, 0);
     const confirmed = window.confirm(
       `Reset test data for ${group.name || group.phone}?\n\n` +
       `This will:\n` +
-      `- Delete all ${group.properties.reduce((s, p) => s + p.totalCount, 0)} leads/inquiries\n` +
+      `- Delete all ${totalLeads} leads/inquiries\n` +
       `- Remove property ownership (submitted_by)\n` +
-      `- Revert account to unclaimed (@nfstay.internal)\n\n` +
+      `- Revert account to unclaimed (@nfstay.internal)\n` +
+      `- Reset outreach sent flag\n\n` +
       `This cannot be undone.`
     );
     if (!confirmed) return;
@@ -283,49 +285,29 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
     const key = `reset-${group.phone}`;
     addLoading(key);
     try {
-      const cleanPhone = group.phone.replace(/\D/g, '');
-      const internalEmail = `landlord_${cleanPhone}@nfstay.internal`;
-      const propIds = group.properties.map(p => p.id);
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session) { toast.error('Not signed in'); return; }
 
-      // 1. Delete inquiries for this landlord's properties + phone
-      await (supabase.from('inquiries') as any)
-        .delete()
-        .or(`lister_phone.eq.${group.phone},property_id.in.(${propIds.join(',')})`);
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-landlord-test-data`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone: group.phone }),
+      });
 
-      // 2. Clear property ownership
-      await supabase.from('properties')
-        .update({ submitted_by: null } as any)
-        .in('id', propIds);
-
-      // 3. Revert auth email via RPC (direct GoTrue API has a 500 bug)
-      // Find the profile to get the user ID
-      const { data: profile } = await (supabase.from('profiles') as any)
-        .select('id')
-        .eq('whatsapp', group.phone)
-        .maybeSingle();
-
-      if (profile?.id) {
-        await (supabase.rpc as any)('claim_landlord_email', {
-          p_user_id: profile.id,
-          p_new_email: internalEmail,
-        });
-
-        // 4. Revert profile email
-        await (supabase.from('profiles') as any)
-          .update({ email: internalEmail })
-          .eq('id', profile.id);
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(body?.error || 'Reset failed');
+        return;
       }
-
-      // 5. Reset outreach_sent on properties
-      await supabase.from('properties')
-        .update({ outreach_sent: false, outreach_sent_at: null } as any)
-        .in('id', propIds);
 
       if (user) logAdminAction(user.id, {
         action: 'reset_landlord_test_data',
         target_table: 'profiles',
-        target_id: profile?.id || group.phone,
-        metadata: { phone: group.phone, properties: propIds.length },
+        target_id: group.phone,
+        metadata: { phone: group.phone, properties: group.properties.length, results: body?.results },
       });
 
       toast.success(`Reset complete for ${group.name || group.phone}`);
