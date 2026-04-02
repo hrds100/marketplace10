@@ -176,7 +176,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       } else {
         next.add(phone);
         if (!assignLeadForms[phone]) {
-          setAssignLeadForms(p => ({ ...p, [phone]: { name: '', email: '', phone: '', mode: 'nda', workflow: GHL_WORKFLOW_COLD } }));
+          setAssignLeadForms(p => ({ ...p, [phone]: { name: '', email: '', phone: '', mode: 'nda_and_claim', workflow: GHL_WORKFLOW_COLD } }));
         }
       }
       return next;
