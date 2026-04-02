@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [2026-04-02f] - Inquiry Pipeline Fixes
+
+### Fixed
+- WhatsApp inquiries now accept optional `tenant_email` field in `receive-tenant-whatsapp` edge function.
+- Email inquiry modal now attempts session refresh before failing, and shows specific "session expired" message instead of generic error.
+
+### Changed
+- Documented n8n workflow change needed: include `tenant_email` from GHL contact data in webhook payload.
+
 ## [2026-04-02d] - Outreach Metadata Enrichment (Pass 1/3)
 
 ### Added
