@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Rocket, Send, Check, X, Shield, ChevronDown, Clock, Inbox, MessageSquare, BarChart3, Phone, Home, FileCheck, UserCheck } from 'lucide-react';
+import { Rocket, Send, Check, X, Shield, ChevronDown, Clock, Inbox, MessageSquare, BarChart3, Phone, Home, FileCheck, UserCheck, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -269,6 +269,74 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
     }
   };
 
+  const resetLandlord = async (group: LandlordGroup) => {
+    const confirmed = window.confirm(
+      `Reset test data for ${group.name || group.phone}?\n\n` +
+      `This will:\n` +
+      `- Delete all ${group.properties.reduce((s, p) => s + p.totalCount, 0)} leads/inquiries\n` +
+      `- Remove property ownership (submitted_by)\n` +
+      `- Revert account to unclaimed (@nfstay.internal)\n\n` +
+      `This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    const key = `reset-${group.phone}`;
+    addLoading(key);
+    try {
+      const cleanPhone = group.phone.replace(/\D/g, '');
+      const internalEmail = `landlord_${cleanPhone}@nfstay.internal`;
+      const propIds = group.properties.map(p => p.id);
+
+      // 1. Delete inquiries for this landlord's properties + phone
+      await (supabase.from('inquiries') as any)
+        .delete()
+        .or(`lister_phone.eq.${group.phone},property_id.in.(${propIds.join(',')})`);
+
+      // 2. Clear property ownership
+      await supabase.from('properties')
+        .update({ submitted_by: null } as any)
+        .in('id', propIds);
+
+      // 3. Revert auth email via RPC (direct GoTrue API has a 500 bug)
+      // Find the profile to get the user ID
+      const { data: profile } = await (supabase.from('profiles') as any)
+        .select('id')
+        .eq('whatsapp', group.phone)
+        .maybeSingle();
+
+      if (profile?.id) {
+        await (supabase.rpc as any)('claim_landlord_email', {
+          p_user_id: profile.id,
+          p_new_email: internalEmail,
+        });
+
+        // 4. Revert profile email
+        await (supabase.from('profiles') as any)
+          .update({ email: internalEmail })
+          .eq('id', profile.id);
+      }
+
+      // 5. Reset outreach_sent on properties
+      await supabase.from('properties')
+        .update({ outreach_sent: false, outreach_sent_at: null } as any)
+        .in('id', propIds);
+
+      if (user) logAdminAction(user.id, {
+        action: 'reset_landlord_test_data',
+        target_table: 'profiles',
+        target_id: profile?.id || group.phone,
+        metadata: { phone: group.phone, properties: propIds.length },
+      });
+
+      toast.success(`Reset complete for ${group.name || group.phone}`);
+      queryClient.invalidateQueries({ queryKey: ['outreach-listings'] });
+    } catch (err) {
+      toast.error('Reset failed: ' + (err instanceof Error ? err.message : 'unknown error'));
+    } finally {
+      removeLoading(key);
+    }
+  };
+
   const toggleExpand = (phone: string) => {
     setExpanded(prev => {
       const next = new Set(prev);
@@ -349,6 +417,16 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={(e) => { e.stopPropagation(); resetLandlord(group); }}
+                  disabled={loadingActions.has(`reset-${group.phone}`)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+                  style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}
+                  title="Reset test data: delete leads, unclaim account, clear property ownership"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  {loadingActions.has(`reset-${group.phone}`) ? 'Resetting...' : 'Reset'}
+                </button>
                 {!group.outreachSent && (
                   <button
                     onClick={(e) => { e.stopPropagation(); sendOutreach(group); }}
