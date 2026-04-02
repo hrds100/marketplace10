@@ -133,56 +133,91 @@ serve(async (req) => {
           || [operatorRow?.first_name, operatorRow?.last_name].filter(Boolean).join(' ')
           || `NFStay Operator`;
 
-        // Step 1: Create (or retrieve) a Hospitable Connect customer
-        // Hospitable Connect requires: id (unique), email, name
-        const customerRes = await fetch(`${HOSPITABLE_CONNECT_BASE}/customers`, {
-          method: 'POST',
-          headers: connectHeaders(),
-          body: JSON.stringify({
-            id: operatorId,
-            email: operatorEmail,
-            name: operatorName,
-          }),
-        });
+        // Step 1: Resolve the Hospitable Connect customer
+        // Strategy: check local DB first, then POST to create, fall back to GET on 422
+        let customerId = '';
 
-        if (!customerRes.ok) {
-          const errText = await customerRes.text();
-          // Log for debugging - check Partner Portal logs for details
-          console.error('[Hospitable] Customer creation failed:', customerRes.status, errText);
+        // Check if we already have a customer ID from a previous attempt
+        const { data: existingConn } = await supabase
+          .from('nfs_hospitable_connections')
+          .select('hospitable_customer_id')
+          .eq('operator_id', operatorId)
+          .single();
 
-          // Update connection record with the error
-          await supabase
-            .from('nfs_hospitable_connections')
-            .upsert({
-              operator_id: operatorId,
-              profile_id: profileId,
-              hospitable_customer_id: '',
-              status: 'failed',
-              last_error: {
-                message: 'Failed to create Hospitable customer',
-                status: customerRes.status,
-                detail: errText,
-                hint: customerRes.status === 401
-                  ? 'NFS_HOSPITABLE_PARTNER_SECRET may be invalid. Check Partner Portal.'
-                  : customerRes.status === 403
-                    ? 'Partner account may not have Connect access. Check Partner Portal permissions.'
-                    : 'Check Hospitable Partner Portal logs for details.',
-              },
-            }, { onConflict: 'operator_id' });
-
-          return new Response(
-            JSON.stringify({
-              error: 'Failed to create Hospitable customer',
-              hint: customerRes.status === 401
-                ? 'Check NFS_HOSPITABLE_PARTNER_SECRET in Supabase edge function secrets.'
-                : `Hospitable returned ${customerRes.status}. Check Partner Portal logs.`,
-            }),
-            { status: 502, headers: corsHeaders }
-          );
+        if (existingConn?.hospitable_customer_id) {
+          // Verify the existing customer still exists in Hospitable
+          const verifyRes = await fetch(`${HOSPITABLE_CONNECT_BASE}/customers/${existingConn.hospitable_customer_id}`, {
+            method: 'GET',
+            headers: connectHeaders(),
+          });
+          if (verifyRes.ok) {
+            customerId = existingConn.hospitable_customer_id;
+          }
         }
 
-        const customerData = await customerRes.json();
-        const customerId = customerData.id || customerData.data?.id || '';
+        // If no existing customer, create one
+        if (!customerId) {
+          const customerRes = await fetch(`${HOSPITABLE_CONNECT_BASE}/customers`, {
+            method: 'POST',
+            headers: connectHeaders(),
+            body: JSON.stringify({
+              id: operatorId,
+              email: operatorEmail,
+              name: operatorName,
+            }),
+          });
+
+          if (customerRes.ok) {
+            const customerData = await customerRes.json();
+            customerId = customerData.id || customerData.data?.id || '';
+          } else if (customerRes.status === 422) {
+            // 422 = customer already exists (duplicate ID). Retrieve it instead.
+            console.error('[Hospitable] Customer already exists (422), fetching existing:', operatorId);
+            const getRes = await fetch(`${HOSPITABLE_CONNECT_BASE}/customers/${operatorId}`, {
+              method: 'GET',
+              headers: connectHeaders(),
+            });
+            if (getRes.ok) {
+              const getData = await getRes.json();
+              customerId = getData.id || getData.data?.id || '';
+            } else {
+              const getErr = await getRes.text();
+              console.error('[Hospitable] GET customer also failed:', getRes.status, getErr);
+            }
+          } else {
+            const errText = await customerRes.text();
+            console.error('[Hospitable] Customer creation failed:', customerRes.status, errText);
+
+            await supabase
+              .from('nfs_hospitable_connections')
+              .upsert({
+                operator_id: operatorId,
+                profile_id: profileId,
+                hospitable_customer_id: '',
+                status: 'failed',
+                last_error: {
+                  message: 'Failed to create Hospitable customer',
+                  status: customerRes.status,
+                  detail: errText,
+                  hint: customerRes.status === 401
+                    ? 'NFS_HOSPITABLE_PARTNER_SECRET may be invalid. Check Partner Portal.'
+                    : customerRes.status === 403
+                      ? 'Partner account may not have Connect access. Check Partner Portal permissions.'
+                      : 'Check Hospitable Partner Portal logs for details.',
+                },
+              }, { onConflict: 'operator_id' });
+
+            return new Response(
+              JSON.stringify({
+                error: 'Failed to create Hospitable customer',
+                hint: customerRes.status === 401
+                  ? 'Check NFS_HOSPITABLE_PARTNER_SECRET in Supabase edge function secrets.'
+                  : `Hospitable returned ${customerRes.status}. Check Partner Portal logs.`,
+              }),
+              { status: 502, headers: corsHeaders }
+            );
+          }
+        }
 
         if (!customerId) {
           console.error('[Hospitable] Customer response missing id:', JSON.stringify(customerData));
