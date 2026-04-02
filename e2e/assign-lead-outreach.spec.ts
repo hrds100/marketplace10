@@ -28,6 +28,27 @@ test.describe('Assign a Lead - Landlord Activation', () => {
     expect(content).toContain('<option value="direct">Direct</option>');
   });
 
+  test('Workflow selector exists with correct default and options', () => {
+    const content = readSource('src/pages/admin/AdminOutreachV2.tsx');
+
+    // Workflow field in form state, defaulting to cold workflow
+    expect(content).toContain('workflow: GHL_WORKFLOW_COLD');
+
+    // Selector label
+    expect(content).toContain('Outreach Workflow');
+
+    // Two options with human-readable labels
+    expect(content).toContain('Landlord Activation (default)');
+    expect(content).toContain('Tenant Lead Release (NDA)');
+
+    // Options use the workflow ID constants
+    expect(content).toContain('{GHL_WORKFLOW_COLD}');
+    expect(content).toContain('{GHL_WORKFLOW_WARM}');
+
+    // Handler uses formData.workflow directly (no silent mode-based switching)
+    expect(content).toContain('callGhlEnroll(group.phone, formData.workflow)');
+  });
+
   test('Assign Lead button exists in group header with UserPlus icon', () => {
     const content = readSource('src/pages/admin/AdminOutreachV2.tsx');
 
@@ -61,10 +82,10 @@ test.describe('Assign a Lead - Landlord Activation', () => {
     // Generates unique token
     expect(content).toContain('crypto.randomUUID()');
 
-    // Routes to correct GHL workflow based on mode
-    // Direct -> cold workflow, NDA/NDA+Claim -> warm workflow
-    expect(content).toContain("formData.mode === 'direct' ? GHL_WORKFLOW_COLD : GHL_WORKFLOW_WARM");
-    expect(content).toContain('callGhlEnroll(group.phone, workflowId)');
+    // Uses the workflow Hugo selected in the form (no silent switching)
+    expect(content).toContain('callGhlEnroll(group.phone, formData.workflow)');
+    // No hidden mode-based routing
+    expect(content).not.toContain("formData.mode === 'direct' ? GHL_WORKFLOW_COLD : GHL_WORKFLOW_WARM");
 
     // Marks properties as outreach_sent
     expect(content).toContain("outreach_sent: true");
@@ -242,6 +263,19 @@ test.describe('Assign a Lead - Browser Flow', () => {
     // 12. Switch mode to NDA + Claim and verify
     await modeSelect.selectOption('nda_and_claim');
     expect(await modeSelect.inputValue()).toBe('nda_and_claim');
+
+    // 12b. Verify workflow selector exists with correct default and options
+    const workflowSelect = page.locator('select').filter({ has: page.locator('option:has-text("Landlord Activation")') });
+    await expect(workflowSelect).toBeVisible();
+    const wfOptions = await workflowSelect.locator('option').allTextContents();
+    expect(wfOptions).toContain('Landlord Activation (default)');
+    expect(wfOptions).toContain('Tenant Lead Release (NDA)');
+    // Default should be the cold/activation workflow
+    expect(await workflowSelect.inputValue()).toBe('67250bfa-e1fc-4201-8bca-08c384a4a31d');
+
+    // 12c. Workflow choice is independent of release mode (changing mode doesn't change workflow)
+    await modeSelect.selectOption('direct');
+    expect(await workflowSelect.inputValue()).toBe('67250bfa-e1fc-4201-8bca-08c384a4a31d');
 
     // 13. Confirm Cancel button works and hides form
     const cancelBtn = page.locator('button:has-text("Cancel")').first();

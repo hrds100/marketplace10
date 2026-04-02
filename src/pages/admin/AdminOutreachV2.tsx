@@ -166,7 +166,7 @@ interface LandlordGroup {
 function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showAssignForm, setShowAssignForm] = useState<Set<string>>(new Set());
-  const [assignLeadForms, setAssignLeadForms] = useState<Record<string, { name: string; email: string; phone: string; mode: 'direct' | 'nda' | 'nda_and_claim' }>>({});
+  const [assignLeadForms, setAssignLeadForms] = useState<Record<string, { name: string; email: string; phone: string; mode: 'direct' | 'nda' | 'nda_and_claim'; workflow: string }>>({});
 
   const toggleAssignForm = (phone: string) => {
     setShowAssignForm(prev => {
@@ -176,7 +176,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       } else {
         next.add(phone);
         if (!assignLeadForms[phone]) {
-          setAssignLeadForms(p => ({ ...p, [phone]: { name: '', email: '', phone: '', mode: 'nda' } }));
+          setAssignLeadForms(p => ({ ...p, [phone]: { name: '', email: '', phone: '', mode: 'nda', workflow: GHL_WORKFLOW_COLD } }));
         }
       }
       return next;
@@ -356,11 +356,8 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       } as any);
       if (inqError) throw inqError;
 
-      // 2. Send GHL outreach to landlord
-      // NDA / NDA+Claim -> warm workflow (sends magic link with lead context)
-      // Direct -> cold workflow (generic activation, lead already unlocked)
-      const workflowId = formData.mode === 'direct' ? GHL_WORKFLOW_COLD : GHL_WORKFLOW_WARM;
-      const ghlResult = await callGhlEnroll(group.phone, workflowId);
+      // 2. Send GHL outreach using the workflow Hugo selected in the form
+      const ghlResult = await callGhlEnroll(group.phone, formData.workflow);
       if (!ghlResult.success) {
         toast.error('Lead saved but GHL outreach failed: ' + (ghlResult.error || 'Unknown'));
       }
@@ -606,6 +603,18 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                           <option value="nda">NDA</option>
                           <option value="nda_and_claim">NDA + Claim</option>
                           <option value="direct">Direct</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Outreach Workflow</label>
+                        <select
+                          value={assignLeadForms[group.phone].workflow}
+                          onChange={e => updateAssignForm(group.phone, 'workflow', e.target.value)}
+                          className="h-9 rounded-lg border px-2 text-xs font-medium"
+                          style={{ borderColor: '#E5E5E5', color: '#1A1A1A' }}
+                        >
+                          <option value={GHL_WORKFLOW_COLD}>Landlord Activation (default)</option>
+                          <option value={GHL_WORKFLOW_WARM}>Tenant Lead Release (NDA)</option>
                         </select>
                       </div>
                       <div className="flex-1" />
