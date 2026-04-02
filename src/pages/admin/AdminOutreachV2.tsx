@@ -67,6 +67,12 @@ interface ListerMetric {
 
 type TabKey = 'listings' | 'pending' | 'metrics';
 
+/** A profile is truly claimed only when it has a real email (not @nfstay.internal placeholder). */
+function isReallyClaimed(profile: { email: string | null } | null | undefined): boolean {
+  if (!profile?.email) return false;
+  return !profile.email.endsWith('@nfstay.internal');
+}
+
 // ── Edge function caller ──
 async function callGhlEnroll(phone: string, workflowId: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -204,7 +210,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
             phone,
             name: profile?.name || prop.contact_name || null,
             email: profile?.email || null,
-            claimed: profileMap.has(phone),
+            claimed: isReallyClaimed(profileMap.get(phone)),
             outreachSent: false,
             outreachSentAt: null,
             hasClaimLeads: false,
@@ -442,7 +448,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
           landlordPhone,
           landlordName: profile?.name || inq.lister_name || null,
           landlordEmail: profile?.email || null,
-          claimed: !!profile,
+          claimed: isReallyClaimed(profile),
         };
       });
     },
@@ -613,9 +619,11 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
 
               <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                 {group.phone && (() => {
-                  const currentMode = alwaysAuthorised
+                  let currentMode = alwaysAuthorised
                     ? (group.inquiries.find(i => i.always_authorised)?.authorisation_type || 'direct')
                     : 'off';
+                  // Normalize: claimed landlords can't be in nda_and_claim mode
+                  if (group.claimed && currentMode === 'nda_and_claim') currentMode = 'nda';
                   const modeLabel = currentMode === 'off' ? 'Off' : currentMode === 'nda' ? 'NDA' : currentMode === 'nda_and_claim' ? 'NDA + Claim' : 'Direct';
                   const isDropOpen = openDropdown === group.key;
                   return (
@@ -636,10 +644,10 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
                           style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {([['off', 'Off'], ['direct', 'Direct'], ['nda', 'NDA'], ['nda_and_claim', 'NDA + Claim']] as const).map(([value, label]) => (
+                          {([['off', 'Off'], ['direct', 'Direct'], ['nda', 'NDA'], ...(!group.claimed ? [['nda_and_claim', 'NDA + Claim'] as const] : [])] as Array<readonly [string, string]>).map(([value, label]) => (
                             <button
                               key={value}
-                              onClick={() => { setAlwaysAuthoriseMode(group.phone, value); setOpenDropdown(null); }}
+                              onClick={() => { setAlwaysAuthoriseMode(group.phone, value as 'off' | 'direct' | 'nda' | 'nda_and_claim'); setOpenDropdown(null); }}
                               className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-gray-50 transition-colors flex items-center justify-between"
                               style={{ color: currentMode === value ? '#1E9A80' : '#1A1A1A' }}
                             >
@@ -702,14 +710,16 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
                             >
                               {loadingActions.has(`auth-${inq.id}-nda`) ? '...' : 'NDA'}
                             </button>
-                            <button
-                              onClick={() => authorise(inq, 'nda_and_claim')}
-                              disabled={loadingActions.has(`auth-${inq.id}-nda_and_claim`)}
-                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                              style={{ backgroundColor: '#111111' }}
-                            >
-                              {loadingActions.has(`auth-${inq.id}-nda_and_claim`) ? '...' : 'NDA + Claim'}
-                            </button>
+                            {!group.claimed && (
+                              <button
+                                onClick={() => authorise(inq, 'nda_and_claim')}
+                                disabled={loadingActions.has(`auth-${inq.id}-nda_and_claim`)}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                                style={{ backgroundColor: '#111111' }}
+                              >
+                                {loadingActions.has(`auth-${inq.id}-nda_and_claim`) ? '...' : 'NDA + Claim'}
+                              </button>
+                            )}
                             <button
                               onClick={() => authorise(inq, 'direct')}
                               disabled={loadingActions.has(`auth-${inq.id}-direct`)}
@@ -817,13 +827,13 @@ function MetricsTab() {
         if (inq.nda_signed) s.ndaSigned++;
       }
 
-      // Claimed
+      // Claimed - only if real email (not @nfstay.internal placeholder)
       for (const profile of profiles) {
         const s = phoneMap.get(profile.whatsapp);
         if (!s) continue;
-        if (profile.name && profile.name !== profile.whatsapp && !profile.name.includes('+')) {
+        if (isReallyClaimed(profile)) {
           s.claimed = true;
-          s.name = profile.name;
+          if (profile.name) s.name = profile.name;
         }
       }
 

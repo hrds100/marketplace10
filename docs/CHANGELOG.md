@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [2026-04-02a] - Fix Claimed Detection + Hide NDA + Claim for Claimed Landlords
+
+### Fixed
+- `isReallyClaimed()` helper: profiles with `@nfstay.internal` email are treated as unclaimed.
+- Landlord Activation, Tenant Requests, and Metrics all use the same claimed check.
+- `NDA + Claim` button hidden for truly claimed landlords (real email, not internal).
+- Always Authorise dropdown: `NDA + Claim` option removed for claimed landlords.
+- Saved `nda_and_claim` mode normalizes to `NDA` display for claimed landlords.
+- Internal placeholder accounts (`landlord_xxx@nfstay.internal`) correctly show as Unclaimed.
+
 ## [2026-04-01i] - Restore Tenant WhatsApp Auto-Reply
 
 ### Fixed - Tenant auto-reply not sending
