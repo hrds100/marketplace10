@@ -87,8 +87,10 @@ export function useNfsHospitableConnect(): UseNfsHospitableConnectReturn {
       setConnecting(true);
       setError(null);
 
+      // Pass origin so the edge function knows where to redirect the operator back to
+      const origin = encodeURIComponent(window.location.origin);
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nfs-hospitable-oauth?action=authorize&operator_id=${operator.id}&profile_id=${operator.profile_id}`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nfs-hospitable-oauth?action=authorize&operator_id=${operator.id}&profile_id=${operator.profile_id}&origin=${origin}`,
         {
           headers: {
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
