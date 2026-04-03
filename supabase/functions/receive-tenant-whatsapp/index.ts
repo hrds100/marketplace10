@@ -6,6 +6,8 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const BASE_URL = 'https://hub.nfstay.com'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -145,6 +147,40 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Failed to create inquiry', detail: insertErr.message }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    // 5a. Admin bell notification (non-blocking, same pattern as process-inquiry)
+    try {
+      await supabase.from('notifications').insert({
+        user_id: null,
+        type: 'new_inquiry',
+        title: `New inquiry for ${property.name}`,
+        body: `${tenant_name || 'Someone'} inquired about ${property.name} via whatsapp`,
+        property_id: property.id,
+      } as Record<string, unknown>);
+    } catch (e) {
+      console.error('[receive-tenant-whatsapp] Failed to create admin notification:', e);
+    }
+
+    // 5b. Tenant confirmation email (non-blocking, same pattern as process-inquiry)
+    if (tenant_email) {
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'inquiry-tenant-confirmation',
+            data: {
+              tenant_name: tenant_name || 'there',
+              tenant_email,
+              property_name: property.name,
+              property_url: `${BASE_URL}/deals/${property.id}`,
+              lister_name: property.contact_name || 'Property Lister',
+            },
+          },
+        })
+        console.log(`[receive-tenant-whatsapp] Tenant confirmation email sent to ${tenant_email}`)
+      } catch (e) {
+        console.error('[receive-tenant-whatsapp] Failed to send tenant confirmation email:', e)
+      }
     }
 
     return new Response(JSON.stringify({

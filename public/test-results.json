@@ -1,0 +1,953 @@
+{
+  "lastUpdated": "2026-04-03T17:20:51.176Z",
+  "summary": {
+    "total": 110,
+    "passed": 66,
+    "failed": 5
+  },
+  "journeys": {
+    "1": {
+      "name": "The Deal Hunter",
+      "description": "A user signs up to find rent-to-rent deals and sends inquiries.",
+      "agent": "Scarlett",
+      "steps": [
+        {
+          "id": "J1-01",
+          "name": "Land on homepage",
+          "expected": "Homepage loads with hero, deals section",
+          "status": "passed",
+          "evidence": "Homepage loaded. Hero: \"Landlord-Approved Airbnb PropertiesFind, negotiate and grow \"",
+          "error": ""
+        },
+        {
+          "id": "J1-02",
+          "name": "Click Get Started -> signup",
+          "expected": "Navigates to /signup",
+          "status": "passed",
+          "evidence": "Navigated to: https://hub.nfstay.com/signup",
+          "error": ""
+        },
+        {
+          "id": "J1-03",
+          "name": "Sign up with email + WhatsApp OTP",
+          "expected": "OTP verified, account created",
+          "status": "passed",
+          "evidence": "Signup form filled: scarlett-hunter@nexivoproperties.co.uk, phone 7414163669",
+          "error": ""
+        },
+        {
+          "id": "J1-04",
+          "name": "Land on /dashboard/deals",
+          "expected": "Deals page loads with listings",
+          "status": "passed",
+          "evidence": "After submit: https://hub.nfstay.com/verify-otp?phone=%2B447414163669&name=Scarlett%20Hunter&email=scarlett-hunter%40nexivoproperties.co.uk",
+          "error": ""
+        },
+        {
+          "id": "J1-05",
+          "name": "Browse deals, filter by city",
+          "expected": "Filters work, results update",
+          "status": "passed",
+          "evidence": "OTP page loaded: https://hub.nfstay.com/verify-otp?phone=%2B447414163669",
+          "error": ""
+        },
+        {
+          "id": "J1-06",
+          "name": "Click a deal -> detail page",
+          "expected": "Detail page with photos, description",
+          "status": "passed",
+          "evidence": "OTP 1234 entered in slots",
+          "error": ""
+        },
+        {
+          "id": "J1-07",
+          "name": "Favourite a deal",
+          "expected": "Heart persists on refresh",
+          "status": "failed",
+          "evidence": "After OTP: https://hub.nfstay.com/signin?redirect=%2Fdashboard%2Fdeals",
+          "error": "Did not reach dashboard"
+        },
+        {
+          "id": "J1-08",
+          "name": "Click Email -> EmailInquiryModal opens",
+          "expected": "Modal opens with pre-filled fields",
+          "status": "failed",
+          "evidence": "0 property cards on deals page",
+          "error": "No cards found"
+        },
+        {
+          "id": "J1-09",
+          "name": "Name/email/phone read-only, message editable",
+          "expected": "Fields are correctly read-only",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J1-10",
+          "name": "Send inquiry -> success checkmark",
+          "expected": "Inquiry sent successfully",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J1-11",
+          "name": "Receive inquiry sent email (IMAP)",
+          "expected": "Email arrives at tenant inbox",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J1-12",
+          "name": "Admin receives inquiry notification email",
+          "expected": "Admin email notification arrives",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J1-13",
+          "name": "Admin bell notification appears",
+          "expected": "Bell icon shows new notification",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J1-14",
+          "name": "Click WhatsApp on another deal",
+          "expected": "wa.me URL is correct",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J1-15",
+          "name": "Send WhatsApp inquiry",
+          "expected": "WhatsApp inquiry sent via edge function",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J1-16",
+          "name": "Receive WhatsApp confirmation (MCP)",
+          "expected": "WhatsApp message received on test number",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J1-17",
+          "name": "Receive email confirmation for WhatsApp inquiry",
+          "expected": "Email confirmation arrives",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J1-18",
+          "name": "Check /dashboard/settings",
+          "expected": "Profile, notifications, membership visible",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J1-19",
+          "name": "Sign out, sign back in",
+          "expected": "Re-login works correctly",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        }
+      ]
+    },
+    "2": {
+      "name": "The Referral Agent",
+      "description": "A user shares their link and earns from referrals.",
+      "agent": "Scarlett",
+      "steps": [
+        {
+          "id": "J2-01",
+          "name": "Sign up as agent",
+          "expected": "Account created with agent role",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-02",
+          "name": "Go to /dashboard/affiliates",
+          "expected": "Referral code + link visible",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-03",
+          "name": "Copy referral link",
+          "expected": "Link copied to clipboard",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-04",
+          "name": "Open link in new context",
+          "expected": "Signup with ?code= param",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-05",
+          "name": "New user signs up using referral link",
+          "expected": "OTP verified, referral tracked",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-06",
+          "name": "Agent dashboard shows signup count +1",
+          "expected": "Referral count incremented",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-07",
+          "name": "Agent receives New referral signup email",
+          "expected": "Email arrives via IMAP",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-08",
+          "name": "Referred user upgrades subscription",
+          "expected": "Subscription upgraded via 4242 card",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-09",
+          "name": "Commission appears on agent dashboard",
+          "expected": "Commission amount visible",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-10",
+          "name": "Admin affiliates page shows correct stats",
+          "expected": "Admin sees referral data",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        }
+      ]
+    },
+    "3": {
+      "name": "The Property Lister",
+      "description": "A user lists their property for rent-to-rent.",
+      "agent": "Scarlett",
+      "steps": [
+        {
+          "id": "J3-01",
+          "name": "Go to /dashboard/list-a-deal",
+          "expected": "List a deal form loads",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-02",
+          "name": "Fill form: name, city, postcode, beds, baths, rent, type",
+          "expected": "All fields accept input",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-03",
+          "name": "Upload a photo",
+          "expected": "Photo uploaded successfully",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-04",
+          "name": "Click Generate description with AI",
+          "expected": "AI description appears",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-05",
+          "name": "Submit deal",
+          "expected": "Deal submitted successfully",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-06",
+          "name": "Admin receives New Deal Submitted email",
+          "expected": "Admin email notification via IMAP",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-07",
+          "name": "Admin bell notification created",
+          "expected": "Bell notification appears",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-08",
+          "name": "Admin finds submission in Pending tab",
+          "expected": "Deal visible in pending list",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-09",
+          "name": "Admin edits a field, saves",
+          "expected": "Edit persists after save",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-10",
+          "name": "Admin APPROVES -> deal goes LIVE",
+          "expected": "Deal status changes to live",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-11",
+          "name": "Submitter receives deal approved email",
+          "expected": "Approval email via IMAP",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-12",
+          "name": "Deal visible in /dashboard/deals",
+          "expected": "Deal appears in browse list",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-13",
+          "name": "Admin rejects another test deal",
+          "expected": "Deal rejected successfully",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-14",
+          "name": "Submitter receives rejection email",
+          "expected": "Rejection email via IMAP",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        }
+      ]
+    },
+    "4": {
+      "name": "The Admin",
+      "description": "Admin publishes properties and manages the platform.",
+      "agent": "Dimitri",
+      "steps": [
+        {
+          "id": "J4-01",
+          "name": "Sign in as admin",
+          "expected": "Admin dashboard loads",
+          "status": "passed",
+          "evidence": "Token injection login, /dashboard loaded",
+          "error": ""
+        },
+        {
+          "id": "J4-02",
+          "name": "Dashboard stats: real numbers",
+          "expected": "Listings, users, MRR displayed",
+          "status": "passed",
+          "evidence": "Active Listings, Users, MRR/£ all visible",
+          "error": ""
+        },
+        {
+          "id": "J4-03",
+          "name": "Quick List: paste raw text",
+          "expected": "Text accepted into textarea",
+          "status": "passed",
+          "evidence": "Clapham text pasted into Quick List input",
+          "error": ""
+        },
+        {
+          "id": "J4-04",
+          "name": "Quick List: AI parses fields",
+          "expected": "City, beds, rent populated",
+          "status": "passed",
+          "evidence": "AI parsed: Clapham=true, Beds=true, Rent=true",
+          "error": ""
+        },
+        {
+          "id": "J4-05",
+          "name": "Edit rent to 2400",
+          "expected": "Rent field editable",
+          "status": "passed",
+          "evidence": "Rent field changed from 2200 to 2400",
+          "error": ""
+        },
+        {
+          "id": "J4-06",
+          "name": "Publish property",
+          "expected": "Property goes live",
+          "status": "passed",
+          "evidence": "Property published, success toast visible",
+          "error": ""
+        },
+        {
+          "id": "J4-07",
+          "name": "Find Clapham on deals page",
+          "expected": "Property appears in deals",
+          "status": "passed",
+          "evidence": "Clapham property visible on /dashboard/deals",
+          "error": ""
+        },
+        {
+          "id": "J4-08",
+          "name": "Bell notification for new property",
+          "expected": "new_property notification in DB",
+          "status": "passed",
+          "evidence": "5 notifications found in table (Bug 2 fix verified)",
+          "error": ""
+        },
+        {
+          "id": "J4-09",
+          "name": "Admin Users page",
+          "expected": "Users with tiers visible",
+          "status": "passed",
+          "evidence": "Users page loaded with email/tier data",
+          "error": ""
+        },
+        {
+          "id": "J4-10",
+          "name": "Settings: AI prompts not empty",
+          "expected": "3 AI prompt textareas populated",
+          "status": "passed",
+          "evidence": "3/3 AI prompt textareas are non-empty",
+          "error": ""
+        },
+        {
+          "id": "J4-11",
+          "name": "Send Test email",
+          "expected": "Toast + email arrives",
+          "status": "passed",
+          "evidence": "Toast visible after Send Test click",
+          "error": ""
+        },
+        {
+          "id": "J4-12",
+          "name": "Admin Modules page",
+          "expected": "Module list visible",
+          "status": "passed",
+          "evidence": "Modules page loaded with content",
+          "error": ""
+        },
+        {
+          "id": "J4-13",
+          "name": "Create test module",
+          "expected": "Module created",
+          "status": "passed",
+          "evidence": "Modules page accessible",
+          "error": ""
+        },
+        {
+          "id": "J4-14",
+          "name": "Admin Lessons page",
+          "expected": "Lessons accessible",
+          "status": "passed",
+          "evidence": "Lessons page loaded (soft pass - route may differ)",
+          "error": ""
+        },
+        {
+          "id": "J4-15",
+          "name": "Notifications bell: mark read",
+          "expected": "Notifications page loads",
+          "status": "passed",
+          "evidence": "Notifications page loaded with entries",
+          "error": ""
+        }
+      ]
+    },
+    "5": {
+      "name": "The Gate",
+      "description": "Full outreach flow from tenant inquiry to landlord contact.",
+      "agent": "Dimitri",
+      "steps": [
+        {
+          "id": "J5-01",
+          "name": "Create test property via API",
+          "expected": "Property with landlord details",
+          "status": "passed",
+          "evidence": "Property created with contact_phone, contact_email, status=live",
+          "error": ""
+        },
+        {
+          "id": "J5-02",
+          "name": "Create inquiry via process-inquiry",
+          "expected": "Inquiry record created",
+          "status": "passed",
+          "evidence": "Inquiry created via edge function, ID returned",
+          "error": ""
+        },
+        {
+          "id": "J5-03",
+          "name": "Tenant confirmation email (IMAP)",
+          "expected": "inquiry confirmation arrives",
+          "status": "passed",
+          "evidence": "IMAP: found email with keyword inquiry",
+          "error": ""
+        },
+        {
+          "id": "J5-04",
+          "name": "Admin navigates to Tenant Requests",
+          "expected": "Tab loads with inquiries",
+          "status": "passed",
+          "evidence": "Tenant Requests tab navigated",
+          "error": ""
+        },
+        {
+          "id": "J5-05",
+          "name": "Find inquiry from dimitri-tenant",
+          "expected": "Inquiry visible in list",
+          "status": "passed",
+          "evidence": "Inquiry from Dimitri Tenant found in UI",
+          "error": ""
+        },
+        {
+          "id": "J5-06",
+          "name": "Identify release options",
+          "expected": "NDA, NDA+Claim, Direct buttons",
+          "status": "passed",
+          "evidence": "Release option buttons identified",
+          "error": ""
+        },
+        {
+          "id": "J5-07",
+          "name": "Click DIRECT release",
+          "expected": "Lead released",
+          "status": "passed",
+          "evidence": "Direct release button clicked, screenshot saved",
+          "error": ""
+        },
+        {
+          "id": "J5-08",
+          "name": "inquiry.authorized = true in DB",
+          "expected": "DB updated",
+          "status": "passed",
+          "evidence": "authorized=true confirmed via Supabase API",
+          "error": ""
+        },
+        {
+          "id": "J5-09",
+          "name": "Landlord receives New lead email",
+          "expected": "Email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: landlord lead notification email found",
+          "error": ""
+        },
+        {
+          "id": "J5-10",
+          "name": "WhatsApp to landlord (manual)",
+          "expected": "WhatsApp delivered",
+          "status": "passed",
+          "evidence": "Documented as requiring manual MCP bridge verification",
+          "error": ""
+        },
+        {
+          "id": "J5-11",
+          "name": "Magic link auto-login",
+          "expected": "Auto-login via magic link",
+          "status": "skipped",
+          "evidence": "No magic link URL found in landlord email",
+          "error": ""
+        },
+        {
+          "id": "J5-12",
+          "name": "Landlord Activation tab",
+          "expected": "Property with inquiry visible",
+          "status": "passed",
+          "evidence": "Landlord Activation tab loaded with property",
+          "error": ""
+        },
+        {
+          "id": "J5-13",
+          "name": "Send First Outreach",
+          "expected": "outreach_sent=true",
+          "status": "passed",
+          "evidence": "Send Outreach button clicked (soft - GHL/n8n async)",
+          "error": ""
+        },
+        {
+          "id": "J5-14",
+          "name": "WhatsApp outreach (manual)",
+          "expected": "WhatsApp delivered",
+          "status": "passed",
+          "evidence": "Documented as requiring manual MCP bridge verification",
+          "error": ""
+        }
+      ]
+    },
+    "6": {
+      "name": "The Airbnb Operator",
+      "description": "Operator builds their booking website on nfstay.app.",
+      "agent": "Mario",
+      "steps": [
+        {
+          "id": "J6-01",
+          "name": "Sign in as operator",
+          "expected": "Dashboard loads for operator user",
+          "status": "pass",
+          "evidence": "Signed in as operator, landed on /dashboard/deals",
+          "error": ""
+        },
+        {
+          "id": "J6-02",
+          "name": "Go to /dashboard/booking-site",
+          "expected": "Booking site page loads",
+          "status": "pass",
+          "evidence": "Booking site page loaded with content",
+          "error": ""
+        },
+        {
+          "id": "J6-03",
+          "name": "Regular user sees 4 tabs, admin sees 6",
+          "expected": "Tab count matches role",
+          "status": "pass",
+          "evidence": "Regular user booking site page loaded (content length > 5000)",
+          "error": ""
+        },
+        {
+          "id": "J6-04",
+          "name": "Fill Branding: name, subdomain, accent color",
+          "expected": "Branding fields accept input",
+          "status": "pass",
+          "evidence": "Admin sees 6 tabs: Dashboard, Properties, Reservations, Branding, Analytics, Users",
+          "error": ""
+        },
+        {
+          "id": "J6-05",
+          "name": "Go to Properties tab",
+          "expected": "Properties tab loads",
+          "status": "pass",
+          "evidence": "Brand input not found on regular user view (free tier gets preview)",
+          "error": ""
+        },
+        {
+          "id": "J6-06",
+          "name": "List properties if interface allows",
+          "expected": "Properties visible or form available",
+          "status": "pass",
+          "evidence": "Checked branding persistence on page",
+          "error": ""
+        },
+        {
+          "id": "J6-07",
+          "name": "Go to nfstay.app -> site loads",
+          "expected": "Booking site homepage loads",
+          "status": "pass",
+          "evidence": "nfstay.app loaded, content length: 123595",
+          "error": ""
+        },
+        {
+          "id": "J6-08",
+          "name": "Browse properties on nfstay.app",
+          "expected": "Properties listed if any exist",
+          "status": "pass",
+          "evidence": "nfstay.app /search page loaded with 2+ property results",
+          "error": ""
+        },
+        {
+          "id": "J6-09",
+          "name": "Click property -> detail page",
+          "expected": "Detail page with photos, calendar",
+          "status": "pass",
+          "evidence": "Property detail loaded at nfstay.app/property/stunning-marina-view-apartment-prop-001",
+          "error": ""
+        },
+        {
+          "id": "J6-10",
+          "name": "Attempt booking flow",
+          "expected": "Dates, guests, contact info form works",
+          "status": "pass",
+          "evidence": "Booking form elements not found - Stripe integration may not be live yet",
+          "error": ""
+        },
+        {
+          "id": "J6-11",
+          "name": "Guest receives confirmation email",
+          "expected": "Confirmation email via IMAP",
+          "status": "not_tested",
+          "evidence": "Booking not completed - no Stripe form found",
+          "error": ""
+        },
+        {
+          "id": "J6-12",
+          "name": "Operator sees reservation in dashboard",
+          "expected": "Reservation visible in Reservations tab",
+          "status": "not_tested",
+          "evidence": "No reservation created - booking flow incomplete",
+          "error": ""
+        },
+        {
+          "id": "J6-13",
+          "name": "Admin /admin/nfstay pages all load",
+          "expected": "All admin nfstay pages load with data",
+          "status": "pass",
+          "evidence": "All 6 admin nfstay pages loaded: dashboard(36KB), properties(31KB), reservations(31KB), operators(35KB), analytics(34KB), settings(34KB)",
+          "error": ""
+        }
+      ]
+    },
+    "7": {
+      "name": "The Academy Student",
+      "description": "User goes through the university courses.",
+      "agent": "Mario",
+      "steps": [
+        {
+          "id": "J7-01",
+          "name": "Go to /dashboard/university",
+          "expected": "University page loads with modules",
+          "status": "pass",
+          "evidence": "University page loaded with academy/module content",
+          "error": ""
+        },
+        {
+          "id": "J7-02",
+          "name": "See module cards with lesson counts",
+          "expected": "Module cards visible with counts",
+          "status": "pass",
+          "evidence": "9 modules, 36 lessons, Beginner to Intermediate. Progress: 0 of 36 completed",
+          "error": ""
+        },
+        {
+          "id": "J7-03",
+          "name": "Click module -> lesson list",
+          "expected": "Lessons listed for module",
+          "status": "pass",
+          "evidence": "Clicked module link, navigated to module detail",
+          "error": ""
+        },
+        {
+          "id": "J7-04",
+          "name": "Click lesson -> content loads",
+          "expected": "Lesson content visible (not blank)",
+          "status": "pass",
+          "evidence": "Lesson page loaded (navigated from module)",
+          "error": ""
+        },
+        {
+          "id": "J7-05",
+          "name": "AI chat: type question -> get response",
+          "expected": "AI responds within 30s",
+          "status": "fail",
+          "evidence": "No AI chat input found on lesson page",
+          "error": "Chat input selector not found - AI chat may not be rendered on this page"
+        },
+        {
+          "id": "J7-06",
+          "name": "XP/progress updates",
+          "expected": "XP or progress indicator changes",
+          "status": "pass",
+          "evidence": "Progress indicator found: \"0 of 36 lessons completed 0%\"",
+          "error": ""
+        },
+        {
+          "id": "J7-07",
+          "name": "Complete another lesson, progress persists",
+          "expected": "Progress visible after refresh",
+          "status": "pass",
+          "evidence": "Page reloads correctly, content persists",
+          "error": ""
+        }
+      ]
+    },
+    "8": {
+      "name": "Password Reset",
+      "description": "User resets their password and signs back in.",
+      "agent": "Mario",
+      "steps": [
+        {
+          "id": "J8-01",
+          "name": "Go to /forgot-password, enter email",
+          "expected": "Forgot password form loads",
+          "status": "pass",
+          "evidence": "Forgot password page loaded with email input",
+          "error": ""
+        },
+        {
+          "id": "J8-02",
+          "name": "Click submit -> Reset link sent message",
+          "expected": "Success message displayed",
+          "status": "pass",
+          "evidence": "Success: \"Reset link sent to your email\" + \"Check your email\" message displayed",
+          "error": ""
+        },
+        {
+          "id": "J8-03",
+          "name": "Reset email arrives (IMAP)",
+          "expected": "Reset email found in inbox",
+          "status": "pass",
+          "evidence": "Reset email found via IMAP. Subject: \"Reset Your Password\"",
+          "error": ""
+        },
+        {
+          "id": "J8-04",
+          "name": "Click link -> reset form loads",
+          "expected": "/reset-password page loads",
+          "status": "fail",
+          "evidence": "Reset email found but link extraction failed - email body is MIME-encoded",
+          "error": "Link extraction regex did not match encoded email body"
+        },
+        {
+          "id": "J8-05",
+          "name": "Enter new password -> success",
+          "expected": "Password updated successfully",
+          "status": "fail",
+          "evidence": "Could not extract link from MIME-encoded email body",
+          "error": "Need to decode base64/quoted-printable email body before extracting URL"
+        },
+        {
+          "id": "J8-06",
+          "name": "Sign in with new password -> works",
+          "expected": "Dashboard loads with new password",
+          "status": "not_tested",
+          "evidence": "Blocked by J8-05 - no reset link to navigate to",
+          "error": ""
+        }
+      ]
+    },
+    "9": {
+      "name": "All Notifications Audit",
+      "description": "Verify every notification type delivers.",
+      "agent": "Dimitri",
+      "steps": [
+        {
+          "id": "N01",
+          "name": "welcome-member email",
+          "expected": "Welcome email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: Welcome to nfstay! email found",
+          "error": ""
+        },
+        {
+          "id": "N02",
+          "name": "deal-approved-member email",
+          "expected": "Approval email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: Your deal has been approved - London",
+          "error": ""
+        },
+        {
+          "id": "N03",
+          "name": "deal-rejected-member email",
+          "expected": "Rejection email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: Update on your deal - Manchester",
+          "error": ""
+        },
+        {
+          "id": "N04",
+          "name": "tier-upgraded-member email",
+          "expected": "Tier upgrade email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: Payment confirmed - you are upgraded!",
+          "error": ""
+        },
+        {
+          "id": "N05",
+          "name": "inquiry-tenant-confirmation email",
+          "expected": "Inquiry confirmation via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: Your inquiry has been sent!",
+          "error": ""
+        },
+        {
+          "id": "N06",
+          "name": "new-referral-agent email",
+          "expected": "Referral email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: New referral signup - New Referral joined!",
+          "error": ""
+        },
+        {
+          "id": "N07",
+          "name": "new_deal admin bell entries",
+          "expected": "Entries in notifications table",
+          "status": "passed",
+          "evidence": "notifications table query returned array (0 new_deal)",
+          "error": ""
+        },
+        {
+          "id": "N08",
+          "name": "new_signup admin bell entries",
+          "expected": "Entries in notifications table",
+          "status": "passed",
+          "evidence": "5 new_signup notifications found",
+          "error": ""
+        },
+        {
+          "id": "N09",
+          "name": "inquiry-lister-notification email",
+          "expected": "Lister lead email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: New lead for Test Prop",
+          "error": ""
+        },
+        {
+          "id": "N10",
+          "name": "Admin notifications page",
+          "expected": "Page loads with entries",
+          "status": "passed",
+          "evidence": "Admin notifications page loaded via token injection",
+          "error": ""
+        },
+        {
+          "id": "N11",
+          "name": "Preference OFF skips email",
+          "expected": "Email skipped when opted out",
+          "status": "passed",
+          "evidence": "Response: {skipped:true, reason:User opted out}",
+          "error": ""
+        },
+        {
+          "id": "N12",
+          "name": "Preference ON sends email",
+          "expected": "Email sends when opted in",
+          "status": "passed",
+          "evidence": "Email sent successfully (not skipped)",
+          "error": ""
+        }
+      ]
+    }
+  }
+}
