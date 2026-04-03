@@ -660,7 +660,58 @@ export default function AdminDeals() {
       )}
 
       {/* ── LIVE TAB (table-based, from Listings) ── */}
-      {tab === 'live' && (
+      {tab === 'live' && groupView && (
+        <div className="space-y-4" data-testid="grouped-view">
+          {groupedByLandlord.map(group => (
+            <div key={group.phone} className="bg-card border border-border rounded-2xl overflow-hidden">
+              <div
+                data-testid="landlord-group-header"
+                className="flex items-center gap-4 p-4 cursor-pointer bg-secondary/50 hover:bg-secondary transition-colors"
+                onClick={() => toggleGroup(group.phone)}
+              >
+                <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground">{group.name || 'Unknown'}</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#1E9A80]">
+                      {group.properties.length} {group.properties.length === 1 ? 'property' : 'properties'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {group.phone !== 'unknown' ? group.phone : 'No phone'}
+                    {group.email ? ` · ${group.email}` : ''}
+                  </p>
+                </div>
+                {collapsedGroups.has(group.phone)
+                  ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
+              </div>
+              {!collapsedGroups.has(group.phone) && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[900px]">
+                    <thead>
+                      <tr className="border-b border-border">
+                        {['Name', 'City', 'Type', 'Rent', 'Profit', 'Status', 'Featured', 'WhatsApp', 'Actions'].map(h => (
+                          <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.properties.map((l, i) => (
+                        <LiveTableRow key={l.id} l={l} i={i} changeStatus={changeStatus} toggleFeatured={toggleFeatured} startEdit={startEdit} deleteProperty={deleteProperty} setHardDeleteTarget={setHardDeleteTarget} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ))}
+          {currentList.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-12">No live listings.</p>
+          )}
+        </div>
+      )}
+      {tab === 'live' && !groupView && (
         <div className="bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto">
           <table className="w-full text-sm min-w-[900px]">
             <thead>
@@ -672,43 +723,7 @@ export default function AdminDeals() {
             </thead>
             <tbody>
               {currentList.map((l, i) => (
-                <tr key={l.id} className={i % 2 === 1 ? 'bg-secondary' : ''}>
-                  <td className="p-3.5 font-medium text-foreground">{l.name || '-'}</td>
-                  <td className="p-3.5 text-muted-foreground">{l.city || '-'}</td>
-                  <td className="p-3.5">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full text-white ${(l as Record<string, unknown>).listing_type === 'sale' ? 'bg-emerald-600' : 'bg-[#1E9A80]'}`}>
-                      {(l as Record<string, unknown>).listing_type === 'sale' ? 'Sale' : 'Rental'}
-                    </span>
-                  </td>
-                  <td className="p-3.5 text-foreground">£{(l.rent_monthly ?? 0).toLocaleString()}</td>
-                  <td className="p-3.5 text-accent-foreground font-medium">£{(l.profit_est ?? 0).toLocaleString()}</td>
-                  <td className="p-3.5">
-                    <select value={l.status} onChange={e => changeStatus(l.id, e.target.value)} className="input-nfstay h-8 text-xs bg-card pr-6">
-                      <option value="live">Live</option>
-                      <option value="on-offer">On offer</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  </td>
-                  <td className="p-3.5">
-                    <button onClick={() => toggleFeatured(l.id)} className={`w-9 h-5 rounded-full relative transition-colors ${l.featured ? 'bg-primary' : 'bg-border'}`}>
-                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${l.featured ? 'left-[18px]' : 'left-0.5'}`} />
-                    </button>
-                  </td>
-                  <td className="p-3.5">
-                    {l.landlord_whatsapp ? (
-                      <a href={`https://wa.me/${l.landlord_whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:opacity-75">
-                        <MessageCircle className="w-4 h-4" />
-                      </a>
-                    ) : <span className="text-muted-foreground text-xs">-</span>}
-                  </td>
-                  <td className="p-3.5">
-                    <div className="flex gap-2">
-                      <button onClick={() => startEdit(l)} className="text-xs text-primary font-medium inline-flex items-center gap-1"><Edit2 className="w-3 h-3" /> Edit</button>
-                      <button onClick={() => deleteProperty(l.id)} className="text-xs text-destructive font-medium inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Delete</button>
-                      <button onClick={() => setHardDeleteTarget({ id: l.id, name: l.name })} className="text-xs font-medium px-2 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Hard Delete</button>
-                    </div>
-                  </td>
-                </tr>
+                <LiveTableRow key={l.id} l={l} i={i} changeStatus={changeStatus} toggleFeatured={toggleFeatured} startEdit={startEdit} deleteProperty={deleteProperty} setHardDeleteTarget={setHardDeleteTarget} />
               ))}
             </tbody>
           </table>
@@ -719,25 +734,50 @@ export default function AdminDeals() {
       )}
 
       {/* ── INACTIVE TAB (card-based, simpler) ── */}
-      {tab === 'inactive' && (
-        <div className="space-y-3">
-          {currentList.map(s => (
-            <div key={s.id} className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="flex items-center gap-4 p-4">
+      {tab === 'inactive' && groupView && (
+        <div className="space-y-4" data-testid="grouped-view">
+          {groupedByLandlord.map(group => (
+            <div key={group.phone} className="bg-card border border-border rounded-2xl overflow-hidden">
+              <div
+                data-testid="landlord-group-header"
+                className="flex items-center gap-4 p-4 cursor-pointer bg-secondary/50 hover:bg-secondary transition-colors"
+                onClick={() => toggleGroup(group.phone)}
+              >
+                <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground truncate">{s.name}</span>
-                    {statusBadge(s.status)}
-                    {sourceTag(s as Record<string, unknown>)}
+                    <span className="text-sm font-semibold text-foreground">{group.name || 'Unknown'}</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#1E9A80]">
+                      {group.properties.length} {group.properties.length === 1 ? 'property' : 'properties'}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{s.city} · £{s.rent_monthly?.toLocaleString()}/mo</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {group.phone !== 'unknown' ? group.phone : 'No phone'}
+                    {group.email ? ` · ${group.email}` : ''}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => changeStatus(s.id, 'pending')} className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Reactivate</button>
-                  <button onClick={() => setHardDeleteTarget({ id: s.id, name: s.name })} className="text-xs font-medium px-2 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Hard Delete</button>
-                </div>
+                {collapsedGroups.has(group.phone)
+                  ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
               </div>
+              {!collapsedGroups.has(group.phone) && (
+                <div className="divide-y divide-border">
+                  {group.properties.map(s => (
+                    <InactiveCard key={s.id} s={s} statusBadge={statusBadge} sourceTag={sourceTag} changeStatus={changeStatus} setHardDeleteTarget={setHardDeleteTarget} />
+                  ))}
+                </div>
+              )}
             </div>
+          ))}
+          {currentList.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-12">No inactive deals.</p>
+          )}
+        </div>
+      )}
+      {tab === 'inactive' && !groupView && (
+        <div className="space-y-3">
+          {currentList.map(s => (
+            <InactiveCard key={s.id} s={s} statusBadge={statusBadge} sourceTag={sourceTag} changeStatus={changeStatus} setHardDeleteTarget={setHardDeleteTarget} />
           ))}
           {currentList.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-12">No inactive deals.</p>
@@ -854,6 +894,85 @@ function Field({ label, value, onChange, type = 'text' }: { label: string; value
       <label className="text-xs font-semibold text-foreground block mb-1">{label}</label>
       <input type={type} value={value} onChange={e => onChange(e.target.value)}
         className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
+    </div>
+  );
+}
+
+/** Reusable live-tab table row used in both flat and grouped views */
+function LiveTableRow({ l, i, changeStatus, toggleFeatured, startEdit, deleteProperty, setHardDeleteTarget }: {
+  l: Record<string, any>;
+  i: number;
+  changeStatus: (id: string, status: string) => void;
+  toggleFeatured: (id: string) => void;
+  startEdit: (p: any) => void;
+  deleteProperty: (id: string) => void;
+  setHardDeleteTarget: (t: { id: string; name: string }) => void;
+}) {
+  return (
+    <tr className={i % 2 === 1 ? 'bg-secondary' : ''}>
+      <td className="p-3.5 font-medium text-foreground">{l.name || '-'}</td>
+      <td className="p-3.5 text-muted-foreground">{l.city || '-'}</td>
+      <td className="p-3.5">
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full text-white ${l.listing_type === 'sale' ? 'bg-emerald-600' : 'bg-[#1E9A80]'}`}>
+          {l.listing_type === 'sale' ? 'Sale' : 'Rental'}
+        </span>
+      </td>
+      <td className="p-3.5 text-foreground">£{(l.rent_monthly ?? 0).toLocaleString()}</td>
+      <td className="p-3.5 text-accent-foreground font-medium">£{(l.profit_est ?? 0).toLocaleString()}</td>
+      <td className="p-3.5">
+        <select value={l.status} onChange={e => changeStatus(l.id, e.target.value)} className="input-nfstay h-8 text-xs bg-card pr-6">
+          <option value="live">Live</option>
+          <option value="on-offer">On offer</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </td>
+      <td className="p-3.5">
+        <button onClick={() => toggleFeatured(l.id)} className={`w-9 h-5 rounded-full relative transition-colors ${l.featured ? 'bg-primary' : 'bg-border'}`}>
+          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${l.featured ? 'left-[18px]' : 'left-0.5'}`} />
+        </button>
+      </td>
+      <td className="p-3.5">
+        {l.landlord_whatsapp ? (
+          <a href={`https://wa.me/${l.landlord_whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:opacity-75">
+            <MessageCircle className="w-4 h-4" />
+          </a>
+        ) : <span className="text-muted-foreground text-xs">-</span>}
+      </td>
+      <td className="p-3.5">
+        <div className="flex gap-2">
+          <button onClick={() => startEdit(l)} className="text-xs text-primary font-medium inline-flex items-center gap-1"><Edit2 className="w-3 h-3" /> Edit</button>
+          <button onClick={() => deleteProperty(l.id)} className="text-xs text-destructive font-medium inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Delete</button>
+          <button onClick={() => setHardDeleteTarget({ id: l.id, name: l.name })} className="text-xs font-medium px-2 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Hard Delete</button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/** Reusable inactive-tab card used in both flat and grouped views */
+function InactiveCard({ s, statusBadge, sourceTag, changeStatus, setHardDeleteTarget }: {
+  s: Record<string, any>;
+  statusBadge: (status: string) => React.ReactNode;
+  sourceTag: (s: Record<string, unknown>) => React.ReactNode;
+  changeStatus: (id: string, status: string) => void;
+  setHardDeleteTarget: (t: { id: string; name: string }) => void;
+}) {
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="flex items-center gap-4 p-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground truncate">{s.name}</span>
+            {statusBadge(s.status)}
+            {sourceTag(s as Record<string, unknown>)}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">{s.city} · £{s.rent_monthly?.toLocaleString()}/mo</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => changeStatus(s.id, 'pending')} className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Reactivate</button>
+          <button onClick={() => setHardDeleteTarget({ id: s.id, name: s.name })} className="text-xs font-medium px-2 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /> Hard Delete</button>
+        </div>
+      </div>
     </div>
   );
 }
