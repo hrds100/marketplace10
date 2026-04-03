@@ -36,6 +36,39 @@ function getPreferenceColumn(type: string): string | null {
   }
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Map email type to notification_settings event_key for admin-level toggle check
+function mapTypeToEventKey(type: string): string | null {
+  const map: Record<string, string> = {
+    'new-deal-admin': 'new_deal_submitted',
+    'new-signup-admin': 'new_signup',
+    'deal-approved-member': 'deal_approved',
+    'deal-rejected-member': 'deal_rejected',
+    'deal-expired-member': 'deal_expired',
+    'welcome-member': 'welcome_email',
+    'tier-upgraded-member': 'tier_upgraded',
+    'inquiry-tenant-confirmation': 'new_inquiry_email',
+    'inquiry-lister-notification': 'new_inquiry_email',
+    'payout-requested-admin': 'payout_requested',
+    'payout-sent-member': 'payout_completed',
+    'new-referral-agent': 'new_referral',
+    'inv-purchase-buyer': 'share_purchased',
+    'inv-purchase-agent': 'agent_commission',
+    'inv-purchase-admin': 'crypto_purchase',
+    'inv-order-approved-buyer': 'share_purchased',
+  };
+  return map[type] || null;
+}
+
+// Interpolate {{variable}} placeholders in a template string
+function interpolate(template: string, data: Record<string, unknown>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => String(data[key] ?? ''));
+}
+
 const BRAND = {
   color: '#1E9A80',
   bg: '#f3f3ee',
@@ -333,7 +366,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
         subject: 'Your inquiry has been sent!',
         html: layout('Inquiry sent', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-            Hi ${data.tenant_name || 'there'}, your inquiry about <strong>${data.property_name}</strong> has been received. We've notified ${data.lister_name || 'the property lister'} and they will contact you shortly.
+            Hi ${data.tenant_name || 'there'}, your inquiry about <strong>${data.property_name}</strong> has been received. We've received your inquiry and will forward it to the property owner shortly. You'll hear back within 24 hours.
           </p>
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 20px;">
             Have a great day!
@@ -374,18 +407,66 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
     const { type, data } = await req.json();
-    const { to, subject, html } = buildEmail(type, data);
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Check notification preferences for gated email types
+    // Check admin-level notification toggle
+    const eventKey = mapTypeToEventKey(type);
+    if (eventKey) {
+      const { data: setting } = await supabaseAdmin
+        .from('notification_settings')
+        .select('email_enabled')
+        .eq('event_key', eventKey)
+        .single();
+      if (setting && !(setting as Record<string, unknown>).email_enabled) {
+        return new Response(JSON.stringify({ skipped: true, reason: 'Notification disabled by admin' }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Check for admin-edited template in email_templates table
+    let finalSubject: string;
+    let finalHtml: string;
+    let finalTo: string | string[];
+
+    const { data: dbTemplate } = await supabaseAdmin
+      .from('email_templates')
+      .select('subject, html_body')
+      .eq('type', type)
+      .single();
+
+    if (dbTemplate && (dbTemplate as Record<string, unknown>).html_body) {
+      // Use DB template with variable interpolation, but still need recipient from buildEmail
+      const fallback = buildEmail(type, data);
+      finalTo = fallback.to;
+      finalSubject = interpolate(String((dbTemplate as Record<string, unknown>).subject), data);
+      finalHtml = layout(
+        interpolate(String((dbTemplate as Record<string, unknown>).subject), data),
+        interpolate(String((dbTemplate as Record<string, unknown>).html_body), data)
+      );
+    } else {
+      // Fall back to hardcoded buildEmail
+      const built = buildEmail(type, data);
+      finalTo = built.to;
+      finalSubject = built.subject;
+      finalHtml = built.html;
+    }
+
+    // Check user notification preferences for gated email types
     const prefColumn = getPreferenceColumn(type);
     if (prefColumn) {
-      const recipientEmail = Array.isArray(to) ? to[0] : to;
+      const recipientEmail = Array.isArray(finalTo) ? finalTo[0] : finalTo;
       const allowed = await shouldSendEmail(recipientEmail, prefColumn);
       if (!allowed) {
         return new Response(JSON.stringify({ skipped: true, reason: 'User opted out', type }), {
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         });
       }
@@ -397,18 +478,18 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+      body: JSON.stringify({ from: FROM_EMAIL, to: finalTo, subject: finalSubject, html: finalHtml }),
     });
 
     const result = await res.json();
     return new Response(JSON.stringify(result), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: res.ok ? 200 : 500,
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
       status: err instanceof Error && err.message.startsWith('Unknown email type') ? 400 : 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
