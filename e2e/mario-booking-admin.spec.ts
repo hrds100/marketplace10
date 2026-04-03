@@ -54,7 +54,7 @@ test.describe('Booking Site Admin Tabs', () => {
     await expect(page.locator('text=Revenue This Month')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Bookings This Month')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Avg Booking Value')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('text=Recent Bookings')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Recent Bookings' })).toBeVisible({ timeout: 10000 });
   });
 
   test('admin Users tab shows operators table', async ({ page }) => {
