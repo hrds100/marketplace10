@@ -59,6 +59,9 @@ serve(async (req) => {
 
     // Normalize phone for GHL lookup
     const normalized = normalizeUKPhone(phone)
+    if (!normalized) {
+      console.error(`[ghl-enroll] Phone normalization failed for: ${phone}`)
+    }
     const searchPhone = normalized || phone.replace(/[^0-9+]/g, '')
 
     // 1. Search for GHL contact by phone (try normalized first, then raw variants)
@@ -95,6 +98,7 @@ serve(async (req) => {
     // 2. If no contact found, create one
     let created = false
     if (!contactId) {
+      console.error(`[ghl-enroll] No GHL contact found for any variant: ${searchVariants.join(', ')}`)
       const createRes = await fetch(`${GHL_BASE}/contacts/`, {
         method: 'POST',
         headers: {
@@ -112,6 +116,7 @@ serve(async (req) => {
 
       if (!createRes.ok) {
         const body = await createRes.text()
+        console.error(`[ghl-enroll] Contact creation failed (${createRes.status}): ${body}`)
         return new Response(JSON.stringify({ error: 'Failed to create GHL contact', detail: body }), {
           status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
@@ -160,10 +165,13 @@ serve(async (req) => {
 
     if (!enrollRes.ok) {
       const body = await enrollRes.text()
+      console.error(`[ghl-enroll] Workflow enrollment failed (${enrollRes.status}): ${body}`)
       return new Response(JSON.stringify({ error: 'GHL workflow enrollment failed', detail: body }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    console.log(`[ghl-enroll] Successfully enrolled contactId=${contactId} into workflow=${workflowId} (created=${created})`)
 
     return new Response(JSON.stringify({ success: true, contactId, created }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

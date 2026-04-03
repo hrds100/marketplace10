@@ -66,18 +66,26 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
           property_url: `https://hub.nfstay.com/deals/${listing!.slug || listing!.id}`,
         },
       });
+      console.log('[EmailInquiry] process-inquiry response:', data, error);
       if (error) throw error;
       setSent(true);
       onContactSuccess?.(listing!.id);
-    } catch (err) {
-      toast.error('Failed to send inquiry. Please try again.');
+    } catch (err: any) {
+      const msg = String(err?.message || err || '');
+      if (msg.includes('401') || msg.includes('expired')) {
+        toast.error('Your session expired. Please sign out and sign back in.');
+      } else if (msg.includes('404')) {
+        toast.error('This property could not be found.');
+      } else {
+        toast.error('Failed to send inquiry. Please try again.');
+      }
     } finally {
       setSending(false);
     }
   }
 
   const modal = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div data-testid="email-inquiry-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-white rounded-xl border w-full max-w-md mx-auto overflow-hidden"

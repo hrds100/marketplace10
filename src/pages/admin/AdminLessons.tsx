@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, X, Edit2, Trash2, Sparkles, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Plus, X, Edit2, Trash2, Sparkles, Loader2, Eye, EyeOff, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import { modules as templateModules } from '@/data/universityData';
 
 type LessonRow = Tables<'lessons'>;
 type ModuleRow = Tables<'modules'>;
@@ -120,6 +121,61 @@ export default function AdminLessons() {
     if (error) { toast.error(error.message); return; }
     queryClient.invalidateQueries({ queryKey: ['admin-lessons'] });
     toast.success('Lesson deleted');
+  };
+
+  const [seeding, setSeeding] = useState(false);
+
+  const seedFromTemplate = async () => {
+    setSeeding(true);
+    try {
+      // First ensure modules exist
+      for (const mod of templateModules) {
+        await supabase.from('modules').upsert({
+          id: mod.id,
+          title: mod.title,
+          emoji: mod.emoji || null,
+          description: mod.summary || null,
+          xp_reward: mod.xpReward || 100,
+          order_index: templateModules.indexOf(mod),
+          is_locked: false,
+          tier_required: 'free',
+          learning_outcomes: mod.learningOutcomes || [],
+        }, { onConflict: 'id' });
+      }
+
+      // Then insert lessons
+      let orderIdx = 0;
+      for (const mod of templateModules) {
+        for (const lesson of mod.lessons) {
+          await supabase.from('lessons').upsert({
+            id: lesson.id,
+            title: lesson.title,
+            emoji: lesson.emoji || null,
+            module_id: mod.id,
+            order_index: orderIdx++,
+            estimated_minutes: lesson.duration || 15,
+            is_published: true,
+            content: JSON.stringify({
+              whyItMatters: lesson.whyItMatters,
+              content: lesson.content,
+              steps: lesson.steps,
+              commonMistakes: lesson.commonMistakes,
+              ukSpecificNotes: lesson.ukSpecificNotes,
+              suggestedPrompts: lesson.suggestedPrompts,
+            }),
+          }, { onConflict: 'id' });
+        }
+      }
+
+      toast.success(`Seeded ${templateModules.length} modules and their lessons`);
+      queryClient.invalidateQueries({ queryKey: ['admin-lessons'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-modules'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-modules-for-lessons'] });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to seed lessons');
+    } finally {
+      setSeeding(false);
+    }
   };
 
   return (
@@ -319,8 +375,19 @@ export default function AdminLessons() {
             ))}
             {lessons.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                  No lessons yet. Click "Add Lesson" to create one.
+                <td colSpan={7} className="p-8 text-center">
+                  <p className="text-muted-foreground mb-3">No lessons yet.</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={seedFromTemplate}
+                      disabled={seeding}
+                      className="h-9 px-4 rounded-lg border border-primary text-primary text-sm font-medium inline-flex items-center gap-1.5 hover:bg-primary/5 transition-colors disabled:opacity-50"
+                    >
+                      {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
+                      {seeding ? 'Seeding...' : 'Seed from template'}
+                    </button>
+                    <span className="text-xs text-muted-foreground">or click "Add Lesson" above</span>
+                  </div>
                 </td>
               </tr>
             )}

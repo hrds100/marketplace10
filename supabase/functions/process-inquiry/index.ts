@@ -129,6 +129,19 @@ serve(async (req) => {
       })
     }
 
+    // 4a. Notify admin via bell notification (non-blocking)
+    try {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: null,
+        type: 'new_inquiry',
+        title: `New inquiry for ${propertyName}`,
+        body: `${tenant_name || 'Someone'} inquired about ${propertyName} via ${channel}`,
+        property_id: property_id,
+      } as Record<string, unknown>);
+    } catch (e) {
+      console.error('[process-inquiry] Failed to create admin notification:', e);
+    }
+
     // 4b. Create a landlord_invites entry for the magic link (never expires)
     // GHL "Open NFsTay" button uses /inbox?token=... which calls landlord-magic-login
     let magicToken = crypto.randomUUID()

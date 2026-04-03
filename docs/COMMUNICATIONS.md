@@ -1,7 +1,32 @@
 # NFsTay Messaging & Communication Architecture
-_Last updated: 31 March 2026_
+_Last updated: 3 April 2026_
 
 > **MANDATORY: Any agent that adds, removes, or changes ANY email, WhatsApp, or in-app notification MUST update this document in the same commit. No exceptions.**
+
+---
+
+## ADMIN EMAIL RECIPIENTS
+
+Default recipients for all admin notification emails (set in `send-email` edge function):
+- hugo@nfstay.com
+- chris@nfstay.com
+- hello@nfstay.com
+
+Override via `ADMIN_EMAIL` env var in Supabase (comma-separated).
+
+## NOTIFICATION SETTINGS TABLE
+
+The `notification_settings` table controls which notification types send bell and/or email alerts. 22 event types are seeded across 5 categories:
+
+| Category | Event Keys |
+|----------|-----------|
+| General | new_signup, tier_upgraded, weekly_digest |
+| Deals | new_deal_submitted, deal_approved, deal_rejected, deal_expired, new_inquiry_email, new_inquiry_whatsapp, landlord_claimed, nda_signed |
+| Affiliate | subscription_commission, payout_requested, payout_completed, new_referral |
+| Investment | crypto_purchase, share_purchased, agent_commission, jv_commission, rent_available, rent_claimed |
+| nfstay App | booking_new |
+
+Each row has `bell_enabled` and `email_enabled` booleans, toggled from Admin Settings.
 
 ---
 
