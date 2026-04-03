@@ -405,7 +405,10 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-4 pb-3 border-b border-border mb-1">
                   <div className="flex-1" />
                   <div className="w-20 text-center text-xs font-semibold text-muted-foreground">Email</div>
-                  <div className="w-20 text-center text-xs font-semibold text-muted-foreground">WhatsApp</div>
+                  <div className="w-20 text-center">
+                    <div className="text-xs font-semibold text-muted-foreground">WhatsApp</div>
+                    <div className="text-[9px] font-semibold mt-0.5" style={{ color: '#1E9A80' }}>Coming Soon</div>
+                  </div>
                 </div>
 
                 {/* New deal alerts: Email always ON, WhatsApp toggleable */}
@@ -418,7 +421,7 @@ export default function SettingsPage() {
                     <Toggle on={true} disabled />
                   </div>
                   <div className="w-20 flex justify-center">
-                    <Toggle on={notifs.notif_whatsapp_new_deals} onToggle={() => handleToggleNotif('notif_whatsapp_new_deals')} />
+                    <Toggle on={false} disabled />
                   </div>
                 </div>
 
@@ -432,7 +435,7 @@ export default function SettingsPage() {
                     <Toggle on={notifs.notif_email_daily} onToggle={() => handleToggleNotif('notif_email_daily')} />
                   </div>
                   <div className="w-20 flex justify-center">
-                    <Toggle on={notifs.notif_whatsapp_daily} onToggle={() => handleToggleNotif('notif_whatsapp_daily')} />
+                    <Toggle on={false} disabled />
                   </div>
                 </div>
 
@@ -446,12 +449,12 @@ export default function SettingsPage() {
                     <Toggle on={true} disabled />
                   </div>
                   <div className="w-20 flex justify-center">
-                    <Toggle on={notifs.notif_whatsapp_status} onToggle={() => handleToggleNotif('notif_whatsapp_status')} />
+                    <Toggle on={false} disabled />
                   </div>
                 </div>
 
-                {/* Affiliate conversions: both always ON */}
-                <div className="flex items-center gap-4 py-4">
+                {/* Affiliate conversions: email ON, WhatsApp disabled */}
+                <div className="flex items-center gap-4 py-4 border-b border-border">
                   <div className="flex-1">
                     <div className="text-sm font-medium text-foreground">Affiliate conversions</div>
                     <div className="text-xs text-muted-foreground mt-0.5">Know when your referrals convert</div>
@@ -460,7 +463,35 @@ export default function SettingsPage() {
                     <Toggle on={true} disabled />
                   </div>
                   <div className="w-20 flex justify-center">
+                    <Toggle on={false} disabled />
+                  </div>
+                </div>
+
+                {/* Investment / JV updates */}
+                <div className="flex items-center gap-4 py-4 border-t border-border">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-foreground">Investment updates</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">JV partner updates, share allocations, and rent payouts</div>
+                  </div>
+                  <div className="w-20 flex justify-center">
                     <Toggle on={true} disabled />
+                  </div>
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={false} disabled />
+                  </div>
+                </div>
+
+                {/* Inquiry confirmations */}
+                <div className="flex items-center gap-4 py-4 border-t border-border">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-foreground">Inquiry confirmations</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Confirmation when you send an inquiry to a property</div>
+                  </div>
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={true} disabled />
+                  </div>
+                  <div className="w-20 flex justify-center">
+                    <Toggle on={false} disabled />
                   </div>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings, Globe, Bell, Sparkles, Mail, Loader2 } from 'lucide-react';
+import { Globe, Bell, Sparkles, Mail, Loader2, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -37,6 +37,26 @@ interface NotifSetting {
   email_enabled: boolean;
 }
 
+interface EmailTemplate {
+  id: string;
+  type: string;
+  label: string;
+  category: string;
+  subject: string;
+  html_body: string;
+  variables: string[];
+}
+
+const TEMPLATE_CATEGORY_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  member: 'Member',
+  affiliate: 'Affiliate',
+  investment: 'Investment',
+  inquiry: 'Inquiry',
+};
+
+const TEMPLATE_CATEGORY_ORDER = ['admin', 'member', 'affiliate', 'investment', 'inquiry'];
+
 const CATEGORY_LABELS: Record<string, string> = {
   general: 'General',
   deals: 'Deals & Listings',
@@ -57,6 +77,14 @@ export default function AdminSettings() {
   // Notification settings state
   const [notifSettings, setNotifSettings] = useState<NotifSetting[]>([]);
   const [notifLoading, setNotifLoading] = useState(true);
+
+  // Email template state
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [templateLoading, setTemplateLoading] = useState(true);
+  const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<{ subject: string; html_body: string } | null>(null);
+  const [templateSaving, setTemplateSaving] = useState(false);
+  const [testSending, setTestSending] = useState<string | null>(null);
 
   // Load AI settings from Supabase on mount
   useEffect(() => {
@@ -99,6 +127,75 @@ export default function AdminSettings() {
   }, []);
 
   useEffect(() => { fetchNotifSettings(); }, [fetchNotifSettings]);
+
+  // Load email templates
+  useEffect(() => {
+    (async () => {
+      try {
+        // email_templates table not in generated types — cast needed
+        const { data } = await (supabase.from('email_templates') as any)
+          .select('*')
+          .order('category')
+          .order('label');
+        if (data) setEmailTemplates(data as EmailTemplate[]);
+      } catch {
+        // Table may not exist yet
+      } finally {
+        setTemplateLoading(false);
+      }
+    })();
+  }, []);
+
+  // Save edited template
+  const handleSaveTemplate = async (templateId: string) => {
+    if (!editingTemplate) return;
+    setTemplateSaving(true);
+    try {
+      const { error } = await (supabase.from('email_templates') as any)
+        .update({
+          subject: editingTemplate.subject,
+          html_body: editingTemplate.html_body,
+          updated_at: new Date().toISOString(),
+          updated_by: user?.id || null,
+        })
+        .eq('id', templateId);
+      if (error) throw error;
+      setEmailTemplates(prev =>
+        prev.map(t => t.id === templateId ? { ...t, ...editingTemplate } : t)
+      );
+      setExpandedTemplate(null);
+      setEditingTemplate(null);
+      toast.success('Template saved');
+    } catch {
+      toast.error('Failed to save template');
+    } finally {
+      setTemplateSaving(false);
+    }
+  };
+
+  // Send test email
+  const handleSendTest = async (template: EmailTemplate) => {
+    setTestSending(template.id);
+    try {
+      const testData: Record<string, string> = {};
+      template.variables.forEach(v => { testData[v] = `[TEST ${v}]`; });
+      testData.email = user?.email || 'admin@hub.nfstay.com';
+      testData.tenant_email = user?.email || 'admin@hub.nfstay.com';
+      testData.memberEmail = user?.email || 'admin@hub.nfstay.com';
+      testData.agentEmail = user?.email || 'admin@hub.nfstay.com';
+      testData.lister_email = user?.email || 'admin@hub.nfstay.com';
+
+      const { error } = await supabase.functions.invoke('send-email', {
+        body: { type: template.type, data: testData },
+      });
+      if (error) throw error;
+      toast.success(`Test email sent to ${user?.email}`);
+    } catch {
+      toast.error('Failed to send test email');
+    } finally {
+      setTestSending(null);
+    }
+  };
 
   // Toggle a notification setting
   const toggleNotif = async (id: string, field: 'bell_enabled' | 'email_enabled', current: boolean) => {
@@ -155,6 +252,15 @@ export default function AdminSettings() {
       setAiSaving(false);
     }
   };
+
+  // Group email templates by category
+  const templateGroups = TEMPLATE_CATEGORY_ORDER
+    .map(cat => ({
+      category: cat,
+      label: TEMPLATE_CATEGORY_LABELS[cat] || cat,
+      items: emailTemplates.filter(t => t.category === cat),
+    }))
+    .filter(g => g.items.length > 0);
 
   // Group notification settings by category
   const grouped = CATEGORY_ORDER
@@ -277,6 +383,124 @@ export default function AdminSettings() {
                   These addresses receive all admin notification emails. Change via ADMIN_EMAIL env var in Supabase.
                 </p>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* -- Email Templates -- */}
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Mail className="w-5 h-5 text-muted-foreground" />
+            <h2 className="text-base font-bold text-foreground">Email Templates</h2>
+          </div>
+
+          {templateLoading ? (
+            <div className="py-6 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading templates...
+            </div>
+          ) : emailTemplates.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">
+              No email templates found. Run the email_templates migration first.
+            </p>
+          ) : (
+            <div className="space-y-5">
+              {templateGroups.map(group => (
+                <div key={group.category}>
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                    {group.label}
+                  </h3>
+                  <div className="space-y-0">
+                    {group.items.map(template => (
+                      <div key={template.id} className="border-b border-border last:border-0">
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="text-sm text-foreground">{template.label}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleSendTest(template)}
+                              disabled={testSending === template.id}
+                              className="px-2.5 py-1 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-50 flex items-center gap-1"
+                            >
+                              {testSending === template.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Send className="w-3 h-3" />
+                              )}
+                              Send Test
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (expandedTemplate === template.id) {
+                                  setExpandedTemplate(null);
+                                  setEditingTemplate(null);
+                                } else {
+                                  setExpandedTemplate(template.id);
+                                  setEditingTemplate({ subject: template.subject, html_body: template.html_body });
+                                }
+                              }}
+                              className="px-2.5 py-1 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-secondary transition-colors flex items-center gap-1"
+                            >
+                              {expandedTemplate === template.id ? (
+                                <><ChevronUp className="w-3 h-3" /> Close</>
+                              ) : (
+                                <><ChevronDown className="w-3 h-3" /> Edit</>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Expanded editor */}
+                        {expandedTemplate === template.id && editingTemplate && (
+                          <div className="pb-4 space-y-3">
+                            <div>
+                              <label className="text-xs font-semibold text-foreground block mb-1">Subject</label>
+                              <input
+                                value={editingTemplate.subject}
+                                onChange={e => setEditingTemplate(prev => prev ? { ...prev, subject: e.target.value } : prev)}
+                                className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-foreground block mb-1">HTML Body</label>
+                              <textarea
+                                rows={12}
+                                value={editingTemplate.html_body}
+                                onChange={e => setEditingTemplate(prev => prev ? { ...prev, html_body: e.target.value } : prev)}
+                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                              />
+                            </div>
+                            {/* Variable chips */}
+                            {template.variables.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                <span className="text-[10px] font-semibold text-muted-foreground uppercase">Variables:</span>
+                                {template.variables.map(v => (
+                                  <span key={v} className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-primary">
+                                    {`{{${v}}}`}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => { setExpandedTemplate(null); setEditingTemplate(null); }}
+                                className="px-4 py-1.5 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleSaveTemplate(template.id)}
+                                disabled={templateSaving}
+                                className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                              >
+                                {templateSaving ? 'Saving...' : 'Save Template'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
