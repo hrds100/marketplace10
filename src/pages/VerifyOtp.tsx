@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { sendOtp, verifyOtp } from '@/lib/n8n';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import CountryCodeSelect from '@/components/CountryCodeSelect';
 
 
 // Derive a deterministic Supabase password from Particle UUID (must match SignUp.tsx)
@@ -30,6 +31,9 @@ export default function VerifyOtp() {
   const [canResend, setCanResend] = useState(false);
   const verifyingRef = useRef(false);
   const toastFiredRef = useRef(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [countryCode, setCountryCode] = useState('+44');
+  const [sendingOtp, setSendingOtp] = useState(false);
 
   // Particle wallet creation handled in handleVerify via dynamic import
 
@@ -201,14 +205,68 @@ export default function VerifyOtp() {
     }
   };
 
+  const handleSendFirstOtp = async () => {
+    if (!phoneInput.trim()) return;
+    setSendingOtp(true);
+    try {
+      const fullPhone = countryCode + phoneInput.replace(/\s/g, '');
+      await sendOtp(fullPhone);
+      const newParams = new URLSearchParams(params);
+      newParams.set('phone', fullPhone);
+      navigate(`/verify-otp?${newParams.toString()}`, { replace: true });
+    } catch {
+      toast.error('Failed to send verification code');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
   if (!phone) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8">
-        <div className="text-center">
-          <p className="text-muted-foreground">No phone number provided.</p>
-          <Link to="/signup" className="text-primary font-semibold mt-2 inline-block">
-            Go to signup
-          </Link>
+      <div data-feature="AUTH" className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-[400px]">
+          <a href="/" className="text-xl font-extrabold text-foreground tracking-tight">nfstay</a>
+
+          <h2 className="text-[22px] font-bold text-foreground mt-8 mb-1">Add your WhatsApp</h2>
+          <p className="text-sm text-muted-foreground mb-6">One last step to verify your account</p>
+
+          {name && (
+            <p className="text-sm text-muted-foreground mb-4">
+              Signed in as <span className="font-medium text-foreground">{name}</span>
+              {email && <span className="text-muted-foreground"> ({email})</span>}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-1 mb-4">
+            <label className="text-sm font-medium" style={{ color: '#525252' }}>
+              WhatsApp Number <span className="text-red-500">*</span>
+            </label>
+            <div className="flex">
+              <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+              <div className="relative flex-1">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none" style={{ color: '#737373' }} />
+                <input
+                  type="tel"
+                  placeholder="7863 992 555"
+                  value={phoneInput}
+                  onChange={e => setPhoneInput(e.target.value)}
+                  className="w-full h-[41px] bg-white border rounded-r-[10px] text-sm outline-none transition-all duration-150 focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
+                  style={{ borderColor: '#e5e5e5', color: '#0a0a0a', padding: '4px 12px 4px 40px', boxShadow: '0 4px 8px -1px rgba(0,0,0,0.05)' }}
+                />
+              </div>
+            </div>
+            <p className="text-[11px] mt-1" style={{ color: '#737373' }}>We'll send a 4-digit verification code via WhatsApp</p>
+          </div>
+
+          <button
+            onClick={handleSendFirstOtp}
+            disabled={sendingOtp || !phoneInput.trim()}
+            className="w-full rounded-lg font-medium text-white transition-all duration-150 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+            style={{ height: 37, backgroundColor: '#1e9a80', fontSize: 16, padding: '8px 16px', border: 'none' }}
+          >
+            {sendingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+            {sendingOtp ? 'Sending code...' : 'Send verification code'}
+          </button>
         </div>
       </div>
     );
