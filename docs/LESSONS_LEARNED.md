@@ -5,6 +5,16 @@
 
 ---
 
+## 2026-04-03 - ghl-enroll had zero error logging
+
+**What happened:** The `ghl-enroll` edge function (`supabase/functions/ghl-enroll/index.ts`) returned error HTTP responses to the caller but had no `console.error` calls at any failure point. When outreach enrollments failed, there was nothing in Supabase function logs to diagnose why.
+
+**Root cause:** All error paths returned structured JSON errors to the frontend but never logged them server-side. The `catch` blocks were either empty or only forwarded errors to the response.
+
+**Rule:** Every edge function should `console.error` with a prefix tag (e.g. `[ghl-enroll]`) at every failure point, even if the error is also returned in the HTTP response. Supabase function logs are the only diagnostic tool when the frontend caller doesn't surface details.
+
+---
+
 ## 2026-03-23 - Password seed rename broke all social logins
 
 **What happened:** A bulk rename accidentally changed the password seed `_NFsTay2!` across SignIn.tsx, SignUp.tsx, ParticleAuthCallback.tsx, and VerifyOtp.tsx. All social login users (Google, Apple, X, Facebook) were locked out.

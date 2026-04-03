@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   ChevronDown, ChevronUp, ExternalLink, Upload, X, MessageCircle,
-  Edit2, Trash2, Download, AlertTriangle, RefreshCw,
+  Edit2, Trash2, Download, AlertTriangle, RefreshCw, Users, List,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
@@ -55,6 +55,43 @@ export default function AdminDeals() {
 
   const currentList = tab === 'pending' ? pending : tab === 'live' ? live : inactive;
   const featuredCount = allProperties.filter(p => p.featured).length;
+
+  // ── Grouped view ────────────────────────────────────────────
+  const [groupView, setGroupView] = useState(true);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  interface LandlordGroup {
+    phone: string;
+    name: string | null;
+    email: string | null;
+    properties: typeof allProperties;
+  }
+
+  const groupedByLandlord = useMemo(() => {
+    const map = new Map<string, LandlordGroup>();
+    for (const p of currentList) {
+      const phone = (p as Record<string, unknown>).landlord_whatsapp as string || (p as Record<string, unknown>).contact_phone as string || 'unknown';
+      if (!map.has(phone)) {
+        map.set(phone, {
+          phone,
+          name: (p as Record<string, unknown>).contact_name as string || null,
+          email: (p as Record<string, unknown>).contact_email as string || null,
+          properties: [],
+        });
+      }
+      map.get(phone)!.properties.push(p);
+    }
+    return Array.from(map.values()).sort((a, b) => b.properties.length - a.properties.length);
+  }, [currentList]);
+
+  const toggleGroup = (phone: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(phone)) next.delete(phone);
+      else next.add(phone);
+      return next;
+    });
+  };
 
   // ── Approve / Reject (from Submissions) ──────────────────────
   const approve = async (id: string) => {
@@ -343,7 +380,7 @@ export default function AdminDeals() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex items-center gap-2 mb-6">
         {([
           { key: 'pending' as Tab, label: 'Pending Review', count: pending.length },
           { key: 'live' as Tab, label: 'Live', count: live.length },
@@ -357,10 +394,79 @@ export default function AdminDeals() {
             )}
           </button>
         ))}
+        <div className="ml-auto">
+          <button
+            data-testid="group-toggle"
+            onClick={() => setGroupView(!groupView)}
+            className="px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors inline-flex items-center gap-1.5 border border-border hover:bg-secondary text-muted-foreground"
+          >
+            {groupView ? <><Users className="w-3.5 h-3.5" /> Grouped by landlord</> : <><List className="w-3.5 h-3.5" /> Flat list</>}
+          </button>
+        </div>
       </div>
 
       {/* ── PENDING TAB (card-based, expandable with edit + pricing) ── */}
-      {tab === 'pending' && (
+      {tab === 'pending' && groupView && (
+        <div className="space-y-4" data-testid="grouped-view">
+          {groupedByLandlord.map(group => (
+            <div key={group.phone} className="bg-card border border-border rounded-2xl overflow-hidden">
+              {/* Landlord group header */}
+              <div
+                data-testid="landlord-group-header"
+                className="flex items-center gap-4 p-4 cursor-pointer bg-secondary/50 hover:bg-secondary transition-colors"
+                onClick={() => toggleGroup(group.phone)}
+              >
+                <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground">{group.name || 'Unknown'}</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#1E9A80]">
+                      {group.properties.length} {group.properties.length === 1 ? 'property' : 'properties'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {group.phone !== 'unknown' ? group.phone : 'No phone'}
+                    {group.email ? ` · ${group.email}` : ''}
+                  </p>
+                </div>
+                {collapsedGroups.has(group.phone)
+                  ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
+              </div>
+
+              {/* Properties inside group */}
+              {!collapsedGroups.has(group.phone) && (
+                <div className="divide-y divide-border">
+                  {group.properties.map(s => (
+                    <PropertyCard
+                      key={s.id}
+                      s={s}
+                      expandedId={expandedId}
+                      setExpandedId={setExpandedId}
+                      statusBadge={statusBadge}
+                      sourceTag={sourceTag}
+                      saLabel={saLabel}
+                      startEdit={startEdit}
+                      approve={approve}
+                      reject={reject}
+                      featuredCount={featuredCount}
+                      pricingLoading={pricingLoading}
+                      refetchPricing={refetchPricing}
+                      queryClient={queryClient}
+                      user={user}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          {currentList.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-12">No pending submissions.</p>
+          )}
+        </div>
+      )}
+
+      {tab === 'pending' && !groupView && (
         <div className="space-y-3">
           {currentList.map(s => (
             <div key={s.id} className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -748,6 +854,131 @@ function Field({ label, value, onChange, type = 'text' }: { label: string; value
       <label className="text-xs font-semibold text-foreground block mb-1">{label}</label>
       <input type={type} value={value} onChange={e => onChange(e.target.value)}
         className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" />
+    </div>
+  );
+}
+
+/** Reusable pending property card used in both flat and grouped views */
+function PropertyCard({ s, expandedId, setExpandedId, statusBadge, sourceTag, saLabel, startEdit, approve, reject, featuredCount, pricingLoading, refetchPricing, queryClient, user }: {
+  s: Record<string, any>;
+  expandedId: string | null;
+  setExpandedId: (id: string | null) => void;
+  statusBadge: (status: string) => React.ReactNode;
+  sourceTag: (s: Record<string, unknown>) => React.ReactNode;
+  saLabel: (sa: string | null) => React.ReactNode;
+  startEdit: (p: any) => void;
+  approve: (id: string) => void;
+  reject: (id: string) => void;
+  featuredCount: number;
+  pricingLoading: string | null;
+  refetchPricing: (p: any) => void;
+  queryClient: any;
+  user: any;
+}) {
+  return (
+    <div className="bg-card overflow-hidden">
+      <div className="flex items-center gap-4 p-4 cursor-pointer" onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground truncate">{s.name}</span>
+            {statusBadge(s.status)}
+            {sourceTag(s as Record<string, unknown>)}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">{s.city} · {s.postcode as string} · £{s.rent_monthly?.toLocaleString()}/mo</p>
+        </div>
+        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+          <button onClick={() => startEdit(s)} className="text-xs text-primary font-medium inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-secondary"><Edit2 className="w-3 h-3" /> Edit</button>
+          {(s.status === 'pending' || s.status === 'inactive') && (
+            <>
+              <button onClick={() => approve(s.id)} className="text-xs bg-nfstay-black text-nfstay-black-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90">Approve</button>
+              <button onClick={() => reject(s.id)} className="text-xs text-destructive font-medium px-2">Reject</button>
+            </>
+          )}
+        </div>
+        {expandedId === s.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </div>
+
+      {expandedId === s.id && (
+        <div className="border-t border-border p-4 space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Detail label="Type" value={s.type} />
+            <Detail label="Category" value={s.property_category as string || '-'} />
+            <Detail label="Bedrooms" value={s.bedrooms?.toString() || '-'} />
+            <Detail label="Bathrooms" value={s.bathrooms?.toString() || '-'} />
+            <Detail label="Garage" value={s.garage ? 'Yes' : 'No'} />
+            <Detail label="SA Approved" value={saLabel(s.sa_approved)} />
+            <Detail label="Rent" value={`£${s.rent_monthly?.toLocaleString()}`} />
+            <Detail label="Est. Profit" value={`£${s.profit_est?.toLocaleString()}`} />
+            <Detail label="Deposit" value={s.deposit ? `£${(s.deposit as number).toLocaleString()}` : '-'} />
+            <Detail label="Agent Fee" value={s.agent_fee ? `£${(s.agent_fee as number).toLocaleString()}` : '-'} />
+            <Detail label="Created" value={new Date(s.created_at).toLocaleDateString()} />
+          </div>
+
+          {/* Airbnb Pricing */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <h4 className="text-xs font-semibold text-foreground">Airbnb Pricing</h4>
+              <button onClick={() => refetchPricing(s)} disabled={pricingLoading === s.id}
+                className="text-[10px] text-primary font-medium inline-flex items-center gap-1 hover:opacity-75 disabled:opacity-50">
+                <RefreshCw className={`w-3 h-3 ${pricingLoading === s.id ? 'animate-spin' : ''}`} />
+                {pricingLoading === s.id ? 'Fetching...' : 'Re-fetch'}
+              </button>
+            </div>
+            {s.estimated_nightly_rate ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Detail label="Nightly Rate" value={`£${s.estimated_nightly_rate}`} />
+                <Detail label="Monthly Revenue" value={`£${(s.estimated_monthly_revenue as number)?.toLocaleString()}`} />
+                <Detail label="Est. Profit" value={`£${(s.estimated_profit as number)?.toLocaleString()}`} />
+                <Detail label="Confidence" value={
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                    s.estimation_confidence === 'High' ? 'bg-emerald-100 text-emerald-700' :
+                    s.estimation_confidence === 'Medium' ? 'bg-amber-100 text-amber-700' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>{s.estimation_confidence as string || '-'}</span>
+                } />
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">No pricing data yet. Click Re-fetch to get Airbnb estimates.</p>
+            )}
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h4 className="text-xs font-semibold text-foreground mb-2">Contact</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Detail label="Name" value={s.contact_name as string || '-'} />
+              <Detail label="Phone" value={s.contact_phone as string || '-'} />
+              <Detail label="WhatsApp" value={s.contact_whatsapp as string || s.landlord_whatsapp || '-'} />
+              <Detail label="Email" value={s.contact_email as string || '-'} />
+            </div>
+          </div>
+
+          {/* Notes */}
+          {(s.notes || s.description) && (
+            <div>
+              <h4 className="text-xs font-semibold text-foreground mb-1">Notes</h4>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{s.notes as string || s.description}</p>
+            </div>
+          )}
+
+          {/* Photos */}
+          {s.photos && s.photos.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-foreground mb-2">Photos ({s.photos.length})</h4>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {s.photos.map((url: string, i: number) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="relative rounded-lg overflow-hidden aspect-square group">
+                    <img src={url} className="w-full h-full object-cover" alt={`Photo ${i + 1}`} />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <ExternalLink className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
