@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2026-04-03T17:47:53.577Z",
+  "lastUpdated": "2026-04-03T19:15:54.831Z",
   "summary": {
     "total": 247,
     "passed": 207,
-    "failed": 10
+    "failed": 4
   },
   "journeys": {
     "1": {
