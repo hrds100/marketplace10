@@ -39,19 +39,25 @@ Tenant clicks WhatsApp on deal card/detail/panel
 ## WORKFLOW: Landlord Outreach (admin-triggered via ghl-enroll)
 
 **Edge function:** `ghl-enroll`
-**Triggered by:** Admin clicking NDA/NDA+Claim in Outreach > Tenant Requests
+**Triggered by:** Admin clicking Direct/NDA/NDA+Claim in Outreach > Tenant Requests
 
 ### What it does:
 1. Searches GHL for landlord contact by phone (multiple format variants)
 2. Creates GHL contact if not found
-3. Removes contact from workflow (if already enrolled), waits 1.5s
-4. Re-enrolls in the selected GHL workflow
+3. **Sets GHL custom fields by FIELD ID** (not key name):
+   - `Z0thvOTyoO2KxTMt5sP8` (property_reference) = property name
+   - `gWb4evAKLWCK0y8RHp32` (magic_link_url) = `?token=XXX`
+4. Removes contact from workflow (if already enrolled), waits 1.5s
+5. Re-enrolls in the WARM GHL workflow
 
 ### GHL Workflow IDs:
-| Workflow | ID | Use |
-|----------|-----|-----|
-| Cold outreach (first contact) | `67250bfa-e1fc-4201-8bca-08c384a4a31d` | Landlord Activation tab |
-| NDA/warm (tenant lead release) | `0eb4395c-e493-43dc-be97-6c4455b5c7c4` | Tenant Requests NDA/NDA+Claim |
+| Workflow | ID | Use | Called via |
+|----------|-----|-----|-----------|
+| COLD (Landlord Activation ONLY) | `67250bfa-e1fc-4201-8bca-08c384a4a31d` | "Send First Outreach" + "Assign Lead" | n8n webhook |
+| WARM (Tenant Requests — ALL types) | `0eb4395c-e493-43dc-be97-6c4455b5c7c4` | Direct, NDA, NDA+Claim release | `ghl-enroll` edge function |
+
+**All three Tenant Request types (Direct, NDA, NDA+Claim) use the WARM workflow.**
+The difference is UI-only — what the landlord sees on CRM after clicking magic link.
 
 ## WORKFLOW: Inbox messaging (post-claim, ongoing)
 
