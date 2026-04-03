@@ -918,6 +918,11 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     },
   });
 
+  // ── Authorise inquiry: Direct / NDA / NDA+Claim ──
+  // ALL three types send the WARM workflow (0eb4395c) to the landlord via WhatsApp.
+  // The difference is UI-only: what the landlord sees when they click the magic link.
+  // Email is also sent if the landlord has an email on file.
+  // COLD workflow (67250bfa) is ONLY for Landlord Activation — never used here.
   const authorise = async (inquiry: PendingInquiryRow, type: 'nda' | 'nda_and_claim' | 'direct') => {
     const key = `auth-${inquiry.id}-${type}`;
     addLoading(key);
@@ -926,79 +931,65 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
       const email = inquiry.landlordEmail;
       const channels: string[] = [];
 
-      // Contact landlord on available channels (NDA/NDA+Claim only -- Direct skips outreach)
-      if (type === 'nda' || type === 'nda_and_claim') {
-        // Build magic link for WhatsApp template button
-        let magicLink = 'https://hub.nfstay.com/signin';
-        if (phone) {
-          const { data: inviteData } = await (supabase.from('landlord_invites') as any)
-            .select('magic_token')
-            .eq('phone', phone)
-            .order('created_at', { ascending: false })
-            .limit(1);
-          const magicToken = inviteData?.[0]?.magic_token;
-          if (magicToken) magicLink = `https://hub.nfstay.com/inbox?token=${magicToken}`;
-        }
+      // 1. Get magic link for the landlord
+      let magicLink = 'https://hub.nfstay.com/signin';
+      if (phone) {
+        const { data: inviteData } = await (supabase.from('landlord_invites') as any)
+          .select('magic_token')
+          .eq('phone', phone)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        const token = inviteData?.[0]?.magic_token;
+        if (token) magicLink = `https://hub.nfstay.com/inbox?token=${token}`;
+      }
 
-        // WhatsApp via direct GHL enrollment with WARM workflow (NDA/lead release)
-        // COLD workflow (67250bfa) is for Landlord Activation only — never use here
-        if (phone) {
-          const result = await callGhlEnroll(phone, GHL_WORKFLOW_WARM, {
-            property_name: inquiry.propertyName || inquiry.property_id?.slice(0, 8) || 'Property',
+      // 2. WhatsApp — WARM workflow for all types (direct, nda, nda_and_claim)
+      if (phone) {
+        const result = await callGhlEnroll(phone, GHL_WORKFLOW_WARM, {
+          property_name: inquiry.propertyName || 'Property',
+          tenant_name: inquiry.tenant_name || 'A tenant',
+          magic_link: magicLink,
+          contactName: inquiry.landlordName || 'Landlord',
+        });
+        if (result.success) channels.push('whatsapp');
+        else console.error('GHL enroll failed:', result.error);
+      }
+
+      // 3. Email — if landlord has email on file
+      if (email) {
+        try {
+          const emailType = type === 'nda' ? 'inquiry-lister-nda' : 'inquiry-lister-notification';
+          const emailData: Record<string, string> = {
+            lister_email: email,
+            lister_name: inquiry.landlordName || 'Landlord',
             tenant_name: inquiry.tenant_name || 'A tenant',
-            magic_link: magicLink,
-            contactName: inquiry.landlordName || 'Landlord',
-          });
-          if (result.success) {
-            channels.push('whatsapp');
-          } else {
-            console.error('GHL enrollment failed:', result.error);
-          }
-        }
+            property_name: inquiry.propertyName || 'Property',
+            property_url: `https://hub.nfstay.com/deals/${inquiry.property_id}`,
+          };
+          if (type === 'nda') emailData.nda_url = magicLink;
+          else emailData.lead_url = magicLink;
 
-        // Email via send-email edge function if email exists
-        if (email) {
-          try {
-            const emailType = type === 'nda' ? 'inquiry-lister-nda' : 'inquiry-lister-notification';
-            const emailData: Record<string, string> = {
-              lister_email: email,
-              lister_name: inquiry.landlordName || 'Landlord',
-              tenant_name: inquiry.tenant_name || 'A tenant',
-              property_name: inquiry.propertyName || 'Property',
-              property_url: `https://hub.nfstay.com/deals/${inquiry.property_id}`,
-            };
-            if (type === 'nda') {
-              emailData.nda_url = magicLink;
-            } else {
-              emailData.lead_url = magicLink;
-            }
-
-            await supabase.functions.invoke('send-email', {
-              body: { type: emailType, data: emailData },
-            });
-            channels.push('email');
-          } catch {
-            console.error('Landlord release email failed');
-          }
-        }
-
-        // If neither channel succeeded, warn but still allow authorization
-        if (channels.length === 0 && !phone && !email) {
-          toast.error('No landlord contact info found -- inquiry authorized but landlord not contacted');
-        } else if (channels.length === 0) {
-          toast.error('Landlord contact failed on all channels -- inquiry authorized but delivery unconfirmed');
+          await supabase.functions.invoke('send-email', { body: { type: emailType, data: emailData } });
+          channels.push('email');
+        } catch {
+          console.error('Landlord email failed');
         }
       }
 
-      // Update DB -- authorized regardless of delivery success
+      if (channels.length === 0) {
+        toast.error(phone || email
+          ? 'Landlord contact failed — inquiry authorized but delivery unconfirmed'
+          : 'No landlord contact info — inquiry authorized but landlord not contacted');
+      }
+
+      // 4. Update DB
       const { error } = await supabase.from('inquiries')
         .update({ authorized: true, authorisation_type: type, authorized_at: new Date().toISOString() } as any)
         .eq('id', inquiry.id);
       if (error) throw error;
 
       if (user) logAdminAction(user.id, { action: 'inquiry_authorised', target_table: 'inquiries', target_id: inquiry.id, metadata: { type, channels } });
-      const channelLabel = channels.length > 0 ? ` via ${channels.join(' + ')}` : '';
-      toast.success(`Inquiry authorised (${type.replace(/_/g, ' + ')})${channelLabel}`);
+      toast.success(`Inquiry authorised (${type.replace(/_/g, ' + ')}) via ${channels.join(' + ') || 'DB only'}`);
       queryClient.invalidateQueries({ queryKey: ['outreach-pending'] });
     } catch {
       toast.error('Failed to authorise inquiry');
