@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, X, Edit2, Trash2, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
+import { Plus, X, Edit2, Trash2, ArrowUp, ArrowDown, AlertCircle, Database, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import { modules as templateModules } from '@/data/universityData';
 
 type ModuleRow = Tables<'modules'>;
 
@@ -126,6 +127,33 @@ export default function AdminModules() {
     queryClient.invalidateQueries({ queryKey: ['admin-modules'] });
     queryClient.invalidateQueries({ queryKey: ['admin-module-lesson-counts'] });
     setDeleteTarget(null);
+  };
+
+  const [seeding, setSeeding] = useState(false);
+
+  const seedModulesFromTemplate = async () => {
+    setSeeding(true);
+    try {
+      for (const mod of templateModules) {
+        await supabase.from('modules').upsert({
+          id: mod.id,
+          title: mod.title,
+          emoji: mod.emoji || null,
+          description: mod.summary || null,
+          xp_reward: mod.xpReward || 100,
+          order_index: templateModules.indexOf(mod),
+          is_locked: false,
+          tier_required: 'free',
+          learning_outcomes: mod.learningOutcomes || [],
+        }, { onConflict: 'id' });
+      }
+      toast.success(`Seeded ${templateModules.length} modules from template`);
+      queryClient.invalidateQueries({ queryKey: ['admin-modules'] });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to seed modules');
+    } finally {
+      setSeeding(false);
+    }
   };
 
   const reorder = async (id: string, direction: 'up' | 'down') => {
@@ -372,8 +400,19 @@ export default function AdminModules() {
             ))}
             {modules.length === 0 && (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                  No modules yet. Click "Add Module" to create one.
+                <td colSpan={8} className="p-8 text-center">
+                  <p className="text-muted-foreground mb-3">No modules yet.</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={seedModulesFromTemplate}
+                      disabled={seeding}
+                      className="h-9 px-4 rounded-lg border border-primary text-primary text-sm font-medium inline-flex items-center gap-1.5 hover:bg-primary/5 transition-colors disabled:opacity-50"
+                    >
+                      {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
+                      {seeding ? 'Seeding...' : 'Seed from template'}
+                    </button>
+                    <span className="text-xs text-muted-foreground">or click "Add Module" above</span>
+                  </div>
                 </td>
               </tr>
             )}

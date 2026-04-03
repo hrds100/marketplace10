@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Settings, Globe, Bell, Sparkles } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Settings, Globe, Bell, Sparkles, Mail, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -28,12 +28,35 @@ const DEFAULT_AI: AIForm = {
   system_prompt_description: '',
 };
 
+interface NotifSetting {
+  id: string;
+  event_key: string;
+  label: string;
+  category: string;
+  bell_enabled: boolean;
+  email_enabled: boolean;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  general: 'General',
+  deals: 'Deals & Listings',
+  affiliate: 'Affiliates & Payouts',
+  investment: 'Investment',
+  nfstay: 'nfstay App',
+};
+
+const CATEGORY_ORDER = ['general', 'deals', 'affiliate', 'investment', 'nfstay'];
+
 export default function AdminSettings() {
   const { user } = useAuth();
   const [aiForm, setAiForm] = useState<AIForm>(DEFAULT_AI);
   const [existingRowId, setExistingRowId] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(true);
   const [aiSaving, setAiSaving] = useState(false);
+
+  // Notification settings state
+  const [notifSettings, setNotifSettings] = useState<NotifSetting[]>([]);
+  const [notifLoading, setNotifLoading] = useState(true);
 
   // Load AI settings from Supabase on mount
   useEffect(() => {
@@ -58,6 +81,44 @@ export default function AdminSettings() {
       setAiLoading(false);
     })();
   }, []);
+
+  // Load notification settings
+  const fetchNotifSettings = useCallback(async () => {
+    try {
+      const { data, error } = await (supabase.from('notification_settings') as any)
+        .select('*')
+        .order('category')
+        .order('label');
+      if (error) throw error;
+      if (data) setNotifSettings(data as NotifSetting[]);
+    } catch {
+      // Table may not exist yet — show empty
+    } finally {
+      setNotifLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchNotifSettings(); }, [fetchNotifSettings]);
+
+  // Toggle a notification setting
+  const toggleNotif = async (id: string, field: 'bell_enabled' | 'email_enabled', current: boolean) => {
+    // Optimistic update
+    setNotifSettings(prev =>
+      prev.map(n => n.id === id ? { ...n, [field]: !current } : n)
+    );
+    try {
+      const { error } = await (supabase.from('notification_settings') as any)
+        .update({ [field]: !current, updated_at: new Date().toISOString(), updated_by: user?.id || null })
+        .eq('id', id);
+      if (error) throw error;
+    } catch {
+      // Revert on error
+      setNotifSettings(prev =>
+        prev.map(n => n.id === id ? { ...n, [field]: current } : n)
+      );
+      toast.error('Failed to update notification setting');
+    }
+  };
 
   /**
    * Save AI settings: upsert to ai_settings table.
@@ -95,12 +156,21 @@ export default function AdminSettings() {
     }
   };
 
+  // Group notification settings by category
+  const grouped = CATEGORY_ORDER
+    .map(cat => ({
+      category: cat,
+      label: CATEGORY_LABELS[cat] || cat,
+      items: notifSettings.filter(n => n.category === cat),
+    }))
+    .filter(g => g.items.length > 0);
+
   return (
     <div data-feature="ADMIN" className="max-w-[600px]">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Admin Settings</h1>
 
       <div className="space-y-6">
-        {/* ── Platform ── */}
+        {/* -- Platform -- */}
         <div className="bg-card border border-border rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Globe className="w-5 h-5 text-muted-foreground" />
@@ -118,25 +188,100 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        {/* ── Notifications ── */}
+        {/* -- Notifications -- */}
         <div className="bg-card border border-border rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Bell className="w-5 h-5 text-muted-foreground" />
             <h2 className="text-base font-bold text-foreground">Notifications</h2>
           </div>
-          <div className="space-y-3">
-            {['Email new submissions to admin', 'Email new signups to admin', 'Weekly analytics digest'].map(s => (
-              <div key={s} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <span className="text-sm text-foreground">{s}</span>
-                <button className="w-11 h-6 rounded-full bg-primary relative">
-                  <span className="absolute top-0.5 left-[22px] w-5 h-5 rounded-full bg-white shadow" />
-                </button>
+
+          {notifLoading ? (
+            <div className="py-6 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading notification settings...
+            </div>
+          ) : notifSettings.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">
+              No notification settings found. Run the migration to seed the notification_settings table.
+            </p>
+          ) : (
+            <div className="space-y-5">
+              {/* Column headers */}
+              <div className="flex items-center justify-end gap-6 pr-1">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <Bell className="w-3 h-3" /> Bell
+                </span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <Mail className="w-3 h-3" /> Email
+                </span>
               </div>
-            ))}
-          </div>
+
+              {grouped.map(group => (
+                <div key={group.category}>
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                    {group.label}
+                  </h3>
+                  <div className="space-y-0">
+                    {group.items.map(setting => (
+                      <div
+                        key={setting.id}
+                        className="flex items-center justify-between py-2.5 border-b border-border last:border-0"
+                      >
+                        <span className="text-sm text-foreground">{setting.label}</span>
+                        <div className="flex items-center gap-6">
+                          {/* Bell toggle */}
+                          <button
+                            onClick={() => toggleNotif(setting.id, 'bell_enabled', setting.bell_enabled)}
+                            className={`w-9 h-5 rounded-full relative transition-colors ${
+                              setting.bell_enabled ? 'bg-primary' : 'bg-border'
+                            }`}
+                            aria-label={`Bell notification for ${setting.label}`}
+                          >
+                            <span
+                              className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                                setting.bell_enabled ? 'left-[18px]' : 'left-0.5'
+                              }`}
+                            />
+                          </button>
+                          {/* Email toggle */}
+                          <button
+                            onClick={() => toggleNotif(setting.id, 'email_enabled', setting.email_enabled)}
+                            className={`w-9 h-5 rounded-full relative transition-colors ${
+                              setting.email_enabled ? 'bg-primary' : 'bg-border'
+                            }`}
+                            aria-label={`Email notification for ${setting.label}`}
+                          >
+                            <span
+                              className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                                setting.email_enabled ? 'left-[18px]' : 'left-0.5'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {/* Admin email recipients */}
+              <div className="pt-3 border-t border-border">
+                <label className="text-xs font-semibold text-foreground block mb-1.5">
+                  Admin email recipients
+                </label>
+                <input
+                  defaultValue="hugo@nfstay.com, chris@nfstay.com, hello@nfstay.com"
+                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
+                  placeholder="Comma-separated admin emails"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  These addresses receive all admin notification emails. Change via ADMIN_EMAIL env var in Supabase.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* ── AI Engine ── */}
+        {/* -- AI Engine -- */}
         <div className="bg-card border border-border rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-primary" />

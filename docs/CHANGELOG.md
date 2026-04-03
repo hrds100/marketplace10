@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [2026-04-03c] - Admin Notifications, Settings & University Seed
+
+### Added
+- **Notification toggles (22 types):** Admin Settings now loads all notification types from `notification_settings` table, grouped by category (General, Deals, Affiliate, Investment, nfstay App). Each type has independent Bell and Email toggles with optimistic updates.
+- **Admin email recipients field:** visible in Settings, pre-filled with hugo@nfstay.com, chris@nfstay.com, hello@nfstay.com.
+- **University seed button:** AdminLessons and AdminModules now show a "Seed from template" button when empty, which populates from `universityData.ts`.
+- **Migration:** `20260403_fix_ai_settings_and_notification_settings.sql` creates `notification_settings` table, seeds 22 event types, and ensures `ai_settings` RLS policies exist for admin.
+- **Playwright test:** `e2e/admin-notifications-settings.spec.ts` covers settings page, notification toggles, university seed, and notifications list.
+
+### Fixed
+- **AI settings RLS:** Added explicit admin SELECT/UPDATE/INSERT policies on `ai_settings` table so prompts are visible to admin users.
+- **Admin notifications query:** AdminNotifications.tsx now fetches both user-specific and admin-wide (user_id IS NULL) notifications.
+- **hello@nfstay.com:** Added to default ADMIN_EMAILS in `send-email` edge function.
+
 ## [2026-04-03b] - List-a-Deal Optional Fields + Airbnb Pricing Diagnostics
 
 ### Fixed
