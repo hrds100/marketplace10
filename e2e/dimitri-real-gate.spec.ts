@@ -23,7 +23,7 @@ async function getTokens(email: string, password: string) {
       });
       const d = await r.json();
       if (d?.access_token) return d;
-    } catch {}
+    } catch { /* noop */ }
     await new Promise(r => setTimeout(r, 2000));
   }
   throw new Error('Auth failed: ' + email);
@@ -62,7 +62,7 @@ async function searchImap(to: string, timeoutMs = 60000): Promise<{ found: boole
       } finally { lock.release(); }
       await client.logout();
     } catch (e) {
-      try { await client.logout(); } catch {}
+      try { await client.logout(); } catch { /* noop */ }
     }
     await new Promise(r => setTimeout(r, 5000));
   }
