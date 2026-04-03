@@ -908,7 +908,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
         const profile = landlordPhone ? profileMap.get(landlordPhone) : null;
         return {
         ...inq,
-        propertyName: propMap.get(inq.property_id)?.name || 'Unknown',
+        propertyName: propMap.get(inq.property_id)?.name || 'Property',
           landlordPhone,
           landlordName: profile?.name || inq.lister_name || null,
           landlordEmail: profile?.email || null,

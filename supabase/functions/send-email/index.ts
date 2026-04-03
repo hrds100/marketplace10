@@ -381,26 +381,47 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'inquiry-lister-notification':
       return {
         to: String(data.lister_email),
-        subject: `New lead for ${data.property_name}`,
-        html: layout('New inquiry', `
+        subject: `New tenant inquiry for ${data.property_name || 'your property'}`,
+        html: layout('You have a new lead!', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-            You have a new inquiry from <strong>${data.tenant_name}</strong> about <strong>${data.property_name}</strong>. Click below to view their contact details.
+            Great news — someone is interested in your property on nfstay.
           </p>
-          ${btn('View Tenant Details', String(data.lead_url))}
-          ${data.property_url ? `<div style="text-align:center;margin-top:12px;"><a href="${data.property_url}" style="font-size:13px;color:#1E9A80;text-decoration:underline;">View Property</a></div>` : ''}
+          ${row('Property', String(data.property_name || 'Your property'))}
+          ${row('Tenant', String(data.tenant_name || 'A tenant'))}
+          ${row('Status', 'Ready to view')}
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:16px 0 0;">
+            Click below to view their full contact details in your nfstay inbox.
+          </p>
+          <div style="text-align:center;margin:24px 0 8px;">
+            ${btn('View Lead Details →', String(data.lead_url || `${BASE_URL}/signin`))}
+          </div>
+          ${data.property_url ? `<div style="text-align:center;margin-top:8px;"><a href="${data.property_url}" style="font-size:13px;color:${BRAND.color};text-decoration:underline;">View Property Listing</a></div>` : ''}
+          <p style="font-size:12px;color:#9ca3af;margin:24px 0 0;line-height:1.5;">
+            This is an automated message from nfstay. You received this because a tenant inquired about your listed property.
+          </p>
         `),
       };
 
     case 'inquiry-lister-nda':
       return {
         to: String(data.lister_email),
-        subject: 'New lead - quick agreement needed',
-        html: layout('New inquiry', `
+        subject: `New inquiry for ${data.property_name || 'your property'} — quick agreement needed`,
+        html: layout('You have a new lead!', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-            You have a new inquiry about <strong>${data.property_name}</strong>! Before we share the tenant's details, please review our quick partnership agreement.
+            Great news — someone is interested in your property on nfstay.
           </p>
-          ${btn('Review & Get Details', String(data.nda_url))}
-          ${data.property_url ? `<div style="text-align:center;margin-top:12px;"><a href="${data.property_url}" style="font-size:13px;color:#1E9A80;text-decoration:underline;">View Property</a></div>` : ''}
+          ${row('Property', String(data.property_name || 'Your property'))}
+          ${row('Status', 'Agreement required')}
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:16px 0 0;">
+            Before we can share the tenant's details, please review and accept our quick Lead Access Agreement. It takes less than a minute.
+          </p>
+          <div style="text-align:center;margin:24px 0 8px;">
+            ${btn('Review Agreement & View Lead →', String(data.nda_url || `${BASE_URL}/signin`))}
+          </div>
+          ${data.property_url ? `<div style="text-align:center;margin-top:8px;"><a href="${data.property_url}" style="font-size:13px;color:${BRAND.color};text-decoration:underline;">View Property Listing</a></div>` : ''}
+          <p style="font-size:12px;color:#9ca3af;margin:24px 0 0;line-height:1.5;">
+            This is an automated message from nfstay. You received this because a tenant inquired about your listed property.
+          </p>
         `),
       };
 
