@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [2026-04-03c] - Admin Notifications, Settings & University Seed
+## [2026-04-03d] - Admin Notifications, Settings & University Seed
 
 ### Added
 - **Notification toggles (22 types):** Admin Settings now loads all notification types from `notification_settings` table, grouped by category (General, Deals, Affiliate, Investment, nfstay App). Each type has independent Bell and Email toggles with optimistic updates.
@@ -15,6 +15,15 @@
 - **AI settings RLS:** Added explicit admin SELECT/UPDATE/INSERT policies on `ai_settings` table so prompts are visible to admin users.
 - **Admin notifications query:** AdminNotifications.tsx now fetches both user-specific and admin-wide (user_id IS NULL) notifications.
 - **hello@nfstay.com:** Added to default ADMIN_EMAILS in `send-email` edge function.
+
+## [2026-04-03c] - Admin Deals Grouped View + Inquiry Pipeline Improvements
+
+### Added
+- Admin Deals page: grouped-by-landlord view with collapsible headers showing name, email, phone, and property count. Toggle between grouped and flat list.
+- `ghl-enroll` edge function: error logging at all key failure points (phone normalization, contact search, contact creation, workflow enrollment, and success).
+- `process-inquiry` edge function: admin bell notification inserted after every new inquiry (non-blocking).
+- `EmailInquiryModal`: differentiated error messages for expired session (401), property not found (404), and generic failures. Added debug logging and `data-testid` for Playwright.
+- Playwright test: `e2e/admin-deals-grouped.spec.ts` covering tabs, grouped toggle, and outreach page load.
 
 ## [2026-04-03b] - List-a-Deal Optional Fields + Airbnb Pricing Diagnostics
 
