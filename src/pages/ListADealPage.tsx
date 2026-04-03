@@ -460,8 +460,8 @@ export default function ListADealPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="w-full max-w-lg border border-border rounded-2xl p-8 bg-card text-center">
           <div className="w-12 h-12 rounded-full bg-accent-light flex items-center justify-center mx-auto"><CheckCircle className="w-6 h-6 text-primary" /></div>
-          <h2 className="text-[22px] font-bold text-foreground mt-4">Congratulations! Your deal is under review.</h2>
-          <p className="text-sm text-muted-foreground mt-1.5">This property could generate approximately:</p>
+          <h2 className="text-[22px] font-bold text-foreground mt-4">Congratulations!</h2>
+          <p className="text-sm text-muted-foreground mt-1.5">This property could make <span className="font-semibold text-foreground">£{pricingResult.estimated_monthly_revenue.toLocaleString()}</span> per month on Airbnb for Airbnb operators.</p>
           <div className="mt-5 rounded-xl bg-accent-light p-6 text-left">
             <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Estimated nightly rate</span><span className="text-sm font-semibold text-foreground">£{pricingResult.estimated_nightly_rate}/night</span></div>
             <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Est. monthly revenue</span><span className="text-sm font-semibold text-foreground">£{pricingResult.estimated_monthly_revenue.toLocaleString()}</span></div>
