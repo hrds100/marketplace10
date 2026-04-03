@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload, Loader2, AlertCircle, CheckCircle2, LayoutDashboard, Building2, CalendarCheck, Paintbrush, TrendingUp, Star, Eye } from 'lucide-react';
+import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload, Loader2, AlertCircle, CheckCircle2, LayoutDashboard, Building2, CalendarCheck, Paintbrush, TrendingUp, Star, Eye, Users } from 'lucide-react';
 import PaymentSheet from '@/components/PaymentSheet';
 import BookingSitePreview from './BookingSitePreview';
 import { getBridgeUrl } from '@/lib/authBridge';
@@ -378,11 +378,21 @@ function BookingSiteDashboard() {
   const [domainMode, setDomainMode] = useState<'subdomain' | 'custom'>('subdomain');
   const [hexInput, setHexInput] = useState(defaultBranding.accentColor);
   const [seeded, setSeeded] = useState(false);
-  const [topTab, setTopTab] = useState<'dashboard' | 'properties' | 'reservations' | 'branding'>('dashboard');
+  const { isAdmin } = useAuth();
+  const [topTab, setTopTab] = useState<'dashboard' | 'properties' | 'reservations' | 'branding' | 'analytics' | 'users'>('dashboard');
 
   // Dashboard stats
   const [statsLoading, setStatsLoading] = useState(false);
-  const [stats, setStats] = useState({ properties: 0, reservations: 0, revenue: 0 });
+  const [stats, setStats] = useState({ properties: 0, reservations: 0, revenue: 0, operators: 0 });
+
+  // Admin: Analytics state
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState({ monthlyRevenue: 0, monthlyBookings: 0, avgBookingValue: 0 });
+  const [recentBookings, setRecentBookings] = useState<Array<Record<string, unknown>>>([]);
+
+  // Admin: Users/Operators state
+  const [operatorsLoading, setOperatorsLoading] = useState(false);
+  const [operators, setOperators] = useState<Array<Record<string, unknown>>>([]);
 
   // Properties list
   const [properties, setProperties] = useState<Array<Record<string, unknown>>>([]);
@@ -392,49 +402,129 @@ function BookingSiteDashboard() {
   const [reservations, setReservations] = useState<Array<Record<string, unknown>>>([]);
   const [resLoading, setResLoading] = useState(false);
 
-  // Fetch dashboard stats
+  // Fetch dashboard stats — admin sees ALL operators' data
   useEffect(() => {
-    if (!operator?.id || topTab !== 'dashboard') return;
+    if (topTab !== 'dashboard') return;
+    if (!isAdmin && !operator?.id) return;
     setStatsLoading(true);
-    Promise.all([
-      (supabase.from('nfs_properties') as any).select('id', { count: 'exact', head: true }).eq('operator_id', operator.id),
-      (supabase.from('nfs_reservations') as any).select('id, total_price').eq('operator_id', operator.id),
-    ]).then(([propRes, resRes]) => {
+
+    const propsQuery = isAdmin
+      ? (supabase.from('nfs_properties') as any).select('id', { count: 'exact', head: true })
+      : (supabase.from('nfs_properties') as any).select('id', { count: 'exact', head: true }).eq('operator_id', operator!.id);
+
+    const resQuery = isAdmin
+      ? (supabase.from('nfs_reservations') as any).select('id, total_price')
+      : (supabase.from('nfs_reservations') as any).select('id, total_price').eq('operator_id', operator!.id);
+
+    const opsQuery = isAdmin
+      ? (supabase.from('nfs_operators') as any).select('id', { count: 'exact', head: true })
+      : Promise.resolve({ count: 0 });
+
+    Promise.all([propsQuery, resQuery, opsQuery]).then(([propRes, resRes, opsRes]) => {
       const propCount = propRes.count || 0;
       const resList = resRes.data || [];
       const revenue = resList.reduce((sum: number, r: Record<string, unknown>) => sum + (Number(r.total_price) || 0), 0);
-      setStats({ properties: propCount, reservations: resList.length, revenue });
+      setStats({ properties: propCount, reservations: resList.length, revenue, operators: opsRes.count || 0 });
       setStatsLoading(false);
     });
-  }, [operator?.id, topTab]);
+  }, [operator?.id, topTab, isAdmin]);
 
-  // Fetch properties
+  // Fetch properties — admin sees ALL operators' properties
   useEffect(() => {
-    if (!operator?.id || topTab !== 'properties') return;
+    if (topTab !== 'properties') return;
+    if (!isAdmin && !operator?.id) return;
     setPropsLoading(true);
-    (supabase.from('nfs_properties') as any)
-      .select('id, name, city, status, images')
-      .eq('operator_id', operator.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }: { data: Array<Record<string, unknown>> | null }) => {
-        setProperties(data || []);
-        setPropsLoading(false);
-      });
-  }, [operator?.id, topTab]);
 
-  // Fetch reservations
+    const query = isAdmin
+      ? (supabase.from('nfs_properties') as any)
+          .select('id, name, city, status, images, operator_id, nfs_operators(brand_name)')
+          .order('created_at', { ascending: false })
+      : (supabase.from('nfs_properties') as any)
+          .select('id, name, city, status, images')
+          .eq('operator_id', operator!.id)
+          .order('created_at', { ascending: false });
+
+    query.then(({ data }: { data: Array<Record<string, unknown>> | null }) => {
+      setProperties(data || []);
+      setPropsLoading(false);
+    });
+  }, [operator?.id, topTab, isAdmin]);
+
+  // Fetch reservations — admin sees ALL operators' reservations
   useEffect(() => {
-    if (!operator?.id || topTab !== 'reservations') return;
+    if (topTab !== 'reservations') return;
+    if (!isAdmin && !operator?.id) return;
     setResLoading(true);
-    (supabase.from('nfs_reservations') as any)
-      .select('id, guest_name, check_in, check_out, status, total_price, nfs_properties(name)')
-      .eq('operator_id', operator.id)
-      .order('check_in', { ascending: false })
-      .then(({ data }: { data: Array<Record<string, unknown>> | null }) => {
-        setReservations(data || []);
-        setResLoading(false);
+
+    const query = isAdmin
+      ? (supabase.from('nfs_reservations') as any)
+          .select('id, guest_name, check_in, check_out, status, total_price, nfs_properties(name), nfs_operators(brand_name)')
+          .order('check_in', { ascending: false })
+      : (supabase.from('nfs_reservations') as any)
+          .select('id, guest_name, check_in, check_out, status, total_price, nfs_properties(name)')
+          .eq('operator_id', operator!.id)
+          .order('check_in', { ascending: false });
+
+    query.then(({ data }: { data: Array<Record<string, unknown>> | null }) => {
+      setReservations(data || []);
+      setResLoading(false);
+    });
+  }, [operator?.id, topTab, isAdmin]);
+
+  // Fetch analytics data (admin only)
+  useEffect(() => {
+    if (!isAdmin || topTab !== 'analytics') return;
+    setAnalyticsLoading(true);
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    Promise.all([
+      (supabase.from('nfs_reservations') as any)
+        .select('id, total_price, guest_name, check_in, check_out, nfs_properties(name), nfs_operators(brand_name)')
+        .gte('created_at', monthStart),
+      (supabase.from('nfs_reservations') as any)
+        .select('id, total_price, guest_name, check_in, check_out, status, nfs_properties(name), nfs_operators(brand_name)')
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ]).then(([monthRes, recentRes]) => {
+      const monthList = monthRes.data || [];
+      const monthlyRevenue = monthList.reduce((sum: number, r: Record<string, unknown>) => sum + (Number(r.total_price) || 0), 0);
+      const monthlyBookings = monthList.length;
+      const avgBookingValue = monthlyBookings > 0 ? monthlyRevenue / monthlyBookings : 0;
+      setAnalyticsData({ monthlyRevenue, monthlyBookings, avgBookingValue });
+      setRecentBookings(recentRes.data || []);
+      setAnalyticsLoading(false);
+    }).catch((e) => {
+      console.error('Analytics fetch error:', e);
+      setAnalyticsLoading(false);
+    });
+  }, [isAdmin, topTab]);
+
+  // Fetch operators (admin only)
+  useEffect(() => {
+    if (!isAdmin || topTab !== 'users') return;
+    setOperatorsLoading(true);
+    (supabase.from('nfs_operators') as any)
+      .select('id, brand_name, email, subdomain, created_at')
+      .order('created_at', { ascending: false })
+      .then(async ({ data }: { data: Array<Record<string, unknown>> | null }) => {
+        const ops = data || [];
+        // Fetch property count per operator
+        const withCounts = await Promise.all(
+          ops.map(async (op) => {
+            const { count } = await (supabase.from('nfs_properties') as any)
+              .select('id', { count: 'exact', head: true })
+              .eq('operator_id', op.id);
+            return { ...op, property_count: count || 0 };
+          })
+        );
+        setOperators(withCounts);
+        setOperatorsLoading(false);
+      }).catch((e: unknown) => {
+        console.error('Operators fetch error:', e);
+        setOperatorsLoading(false);
       });
-  }, [operator?.id, topTab]);
+  }, [isAdmin, topTab]);
 
   // Pre-fill branding from operator record
   useEffect(() => {
@@ -524,8 +614,8 @@ function BookingSiteDashboard() {
     );
   }
 
-  // No operator record
-  if (!operator && !opLoading) {
+  // No operator record — admins can still access admin tabs
+  if (!operator && !opLoading && !isAdmin) {
     return (
       <div data-feature="BOOKING_NFSTAY" className="h-[calc(100vh-3.5rem)] flex items-center justify-center">
         <div className="text-center max-w-md px-6">
@@ -560,6 +650,10 @@ function BookingSiteDashboard() {
             { id: 'properties' as const, label: 'Properties', icon: Building2 },
             { id: 'reservations' as const, label: 'Reservations', icon: CalendarCheck },
             { id: 'branding' as const, label: 'Branding', icon: Paintbrush },
+            ...(isAdmin ? [
+              { id: 'analytics' as const, label: 'Analytics', icon: TrendingUp },
+              { id: 'users' as const, label: 'Users', icon: Users },
+            ] : []),
           ]).map(tab => (
             <button
               key={tab.id}
@@ -579,7 +673,7 @@ function BookingSiteDashboard() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
             <p className="text-sm text-muted-foreground">
-              Welcome back{operator?.brand_name ? `, ${operator.brand_name}` : ''}! Here's your property overview.
+              {isAdmin ? 'Platform overview across all operators.' : `Welcome back${operator?.brand_name ? `, ${operator.brand_name}` : ''}! Here's your property overview.`}
             </p>
           </div>
           {statsLoading ? (
@@ -592,7 +686,9 @@ function BookingSiteDashboard() {
                 { label: 'Total Revenue', value: `$${stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: TrendingUp, change: `${stats.reservations} bookings`, sub: 'all time' },
                 { label: 'Active Listings', value: stats.properties, icon: Building2, change: `${stats.properties} total`, sub: 'properties' },
                 { label: 'Reservations', value: stats.reservations, icon: CalendarCheck, change: `${stats.reservations} total`, sub: 'reservations' },
-                { label: 'Avg Rating', value: '-', icon: Star, change: '-', sub: 'coming soon' },
+                ...(isAdmin
+                  ? [{ label: 'Active Operators', value: stats.operators, icon: Users, change: `${stats.operators} total`, sub: 'operators' }]
+                  : [{ label: 'Avg Rating', value: '-', icon: Star, change: '-', sub: 'coming soon' }]),
               ].map((s) => (
                 <div key={s.label} className="bg-card border border-border rounded-2xl p-5">
                   <div className="flex items-center justify-between mb-3">
@@ -644,6 +740,7 @@ function BookingSiteDashboard() {
                   <thead>
                     <tr className="border-b border-border text-left bg-muted/30">
                       <th className="p-4 font-medium text-muted-foreground">Property</th>
+                      {isAdmin && <th className="p-4 font-medium text-muted-foreground">Operator</th>}
                       <th className="p-4 font-medium text-muted-foreground">Location</th>
                       <th className="p-4 font-medium text-muted-foreground">Status</th>
                       <th className="p-4 font-medium text-muted-foreground w-12"></th>
@@ -652,6 +749,7 @@ function BookingSiteDashboard() {
                   <tbody>
                     {properties.map((prop) => {
                       const images = (prop.images as string[]) || [];
+                      const opData = prop.nfs_operators as Record<string, unknown> | null;
                       return (
                         <tr key={String(prop.id)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                           <td className="p-4">
@@ -668,6 +766,7 @@ function BookingSiteDashboard() {
                               </div>
                             </div>
                           </td>
+                          {isAdmin && <td className="p-4 text-muted-foreground">{opData ? String(opData.brand_name || 'Unknown') : '-'}</td>}
                           <td className="p-4 text-muted-foreground">{String(prop.city || '-')}</td>
                           <td className="p-4">
                             <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${prop.status === 'active' || prop.status === 'listed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
@@ -718,6 +817,7 @@ function BookingSiteDashboard() {
                     <tr className="border-b border-border text-left bg-muted/30">
                       <th className="p-4 font-medium text-muted-foreground">Guest</th>
                       <th className="p-4 font-medium text-muted-foreground">Property</th>
+                      {isAdmin && <th className="p-4 font-medium text-muted-foreground">Operator</th>}
                       <th className="p-4 font-medium text-muted-foreground">Check-in</th>
                       <th className="p-4 font-medium text-muted-foreground">Check-out</th>
                       <th className="p-4 font-medium text-muted-foreground">Amount</th>
@@ -727,10 +827,12 @@ function BookingSiteDashboard() {
                   <tbody>
                     {reservations.map((res) => {
                       const propData = res.nfs_properties as Record<string, unknown> | null;
+                      const resOpData = res.nfs_operators as Record<string, unknown> | null;
                       return (
                         <tr key={String(res.id)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                           <td className="p-4 font-medium">{String(res.guest_name || '-')}</td>
                           <td className="p-4 text-muted-foreground truncate max-w-[160px]">{propData ? String(propData.name) : '-'}</td>
+                          {isAdmin && <td className="p-4 text-muted-foreground">{resOpData ? String(resOpData.brand_name || 'Unknown') : '-'}</td>}
                           <td className="p-4 text-muted-foreground whitespace-nowrap">{res.check_in ? new Date(String(res.check_in)).toLocaleDateString() : '-'}</td>
                           <td className="p-4 text-muted-foreground whitespace-nowrap">{res.check_out ? new Date(String(res.check_out)).toLocaleDateString() : '-'}</td>
                           <td className="p-4 font-medium">${Number(res.total_price || 0).toFixed(2)}</td>
@@ -742,6 +844,123 @@ function BookingSiteDashboard() {
                         </tr>
                       );
                     })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Analytics Tab (admin only) */}
+      {topTab === 'analytics' && isAdmin && (
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
+            <p className="text-sm text-muted-foreground">Revenue and booking metrics for the current month.</p>
+          </div>
+          {analyticsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-card border border-border rounded-2xl p-5">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Revenue This Month</div>
+                  <div className="text-2xl font-bold text-foreground mt-1">&pound;{analyticsData.monthlyRevenue.toLocaleString()}</div>
+                </div>
+                <div className="bg-card border border-border rounded-2xl p-5">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bookings This Month</div>
+                  <div className="text-2xl font-bold text-foreground mt-1">{analyticsData.monthlyBookings}</div>
+                </div>
+                <div className="bg-card border border-border rounded-2xl p-5">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avg Booking Value</div>
+                  <div className="text-2xl font-bold text-foreground mt-1">&pound;{analyticsData.avgBookingValue.toFixed(0)}</div>
+                </div>
+              </div>
+              <div className="bg-card border border-border rounded-2xl p-5">
+                <h3 className="text-sm font-bold text-foreground mb-3">Recent Bookings</h3>
+                {recentBookings.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No recent bookings yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border text-left">
+                          <th className="pb-2 font-medium text-muted-foreground">Guest</th>
+                          <th className="pb-2 font-medium text-muted-foreground">Property</th>
+                          <th className="pb-2 font-medium text-muted-foreground">Operator</th>
+                          <th className="pb-2 font-medium text-muted-foreground">Check-in</th>
+                          <th className="pb-2 font-medium text-muted-foreground">Check-out</th>
+                          <th className="pb-2 font-medium text-muted-foreground">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recentBookings.map((b) => {
+                          const bProp = b.nfs_properties as Record<string, unknown> | null;
+                          const bOp = b.nfs_operators as Record<string, unknown> | null;
+                          return (
+                            <tr key={String(b.id)} className="border-b border-border last:border-0">
+                              <td className="py-2 font-medium">{String(b.guest_name || '-')}</td>
+                              <td className="py-2 text-muted-foreground">{bProp ? String(bProp.name) : '-'}</td>
+                              <td className="py-2 text-muted-foreground">{bOp ? String(bOp.brand_name || 'Unknown') : '-'}</td>
+                              <td className="py-2 text-muted-foreground whitespace-nowrap">{b.check_in ? new Date(String(b.check_in)).toLocaleDateString() : '-'}</td>
+                              <td className="py-2 text-muted-foreground whitespace-nowrap">{b.check_out ? new Date(String(b.check_out)).toLocaleDateString() : '-'}</td>
+                              <td className="py-2 font-medium">&pound;{Number(b.total_price || 0).toFixed(2)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Users Tab (admin only) */}
+      {topTab === 'users' && isAdmin && (
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Booking Site Users</h1>
+            <p className="text-sm text-muted-foreground">All operators registered on the booking platform.</p>
+          </div>
+          {operatorsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : operators.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground mb-1">No operators found</p>
+              <p className="text-sm text-muted-foreground">Operators will appear here once they register.</p>
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left bg-muted/30">
+                      <th className="p-4 font-medium text-muted-foreground">Brand</th>
+                      <th className="p-4 font-medium text-muted-foreground">Email</th>
+                      <th className="p-4 font-medium text-muted-foreground">Subdomain</th>
+                      <th className="p-4 font-medium text-muted-foreground">Properties</th>
+                      <th className="p-4 font-medium text-muted-foreground">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {operators.map((op) => (
+                      <tr key={String(op.id)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                        <td className="p-4 font-medium">{String(op.brand_name || 'Unnamed')}</td>
+                        <td className="p-4 text-muted-foreground">{String(op.email || '-')}</td>
+                        <td className="p-4 text-muted-foreground">{op.subdomain ? `${String(op.subdomain)}.nfstay.app` : '-'}</td>
+                        <td className="p-4 font-medium">{String(op.property_count ?? 0)}</td>
+                        <td className="p-4 text-muted-foreground whitespace-nowrap">{op.created_at ? new Date(String(op.created_at)).toLocaleDateString() : '-'}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
