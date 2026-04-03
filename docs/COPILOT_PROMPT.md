@@ -34,7 +34,7 @@ Instead, refine Hugo's request into this exact structure:
 ```
 REFINED PROMPT
 ---
-Read docs/AGENT_INSTRUCTIONS.md first. Then read [scoped doc list].
+Read docs/AGENT_INSTRUCTIONS.md and docs/TAKEOVER.md first. Then read [scoped doc list].
 
 OBJECTIVE
 [one clear sentence]
@@ -87,7 +87,7 @@ Every task starts by reading the right docs. Never read everything - scope it.
 
 | Task type | Always read | Also read |
 |-----------|------------|-----------|
-| Any task | This file + repo's `docs/AGENT_INSTRUCTIONS.md` | repo's `docs/STACK.md` |
+| Any task | This file + repo's `docs/AGENT_INSTRUCTIONS.md` + repo's `docs/TAKEOVER.md` | repo's `docs/STACK.md` |
 | UI / frontend | | repo's `.claude/rules/design.md` |
 | Database / RLS | | repo's `docs/DATABASE.md` |
 | Auth / login | | both repos' auth docs (shared Supabase) |

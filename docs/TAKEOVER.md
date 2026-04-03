@@ -99,12 +99,12 @@
 
 ## 9. How a New Agent Should Take Over
 
-### Read order (exact)
-1. This file (`docs/TAKEOVER.md`)
-2. `CLAUDE.md` (project root)
-3. `docs/AGENT_INSTRUCTIONS.md`
-4. `docs/COPILOT_PROMPT.md`
-5. Scoped docs for your task (see Section 3a of AGENT_INSTRUCTIONS.md)
+### Read order (exact, every session)
+1. `docs/AGENT_INSTRUCTIONS.md` (operating rules)
+2. `docs/TAKEOVER.md` (this file — live state)
+3. Scoped docs for your task (see Section 3a of AGENT_INSTRUCTIONS.md)
+4. `CLAUDE.md` is auto-loaded by Claude Code — do not re-read manually
+5. `docs/COPILOT_PROMPT.md` is the master standard — read if you need the full protocol
 
 ### Trust hierarchy
 - `docs/COPILOT_PROMPT.md` is the master standard (never overridden)
