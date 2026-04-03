@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## [2026-04-03b] - List-a-Deal Optional Fields + Airbnb Pricing Diagnostics
+
+### Fixed
+- Deposit and profit fields are no longer forced as mandatory on the list-a-deal form. Only city, postcode, type, bedrooms, and rent are truly required.
+- Contact email now pre-fills correctly from profile email or auth email, even when the user has no WhatsApp in their profile.
+- Airbnb pricing webhook errors are now logged to console instead of being silently swallowed.
+
+### Changed
+- Pricing webhook timeout increased from 15s to 25s (applies to both ListADealPage and AdminQuickList).
+- Analysing phase copy updated to "Analysing similar listings on Airbnb".
+- Reveal phase copy updated to "This property could generate approximately:".
+- Fallback phase copy clarifies that revenue estimation is temporarily unavailable.
+
+## [2026-04-03a] - Visibility Gate + Takeover Continuity Doc
+
+### Added
+- **Visibility gate** in COPILOT_PROMPT.md and AGENT_INSTRUCTIONS.md: local-only work is not considered done. Every task must end with branch, commit, PR link, CI status, preview URL, and files changed.
+- **Co-Pilot review gate**: Claude's claim is not the source of truth. GitHub is. No PR merges without Co-Pilot audit of GitHub reality.
+- **Takeover doc** (`docs/TAKEOVER.md`): canonical continuity file for any new chat or agent to resume the repo quickly. Covers project snapshot, production truth, active rules, critical flows, known issues, branch map, recent decisions, environment, and exact takeover procedure.
+- **Takeover doc rule** in both master docs: takeover doc must be updated when meaningful changes affect continuity.
+
 ## [2026-04-02f] - Inquiry Pipeline Fixes
 
 ### Fixed

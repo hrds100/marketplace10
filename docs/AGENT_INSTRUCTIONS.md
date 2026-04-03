@@ -41,7 +41,7 @@ Instead, refine Hugo's prompt. Return exactly this structure:
 ```
 REFINED PROMPT
 ─────────────────────────────────────────────────────────────────────
-Read docs/AGENT_INSTRUCTIONS.md first. Then read [scoped doc list].
+Read docs/AGENT_INSTRUCTIONS.md and docs/TAKEOVER.md first. Then read [scoped doc list].
 
 OBJECTIVE
 [one clear sentence: what is being built or fixed]
@@ -99,7 +99,7 @@ Claude then:
 
 | Task type | Docs to read |
 |-----------|-------------|
-| **Always** | `docs/AGENT_INSTRUCTIONS.md` (this file) + `docs/STACK.md` |
+| **Always** | `docs/AGENT_INSTRUCTIONS.md` (this file) + `docs/TAKEOVER.md` + `docs/STACK.md` |
 | Inbox / messaging / chat | + `docs/MESSAGING.md` + `docs/INTEGRATIONS.md` |
 | Payments / tier / GHL funnel | + `docs/INTEGRATIONS.md` + `docs/STACK.md` |
 | DB schema / RLS / new tables | + `docs/DATABASE.md` (+ `docs/MESSAGING.md` if chat-related) |
@@ -162,7 +162,7 @@ Claude never writes code directly. Claude produces **one** execution prompt for 
 
 Every execution prompt **must**:
 
-- Start with: `"Read docs/AGENT_INSTRUCTIONS.md first. Then read [files]."`
+- Start with: `"Read docs/AGENT_INSTRUCTIONS.md and docs/TAKEOVER.md first. Then read [files]."`
 - List all required docs (scoped per Section 3a)
 - List every source file that will be touched
 - Include relevant acceptance scenarios from `docs/ACCEPTANCE.md`
@@ -702,3 +702,33 @@ coordinating with Hugo first.
   and ADMIN__INVEST in feature-map.json.
 - Main agent: all sessions in scope -- feature-map.json defines
   the boundary per task.
+
+---
+
+## VISIBILITY GATE
+
+- If work is not pushed to a GitHub feature branch, it is not considered done.
+- Local-only changes do not count as proof, verification, or completion.
+- Every implementation task must end with:
+  - branch name
+  - commit hash
+  - PR link
+  - CI status
+  - real preview URL (if applicable)
+  - exact files changed
+- Hugo brings that output back to the nfstay Co-Pilot for audit before merge.
+- No PR may be merged until the Co-Pilot has reviewed GitHub reality.
+
+### Co-Pilot Review Gate
+
+- Claude's claim is not the source of truth.
+- GitHub is the source of truth.
+- "Done" means pushed, reviewable, and auditable.
+
+---
+
+## TAKEOVER DOC RULE
+
+- `docs/TAKEOVER.md` is the canonical continuity file for future chats and agents.
+- It must be updated whenever a meaningful change is made to behavior, architecture, live status, deployment flow, critical bug status, or active branch work.
+- A task is not fully complete until the takeover doc is updated when relevant.
