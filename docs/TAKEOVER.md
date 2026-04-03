@@ -23,8 +23,8 @@
 
 | Item | Value |
 |------|-------|
-| **Latest known live commit** | `452200f` - fix: claim button hidden behind mobile nav bar (#198) |
-| **Latest meaningful merged PRs** | #198 claim button fix, #197 email inquiry 401, #196 WhatsApp inquiry gap, #195 admin deals consolidation |
+| **Latest known live commit** | `4c58f4c` - feat(outreach): Reset Test Data button + PIN dialog (PR #175) |
+| **Latest meaningful merged PRs** | #203 agent roster, #193 email inquiry gate (process-inquiry redeployed 2026-04-03), #175 outreach reset button, #202 admin settings |
 | **Open but important** | Check `gh pr list --state open` for current state |
 | **Unproven / not yet merged** | Check active branches below |
 
@@ -68,7 +68,9 @@
 
 | Branch | Purpose | Status |
 |--------|---------|--------|
-| `fix/list-a-deal-airbnb-pricing` | PR #199 — deposit/profit optional, email prefill, pricing diagnostics | Merging now — Hugo manual test passed |
+| `fix/hospitable-clean-sync` | PR #189 — consistent listing sync mapping across n8n workflows | Open — hospitable backlog |
+| `fix/hospitable-photo-quality` | PR #188 — full-res Airbnb photos instead of thumbnails | Open — hospitable backlog |
+| `fix/hospitable-sync-listings` | PR #187 — real Airbnb listings sync to nfstay | Open — hospitable backlog |
 
 > Update this table when branches are created or merged. Delete merged branches. Only list branches verified on GitHub — never local-only.
 
@@ -81,6 +83,8 @@
 - Outreach renamed to "The Gate" with contacted badge from DB (2026-04-01)
 - Visibility gate + Co-Pilot review gate added to prevent local-only work being treated as done (2026-04-03)
 - List-a-deal: deposit/profit made optional, email prefill fixed, Airbnb pricing timeout increased + error logging added (2026-04-03, PR #199, merged)
+- Email inquiry gate: email inquiries now reach admin gate (401 fixed). process-inquiry edge function redeployed 2026-04-03 (PR #193)
+- Outreach: global Reset Test Data button added with PIN confirmation (PIN: 1234) — wipes all inquiries + outreach flags on all properties (PR #175, 2026-04-03)
 
 ---
 
@@ -156,4 +160,4 @@ When Hugo brings output back to the Co-Pilot, he must paste the exact `AGENT:` l
 
 ---
 
-*Last updated: 2026-04-03 — agent roster added*
+*Last updated: 2026-04-03 — PR #193 (email inquiry gate) + PR #175 (outreach reset button) merged*
