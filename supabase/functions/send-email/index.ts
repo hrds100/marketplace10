@@ -1,3 +1,6 @@
+// DEPLOY NOTE: After every deploy, verify_jwt must be patched to false.
+// This function is called from browser (admin Send Test) and other edge functions.
+// Patch command: PATCH /v1/projects/asazddtvjvmckouxcmmo/functions/send-email { verify_jwt: false }
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
