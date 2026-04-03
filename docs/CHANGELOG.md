@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [2026-04-03c] - Admin Deals Grouped View + Inquiry Pipeline Improvements
+
+### Added
+- Admin Deals page: grouped-by-landlord view with collapsible headers showing name, email, phone, and property count. Toggle between grouped and flat list.
+- `ghl-enroll` edge function: error logging at all key failure points (phone normalization, contact search, contact creation, workflow enrollment, and success).
+- `process-inquiry` edge function: admin bell notification inserted after every new inquiry (non-blocking).
+- `EmailInquiryModal`: differentiated error messages for expired session (401), property not found (404), and generic failures. Added debug logging and `data-testid` for Playwright.
+- Playwright test: `e2e/admin-deals-grouped.spec.ts` covering tabs, grouped toggle, and outreach page load.
+
 ## [2026-04-03b] - List-a-Deal Optional Fields + Airbnb Pricing Diagnostics
 
 ### Fixed
