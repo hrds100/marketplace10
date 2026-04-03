@@ -940,19 +940,20 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
           if (magicToken) magicLink = `https://hub.nfstay.com/inbox?token=${magicToken}`;
         }
 
-        // WhatsApp via GHL if phone exists — pass contact data for template params
+        // WhatsApp via n8n -> GHL (same path as cold outreach — n8n sets contact fields)
         if (phone) {
-          const result = await callGhlEnroll(phone, GHL_WORKFLOW_WARM, {
-            property_name: inquiry.propertyName || 'Property',
-            tenant_name: inquiry.tenant_name || 'A tenant',
-            magic_link: magicLink,
-            contactName: inquiry.landlordName || 'Landlord',
+          const result = await callOutreachWebhook({
+            landlord_whatsapp: phone,
+            landlord_name: inquiry.landlordName || 'Property Owner',
+            property_ref_code: inquiry.property_id?.slice(0, 8) || '',
+            property_title: inquiry.propertyName || 'Property',
+            property_city: '',
+            inquiry_count: 1,
           });
           if (result.success) {
             channels.push('whatsapp');
           } else {
-            // Log but don't block -- email may still work
-            console.error('GHL enrollment failed:', result.error);
+            console.error('n8n outreach failed:', result.error);
           }
         }
 
