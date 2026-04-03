@@ -21,6 +21,7 @@ interface Props {
   onEmailInquire?: (listing: ListingShape) => void;
   showSavedBadge?: boolean;
   forceSignUp?: boolean;
+  contacted?: boolean;
 }
 
 // JV card CSS animations (injected once)
@@ -53,7 +54,7 @@ const LISTER_LABELS: Record<string, string> = {
   deal_sourcer: 'Deal Sourcer',
 };
 
-export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, onEmailInquire, showSavedBadge, forceSignUp }: Props) {
+export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, onEmailInquire, showSavedBadge, forceSignUp, contacted }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { tier } = useUserTier();
@@ -317,6 +318,18 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               }}
             >
               {LISTER_LABELS[listing.lister_type]}
+            </span>
+          </div>
+        )}
+
+        {/* Contacted badge */}
+        {contacted && (
+          <div className="mt-1.5">
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
+              style={{ backgroundColor: '#F3F4F6', color: '#6B7280' }}
+            >
+              <CheckCircle className="w-3 h-3" /> Contacted
             </span>
           </div>
         )}

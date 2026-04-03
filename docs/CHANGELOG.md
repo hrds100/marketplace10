@@ -2,6 +2,126 @@
 
 ## [Unreleased]
 
+## [2026-04-03e] - Agent Roster + Handoff Protocol
+
+### Added
+- Agent roster in `docs/TAKEOVER.md` Section 9: four fixed agent IDs (NF-ALPHA, NF-BRAVO, NF-CHARLIE, NF-DELTA) with scoped branches and responsibilities.
+- Mandatory output header format (AGENT, BRANCH, COMMIT, PR, CI, PREVIEW, FILES CHANGED, PROVEN, UNPROVEN) for every agent report.
+- Handoff rule: Hugo must paste the AGENT line back to the Co-Pilot for routing. No ID = rejected.
+- AGENT IDENTITY RULE added to `docs/AGENT_INSTRUCTIONS.md` and `docs/COPILOT_PROMPT.md` pointing to the roster.
+
+## [2026-04-03d] - Admin Notifications, Settings & University Seed
+
+### Added
+- **Notification toggles (22 types):** Admin Settings now loads all notification types from `notification_settings` table, grouped by category (General, Deals, Affiliate, Investment, nfstay App). Each type has independent Bell and Email toggles with optimistic updates.
+- **Admin email recipients field:** visible in Settings, pre-filled with hugo@nfstay.com, chris@nfstay.com, hello@nfstay.com.
+- **University seed button:** AdminLessons and AdminModules now show a "Seed from template" button when empty, which populates from `universityData.ts`.
+- **Migration:** `20260403_fix_ai_settings_and_notification_settings.sql` creates `notification_settings` table, seeds 22 event types, and ensures `ai_settings` RLS policies exist for admin.
+- **Playwright test:** `e2e/admin-notifications-settings.spec.ts` covers settings page, notification toggles, university seed, and notifications list.
+
+### Fixed
+- **AI settings RLS:** Added explicit admin SELECT/UPDATE/INSERT policies on `ai_settings` table so prompts are visible to admin users.
+- **Admin notifications query:** AdminNotifications.tsx now fetches both user-specific and admin-wide (user_id IS NULL) notifications.
+- **hello@nfstay.com:** Added to default ADMIN_EMAILS in `send-email` edge function.
+
+## [2026-04-03c] - Admin Deals Grouped View + Inquiry Pipeline Improvements
+
+### Added
+- Admin Deals page: grouped-by-landlord view with collapsible headers showing name, email, phone, and property count. Toggle between grouped and flat list.
+- `ghl-enroll` edge function: error logging at all key failure points (phone normalization, contact search, contact creation, workflow enrollment, and success).
+- `process-inquiry` edge function: admin bell notification inserted after every new inquiry (non-blocking).
+- `EmailInquiryModal`: differentiated error messages for expired session (401), property not found (404), and generic failures. Added debug logging and `data-testid` for Playwright.
+- Playwright test: `e2e/admin-deals-grouped.spec.ts` covering tabs, grouped toggle, and outreach page load.
+
+## [2026-04-03b] - List-a-Deal Optional Fields + Airbnb Pricing Diagnostics
+
+### Fixed
+- Deposit and profit fields are no longer forced as mandatory on the list-a-deal form. Only city, postcode, type, bedrooms, and rent are truly required.
+- Contact email now pre-fills correctly from profile email or auth email, even when the user has no WhatsApp in their profile.
+- Airbnb pricing webhook errors are now logged to console instead of being silently swallowed.
+
+### Changed
+- Pricing webhook timeout increased from 15s to 25s (applies to both ListADealPage and AdminQuickList).
+- Analysing phase copy updated to "Analysing similar listings on Airbnb".
+- Reveal phase copy updated to "This property could generate approximately:".
+- Fallback phase copy clarifies that revenue estimation is temporarily unavailable.
+
+## [2026-04-03a] - Visibility Gate + Takeover Continuity Doc
+
+### Added
+- **Visibility gate** in COPILOT_PROMPT.md and AGENT_INSTRUCTIONS.md: local-only work is not considered done. Every task must end with branch, commit, PR link, CI status, preview URL, and files changed.
+- **Co-Pilot review gate**: Claude's claim is not the source of truth. GitHub is. No PR merges without Co-Pilot audit of GitHub reality.
+- **Takeover doc** (`docs/TAKEOVER.md`): canonical continuity file for any new chat or agent to resume the repo quickly. Covers project snapshot, production truth, active rules, critical flows, known issues, branch map, recent decisions, environment, and exact takeover procedure.
+- **Takeover doc rule** in both master docs: takeover doc must be updated when meaningful changes affect continuity.
+
+## [2026-04-02f] - Inquiry Pipeline Fixes
+
+### Fixed
+- WhatsApp inquiries now accept optional `tenant_email` field in `receive-tenant-whatsapp` edge function.
+- Email inquiry modal now attempts session refresh before failing, and shows specific "session expired" message instead of generic error.
+
+### Changed
+- Documented n8n workflow change needed: include `tenant_email` from GHL contact data in webhook payload.
+
+## [2026-04-02e] - Admin Deals Consolidation
+
+### Changed
+- Merged Submissions + Listings into one "Deals" page with 3 tabs: Pending Review, Live, Inactive.
+- Pending tab supports full property editing before approval, including Airbnb pricing display and re-fetch.
+- Live tab preserves all Listings features: table view, CSV import/export, featured toggle (3-max), status dropdown, hard delete with PIN.
+- Inactive tab adds Reactivate button to move deals back to pending.
+
+### Removed
+- Deal Sourcers page (read-only metrics, already available in The Gate > Metrics tab).
+- Observatory page (read-only chat monitor, chat system no longer active).
+- Old nav links: Submissions, Listings, Deal Sourcers, Observatory replaced by single "Deals" link.
+- Old URLs (/admin/marketplace/submissions, /listings, /deal-sourcers) redirect to /admin/marketplace/deals.
+
+### Preserved
+- 1st Inquiry and NDA toggles remain on Pending Review tab (both fields read by process-inquiry edge function).
+- Approval workflow: audit log, email notifications, in-app notifications all intact.
+- Approve/Reject buttons only visible on pending/inactive items (matches original Submissions behavior).
+
+## [2026-04-02d] - Outreach Metadata Enrichment (Pass 1/3)
+
+### Added
+- `authorized_at` column on inquiries (migration + live applied).
+- Tenant Requests: group header shows Claimed/Unclaimed badge + NDA count.
+- Tenant Requests: released leads show sent timestamp and NDA signed timestamp.
+- Landlord Activation: Leads (N) badge is now clickable/expandable with inline lead history.
+- Lead history shows: tenant name, received time, release mode, NDA signed state.
+
+### Changed
+- `authorise()` now stamps `authorized_at` when admin releases a lead.
+
+## [2026-04-02c] - Single Reply Source for WhatsApp Inquiries
+
+### Fixed
+- Stripped reply nodes from poll workflow. Poll is now inquiry-only backup.
+- Webhook workflow is the single canonical reply sender.
+- Proven: 1 test = 1 inquiry + 1 reply + 0 duplicates (before=8, after=9 replies).
+- Architecture: webhook (instant reply) + poll (backup inquiry creation, no reply).
+
+## [2026-04-02b] - Restore Poll Workflow Tenant Reply
+
+### Fixed
+- ROOT CAUSE: Poll workflow had reply nodes stripped (to avoid duplicates with webhook).
+  But GHL trigger stopped firing to the webhook, so the poll was the only path creating
+  inquiries - and it had no reply step. Tenant got no confirmation.
+- Fix: Reply nodes restored to poll workflow (Prepare Reply -> Should Reply? -> Send Tenant Reply).
+- Both paths now send replies: webhook (instant, when GHL triggers) and poll (every 2 min, backup).
+- Edge function dedup prevents duplicate inquiries; reply fires for both new and dedup'd results.
+
+## [2026-04-02a] - Fix Claimed Detection + Hide NDA + Claim for Claimed Landlords
+
+### Fixed
+- `isReallyClaimed()` helper: profiles with `@nfstay.internal` email are treated as unclaimed.
+- Landlord Activation, Tenant Requests, and Metrics all use the same claimed check.
+- `NDA + Claim` button hidden for truly claimed landlords (real email, not internal).
+- Always Authorise dropdown: `NDA + Claim` option removed for claimed landlords.
+- Saved `nda_and_claim` mode normalizes to `NDA` display for claimed landlords.
+- Internal placeholder accounts (`landlord_xxx@nfstay.internal`) correctly show as Unclaimed.
+
 ## [2026-04-01i] - Restore Tenant WhatsApp Auto-Reply
 
 ### Fixed - Tenant auto-reply not sending

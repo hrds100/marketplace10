@@ -12,7 +12,11 @@
       "name": "Manual Sync Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [250, 300]
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "nfs-hospitable-manual-sync"
     },
     {
       "parameters": {
@@ -22,26 +26,47 @@
       "name": "Parse Manual Sync Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [470, 300]
+      "position": [
+        470,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/nfs_hospitable_connections?id=eq.{{ $json.connectionId }}",
+        "url": "=https://asazddtvjvmckouxcmmo.supabase.co/rest/v1/nfs_hospitable_connections?id=eq.{{ $json.connectionId }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "Prefer", "value": "return=minimal" }
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzYXpkZHR2anZtY2tvdXhjbW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQxODQ2NCwiZXhwIjoyMDg4OTk0NDY0fQ.B7nmKCji4LEDU5JozanHl9PjNXzYuIpav6B8KR3BNV0"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzYXpkZHR2anZtY2tvdXhjbW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQxODQ2NCwiZXhwIjoyMDg4OTk0NDY0fQ.B7nmKCji4LEDU5JozanHl9PjNXzYuIpav6B8KR3BNV0"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
           ]
         },
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "sync_status", "value": "syncing" },
-            { "name": "last_sync_error", "value": "" }
+            {
+              "name": "sync_status",
+              "value": "syncing"
+            },
+            {
+              "name": "last_sync_error",
+              "value": ""
+            }
           ]
         }
       },
@@ -49,16 +74,29 @@
       "name": "Mark Syncing",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [690, 300]
+      "position": [
+        690,
+        300
+      ]
     },
     {
       "parameters": {
-        "url": "=https://api.connect.hospitable.com/v1/customers/{{ $('Parse Manual Sync Payload').first().json.hospitableCustomerId }}/listings?per_page=100",
+        "url": "=https://connect.hospitable.com/api/v1/customers/{{ $('Parse Manual Sync Payload').first().json.hospitableCustomerId }}/listings?per_page=100",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.NFS_HOSPITABLE_BEARER_TOKEN }}" },
-            { "name": "Accept", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer 323|yMdjHB31rbzICtb8rEZ6P6lWNj6nlykDaNYnzszE402237aa"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Connect-Version",
+              "value": "2024-01-01"
+            }
           ]
         }
       },
@@ -66,29 +104,47 @@
       "name": "Fetch All Listings",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [910, 300]
+      "position": [
+        910,
+        300
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// Same transform as init-sync\nconst response = $input.first().json;\nconst listings = response.data || response.listings || [];\nconst operatorId = $('Parse Manual Sync Payload').first().json.operatorId;\nconst hospitableCustomerId = $('Parse Manual Sync Payload').first().json.hospitableCustomerId;\nconst hospitableConnectionId = $('Parse Manual Sync Payload').first().json.hospitableConnectionId;\nconst supabaseUrl = $env.SUPABASE_URL;\nconst serviceKey = $env.SUPABASE_SERVICE_ROLE_KEY;\nlet upserted = 0;\n\nfor (const listing of listings) {\n  const prop = {\n    operator_id: operatorId,\n    source: 'airbnb',\n    status: 'completed',\n    listing_status: 'listed',\n    hospitable_property_id: listing.id || listing.listing_id,\n    hospitable_connected: true,\n    hospitable_last_sync_at: new Date().toISOString(),\n    hospitable_sync_status: 'completed',\n    hospitable_connection_id: hospitableConnectionId,\n    hospitable_customer_id: hospitableCustomerId,\n    public_title: listing.name || listing.title || '',\n    description: listing.description || '',\n    address: listing.address?.full || '',\n    city: listing.address?.city || '',\n    country: listing.address?.country || '',\n    max_guests: listing.max_guests || 4,\n    base_rate_amount: listing.base_price || 100,\n    images: (listing.photos || []).map((p, i) => ({ url: p.url || p, caption: '', order: i }))\n  };\n\n  const hpid = prop.hospitable_property_id;\n  const existing = await fetch(\n    `${supabaseUrl}/rest/v1/nfs_properties?hospitable_property_id=eq.${hpid}&select=id`,\n    { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Accept': 'application/json' } }\n  ).then(r => r.json());\n\n  if (existing?.length > 0) {\n    await fetch(`${supabaseUrl}/rest/v1/nfs_properties?id=eq.${existing[0].id}`, {\n      method: 'PATCH',\n      headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },\n      body: JSON.stringify(prop)\n    });\n  } else {\n    await fetch(`${supabaseUrl}/rest/v1/nfs_properties`, {\n      method: 'POST',\n      headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },\n      body: JSON.stringify(prop)\n    });\n  }\n  upserted++;\n}\n\nreturn [{ json: { propertiesUpserted: upserted } }];"
+        "jsCode": "// Same transform as init-sync\nconst response = $input.first().json;\nconst listings = response.data || response.listings || [];\nconst operatorId = $('Parse Manual Sync Payload').first().json.operatorId;\nconst hospitableCustomerId = $('Parse Manual Sync Payload').first().json.hospitableCustomerId;\nconst hospitableConnectionId = $('Parse Manual Sync Payload').first().json.hospitableConnectionId;\nconst supabaseUrl = $env.SUPABASE_URL;\nconst serviceKey = $env.SUPABASE_SERVICE_ROLE_KEY;\nlet upserted = 0;\n\nfor (const listing of listings) {\n  const prop = {\n    operator_id: operatorId,\n    source: 'airbnb',\n    status: 'completed',\n    listing_status: 'listed',\n    hospitable_property_id: listing.id || listing.listing_id,\n    hospitable_connected: true,\n    hospitable_last_sync_at: new Date().toISOString(),\n    hospitable_sync_status: 'completed',\n    hospitable_connection_id: hospitableConnectionId,\n    hospitable_customer_id: hospitableCustomerId,\n    public_title: listing.public_name || listing.name || listing.title || '',\n    description: listing.description || '',\n    address: listing.address?.street || '',\n    city: listing.address?.city || '',\n    country: listing.address?.country_code || 'GB',\n    max_guests: listing.capacity?.max || listing.max_guests || 4,\n    base_rate_amount: listing.base_price || 100,\n    images: listing.picture ? [{ url: listing.picture.replace(/\\\\?aki_policy=[^&]+/, ''), caption: '', order: 0, is_cover: true }] : []\n  };\n\n  const hpid = prop.hospitable_property_id;\n  const existing = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `${supabaseUrl}/rest/v1/nfs_properties?hospitable_property_id=eq.${hpid}&select=id`,\n    headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Accept': 'application/json' }\n  });\n\n  if (existing?.length > 0) {\n    await this.helpers.httpRequest({\n      method: 'PATCH',\n      url: `${supabaseUrl}/rest/v1/nfs_properties?id=eq.${existing[0].id}`,\n      headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },\n      body: prop\n    });\n  } else {\n    await this.helpers.httpRequest({\n      method: 'POST',\n      url: `${supabaseUrl}/rest/v1/nfs_properties`,\n      headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },\n      body: prop\n    });\n  }\n  upserted++;\n}\n\nreturn [{ json: { propertiesUpserted: upserted } }];"
       },
       "id": "nfs-manual-upsert-listings",
       "name": "Upsert All Listings",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1130, 300]
+      "position": [
+        1130,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/nfs_hospitable_connections?id=eq.{{ $('Parse Manual Sync Payload').first().json.connectionId }}",
+        "url": "=https://asazddtvjvmckouxcmmo.supabase.co/rest/v1/nfs_hospitable_connections?id=eq.{{ $('Parse Manual Sync Payload').first().json.connectionId }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "Prefer", "value": "return=minimal" }
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzYXpkZHR2anZtY2tvdXhjbW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQxODQ2NCwiZXhwIjoyMDg4OTk0NDY0fQ.B7nmKCji4LEDU5JozanHl9PjNXzYuIpav6B8KR3BNV0"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzYXpkZHR2anZtY2tvdXhjbW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQxODQ2NCwiZXhwIjoyMDg4OTk0NDY0fQ.B7nmKCji4LEDU5JozanHl9PjNXzYuIpav6B8KR3BNV0"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
           ]
         },
         "sendBody": true,
@@ -99,30 +155,106 @@
       "name": "Mark Sync Complete",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1350, 300]
+      "position": [
+        1350,
+        300
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={ { \"success\": true, \"properties_synced\": {{ $('Upsert All Listings').first().json.propertiesUpserted }} } }",
-        "options": { "responseCode": 200 }
+        "responseBody": "={\"success\": true, \"properties_synced\": 0}",
+        "options": {
+          "responseCode": 200
+        }
       },
       "id": "nfs-manual-response",
       "name": "Webhook Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1570, 300]
+      "position": [
+        1570,
+        300
+      ]
     }
   ],
   "connections": {
-    "Manual Sync Webhook": { "main": [[{ "node": "Parse Manual Sync Payload", "type": "main", "index": 0 }]] },
-    "Parse Manual Sync Payload": { "main": [[{ "node": "Mark Syncing", "type": "main", "index": 0 }]] },
-    "Mark Syncing": { "main": [[{ "node": "Fetch All Listings", "type": "main", "index": 0 }]] },
-    "Fetch All Listings": { "main": [[{ "node": "Upsert All Listings", "type": "main", "index": 0 }]] },
-    "Upsert All Listings": { "main": [[{ "node": "Mark Sync Complete", "type": "main", "index": 0 }]] },
-    "Mark Sync Complete": { "main": [[{ "node": "Webhook Response", "type": "main", "index": 0 }]] }
+    "Manual Sync Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Manual Sync Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Manual Sync Payload": {
+      "main": [
+        [
+          {
+            "node": "Mark Syncing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Syncing": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Listings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch All Listings": {
+      "main": [
+        [
+          {
+            "node": "Upsert All Listings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert All Listings": {
+      "main": [
+        [
+          {
+            "node": "Mark Sync Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Sync Complete": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" },
-  "tags": [{ "name": "nfstay" }],
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "tags": [
+    {
+      "name": "nfstay"
+    }
+  ],
   "active": false
 }

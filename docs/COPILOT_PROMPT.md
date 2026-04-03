@@ -34,7 +34,7 @@ Instead, refine Hugo's request into this exact structure:
 ```
 REFINED PROMPT
 ---
-Read docs/AGENT_INSTRUCTIONS.md first. Then read [scoped doc list].
+Read docs/AGENT_INSTRUCTIONS.md and docs/TAKEOVER.md first. Then read [scoped doc list].
 
 OBJECTIVE
 [one clear sentence]
@@ -87,7 +87,7 @@ Every task starts by reading the right docs. Never read everything - scope it.
 
 | Task type | Always read | Also read |
 |-----------|------------|-----------|
-| Any task | This file + repo's `docs/AGENT_INSTRUCTIONS.md` | repo's `docs/STACK.md` |
+| Any task | This file + repo's `docs/AGENT_INSTRUCTIONS.md` + repo's `docs/TAKEOVER.md` | repo's `docs/STACK.md` |
 | UI / frontend | | repo's `.claude/rules/design.md` |
 | Database / RLS | | repo's `docs/DATABASE.md` |
 | Auth / login | | both repos' auth docs (shared Supabase) |
@@ -287,6 +287,7 @@ These behaviors are intentionally adopted from Claude Code style:
 marketplace10/docs/COPILOT_PROMPT.md   <-- YOU ARE HERE (tracked canonical master standard)
   |
   |-- CLAUDE.md                          <-- quick-ref loaded every session
+  |-- docs/TAKEOVER.md                   <-- canonical continuity file for new chats/agents
   |-- docs/AGENT_INSTRUCTIONS.md         <-- extends this with marketplace10-specific rules
   |-- docs/COPILOT.md                    <-- PILOT identity and supervision style
   |-- docs/invest/AGENT_INVESTMENT_INSTRUCTIONS.md  <-- extends with invest rules
@@ -320,6 +321,7 @@ Some docs must stay current. When a task changes product behavior, the relevant 
 | New service, library, tool, or integration added | `docs/STACK.md` |
 | Any user-facing behavior shipped (feature, fix, UX change) | `docs/CHANGELOG.md` |
 | Root cause discovered, recurring mistake, "don't do this again" | `docs/LESSONS_LEARNED.md` |
+| Behavior, architecture, deployment, or branch state changed | `docs/TAKEOVER.md` |
 
 **Rules:**
 - Update in-place. Change existing sections to reflect the new reality. Do not append "Updated on..." notes.
@@ -341,5 +343,46 @@ If the same fix has been attempted twice and it still fails:
 
 ---
 
-*This document is the single source of truth for copilot behavior across the nfstay workspace. Last updated: 2026-04-01.*
+---
+
+## 14. VISIBILITY GATE
+
+- If work is not pushed to a GitHub feature branch, it is not considered done.
+- Local-only changes do not count as proof, verification, or completion.
+- Every implementation task must end with:
+  - branch name
+  - commit hash
+  - PR link
+  - CI status
+  - real preview URL (if applicable)
+  - exact files changed
+- Hugo brings that output back to the nfstay Co-Pilot for audit before merge.
+- No PR may be merged until the Co-Pilot has reviewed GitHub reality.
+
+### Co-Pilot Review Gate
+
+- Claude's claim is not the source of truth.
+- GitHub is the source of truth.
+- "Done" means pushed, reviewable, and auditable.
+
+---
+
+## 15. TAKEOVER DOC RULE
+
+- `docs/TAKEOVER.md` is the canonical continuity file for future chats and agents.
+- It must be updated whenever a meaningful change is made to behavior, architecture, live status, deployment flow, critical bug status, or active branch work.
+- A task is not fully complete until the takeover doc is updated when relevant.
+
+---
+
+## 16. AGENT IDENTITY RULE
+
+- The canonical agent roster is in `docs/TAKEOVER.md` Section 9.
+- Every coding agent must identify itself using the mandatory output header defined there.
+- Hugo pastes the `AGENT:` line back to the Co-Pilot with every report. No agent ID = report rejected.
+- Each agent works only within its assigned scope and branch prefix.
+
+---
+
+*This document is the single source of truth for copilot behavior across the nfstay workspace. Last updated: 2026-04-03.*
 

@@ -1,12 +1,24 @@
-// nfstay Hospitable OAuth Edge Function
-// Handles Hospitable Partner Connect OAuth flow for operators
+// nfstay Hospitable Connect Edge Function
+// Implements the official Hospitable Connect partner flow:
+//   1. Create a Hospitable Connect customer (POST /api/v1/customers)
+//   2. Create an auth code for that customer (POST /api/v1/auth-codes)
+//   3. Redirect operator to the returned `return_url`
+//   4. Handle the return from Hospitable after operator completes auth
 //
 // Endpoints:
-//   GET  /nfs-hospitable-oauth?action=authorize&operator_id=...&profile_id=... → Redirects to Hospitable
-//   GET  /nfs-hospitable-oauth?action=callback&code=...&state=... → Handles OAuth callback
-//   POST /nfs-hospitable-oauth { action: 'disconnect', operator_id: '...' } → Disconnects
+//   GET  ?action=authorize&operator_id=...&profile_id=...&origin=... -> Returns { url } for redirect
+//   GET  ?action=callback&customer_id=...&status=...                 -> Handles Hospitable return
+//   POST { action: 'disconnect', operator_id: '...' }               -> Disconnects
+//   POST { action: 'resync', operator_id: '...' }                   -> Triggers manual sync
 //
-// Requires: NFS_HOSPITABLE_PARTNER_ID, NFS_HOSPITABLE_PARTNER_SECRET
+// Requires env vars:
+//   NFS_HOSPITABLE_PARTNER_ID     - Partner identifier from Hospitable Partner Portal
+//   NFS_HOSPITABLE_PARTNER_SECRET - Bearer token for Connect API auth
+//
+// Hospitable Connect docs references:
+//   - Create a customer:  POST https://connect.hospitable.com/api/v1/customers
+//   - Create auth code:   POST https://connect.hospitable.com/api/v1/auth-codes
+//   - Partner Portal:     https://developer.hospitable.com/docs/public-api-docs/03fvv8cmnjlqw-partner-portal
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -20,8 +32,13 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const N8N_BASE_URL = Deno.env.get('NFS_N8N_WEBHOOK_URL') || 'https://n8n.srv886554.hstgr.cloud';
 const N8N_INIT_SYNC_PATH = '/webhook/nfs-hospitable-init-sync';
 
-const HOSPITABLE_OAUTH_URL = 'https://connect.hospitable.com';
-const HOSPITABLE_API_URL = 'https://api.connect.hospitable.com';
+// Hospitable Connect API base - all endpoints are under this domain
+// NOTE: api.connect.hospitable.com does NOT resolve. Use connect.hospitable.com/api/v1/...
+const HOSPITABLE_CONNECT_BASE = 'https://connect.hospitable.com/api/v1';
+
+// Connect-Version header - required by Hospitable Connect API
+// Verify this version in your Partner Portal if requests fail
+const CONNECT_VERSION = '2024-01-01';
 
 // Whitelist of allowed redirect origins for OAuth callback
 const ALLOWED_ORIGINS = ['https://hub.nfstay.com', 'https://nfstay.app'];
@@ -40,6 +57,16 @@ function buildRedirectUrl(origin: string, params: Record<string, string>): strin
   return `${origin}${basePath}?${qs.toString()}`;
 }
 
+/** Standard headers for Hospitable Connect API requests */
+function connectHeaders(): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Authorization': `Bearer ${NFS_HOSPITABLE_PARTNER_SECRET}`,
+    'Connect-Version': CONNECT_VERSION,
+  };
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -53,7 +80,9 @@ serve(async (req) => {
 
   if (!NFS_HOSPITABLE_PARTNER_ID || !NFS_HOSPITABLE_PARTNER_SECRET) {
     return new Response(
-      JSON.stringify({ error: 'Hospitable credentials not configured' }),
+      JSON.stringify({
+        error: 'Hospitable credentials not configured. Set NFS_HOSPITABLE_PARTNER_ID and NFS_HOSPITABLE_PARTNER_SECRET in Supabase edge function secrets.',
+      }),
       { status: 500, headers: corsHeaders }
     );
   }
@@ -66,7 +95,9 @@ serve(async (req) => {
     if (req.method === 'GET') {
       const action = url.searchParams.get('action');
 
-      // ── AUTHORIZE: Generate Hospitable OAuth URL ──
+      // ══════════════════════════════════════════════════════════════════
+      // AUTHORIZE: Create Hospitable Connect customer + auth code
+      // ══════════════════════════════════════════════════════════════════
       if (action === 'authorize') {
         const operatorId = url.searchParams.get('operator_id');
         const profileId = url.searchParams.get('profile_id');
@@ -79,162 +110,332 @@ serve(async (req) => {
           );
         }
 
-        // Generate a random state for CSRF protection
+        // Look up operator details for Hospitable customer creation
+        // Hospitable requires: id, email, name
+        const { data: operatorRow } = await supabase
+          .from('nfs_operators')
+          .select('contact_email, first_name, last_name, brand_name')
+          .eq('id', operatorId)
+          .single();
+
+        // Fall back to auth email if operator has no contact_email
+        let operatorEmail = operatorRow?.contact_email || '';
+        if (!operatorEmail) {
+          const { data: profileRow } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', profileId)
+            .single();
+          operatorEmail = profileRow?.email || `operator-${operatorId}@nfstay.com`;
+        }
+
+        const operatorName = operatorRow?.brand_name
+          || [operatorRow?.first_name, operatorRow?.last_name].filter(Boolean).join(' ')
+          || `NFStay Operator`;
+
+        // Step 1: Resolve the Hospitable Connect customer
+        // Strategy: check local DB first, then POST to create, fall back to GET on 422
+        let customerId = '';
+
+        // Check if we already have a customer ID from a previous attempt
+        const { data: existingConn } = await supabase
+          .from('nfs_hospitable_connections')
+          .select('hospitable_customer_id')
+          .eq('operator_id', operatorId)
+          .single();
+
+        if (existingConn?.hospitable_customer_id) {
+          // Verify the existing customer still exists in Hospitable
+          const verifyRes = await fetch(`${HOSPITABLE_CONNECT_BASE}/customers/${existingConn.hospitable_customer_id}`, {
+            method: 'GET',
+            headers: connectHeaders(),
+          });
+          if (verifyRes.ok) {
+            customerId = existingConn.hospitable_customer_id;
+          }
+        }
+
+        // If no existing customer, create one
+        if (!customerId) {
+          const customerRes = await fetch(`${HOSPITABLE_CONNECT_BASE}/customers`, {
+            method: 'POST',
+            headers: connectHeaders(),
+            body: JSON.stringify({
+              id: operatorId,
+              email: operatorEmail,
+              name: operatorName,
+            }),
+          });
+
+          if (customerRes.ok) {
+            const customerData = await customerRes.json();
+            customerId = customerData.id || customerData.data?.id || '';
+          } else if (customerRes.status === 422) {
+            // 422 = customer already exists (duplicate ID). Retrieve it instead.
+            console.error('[Hospitable] Customer already exists (422), fetching existing:', operatorId);
+            const getRes = await fetch(`${HOSPITABLE_CONNECT_BASE}/customers/${operatorId}`, {
+              method: 'GET',
+              headers: connectHeaders(),
+            });
+            if (getRes.ok) {
+              const getData = await getRes.json();
+              customerId = getData.id || getData.data?.id || '';
+            } else {
+              const getErr = await getRes.text();
+              console.error('[Hospitable] GET customer also failed:', getRes.status, getErr);
+            }
+          } else {
+            const errText = await customerRes.text();
+            console.error('[Hospitable] Customer creation failed:', customerRes.status, errText);
+
+            await supabase
+              .from('nfs_hospitable_connections')
+              .upsert({
+                operator_id: operatorId,
+                profile_id: profileId,
+                hospitable_customer_id: '',
+                status: 'failed',
+                last_error: {
+                  message: 'Failed to create Hospitable customer',
+                  status: customerRes.status,
+                  detail: errText,
+                  hint: customerRes.status === 401
+                    ? 'NFS_HOSPITABLE_PARTNER_SECRET may be invalid. Check Partner Portal.'
+                    : customerRes.status === 403
+                      ? 'Partner account may not have Connect access. Check Partner Portal permissions.'
+                      : 'Check Hospitable Partner Portal logs for details.',
+                },
+              }, { onConflict: 'operator_id' });
+
+            return new Response(
+              JSON.stringify({
+                error: 'Failed to create Hospitable customer',
+                hint: customerRes.status === 401
+                  ? 'Check NFS_HOSPITABLE_PARTNER_SECRET in Supabase edge function secrets.'
+                  : `Hospitable returned ${customerRes.status}. Check Partner Portal logs.`,
+              }),
+              { status: 502, headers: corsHeaders }
+            );
+          }
+        }
+
+        if (!customerId) {
+          console.error('[Hospitable] Customer response missing id:', JSON.stringify(customerData));
+          return new Response(
+            JSON.stringify({ error: 'Hospitable customer created but no customer ID returned. Check Partner Portal.' }),
+            { status: 502, headers: corsHeaders }
+          );
+        }
+
+        // Step 2: Create an auth code for this customer
+        // The auth code response includes a `return_url` where we redirect the operator
+        // Our `redirect_url` is where Hospitable sends the operator back after auth
+        const callbackUrl = `${SUPABASE_URL}/functions/v1/nfs-hospitable-oauth?action=callback`;
+
+        const authCodeRes = await fetch(`${HOSPITABLE_CONNECT_BASE}/auth-codes`, {
+          method: 'POST',
+          headers: connectHeaders(),
+          body: JSON.stringify({
+            customer_id: customerId,
+            redirect_url: callbackUrl,
+          }),
+        });
+
+        if (!authCodeRes.ok) {
+          const errText = await authCodeRes.text();
+          console.error('[Hospitable] Auth code creation failed:', authCodeRes.status, errText);
+
+          await supabase
+            .from('nfs_hospitable_connections')
+            .upsert({
+              operator_id: operatorId,
+              profile_id: profileId,
+              hospitable_customer_id: customerId,
+              status: 'failed',
+              last_error: {
+                message: 'Failed to create Hospitable auth code',
+                status: authCodeRes.status,
+                detail: errText,
+              },
+            }, { onConflict: 'operator_id' });
+
+          return new Response(
+            JSON.stringify({
+              error: 'Failed to create Hospitable auth code',
+              hint: `Hospitable returned ${authCodeRes.status}. Verify redirect_url is whitelisted in Partner Portal.`,
+            }),
+            { status: 502, headers: corsHeaders }
+          );
+        }
+
+        const authCodeData = await authCodeRes.json();
+        // The response should contain a return_url where we send the operator
+        const returnUrl = authCodeData.return_url || authCodeData.data?.return_url || '';
+
+        if (!returnUrl) {
+          console.error('[Hospitable] Auth code response missing return_url:', JSON.stringify(authCodeData));
+          return new Response(
+            JSON.stringify({
+              error: 'Hospitable auth code created but no return_url provided',
+              hint: 'Check Partner Portal configuration. The auth-codes endpoint should return a return_url.',
+            }),
+            { status: 502, headers: corsHeaders }
+          );
+        }
+
+        // Step 3: Store pending connection state
+        // Use a CSRF state token so callback can look up the right connection
         const state = crypto.randomUUID();
 
-        // Upsert nfs_hospitable_connections with pending state
-        // Store redirect_origin in user_metadata so callback knows where to send the user
         await supabase
           .from('nfs_hospitable_connections')
           .upsert({
             operator_id: operatorId,
             profile_id: profileId,
-            hospitable_customer_id: '', // Will be set on callback
-            auth_code: state, // Reuse auth_code field for CSRF state
-            auth_code_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 min expiry
+            hospitable_customer_id: customerId,
+            auth_code: state,
+            auth_code_expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 min expiry
             status: 'pending',
             sync_status: 'pending',
             user_metadata: { redirect_origin: origin },
+            last_error: null,
           }, { onConflict: 'operator_id' });
 
-        const redirectUri = `${SUPABASE_URL}/functions/v1/nfs-hospitable-oauth?action=callback`;
-        const oauthUrl = `${HOSPITABLE_OAUTH_URL}/oauth/authorize?` +
-          `partner_id=${encodeURIComponent(NFS_HOSPITABLE_PARTNER_ID)}` +
-          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-          `&state=${state}`;
-
+        // Return the Hospitable return_url to the frontend for redirect
         return new Response(
-          JSON.stringify({ url: oauthUrl }),
+          JSON.stringify({ url: returnUrl }),
           { status: 200, headers: corsHeaders }
         );
       }
 
-      // ── CALLBACK: Handle Hospitable OAuth redirect ──
+      // ══════════════════════════════════════════════════════════════════
+      // CALLBACK: Handle return from Hospitable after operator auth
+      // Hospitable redirects the operator back here after they complete
+      // the Connect authorization flow.
+      // ══════════════════════════════════════════════════════════════════
       if (action === 'callback') {
-        const code = url.searchParams.get('code');
-        const state = url.searchParams.get('state');
+        // Hospitable Connect returns status-based params, not an OAuth code
+        const status = url.searchParams.get('status');
+        const customerId = url.searchParams.get('customer_id');
         const errorParam = url.searchParams.get('error');
 
-        // For early errors (before we can look up connection row), try to resolve origin from state
-        // If state is missing, fall back to DEFAULT_ORIGIN
-        const resolveRedirectOrigin = (meta: Record<string, unknown> | null): string => {
-          const stored = meta && typeof meta === 'object' ? (meta as Record<string, string>).redirect_origin : null;
-          return resolveOrigin(stored || null);
-        };
+        // Try to find the pending connection by customer_id or by recent pending state
+        let connectionRow: Record<string, unknown> | null = null;
+        let redirectOrigin = DEFAULT_ORIGIN;
 
-        if (errorParam) {
-          // Try to look up origin from connection row if state is available
-          let redirectOrigin = DEFAULT_ORIGIN;
-          if (state) {
-            const { data: errRow } = await supabase
+        if (customerId) {
+          const { data } = await supabase
+            .from('nfs_hospitable_connections')
+            .select('id, operator_id, profile_id, hospitable_customer_id, auth_code_expires_at, user_metadata')
+            .eq('hospitable_customer_id', customerId)
+            .single();
+          connectionRow = data;
+        }
+
+        // Fallback: look up by most recent pending connection if no customer_id
+        if (!connectionRow) {
+          const { data } = await supabase
+            .from('nfs_hospitable_connections')
+            .select('id, operator_id, profile_id, hospitable_customer_id, auth_code_expires_at, user_metadata')
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          connectionRow = data;
+        }
+
+        // Resolve redirect origin from stored metadata
+        if (connectionRow?.user_metadata && typeof connectionRow.user_metadata === 'object') {
+          const meta = connectionRow.user_metadata as Record<string, string>;
+          redirectOrigin = resolveOrigin(meta.redirect_origin || null);
+        }
+
+        // Handle errors from Hospitable
+        if (errorParam || status === 'error') {
+          if (connectionRow) {
+            await supabase
               .from('nfs_hospitable_connections')
-              .select('user_metadata')
-              .eq('auth_code', state)
-              .single();
-            redirectOrigin = resolveRedirectOrigin(errRow?.user_metadata);
+              .update({
+                status: 'failed',
+                last_error: { message: errorParam || 'Authorization failed at Hospitable', source: 'hospitable_callback' },
+                auth_code: null,
+              })
+              .eq('id', connectionRow.id);
           }
+
           return new Response(null, {
             status: 302,
-            headers: { Location: buildRedirectUrl(redirectOrigin, { error: errorParam }) },
+            headers: { Location: buildRedirectUrl(redirectOrigin, { error: errorParam || 'auth_failed' }) },
           });
         }
 
-        if (!code || !state) {
-          return new Response(null, {
-            status: 302,
-            headers: { Location: buildRedirectUrl(DEFAULT_ORIGIN, { error: 'missing_params' }) },
-          });
-        }
-
-        // Verify state matches (CSRF protection)
-        const { data: connectionRow } = await supabase
-          .from('nfs_hospitable_connections')
-          .select('id, operator_id, profile_id, auth_code_expires_at, user_metadata')
-          .eq('auth_code', state)
-          .single();
-
-        // Resolve redirect origin from the stored connection metadata
-        const redirectOrigin = resolveRedirectOrigin(connectionRow?.user_metadata);
-
+        // If no connection row found, we can't proceed
         if (!connectionRow) {
           return new Response(null, {
             status: 302,
-            headers: { Location: buildRedirectUrl(DEFAULT_ORIGIN, { error: 'invalid_state' }) },
+            headers: { Location: buildRedirectUrl(DEFAULT_ORIGIN, { error: 'no_pending_connection' }) },
           });
         }
 
-        // Check state hasn't expired
-        if (connectionRow.auth_code_expires_at && new Date(connectionRow.auth_code_expires_at) < new Date()) {
+        // Check state hasn't expired (15 min window)
+        if (connectionRow.auth_code_expires_at && new Date(connectionRow.auth_code_expires_at as string) < new Date()) {
           return new Response(null, {
             status: 302,
             headers: { Location: buildRedirectUrl(redirectOrigin, { error: 'state_expired' }) },
           });
         }
 
-        // Exchange auth code for customer/connection details with Hospitable API
-        const tokenResponse = await fetch(`${HOSPITABLE_API_URL}/v1/oauth/token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Basic ${btoa(`${NFS_HOSPITABLE_PARTNER_ID}:${NFS_HOSPITABLE_PARTNER_SECRET}`)}`,
-          },
-          body: JSON.stringify({
-            grant_type: 'authorization_code',
-            code,
-            redirect_uri: `${SUPABASE_URL}/functions/v1/nfs-hospitable-oauth?action=callback`,
-          }),
-        });
+        // Verify the connection with Hospitable by fetching customer details
+        const resolvedCustomerId = customerId || (connectionRow.hospitable_customer_id as string);
+        let connectionId = '';
+        let connectedPlatforms: string[] = [];
+        let customerMeta: Record<string, unknown> = {};
 
-        if (!tokenResponse.ok) {
-          const errorText = await tokenResponse.text();
-          await supabase
-            .from('nfs_hospitable_connections')
-            .update({
-              status: 'failed',
-              last_error: { message: 'Token exchange failed', detail: errorText },
-              auth_code: null,
-            })
-            .eq('id', connectionRow.id);
+        if (resolvedCustomerId) {
+          try {
+            const verifyRes = await fetch(`${HOSPITABLE_CONNECT_BASE}/customers/${resolvedCustomerId}`, {
+              method: 'GET',
+              headers: connectHeaders(),
+            });
 
-          return new Response(null, {
-            status: 302,
-            headers: { Location: buildRedirectUrl(redirectOrigin, { error: 'token_exchange_failed' }) },
-          });
+            if (verifyRes.ok) {
+              const verifyData = await verifyRes.json();
+              connectionId = verifyData.connection_id || verifyData.data?.connection_id || '';
+              connectedPlatforms = verifyData.connected_platforms || verifyData.data?.connected_platforms || [];
+              customerMeta = verifyData.user || verifyData.data?.user || verifyData.metadata || {};
+            } else {
+              console.error('[Hospitable] Customer verify failed:', verifyRes.status, await verifyRes.text());
+            }
+          } catch (err) {
+            console.error('[Hospitable] Customer verify error:', err);
+          }
         }
 
-        const tokenData = await tokenResponse.json();
-
-        // Extract customer and connection info from Hospitable response
-        const customerId = tokenData.customer_id || tokenData.data?.customer_id || '';
-        const connectionId = tokenData.connection_id || tokenData.data?.connection_id || '';
-        const connectedPlatforms = tokenData.connected_platforms || tokenData.data?.connected_platforms || [];
-        const userMetadata = tokenData.user || tokenData.data?.user || {};
-
-        // Merge redirect_origin into user_metadata so it persists alongside Hospitable data
+        // Merge redirect_origin into user_metadata
         const existingMeta = (connectionRow.user_metadata && typeof connectionRow.user_metadata === 'object')
           ? connectionRow.user_metadata as Record<string, unknown>
           : {};
-        const mergedMetadata = { ...existingMeta, ...userMetadata };
+        const mergedMetadata = { ...existingMeta, ...customerMeta };
 
-        // Update nfs_hospitable_connections with successful connection
+        // Update connection as successful
         await supabase
           .from('nfs_hospitable_connections')
           .update({
-            hospitable_customer_id: customerId,
+            hospitable_customer_id: resolvedCustomerId,
             hospitable_connection_id: connectionId,
             status: 'connected',
             is_active: true,
             connected_at: new Date().toISOString(),
             connected_platforms: connectedPlatforms,
             user_metadata: mergedMetadata,
-            auth_code: null, // Clear CSRF state
+            auth_code: null,
             auth_code_expires_at: null,
             last_error: null,
             health_status: 'healthy',
           })
           .eq('id', connectionRow.id);
 
-        // Trigger n8n initial sync workflow
+        // Trigger n8n initial sync workflow (non-blocking)
         try {
           await fetch(`${N8N_BASE_URL}${N8N_INIT_SYNC_PATH}`, {
             method: 'POST',
@@ -242,12 +443,12 @@ serve(async (req) => {
             body: JSON.stringify({
               operator_id: connectionRow.operator_id,
               connection_id: connectionRow.id,
-              hospitable_customer_id: customerId,
+              hospitable_customer_id: resolvedCustomerId,
               hospitable_connection_id: connectionId,
             }),
           });
         } catch {
-          // n8n trigger failure is non-blocking — sync can be triggered manually later
+          // n8n trigger failure is non-blocking - sync can be triggered manually later
           await supabase
             .from('nfs_hospitable_connections')
             .update({
@@ -285,16 +486,14 @@ serve(async (req) => {
           .eq('operator_id', operatorId)
           .single();
 
-        if (connectionRow?.hospitable_connection_id) {
+        // Notify Hospitable of disconnection via Connect API
+        if (connectionRow?.hospitable_customer_id) {
           try {
-            // Notify Hospitable of disconnection
             await fetch(
-              `${HOSPITABLE_API_URL}/v1/connections/${connectionRow.hospitable_connection_id}`,
+              `${HOSPITABLE_CONNECT_BASE}/customers/${connectionRow.hospitable_customer_id}`,
               {
                 method: 'DELETE',
-                headers: {
-                  'Authorization': `Basic ${btoa(`${NFS_HOSPITABLE_PARTNER_ID}:${NFS_HOSPITABLE_PARTNER_SECRET}`)}`,
-                },
+                headers: connectHeaders(),
               }
             );
           } catch {

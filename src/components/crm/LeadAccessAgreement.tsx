@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { Shield, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Shield, X, User, Mail, Lock } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const STEPS = [
   {
@@ -39,28 +41,85 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onAgree: () => void;
+  requiresClaim?: boolean;
+  ndaAlreadySigned?: boolean;
+  onClaimComplete?: () => void;
 }
 
-export default function LeadAccessAgreement({ open, onClose, onAgree }: Props) {
+export default function LeadAccessAgreement({ open, onClose, onAgree, requiresClaim, ndaAlreadySigned, onClaimComplete }: Props) {
   const [step, setStep] = useState(0);
+  const [showClaimForm, setShowClaimForm] = useState(false);
+  const [claimName, setClaimName] = useState('');
+  const [claimEmail, setClaimEmail] = useState('');
+  const [claimPassword, setClaimPassword] = useState('');
+  const [claiming, setClaiming] = useState(false);
+
+  // If NDA already signed and claim is required, skip NDA steps and show claim form directly
+  useEffect(() => {
+    if (open && ndaAlreadySigned && requiresClaim) {
+      setShowClaimForm(true);
+    }
+  }, [open, ndaAlreadySigned, requiresClaim]);
 
   if (!open) return null;
 
+  // When NDA is already signed, only show the claim step
+  const skipNda = ndaAlreadySigned && requiresClaim;
   const isLastStep = step === STEPS.length - 1;
   const current = STEPS[step];
-  const progress = ((step + 1) / STEPS.length) * 100;
+  const totalSteps = skipNda ? 1 : STEPS.length + (requiresClaim ? 1 : 0);
+  const currentStep = skipNda ? 1 : showClaimForm ? STEPS.length + 1 : step + 1;
+  const progress = (currentStep / totalSteps) * 100;
 
   function handleNext() {
     if (isLastStep) {
-      setStep(0);
       onAgree();
+      if (requiresClaim) {
+        setShowClaimForm(true);
+      } else {
+        setStep(0);
+      }
     } else {
       setStep(step + 1);
     }
   }
 
+  async function handleClaim(e: React.FormEvent) {
+    e.preventDefault();
+    if (!claimName.trim() || !claimEmail.trim() || !claimPassword.trim()) return;
+    if (claimPassword.trim().length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    setClaiming(true);
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session) { toast.error('Not signed in'); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/claim-landlord-account`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: claimEmail.trim().toLowerCase(), name: claimName.trim(), password: claimPassword.trim() }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        toast.error(body?.error || 'Failed to claim account');
+        return;
+      }
+      // Refresh session so JWT reflects new email (clears isUnclaimed)
+      await supabase.auth.refreshSession();
+      toast.success('Account claimed! Log in anytime with your email and password.');
+      setShowClaimForm(false);
+      setStep(0);
+      setClaimName('');
+      setClaimEmail('');
+      setClaimPassword('');
+      onClaimComplete?.();
+    } catch { toast.error('Something went wrong'); } finally { setClaiming(false); }
+  }
+
   function handleClose() {
     setStep(0);
+    setShowClaimForm(false);
+    setClaimName('');
+    setClaimEmail('');
+    setClaimPassword('');
     onClose();
   }
 
@@ -72,7 +131,7 @@ export default function LeadAccessAgreement({ open, onClose, onAgree }: Props) {
       {/* Modal - bottom sheet on mobile, centered on desktop */}
       <div className="fixed z-50 inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-md sm:w-full">
         <div
-          className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 sm:slide-in-from-bottom-0 sm:fade-in"
+          className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-y-auto animate-in slide-in-from-bottom duration-300 sm:slide-in-from-bottom-0 sm:fade-in pb-[70px] sm:pb-0"
           style={{ maxHeight: '85dvh' }}
         >
           {/* Header */}
@@ -99,30 +158,71 @@ export default function LeadAccessAgreement({ open, onClose, onAgree }: Props) {
             />
           </div>
 
-          {/* Content */}
-          <div className="px-5 py-6" key={step}>
-            <h3 className="text-base font-bold mb-3" style={{ color: '#1A1A1A' }}>{current.title}</h3>
-            <p className="text-sm leading-relaxed" style={{ color: '#374151' }}>
-              {renderText(current.text)}
-            </p>
-          </div>
+          {showClaimForm ? (
+            <>
+              {/* Claim form */}
+              <div className="px-5 py-6">
+                <h3 className="text-base font-bold mb-2" style={{ color: '#1A1A1A' }}>Claim your account</h3>
+                <p className="text-sm mb-4" style={{ color: '#6B7280' }}>
+                  Enter your real name and email to complete your account. You can then log in anytime.
+                </p>
+                <form onSubmit={handleClaim} className="space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold mb-1 block" style={{ color: '#525252' }}>Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                      <input value={claimName} onChange={e => setClaimName(e.target.value)} placeholder="Your full name" required className="w-full h-10 pl-10 pr-3 rounded-lg border text-sm" style={{ borderColor: '#E5E5E5' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold mb-1 block" style={{ color: '#525252' }}>Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                      <input type="email" value={claimEmail} onChange={e => setClaimEmail(e.target.value)} placeholder="your@email.com" required className="w-full h-10 pl-10 pr-3 rounded-lg border text-sm" style={{ borderColor: '#E5E5E5' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold mb-1 block" style={{ color: '#525252' }}>Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                      <input type="password" value={claimPassword} onChange={e => setClaimPassword(e.target.value)} placeholder="Choose a password (min 6 chars)" required minLength={6} className="w-full h-10 pl-10 pr-3 rounded-lg border text-sm" style={{ borderColor: '#E5E5E5' }} />
+                    </div>
+                    <p className="text-[10px] mt-1" style={{ color: '#9CA3AF' }}>Use this to log in at hub.nfstay.com anytime</p>
+                  </div>
+                  <button type="submit" disabled={claiming || !claimName.trim() || !claimEmail.trim() || claimPassword.trim().length < 6} className="w-full h-11 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-[0.96] disabled:opacity-50" style={{ backgroundColor: '#1E9A80', boxShadow: 'rgba(30,154,128,0.35) 0 4px 16px' }}>
+                    {claiming ? 'Claiming...' : 'Claim Account & View Lead'}
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* NDA Content */}
+              <div className="px-5 py-6" key={step}>
+                <h3 className="text-base font-bold mb-3" style={{ color: '#1A1A1A' }}>{current.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: '#374151' }}>
+                  {renderText(current.text)}
+                </p>
+              </div>
 
-          {/* Action */}
-          <div className="px-5 pb-5">
-            <button
-              onClick={handleNext}
-              className="w-full h-11 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-[0.96] active:scale-[0.98]"
-              style={{
-                backgroundColor: '#1E9A80',
-                boxShadow: isLastStep ? 'rgba(30,154,128,0.35) 0 4px 16px' : undefined,
-              }}
-            >
-              {isLastStep ? 'I Agree & View Lead' : current.button}
-            </button>
-            <p className="text-center text-[10px] mt-3" style={{ color: '#9CA3AF' }}>
-              This protects lead quality and ensures we can continue supplying high-quality tenant enquiries.
-            </p>
-          </div>
+              {/* Action */}
+              <div className="px-5 pb-5">
+                <button
+                  onClick={handleNext}
+                  className="w-full h-11 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-[0.96] active:scale-[0.98]"
+                  style={{
+                    backgroundColor: '#1E9A80',
+                    boxShadow: isLastStep ? 'rgba(30,154,128,0.35) 0 4px 16px' : undefined,
+                  }}
+                >
+                  {isLastStep ? (requiresClaim ? 'I Agree & Continue to Claim' : 'I Agree & View Lead') : current.button}
+                </button>
+                <p className="text-center text-[10px] mt-3" style={{ color: '#9CA3AF' }}>
+                  This protects lead quality and ensures we can continue supplying high-quality tenant enquiries.
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </>

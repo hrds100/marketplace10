@@ -1,5 +1,5 @@
 // receive-tenant-whatsapp -- Create inquiry from inbound tenant WhatsApp via GHL
-// Input: { tenant_phone, tenant_name, message_body, property_ref, property_id }
+// Input: { tenant_phone, tenant_name, message_body, property_ref, property_id, tenant_email? }
 // Output: { success, inquiry_id } or { error }
 // Inquiry appears in Admin > Outreach > Tenant Requests. Nothing sent to landlord.
 
@@ -16,7 +16,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { tenant_phone, tenant_name, message_body, property_ref, property_id } = body
+    const { tenant_phone, tenant_name, message_body, property_ref, property_id, tenant_email } = body
 
     if (!tenant_phone) {
       return new Response(JSON.stringify({ error: 'Missing tenant_phone' }), {
@@ -130,6 +130,7 @@ serve(async (req) => {
         message: message_body || '',
         tenant_name: tenant_name || null,
         tenant_phone: tenant_phone,
+        tenant_email: tenant_email || null,
         token,
         status: 'new',
         nda_required: property.nda_required || false,

@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { useInvestProperties } from '@/hooks/useInvestData';
+import { useAuth } from '@/hooks/useAuth';
 
 const DealsMap = lazy(() => import('@/components/DealsMap'));
 
@@ -84,6 +85,7 @@ function CardSkeleton() {
 
 export default function DealsPageV2() {
   useEffect(() => { document.title = 'nfstay - Deals'; }, []);
+  const { user } = useAuth();
   const { toggle, isFav } = useFavourites();
   const [activeTab, setActiveTab] = useState<string>('All');
   const [city, setCity] = useState('');
@@ -129,6 +131,25 @@ export default function DealsPageV2() {
     },
     [navigate],
   );
+
+  // Fetch properties the current user has contacted (inquiry exists in DB)
+  const { data: contactedPropertyIds, refetch: refetchContacted } = useQuery({
+    queryKey: ['contacted-properties', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return new Set<string>();
+      const { data } = await supabase
+        .from('inquiries')
+        .select('property_id')
+        .eq('tenant_id', user.id);
+      return new Set((data || []).map(r => r.property_id).filter(Boolean) as string[]);
+    },
+    enabled: !!user?.id,
+  });
+  const contactedSet = contactedPropertyIds || new Set<string>();
+
+  const handleContactSuccess = useCallback((propertyId: string) => {
+    refetchContacted();
+  }, [refetchContacted]);
 
   const { data: dbProperties, isLoading } = useQuery({
     queryKey: ['properties'],
@@ -431,6 +452,7 @@ export default function DealsPageV2() {
                       onAddToCRM={handleAddToCRM}
                       onInquire={handleInquire}
                       onEmailInquire={setEmailListing}
+                      contacted={contactedSet.has(l.id)}
                     />
                   </div>
                 ))}
@@ -520,6 +542,7 @@ export default function DealsPageV2() {
         open={!!emailListing}
         listing={emailListing}
         onClose={() => setEmailListing(null)}
+        onContactSuccess={handleContactSuccess}
       />
 
       {/* GHL payment panel (for free users) */}

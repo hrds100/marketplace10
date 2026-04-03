@@ -97,17 +97,54 @@ serve(async (req) => {
     const ndaRequired = (property as Record<string, unknown>).nda_required as boolean || false
     const firstLandlordInquiry = (property as Record<string, unknown>).first_landlord_inquiry as boolean || false
 
-    // 3. Generate a unique token
+    // 3. Idempotency: same tenant_email + property_id within 5 minutes -> return existing
+    if (tenant_email) {
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      const { data: recentDup } = await supabaseAdmin
+        .from('inquiries')
+        .select('id')
+        .eq('tenant_email', tenant_email)
+        .eq('property_id', property_id)
+        .gte('created_at', fiveMinAgo)
+        .limit(1)
+      if (recentDup && recentDup.length > 0) {
+        return new Response(JSON.stringify({
+          success: true,
+          inquiry_id: recentDup[0].id,
+          deduplicated: true,
+        }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    }
+
+    // 3b. Check if always_authorised for this lister phone (same as receive-tenant-whatsapp)
+    const effectiveListerPhone = landlordWhatsapp || listerPhone
+    let autoAuth = false
+    let autoAuthType: string | null = null
+    if (effectiveListerPhone) {
+      const { data: existing } = await supabaseAdmin
+        .from('inquiries')
+        .select('always_authorised, authorisation_type')
+        .eq('lister_phone', effectiveListerPhone)
+        .eq('always_authorised', true)
+        .limit(1)
+      if (existing && existing.length > 0) {
+        autoAuth = true
+        autoAuthType = existing[0].authorisation_type || null
+      }
+    }
+
+    // 4. Generate a unique token and insert inquiry
     const inquiryToken = crypto.randomUUID()
 
-    // 4. Insert into inquiries table
     const { data: inquiry, error: insertErr } = await supabaseAdmin
       .from('inquiries')
       .insert({
         tenant_id: user.id,
         property_id,
         lister_type: listerType,
-        lister_phone: listerPhone,
+        lister_phone: effectiveListerPhone,
         lister_email: listerEmail,
         lister_name: listerName,
         channel,
@@ -118,6 +155,9 @@ serve(async (req) => {
         token: inquiryToken,
         status: 'new',
         nda_required: ndaRequired,
+        authorized: autoAuth,
+        always_authorised: autoAuth,
+        authorisation_type: autoAuthType,
       } as Record<string, unknown>)
       .select('id')
       .single()
@@ -127,6 +167,19 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Failed to create inquiry' }), {
         status: 500, headers: corsHeaders,
       })
+    }
+
+    // 4a. Notify admin via bell notification (non-blocking)
+    try {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: null,
+        type: 'new_inquiry',
+        title: `New inquiry for ${propertyName}`,
+        body: `${tenant_name || 'Someone'} inquired about ${propertyName} via ${channel}`,
+        property_id: property_id,
+      } as Record<string, unknown>);
+    } catch (e) {
+      console.error('[process-inquiry] Failed to create admin notification:', e);
     }
 
     // 4b. Create a landlord_invites entry for the magic link (never expires)

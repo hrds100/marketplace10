@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
-  ArrowLeft, LayoutDashboard, List, Users, FileText, GraduationCap,
-  CreditCard, HelpCircle, UserCheck, Settings, Bell, TrendingUp,
+  ArrowLeft, LayoutDashboard, List, Users, GraduationCap,
+  CreditCard, HelpCircle, UserCheck, Settings, Bell,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
-  LayoutGrid, Plug, Globe, CalendarCheck, Zap, Eye, Menu, X,
-  BarChart3, Calendar, Briefcase,
+  Plug, Zap, Menu, X,
+  BarChart3, Calendar,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,18 +14,15 @@ import { NfsLogo } from '@/components/nfstay/NfsLogo';
 const marketplaceLinks = [
   { to: '/admin/marketplace', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { to: '/admin/marketplace/quick-list', label: 'Quick List', icon: Zap },
-  { to: '/admin/marketplace/listings', label: 'Listings', icon: List },
-  { to: '/admin/marketplace/outreach', label: 'Outreach', icon: Rocket },
+  { to: '/admin/marketplace/deals', label: 'Deals', icon: List },
+  { to: '/admin/marketplace/outreach', label: 'The Gate', icon: Rocket },
   { to: '/admin/marketplace/users', label: 'Users', icon: Users },
-  { to: '/admin/marketplace/submissions', label: 'Submissions', icon: FileText },
   { to: '/admin/marketplace/notifications', label: 'Notifications', icon: Bell },
   { to: '/admin/marketplace/university', label: 'University', icon: GraduationCap },
   { to: '/admin/marketplace/pricing', label: 'Pricing', icon: CreditCard },
   { to: '/admin/marketplace/faq', label: 'FAQ', icon: HelpCircle },
   { to: '/admin/marketplace/affiliates', label: 'Affiliates', icon: UserCheck },
-  { to: '/admin/marketplace/deal-sourcers', label: 'Deal Sourcers', icon: Briefcase },
   { to: '/admin/marketplace/settings', label: 'Settings', icon: Settings },
-  { to: '/admin/observatory', label: 'Observatory', icon: Eye },
 ];
 
 const investLinks = [

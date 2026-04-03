@@ -255,3 +255,57 @@ Stored in `aff_commission_settings` (NULL user_id = global). Per-user overrides 
 - Phone OTP via n8n (Twilio) - not Supabase native OTP
 - Admin detection: JWT email checked against hardcoded `ADMIN_EMAILS` array in `useAuth.ts`
 - Session persistence: localStorage with auto-refresh
+
+## Hospitable Connect (Property Sync)
+
+**API Base**: `https://connect.hospitable.com/api/v1`
+**Auth**: Bearer token via `NFS_HOSPITABLE_PARTNER_SECRET` env var
+**Partner Portal**: https://developer.hospitable.com/docs/public-api-docs/03fvv8cmnjlqw-partner-portal
+
+### Connect Flow (official Hospitable Connect API)
+
+1. Operator clicks "Connect with Hospitable" in settings
+2. Frontend calls edge function `nfs-hospitable-oauth?action=authorize`
+3. Edge function creates a Hospitable customer via `POST /api/v1/customers`
+4. Edge function creates an auth code via `POST /api/v1/auth-codes` with our callback URL
+5. Edge function returns the `return_url` from Hospitable to the frontend
+6. Frontend redirects operator to `return_url` (Hospitable-hosted auth page)
+7. Operator authorizes on Hospitable
+8. Hospitable redirects back to our edge function `?action=callback`
+9. Edge function verifies the connection, updates `nfs_hospitable_connections`, triggers n8n sync
+10. Edge function redirects operator back to hub or bookingsite with `?status=success`
+
+### Edge Function: nfs-hospitable-oauth
+- **Location**: `supabase/functions/nfs-hospitable-oauth/index.ts`
+- **Deploy**: `supabase functions deploy nfs-hospitable-oauth --project-ref asazddtvjvmckouxcmmo --no-verify-jwt`
+- **After deploy**: Verify `verify_jwt=false` is set (Supabase resets it on deploy)
+
+#### Required Env Vars (Supabase edge function secrets)
+| Var | Purpose |
+|-----|---------|
+| `NFS_HOSPITABLE_PARTNER_ID` | Partner identifier from Hospitable Partner Portal |
+| `NFS_HOSPITABLE_PARTNER_SECRET` | Bearer token for Connect API authentication |
+
+#### Endpoints
+| Method | Params | Purpose |
+|--------|--------|---------|
+| GET | `action=authorize&operator_id=...&profile_id=...&origin=...` | Create customer + auth code, return redirect URL |
+| GET | `action=callback&customer_id=...&status=...` | Handle return from Hospitable |
+| POST | `{ action: 'disconnect', operator_id }` | Disconnect operator from Hospitable |
+| POST | `{ action: 'resync', operator_id }` | Trigger manual sync via n8n |
+
+### n8n Sync Workflows
+| Workflow | Webhook Path | Purpose |
+|----------|-------------|---------|
+| Init sync | `/webhook/nfs-hospitable-init-sync` | Triggered after successful connect |
+| Manual sync | `/webhook/nfs-hospitable-manual-sync` | Triggered by operator "Sync Now" button |
+
+### Return URL Handling
+- **Hub (hub.nfstay.com)**: Redirects to `/operator/settings?tab=hospitable&status=success`
+- **Bookingsite (nfstay.app)**: Redirects to `/nfstay/oauth-callback?provider=hospitable&status=success`
+
+### Important Notes
+- `api.connect.hospitable.com` does NOT resolve publicly - all requests go to `connect.hospitable.com/api/v1/...`
+- The old `partner_id` browser OAuth flow (`/oauth/authorize?partner_id=...`) is deprecated and 404s
+- Connect-Version header is required on all API calls
+- Verify Partner Portal settings: redirect URL whitelist, webhook config, API permissions

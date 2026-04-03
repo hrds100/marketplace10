@@ -10,9 +10,10 @@ interface Props {
   open: boolean;
   listing: ListingShape | null;
   onClose: () => void;
+  onContactSuccess?: (propertyId: string) => void;
 }
 
-export default function EmailInquiryModal({ open, listing, onClose }: Props) {
+export default function EmailInquiryModal({ open, listing, onClose, onContactSuccess }: Props) {
   const { user } = useAuth();
   const [name, setName] = useState(user?.user_metadata?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -47,10 +48,14 @@ export default function EmailInquiryModal({ open, listing, onClose }: Props) {
     }
     setSending(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Not authenticated');
+      // Ensure fresh session before calling edge function
+      const { data: { session } } = await supabase.auth.refreshSession();
+      if (!session?.access_token) {
+        toast.error('Your session expired. Please sign out and sign back in.');
+        setSending(false);
+        return;
+      }
       const { data, error } = await supabase.functions.invoke('process-inquiry', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
         body: {
           property_id: listing!.id,
           channel: 'email',
@@ -61,17 +66,26 @@ export default function EmailInquiryModal({ open, listing, onClose }: Props) {
           property_url: `https://hub.nfstay.com/deals/${listing!.slug || listing!.id}`,
         },
       });
+      console.log('[EmailInquiry] process-inquiry response:', data, error);
       if (error) throw error;
       setSent(true);
-    } catch (err) {
-      toast.error('Failed to send inquiry. Please try again.');
+      onContactSuccess?.(listing!.id);
+    } catch (err: any) {
+      const msg = String(err?.message || err || '');
+      if (msg.includes('401') || msg.includes('expired')) {
+        toast.error('Your session expired. Please sign out and sign back in.');
+      } else if (msg.includes('404')) {
+        toast.error('This property could not be found.');
+      } else {
+        toast.error('Failed to send inquiry. Please try again.');
+      }
     } finally {
       setSending(false);
     }
   }
 
   const modal = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div data-testid="email-inquiry-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-white rounded-xl border w-full max-w-md mx-auto overflow-hidden"
