@@ -702,3 +702,33 @@ coordinating with Hugo first.
   and ADMIN__INVEST in feature-map.json.
 - Main agent: all sessions in scope -- feature-map.json defines
   the boundary per task.
+
+---
+
+## VISIBILITY GATE
+
+- If work is not pushed to a GitHub feature branch, it is not considered done.
+- Local-only changes do not count as proof, verification, or completion.
+- Every implementation task must end with:
+  - branch name
+  - commit hash
+  - PR link
+  - CI status
+  - real preview URL (if applicable)
+  - exact files changed
+- Hugo brings that output back to the nfstay Co-Pilot for audit before merge.
+- No PR may be merged until the Co-Pilot has reviewed GitHub reality.
+
+### Co-Pilot Review Gate
+
+- Claude's claim is not the source of truth.
+- GitHub is the source of truth.
+- "Done" means pushed, reviewable, and auditable.
+
+---
+
+## TAKEOVER DOC RULE
+
+- `docs/TAKEOVER.md` is the canonical continuity file for future chats and agents.
+- It must be updated whenever a meaningful change is made to behavior, architecture, live status, deployment flow, critical bug status, or active branch work.
+- A task is not fully complete until the takeover doc is updated when relevant.
