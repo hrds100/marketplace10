@@ -184,11 +184,13 @@ export default function ListADealPage() {
       .then(({ data }: { data: { whatsapp: string; name: string; email: string } | null }) => {
         if (data?.whatsapp) {
           setProfileWhatsapp(data.whatsapp);
+          setForm(p => ({ ...p, contactWhatsapp: data.whatsapp }));
+        }
+        if (data) {
           setForm(p => ({
             ...p,
-            contactWhatsapp: data.whatsapp,
             contactName: p.contactName || data.name || '',
-            contactEmail: p.contactEmail || data.email || '',
+            contactEmail: p.contactEmail || data.email || user?.email || '',
           }));
         }
       });
@@ -399,13 +401,17 @@ export default function ListADealPage() {
       // AI pricing
       const minDelay = new Promise(r => setTimeout(r, 2500));
       const pricingFetch = (async (): Promise<AIPricingResult | null> => {
-        const c = new AbortController(); const t = setTimeout(() => c.abort(), 15_000);
+        const c = new AbortController(); const t = setTimeout(() => c.abort(), 25_000);
         try {
           const res = await fetch(`${N8N_BASE}/webhook/airbnb-pricing`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city: form.city, postcode: form.postcode, bedrooms: parseInt(form.bedrooms) || 0, bathrooms: parseInt(form.bathrooms) || 0, type: resolvedType, rent: parseInt(form.rent) || 0, propertyId }),
             signal: c.signal });
-          clearTimeout(t); if (!res.ok) return null; const data = await res.json(); if (!data?.estimated_nightly_rate) return null; return data as AIPricingResult;
-        } catch { clearTimeout(t); return null; }
+          clearTimeout(t);
+          if (!res.ok) { console.error('[airbnb-pricing] HTTP', res.status, await res.text().catch(() => '')); return null; }
+          const data = await res.json();
+          if (!data?.estimated_nightly_rate) { console.error('[airbnb-pricing] Missing estimated_nightly_rate in response:', data); return null; }
+          return data as AIPricingResult;
+        } catch (err) { console.error('[airbnb-pricing] Webhook failed:', err); clearTimeout(t); return null; }
       })();
 
       const [, result] = await Promise.all([minDelay, pricingFetch]);
@@ -428,8 +434,8 @@ export default function ListADealPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="w-full max-w-lg border border-border rounded-2xl p-8 bg-card text-center">
           <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto" />
-          <h2 className="text-[22px] font-bold text-foreground mt-5">We are preparing your listing</h2>
-          <p className="text-sm text-muted-foreground mt-1.5">Our AI is analysing Airbnb data and comparable listings in {form.city || 'your area'}.</p>
+          <h2 className="text-[22px] font-bold text-foreground mt-5">Analysing similar listings on Airbnb</h2>
+          <p className="text-sm text-muted-foreground mt-1.5">We're comparing your property with similar Airbnb listings in {form.city || 'your area'} to estimate potential revenue.</p>
           <div className="mt-6 rounded-xl bg-secondary p-4 text-left">
             {photos[0] && <img src={photos[0]} alt="" className="w-full h-32 object-cover rounded-lg mb-3" />}
             <div className="text-sm font-bold text-foreground">{nextId}</div>
@@ -455,7 +461,7 @@ export default function ListADealPage() {
         <div className="w-full max-w-lg border border-border rounded-2xl p-8 bg-card text-center">
           <div className="w-12 h-12 rounded-full bg-accent-light flex items-center justify-center mx-auto"><CheckCircle className="w-6 h-6 text-primary" /></div>
           <h2 className="text-[22px] font-bold text-foreground mt-4">Congratulations! Your deal is under review.</h2>
-          <p className="text-sm text-muted-foreground mt-1.5">Based on Airbnb comparable listings, we estimate this property could generate approximately:</p>
+          <p className="text-sm text-muted-foreground mt-1.5">This property could generate approximately:</p>
           <div className="mt-5 rounded-xl bg-accent-light p-6 text-left">
             <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Estimated nightly rate</span><span className="text-sm font-semibold text-foreground">£{pricingResult.estimated_nightly_rate}/night</span></div>
             <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Est. monthly revenue</span><span className="text-sm font-semibold text-foreground">£{pricingResult.estimated_monthly_revenue.toLocaleString()}</span></div>
@@ -467,7 +473,7 @@ export default function ListADealPage() {
           {pricingResult.notes && <p className="text-xs text-muted-foreground mt-3 max-w-[400px] mx-auto">{pricingResult.notes}</p>}
           <p className="text-[11px] text-muted-foreground mt-3 italic">Estimation based on live Airbnb comparable listings. Actual results may vary.</p>
           <div className="border-t border-border mt-6 pt-5">
-            <p className="text-sm text-muted-foreground mb-5">Your listing is now under review by our DME (Deal Management Engine).</p>
+            <p className="text-sm text-muted-foreground mb-5">Your listing is now under review. Our team will contact you within 24–48 hours.</p>
             <div className="flex justify-center">
               <button onClick={resetAll} className="h-11 px-8 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">Submit another deal <ArrowRight className="w-4 h-4" /></button>
             </div>
@@ -483,7 +489,7 @@ export default function ListADealPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <div className="w-12 h-12 rounded-full bg-accent-light flex items-center justify-center"><CheckCircle className="w-6 h-6 text-primary" /></div>
         <h2 className="text-[22px] font-bold text-foreground mt-4">Deal submitted successfully!</h2>
-        <p className="text-sm text-muted-foreground mt-1.5 max-w-[400px]">Your listing has been submitted. Our AI is still analysing market data — estimated profitability will appear on your deal shortly.</p>
+        <p className="text-sm text-muted-foreground mt-1.5 max-w-[400px]">Your listing has been submitted. Airbnb revenue estimation is temporarily unavailable — our team will add it manually.</p>
         <div className="flex justify-center mt-6">
           <button onClick={resetAll} className="h-11 px-8 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">Submit another deal <ArrowRight className="w-4 h-4" /></button>
         </div>
@@ -640,10 +646,10 @@ export default function ListADealPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div><label className="text-xs font-semibold text-foreground block mb-1.5">{listingType === 'sale' ? 'Property price (£) *' : 'Monthly rent (£) *'}</label><input type="number" placeholder={listingType === 'sale' ? '250000' : '1200'} value={form.rent} onChange={e => set('rent', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Est. monthly profit (£) *</label><p className="text-[10px] text-muted-foreground mb-1">We will cross-check with Airbnb similar listings for accuracy.</p><input type="number" placeholder="600" value={form.profit} onChange={e => set('profit', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Est. monthly profit (£)</label><p className="text-[10px] text-muted-foreground mb-1">We will cross-check with Airbnb similar listings for accuracy.</p><input type="number" placeholder="600" value={form.profit} onChange={e => set('profit', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Deposit (£) *</label><input type="number" placeholder="2400" value={form.deposit} onChange={e => set('deposit', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Deposit (£)</label><input type="number" placeholder="2400" value={form.deposit} onChange={e => set('deposit', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                   <div><label className="text-xs font-semibold text-foreground block mb-1.5">Fee (£)</label><input type="number" placeholder="0" value={form.agentFee} onChange={e => set('agentFee', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                 </div>
               </div>
