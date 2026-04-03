@@ -70,10 +70,14 @@ This message must stay short and readable. Do not add internal IDs, UUIDs, or sy
 **4. Admin releases the lead**
 
 - Admin opens Tenant Requests and chooses one of three release paths per inquiry:
-  - **NDA:** enrolls lister in GHL NDA workflow (workflow `0eb4395c` via `ghl-enroll` edge function). Landlord must complete Lead Access Agreement (NDA) to unlock contact details.
-  - **NDA + Claim:** same NDA flow, plus landlord must claim account before lead details unlock.
-  - **Direct:** marks authorized immediately in DB. No NDA/claim lock is applied in landlord CRM.
-- GHL enrollment must succeed before the DB is updated to `authorized = true`. If GHL fails, the inquiry stays unauthorized.
+  - **Direct:** landlord receives WhatsApp + email with magic link. Lands on CRM with tenant details visible immediately. No NDA, no claim.
+  - **NDA:** same WhatsApp + email, same magic link. When landlord lands on CRM, they see the NDA agreement first. Must sign before seeing tenant details.
+  - **NDA + Claim:** same as NDA, plus landlord must claim their account (set email + password) if they haven't already.
+- **All three types use the same GHL WARM workflow** (`0eb4395c` via `ghl-enroll` edge function). The difference is UI-only on the CRM side.
+- `ghl-enroll` sets two GHL custom fields by **field ID** before enrollment:
+  - `Z0thvOTyoO2KxTMt5sP8` (property_reference) = property name shown in WhatsApp template
+  - `gWb4evAKLWCK0y8RHp32` (magic_link_url) = `?token=XXX` (GHL template prepends base URL)
+- Email is also sent via `send-email` edge function if landlord has an email on file.
 - **This is the single admin gate.** No inquiry reaches a landlord without admin approval.
 
 **Tenant Requests UI structure**

@@ -142,14 +142,11 @@ serve(async (req) => {
       // Standard GHL fields
       if (contactName) updateBody.name = contactName
 
-      // Custom fields for WhatsApp template interpolation
-      // GHL custom fields use key-value pairs; we also set standard fields as fallback
-      const customFieldUpdates: Array<{ key: string; field_value: string }> = []
-      if (property_name) customFieldUpdates.push({ key: 'property_name', field_value: property_name })
-      if (tenant_name) customFieldUpdates.push({ key: 'tenant_name', field_value: tenant_name })
-      if (magic_link) customFieldUpdates.push({ key: 'magic_link', field_value: magic_link })
-      if (property_city) customFieldUpdates.push({ key: 'property_city', field_value: property_city })
-      if (property_ref) customFieldUpdates.push({ key: 'property_reference', field_value: property_ref })
+      // GHL custom fields — use FIELD IDs, not friendly names
+      // Documented in docs/INTEGRATIONS.md and docs/N8N_WHATSAPP_WORKFLOW.md
+      const customFieldUpdates: Array<{ id: string; field_value: string }> = []
+      if (property_name) customFieldUpdates.push({ id: 'Z0thvOTyoO2KxTMt5sP8', field_value: property_name })  // property_reference
+      if (magic_link) customFieldUpdates.push({ id: 'gWb4evAKLWCK0y8RHp32', field_value: magic_link })        // magic_link_url
 
       if (customFieldUpdates.length > 0) {
         updateBody.customFields = customFieldUpdates

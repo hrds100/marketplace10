@@ -97,8 +97,10 @@ The flow is:
 
 1. Tenant sends WhatsApp → GHL → n8n → `receive-tenant-whatsapp` edge function → inquiry row created
 2. Inquiry appears in Admin > Outreach > Tenant Requests. **Landlord gets nothing yet.**
-3. Admin chooses NDA, NDA + Claim, or Direct → `ghl-enroll` edge function fires
-4. Only then is the landlord contacted via GHL workflow
+3. Admin chooses Direct, NDA, or NDA + Claim → ALL three call `ghl-enroll` edge function with WARM workflow `0eb4395c`
+4. `ghl-enroll` sets GHL custom fields by **field ID** (property_reference, magic_link_url) then enrolls contact
+5. GHL WARM workflow sends WhatsApp template to landlord. Email also sent via `send-email` if landlord has email.
+6. The difference between Direct/NDA/NDA+Claim is **UI-only** — what the landlord sees on the CRM after clicking the magic link
 
 See `docs/N8N_WHATSAPP_WORKFLOW.md` for full workflow details.
 
@@ -106,8 +108,8 @@ See `docs/N8N_WHATSAPP_WORKFLOW.md` for full workflow details.
 
 | Workflow | ID | Use |
 |----------|-----|-----|
-| Cold outreach (Landlord Activation) | `67250bfa-e1fc-4201-8bca-08c384a4a31d` | Admin sends first contact to landlord |
-| NDA/warm (Tenant lead release) | `0eb4395c-e493-43dc-be97-6c4455b5c7c4` | Admin releases tenant lead with NDA |
+| COLD (Landlord Activation ONLY) | `67250bfa-e1fc-4201-8bca-08c384a4a31d` | "Send First Outreach" + "Assign Lead" — via n8n |
+| WARM (Tenant Requests — ALL types) | `0eb4395c-e493-43dc-be97-6c4455b5c7c4` | Direct, NDA, NDA+Claim — via `ghl-enroll` edge function |
 | Landlord replied (inbox) | `9b826037-0562-4e10-9bd8-d9d488b719b6` | In-app messaging notification (post-claim only) |
 
 **Re-enrollment rule:** GHL will not re-trigger a workflow for an already-enrolled contact. The `ghl-enroll` edge function handles this by removing the contact from the workflow, waiting 1.5s, then re-enrolling.
@@ -116,9 +118,11 @@ See `docs/N8N_WHATSAPP_WORKFLOW.md` for full workflow details.
 
 | Field ID | Field Name | Purpose |
 |----------|-----------|---------|
-| `Z0thvOTyoO2KxTMt5sP8` | property_reference | Property title shown in WhatsApp template |
-| `gWb4evAKLWCK0y8RHp32` | magic_link_url | Auto-login URL for landlord (`hub.nfstay.com/inbox?token=...`) |
+| `Z0thvOTyoO2KxTMt5sP8` | property_reference | Property name in WhatsApp template. Set by `ghl-enroll` contactData.property_name |
+| `gWb4evAKLWCK0y8RHp32` | magic_link_url | `?token=XXX` (GHL template prepends base URL). Set by `ghl-enroll` contactData.magic_link |
 | `QIc7FR6U3OGNEhdk7LoY` | first_contact_sent | Tracks if landlord was contacted before |
+
+**CRITICAL:** `ghl-enroll` must set fields by **field ID**, not key name. Using `key: 'property_name'` does NOT work. Use `id: 'Z0thvOTyoO2KxTMt5sP8'`.
 
 ### Inbox Messaging Webhooks (post-claim, ongoing)
 

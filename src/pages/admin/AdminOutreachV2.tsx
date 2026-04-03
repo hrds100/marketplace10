@@ -931,24 +931,28 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
       const email = inquiry.landlordEmail;
       const channels: string[] = [];
 
-      // 1. Get magic link for the landlord
-      let magicLink = 'https://hub.nfstay.com/signin';
+      // 1. Get magic token for the landlord
+      let magicToken = '';
       if (phone) {
         const { data: inviteData } = await (supabase.from('landlord_invites') as any)
           .select('magic_token')
           .eq('phone', phone)
           .order('created_at', { ascending: false })
           .limit(1);
-        const token = inviteData?.[0]?.magic_token;
-        if (token) magicLink = `https://hub.nfstay.com/inbox?token=${token}`;
+        magicToken = inviteData?.[0]?.magic_token || '';
       }
+      const magicLink = magicToken
+        ? `https://hub.nfstay.com/inbox?token=${magicToken}`
+        : 'https://hub.nfstay.com/signin';
+      // GHL template prepends base URL — only send ?token=XXX part
+      const ghlMagicLink = magicToken ? `?token=${magicToken}` : '';
 
       // 2. WhatsApp — WARM workflow for all types (direct, nda, nda_and_claim)
       if (phone) {
         const result = await callGhlEnroll(phone, GHL_WORKFLOW_WARM, {
           property_name: inquiry.propertyName || 'Property',
           tenant_name: inquiry.tenant_name || 'A tenant',
-          magic_link: magicLink,
+          magic_link: ghlMagicLink,
           contactName: inquiry.landlordName || 'Landlord',
         });
         if (result.success) channels.push('whatsapp');
