@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>nfstay — Test Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #F3F3EE;
+      color: #1A1A1A;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #E5E7EB;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 16px 24px;
+    }
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 20px;
+    }
+    .logo-box {
+      background: #0A0A0A;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .logo-sub {
+      font-size: 13px;
+      font-weight: 500;
+      color: #6B7280;
+      margin-left: 8px;
+    }
+
+    /* Summary bar */
+    .summary-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 14px;
+    }
+    .summary-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: #fff;
+      border-radius: 100px;
+      border: 1px solid #E5E7EB;
+      font-weight: 600;
+    }
+    .summary-stat .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .dot-pass { background: #1E9A80; }
+    .dot-fail { background: #DC2626; }
+    .dot-untested { background: #9CA3AF; }
+    .summary-timestamp {
+      font-size: 12px;
+      color: #6B7280;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1280px;
+      margin: 24px auto;
+      padding: 0 24px;
+    }
+
+    /* Journey card */
+    .journey {
+      background: #fff;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .journey-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 200ms;
+    }
+    .journey-header:hover {
+      background: #FAFAFA;
+    }
+    .journey-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .journey-number {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ECFDF5;
+      color: #1E9A80;
+      font-weight: 700;
+      font-size: 14px;
+      border-radius: 8px;
+    }
+    .journey-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .journey-desc {
+      font-size: 13px;
+      color: #6B7280;
+      margin-top: 2px;
+    }
+    .journey-agent {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6B7280;
+      background: #F3F3EE;
+      padding: 2px 8px;
+      border-radius: 100px;
+      margin-left: 8px;
+    }
+    .journey-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .journey-stats {
+      display: flex;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .stat-pass { color: #1E9A80; }
+    .stat-fail { color: #DC2626; }
+    .stat-total { color: #6B7280; }
+    .chevron {
+      width: 20px;
+      height: 20px;
+      transition: transform 200ms;
+      color: #9CA3AF;
+    }
+    .journey.open .chevron {
+      transform: rotate(180deg);
+    }
+
+    /* Steps table */
+    .steps {
+      display: none;
+      border-top: 1px solid #E5E7EB;
+    }
+    .journey.open .steps {
+      display: block;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 60px 1fr 1fr auto;
+      gap: 12px;
+      align-items: start;
+      padding: 12px 20px;
+      border-bottom: 1px solid #F3F3EE;
+      font-size: 13px;
+    }
+    .step:last-child {
+      border-bottom: none;
+    }
+    .step-id {
+      font-weight: 600;
+      color: #6B7280;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    .step-name {
+      font-weight: 500;
+    }
+    .step-expected {
+      color: #6B7280;
+    }
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .badge-pass {
+      background: #ECFDF5;
+      color: #1E9A80;
+    }
+    .badge-fail {
+      background: #FEF2F2;
+      color: #DC2626;
+    }
+    .badge-not_tested {
+      background: #F3F4F6;
+      color: #9CA3AF;
+    }
+    .step-evidence {
+      grid-column: 2 / -1;
+      font-size: 12px;
+      color: #6B7280;
+      padding: 4px 0 0 0;
+    }
+    .step-error {
+      grid-column: 2 / -1;
+      font-size: 12px;
+      color: #DC2626;
+      background: #FEF2F2;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      width: 120px;
+      height: 6px;
+      background: #E5E7EB;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #1E9A80;
+      border-radius: 3px;
+      transition: width 300ms;
+    }
+    .progress-fill-fail {
+      height: 100%;
+      background: #DC2626;
+      border-radius: 3px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .step {
+        grid-template-columns: 50px 1fr;
+        gap: 6px;
+      }
+      .step-expected {
+        grid-column: 2;
+      }
+      .step-badge {
+        grid-column: 2;
+        justify-self: start;
+      }
+      .summary-bar {
+        gap: 8px;
+      }
+      .journey-stats { display: none; }
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6B7280;
+      font-size: 14px;
+    }
+    .error-msg {
+      text-align: center;
+      padding: 60px 20px;
+      color: #DC2626;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-box">nf</span>stay
+        <span class="logo-sub">Test Dashboard</span>
+      </div>
+      <div class="summary-bar" id="summaryBar">
+        <span class="loading">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="container">
+    <div class="loading">Loading test results...</div>
+  </div>
+
+  <script>
+    async function loadResults() {
+      try {
+        const res = await fetch('/test-results.json?' + Date.now());
+        if (!res.ok) throw new Error('Failed to load test-results.json');
+        const data = await res.json();
+        renderSummary(data);
+        renderJourneys(data);
+      } catch (err) {
+        document.getElementById('container').innerHTML =
+          '<div class="error-msg">Could not load test-results.json: ' + err.message + '</div>';
+      }
+    }
+
+    function renderSummary(data) {
+      // Recount from actual steps
+      let total = 0, passed = 0, failed = 0;
+      for (const j of Object.values(data.journeys)) {
+        for (const s of j.steps) {
+          total++;
+          if (s.status === 'pass') passed++;
+          else if (s.status === 'fail') failed++;
+        }
+      }
+      const untested = total - passed - failed;
+      const ts = data.lastUpdated ? new Date(data.lastUpdated).toLocaleString() : 'Unknown';
+
+      document.getElementById('summaryBar').innerHTML = `
+        <div class="summary-stat"><span class="dot dot-pass"></span>${passed} passed</div>
+        <div class="summary-stat"><span class="dot dot-fail"></span>${failed} failed</div>
+        <div class="summary-stat"><span class="dot dot-untested"></span>${untested} untested</div>
+        <div class="summary-stat stat-total">${total} total</div>
+        <div class="summary-timestamp">Updated: ${ts}</div>
+      `;
+    }
+
+    function renderJourneys(data) {
+      const container = document.getElementById('container');
+      container.innerHTML = '';
+
+      const sortedKeys = Object.keys(data.journeys).sort((a, b) => Number(a) - Number(b));
+
+      for (const key of sortedKeys) {
+        const j = data.journeys[key];
+        let jPassed = 0, jFailed = 0;
+        for (const s of j.steps) {
+          if (s.status === 'pass') jPassed++;
+          else if (s.status === 'fail') jFailed++;
+        }
+        const jTotal = j.steps.length;
+        const pct = jTotal > 0 ? Math.round(((jPassed + jFailed) / jTotal) * 100) : 0;
+
+        const div = document.createElement('div');
+        div.className = 'journey';
+        div.innerHTML = `
+          <div class="journey-header" onclick="this.parentElement.classList.toggle('open')">
+            <div class="journey-left">
+              <div class="journey-number">${key}</div>
+              <div>
+                <div class="journey-title">${esc(j.name)}
+                  <span class="journey-agent">${esc(j.agent || '')}</span>
+                </div>
+                <div class="journey-desc">${esc(j.description)}</div>
+              </div>
+            </div>
+            <div class="journey-right">
+              <div class="journey-stats">
+                <span class="stat-pass">${jPassed}&#10003;</span>
+                <span class="stat-fail">${jFailed}&#10007;</span>
+                <span class="stat-total">${jTotal} steps</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width:${jTotal > 0 ? (jPassed/jTotal)*100 : 0}%"></div>
+              </div>
+              <svg class="chevron" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+          </div>
+          <div class="steps">
+            ${j.steps.map(s => renderStep(s)).join('')}
+          </div>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    function renderStep(s) {
+      const badgeClass = 'badge-' + s.status;
+      const label = s.status === 'pass' ? 'PASS' : s.status === 'fail' ? 'FAIL' : 'NOT TESTED';
+      let extra = '';
+      if (s.evidence) {
+        extra += `<div class="step-evidence">&#128270; ${esc(s.evidence)}</div>`;
+      }
+      if (s.error) {
+        extra += `<div class="step-error">&#9888; ${esc(s.error)}</div>`;
+      }
+      return `
+        <div class="step">
+          <span class="step-id">${esc(s.id)}</span>
+          <span class="step-name">${esc(s.name)}</span>
+          <span class="step-expected">${esc(s.expected)}</span>
+          <span class="step-badge ${badgeClass}">${label}</span>
+          ${extra}
+        </div>
+      `;
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    loadResults();
+    // Auto-refresh every 30 seconds
+    setInterval(loadResults, 30000);
+  </script>
+</body>
+</html>
