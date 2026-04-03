@@ -87,13 +87,13 @@ test.describe('List-a-Deal: optional fields and pricing flow', () => {
     }
 
     // Fill city
-    const cityInput = page.locator('input[placeholder="Manchester"]').first();
+    const cityInput = page.locator('input[placeholder="e.g. Manchester"]').first();
     await expect(cityInput).toBeVisible({ timeout: 5000 });
     await cityInput.fill('Manchester');
 
     // Fill postcode
-    const postcodeInput = page.locator('input[placeholder="M1 1AA"]').first();
-    await postcodeInput.fill('M1 1AA');
+    const postcodeInput = page.locator('input[placeholder="e.g. M14"]').first();
+    await postcodeInput.fill('M14 5TP');
 
     // Open Financials, fill rent only
     const financials = page.locator('text=Financials').first();
