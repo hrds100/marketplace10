@@ -5,6 +5,18 @@
 
 ---
 
+## 2026-04-03 - AI prompts not visible in admin settings
+
+**What happened:** The AI Engine section in Admin Settings loaded but all textareas were empty. The ai_settings table had data but RLS blocked the admin from reading it.
+
+**Root cause:** The `ai_settings` table had RLS enabled but no SELECT/UPDATE/INSERT policies for admin emails. The query silently returned null (Supabase returns empty, not an error, when RLS blocks).
+
+**Fix:** Added explicit admin policies (`admin_select_ai_settings`, `admin_update_ai_settings`, `admin_insert_ai_settings`) matching the pattern used by other admin tables: `auth.jwt() ->> 'email' IN (...)`.
+
+**Rule:** Every new table that admins need to access requires explicit RLS policies for admin emails. Silent RLS failures are the most common admin bug.
+
+---
+
 ## 2026-04-03 - ghl-enroll had zero error logging
 
 **What happened:** The `ghl-enroll` edge function (`supabase/functions/ghl-enroll/index.ts`) returned error HTTP responses to the caller but had no `console.error` calls at any failure point. When outreach enrollments failed, there was nothing in Supabase function logs to diagnose why.

@@ -45,9 +45,10 @@ export default function AdminNotifications() {
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
     // notifications table not in generated types — cast needed
+    // Admin sees own + admin-wide (user_id IS NULL)
     const { data } = await (supabase.from('notifications') as any)
       .select('*')
-      .eq('user_id', user.id)
+      .or(`user_id.eq.${user.id},user_id.is.null`)
       .order('created_at', { ascending: false })
       .limit(50);
     if (data) setNotifications(data as Notification[]);
