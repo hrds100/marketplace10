@@ -75,6 +75,7 @@ export default function SettingsHospitable() {
 
   const error = fetchError || connectError;
   const isConnected = connection?.status === 'connected' && connection?.is_active;
+  const isDisconnected = connection?.status === 'disconnected';
 
   const handleDisconnect = async () => {
     const ok = await disconnect();
@@ -127,20 +128,24 @@ export default function SettingsHospitable() {
       )}
 
       {!isConnected ? (
-        /* ── Not connected ── */
+        /* ── Not connected / disconnected ── */
         <div className="rounded-xl border border-border/40 bg-white dark:bg-card p-6 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-muted mx-auto flex items-center justify-center">
             <WifiOff className="w-6 h-6 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-medium text-sm">Connect Hospitable</p>
+            <p className="font-medium text-sm">
+              {isDisconnected ? 'Reconnect Hospitable' : 'Connect Hospitable'}
+            </p>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto mt-1">
-              Link your Hospitable account to automatically import your listings and reservations from Airbnb, VRBO, and other platforms.
+              {isDisconnected
+                ? 'Your Hospitable connection was disconnected. Reconnect to resume syncing your Airbnb listings.'
+                : 'Link your Hospitable account to automatically import your listings and reservations from Airbnb, VRBO, and other platforms.'}
             </p>
           </div>
           <Button data-feature="BOOKING_NFSTAY__HOSPITABLE_CONNECT" onClick={initiateConnect} disabled={connecting} className="w-full max-w-xs">
             {connecting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wifi className="w-4 h-4 mr-2" />}
-            {connecting ? 'Connecting...' : 'Connect with Hospitable'}
+            {connecting ? 'Connecting...' : isDisconnected ? 'Reconnect Hospitable' : 'Connect with Hospitable'}
           </Button>
 
           {connection?.status === 'failed' && connection?.last_error && (

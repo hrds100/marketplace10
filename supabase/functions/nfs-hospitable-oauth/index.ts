@@ -296,9 +296,11 @@ serve(async (req) => {
             auth_code: state,
             auth_code_expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 min expiry
             status: 'pending',
+            is_active: false,
             sync_status: 'pending',
             user_metadata: { redirect_origin: origin },
             last_error: null,
+            last_sync_error: null,
           }, { onConflict: 'operator_id' });
 
         // Return the Hospitable return_url to the frontend for redirect
