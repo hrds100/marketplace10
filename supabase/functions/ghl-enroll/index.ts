@@ -1,6 +1,7 @@
 // ghl-enroll -- Enroll a GHL contact into a workflow by phone number
 // Trigger: POST from admin frontend
-// Input: { phone, workflowId, contactName? }
+// Input: { phone, workflowId, contactName?, contactData? }
+// contactData: { property_name?, tenant_name?, magic_link?, property_city?, property_ref? }
 // Output: { success, contactId, created? } or { error }
 //
 // If no GHL contact exists for the phone, one is created automatically.
@@ -49,7 +50,10 @@ serve(async (req) => {
       })
     }
 
-    const { phone, workflowId, contactName } = await req.json()
+    const { phone, workflowId, contactName, contactData } = await req.json()
+    // contactData: optional fields to set on the GHL contact before workflow enrollment
+    // These populate the WhatsApp template parameters that the workflow uses
+    const { property_name, tenant_name, magic_link, property_city, property_ref } = contactData || {} as Record<string, string>
 
     if (!phone || !workflowId) {
       return new Response(JSON.stringify({ error: 'Missing phone or workflowId' }), {
@@ -130,6 +134,57 @@ serve(async (req) => {
         })
       }
       created = true
+    }
+
+    // 2b. Update contact fields so WhatsApp template parameters are populated
+    if (contactData && contactId) {
+      const updateBody: Record<string, unknown> = {}
+      // Standard GHL fields
+      if (contactName) updateBody.name = contactName
+
+      // Custom fields for WhatsApp template interpolation
+      // GHL custom fields use key-value pairs; we also set standard fields as fallback
+      const customFieldUpdates: Array<{ key: string; field_value: string }> = []
+      if (property_name) customFieldUpdates.push({ key: 'property_name', field_value: property_name })
+      if (tenant_name) customFieldUpdates.push({ key: 'tenant_name', field_value: tenant_name })
+      if (magic_link) customFieldUpdates.push({ key: 'magic_link', field_value: magic_link })
+      if (property_city) customFieldUpdates.push({ key: 'property_city', field_value: property_city })
+      if (property_ref) customFieldUpdates.push({ key: 'property_reference', field_value: property_ref })
+
+      if (customFieldUpdates.length > 0) {
+        updateBody.customFields = customFieldUpdates
+      }
+
+      // Also set company name to property_name (common GHL template field)
+      if (property_name) updateBody.companyName = property_name
+
+      // Set tags for tracking
+      updateBody.tags = ['nfstay', 'lead-released']
+
+      if (Object.keys(updateBody).length > 0) {
+        try {
+          const updateRes = await fetch(`${GHL_BASE}/contacts/${contactId}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${GHL_TOKEN}`,
+              'Version': '2021-07-28',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateBody),
+          })
+          if (!updateRes.ok) {
+            const body = await updateRes.text()
+            console.error(`[ghl-enroll] Contact update failed (${updateRes.status}): ${body}`)
+            // Non-blocking — continue with enrollment even if update fails
+          } else {
+            console.log(`[ghl-enroll] Contact ${contactId} fields updated: ${customFieldUpdates.map(f => f.key).join(', ')}`)
+          }
+        } catch (e) {
+          console.error('[ghl-enroll] Contact update error:', e)
+        }
+        // Small delay to let GHL process the field update before workflow triggers
+        await delay(500)
+      }
     }
 
     // 3. Remove from workflow first (idempotent - ignores 404/errors)

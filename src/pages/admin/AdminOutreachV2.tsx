@@ -104,10 +104,21 @@ async function callOutreachWebhook(payload: {
 }
 
 // ── Edge function caller for warm outreach (NDA/lead release) ──
-async function callGhlEnroll(phone: string, workflowId: string): Promise<{ success: boolean; error?: string }> {
+async function callGhlEnroll(
+  phone: string,
+  workflowId: string,
+  contactData?: {
+    property_name?: string;
+    tenant_name?: string;
+    magic_link?: string;
+    property_city?: string;
+    property_ref?: string;
+    contactName?: string;
+  },
+): Promise<{ success: boolean; error?: string }> {
   try {
     const { data, error } = await supabase.functions.invoke('ghl-enroll', {
-      body: { phone, workflowId },
+      body: { phone, workflowId, contactName: contactData?.contactName, contactData },
     });
     if (error) return { success: false, error: error.message };
     if (data?.error) return { success: false, error: data.error };
@@ -917,31 +928,38 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
 
       // Contact landlord on available channels (NDA/NDA+Claim only -- Direct skips outreach)
       if (type === 'nda' || type === 'nda_and_claim') {
-        // WhatsApp via GHL if phone exists
+        // Build magic link for WhatsApp template button
+        let magicLink = 'https://hub.nfstay.com/signin';
         if (phone) {
-          const result = await callGhlEnroll(phone, GHL_WORKFLOW_WARM);
+          const { data: inviteData } = await (supabase.from('landlord_invites') as any)
+            .select('magic_token')
+            .eq('phone', phone)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          const magicToken = inviteData?.[0]?.magic_token;
+          if (magicToken) magicLink = `https://hub.nfstay.com/inbox?token=${magicToken}`;
+        }
+
+        // WhatsApp via n8n -> GHL (same path as cold outreach — n8n sets contact fields)
+        if (phone) {
+          const result = await callOutreachWebhook({
+            landlord_whatsapp: phone,
+            landlord_name: inquiry.landlordName || 'Property Owner',
+            property_ref_code: inquiry.property_id?.slice(0, 8) || '',
+            property_title: inquiry.propertyName || 'Property',
+            property_city: '',
+            inquiry_count: 1,
+          });
           if (result.success) {
             channels.push('whatsapp');
           } else {
-            // Log but don't block -- email may still work
-            console.error('GHL enrollment failed:', result.error);
+            console.error('n8n outreach failed:', result.error);
           }
         }
 
         // Email via send-email edge function if email exists
         if (email) {
           try {
-            // Find the magic token for this landlord to build the lead URL
-            const { data: inviteData } = await (supabase.from('landlord_invites') as any)
-              .select('magic_token')
-              .eq('phone', phone)
-              .order('created_at', { ascending: false })
-              .limit(1);
-            const magicToken = inviteData?.[0]?.magic_token;
-            const leadUrl = magicToken
-              ? `https://hub.nfstay.com/inbox?token=${magicToken}`
-              : 'https://hub.nfstay.com/signin';
-
             const emailType = type === 'nda' ? 'inquiry-lister-nda' : 'inquiry-lister-notification';
             const emailData: Record<string, string> = {
               lister_email: email,
@@ -951,9 +969,9 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
               property_url: `https://hub.nfstay.com/deals/${inquiry.property_id}`,
             };
             if (type === 'nda') {
-              emailData.nda_url = leadUrl;
+              emailData.nda_url = magicLink;
             } else {
-              emailData.lead_url = leadUrl;
+              emailData.lead_url = magicLink;
             }
 
             await supabase.functions.invoke('send-email', {
