@@ -59,6 +59,9 @@ Tenant clicks WhatsApp on deal card/detail/panel
 **All three Tenant Request types (Direct, NDA, NDA+Claim) use the WARM workflow.**
 The difference is UI-only — what the landlord sees on CRM after clicking magic link.
 
+### Property Reference Rule
+The `property_ref_code` sent to n8n/GHL must be the **property name** (e.g. "3-Bed Terraced House, Clapham"), NOT a slug, UUID, or reference number. The landlord sees this in the WhatsApp message — it must be human-readable. No internal IDs.
+
 ## WORKFLOW: Inbox messaging (post-claim, ongoing)
 
 These workflows handle in-app messaging notifications AFTER a landlord has claimed their account and a conversation thread exists. They are separate from the marketplace lead flow.

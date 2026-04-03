@@ -77,6 +77,7 @@ This message must stay short and readable. Do not add internal IDs, UUIDs, or sy
 - `ghl-enroll` sets two GHL custom fields by **field ID** before enrollment:
   - `Z0thvOTyoO2KxTMt5sP8` (property_reference) = property name shown in WhatsApp template
   - `gWb4evAKLWCK0y8RHp32` (magic_link_url) = `?token=XXX` (GHL template prepends base URL)
+- **Property reference must be the human-readable property name** (e.g. "3-Bed Terraced House, Clapham"), never a slug, UUID, or internal reference number.
 - Email is also sent via `send-email` edge function if landlord has an email on file.
 - **This is the single admin gate.** No inquiry reaches a landlord without admin approval.
 
