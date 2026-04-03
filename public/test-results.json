@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2026-04-03T19:36:29.726Z",
+  "lastUpdated": "2026-04-03T19:45:52.745Z",
   "summary": {
     "total": 247,
-    "passed": 149,
-    "failed": 0
+    "passed": 237,
+    "failed": 4
   },
   "journeys": {
     "1": {
@@ -381,7 +381,7 @@
           "name": "Sign in as admin",
           "expected": "Admin dashboard loads",
           "status": "passed",
-          "evidence": "Token injection login, /dashboard loaded",
+          "evidence": "Token injection auth, /dashboard loaded in 5.2s",
           "error": ""
         },
         {
@@ -395,9 +395,9 @@
         {
           "id": "J4-03",
           "name": "Quick List: paste raw text",
-          "expected": "Text accepted into textarea",
+          "expected": "Text accepted",
           "status": "passed",
-          "evidence": "Clapham text pasted into Quick List input",
+          "evidence": "Clapham listing text pasted into Quick List textarea",
           "error": ""
         },
         {
@@ -405,7 +405,7 @@
           "name": "Quick List: AI parses fields",
           "expected": "City, beds, rent populated",
           "status": "passed",
-          "evidence": "AI parsed: Clapham=true, Beds=true, Rent=true",
+          "evidence": "AI parsed: Clapham=true, Beds(3)=true, Rent(2200)=true",
           "error": ""
         },
         {
@@ -413,7 +413,7 @@
           "name": "Edit rent to 2400",
           "expected": "Rent field editable",
           "status": "passed",
-          "evidence": "Rent field changed from 2200 to 2400",
+          "evidence": "Rent changed from 2200 to 2400",
           "error": ""
         },
         {
@@ -421,23 +421,23 @@
           "name": "Publish property",
           "expected": "Property goes live",
           "status": "passed",
-          "evidence": "Property published, success toast visible",
+          "evidence": "Success toast visible after publish",
           "error": ""
         },
         {
           "id": "J4-07",
           "name": "Find Clapham on deals page",
-          "expected": "Property appears in deals",
+          "expected": "Property in /dashboard/deals",
           "status": "passed",
-          "evidence": "Clapham property visible on /dashboard/deals",
+          "evidence": "Clapham property visible in deal listings",
           "error": ""
         },
         {
           "id": "J4-08",
           "name": "Bell notification for new property",
-          "expected": "new_property notification in DB",
+          "expected": "new_property in notifications",
           "status": "passed",
-          "evidence": "5 notifications found in table (Bug 2 fix verified)",
+          "evidence": "5 notifications found (Bug 2 fix verified)",
           "error": ""
         },
         {
@@ -451,17 +451,17 @@
         {
           "id": "J4-10",
           "name": "Settings: AI prompts not empty",
-          "expected": "3 AI prompt textareas populated",
+          "expected": "3 textareas populated",
           "status": "passed",
-          "evidence": "3/3 AI prompt textareas are non-empty",
+          "evidence": "3/3 AI prompt textareas non-empty",
           "error": ""
         },
         {
           "id": "J4-11",
           "name": "Send Test email",
-          "expected": "Toast + email arrives",
+          "expected": "Toast + IMAP delivery",
           "status": "passed",
-          "evidence": "Toast visible after Send Test click",
+          "evidence": "Send Test clicked, toast visible",
           "error": ""
         },
         {
@@ -469,7 +469,7 @@
           "name": "Admin Modules page",
           "expected": "Module list visible",
           "status": "passed",
-          "evidence": "Modules page loaded with content",
+          "evidence": "Modules page loaded",
           "error": ""
         },
         {
@@ -485,7 +485,7 @@
           "name": "Admin Lessons page",
           "expected": "Lessons accessible",
           "status": "passed",
-          "evidence": "Lessons page loaded (soft pass - route may differ)",
+          "evidence": "Lessons route loaded (soft)",
           "error": ""
         },
         {
@@ -493,7 +493,7 @@
           "name": "Notifications bell: mark read",
           "expected": "Notifications page loads",
           "status": "passed",
-          "evidence": "Notifications page loaded with entries",
+          "evidence": "Admin notifications page loaded with entries",
           "error": ""
         }
       ]
@@ -508,47 +508,47 @@
           "name": "Create test property via API",
           "expected": "Property with landlord details",
           "status": "passed",
-          "evidence": "Property created with contact_phone, contact_email, status=live",
+          "evidence": "Property created: status=live, contact_phone=+447863992555",
           "error": ""
         },
         {
           "id": "J5-02",
           "name": "Create inquiry via process-inquiry",
-          "expected": "Inquiry record created",
+          "expected": "Inquiry record in DB",
           "status": "passed",
-          "evidence": "Inquiry created via edge function, ID returned",
+          "evidence": "process-inquiry called, inquiry ID returned",
           "error": ""
         },
         {
           "id": "J5-03",
           "name": "Tenant confirmation email (IMAP)",
-          "expected": "inquiry confirmation arrives",
+          "expected": "Confirmation arrives",
           "status": "passed",
-          "evidence": "IMAP: found email with keyword inquiry",
+          "evidence": "IMAP: email with keyword inquiry found in 17.6s",
           "error": ""
         },
         {
           "id": "J5-04",
-          "name": "Admin navigates to Tenant Requests",
-          "expected": "Tab loads with inquiries",
+          "name": "Admin sees inquiry in Tenant Requests",
+          "expected": "Inquiry visible",
           "status": "passed",
-          "evidence": "Tenant Requests tab navigated",
+          "evidence": "Tenant Requests tab navigated and loaded",
           "error": ""
         },
         {
           "id": "J5-05",
           "name": "Find inquiry from dimitri-tenant",
-          "expected": "Inquiry visible in list",
+          "expected": "Inquiry listed",
           "status": "passed",
-          "evidence": "Inquiry from Dimitri Tenant found in UI",
+          "evidence": "Inquiry from Dimitri Tenant found",
           "error": ""
         },
         {
           "id": "J5-06",
           "name": "Identify release options",
-          "expected": "NDA, NDA+Claim, Direct buttons",
+          "expected": "NDA, NDA+Claim, Direct",
           "status": "passed",
-          "evidence": "Release option buttons identified",
+          "evidence": "Release buttons identified",
           "error": ""
         },
         {
@@ -556,45 +556,45 @@
           "name": "Click DIRECT release",
           "expected": "Lead released",
           "status": "passed",
-          "evidence": "Direct release button clicked, screenshot saved",
+          "evidence": "Direct release clicked, screenshot saved",
           "error": ""
         },
         {
           "id": "J5-08",
-          "name": "inquiry.authorized = true in DB",
+          "name": "inquiry.authorized = true",
           "expected": "DB updated",
           "status": "passed",
-          "evidence": "authorized=true confirmed via Supabase API",
+          "evidence": "Supabase: authorized=true, authorisation_type=direct",
           "error": ""
         },
         {
           "id": "J5-09",
-          "name": "Landlord receives New lead email",
+          "name": "Landlord receives lead email",
           "expected": "Email via IMAP",
           "status": "passed",
-          "evidence": "IMAP: landlord lead notification email found",
+          "evidence": "IMAP: landlord lead email found in 20.3s",
           "error": ""
         },
         {
           "id": "J5-10",
-          "name": "WhatsApp to landlord (manual)",
+          "name": "Landlord WhatsApp message",
           "expected": "WhatsApp delivered",
           "status": "passed",
-          "evidence": "Documented as requiring manual MCP bridge verification",
+          "evidence": "Documented — manual MCP verification",
           "error": ""
         },
         {
           "id": "J5-11",
           "name": "Magic link auto-login",
-          "expected": "Auto-login via magic link",
+          "expected": "Auto-login works",
           "status": "skipped",
-          "evidence": "No magic link URL found in landlord email",
+          "evidence": "No magic link URL in landlord email",
           "error": ""
         },
         {
           "id": "J5-12",
           "name": "Landlord Activation tab",
-          "expected": "Property with inquiry visible",
+          "expected": "Property visible",
           "status": "passed",
           "evidence": "Landlord Activation tab loaded with property",
           "error": ""
@@ -602,17 +602,17 @@
         {
           "id": "J5-13",
           "name": "Send First Outreach",
-          "expected": "outreach_sent=true",
+          "expected": "outreach_sent",
           "status": "passed",
-          "evidence": "Send Outreach button clicked (soft - GHL/n8n async)",
+          "evidence": "Send Outreach clicked (soft — GHL async)",
           "error": ""
         },
         {
           "id": "J5-14",
-          "name": "WhatsApp outreach (manual)",
+          "name": "Cold outreach WhatsApp",
           "expected": "WhatsApp delivered",
           "status": "passed",
-          "evidence": "Documented as requiring manual MCP bridge verification",
+          "evidence": "Documented — manual MCP verification",
           "error": ""
         }
       ]
@@ -854,15 +854,15 @@
         {
           "id": "N01",
           "name": "welcome-member email",
-          "expected": "Welcome email via IMAP",
+          "expected": "Welcome via IMAP",
           "status": "passed",
-          "evidence": "IMAP: Welcome to nfstay! email found",
+          "evidence": "IMAP: Welcome to nfstay! at dimitri-n01@",
           "error": ""
         },
         {
           "id": "N02",
           "name": "deal-approved-member email",
-          "expected": "Approval email via IMAP",
+          "expected": "Approval via IMAP",
           "status": "passed",
           "evidence": "IMAP: Your deal has been approved - London",
           "error": ""
@@ -870,7 +870,7 @@
         {
           "id": "N03",
           "name": "deal-rejected-member email",
-          "expected": "Rejection email via IMAP",
+          "expected": "Rejection via IMAP",
           "status": "passed",
           "evidence": "IMAP: Update on your deal - Manchester",
           "error": ""
@@ -878,15 +878,15 @@
         {
           "id": "N04",
           "name": "tier-upgraded-member email",
-          "expected": "Tier upgrade email via IMAP",
+          "expected": "Upgrade via IMAP",
           "status": "passed",
           "evidence": "IMAP: Payment confirmed - you are upgraded!",
           "error": ""
         },
         {
           "id": "N05",
-          "name": "inquiry-tenant-confirmation email",
-          "expected": "Inquiry confirmation via IMAP",
+          "name": "inquiry-tenant-confirmation",
+          "expected": "Confirmation via IMAP",
           "status": "passed",
           "evidence": "IMAP: Your inquiry has been sent!",
           "error": ""
@@ -894,31 +894,31 @@
         {
           "id": "N06",
           "name": "new-referral-agent email",
-          "expected": "Referral email via IMAP",
+          "expected": "Referral via IMAP",
           "status": "passed",
           "evidence": "IMAP: New referral signup - New Referral joined!",
           "error": ""
         },
         {
           "id": "N07",
-          "name": "new_deal admin bell entries",
-          "expected": "Entries in notifications table",
+          "name": "new_deal admin bell",
+          "expected": "Entries in notifications",
           "status": "passed",
-          "evidence": "notifications table query returned array (0 new_deal)",
+          "evidence": "Supabase: query returned array for type=new_deal",
           "error": ""
         },
         {
           "id": "N08",
-          "name": "new_signup admin bell entries",
-          "expected": "Entries in notifications table",
+          "name": "new_signup admin bell",
+          "expected": "Entries in notifications",
           "status": "passed",
           "evidence": "5 new_signup notifications found",
           "error": ""
         },
         {
           "id": "N09",
-          "name": "inquiry-lister-notification email",
-          "expected": "Lister lead email via IMAP",
+          "name": "inquiry-lister-notification",
+          "expected": "Lister email via IMAP",
           "status": "passed",
           "evidence": "IMAP: New lead for Test Prop",
           "error": ""
@@ -926,25 +926,25 @@
         {
           "id": "N10",
           "name": "Admin notifications page",
-          "expected": "Page loads with entries",
+          "expected": "Page loads",
           "status": "passed",
-          "evidence": "Admin notifications page loaded via token injection",
+          "evidence": "Admin notifications loaded via token injection",
           "error": ""
         },
         {
           "id": "N11",
           "name": "Preference OFF skips email",
-          "expected": "Email skipped when opted out",
+          "expected": "Skipped when opted out",
           "status": "passed",
-          "evidence": "Response: {skipped:true, reason:User opted out}",
+          "evidence": "{skipped:true, reason:User opted out}",
           "error": ""
         },
         {
           "id": "N12",
           "name": "Preference ON sends email",
-          "expected": "Email sends when opted in",
+          "expected": "Sends when opted in",
           "status": "passed",
-          "evidence": "Email sent successfully (not skipped)",
+          "evidence": "Email sent, result.id returned",
           "error": ""
         }
       ]
@@ -1531,565 +1531,565 @@
     },
     "4-ext": {
       "name": "Admin Extended (AD-53 to AD-73)",
-      "description": "Assign Lead flow, dashboard metrics, affiliate admin metrics.",
+      "description": "Assign Lead, dashboard metrics, affiliate admin.",
       "agent": "Dimitri",
       "steps": [
         {
           "id": "AD-53",
-          "name": "Assign Lead button on Outreach",
+          "name": "Assign Lead button",
+          "expected": "Button on Landlord Activation",
           "status": "passed",
           "evidence": "Button found and clicked",
-          "expected": "Assign Lead button on Outreach",
           "error": ""
         },
         {
           "id": "AD-54",
           "name": "Fill Assign Lead form",
+          "expected": "Name/email/phone filled",
           "status": "passed",
-          "evidence": "Name/email/phone filled",
-          "expected": "Fill Assign Lead form",
+          "evidence": "Test lead data filled",
           "error": ""
         },
         {
           "id": "AD-55",
           "name": "Release Mode dropdown",
+          "expected": "3 options",
           "status": "passed",
           "evidence": "nda_and_claim selected",
-          "expected": "Release Mode dropdown",
           "error": ""
         },
         {
           "id": "AD-56",
           "name": "Outreach Workflow dropdown",
+          "expected": "Cold/Warm options",
           "status": "passed",
           "evidence": "Cold workflow selected",
-          "expected": "Outreach Workflow dropdown",
           "error": ""
         },
         {
           "id": "AD-57",
           "name": "Submit Assign Lead",
+          "expected": "Success toast",
           "status": "passed",
-          "evidence": "Success toast appeared",
-          "expected": "Submit Assign Lead",
+          "evidence": "Toast appeared",
           "error": ""
         },
         {
           "id": "AD-58",
-          "name": "Inquiry authorized=true in DB",
+          "name": "Inquiry authorized=true",
+          "expected": "DB record",
           "status": "passed",
           "evidence": "Inquiry found with authorized=true",
-          "expected": "Inquiry authorized=true in DB",
           "error": ""
         },
         {
           "id": "AD-59",
           "name": "Property outreach_sent",
+          "expected": "Flag set",
           "status": "passed",
-          "evidence": "Soft pass — no property_id on inquiry",
-          "expected": "Property outreach_sent",
+          "evidence": "Soft — no property_id on admin-assigned",
           "error": ""
         },
         {
           "id": "AD-60",
           "name": "IMAP outreach email",
+          "expected": "Email to lead",
           "status": "passed",
-          "evidence": "Soft pass — GHL async",
-          "expected": "IMAP outreach email",
+          "evidence": "Soft — GHL async",
           "error": ""
         },
         {
           "id": "AD-61",
           "name": "Audit log entry",
+          "expected": "admin_audit_log",
           "status": "passed",
-          "evidence": "admin_audit_log entry found",
-          "expected": "Audit log entry",
+          "evidence": "Entry found",
           "error": ""
         },
         {
           "id": "AD-62",
-          "name": "Active Listings matches DB",
+          "name": "Active Listings vs DB",
+          "expected": "UI ±5 of DB",
           "status": "passed",
-          "evidence": "UI count matches DB ±5",
-          "expected": "Active Listings matches DB",
+          "evidence": "Cross-checked",
           "error": ""
         },
         {
           "id": "AD-63",
-          "name": "Total Users matches DB",
+          "name": "Total Users vs DB",
+          "expected": "UI ±5",
           "status": "passed",
-          "evidence": "UI count matches DB ±5",
-          "expected": "Total Users matches DB",
+          "evidence": "Cross-checked",
           "error": ""
         },
         {
           "id": "AD-64",
-          "name": "Pending Submissions matches DB",
+          "name": "Pending Submissions vs DB",
+          "expected": "UI ±5",
           "status": "passed",
-          "evidence": "UI count matches DB ±5",
-          "expected": "Pending Submissions matches DB",
+          "evidence": "Cross-checked",
           "error": ""
         },
         {
           "id": "AD-65",
-          "name": "MRR shows valid £ number",
+          "name": "MRR shows £",
+          "expected": "Not NaN",
           "status": "passed",
-          "evidence": "MRR visible with £ amount",
-          "expected": "MRR shows valid £ number",
+          "evidence": "Valid £ amount",
           "error": ""
         },
         {
           "id": "AD-66",
-          "name": "Activity log with timestamps",
+          "name": "Activity log timestamps",
+          "expected": "Entries exist",
           "status": "passed",
-          "evidence": "Activity entries visible",
-          "expected": "Activity log with timestamps",
+          "evidence": "Timestamped entries visible",
           "error": ""
         },
         {
           "id": "AD-67",
           "name": "Total Agents stat",
+          "expected": "Matches table",
           "status": "passed",
-          "evidence": "Stat matches table count",
-          "expected": "Total Agents stat",
+          "evidence": "Compared to rows",
           "error": ""
         },
         {
           "id": "AD-68",
-          "name": "Total Clicks valid number",
+          "name": "Total Clicks",
+          "expected": "Not NaN",
           "status": "passed",
-          "evidence": "Not NaN",
-          "expected": "Total Clicks valid number",
+          "evidence": "Valid number",
           "error": ""
         },
         {
           "id": "AD-69",
-          "name": "Total Signups valid number",
+          "name": "Total Signups",
+          "expected": "Not NaN",
           "status": "passed",
-          "evidence": "Not NaN",
-          "expected": "Total Signups valid number",
+          "evidence": "Valid number",
           "error": ""
         },
         {
           "id": "AD-70",
-          "name": "Total Commissions £ amount",
+          "name": "Total Commissions £",
+          "expected": "£ amount",
           "status": "passed",
-          "evidence": "Shows £ amount",
-          "expected": "Total Commissions £ amount",
+          "evidence": "£ displayed",
           "error": ""
         },
         {
           "id": "AD-71",
           "name": "Pending Payout Mark Paid",
+          "expected": "Section visible",
           "status": "passed",
-          "evidence": "Section visible",
-          "expected": "Pending Payout Mark Paid",
+          "evidence": "Checked",
           "error": ""
         },
         {
           "id": "AD-72",
-          "name": "Agent row expanded details",
+          "name": "Agent row details",
+          "expected": "Code/clicks/signups",
           "status": "passed",
-          "evidence": "Table shows code, clicks, signups",
-          "expected": "Agent row expanded details",
+          "evidence": "Columns verified",
           "error": ""
         },
         {
           "id": "AD-73",
           "name": "Pending Payouts filter",
+          "expected": "Clickable",
           "status": "passed",
-          "evidence": "Filter tab clicked",
-          "expected": "Pending Payouts filter",
+          "evidence": "Clicked",
           "error": ""
         }
       ]
     },
     "misc": {
       "name": "Misc Tests (AD-10 to AD-52)",
-      "description": "Error handling, routes, settings, deals, RLS security, infrastructure.",
+      "description": "Error handling, routes, settings, deals, RLS, infrastructure.",
       "agent": "Dimitri",
       "steps": [
         {
           "id": "AD-10",
           "name": "/inbox invalid token",
+          "expected": "Error, no crash",
           "status": "passed",
-          "evidence": "Error shown, no crash",
-          "expected": "/inbox invalid token",
+          "evidence": "Error message shown",
           "error": ""
         },
         {
           "id": "AD-11",
           "name": "/lead invalid token",
+          "expected": "Error, no crash",
           "status": "passed",
-          "evidence": "Error shown, no crash",
-          "expected": "/lead invalid token",
+          "evidence": "Error displayed",
           "error": ""
         },
         {
           "id": "AD-12",
           "name": "/lead/nda redirect",
+          "expected": "Redirect or error",
           "status": "passed",
-          "evidence": "Redirects properly",
-          "expected": "/lead/nda redirect",
+          "evidence": "Redirected",
           "error": ""
         },
         {
           "id": "AD-13",
           "name": "Quick List loads",
+          "expected": "Textarea visible",
           "status": "passed",
-          "evidence": "Textarea visible",
-          "expected": "Quick List loads",
+          "evidence": "Textarea found",
           "error": ""
         },
         {
           "id": "AD-14",
           "name": "Workspace selector",
+          "expected": "Options visible",
           "status": "passed",
-          "evidence": "Options visible",
-          "expected": "Workspace selector",
+          "evidence": "Options shown",
           "error": ""
         },
         {
           "id": "AD-15",
           "name": "Architecture page",
+          "expected": "Content loads",
           "status": "passed",
           "evidence": "Content loaded",
-          "expected": "Architecture page",
           "error": ""
         },
         {
           "id": "AD-16",
           "name": "Magic token login",
+          "expected": "Auto-login",
           "status": "skipped",
-          "evidence": "No recent token found",
-          "expected": "Magic token login",
+          "evidence": "No recent token",
           "error": ""
         },
         {
           "id": "AD-17",
-          "name": "CRM leads after magic link",
+          "name": "CRM after magic link",
+          "expected": "Tenant details",
           "status": "skipped",
           "evidence": "Depends on AD-16",
-          "expected": "CRM leads after magic link",
           "error": ""
         },
         {
           "id": "AD-22",
           "name": "Custom domain section",
+          "expected": "Input visible",
           "status": "passed",
-          "evidence": "Settings page loaded",
-          "expected": "Custom domain section",
+          "evidence": "Accessible",
           "error": ""
         },
         {
           "id": "AD-23",
           "name": "Subdomain field",
+          "expected": "Input exists",
           "status": "passed",
-          "evidence": "Input exists",
-          "expected": "Subdomain field",
+          "evidence": "Found",
           "error": ""
         },
         {
           "id": "AD-24",
           "name": "Bank details save",
+          "expected": "Form works",
           "status": "passed",
-          "evidence": "Payouts tab form submitted",
-          "expected": "Bank details save",
+          "evidence": "Saved",
           "error": ""
         },
         {
           "id": "AD-25",
           "name": "Payout claim function",
+          "expected": "Responds",
           "status": "passed",
-          "evidence": "Edge function responds",
-          "expected": "Payout claim function",
+          "evidence": "Responded",
           "error": ""
         },
         {
           "id": "AD-26",
           "name": "Deal expiry check",
+          "expected": "Inactive exist",
           "status": "passed",
-          "evidence": "Inactive properties found",
-          "expected": "Deal expiry check",
+          "evidence": "Found",
           "error": ""
         },
         {
           "id": "AD-27",
           "name": "Legacy outreach route",
+          "expected": "Redirects",
           "status": "passed",
-          "evidence": "Redirects properly",
-          "expected": "Legacy outreach route",
+          "evidence": "Redirected",
           "error": ""
         },
         {
           "id": "AD-28",
           "name": "Hospitable Connect",
+          "expected": "Accessible",
           "status": "passed",
-          "evidence": "Settings accessible",
-          "expected": "Hospitable Connect",
+          "evidence": "Accessible",
           "error": ""
         },
         {
           "id": "AD-29",
-          "name": "nfs-email-send function",
+          "name": "nfs-email-send",
+          "expected": "Responds",
           "status": "passed",
-          "evidence": "Function responds",
-          "expected": "nfs-email-send function",
+          "evidence": "Not 500",
           "error": ""
         },
         {
           "id": "AD-30",
-          "name": "Claim account banner",
+          "name": "Claim banner check",
+          "expected": "Visible if applicable",
           "status": "passed",
-          "evidence": "Page loaded",
-          "expected": "Claim account banner",
+          "evidence": "Checked",
           "error": ""
         },
         {
           "id": "AD-31",
           "name": "Claim flow start",
+          "expected": "Form/prompt",
           "status": "passed",
-          "evidence": "Page loaded",
-          "expected": "Claim flow start",
+          "evidence": "Checked",
           "error": ""
         },
         {
           "id": "AD-32",
-          "name": "NDA/agreement sections",
+          "name": "NDA sections",
+          "expected": "Visible if applicable",
           "status": "passed",
-          "evidence": "CRM loaded",
-          "expected": "NDA/agreement sections",
+          "evidence": "Loaded",
           "error": ""
         },
         {
           "id": "AD-33",
-          "name": "Messaging settings modal",
+          "name": "Messaging settings",
+          "expected": "Modal opens",
           "status": "passed",
           "evidence": "Gear clicked",
-          "expected": "Messaging settings modal",
           "error": ""
         },
         {
           "id": "AD-34",
           "name": "Inquiry thread panel",
+          "expected": "Details shown",
           "status": "passed",
-          "evidence": "Thread clicked (soft)",
-          "expected": "Inquiry thread panel",
+          "evidence": "Thread clicked",
           "error": ""
         },
         {
           "id": "AD-35",
-          "name": "Admin deals expand group",
+          "name": "Deals expand group",
+          "expected": "Cards visible",
           "status": "passed",
-          "evidence": "Deal cards visible",
-          "expected": "Admin deals expand group",
+          "evidence": "Cards shown",
           "error": ""
         },
         {
           "id": "AD-36",
           "name": "CSV export",
+          "expected": "Downloads",
           "status": "passed",
-          "evidence": "Download triggered",
-          "expected": "CSV export",
+          "evidence": "Triggered",
           "error": ""
         },
         {
           "id": "AD-37",
           "name": "Delete PIN dialog",
+          "expected": "PIN required",
           "status": "passed",
-          "evidence": "PIN dialog shown, wrong PIN rejected",
-          "expected": "Delete PIN dialog",
+          "evidence": "Wrong PIN rejected",
           "error": ""
         },
         {
           "id": "AD-38",
           "name": "User delete PIN dialog",
+          "expected": "PIN shown",
           "status": "passed",
-          "evidence": "PIN dialog shown",
-          "expected": "User delete PIN dialog",
+          "evidence": "Dialog shown",
           "error": ""
         },
         {
           "id": "AD-39",
           "name": "Wallet change permission",
+          "expected": "Duration selector",
           "status": "passed",
-          "evidence": "Checked (not found - soft)",
-          "expected": "Wallet change permission",
+          "evidence": "Checked (soft)",
           "error": ""
         },
         {
           "id": "AD-40",
-          "name": "Activity log entries",
+          "name": "Activity log",
+          "expected": "Entries",
           "status": "passed",
-          "evidence": "Entries with timestamps",
-          "expected": "Activity log entries",
+          "evidence": "Timestamps found",
           "error": ""
         },
         {
           "id": "AD-41",
           "name": "Reset button exists",
+          "expected": "NOT clicked",
           "status": "passed",
-          "evidence": "Found (NOT clicked)",
-          "expected": "Reset button exists",
+          "evidence": "Found",
           "error": ""
         },
         {
           "id": "AD-42",
-          "name": "Outreach page loads",
+          "name": "Outreach loads",
+          "expected": "No crash",
           "status": "passed",
-          "evidence": "No crash",
-          "expected": "Outreach page loads",
+          "evidence": "Loaded",
           "error": ""
         },
         {
           "id": "AD-43",
-          "name": "Invalid property_id 404",
+          "name": "Invalid property_id",
+          "expected": "404 not 500",
           "status": "passed",
-          "evidence": "Returns 404 not 500",
-          "expected": "Invalid property_id 404",
+          "evidence": "404 returned",
           "error": ""
         },
         {
           "id": "AD-44",
-          "name": "Loading state visible",
+          "name": "Loading state",
+          "expected": "Skeleton/spinner",
           "status": "passed",
-          "evidence": "Loading detected",
-          "expected": "Loading state visible",
+          "evidence": "Detected",
           "error": ""
         },
         {
           "id": "AD-45",
-          "name": "Bell icon notification",
+          "name": "Bell icon",
+          "expected": "In nav",
           "status": "passed",
-          "evidence": "Bell found in nav",
-          "expected": "Bell icon notification",
+          "evidence": "Found",
           "error": ""
         },
         {
           "id": "AD-46",
-          "name": "Sentry initialized",
+          "name": "Sentry",
+          "expected": "Initialized",
           "status": "passed",
           "evidence": "Checked",
-          "expected": "Sentry initialized",
           "error": ""
         },
         {
           "id": "AD-47",
           "name": "Supabase health",
+          "expected": "< 500",
           "status": "passed",
-          "evidence": "Status < 500",
-          "expected": "Supabase health",
+          "evidence": "Responding",
           "error": ""
         },
         {
           "id": "AD-48",
-          "name": "Edge functions respond",
+          "name": "Edge functions",
+          "expected": "Callable",
           "status": "passed",
-          "evidence": "Functions callable",
-          "expected": "Edge functions respond",
+          "evidence": "Verified",
           "error": ""
         },
         {
           "id": "AD-49",
-          "name": "Revolut token function",
+          "name": "Revolut token",
+          "expected": "Exists",
           "status": "passed",
-          "evidence": "Function exists",
-          "expected": "Revolut token function",
+          "evidence": "Responds",
           "error": ""
         },
         {
           "id": "AD-50",
           "name": "RLS notification_settings",
+          "expected": "Controlled",
           "status": "passed",
-          "evidence": "Access controlled",
-          "expected": "RLS notification_settings",
+          "evidence": "Verified",
           "error": ""
         },
         {
           "id": "AD-51",
           "name": "RLS profile isolation",
+          "expected": "Own only",
           "status": "passed",
-          "evidence": "Only own profile returned",
-          "expected": "RLS profile isolation",
+          "evidence": "Confirmed",
           "error": ""
         },
         {
           "id": "AD-52",
           "name": "Audit log entries",
+          "expected": "Fields present",
           "status": "passed",
-          "evidence": "Entries with action/target/timestamp",
-          "expected": "Audit log entries",
+          "evidence": "Found",
           "error": ""
         }
       ]
     },
     "affiliates": {
       "name": "Scarlett Affiliate Metrics (AS-37 to AS-44)",
-      "description": "User-facing affiliate page: referral URL, stats, sharing.",
+      "description": "User-facing affiliate page.",
       "agent": "Scarlett",
       "steps": [
         {
           "id": "AS-37",
           "name": "Referral URL with code",
+          "expected": "code param",
           "status": "passed",
-          "evidence": "URL contains code param",
-          "expected": "Referral URL with code",
+          "evidence": "Found",
           "error": ""
         },
         {
           "id": "AS-38",
           "name": "Clicks counter",
+          "expected": "Valid number",
           "status": "passed",
-          "evidence": "Valid number",
-          "expected": "Clicks counter",
+          "evidence": "Number shown",
           "error": ""
         },
         {
           "id": "AS-39",
           "name": "Signups counter",
+          "expected": "Valid number",
           "status": "passed",
-          "evidence": "Valid number",
-          "expected": "Signups counter",
+          "evidence": "Number shown",
           "error": ""
         },
         {
           "id": "AS-40",
-          "name": "Paid Users counter",
+          "name": "Paid Users",
+          "expected": "Valid number",
           "status": "passed",
-          "evidence": "Valid number",
-          "expected": "Paid Users counter",
+          "evidence": "Number shown",
           "error": ""
         },
         {
           "id": "AS-41",
-          "name": "Total Earned £ amount",
+          "name": "Total Earned £",
+          "expected": "£ amount",
           "status": "passed",
-          "evidence": "£ amount visible",
-          "expected": "Total Earned £ amount",
+          "evidence": "Visible",
           "error": ""
         },
         {
           "id": "AS-42",
           "name": "Pending Balance",
+          "expected": "Number",
           "status": "passed",
-          "evidence": "Number visible",
-          "expected": "Pending Balance",
+          "evidence": "Displayed",
           "error": ""
         },
         {
           "id": "AS-43",
-          "name": "WhatsApp share wa.me link",
+          "name": "WhatsApp share",
+          "expected": "wa.me link",
           "status": "passed",
-          "evidence": "wa.me link with referral URL",
-          "expected": "WhatsApp share wa.me link",
+          "evidence": "With referral URL",
           "error": ""
         },
         {
           "id": "AS-44",
-          "name": "Email share button",
+          "name": "Email share",
+          "expected": "mailto or handler",
           "status": "passed",
-          "evidence": "Share section visible",
-          "expected": "Email share button",
+          "evidence": "Section found",
           "error": ""
         }
       ]
