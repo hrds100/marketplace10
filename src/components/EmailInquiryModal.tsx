@@ -126,27 +126,27 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
           <form onSubmit={handleSubmit} className="p-5 space-y-3">
             <input
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              readOnly
               placeholder="Enter name*"
               required
-              className="w-full h-11 rounded-[10px] border px-3 text-sm"
-              style={{ borderColor: '#E5E5E5', color: '#0A0A0A' }}
+              className="w-full h-11 rounded-[10px] border px-3 text-sm bg-muted/30 cursor-not-allowed"
+              style={{ borderColor: '#E5E5E5', color: '#6B7280' }}
             />
             <input
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              readOnly
               placeholder="Enter email*"
               required
               type="email"
-              className="w-full h-11 rounded-[10px] border px-3 text-sm"
-              style={{ borderColor: '#E5E5E5', color: '#0A0A0A' }}
+              className="w-full h-11 rounded-[10px] border px-3 text-sm bg-muted/30 cursor-not-allowed"
+              style={{ borderColor: '#E5E5E5', color: '#6B7280' }}
             />
             <input
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              readOnly
               placeholder="+44 phone number"
-              className="w-full h-11 rounded-[10px] border px-3 text-sm"
-              style={{ borderColor: '#E5E5E5', color: '#0A0A0A' }}
+              className="w-full h-11 rounded-[10px] border px-3 text-sm bg-muted/30 cursor-not-allowed"
+              style={{ borderColor: '#E5E5E5', color: '#6B7280' }}
             />
             <textarea
               value={message}

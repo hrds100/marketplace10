@@ -3,6 +3,11 @@
 // Input: { property_id, channel: 'email', message, tenant_name, tenant_email, tenant_phone }
 // Output: { success, inquiry_id }
 // NOTE: WhatsApp inquiries are handled by receive-tenant-whatsapp (inbound route via n8n/GHL)
+// DEPLOY NOTE: This function must have verify_jwt=false (it handles JWT internally).
+// Every Supabase deploy resets verify_jwt to true. After deploy, patch via Management API:
+// curl -X PATCH -H "Authorization: Bearer <PAT>" -H "Content-Type: application/json" \
+//   -d '{"verify_jwt": false}' \
+//   "https://api.supabase.com/v1/projects/asazddtvjvmckouxcmmo/functions/process-inquiry"
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
