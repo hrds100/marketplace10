@@ -77,6 +77,57 @@ test.describe("Admin Deals Grouped View", () => {
     expect(toggleTextBack).toContain("Grouped by landlord");
   });
 
+  test("Grouped view works on Live and Inactive tabs too", async ({ page }) => {
+    await adminSignIn(page);
+    await page.goto(`${BASE}/admin/marketplace/deals`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(2000);
+
+    // Ensure grouped mode is active
+    const toggle = page.locator('[data-testid="group-toggle"]');
+    const toggleText = await toggle.textContent();
+    if (toggleText?.includes("Flat list")) {
+      await toggle.click();
+      await page.waitForTimeout(500);
+    }
+
+    // Switch to Live tab
+    await page.locator("text=Live").first().click();
+    await page.waitForTimeout(1000);
+
+    // Grouped view should show on Live tab
+    const liveGrouped = page.locator('[data-testid="grouped-view"]');
+    const liveGroups = page.locator('[data-testid="landlord-group-header"]');
+    const liveEmpty = page.locator("text=No live listings");
+    const hasLiveGroups = await liveGroups.count();
+    const hasLiveEmpty = await liveEmpty.isVisible().catch(() => false);
+    // Either grouped headers or empty state should be visible (not the flat table)
+    expect(hasLiveGroups > 0 || hasLiveEmpty).toBeTruthy();
+
+    // Switch to Inactive tab
+    await page.locator("text=Inactive").first().click();
+    await page.waitForTimeout(1000);
+
+    // Grouped view should show on Inactive tab
+    const inactiveGroups = page.locator('[data-testid="landlord-group-header"]');
+    const inactiveEmpty = page.locator("text=No inactive deals");
+    const hasInactiveGroups = await inactiveGroups.count();
+    const hasInactiveEmpty = await inactiveEmpty.isVisible().catch(() => false);
+    expect(hasInactiveGroups > 0 || hasInactiveEmpty).toBeTruthy();
+
+    // Toggle to flat on Inactive tab and verify it switches
+    await toggle.click();
+    await page.waitForTimeout(500);
+    const flatText = await toggle.textContent();
+    expect(flatText).toContain("Flat list");
+
+    // Switch back to Live - should still be flat (shared state)
+    await page.locator("text=Live").first().click();
+    await page.waitForTimeout(1000);
+    // Should NOT show grouped view headers
+    const liveGroupedAfterFlat = page.locator('[data-testid="grouped-view"]');
+    await expect(liveGroupedAfterFlat).toHaveCount(0);
+  });
+
   test("Admin outreach page loads", async ({ page }) => {
     await adminSignIn(page);
     await page.goto(`${BASE}/admin/marketplace/outreach`, { waitUntil: "networkidle" });
