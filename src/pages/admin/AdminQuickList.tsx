@@ -328,7 +328,7 @@ export default function AdminQuickList() {
         const item = toPublish[0];
         const minDelay = new Promise(r => setTimeout(r, 2500));
         const pricingFetch = (async (): Promise<AIPricingResult | null> => {
-          const c = new AbortController(); const t = setTimeout(() => c.abort(), 15_000);
+          const c = new AbortController(); const t = setTimeout(() => c.abort(), 25_000);
           try {
             const res = await fetch(`${N8N_BASE}/webhook/airbnb-pricing`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -341,11 +341,11 @@ export default function AdminQuickList() {
               signal: c.signal,
             });
             clearTimeout(t);
-            if (!res.ok) return null;
+            if (!res.ok) { console.error('[airbnb-pricing] HTTP', res.status, await res.text().catch(() => '')); return null; }
             const data = await res.json();
-            if (!data?.estimated_nightly_rate) return null;
+            if (!data?.estimated_nightly_rate) { console.error('[airbnb-pricing] Missing estimated_nightly_rate:', data); return null; }
             return data as AIPricingResult;
-          } catch { clearTimeout(t); return null; }
+          } catch (err) { console.error('[airbnb-pricing] Webhook failed:', err); clearTimeout(t); return null; }
         })();
 
         const [, result] = await Promise.all([minDelay, pricingFetch]);

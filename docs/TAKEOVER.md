@@ -68,7 +68,7 @@
 
 | Branch | Purpose | Status |
 |--------|---------|--------|
-| `fix/list-a-deal-airbnb-pricing` | PR #199 — deposit/profit optional, email prefill, pricing diagnostics | PARTIAL — 2/3 Playwright pass, awaiting Hugo manual test on preview |
+| `fix/list-a-deal-airbnb-pricing` | PR #199 — deposit/profit optional, email prefill, pricing diagnostics | Merging now — Hugo manual test passed |
 
 > Update this table when branches are created or merged. Delete merged branches. Only list branches verified on GitHub — never local-only.
 
@@ -80,7 +80,7 @@
 - WhatsApp reply architecture: webhook (instant) + poll (backup inquiry only, no reply duplication) (2026-04-02)
 - Outreach renamed to "The Gate" with contacted badge from DB (2026-04-01)
 - Visibility gate + Co-Pilot review gate added to prevent local-only work being treated as done (2026-04-03)
-- List-a-deal: deposit/profit made optional, email prefill fixed, Airbnb pricing timeout increased + error logging added (2026-04-03, PR #199, pending merge)
+- List-a-deal: deposit/profit made optional, email prefill fixed, Airbnb pricing timeout increased + error logging added (2026-04-03, PR #199, merged)
 
 ---
 
