@@ -732,3 +732,12 @@ coordinating with Hugo first.
 - `docs/TAKEOVER.md` is the canonical continuity file for future chats and agents.
 - It must be updated whenever a meaningful change is made to behavior, architecture, live status, deployment flow, critical bug status, or active branch work.
 - A task is not fully complete until the takeover doc is updated when relevant.
+
+---
+
+## AGENT IDENTITY RULE
+
+- The canonical agent roster is in `docs/TAKEOVER.md` Section 9.
+- Every coding agent must identify itself using the mandatory output header defined there.
+- Hugo pastes the `AGENT:` line back to the Co-Pilot with every report. No agent ID = report rejected.
+- Each agent works only within its assigned scope and branch prefix.

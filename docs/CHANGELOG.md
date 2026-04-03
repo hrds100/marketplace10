@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [2026-04-03e] - Agent Roster + Handoff Protocol
+
+### Added
+- Agent roster in `docs/TAKEOVER.md` Section 9: four fixed agent IDs (NF-ALPHA, NF-BRAVO, NF-CHARLIE, NF-DELTA) with scoped branches and responsibilities.
+- Mandatory output header format (AGENT, BRANCH, COMMIT, PR, CI, PREVIEW, FILES CHANGED, PROVEN, UNPROVEN) for every agent report.
+- Handoff rule: Hugo must paste the AGENT line back to the Co-Pilot for routing. No ID = rejected.
+- AGENT IDENTITY RULE added to `docs/AGENT_INSTRUCTIONS.md` and `docs/COPILOT_PROMPT.md` pointing to the roster.
+
 ## [2026-04-03d] - Admin Notifications, Settings & University Seed
 
 ### Added
