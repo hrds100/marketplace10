@@ -1,7 +1,7 @@
 {
-  "lastUpdated": "2026-04-03T19:45:52.745Z",
+  "lastUpdated": "2026-04-03T20:13:31.564Z",
   "summary": {
-    "total": 247,
+    "total": 272,
     "passed": 237,
     "failed": 4
   },
@@ -945,6 +945,220 @@
           "expected": "Sends when opted in",
           "status": "passed",
           "evidence": "Email sent, result.id returned",
+          "error": ""
+        }
+      ]
+    },
+    "10": {
+      "name": "Real Inquiry Flow",
+      "description": "Full email and WhatsApp inquiry flow from UI click through admin notification.",
+      "agent": "Scarlett",
+      "steps": [
+        {
+          "id": "R01",
+          "name": "Email inquiry sent via UI click",
+          "expected": "Inquiry sent successfully from deal detail page",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "R02",
+          "name": "Tenant receives confirmation email (IMAP verified)",
+          "expected": "Confirmation email arrives in tenant inbox",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "R03",
+          "name": "Admin receives notification email",
+          "expected": "Admin gets inquiry notification email",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "R04",
+          "name": "Admin bell notification appears",
+          "expected": "Bell icon shows new inquiry notification",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "R05",
+          "name": "WhatsApp inquiry sent",
+          "expected": "WhatsApp inquiry sent via edge function",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "R06",
+          "name": "Tenant receives WhatsApp confirmation email",
+          "expected": "Email confirmation for WhatsApp inquiry arrives",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "R07",
+          "name": "Inquiry appears in admin Tenant Requests",
+          "expected": "Inquiry visible in /admin/marketplace/outreach",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        }
+      ]
+    },
+    "11": {
+      "name": "The Gate - Full Flow",
+      "description": "Complete outreach flow: direct release, WhatsApp, magic links, NDA, landlord claim.",
+      "agent": "Dimitri",
+      "steps": [
+        {
+          "id": "G01",
+          "name": "Direct release clicked in admin UI",
+          "expected": "Lead released to landlord",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G02",
+          "name": "Landlord receives email with lead details",
+          "expected": "Lead email arrives via IMAP",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G03",
+          "name": "Landlord receives WhatsApp message",
+          "expected": "WhatsApp delivered to landlord number",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G04",
+          "name": "Magic link in WhatsApp opened -> auto-login",
+          "expected": "Magic link works, auto-login succeeds",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G05",
+          "name": "Landlord sees tenant details in CRM",
+          "expected": "CRM shows tenant info for landlord",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G06",
+          "name": "Landlord replies via WhatsApp \"is this property available\"",
+          "expected": "WhatsApp reply sent from landlord",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G07",
+          "name": "Landlord reply appears in platform inbox",
+          "expected": "Reply visible in inbox/chat",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G08",
+          "name": "Send First Outreach clicked",
+          "expected": "Cold outreach sent to landlord",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G09",
+          "name": "Landlord receives cold outreach WhatsApp",
+          "expected": "Cold outreach WhatsApp delivered",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G10",
+          "name": "Landlord clicks magic link from WhatsApp -> page loads",
+          "expected": "Magic link navigates to correct page",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G11",
+          "name": "Landlord replies to cold outreach via WhatsApp",
+          "expected": "Reply sent and received",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G12",
+          "name": "Assign Lead form filled and submitted",
+          "expected": "Lead assigned to landlord",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G13",
+          "name": "Landlord receives assign lead WhatsApp",
+          "expected": "Assign lead WhatsApp delivered",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G14",
+          "name": "NDA release clicked",
+          "expected": "NDA sent to landlord",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G15",
+          "name": "Landlord receives NDA email",
+          "expected": "NDA email arrives via IMAP",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G16",
+          "name": "Landlord receives NDA WhatsApp",
+          "expected": "NDA WhatsApp delivered",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G17",
+          "name": "NDA link opened -> signing page loads",
+          "expected": "NDA signing page renders",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "G18",
+          "name": "Landlord claim account flow works",
+          "expected": "Landlord can claim account and set password",
+          "status": "not_tested",
+          "evidence": "",
           "error": ""
         }
       ]
