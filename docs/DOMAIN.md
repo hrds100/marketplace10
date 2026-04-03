@@ -27,7 +27,7 @@ _Last updated: 2026-03-16_
 | **Thread** | One conversation about one deal. Row in `chat_threads`; has operator_id, landlord_id, property_id, terms_accepted. |
 | **Message** | One message in a thread. Row in `chat_messages`; has body, body_receiver, sender_id, is_masked. |
 | **NDA / Agreement** | The fee-protection agreement the **landlord** signs before contact details are revealed. Stored as `chat_threads.terms_accepted` and rows in `agreement_acceptances`. Only the landlord signs; the tenant never signs the NDA. |
-| **Tier** | Subscription level in `profiles.tier`: `free`, `monthly`, `yearly`, `lifetime`. Controls access (e.g. first message in inbox requires paid tier for tenant). |
+| **Tier** | Subscription level in `profiles.tier`: `free`, `monthly`, `yearly`, `lifetime`. Pricing: £5/3-day trial, £67/month, £997 lifetime (OTO), £397/year (downsell). Controls access (e.g. first message in inbox requires paid tier for tenant). |
 | **Payment** | Checkout via GHL funnel; tier updated by n8n webhook. Unlocks tenant’s ability to send first message (and other paid features). |
 | **Submission** | A deal submitted by a user (List a Deal flow). |
 | **CRM stage** | Pipeline stage for a user’s deal in `crm_deals` (e.g. lead, viewing, offer). |

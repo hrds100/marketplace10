@@ -102,7 +102,7 @@ export const universityModules: UniversityModule[] = [
 
 export const payoutHistory = [
   { date: '15 Mar 2026', amount: '£48.50', status: 'Paid', reference: 'PAY-001' },
-  { date: '15 Feb 2026', amount: '£97.00', status: 'Paid', reference: 'PAY-002' },
+  { date: '15 Feb 2026', amount: '£67.00', status: 'Paid', reference: 'PAY-002' },
   { date: '15 Apr 2026', amount: '£48.50', status: 'Pending', reference: 'PAY-003' },
 ];
 
@@ -124,5 +124,5 @@ export const faqItems = [
   { id: 'faq-5', question: 'What does the membership include?', answer: 'Full access to 1,800+ verified deals, CRM pipeline tools, Airbnb University, deal alerts, and our affiliate programme. Everything you need to build a rent-to-rent portfolio.', published: true },
   { id: 'faq-6', question: 'Can I cancel any time?', answer: 'Absolutely. Cancel your membership at any time from your settings. Your access continues until the end of your billing period.', published: true },
   { id: 'faq-7', question: 'How are deals sourced?', answer: 'Our team sources deals through direct landlord relationships, property agents, and community submissions. Every deal is vetted before going live.', published: true },
-  { id: 'faq-8', question: 'Is there a trial?', answer: 'Yes — start with a 30-day trial for just £9. Full platform access, no restrictions. If it is not for you, cancel before your trial ends.', published: true },
+  { id: 'faq-8', question: 'Is there a trial?', answer: 'Yes - start with a 3-day trial for just £5. Full platform access, no restrictions. If it is not for you, cancel before your trial ends.', published: true },
 ];
