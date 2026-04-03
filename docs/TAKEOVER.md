@@ -45,8 +45,8 @@
 | Flow | Key files | What to know |
 |------|-----------|-------------|
 | **List-a-Deal** | `src/pages/ListADealPage.tsx`, `src/pages/admin/AdminQuickList.tsx` | Tenant submits property → admin reviews in Pending tab → approves → goes live |
-| **Deals / Inquiries** | `src/pages/DealsPage.tsx`, `src/components/InquiryPanel.tsx` | Operators browse deals, send inquiries via WhatsApp or email. Payment gate for free-tier. |
-| **Outreach / The Gates** | `src/pages/admin/TheGatesPage.tsx` | Admin assigns leads to landlords, tracks contacted status, NDA flow |
+| **Deals / Inquiries** | `src/pages/DealsPageV2.tsx`, `src/components/InquiryPanel.tsx` | Operators browse deals, send inquiries via WhatsApp or email. Payment gate for free-tier. |
+| **Outreach / The Gates** | `src/pages/admin/AdminOutreachV2.tsx` | Admin assigns leads to landlords, tracks contacted status, NDA flow |
 | **Admin Notifications** | `src/pages/admin/AdminQuickList.tsx` | Consolidated deals page: Pending Review, Live, Inactive tabs |
 | **University** | `src/pages/UniversityPage.tsx` | Educational content for operators |
 | **Invest / JV** | `src/pages/invest/*` | Investment module - separate agent instructions at `docs/invest/` |
@@ -68,9 +68,9 @@
 
 | Branch | Purpose | Status |
 |--------|---------|--------|
-| `fix/list-a-deal-airbnb-pricing` | Airbnb pricing changes on list-a-deal | Active, uncommitted changes |
+| *(empty — verify with `gh pr list --state open` and `git branch -r`)* | | |
 
-> Update this table when branches are created or merged. Delete merged branches.
+> Update this table when branches are created or merged. Delete merged branches. Only list branches verified on GitHub — never local-only.
 
 ---
 
