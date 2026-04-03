@@ -10,6 +10,8 @@ import { logAdminAction } from '@/lib/auditLog';
 const GHL_WORKFLOW_COLD = '67250bfa-e1fc-4201-8bca-08c384a4a31d';
 const GHL_WORKFLOW_WARM = '0eb4395c-e493-43dc-be97-6c4455b5c7c4';
 
+const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
+
 // ── Types ──
 interface PropertyRow {
   id: string;
@@ -75,7 +77,33 @@ function isReallyClaimed(profile: { email: string | null } | null | undefined): 
   return !profile.email.endsWith('@nfstay.internal');
 }
 
-// ── Edge function caller ──
+// ── n8n webhook caller for cold outreach (sets property_reference before GHL enrollment) ──
+async function callOutreachWebhook(payload: {
+  landlord_whatsapp: string;
+  landlord_name: string;
+  property_ref_code: string;
+  property_title: string;
+  property_city: string;
+  inquiry_count: number;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(`${N8N_BASE}/webhook/landlord-first-outreach`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return { success: false, error: `n8n returned ${res.status}` };
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
+}
+
+// ── Edge function caller for warm outreach (NDA/lead release) ──
 async function callGhlEnroll(phone: string, workflowId: string): Promise<{ success: boolean; error?: string }> {
   try {
     const { data, error } = await supabase.functions.invoke('ghl-enroll', {
@@ -381,9 +409,17 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
     const key = `outreach-${group.phone}`;
     addLoading(key);
     try {
-      const result = await callGhlEnroll(group.phone, GHL_WORKFLOW_COLD);
+      const firstProp = group.properties[0];
+      const result = await callOutreachWebhook({
+        landlord_whatsapp: group.phone,
+        landlord_name: group.name || 'Property Owner',
+        property_ref_code: firstProp?.slug || firstProp?.id?.slice(0, 8) || '',
+        property_title: firstProp?.name || firstProp?.city || 'Property',
+        property_city: firstProp?.city || '',
+        inquiry_count: group.properties.reduce((s, p) => s + p.totalCount, 0),
+      });
       if (!result.success) {
-        toast.error(result.error || 'GHL enrollment failed');
+        toast.error(result.error || 'Outreach failed');
         return;
       }
 
@@ -432,10 +468,18 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       } as any);
       if (inqError) throw inqError;
 
-      // 2. Send GHL outreach using the workflow Hugo selected in the form
-      const ghlResult = await callGhlEnroll(group.phone, formData.workflow);
-      if (!ghlResult.success) {
-        toast.error('Lead saved but GHL outreach failed: ' + (ghlResult.error || 'Unknown'));
+      // 2. Send outreach via n8n webhook (sets property_reference + enrolls in GHL workflow)
+      const firstProp = group.properties[0];
+      const outreachResult = await callOutreachWebhook({
+        landlord_whatsapp: group.phone,
+        landlord_name: group.name || 'Property Owner',
+        property_ref_code: firstProp?.slug || firstProp?.id?.slice(0, 8) || '',
+        property_title: firstProp?.name || firstProp?.city || 'Property',
+        property_city: firstProp?.city || '',
+        inquiry_count: 1,
+      });
+      if (!outreachResult.success) {
+        toast.error('Lead saved but outreach failed: ' + (outreachResult.error || 'Unknown'));
       }
 
       // 3. Mark properties as outreach_sent
