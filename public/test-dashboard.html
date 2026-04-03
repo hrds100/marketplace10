@@ -330,13 +330,13 @@
     }
 
     function renderSummary(data) {
-      // Recount from actual steps
+      // Recount from actual steps (normalize status values)
       let total = 0, passed = 0, failed = 0;
       for (const j of Object.values(data.journeys)) {
         for (const s of j.steps) {
           total++;
-          if (s.status === 'pass') passed++;
-          else if (s.status === 'fail') failed++;
+          if (s.status === 'pass' || s.status === 'passed') passed++;
+          else if (s.status === 'fail' || s.status === 'failed') failed++;
         }
       }
       const untested = total - passed - failed;
@@ -361,8 +361,8 @@
         const j = data.journeys[key];
         let jPassed = 0, jFailed = 0;
         for (const s of j.steps) {
-          if (s.status === 'pass') jPassed++;
-          else if (s.status === 'fail') jFailed++;
+          if (s.status === 'pass' || s.status === 'passed') jPassed++;
+          else if (s.status === 'fail' || s.status === 'failed') jFailed++;
         }
         const jTotal = j.steps.length;
         const pct = jTotal > 0 ? Math.round(((jPassed + jFailed) / jTotal) * 100) : 0;
@@ -403,8 +403,9 @@
     }
 
     function renderStep(s) {
-      const badgeClass = 'badge-' + s.status;
-      const label = s.status === 'pass' ? 'PASS' : s.status === 'fail' ? 'FAIL' : 'NOT TESTED';
+      const norm = (s.status === 'pass' || s.status === 'passed') ? 'pass' : (s.status === 'fail' || s.status === 'failed') ? 'fail' : s.status;
+      const badgeClass = 'badge-' + norm;
+      const label = norm === 'pass' ? 'PASS' : norm === 'fail' ? 'FAIL' : 'NOT TESTED';
       let extra = '';
       if (s.evidence) {
         extra += `<div class="step-evidence">&#128270; ${esc(s.evidence)}</div>`;
