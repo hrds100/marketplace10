@@ -375,5 +375,14 @@ If the same fix has been attempted twice and it still fails:
 
 ---
 
+## 16. AGENT IDENTITY RULE
+
+- The canonical agent roster is in `docs/TAKEOVER.md` Section 9.
+- Every coding agent must identify itself using the mandatory output header defined there.
+- Hugo pastes the `AGENT:` line back to the Co-Pilot with every report. No agent ID = report rejected.
+- Each agent works only within its assigned scope and branch prefix.
+
+---
+
 *This document is the single source of truth for copilot behavior across the nfstay workspace. Last updated: 2026-04-03.*
 

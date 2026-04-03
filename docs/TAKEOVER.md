@@ -98,7 +98,42 @@
 
 ---
 
-## 9. How a New Agent Should Take Over
+## 9. Agent Roster
+
+Three parallel coding agents + one docs helper. Hugo pastes the agent name back to the Co-Pilot with every report.
+
+### Fixed Agent Names
+
+| Agent ID | Branch Prefix | Scope |
+|----------|--------------|-------|
+| `NF-ALPHA__BRANCH-A__LIST-A-DEAL` | `feat/alpha-*`, `fix/alpha-*` | List-a-Deal flow, AdminQuickList, pricing webhook |
+| `NF-BRAVO__BRANCH-B__NOTIFICATIONS-SETTINGS-UNIVERSITY` | `feat/bravo-*`, `fix/bravo-*` | Notifications, settings, university, comms |
+| `NF-CHARLIE__BRANCH-C__DEALS-OUTREACH-INQUIRY` | `feat/charlie-*`, `fix/charlie-*` | DealsPageV2, OutreachV2, InquiryPanel, CRM |
+| `NF-DELTA__DOCS__AGENT-ROSTER` | `docs/delta-*` | Docs and process only — no app code |
+
+### Mandatory Output Header
+
+Every agent must start its report with this header block. If any field is missing, the report is incomplete and the Co-Pilot will reject it.
+
+```
+AGENT:         [exact agent ID from table above]
+BRANCH:        [branch name]
+COMMIT:        [short hash] - [message]
+PR:            [PR link or "not yet"]
+CI:            [running/passed/failed]
+PREVIEW:       [real Vercel preview URL or "N/A" for docs-only]
+FILES CHANGED: [list of files touched]
+PROVEN:        [what was verified — test name, screenshot, or manual check]
+UNPROVEN:      [what still needs Hugo or Co-Pilot verification]
+```
+
+### Handoff Rule
+
+When Hugo brings output back to the Co-Pilot, he must paste the exact `AGENT:` line. The Co-Pilot uses the agent ID to route the report to the correct branch/scope context. No agent ID = no routing = report rejected.
+
+---
+
+## 10. How a New Agent Should Take Over
 
 ### Read order (exact, every session)
 1. `docs/AGENT_INSTRUCTIONS.md` (operating rules)
@@ -121,4 +156,4 @@
 
 ---
 
-*Last updated: 2026-04-03*
+*Last updated: 2026-04-03 — agent roster added*
