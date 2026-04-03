@@ -931,17 +931,33 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
         // Email via send-email edge function if email exists
         if (email) {
           try {
+            // Find the magic token for this landlord to build the lead URL
+            const { data: inviteData } = await (supabase.from('landlord_invites') as any)
+              .select('magic_token')
+              .eq('phone', phone)
+              .order('created_at', { ascending: false })
+              .limit(1);
+            const magicToken = inviteData?.[0]?.magic_token;
+            const leadUrl = magicToken
+              ? `https://hub.nfstay.com/inbox?token=${magicToken}`
+              : 'https://hub.nfstay.com/signin';
+
+            const emailType = type === 'nda' ? 'inquiry-lister-nda' : 'inquiry-lister-notification';
+            const emailData: Record<string, string> = {
+              lister_email: email,
+              lister_name: inquiry.landlordName || 'Landlord',
+              tenant_name: inquiry.tenant_name || 'A tenant',
+              property_name: inquiry.propertyName || 'Property',
+              property_url: `https://hub.nfstay.com/deals/${inquiry.property_id}`,
+            };
+            if (type === 'nda') {
+              emailData.nda_url = leadUrl;
+            } else {
+              emailData.lead_url = leadUrl;
+            }
+
             await supabase.functions.invoke('send-email', {
-              body: {
-                type: 'landlord-lead-released',
-                data: {
-                  email,
-                  landlord_name: inquiry.landlordName || 'Landlord',
-                  tenant_name: inquiry.tenant_name || 'A tenant',
-                  property_name: inquiry.propertyName,
-                  login_url: 'https://hub.nfstay.com/signin',
-                },
-              },
+              body: { type: emailType, data: emailData },
             });
             channels.push('email');
           } catch {
