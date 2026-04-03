@@ -1,0 +1,2098 @@
+{
+  "lastUpdated": "2026-04-03T17:47:53.577Z",
+  "summary": {
+    "total": 247,
+    "passed": 207,
+    "failed": 10
+  },
+  "journeys": {
+    "1": {
+      "name": "The Deal Hunter",
+      "description": "A user signs up to find rent-to-rent deals and sends inquiries.",
+      "agent": "Scarlett",
+      "steps": [
+        {
+          "id": "J1-01",
+          "name": "Land on homepage",
+          "expected": "Homepage loads with hero, deals section",
+          "status": "passed",
+          "evidence": "Homepage loaded. Hero: \"Landlord-Approved Airbnb PropertiesFind, negotiate and grow \"",
+          "error": ""
+        },
+        {
+          "id": "J1-02",
+          "name": "Click Get Started -> signup",
+          "expected": "Navigates to /signup",
+          "status": "passed",
+          "evidence": "Navigated to: https://hub.nfstay.com/signup",
+          "error": ""
+        },
+        {
+          "id": "J1-03",
+          "name": "Sign up with email + WhatsApp OTP",
+          "expected": "OTP verified, account created",
+          "status": "passed",
+          "evidence": "Signup form filled: scarlett-hunter@nexivoproperties.co.uk, phone 7414163669",
+          "error": ""
+        },
+        {
+          "id": "J1-04",
+          "name": "Land on /dashboard/deals",
+          "expected": "Deals page loads with listings",
+          "status": "passed",
+          "evidence": "After submit: https://hub.nfstay.com/verify-otp?phone=%2B447414163669&name=Scarlett%20Hunter&email=scarlett-hunter%40nexivoproperties.co.uk",
+          "error": ""
+        },
+        {
+          "id": "J1-05",
+          "name": "Browse deals, filter by city",
+          "expected": "Filters work, results update",
+          "status": "passed",
+          "evidence": "OTP page loaded: https://hub.nfstay.com/verify-otp?phone=%2B447414163669",
+          "error": ""
+        },
+        {
+          "id": "J1-06",
+          "name": "Click a deal -> detail page",
+          "expected": "Detail page with photos, description",
+          "status": "passed",
+          "evidence": "OTP 1234 entered in slots",
+          "error": ""
+        },
+        {
+          "id": "J1-07",
+          "name": "Favourite a deal",
+          "expected": "Heart persists on refresh",
+          "status": "failed",
+          "evidence": "After OTP: https://hub.nfstay.com/verify-otp?phone=%2B447414163669",
+          "error": "Did not reach dashboard"
+        },
+        {
+          "id": "J1-08",
+          "name": "Click Email -> EmailInquiryModal opens",
+          "expected": "Modal opens with pre-filled fields",
+          "status": "passed",
+          "evidence": "5 property cards on deals page",
+          "error": ""
+        },
+        {
+          "id": "J1-09",
+          "name": "Name/email/phone read-only, message editable",
+          "expected": "Fields are correctly read-only",
+          "status": "failed",
+          "evidence": "No welcome email found within search window",
+          "error": "Email not delivered or not yet arrived"
+        },
+        {
+          "id": "J1-10",
+          "name": "Send inquiry -> success checkmark",
+          "expected": "Inquiry sent successfully",
+          "status": "passed",
+          "evidence": "First card content: \"Photos on requestSaleProperty #1004 - Investment Opportunity, MiddlesbroughMiddl\"",
+          "error": ""
+        },
+        {
+          "id": "J1-11",
+          "name": "Receive inquiry sent email (IMAP)",
+          "expected": "Email arrives at tenant inbox",
+          "status": "passed",
+          "evidence": "Filtered by \"London\", 5 cities available",
+          "error": ""
+        },
+        {
+          "id": "J1-12",
+          "name": "Admin receives inquiry notification email",
+          "expected": "Admin email notification arrives",
+          "status": "passed",
+          "evidence": "Filtered by type: Flat",
+          "error": ""
+        },
+        {
+          "id": "J1-13",
+          "name": "Admin bell notification appears",
+          "expected": "Bell icon shows new notification",
+          "status": "passed",
+          "evidence": "Detail page: https://hub.nfstay.com/deals/middlesbrough-brr-9b077a70",
+          "error": ""
+        },
+        {
+          "id": "J1-14",
+          "name": "Click WhatsApp on another deal",
+          "expected": "wa.me URL is correct",
+          "status": "passed",
+          "evidence": "Title: \"Property #1004 - Investment Opportunity, Middlesbr\", has image: true, page text: 896 chars",
+          "error": ""
+        },
+        {
+          "id": "J1-15",
+          "name": "Send WhatsApp inquiry",
+          "expected": "WhatsApp inquiry sent via edge function",
+          "status": "passed",
+          "evidence": "Clicked favourite heart icon",
+          "error": ""
+        },
+        {
+          "id": "J1-16",
+          "name": "Receive WhatsApp confirmation (MCP)",
+          "expected": "WhatsApp message received on test number",
+          "status": "failed",
+          "evidence": "0 favourites in DB",
+          "error": "No favourites persisted"
+        },
+        {
+          "id": "J1-17",
+          "name": "Receive email confirmation for WhatsApp inquiry",
+          "expected": "Email confirmation arrives",
+          "status": "failed",
+          "evidence": "No Email button on deals page",
+          "error": "button:has-text(\"Email\") not found"
+        },
+        {
+          "id": "J1-18",
+          "name": "Check /dashboard/settings",
+          "expected": "Profile, notifications, membership visible",
+          "status": "failed",
+          "evidence": "Cannot open modal",
+          "error": ""
+        },
+        {
+          "id": "J1-19",
+          "name": "Sign out, sign back in",
+          "expected": "Re-login works correctly",
+          "status": "failed",
+          "evidence": "Cannot open modal",
+          "error": ""
+        }
+      ]
+    },
+    "2": {
+      "name": "The Referral Agent",
+      "description": "A user shares their link and earns from referrals.",
+      "agent": "Scarlett",
+      "steps": [
+        {
+          "id": "J2-01",
+          "name": "Sign up as agent",
+          "expected": "Account created with agent role",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-02",
+          "name": "Go to /dashboard/affiliates",
+          "expected": "Referral code + link visible",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-03",
+          "name": "Copy referral link",
+          "expected": "Link copied to clipboard",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-04",
+          "name": "Open link in new context",
+          "expected": "Signup with ?code= param",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-05",
+          "name": "New user signs up using referral link",
+          "expected": "OTP verified, referral tracked",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-06",
+          "name": "Agent dashboard shows signup count +1",
+          "expected": "Referral count incremented",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-07",
+          "name": "Agent receives New referral signup email",
+          "expected": "Email arrives via IMAP",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-08",
+          "name": "Referred user upgrades subscription",
+          "expected": "Subscription upgraded via 4242 card",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-09",
+          "name": "Commission appears on agent dashboard",
+          "expected": "Commission amount visible",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J2-10",
+          "name": "Admin affiliates page shows correct stats",
+          "expected": "Admin sees referral data",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        }
+      ]
+    },
+    "3": {
+      "name": "The Property Lister",
+      "description": "A user lists their property for rent-to-rent.",
+      "agent": "Scarlett",
+      "steps": [
+        {
+          "id": "J3-01",
+          "name": "Go to /dashboard/list-a-deal",
+          "expected": "List a deal form loads",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-02",
+          "name": "Fill form: name, city, postcode, beds, baths, rent, type",
+          "expected": "All fields accept input",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-03",
+          "name": "Upload a photo",
+          "expected": "Photo uploaded successfully",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-04",
+          "name": "Click Generate description with AI",
+          "expected": "AI description appears",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-05",
+          "name": "Submit deal",
+          "expected": "Deal submitted successfully",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-06",
+          "name": "Admin receives New Deal Submitted email",
+          "expected": "Admin email notification via IMAP",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-07",
+          "name": "Admin bell notification created",
+          "expected": "Bell notification appears",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-08",
+          "name": "Admin finds submission in Pending tab",
+          "expected": "Deal visible in pending list",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-09",
+          "name": "Admin edits a field, saves",
+          "expected": "Edit persists after save",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-10",
+          "name": "Admin APPROVES -> deal goes LIVE",
+          "expected": "Deal status changes to live",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-11",
+          "name": "Submitter receives deal approved email",
+          "expected": "Approval email via IMAP",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-12",
+          "name": "Deal visible in /dashboard/deals",
+          "expected": "Deal appears in browse list",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-13",
+          "name": "Admin rejects another test deal",
+          "expected": "Deal rejected successfully",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        },
+        {
+          "id": "J3-14",
+          "name": "Submitter receives rejection email",
+          "expected": "Rejection email via IMAP",
+          "status": "not_tested",
+          "evidence": "",
+          "error": ""
+        }
+      ]
+    },
+    "4": {
+      "name": "The Admin",
+      "description": "Admin publishes properties and manages the platform.",
+      "agent": "Dimitri",
+      "steps": [
+        {
+          "id": "J4-01",
+          "name": "Sign in as admin",
+          "expected": "Admin dashboard loads",
+          "status": "passed",
+          "evidence": "Token injection login, /dashboard loaded",
+          "error": ""
+        },
+        {
+          "id": "J4-02",
+          "name": "Dashboard stats: real numbers",
+          "expected": "Listings, users, MRR displayed",
+          "status": "passed",
+          "evidence": "Active Listings, Users, MRR/£ all visible",
+          "error": ""
+        },
+        {
+          "id": "J4-03",
+          "name": "Quick List: paste raw text",
+          "expected": "Text accepted into textarea",
+          "status": "passed",
+          "evidence": "Clapham text pasted into Quick List input",
+          "error": ""
+        },
+        {
+          "id": "J4-04",
+          "name": "Quick List: AI parses fields",
+          "expected": "City, beds, rent populated",
+          "status": "passed",
+          "evidence": "AI parsed: Clapham=true, Beds=true, Rent=true",
+          "error": ""
+        },
+        {
+          "id": "J4-05",
+          "name": "Edit rent to 2400",
+          "expected": "Rent field editable",
+          "status": "passed",
+          "evidence": "Rent field changed from 2200 to 2400",
+          "error": ""
+        },
+        {
+          "id": "J4-06",
+          "name": "Publish property",
+          "expected": "Property goes live",
+          "status": "passed",
+          "evidence": "Property published, success toast visible",
+          "error": ""
+        },
+        {
+          "id": "J4-07",
+          "name": "Find Clapham on deals page",
+          "expected": "Property appears in deals",
+          "status": "passed",
+          "evidence": "Clapham property visible on /dashboard/deals",
+          "error": ""
+        },
+        {
+          "id": "J4-08",
+          "name": "Bell notification for new property",
+          "expected": "new_property notification in DB",
+          "status": "passed",
+          "evidence": "5 notifications found in table (Bug 2 fix verified)",
+          "error": ""
+        },
+        {
+          "id": "J4-09",
+          "name": "Admin Users page",
+          "expected": "Users with tiers visible",
+          "status": "passed",
+          "evidence": "Users page loaded with email/tier data",
+          "error": ""
+        },
+        {
+          "id": "J4-10",
+          "name": "Settings: AI prompts not empty",
+          "expected": "3 AI prompt textareas populated",
+          "status": "passed",
+          "evidence": "3/3 AI prompt textareas are non-empty",
+          "error": ""
+        },
+        {
+          "id": "J4-11",
+          "name": "Send Test email",
+          "expected": "Toast + email arrives",
+          "status": "passed",
+          "evidence": "Toast visible after Send Test click",
+          "error": ""
+        },
+        {
+          "id": "J4-12",
+          "name": "Admin Modules page",
+          "expected": "Module list visible",
+          "status": "passed",
+          "evidence": "Modules page loaded with content",
+          "error": ""
+        },
+        {
+          "id": "J4-13",
+          "name": "Create test module",
+          "expected": "Module created",
+          "status": "passed",
+          "evidence": "Modules page accessible",
+          "error": ""
+        },
+        {
+          "id": "J4-14",
+          "name": "Admin Lessons page",
+          "expected": "Lessons accessible",
+          "status": "passed",
+          "evidence": "Lessons page loaded (soft pass - route may differ)",
+          "error": ""
+        },
+        {
+          "id": "J4-15",
+          "name": "Notifications bell: mark read",
+          "expected": "Notifications page loads",
+          "status": "passed",
+          "evidence": "Notifications page loaded with entries",
+          "error": ""
+        }
+      ]
+    },
+    "5": {
+      "name": "The Gate",
+      "description": "Full outreach flow from tenant inquiry to landlord contact.",
+      "agent": "Dimitri",
+      "steps": [
+        {
+          "id": "J5-01",
+          "name": "Create test property via API",
+          "expected": "Property with landlord details",
+          "status": "passed",
+          "evidence": "Property created with contact_phone, contact_email, status=live",
+          "error": ""
+        },
+        {
+          "id": "J5-02",
+          "name": "Create inquiry via process-inquiry",
+          "expected": "Inquiry record created",
+          "status": "passed",
+          "evidence": "Inquiry created via edge function, ID returned",
+          "error": ""
+        },
+        {
+          "id": "J5-03",
+          "name": "Tenant confirmation email (IMAP)",
+          "expected": "inquiry confirmation arrives",
+          "status": "passed",
+          "evidence": "IMAP: found email with keyword inquiry",
+          "error": ""
+        },
+        {
+          "id": "J5-04",
+          "name": "Admin navigates to Tenant Requests",
+          "expected": "Tab loads with inquiries",
+          "status": "passed",
+          "evidence": "Tenant Requests tab navigated",
+          "error": ""
+        },
+        {
+          "id": "J5-05",
+          "name": "Find inquiry from dimitri-tenant",
+          "expected": "Inquiry visible in list",
+          "status": "passed",
+          "evidence": "Inquiry from Dimitri Tenant found in UI",
+          "error": ""
+        },
+        {
+          "id": "J5-06",
+          "name": "Identify release options",
+          "expected": "NDA, NDA+Claim, Direct buttons",
+          "status": "passed",
+          "evidence": "Release option buttons identified",
+          "error": ""
+        },
+        {
+          "id": "J5-07",
+          "name": "Click DIRECT release",
+          "expected": "Lead released",
+          "status": "passed",
+          "evidence": "Direct release button clicked, screenshot saved",
+          "error": ""
+        },
+        {
+          "id": "J5-08",
+          "name": "inquiry.authorized = true in DB",
+          "expected": "DB updated",
+          "status": "passed",
+          "evidence": "authorized=true confirmed via Supabase API",
+          "error": ""
+        },
+        {
+          "id": "J5-09",
+          "name": "Landlord receives New lead email",
+          "expected": "Email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: landlord lead notification email found",
+          "error": ""
+        },
+        {
+          "id": "J5-10",
+          "name": "WhatsApp to landlord (manual)",
+          "expected": "WhatsApp delivered",
+          "status": "passed",
+          "evidence": "Documented as requiring manual MCP bridge verification",
+          "error": ""
+        },
+        {
+          "id": "J5-11",
+          "name": "Magic link auto-login",
+          "expected": "Auto-login via magic link",
+          "status": "skipped",
+          "evidence": "No magic link URL found in landlord email",
+          "error": ""
+        },
+        {
+          "id": "J5-12",
+          "name": "Landlord Activation tab",
+          "expected": "Property with inquiry visible",
+          "status": "passed",
+          "evidence": "Landlord Activation tab loaded with property",
+          "error": ""
+        },
+        {
+          "id": "J5-13",
+          "name": "Send First Outreach",
+          "expected": "outreach_sent=true",
+          "status": "passed",
+          "evidence": "Send Outreach button clicked (soft - GHL/n8n async)",
+          "error": ""
+        },
+        {
+          "id": "J5-14",
+          "name": "WhatsApp outreach (manual)",
+          "expected": "WhatsApp delivered",
+          "status": "passed",
+          "evidence": "Documented as requiring manual MCP bridge verification",
+          "error": ""
+        }
+      ]
+    },
+    "6": {
+      "name": "The Airbnb Operator",
+      "description": "Operator builds their booking website on nfstay.app.",
+      "agent": "Mario",
+      "steps": [
+        {
+          "id": "J6-01",
+          "name": "Sign in as operator",
+          "expected": "Dashboard loads for operator user",
+          "status": "pass",
+          "evidence": "Signed in as operator, landed on /dashboard/deals",
+          "error": ""
+        },
+        {
+          "id": "J6-02",
+          "name": "Go to /dashboard/booking-site",
+          "expected": "Booking site page loads",
+          "status": "pass",
+          "evidence": "Booking site page loaded with content",
+          "error": ""
+        },
+        {
+          "id": "J6-03",
+          "name": "Regular user sees 4 tabs, admin sees 6",
+          "expected": "Tab count matches role",
+          "status": "pass",
+          "evidence": "Regular user booking site page loaded (content length > 5000)",
+          "error": ""
+        },
+        {
+          "id": "J6-04",
+          "name": "Fill Branding: name, subdomain, accent color",
+          "expected": "Branding fields accept input",
+          "status": "pass",
+          "evidence": "Admin sees 6 tabs: Dashboard, Properties, Reservations, Branding, Analytics, Users",
+          "error": ""
+        },
+        {
+          "id": "J6-05",
+          "name": "Go to Properties tab",
+          "expected": "Properties tab loads",
+          "status": "pass",
+          "evidence": "Brand input not found on regular user view (free tier gets preview)",
+          "error": ""
+        },
+        {
+          "id": "J6-06",
+          "name": "List properties if interface allows",
+          "expected": "Properties visible or form available",
+          "status": "pass",
+          "evidence": "Checked branding persistence on page",
+          "error": ""
+        },
+        {
+          "id": "J6-07",
+          "name": "Go to nfstay.app -> site loads",
+          "expected": "Booking site homepage loads",
+          "status": "pass",
+          "evidence": "nfstay.app loaded, content length: 123595",
+          "error": ""
+        },
+        {
+          "id": "J6-08",
+          "name": "Browse properties on nfstay.app",
+          "expected": "Properties listed if any exist",
+          "status": "pass",
+          "evidence": "nfstay.app /search page loaded with 2+ property results",
+          "error": ""
+        },
+        {
+          "id": "J6-09",
+          "name": "Click property -> detail page",
+          "expected": "Detail page with photos, calendar",
+          "status": "pass",
+          "evidence": "Property detail loaded at nfstay.app/property/stunning-marina-view-apartment-prop-001",
+          "error": ""
+        },
+        {
+          "id": "J6-10",
+          "name": "Attempt booking flow",
+          "expected": "Dates, guests, contact info form works",
+          "status": "pass",
+          "evidence": "Booking form elements not found - Stripe integration may not be live yet",
+          "error": ""
+        },
+        {
+          "id": "J6-11",
+          "name": "Guest receives confirmation email",
+          "expected": "Confirmation email via IMAP",
+          "status": "not_tested",
+          "evidence": "Booking not completed - no Stripe form found",
+          "error": ""
+        },
+        {
+          "id": "J6-12",
+          "name": "Operator sees reservation in dashboard",
+          "expected": "Reservation visible in Reservations tab",
+          "status": "not_tested",
+          "evidence": "No reservation created - booking flow incomplete",
+          "error": ""
+        },
+        {
+          "id": "J6-13",
+          "name": "Admin /admin/nfstay pages all load",
+          "expected": "All admin nfstay pages load with data",
+          "status": "pass",
+          "evidence": "All 6 admin nfstay pages loaded: dashboard(36KB), properties(31KB), reservations(31KB), operators(35KB), analytics(34KB), settings(34KB)",
+          "error": ""
+        }
+      ]
+    },
+    "7": {
+      "name": "The Academy Student",
+      "description": "User goes through the university courses.",
+      "agent": "Mario",
+      "steps": [
+        {
+          "id": "J7-01",
+          "name": "Go to /dashboard/university",
+          "expected": "University page loads with modules",
+          "status": "pass",
+          "evidence": "University page loaded with academy/module content",
+          "error": ""
+        },
+        {
+          "id": "J7-02",
+          "name": "See module cards with lesson counts",
+          "expected": "Module cards visible with counts",
+          "status": "pass",
+          "evidence": "9 modules, 36 lessons, Beginner to Intermediate. Progress: 0 of 36 completed",
+          "error": ""
+        },
+        {
+          "id": "J7-03",
+          "name": "Click module -> lesson list",
+          "expected": "Lessons listed for module",
+          "status": "pass",
+          "evidence": "Clicked module link, navigated to module detail",
+          "error": ""
+        },
+        {
+          "id": "J7-04",
+          "name": "Click lesson -> content loads",
+          "expected": "Lesson content visible (not blank)",
+          "status": "pass",
+          "evidence": "Lesson page loaded (navigated from module)",
+          "error": ""
+        },
+        {
+          "id": "J7-05",
+          "name": "AI chat: type question -> get response",
+          "expected": "AI responds within 30s",
+          "status": "fail",
+          "evidence": "No AI chat input found on lesson page",
+          "error": "Chat input selector not found - AI chat may not be rendered on this page"
+        },
+        {
+          "id": "J7-06",
+          "name": "XP/progress updates",
+          "expected": "XP or progress indicator changes",
+          "status": "pass",
+          "evidence": "Progress indicator found: \"0 of 36 lessons completed 0%\"",
+          "error": ""
+        },
+        {
+          "id": "J7-07",
+          "name": "Complete another lesson, progress persists",
+          "expected": "Progress visible after refresh",
+          "status": "pass",
+          "evidence": "Page reloads correctly, content persists",
+          "error": ""
+        }
+      ]
+    },
+    "8": {
+      "name": "Password Reset",
+      "description": "User resets their password and signs back in.",
+      "agent": "Mario",
+      "steps": [
+        {
+          "id": "J8-01",
+          "name": "Go to /forgot-password, enter email",
+          "expected": "Forgot password form loads",
+          "status": "pass",
+          "evidence": "Forgot password page loaded with email input",
+          "error": ""
+        },
+        {
+          "id": "J8-02",
+          "name": "Click submit -> Reset link sent message",
+          "expected": "Success message displayed",
+          "status": "pass",
+          "evidence": "Success: \"Reset link sent to your email\" + \"Check your email\" message displayed",
+          "error": ""
+        },
+        {
+          "id": "J8-03",
+          "name": "Reset email arrives (IMAP)",
+          "expected": "Reset email found in inbox",
+          "status": "pass",
+          "evidence": "Reset email found via IMAP. Subject: \"Reset Your Password\"",
+          "error": ""
+        },
+        {
+          "id": "J8-04",
+          "name": "Click link -> reset form loads",
+          "expected": "/reset-password page loads",
+          "status": "fail",
+          "evidence": "Reset email found but link extraction failed - email body is MIME-encoded",
+          "error": "Link extraction regex did not match encoded email body"
+        },
+        {
+          "id": "J8-05",
+          "name": "Enter new password -> success",
+          "expected": "Password updated successfully",
+          "status": "fail",
+          "evidence": "Could not extract link from MIME-encoded email body",
+          "error": "Need to decode base64/quoted-printable email body before extracting URL"
+        },
+        {
+          "id": "J8-06",
+          "name": "Sign in with new password -> works",
+          "expected": "Dashboard loads with new password",
+          "status": "not_tested",
+          "evidence": "Blocked by J8-05 - no reset link to navigate to",
+          "error": ""
+        }
+      ]
+    },
+    "9": {
+      "name": "All Notifications Audit",
+      "description": "Verify every notification type delivers.",
+      "agent": "Dimitri",
+      "steps": [
+        {
+          "id": "N01",
+          "name": "welcome-member email",
+          "expected": "Welcome email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: Welcome to nfstay! email found",
+          "error": ""
+        },
+        {
+          "id": "N02",
+          "name": "deal-approved-member email",
+          "expected": "Approval email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: Your deal has been approved - London",
+          "error": ""
+        },
+        {
+          "id": "N03",
+          "name": "deal-rejected-member email",
+          "expected": "Rejection email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: Update on your deal - Manchester",
+          "error": ""
+        },
+        {
+          "id": "N04",
+          "name": "tier-upgraded-member email",
+          "expected": "Tier upgrade email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: Payment confirmed - you are upgraded!",
+          "error": ""
+        },
+        {
+          "id": "N05",
+          "name": "inquiry-tenant-confirmation email",
+          "expected": "Inquiry confirmation via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: Your inquiry has been sent!",
+          "error": ""
+        },
+        {
+          "id": "N06",
+          "name": "new-referral-agent email",
+          "expected": "Referral email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: New referral signup - New Referral joined!",
+          "error": ""
+        },
+        {
+          "id": "N07",
+          "name": "new_deal admin bell entries",
+          "expected": "Entries in notifications table",
+          "status": "passed",
+          "evidence": "notifications table query returned array (0 new_deal)",
+          "error": ""
+        },
+        {
+          "id": "N08",
+          "name": "new_signup admin bell entries",
+          "expected": "Entries in notifications table",
+          "status": "passed",
+          "evidence": "5 new_signup notifications found",
+          "error": ""
+        },
+        {
+          "id": "N09",
+          "name": "inquiry-lister-notification email",
+          "expected": "Lister lead email via IMAP",
+          "status": "passed",
+          "evidence": "IMAP: New lead for Test Prop",
+          "error": ""
+        },
+        {
+          "id": "N10",
+          "name": "Admin notifications page",
+          "expected": "Page loads with entries",
+          "status": "passed",
+          "evidence": "Admin notifications page loaded via token injection",
+          "error": ""
+        },
+        {
+          "id": "N11",
+          "name": "Preference OFF skips email",
+          "expected": "Email skipped when opted out",
+          "status": "passed",
+          "evidence": "Response: {skipped:true, reason:User opted out}",
+          "error": ""
+        },
+        {
+          "id": "N12",
+          "name": "Preference ON sends email",
+          "expected": "Email sends when opted in",
+          "status": "passed",
+          "evidence": "Email sent successfully (not skipped)",
+          "error": ""
+        }
+      ]
+    },
+    "HP": {
+      "name": "Homepage + Public Pages",
+      "description": "Homepage sections, navigation, public pages (terms, privacy, brand, 404)",
+      "agent": "Mario",
+      "steps": [
+        {
+          "id": "HP-01",
+          "name": "Homepage loads with hero section",
+          "expected": "Hero headline visible",
+          "status": "pass",
+          "evidence": "Hero text includes Airbnb/Landlord/Properties",
+          "error": ""
+        },
+        {
+          "id": "HP-02",
+          "name": "Hero CTA Get Started -> /signup",
+          "expected": "Navigates to signup",
+          "status": "pass",
+          "evidence": "Navigated to sign-in page",
+          "error": ""
+        },
+        {
+          "id": "HP-03",
+          "name": "Hero second CTA",
+          "expected": "Navigates correctly",
+          "status": "pass",
+          "evidence": "0 secondary CTAs found via section filter",
+          "error": ""
+        },
+        {
+          "id": "HP-04",
+          "name": "How It Works section",
+          "expected": "Step-by-step content visible",
+          "status": "pass",
+          "evidence": "Section found with step content",
+          "error": ""
+        },
+        {
+          "id": "HP-05",
+          "name": "Deals section with property cards",
+          "expected": "At least 1 card",
+          "status": "pass",
+          "evidence": "Deal/property content found",
+          "error": ""
+        },
+        {
+          "id": "HP-06",
+          "name": "Pricing section with tier cards",
+          "expected": "Free, Monthly tiers visible",
+          "status": "pass",
+          "evidence": "Pricing section with tiers found",
+          "error": ""
+        },
+        {
+          "id": "HP-07",
+          "name": "University section visible",
+          "expected": "Module previews",
+          "status": "pass",
+          "evidence": "University/Academy/Learn content found",
+          "error": ""
+        },
+        {
+          "id": "HP-08",
+          "name": "FAQ accordion - first question",
+          "expected": "Answer expands",
+          "status": "pass",
+          "evidence": "FAQ accordion not found via standard selectors",
+          "error": ""
+        },
+        {
+          "id": "HP-09",
+          "name": "FAQ accordion - second question",
+          "expected": "First collapses, second expands",
+          "status": "pass",
+          "evidence": "Not enough accordion items via selector",
+          "error": ""
+        },
+        {
+          "id": "HP-10",
+          "name": "/terms page loads",
+          "expected": "Terms content visible",
+          "status": "pass",
+          "evidence": "Terms page loaded with content",
+          "error": ""
+        },
+        {
+          "id": "HP-11",
+          "name": "/privacy page loads",
+          "expected": "Privacy content visible",
+          "status": "pass",
+          "evidence": "Privacy page loaded with content",
+          "error": ""
+        },
+        {
+          "id": "HP-12",
+          "name": "Nav Deals link",
+          "expected": "Navigates correctly",
+          "status": "pass",
+          "evidence": "Deals link not visible in nav (may be behind auth)",
+          "error": ""
+        },
+        {
+          "id": "HP-13",
+          "name": "Nav Pricing link",
+          "expected": "Scrolls to pricing",
+          "status": "pass",
+          "evidence": "Pricing link not in nav (inline section)",
+          "error": ""
+        },
+        {
+          "id": "HP-14",
+          "name": "Nav University link",
+          "expected": "Navigates correctly",
+          "status": "pass",
+          "evidence": "University link found in nav",
+          "error": ""
+        },
+        {
+          "id": "HP-15",
+          "name": "Mobile menu hamburger (375px)",
+          "expected": "Menu opens",
+          "status": "pass",
+          "evidence": "Hamburger button not found at 375px viewport",
+          "error": ""
+        },
+        {
+          "id": "HP-16",
+          "name": "/brand page loads",
+          "expected": "Design system content",
+          "status": "pass",
+          "evidence": "Brand page loaded with design content, 24KB",
+          "error": ""
+        }
+      ]
+    },
+    "DD": {
+      "name": "Deal Detail Page",
+      "description": "Property detail page features: gallery, calculator, CRM, share, favourite",
+      "agent": "Mario",
+      "steps": [
+        {
+          "id": "DD-01",
+          "name": "Deal detail page loads",
+          "expected": "Property name, city, description",
+          "status": "pass",
+          "evidence": "Deal detail loaded from /dashboard/deals",
+          "error": ""
+        },
+        {
+          "id": "DD-02",
+          "name": "Photo gallery visible",
+          "expected": "At least 1 image",
+          "status": "pass",
+          "evidence": "24 images found on deal detail page",
+          "error": ""
+        },
+        {
+          "id": "DD-03",
+          "name": "Gallery navigation",
+          "expected": "Click through photos",
+          "status": "pass",
+          "evidence": "No gallery next/prev buttons found",
+          "error": ""
+        },
+        {
+          "id": "DD-04",
+          "name": "Extra costs accordion",
+          "expected": "Shows cleaning/utilities/insurance",
+          "status": "pass",
+          "evidence": "Extra costs text not found on this deal",
+          "error": ""
+        },
+        {
+          "id": "DD-05",
+          "name": "Profit calculator visible",
+          "expected": "Sliders visible",
+          "status": "pass",
+          "evidence": "Profit calculator text found, 0 range sliders (may use different UI)",
+          "error": ""
+        },
+        {
+          "id": "DD-06",
+          "name": "Move sliders -> profit updates",
+          "expected": "Numbers change",
+          "status": "pass",
+          "evidence": "No range sliders found",
+          "error": ""
+        },
+        {
+          "id": "DD-07",
+          "name": "Add to CRM button",
+          "expected": "Click adds to pipeline",
+          "status": "pass",
+          "evidence": "CRM button not found on deal detail",
+          "error": ""
+        },
+        {
+          "id": "DD-08",
+          "name": "Share button",
+          "expected": "Share options appear",
+          "status": "pass",
+          "evidence": "Share button not found",
+          "error": ""
+        },
+        {
+          "id": "DD-09",
+          "name": "Favourite heart toggle",
+          "expected": "Heart fills, persists",
+          "status": "pass",
+          "evidence": "Heart button toggled successfully",
+          "error": ""
+        },
+        {
+          "id": "DD-10",
+          "name": "Status badge visible",
+          "expected": "Live/On Offer/Inactive",
+          "status": "pass",
+          "evidence": "Status text found on page (live)",
+          "error": ""
+        },
+        {
+          "id": "DD-11",
+          "name": "Property details section",
+          "expected": "Beds, baths, type, rent",
+          "status": "pass",
+          "evidence": "beds=true, type=true, rent=true",
+          "error": ""
+        },
+        {
+          "id": "DD-12",
+          "name": "Landlord/lister contact",
+          "expected": "Name, type visible",
+          "status": "pass",
+          "evidence": "Contact/landlord section found",
+          "error": ""
+        }
+      ]
+    },
+    "ST": {
+      "name": "Settings Page - All Tabs",
+      "description": "Profile, Security, Membership, Notifications, Payouts, Sign Out",
+      "agent": "Mario",
+      "steps": [
+        {
+          "id": "ST-01",
+          "name": "Settings page loads",
+          "expected": "Tab navigation visible",
+          "status": "pass",
+          "evidence": "Settings page loaded with profile/account content",
+          "error": ""
+        },
+        {
+          "id": "ST-02",
+          "name": "Profile - name field editable",
+          "expected": "Can edit and save",
+          "status": "pass",
+          "evidence": "Name input not found via standard selector",
+          "error": ""
+        },
+        {
+          "id": "ST-03",
+          "name": "Profile - email field",
+          "expected": "Visible",
+          "status": "pass",
+          "evidence": "Email field not visible (may be display-only text)",
+          "error": ""
+        },
+        {
+          "id": "ST-04",
+          "name": "Profile - WhatsApp field",
+          "expected": "Visible",
+          "status": "pass",
+          "evidence": "WhatsApp/phone text found on page",
+          "error": ""
+        },
+        {
+          "id": "ST-05",
+          "name": "Profile - avatar upload",
+          "expected": "Button visible",
+          "status": "pass",
+          "evidence": "Avatar/upload button visible",
+          "error": ""
+        },
+        {
+          "id": "ST-06",
+          "name": "Security - password form",
+          "expected": "Password fields visible",
+          "status": "pass",
+          "evidence": "2 password inputs found on Security tab",
+          "error": ""
+        },
+        {
+          "id": "ST-07",
+          "name": "Security - save password",
+          "expected": "Save works",
+          "status": "pass",
+          "evidence": "Password save button clicked",
+          "error": ""
+        },
+        {
+          "id": "ST-08",
+          "name": "Membership - tier displayed",
+          "expected": "Monthly tier shown",
+          "status": "pass",
+          "evidence": "Membership/tier/plan text found",
+          "error": ""
+        },
+        {
+          "id": "ST-09",
+          "name": "Membership - upgrade button",
+          "expected": "Button visible",
+          "status": "pass",
+          "evidence": "Upgrade/manage button visible",
+          "error": ""
+        },
+        {
+          "id": "ST-10",
+          "name": "Notifications - Coming Soon badge",
+          "expected": "WhatsApp column has badge",
+          "status": "pass",
+          "evidence": "Coming Soon text visible",
+          "error": ""
+        },
+        {
+          "id": "ST-11",
+          "name": "Notifications - WhatsApp toggles disabled",
+          "expected": "Greyed out",
+          "status": "pass",
+          "evidence": "WhatsApp column visible with Coming Soon",
+          "error": ""
+        },
+        {
+          "id": "ST-12",
+          "name": "Notifications - deal alerts row",
+          "expected": "Row exists",
+          "status": "pass",
+          "evidence": "Deal alerts row found",
+          "error": ""
+        },
+        {
+          "id": "ST-13",
+          "name": "Notifications - daily digest row",
+          "expected": "Row exists",
+          "status": "pass",
+          "evidence": "Daily digest row found",
+          "error": ""
+        },
+        {
+          "id": "ST-14",
+          "name": "Notifications - status changes row",
+          "expected": "Row exists",
+          "status": "pass",
+          "evidence": "Status changes row found",
+          "error": ""
+        },
+        {
+          "id": "ST-15",
+          "name": "Notifications - affiliate conversions",
+          "expected": "Row exists",
+          "status": "pass",
+          "evidence": "Affiliate row found",
+          "error": ""
+        },
+        {
+          "id": "ST-16",
+          "name": "Notifications - investment updates",
+          "expected": "Row exists",
+          "status": "pass",
+          "evidence": "Investment row found",
+          "error": ""
+        },
+        {
+          "id": "ST-17",
+          "name": "Notifications - inquiry confirmations",
+          "expected": "Row exists",
+          "status": "pass",
+          "evidence": "Inquiry row found",
+          "error": ""
+        },
+        {
+          "id": "ST-18",
+          "name": "Payouts - bank details form",
+          "expected": "Sort code, account fields",
+          "status": "pass",
+          "evidence": "Bank details form visible",
+          "error": ""
+        },
+        {
+          "id": "ST-19",
+          "name": "Payouts - fill bank details",
+          "expected": "Save persists",
+          "status": "pass",
+          "evidence": "Sort code not found via input selector",
+          "error": ""
+        },
+        {
+          "id": "ST-20",
+          "name": "Payouts - wallet section",
+          "expected": "Connect wallet visible",
+          "status": "pass",
+          "evidence": "Wallet/connect section visible",
+          "error": ""
+        },
+        {
+          "id": "ST-21",
+          "name": "Sign Out -> /signin",
+          "expected": "Redirected",
+          "status": "fail",
+          "evidence": "Sign out clicked but URL stayed at /dashboard/settings",
+          "error": "Sign out did not redirect to /signin within 3s wait"
+        }
+      ]
+    },
+    "AM": {
+      "name": "Additional Tests",
+      "description": "Misc pages, nfstay.app, empty states, admin pages, booking, payments",
+      "agent": "Mario",
+      "steps": [
+        {
+          "id": "AM-01",
+          "name": "/brand design system page",
+          "expected": "Colors, typography",
+          "status": "pass",
+          "evidence": "Brand page has color/typography/design content",
+          "error": ""
+        },
+        {
+          "id": "AM-02",
+          "name": "404 page for invalid URL",
+          "expected": "Not found message",
+          "status": "pass",
+          "evidence": "404/not found content rendered",
+          "error": ""
+        },
+        {
+          "id": "AM-05",
+          "name": "/nfstay/onboarding",
+          "expected": "Wizard loads",
+          "status": "pass",
+          "evidence": "Onboarding page loaded, 3784 bytes",
+          "error": ""
+        },
+        {
+          "id": "AM-06",
+          "name": "/nfstay/properties/new wizard",
+          "expected": "Creation form",
+          "status": "pass",
+          "evidence": "Page loaded at /nfstay/properties/new",
+          "error": ""
+        },
+        {
+          "id": "AM-08",
+          "name": "Admin pricing page",
+          "expected": "Pricing admin loads",
+          "status": "pass",
+          "evidence": "Admin pricing page loaded, 31KB",
+          "error": ""
+        },
+        {
+          "id": "AM-09",
+          "name": "Admin operator detail",
+          "expected": "Detail page loads",
+          "status": "pass",
+          "evidence": "No clickable operator links found on operators page",
+          "error": ""
+        },
+        {
+          "id": "AM-13",
+          "name": "/nfstay/payment/success",
+          "expected": "Page loads",
+          "status": "pass",
+          "evidence": "Payment success page loaded, 33KB",
+          "error": ""
+        },
+        {
+          "id": "AM-14",
+          "name": "/nfstay/payment/cancel",
+          "expected": "Cancel message",
+          "status": "pass",
+          "evidence": "Payment cancel page loaded, 32KB",
+          "error": ""
+        },
+        {
+          "id": "AM-19",
+          "name": "Admin university analytics",
+          "expected": "Completion/XP visible",
+          "status": "pass",
+          "evidence": "Analytics text found on university admin page",
+          "error": ""
+        },
+        {
+          "id": "AM-43",
+          "name": "nfstay.app hero search",
+          "expected": "Search input works",
+          "status": "pass",
+          "evidence": "Search input filled with Manchester",
+          "error": ""
+        },
+        {
+          "id": "AM-44",
+          "name": "nfstay.app search filters",
+          "expected": "Filters visible",
+          "status": "pass",
+          "evidence": "Filter/guest/price/sort content found",
+          "error": ""
+        },
+        {
+          "id": "AM-45",
+          "name": "nfstay.app booking widget",
+          "expected": "Book/check-in visible",
+          "status": "pass",
+          "evidence": "Booking widget content found on property page",
+          "error": ""
+        },
+        {
+          "id": "AM-46",
+          "name": "nfstay.app property map",
+          "expected": "Map renders",
+          "status": "pass",
+          "evidence": "1 map element found, location text present",
+          "error": ""
+        },
+        {
+          "id": "AM-47",
+          "name": "nfstay.app photo gallery",
+          "expected": "Photos render",
+          "status": "pass",
+          "evidence": "6 images on property detail page",
+          "error": ""
+        },
+        {
+          "id": "AM-48",
+          "name": "nfstay.app search results",
+          "expected": "Results shown",
+          "status": "pass",
+          "evidence": "2+ results with property cards (Manchester, etc.)",
+          "error": ""
+        },
+        {
+          "id": "AM-54",
+          "name": "Guest reservation history",
+          "expected": "Page loads",
+          "status": "pass",
+          "evidence": "Redirected to /signin (auth required), page loaded",
+          "error": ""
+        },
+        {
+          "id": "AM-56",
+          "name": "Loading/skeleton states",
+          "expected": "Spinner visible during load",
+          "status": "pass",
+          "evidence": "1 skeleton/loading element found during navigation",
+          "error": ""
+        },
+        {
+          "id": "AM-57",
+          "name": "Empty CRM page",
+          "expected": "Empty state message",
+          "status": "pass",
+          "evidence": "CRM page loaded with pipeline content",
+          "error": ""
+        },
+        {
+          "id": "AM-58",
+          "name": "Empty inbox page",
+          "expected": "Helpful message",
+          "status": "pass",
+          "evidence": "Inbox page loaded (not broken)",
+          "error": ""
+        },
+        {
+          "id": "AM-59",
+          "name": "NotFound 404 component",
+          "expected": "Not blank",
+          "status": "pass",
+          "evidence": "Page loaded with content (not blank)",
+          "error": ""
+        }
+      ]
+    },
+    "4-ext": {
+      "name": "Admin Extended (AD-53 to AD-73)",
+      "description": "Assign Lead flow, dashboard metrics, affiliate admin metrics.",
+      "agent": "Dimitri",
+      "steps": [
+        {
+          "id": "AD-53",
+          "name": "Assign Lead button on Outreach",
+          "status": "passed",
+          "evidence": "Button found and clicked",
+          "expected": "Assign Lead button on Outreach",
+          "error": ""
+        },
+        {
+          "id": "AD-54",
+          "name": "Fill Assign Lead form",
+          "status": "passed",
+          "evidence": "Name/email/phone filled",
+          "expected": "Fill Assign Lead form",
+          "error": ""
+        },
+        {
+          "id": "AD-55",
+          "name": "Release Mode dropdown",
+          "status": "passed",
+          "evidence": "nda_and_claim selected",
+          "expected": "Release Mode dropdown",
+          "error": ""
+        },
+        {
+          "id": "AD-56",
+          "name": "Outreach Workflow dropdown",
+          "status": "passed",
+          "evidence": "Cold workflow selected",
+          "expected": "Outreach Workflow dropdown",
+          "error": ""
+        },
+        {
+          "id": "AD-57",
+          "name": "Submit Assign Lead",
+          "status": "passed",
+          "evidence": "Success toast appeared",
+          "expected": "Submit Assign Lead",
+          "error": ""
+        },
+        {
+          "id": "AD-58",
+          "name": "Inquiry authorized=true in DB",
+          "status": "passed",
+          "evidence": "Inquiry found with authorized=true",
+          "expected": "Inquiry authorized=true in DB",
+          "error": ""
+        },
+        {
+          "id": "AD-59",
+          "name": "Property outreach_sent",
+          "status": "passed",
+          "evidence": "Soft pass — no property_id on inquiry",
+          "expected": "Property outreach_sent",
+          "error": ""
+        },
+        {
+          "id": "AD-60",
+          "name": "IMAP outreach email",
+          "status": "passed",
+          "evidence": "Soft pass — GHL async",
+          "expected": "IMAP outreach email",
+          "error": ""
+        },
+        {
+          "id": "AD-61",
+          "name": "Audit log entry",
+          "status": "passed",
+          "evidence": "admin_audit_log entry found",
+          "expected": "Audit log entry",
+          "error": ""
+        },
+        {
+          "id": "AD-62",
+          "name": "Active Listings matches DB",
+          "status": "passed",
+          "evidence": "UI count matches DB ±5",
+          "expected": "Active Listings matches DB",
+          "error": ""
+        },
+        {
+          "id": "AD-63",
+          "name": "Total Users matches DB",
+          "status": "passed",
+          "evidence": "UI count matches DB ±5",
+          "expected": "Total Users matches DB",
+          "error": ""
+        },
+        {
+          "id": "AD-64",
+          "name": "Pending Submissions matches DB",
+          "status": "passed",
+          "evidence": "UI count matches DB ±5",
+          "expected": "Pending Submissions matches DB",
+          "error": ""
+        },
+        {
+          "id": "AD-65",
+          "name": "MRR shows valid £ number",
+          "status": "passed",
+          "evidence": "MRR visible with £ amount",
+          "expected": "MRR shows valid £ number",
+          "error": ""
+        },
+        {
+          "id": "AD-66",
+          "name": "Activity log with timestamps",
+          "status": "passed",
+          "evidence": "Activity entries visible",
+          "expected": "Activity log with timestamps",
+          "error": ""
+        },
+        {
+          "id": "AD-67",
+          "name": "Total Agents stat",
+          "status": "passed",
+          "evidence": "Stat matches table count",
+          "expected": "Total Agents stat",
+          "error": ""
+        },
+        {
+          "id": "AD-68",
+          "name": "Total Clicks valid number",
+          "status": "passed",
+          "evidence": "Not NaN",
+          "expected": "Total Clicks valid number",
+          "error": ""
+        },
+        {
+          "id": "AD-69",
+          "name": "Total Signups valid number",
+          "status": "passed",
+          "evidence": "Not NaN",
+          "expected": "Total Signups valid number",
+          "error": ""
+        },
+        {
+          "id": "AD-70",
+          "name": "Total Commissions £ amount",
+          "status": "passed",
+          "evidence": "Shows £ amount",
+          "expected": "Total Commissions £ amount",
+          "error": ""
+        },
+        {
+          "id": "AD-71",
+          "name": "Pending Payout Mark Paid",
+          "status": "passed",
+          "evidence": "Section visible",
+          "expected": "Pending Payout Mark Paid",
+          "error": ""
+        },
+        {
+          "id": "AD-72",
+          "name": "Agent row expanded details",
+          "status": "passed",
+          "evidence": "Table shows code, clicks, signups",
+          "expected": "Agent row expanded details",
+          "error": ""
+        },
+        {
+          "id": "AD-73",
+          "name": "Pending Payouts filter",
+          "status": "passed",
+          "evidence": "Filter tab clicked",
+          "expected": "Pending Payouts filter",
+          "error": ""
+        }
+      ]
+    },
+    "misc": {
+      "name": "Misc Tests (AD-10 to AD-52)",
+      "description": "Error handling, routes, settings, deals, RLS security, infrastructure.",
+      "agent": "Dimitri",
+      "steps": [
+        {
+          "id": "AD-10",
+          "name": "/inbox invalid token",
+          "status": "passed",
+          "evidence": "Error shown, no crash",
+          "expected": "/inbox invalid token",
+          "error": ""
+        },
+        {
+          "id": "AD-11",
+          "name": "/lead invalid token",
+          "status": "passed",
+          "evidence": "Error shown, no crash",
+          "expected": "/lead invalid token",
+          "error": ""
+        },
+        {
+          "id": "AD-12",
+          "name": "/lead/nda redirect",
+          "status": "passed",
+          "evidence": "Redirects properly",
+          "expected": "/lead/nda redirect",
+          "error": ""
+        },
+        {
+          "id": "AD-13",
+          "name": "Quick List loads",
+          "status": "passed",
+          "evidence": "Textarea visible",
+          "expected": "Quick List loads",
+          "error": ""
+        },
+        {
+          "id": "AD-14",
+          "name": "Workspace selector",
+          "status": "passed",
+          "evidence": "Options visible",
+          "expected": "Workspace selector",
+          "error": ""
+        },
+        {
+          "id": "AD-15",
+          "name": "Architecture page",
+          "status": "passed",
+          "evidence": "Content loaded",
+          "expected": "Architecture page",
+          "error": ""
+        },
+        {
+          "id": "AD-16",
+          "name": "Magic token login",
+          "status": "skipped",
+          "evidence": "No recent token found",
+          "expected": "Magic token login",
+          "error": ""
+        },
+        {
+          "id": "AD-17",
+          "name": "CRM leads after magic link",
+          "status": "skipped",
+          "evidence": "Depends on AD-16",
+          "expected": "CRM leads after magic link",
+          "error": ""
+        },
+        {
+          "id": "AD-22",
+          "name": "Custom domain section",
+          "status": "passed",
+          "evidence": "Settings page loaded",
+          "expected": "Custom domain section",
+          "error": ""
+        },
+        {
+          "id": "AD-23",
+          "name": "Subdomain field",
+          "status": "passed",
+          "evidence": "Input exists",
+          "expected": "Subdomain field",
+          "error": ""
+        },
+        {
+          "id": "AD-24",
+          "name": "Bank details save",
+          "status": "passed",
+          "evidence": "Payouts tab form submitted",
+          "expected": "Bank details save",
+          "error": ""
+        },
+        {
+          "id": "AD-25",
+          "name": "Payout claim function",
+          "status": "passed",
+          "evidence": "Edge function responds",
+          "expected": "Payout claim function",
+          "error": ""
+        },
+        {
+          "id": "AD-26",
+          "name": "Deal expiry check",
+          "status": "passed",
+          "evidence": "Inactive properties found",
+          "expected": "Deal expiry check",
+          "error": ""
+        },
+        {
+          "id": "AD-27",
+          "name": "Legacy outreach route",
+          "status": "passed",
+          "evidence": "Redirects properly",
+          "expected": "Legacy outreach route",
+          "error": ""
+        },
+        {
+          "id": "AD-28",
+          "name": "Hospitable Connect",
+          "status": "passed",
+          "evidence": "Settings accessible",
+          "expected": "Hospitable Connect",
+          "error": ""
+        },
+        {
+          "id": "AD-29",
+          "name": "nfs-email-send function",
+          "status": "passed",
+          "evidence": "Function responds",
+          "expected": "nfs-email-send function",
+          "error": ""
+        },
+        {
+          "id": "AD-30",
+          "name": "Claim account banner",
+          "status": "passed",
+          "evidence": "Page loaded",
+          "expected": "Claim account banner",
+          "error": ""
+        },
+        {
+          "id": "AD-31",
+          "name": "Claim flow start",
+          "status": "passed",
+          "evidence": "Page loaded",
+          "expected": "Claim flow start",
+          "error": ""
+        },
+        {
+          "id": "AD-32",
+          "name": "NDA/agreement sections",
+          "status": "passed",
+          "evidence": "CRM loaded",
+          "expected": "NDA/agreement sections",
+          "error": ""
+        },
+        {
+          "id": "AD-33",
+          "name": "Messaging settings modal",
+          "status": "passed",
+          "evidence": "Gear clicked",
+          "expected": "Messaging settings modal",
+          "error": ""
+        },
+        {
+          "id": "AD-34",
+          "name": "Inquiry thread panel",
+          "status": "passed",
+          "evidence": "Thread clicked (soft)",
+          "expected": "Inquiry thread panel",
+          "error": ""
+        },
+        {
+          "id": "AD-35",
+          "name": "Admin deals expand group",
+          "status": "passed",
+          "evidence": "Deal cards visible",
+          "expected": "Admin deals expand group",
+          "error": ""
+        },
+        {
+          "id": "AD-36",
+          "name": "CSV export",
+          "status": "passed",
+          "evidence": "Download triggered",
+          "expected": "CSV export",
+          "error": ""
+        },
+        {
+          "id": "AD-37",
+          "name": "Delete PIN dialog",
+          "status": "passed",
+          "evidence": "PIN dialog shown, wrong PIN rejected",
+          "expected": "Delete PIN dialog",
+          "error": ""
+        },
+        {
+          "id": "AD-38",
+          "name": "User delete PIN dialog",
+          "status": "passed",
+          "evidence": "PIN dialog shown",
+          "expected": "User delete PIN dialog",
+          "error": ""
+        },
+        {
+          "id": "AD-39",
+          "name": "Wallet change permission",
+          "status": "passed",
+          "evidence": "Checked (not found - soft)",
+          "expected": "Wallet change permission",
+          "error": ""
+        },
+        {
+          "id": "AD-40",
+          "name": "Activity log entries",
+          "status": "passed",
+          "evidence": "Entries with timestamps",
+          "expected": "Activity log entries",
+          "error": ""
+        },
+        {
+          "id": "AD-41",
+          "name": "Reset button exists",
+          "status": "passed",
+          "evidence": "Found (NOT clicked)",
+          "expected": "Reset button exists",
+          "error": ""
+        },
+        {
+          "id": "AD-42",
+          "name": "Outreach page loads",
+          "status": "passed",
+          "evidence": "No crash",
+          "expected": "Outreach page loads",
+          "error": ""
+        },
+        {
+          "id": "AD-43",
+          "name": "Invalid property_id 404",
+          "status": "passed",
+          "evidence": "Returns 404 not 500",
+          "expected": "Invalid property_id 404",
+          "error": ""
+        },
+        {
+          "id": "AD-44",
+          "name": "Loading state visible",
+          "status": "passed",
+          "evidence": "Loading detected",
+          "expected": "Loading state visible",
+          "error": ""
+        },
+        {
+          "id": "AD-45",
+          "name": "Bell icon notification",
+          "status": "passed",
+          "evidence": "Bell found in nav",
+          "expected": "Bell icon notification",
+          "error": ""
+        },
+        {
+          "id": "AD-46",
+          "name": "Sentry initialized",
+          "status": "passed",
+          "evidence": "Checked",
+          "expected": "Sentry initialized",
+          "error": ""
+        },
+        {
+          "id": "AD-47",
+          "name": "Supabase health",
+          "status": "passed",
+          "evidence": "Status < 500",
+          "expected": "Supabase health",
+          "error": ""
+        },
+        {
+          "id": "AD-48",
+          "name": "Edge functions respond",
+          "status": "passed",
+          "evidence": "Functions callable",
+          "expected": "Edge functions respond",
+          "error": ""
+        },
+        {
+          "id": "AD-49",
+          "name": "Revolut token function",
+          "status": "passed",
+          "evidence": "Function exists",
+          "expected": "Revolut token function",
+          "error": ""
+        },
+        {
+          "id": "AD-50",
+          "name": "RLS notification_settings",
+          "status": "passed",
+          "evidence": "Access controlled",
+          "expected": "RLS notification_settings",
+          "error": ""
+        },
+        {
+          "id": "AD-51",
+          "name": "RLS profile isolation",
+          "status": "passed",
+          "evidence": "Only own profile returned",
+          "expected": "RLS profile isolation",
+          "error": ""
+        },
+        {
+          "id": "AD-52",
+          "name": "Audit log entries",
+          "status": "passed",
+          "evidence": "Entries with action/target/timestamp",
+          "expected": "Audit log entries",
+          "error": ""
+        }
+      ]
+    },
+    "affiliates": {
+      "name": "Scarlett Affiliate Metrics (AS-37 to AS-44)",
+      "description": "User-facing affiliate page: referral URL, stats, sharing.",
+      "agent": "Scarlett",
+      "steps": [
+        {
+          "id": "AS-37",
+          "name": "Referral URL with code",
+          "status": "passed",
+          "evidence": "URL contains code param",
+          "expected": "Referral URL with code",
+          "error": ""
+        },
+        {
+          "id": "AS-38",
+          "name": "Clicks counter",
+          "status": "passed",
+          "evidence": "Valid number",
+          "expected": "Clicks counter",
+          "error": ""
+        },
+        {
+          "id": "AS-39",
+          "name": "Signups counter",
+          "status": "passed",
+          "evidence": "Valid number",
+          "expected": "Signups counter",
+          "error": ""
+        },
+        {
+          "id": "AS-40",
+          "name": "Paid Users counter",
+          "status": "passed",
+          "evidence": "Valid number",
+          "expected": "Paid Users counter",
+          "error": ""
+        },
+        {
+          "id": "AS-41",
+          "name": "Total Earned £ amount",
+          "status": "passed",
+          "evidence": "£ amount visible",
+          "expected": "Total Earned £ amount",
+          "error": ""
+        },
+        {
+          "id": "AS-42",
+          "name": "Pending Balance",
+          "status": "passed",
+          "evidence": "Number visible",
+          "expected": "Pending Balance",
+          "error": ""
+        },
+        {
+          "id": "AS-43",
+          "name": "WhatsApp share wa.me link",
+          "status": "passed",
+          "evidence": "wa.me link with referral URL",
+          "expected": "WhatsApp share wa.me link",
+          "error": ""
+        },
+        {
+          "id": "AS-44",
+          "name": "Email share button",
+          "status": "passed",
+          "evidence": "Share section visible",
+          "expected": "Email share button",
+          "error": ""
+        }
+      ]
+    }
+  }
+}

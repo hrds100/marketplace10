@@ -292,6 +292,17 @@ export default function AdminQuickList() {
         if (insertErr) throw new Error(insertErr.message);
         if (prop?.id) lastPropertyId = prop.id;
 
+        // Admin bell notification for new property
+        if (prop?.id) {
+          (supabase.from('notifications') as any).insert({
+            user_id: null,
+            type: 'new_property',
+            title: 'New property published: ' + (item.name || 'Untitled'),
+            body: 'Published via Quick List',
+            property_id: prop.id,
+          }).then(() => {});
+        }
+
         // Generate friendly slug: city-type-shortid (e.g. skelton-brr-bf3f36da)
         if (prop?.id) {
           const slugParts = [item.city, item.deal_type || item.type, (prop.id as string).slice(0, 8)]
