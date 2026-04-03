@@ -169,6 +169,21 @@ export default function ParticleAuthCallback() {
         body: `${name} (${email}) signed up via social login.`,
       }).then(() => {}).catch(() => {});
 
+      // Check WhatsApp verification before allowing dashboard access
+      const signedInUserId = (await supabase.auth.getUser()).data.user?.id;
+      if (signedInUserId) {
+        const { data: profileCheck } = await (supabase.from('profiles') as any)
+          .select('whatsapp_verified')
+          .eq('id', signedInUserId)
+          .single();
+
+        if (!profileCheck?.whatsapp_verified) {
+          const verifyUrl = `/verify-otp?phone=&name=${encodeURIComponent(name || '')}&email=${encodeURIComponent(email || '')}`;
+          window.location.href = verifyUrl;
+          return;
+        }
+      }
+
       const dest = intent.redirectTo ? decodeURIComponent(intent.redirectTo) : '/dashboard/deals';
       window.location.href = dest;
     } catch (err: any) {

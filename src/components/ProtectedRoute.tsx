@@ -31,7 +31,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       return;
     }
     // Admin emails bypass OTP verification
-    const adminEmails = ['admin@hub.nfstay.com', 'hugo@nfstay.com', 'hugo24eu@gmail.com'];
+    const adminEmails = ['admin@hub.nfstay.com', 'hugo@nfstay.com', 'chris@nfstay.com'];
     if (user.email && adminEmails.includes(user.email)) {
       checkedRef.current = user.id;
       setStatus('verified');
@@ -48,7 +48,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       try {
         const { data, error: queryErr } = await (supabase
           .from('profiles') as any)
-          .select('whatsapp_verified, wallet_auth_method')
+          .select('whatsapp_verified')
           .eq('id', user.id)
           .single();
 
@@ -69,11 +69,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         }
 
         const profile = data as any;
-        // Social login users are identity-verified (Google/Apple/etc) — skip WhatsApp gate
-        const isSocialUser = profile?.wallet_auth_method && profile.wallet_auth_method !== 'jwt';
-        // Existing users who signed in (not fresh signup) should not be blocked by OTP
-        const hasExistingAccount = !!profile;
-        const verified = !!(profile?.whatsapp_verified) || isSocialUser || hasExistingAccount;
+        const verified = !!(profile?.whatsapp_verified);
         if (verified) {
           checkedRef.current = user.id;
         }
