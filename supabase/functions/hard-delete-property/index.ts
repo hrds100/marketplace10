@@ -20,9 +20,20 @@ serve(async (req) => {
       })
     }
 
-    const { propertyId, pin } = await req.json()
-    if (!propertyId || !pin) {
-      return new Response(JSON.stringify({ error: 'propertyId and pin are required' }), {
+    const body = await req.json()
+    const { pin } = body
+
+    // Support single (propertyId) or bulk (propertyIds) mode
+    const propertyIds: string[] = body.propertyIds || (body.propertyId ? [body.propertyId] : [])
+
+    if (!pin) {
+      return new Response(JSON.stringify({ error: 'pin is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (propertyIds.length === 0 && !body.propertyIds) {
+      return new Response(JSON.stringify({ error: 'propertyId or propertyIds is required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -53,59 +64,75 @@ serve(async (req) => {
       })
     }
 
-    // Get property name for audit log before deleting
-    const { data: prop } = await supabaseAdmin
-      .from('properties')
-      .select('name, city')
-      .eq('id', propertyId)
-      .maybeSingle()
-
-    // Clean FK-linked data
-    // 1. Get chat threads for this property
-    const { data: threads } = await supabaseAdmin
-      .from('chat_threads')
-      .select('id')
-      .eq('property_id', propertyId)
-
-    const threadIds = (threads || []).map((t: { id: string }) => t.id)
-
-    // 2. Delete messages in those threads
-    if (threadIds.length > 0) {
-      await supabaseAdmin.from('chat_messages').delete().in('thread_id', threadIds)
-      await supabaseAdmin.from('landlord_invites').delete().in('thread_id', threadIds)
-      await supabaseAdmin.from('agreement_acceptances').delete().in('thread_id', threadIds)
-    }
-
-    // 3. Delete chat threads
-    await supabaseAdmin.from('chat_threads').delete().eq('property_id', propertyId)
-
-    // 4. Delete CRM deals linked to this property
-    await supabaseAdmin.from('crm_deals').delete().eq('property_id', propertyId)
-
-    // 5. Delete user favourites for this property
-    await supabaseAdmin.from('user_favourites').delete().eq('property_id', propertyId)
-
-    // 6. Delete notifications for this property
-    await supabaseAdmin.from('notifications').delete().eq('property_id', propertyId)
-
-    // 7. Delete the property itself
-    const { error: delErr } = await supabaseAdmin.from('properties').delete().eq('id', propertyId)
-    if (delErr) {
-      return new Response(JSON.stringify({ error: 'Delete failed: ' + delErr.message }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Bulk mode: empty array is valid — return ok with deleted: 0
+    if (propertyIds.length === 0) {
+      return new Response(JSON.stringify({ ok: true, deleted: 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Audit log
-    await supabaseAdmin.from('admin_audit_log').insert({
-      user_id: caller.id,
-      action: 'hard_delete_property',
-      target_table: 'properties',
-      target_id: propertyId,
-      metadata: { name: prop?.name, city: prop?.city },
-    }).then(() => {})
+    let deleted = 0
 
-    return new Response(JSON.stringify({ ok: true }), {
+    for (const propertyId of propertyIds) {
+      // Get property name for audit log before deleting
+      const { data: prop } = await supabaseAdmin
+        .from('properties')
+        .select('name, city')
+        .eq('id', propertyId)
+        .maybeSingle()
+
+      // Clean FK-linked data
+      // 1. Get chat threads for this property
+      const { data: threads } = await supabaseAdmin
+        .from('chat_threads')
+        .select('id')
+        .eq('property_id', propertyId)
+
+      const threadIds = (threads || []).map((t: { id: string }) => t.id)
+
+      // 2. Delete messages in those threads
+      if (threadIds.length > 0) {
+        await supabaseAdmin.from('chat_messages').delete().in('thread_id', threadIds)
+        await supabaseAdmin.from('landlord_invites').delete().in('thread_id', threadIds)
+        await supabaseAdmin.from('agreement_acceptances').delete().in('thread_id', threadIds)
+      }
+
+      // 3. Delete chat threads
+      await supabaseAdmin.from('chat_threads').delete().eq('property_id', propertyId)
+
+      // 4. Delete inquiries linked to this property
+      await supabaseAdmin.from('inquiries').delete().eq('property_id', propertyId)
+
+      // 5. Delete CRM deals linked to this property
+      await supabaseAdmin.from('crm_deals').delete().eq('property_id', propertyId)
+
+      // 6. Delete user favourites for this property
+      await supabaseAdmin.from('user_favourites').delete().eq('property_id', propertyId)
+
+      // 7. Delete notifications for this property
+      await supabaseAdmin.from('notifications').delete().eq('property_id', propertyId)
+
+      // 8. Delete the property itself
+      const { error: delErr } = await supabaseAdmin.from('properties').delete().eq('id', propertyId)
+      if (delErr) {
+        return new Response(JSON.stringify({ error: `Delete failed for ${propertyId}: ${delErr.message}` }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Audit log (one entry per ID)
+      await supabaseAdmin.from('admin_audit_log').insert({
+        user_id: caller.id,
+        action: 'hard_delete_property',
+        target_table: 'properties',
+        target_id: propertyId,
+        metadata: { name: prop?.name, city: prop?.city },
+      }).then(() => {})
+
+      deleted++
+    }
+
+    return new Response(JSON.stringify({ ok: true, deleted }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
