@@ -112,7 +112,6 @@ export default function SignUp() {
   const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
   const [view, setView] = useState<ViewState>('social');
-  const [roleStep, setRoleStep] = useState<'choose' | 'done'>('choose');
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
@@ -121,14 +120,6 @@ export default function SignUp() {
   const [particleUser, setParticleUser] = useState<ParticleUserInfo | null>(null);
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+44');
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
-
-  const ROLE_OPTIONS = [
-    { value: 'tenant', label: 'Tenant' },
-    { value: 'landlord', label: 'Landlord' },
-    { value: 'agent', label: 'Letting Agent' },
-    { value: 'deal_sourcer', label: 'Deal Sourcer' },
-  ];
 
   useEffect(() => { document.title = 'nfstay - Sign Up'; }, []);
 
@@ -253,7 +244,7 @@ export default function SignUp() {
 
       if (userId) {
         await (supabase.from('profiles') as any)
-          .update({ name: cleanName, whatsapp: fullPhone, whatsapp_verified: false, ...(selectedRole ? { role: selectedRole } : {}) } as any)
+          .update({ name: cleanName, whatsapp: fullPhone, whatsapp_verified: false } as any)
           .eq('id', userId);
       }
 
@@ -278,95 +269,12 @@ export default function SignUp() {
     finally { setEmailLoading(false); }
   };
 
-  // ── Role selection step (first thing user sees) ──────────────────────────
-
-  if (view === 'social' && roleStep === 'choose') {
-    return (
-      <AuthShell showTabs heading="Welcome to nfstay" subtitle="What brings you here?">
-        <div className="w-full flex flex-col" style={{ gap: 'clamp(12px, 2vh, 24px)' }}>
-          {/* Two main paths */}
-          <button
-            type="button"
-            onClick={() => { setSelectedRole('tenant'); setRoleStep('done'); }}
-            className="w-full p-4 rounded-xl border-2 text-left transition-all hover:border-[#1E9A80] hover:shadow-sm"
-            style={{ borderColor: '#E5E7EB', backgroundColor: '#fff' }}
-          >
-            <span className="text-base font-semibold block" style={{ color: '#1A1A1A' }}>I'm looking for deals / Airbnb properties</span>
-            <span className="text-xs block mt-1" style={{ color: '#6B7280' }}>Find Airbnb properties and deals</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { setSelectedRole(null); setRoleStep('done'); }}
-            className="w-full p-4 rounded-xl border-2 text-left transition-all hover:border-[#1E9A80] hover:shadow-sm"
-            style={{ borderColor: '#E5E7EB', backgroundColor: '#fff' }}
-          >
-            <span className="text-base font-semibold block" style={{ color: '#1A1A1A' }}>I want to list a property</span>
-            <span className="text-xs block mt-1" style={{ color: '#6B7280' }}>List your property and receive tenant leads</span>
-          </button>
-
-          <p className="text-sm text-[#737373] text-center mt-1">
-            Already have an account?{' '}
-            <Link to="/signin" className="text-[#1e9a80] font-semibold">Sign in</Link>
-          </p>
-        </div>
-      </AuthShell>
-    );
-  }
-
-  // ── Sub-role selection (if lister path chosen without a specific role) ───
-
-  if (view === 'social' && roleStep === 'done' && selectedRole === null) {
-    return (
-      <AuthShell showTabs={false} heading="What type of lister are you?" subtitle="This helps us tailor your experience">
-        <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 18px)' }}>
-          <button onClick={() => { setRoleStep('choose'); }} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a] mb-1">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-          {[
-            { value: 'landlord', label: 'Landlord', desc: 'I own the property' },
-            { value: 'agent', label: 'Letting Agent', desc: 'I manage properties for owners' },
-            { value: 'deal_sourcer', label: 'Deal Sourcer', desc: 'I find deals and introduce tenants' },
-          ].map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { setSelectedRole(opt.value); localStorage.setItem('nfstay_signup_role', opt.value); }}
-              className={`w-full p-4 rounded-xl border-2 text-left transition-all hover:border-[#1E9A80] hover:shadow-sm ${
-                selectedRole === opt.value ? 'border-[#1E9A80] bg-[#ECFDF5]' : ''
-              }`}
-              style={{ borderColor: selectedRole === opt.value ? '#1E9A80' : '#E5E7EB', backgroundColor: selectedRole === opt.value ? '#ECFDF5' : '#fff' }}
-            >
-              <span className="text-sm font-semibold block" style={{ color: '#1A1A1A' }}>{opt.label}</span>
-              <span className="text-xs block mt-0.5" style={{ color: '#6B7280' }}>{opt.desc}</span>
-            </button>
-          ))}
-        </div>
-      </AuthShell>
-    );
-  }
-
-  // ── If tenant/operator path, save role to localStorage for social flow ──
-  if (selectedRole && roleStep === 'done') {
-    localStorage.setItem('nfstay_signup_role', selectedRole);
-  }
-
   // ── Social button view ───────────────────────────────────────────────────
 
   if (view === 'social') {
     return (
-      <AuthShell showTabs={false} heading="Create your account" subtitle={selectedRole === 'tenant' ? 'Join thousands of operators building Airbnb portfolios' : `Sign up as ${ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'a lister'}`}>
+      <AuthShell showTabs heading="Create your account" subtitle="Join thousands of UK property professionals">
         <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
-
-          {/* Role indicator + back */}
-          <div className="flex items-center justify-between mb-1">
-            <button onClick={() => { setRoleStep('choose'); setSelectedRole(null); }} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a]">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
-            <span className="px-3 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
-              {ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'Tenant'}
-            </span>
-          </div>
 
           {/* Social 2×2 grid */}
           <div className="grid grid-cols-2 gap-2 w-full">
@@ -461,16 +369,13 @@ export default function SignUp() {
   // ── Email / password view ────────────────────────────────────────────────
 
   return (
-    <AuthShell data-feature="AUTH" showTabs={false} heading="Create your account" subtitle={`Signing up as ${ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'Tenant'}`}>
+    <AuthShell data-feature="AUTH" showTabs={false} heading="Create your account" subtitle="Create your account with email">
       <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
-        {/* Back + role badge */}
-        <div className="flex items-center justify-between mb-1">
+        {/* Back */}
+        <div className="flex items-center mb-1">
           <button onClick={() => setView('social')} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a]">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <span className="px-3 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: '#ECFDF5', color: '#1E9A80' }}>
-            {ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'Tenant'}
-          </span>
         </div>
         {/* Social login buttons - 2×2 grid */}
         <div className="grid grid-cols-2 gap-2 w-full">
