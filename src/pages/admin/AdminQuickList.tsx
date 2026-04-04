@@ -245,11 +245,14 @@ export default function AdminQuickList() {
     setPublishPhase('publishing');
     setLastPublishedListing(toPublish[0]);
     try {
+      let nextNum = await getNextPropertyNumber();
       let lastPropertyId: string | null = null;
 
       for (let idx = 0; idx < toPublish.length; idx++) {
         const item = toPublish[idx];
-        const propName = (item.name || 'Untitled').replace(/\s*\(\s*\)\s*$/, '').trim();
+        const cleanName = (item.name || 'Untitled').replace(/\s*\(\s*\)\s*$/, '').trim();
+        const propName = `Property #${nextNum} - ${cleanName}`;
+        nextNum++;
 
         const { data: prop, error: insertErr } = await supabase.from('properties')
           .insert({

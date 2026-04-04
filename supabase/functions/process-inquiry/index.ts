@@ -100,7 +100,9 @@ serve(async (req) => {
     const listerEmail = (property as Record<string, unknown>).contact_email as string || null
     const listerName = (property as Record<string, unknown>).contact_name as string || 'Property Lister'
     const landlordWhatsapp = (property as Record<string, unknown>).landlord_whatsapp as string || null
-    const propertyName = (property as Record<string, unknown>).name as string || 'Property'
+    const propertyNameRaw = (property as Record<string, unknown>).name as string || 'Property'
+    // Strip "Property #XXXX - " prefix and trailing "()" for user-facing messages
+    const propertyName = propertyNameRaw.replace(/^Property\s*#\d+\s*-\s*/, '').replace(/\s*\(\s*\)\s*$/, '').trim() || propertyNameRaw
     const ndaRequired = (property as Record<string, unknown>).nda_required as boolean || false
     const firstLandlordInquiry = (property as Record<string, unknown>).first_landlord_inquiry as boolean || false
 
