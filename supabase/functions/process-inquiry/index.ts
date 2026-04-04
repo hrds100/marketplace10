@@ -2,7 +2,7 @@
 // Trigger: POST from frontend when tenant submits inquiry via email
 // Input: { property_id, channel: 'email', message, tenant_name, tenant_email, tenant_phone }
 // Output: { success, inquiry_id }
-// NOTE: WhatsApp inquiries are handled by receive-tenant-whatsapp (inbound route via n8n/GHL)
+// NOTE: WhatsApp inquiries are handled by receive-tenant-whatsapp (GHL webhook → edge function)
 // DEPLOY NOTE: This function must have verify_jwt=false (it handles JWT internally).
 // Every Supabase deploy resets verify_jwt to true. After deploy, patch via Management API:
 // curl -X PATCH -H "Authorization: Bearer <PAT>" -H "Content-Type: application/json" \
@@ -207,7 +207,7 @@ serve(async (req) => {
       magicToken = ''
     }
 
-    // 5. Send WhatsApp confirmation to tenant (direct GHL — no n8n)
+    // 5. Send WhatsApp confirmation to tenant (direct GHL)
     if (resolvedTenantPhone && GHL_TOKEN) {
       try {
         const ghlHeaders: Record<string, string> = {
