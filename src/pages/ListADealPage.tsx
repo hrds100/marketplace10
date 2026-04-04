@@ -149,6 +149,7 @@ export default function ListADealPage() {
   const [aiRawText, setAiRawText] = useState('');
   const [aiParsing, setAiParsing] = useState(false);
   const [saConfirmed, setSaConfirmed] = useState(false);
+  const [profileHasListerRole, setProfileHasListerRole] = useState(false);
 
   // Reset form when user navigates to this page fresh (e.g. sidebar click after submit)
   useEffect(() => {
@@ -178,13 +179,19 @@ export default function ListADealPage() {
   useEffect(() => {
     if (!user?.id) return;
     (supabase.from('profiles') as any)
-      .select('whatsapp, name, email')
+      .select('whatsapp, name, email, role')
       .eq('id', user.id)
       .single()
-      .then(({ data }: { data: { whatsapp: string; name: string; email: string } | null }) => {
+      .then(({ data }: { data: { whatsapp: string; name: string; email: string; role: string | null } | null }) => {
         if (data?.whatsapp) {
           setProfileWhatsapp(data.whatsapp);
           setForm(p => ({ ...p, contactWhatsapp: data.whatsapp }));
+        }
+        // Auto-set listerType from profile role if it's a valid lister role
+        const listerRoles: Record<string, DealForm['listerType']> = { landlord: 'landlord', agent: 'agent', deal_sourcer: 'deal_sourcer' };
+        if (data?.role && listerRoles[data.role]) {
+          setProfileHasListerRole(true);
+          setForm(p => ({ ...p, listerType: p.listerType || listerRoles[data.role!]! }));
         }
         if (data) {
           setForm(p => ({
@@ -231,7 +238,7 @@ export default function ListADealPage() {
     'property-type': () => !!form.type || form.propertyCategory === 'hmo',
     'property-features': () => !!form.bedrooms,
     'financials': () => !!form.rent,
-    'contact': () => !!form.contactWhatsapp,
+    'contact': () => !!form.contactWhatsapp && !!form.listerType,
     'media': () => true,
   };
 
@@ -336,6 +343,7 @@ export default function ListADealPage() {
     if (!form.city) missing.push('City');
     if (!resolvedType) missing.push('Property type');
     if (!form.bedrooms) missing.push('Bedrooms');
+    if (!form.listerType) missing.push('Your role (Landlord, Letting Agent, or Deal Sourcer)');
 
     if (missing.length > 0) {
       toast.error(`Please fill in: ${missing.join(', ')}`);
@@ -684,9 +692,9 @@ export default function ListADealPage() {
                 </div>
                 <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact email</label><input type="email" placeholder="From your profile" value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">I am a</label>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">What is your role for this property? *</label>
                   <div className="flex gap-4">
-                    {([['landlord', 'Landlord'], ['agent', 'Agent'], ['deal_sourcer', 'Deal Sourcer']] as const).map(([val, label]) => (
+                    {([['landlord', 'Landlord'], ['agent', 'Letting Agent'], ['deal_sourcer', 'Deal Sourcer']] as const).map(([val, label]) => (
                       <label key={val} className="flex items-center gap-1.5 cursor-pointer">
                         <input type="radio" name="lister_type" value={val} checked={form.listerType === val}
                           onChange={() => set('listerType', val)}
@@ -695,6 +703,9 @@ export default function ListADealPage() {
                       </label>
                     ))}
                   </div>
+                  {!form.listerType && (
+                    <p className="text-[10px] text-red-500 mt-1">Please select your role before submitting</p>
+                  )}
                 </div>
               </div>
             </AccordionSection>
