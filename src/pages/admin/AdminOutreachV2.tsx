@@ -10,7 +10,6 @@ import { logAdminAction } from '@/lib/auditLog';
 const GHL_WORKFLOW_COLD = '67250bfa-e1fc-4201-8bca-08c384a4a31d';
 const GHL_WORKFLOW_WARM = '0eb4395c-e493-43dc-be97-6c4455b5c7c4';
 
-const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
 
 // ── Types ──
 interface PropertyRow {
@@ -77,33 +76,7 @@ function isReallyClaimed(profile: { email: string | null } | null | undefined): 
   return !profile.email.endsWith('@nfstay.internal');
 }
 
-// ── n8n webhook caller for cold outreach (sets property_reference before GHL enrollment) ──
-async function callOutreachWebhook(payload: {
-  landlord_whatsapp: string;
-  landlord_name: string;
-  property_ref_code: string;
-  property_title: string;
-  property_city: string;
-  inquiry_count: number;
-}): Promise<{ success: boolean; error?: string }> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    const res = await fetch(`${N8N_BASE}/webhook/landlord-first-outreach`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    if (!res.ok) return { success: false, error: `n8n returned ${res.status}` };
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: String(err) };
-  }
-}
-
-// ── Edge function caller for warm outreach (NDA/lead release) ──
+// ── Edge function caller for GHL outreach (all workflows) ──
 async function callGhlEnroll(
   phone: string,
   workflowId: string,
@@ -455,13 +428,9 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
     addLoading(key);
     try {
       const firstProp = group.properties[0];
-      const result = await callOutreachWebhook({
-        landlord_whatsapp: group.phone,
-        landlord_name: group.name || 'Property Owner',
-        property_ref_code: '',
-        property_title: firstProp?.name || firstProp?.city || 'Property',
-        property_city: firstProp?.city || '',
-        inquiry_count: group.properties.reduce((s, p) => s + p.totalCount, 0),
+      const result = await callGhlEnroll(group.phone, GHL_WORKFLOW_COLD, {
+        property_name: firstProp?.name || firstProp?.city || 'Property',
+        contactName: group.name || 'Property Owner',
       });
       if (!result.success) {
         toast.error(result.error || 'Outreach failed');
@@ -513,15 +482,12 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       } as any);
       if (inqError) throw inqError;
 
-      // 2. Send outreach via n8n webhook (sets property_reference + enrolls in GHL workflow)
+      // 2. Send outreach via GHL (direct — no n8n)
       const firstProp = group.properties[0];
-      const outreachResult = await callOutreachWebhook({
-        landlord_whatsapp: group.phone,
-        landlord_name: group.name || 'Property Owner',
-        property_ref_code: '',
-        property_title: firstProp?.name || firstProp?.city || 'Property',
-        property_city: firstProp?.city || '',
-        inquiry_count: 1,
+      const outreachResult = await callGhlEnroll(group.phone, formData.workflow, {
+        property_name: firstProp?.name || firstProp?.city || 'Property',
+        tenant_name: formData.name.trim(),
+        contactName: group.name || 'Property Owner',
       });
       if (!outreachResult.success) {
         toast.error('Lead saved but outreach failed: ' + (outreachResult.error || 'Unknown'));
@@ -785,8 +751,8 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                           className="h-9 rounded-lg border px-2 text-xs font-medium"
                           style={{ borderColor: '#E5E5E5', color: '#1A1A1A' }}
                         >
-                          <option value={GHL_WORKFLOW_COLD}>Landlord Activation (default)</option>
-                          <option value={GHL_WORKFLOW_WARM}>Tenant Lead Release (NDA)</option>
+                          <option value={GHL_WORKFLOW_COLD}>Landlord 1st Message</option>
+                          <option value={GHL_WORKFLOW_WARM}>Tenant to Landlord</option>
                         </select>
                       </div>
                       <div className="flex-1" />
