@@ -2,6 +2,8 @@
 
 > Copy everything below the line into the system prompt for the coding agent working on the investment module.
 
+**Co-Pilot (routing, audits, multi-agent splits for Hugo):** use **[../HOTKEY_COPILOT.md](../HOTKEY_COPILOT.md)** — not this file. This file is for **invest/JV implementation** agents only.
+
 ---
 
 ## HOTKEY START - COPY FROM HERE

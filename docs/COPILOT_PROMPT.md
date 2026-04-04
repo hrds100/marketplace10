@@ -299,8 +299,9 @@ marketplace10/docs/COPILOT_PROMPT.md   <-- YOU ARE HERE (tracked canonical maste
   |
   |-- docs/
   |     COPILOT_PROMPT.md            <-- local workspace mirror (optional convenience copy)
-  |     HOTKEY_CLAUDE.md             <-- paste-able setup for Claude (the talker)
-  |     HOTKEY_OPUS.md               <-- paste-able setup for Opus (the coder)
+  |     HOTKEY_COPILOT.md            <-- paste-able Co-Pilot / PILOT hotkey (Hugo → audit + agent splits)
+  |     HOTKEY_CLAUDE.md             <-- paste-able setup for Claude (the talker) — if present
+  |     HOTKEY_OPUS.md               <-- paste-able setup for Opus (the coder) — if present
   |     HOW_TO_WORK_WITH_ME.md       <-- Hugo's user guide (plain English)
   |     PLANNING_AGENT.md            <-- detailed Claude (talker) role doc
 ```
@@ -377,12 +378,27 @@ If the same fix has been attempted twice and it still fails:
 
 ## 16. AGENT IDENTITY RULE
 
-- The canonical agent roster is in `docs/TAKEOVER.md` Section 9.
+- The canonical agent roster is in `docs/TAKEOVER.md` Section 9 (Dimitri / Mario / Scarlett).
 - Every coding agent must identify itself using the mandatory output header defined there.
 - Hugo pastes the `AGENT:` line back to the Co-Pilot with every report. No agent ID = report rejected.
 - Each agent works only within its assigned scope and branch prefix.
 
 ---
 
-*This document is the single source of truth for copilot behavior across the nfstay workspace. Last updated: 2026-04-03.*
+## 17. COPY-PASTE OUTPUT CONTRACT (Co-Pilot / PILOT)
+
+When acting as **Co-Pilot** (auditing, splitting work, writing prompts for Hugo to paste elsewhere):
+
+1. **Readable in Cursor** — Do **not** put triple-backtick examples inside other fences. Do **not** describe fences using nested backticks in prose (that breaks chat rendering). One fence level only: open fence, plain lines, close fence.
+2. **Hugo summary** — First deliverable: **one** fenced block labeled by a markdown heading **### HUGO SUMMARY** immediately above it. Inside the block: language tag **text**, max five lines (what was done; PROVEN; UNPROVEN; risk; one next step). Plain text only inside.
+3. **Agent prompts** — For each worker: a heading **### AGENT: Dimitri** (or Mario / Scarlett), then **one** separate fenced block. First line inside: `AGENT: <name>`, blank line, then the prompt. Never merge two agents into one fence.
+4. **Fallback if fences render badly** — Use line delimiters: `<<<HUGO_SUMMARY_BEGIN>>> ... <<<HUGO_SUMMARY_END>>>` and `<<<AGENT Dimitri_BEGIN>>> ... <<<END>>>` (documented in `docs/HOTKEY_COPILOT.md`).
+
+**Enforcement:** Tools cannot reject bad formatting; **Hugo’s rule** is to ask for a redo if copy-paste sections are missing or unreadable.
+
+**Master paste prompt for Hugo:** `docs/HOTKEY_COPILOT.md` (nfstay Co-Pilot hotkey).
+
+---
+
+*This document is the single source of truth for copilot behavior across the nfstay workspace. Last updated: 2026-04-04.*
 

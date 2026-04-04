@@ -5,6 +5,8 @@
 > The master standard defines shared behaviors (two-phase workflow, hard rules, reporting format).
 > This file adds marketplace10-specific rules, integrations, and procedures.
 
+**Co-Pilot (Hugo → audit / split agents):** paste prompt is **[HOTKEY_COPILOT.md](HOTKEY_COPILOT.md)**. Coding agents use repo rules here + scoped docs; output must use fenced blocks per `COPILOT_PROMPT.md` §17.
+
 ---
 
 ## 1. SYSTEM ROLE
