@@ -125,7 +125,6 @@ export default function SignUp() {
 
   const ROLE_OPTIONS = [
     { value: 'tenant', label: 'Tenant' },
-    { value: 'operator', label: 'Airbnb Operator' },
     { value: 'landlord', label: 'Landlord' },
     { value: 'agent', label: 'Letting Agent' },
     { value: 'deal_sourcer', label: 'Deal Sourcer' },
@@ -292,8 +291,8 @@ export default function SignUp() {
             className="w-full p-4 rounded-xl border-2 text-left transition-all hover:border-[#1E9A80] hover:shadow-sm"
             style={{ borderColor: '#E5E7EB', backgroundColor: '#fff' }}
           >
-            <span className="text-base font-semibold block" style={{ color: '#1A1A1A' }}>I want to rent a property</span>
-            <span className="text-xs block mt-1" style={{ color: '#6B7280' }}>Browse deals, contact landlords, start your Airbnb business</span>
+            <span className="text-base font-semibold block" style={{ color: '#1A1A1A' }}>I'm looking for deals / Airbnb properties</span>
+            <span className="text-xs block mt-1" style={{ color: '#6B7280' }}>Find Airbnb properties and deals</span>
           </button>
 
           <button
@@ -356,7 +355,7 @@ export default function SignUp() {
 
   if (view === 'social') {
     return (
-      <AuthShell showTabs={false} heading="Create your account" subtitle={selectedRole === 'tenant' || selectedRole === 'operator' ? 'Join thousands of operators building Airbnb portfolios' : `Sign up as ${ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'a lister'}`}>
+      <AuthShell showTabs={false} heading="Create your account" subtitle={selectedRole === 'tenant' ? 'Join thousands of operators building Airbnb portfolios' : `Sign up as ${ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'a lister'}`}>
         <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
 
           {/* Role indicator + back */}
@@ -368,23 +367,6 @@ export default function SignUp() {
               {ROLE_OPTIONS.find(r => r.value === selectedRole)?.label || 'Tenant'}
             </span>
           </div>
-
-          {/* Tenant sub-choice: Tenant or Airbnb Operator */}
-          {(selectedRole === 'tenant') && (
-            <div className="flex gap-2 mb-1">
-              {[
-                { value: 'tenant', label: 'Tenant' },
-                { value: 'operator', label: 'Airbnb Operator' },
-              ].map(opt => (
-                <button key={opt.value} type="button" onClick={() => setSelectedRole(opt.value)}
-                  className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all ${
-                    selectedRole === opt.value ? 'bg-[#1E9A80] text-white border-[#1E9A80]' : 'bg-white text-[#1A1A1A] border-[#E5E7EB] hover:border-[#1E9A80]/40'
-                  }`}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Social 2×2 grid */}
           <div className="grid grid-cols-2 gap-2 w-full">
