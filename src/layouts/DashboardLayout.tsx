@@ -18,7 +18,7 @@ import { NfsLogo } from '@/components/nfstay/NfsLogo';
 import { toast } from 'sonner';
 import { normalizeUKPhone } from '@/lib/phoneValidation';
 
-const FULL_BLEED_ROUTES = ['/dashboard/inbox', '/dashboard/deals'];
+const FULL_BLEED_ROUTES = ['/dashboard/deals'];
 const INVEST_ROUTES_PREFIX = '/dashboard/invest';
 
 export interface DashboardContext {

@@ -1,8 +1,7 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, ChevronDown, MessageSquare, Globe, TrendingUp, Store, Wallet, Receipt, Vote } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, ChevronDown, Globe, TrendingUp, Store, Wallet, Receipt, Vote } from 'lucide-react';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 
 const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; highlight?: boolean }> = [
   { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
@@ -34,31 +33,8 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
   const navigate = useNavigate();
   const { signOut, isAdmin } = useAuth();
   const { user } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
   const [investOpen, setInvestOpen] = useState(() => location.pathname.startsWith('/dashboard/invest'));
   const isInvestActive = location.pathname.startsWith('/dashboard/invest');
-
-  useEffect(() => {
-    if (!user?.id) return;
-    const fetchUnread = async () => {
-      const { count } = await supabase
-        .from('chat_threads')
-        .select('id', { count: 'exact', head: true })
-        .or(`operator_id.eq.${user.id},landlord_id.eq.${user.id}`)
-        .eq('is_read', false);
-      setUnreadCount(count ?? 0);
-    };
-    fetchUnread();
-    const ch1 = supabase
-      .channel('sidebar-unread-operator')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads', filter: `operator_id=eq.${user.id}` }, () => fetchUnread())
-      .subscribe();
-    const ch2 = supabase
-      .channel('sidebar-unread-landlord')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads', filter: `landlord_id=eq.${user.id}` }, () => fetchUnread())
-      .subscribe();
-    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
-  }, [user?.id]);
 
   const handleLogout = async () => {
     await signOut();
@@ -98,11 +74,6 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
               >
                 <div className="relative flex-shrink-0">
                   <item.icon className="w-[15px] h-[15px]" strokeWidth={1.8} />
-                  {item.to === '/dashboard/inbox' && unreadCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-lg w-4 h-4 flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
                 </div>
                 {!collapsed && (
                   <div className="flex flex-col flex-1">
@@ -204,11 +175,6 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
             <NavLink key={item.to} to={item.to} className="relative flex flex-col items-center gap-0.5">
               <div className="relative">
                 <item.icon className={`w-[22px] h-[22px] ${isActive ? 'text-primary' : 'text-muted-foreground'}`} strokeWidth={1.75} />
-                {item.to === '/dashboard/inbox' && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-lg w-3.5 h-3.5 flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
               </div>
               <span className={`text-[10px] font-medium ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>{item.label}</span>
             </NavLink>
