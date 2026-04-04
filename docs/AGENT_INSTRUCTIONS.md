@@ -683,6 +683,36 @@ PROTECTED FILES TOUCHED: [yes/no - list if yes]
 
 ---
 
+## GLOBALLY LOCKED FILES — DO NOT TOUCH WITHOUT HUGO'S APPROVAL
+
+These 5 files are shared by every feature in the app. A mistake in any one of them
+breaks the entire site, not just one feature. No agent may edit them without
+explicit written approval from Hugo in the task brief.
+
+| File | Why it is locked |
+|------|-----------------|
+| `src/layouts/AdminLayout.tsx` | One missing icon import = blank screen on every admin page |
+| `src/App.tsx` | Contains ALL page routes — breaking this breaks every page |
+| `src/hooks/useAuth.ts` | Every page checks login state through this — breaking it locks all users out |
+| `src/layouts/DashboardLayout.tsx` | Wraps every dashboard page — a change here affects all users |
+| `src/components/DashboardSidebar.tsx` | Main navigation — breaking this makes the app unnavigable |
+
+Note: `vite.config.ts` and `src/main.tsx` are already locked in CLAUDE.md and
+remain locked.
+
+### Pre-flight rule (mandatory for every agent, every task)
+
+Before touching any file, the agent must post this checklist in their output:
+
+```
+PRE-FLIGHT CHECK
+Files I will touch: [list every file]
+Are any of these in GLOBALLY LOCKED FILES? [yes/no]
+If yes: Hugo has approved this in writing? [yes/no — if no, STOP]
+```
+
+---
+
 ## Feature Map System (added 2026-03-24)
 
 A feature map is live at `feature-map.json` (project root).
