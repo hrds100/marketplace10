@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Outlet, useLocation, useOutletContext, Link, useNavigate } from 'react-router-dom';
-import { PlusCircle, Gem, Wallet, MessageCircle } from 'lucide-react';
+import { Outlet, useLocation, useOutletContext, Link, useNavigate, Navigate } from 'react-router-dom';
+import { PlusCircle, Gem, Wallet } from 'lucide-react';
 import { useEmbeddedWallet } from '@particle-network/connectkit';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import NotificationBell from '@/components/NotificationBell';
@@ -15,8 +15,6 @@ import InvestSubNav from '@/components/InvestSubNav';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { NfsLogo } from '@/components/nfstay/NfsLogo';
-import { toast } from 'sonner';
-import { normalizeUKPhone } from '@/lib/phoneValidation';
 
 const FULL_BLEED_ROUTES = ['/dashboard/deals'];
 const INVEST_ROUTES_PREFIX = '/dashboard/invest';
@@ -84,8 +82,6 @@ export default function DashboardLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [landlordPhone, setLandlordPhone] = useState<string | null>(null);
   const [whatsappMissing, setWhatsappMissing] = useState<boolean | null>(null);
-  const [gatePh, setGatePh] = useState('');
-  const [gateSaving, setGateSaving] = useState(false);
   /** Invest marketplace SamCart checkout: hide chrome and blur page content behind the sheet */
   const [investCheckoutFocus, setInvestCheckoutFocus] = useState(false);
   const isFullBleed = FULL_BLEED_ROUTES.some(r => location.pathname.startsWith(r));
@@ -149,11 +145,16 @@ export default function DashboardLayout() {
     let cancelled = false;
     (async () => {
       const { data: profile } = await (supabase.from('profiles') as any)
-        .select('whatsapp')
+        .select('whatsapp, whatsapp_verified')
         .eq('id', user.id)
         .single();
       if (cancelled) return;
       const wa = (profile?.whatsapp as string | undefined) || '';
+      const isVerified = !!(profile?.whatsapp_verified);
+      if (!wa && isVerified) {
+        // User has no WhatsApp but is marked verified — reset so OTP flow re-triggers
+        await supabase.from('profiles').update({ whatsapp_verified: false } as any).eq('id', user.id);
+      }
       setWhatsappMissing(!wa);
     })();
     return () => { cancelled = true; };
@@ -165,47 +166,12 @@ export default function DashboardLayout() {
 
   return (
     <ProtectedRoute>
-      {/* WhatsApp gate modal — blocks access until WhatsApp is set */}
+      {/* WhatsApp gate — redirect to OTP verification */}
       {whatsappMissing === true && (
-        <div className="fixed inset-0 z-[400] bg-black/60 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 max-w-[440px] w-full mx-4">
-            <div className="flex justify-center mb-4">
-              <MessageCircle className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-xl font-bold text-foreground text-center mb-2">Add your WhatsApp to continue</h2>
-            <p className="text-sm text-muted-foreground text-center mb-4">
-              nfstay uses WhatsApp to send you deal alerts and account updates. This is required to access the platform.
-            </p>
-            <input
-              className="input-nfstay w-full mt-4"
-              placeholder="+44 7911 123456"
-              value={gatePh}
-              onChange={e => setGatePh(e.target.value)}
-            />
-            <button
-              disabled={gateSaving}
-              onClick={async () => {
-                const normalized = normalizeUKPhone(gatePh);
-                if (!normalized) {
-                  toast.error('Enter a valid UK mobile number');
-                  return;
-                }
-                setGateSaving(true);
-                const { error } = await supabase.from('profiles').update({ whatsapp: normalized }).eq('id', user!.id);
-                if (error) {
-                  toast.error('Failed to save');
-                } else {
-                  setWhatsappMissing(false);
-                  toast.success('WhatsApp saved');
-                }
-                setGateSaving(false);
-              }}
-              className="w-full h-11 mt-3 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {gateSaving ? 'Saving...' : 'Save and continue'}
-            </button>
-          </div>
-        </div>
+        <Navigate
+          to={`/verify-otp?name=${encodeURIComponent((user as any)?.user_metadata?.name || '')}&email=${encodeURIComponent(user?.email || '')}`}
+          replace
+        />
       )}
 
       <WalletProvisioner>
