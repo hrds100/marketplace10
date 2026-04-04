@@ -128,10 +128,13 @@ export default function AdminInvestOrders() {
     }
   };
 
+  // Always prefer investor_wallet (fresh from profiles) over stale inv_orders.wallet_address
+  const displayWallet = (order: Order) => order.investor_wallet || order.wallet_address;
+
   const openEdit = (order: Order) => {
     setEditForm({
       property_id: order.property_id,
-      wallet_address: order.investor_wallet || order.wallet_address,
+      wallet_address: displayWallet(order),
       agent_wallet: order.agent_wallet,
     });
     setEditModal(order);
@@ -334,7 +337,7 @@ export default function AdminInvestOrders() {
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Send <strong>{confirmApprove?.shares}</strong> shares to wallet{' '}
-            <code className="text-xs">{confirmApprove?.investor_wallet || confirmApprove?.wallet_address}</code>?
+            <code className="text-xs">{confirmApprove ? displayWallet(confirmApprove) : ''}</code>?
             This will execute a blockchain transaction.
           </p>
           <DialogFooter>
