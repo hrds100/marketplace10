@@ -83,7 +83,7 @@ export default function VerifyOtp() {
       if (user) {
         const { error: updateErr } = await (supabase
           .from('profiles') as any)
-          .update({ whatsapp_verified: true })
+          .update({ whatsapp_verified: true, whatsapp: phone, email: email || null })
           .eq('id', user.id);
         if (updateErr) {
           await (supabase.from('profiles') as any).upsert({

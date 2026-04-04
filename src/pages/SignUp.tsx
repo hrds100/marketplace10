@@ -244,13 +244,13 @@ export default function SignUp() {
 
       if (userId) {
         const { error: profileErr } = await (supabase.from('profiles') as any)
-          .update({ name: cleanName, whatsapp: fullPhone, whatsapp_verified: false } as any)
+          .update({ name: cleanName, email: cleanEmail, whatsapp: fullPhone, whatsapp_verified: false } as any)
           .eq('id', userId);
         // If update fails (e.g., no profile row yet from trigger), try upsert as fallback
         if (profileErr) {
           console.error('Profile update failed, trying upsert:', profileErr.message);
           await (supabase.from('profiles') as any)
-            .upsert({ id: userId, name: cleanName, whatsapp: fullPhone, whatsapp_verified: false } as any);
+            .upsert({ id: userId, name: cleanName, email: cleanEmail, whatsapp: fullPhone, whatsapp_verified: false } as any);
         }
       }
 

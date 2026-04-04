@@ -61,6 +61,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
             const { error: repairErr } = await (supabase.from('profiles') as any).upsert({
               id: user.id,
               name: meta?.name || user.email || 'User',
+              email: user.email || null,
               whatsapp: meta?.whatsapp || null,
               whatsapp_verified: false,
             } as any);
