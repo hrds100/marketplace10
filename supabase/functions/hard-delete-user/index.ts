@@ -73,15 +73,25 @@ serve(async (req) => {
     }
 
     let deleted = 0
+    const errors: string[] = []
 
     for (const userId of userIds) {
       // Prevent deleting yourself
       if (userId === caller.id) continue
 
+      // NULLify references (don't delete these rows, just unlink the user)
+      await supabaseAdmin.from('inv_orders').update({ agent_id: null }).eq('agent_id', userId)
+      await supabaseAdmin.from('aff_commissions').update({ user_id: null }).eq('user_id', userId)
+      await supabaseAdmin.from('aff_commissions').update({ set_by: null }).eq('set_by', userId)
+      await supabaseAdmin.from('aff_events').update({ referred_user_id: null }).eq('referred_user_id', userId)
+      await supabaseAdmin.from('email_templates').update({ updated_by: null }).eq('updated_by', userId)
+      await supabaseAdmin.from('ai_settings').update({ updated_by: null }).eq('updated_by', userId)
+      await supabaseAdmin.from('nfs_reservations').update({ created_by: null }).eq('created_by', userId)
+      await supabaseAdmin.from('nfs_reservations').update({ linked_user_id: null }).eq('linked_user_id', userId)
+
       // Clean FK-linked tables (order matters — delete dependents before profile)
       const fkTables = [
-        { table: 'aff_profiles', col: 'user_id' },
-        { table: 'nfs_hospitable_connections', col: 'profile_id' },
+        // Core platform
         { table: 'user_favourites', col: 'user_id' },
         { table: 'user_progress', col: 'user_id' },
         { table: 'chat_messages', col: 'sender_id' },
@@ -89,7 +99,22 @@ serve(async (req) => {
         { table: 'notifications', col: 'user_id' },
         { table: 'crm_deals', col: 'user_id' },
         { table: 'admin_audit_log', col: 'user_id' },
+        { table: 'pipeline_stages', col: 'user_id' },
+        // Investment
+        { table: 'inv_shareholders', col: 'user_id' },
+        { table: 'inv_orders', col: 'user_id' },
+        { table: 'inv_payouts', col: 'user_id' },
+        { table: 'inv_votes', col: 'user_id' },
+        { table: 'inv_boost_status', col: 'user_id' },
+        { table: 'inv_proposals', col: 'proposer_id' },
+        { table: 'payout_claims', col: 'user_id' },
+        { table: 'user_bank_accounts', col: 'user_id' },
+        // Affiliate
+        { table: 'aff_profiles', col: 'user_id' },
         { table: 'affiliate_events', col: 'affiliate_id' },
+        // NFStay
+        { table: 'nfs_hospitable_connections', col: 'profile_id' },
+        { table: 'nfs_operator_users', col: 'profile_id' },
       ]
 
       for (const { table, col } of fkTables) {
@@ -113,9 +138,8 @@ serve(async (req) => {
       // Delete auth user
       const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(userId)
       if (authErr) {
-        return new Response(JSON.stringify({ error: `Auth delete failed for ${userId}: ${authErr.message}` }), {
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        errors.push(`${userId}: ${authErr.message}`)
+        continue
       }
 
       // Audit log (one entry per ID)
@@ -129,7 +153,11 @@ serve(async (req) => {
       deleted++
     }
 
-    return new Response(JSON.stringify({ ok: true, deleted }), {
+    return new Response(JSON.stringify({
+      ok: errors.length === 0,
+      deleted,
+      errors: errors.length > 0 ? errors : undefined,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
