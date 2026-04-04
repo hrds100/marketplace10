@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [2026-04-04g] - Eliminate n8n from OTP + Inquiry Flow
+
+### Removed
+- **n8n eliminated from OTP flow (PR #251):** New `send-otp` edge function calls GHL directly (workflow `baabc69a`). New `verify-otp` edge function handles code acceptance natively. No more n8n middleman.
+- **n8n eliminated from inquiry WhatsApp reply (PR #251):** `process-inquiry` now calls GHL conversations API directly for tenant auto-reply. Fires for ALL inquiry channels (not just WhatsApp).
+- **Redundant n8n signup-welcome webhook removed** from SignUp.tsx — welcome email already sent natively via Resend.
+
+### Fixed
+- **Email inquiry template updated:** Tenant confirmation email now uses Hugo's approved copy: "Hello, thanks for contacting nfstay. We've passed your enquiry to the Landlord or Agent..."
+- **GHL OTP workflow ID corrected:** Was truncated (`baabc69a`), now full UUID (`baabc69a-a00f-412a-863e-7189ae025091`).
+- **Phone normalization:** Fixed +4407... → +447... (strip leading 0 after country code).
+- **All 10 edge functions redeployed** with `--no-verify-jwt` to prevent 401 errors.
+
+### Fixed (earlier in session)
+- **Admin wallet column (PR #245):** Shows crypto wallet in admin users table.
+- **WhatsApp gate OTP enforcement (PR #246):** Forces real OTP verification instead of accepting any phone number.
+- **Email backfill (PR #247):** Emails now auto-saved on all signup paths + existing users backfilled.
+- **Auto wallet creation (PR #248):** Wallets auto-create silently on dashboard load.
+- **Hard delete FK fix (PR #249):** Added 10 missing FK table cleanups to bulk delete.
+
 ## [2026-04-04f] - WhatsApp Gate, Email Backfill, Auto Wallets & Admin Enhancements
 
 ### Added

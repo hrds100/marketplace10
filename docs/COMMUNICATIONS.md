@@ -419,7 +419,7 @@ Used for:
 | New signup alert | Email | Hugo (admin) | "New User - James Walker" with name/email/phone |
 | New signup alert | In-App | Hugo (admin) | Bell notification in dashboard |
 
-**How it flows:** User fills signup form - frontend calls n8n `/send-otp` - n8n creates GHL contact - GHL `OTP - nfstay` workflow sends WhatsApp. Frontend also calls Resend for welcome + admin emails.
+**How it flows:** User fills signup form → frontend calls `send-otp` edge function → edge function creates/finds GHL contact → enrolls in GHL `OTP - nfstay` workflow (`baabc69a`) → GHL sends WhatsApp. No n8n involved. Frontend also calls Resend for welcome + admin emails.
 
 ### Member Submits a Deal
 
@@ -592,7 +592,8 @@ USER ACTION
 |  n8n               |
 |  (36 workflows)    |
 |                    |
-|  send-otp ---------+--> GHL --> WhatsApp (OTP code)
+|  (send-otp: MOVED to Supabase Edge Function - no longer n8n)
+|  (verify-otp: MOVED to Supabase Edge Function - no longer n8n)
 |  inbox-new-msg ----+--> GHL --> WhatsApp (landlord messages)
 |  inbox-replied ----+--> GHL --> WhatsApp (operator messages)
 |  inv-notify -------+--> GHL --> WhatsApp (investment alerts)
