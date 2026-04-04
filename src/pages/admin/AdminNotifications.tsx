@@ -10,10 +10,12 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, CheckCheck, ExternalLink } from 'lucide-react';
+import { Bell, CheckCheck, ExternalLink, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { logAdminAction } from '@/lib/auditLog';
 
 interface Notification {
   id: string;
@@ -41,6 +43,10 @@ export default function AdminNotifications() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkPin, setBulkPin] = useState('');
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -86,6 +92,42 @@ export default function AdminNotifications() {
     }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === notifications.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(notifications.map(n => n.id)));
+    }
+  };
+
+  const bulkDeleteNotifications = async () => {
+    if (bulkPin !== '5891') { toast.error('Wrong PIN'); return; }
+    setBulkDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error } = await (supabase.from('notifications') as any).delete().in('id', ids);
+      if (error) throw error;
+      if (user) logAdminAction(user.id, { action: 'bulk_delete_notifications', target_table: 'notifications', target_id: ids.join(','), metadata: { count: ids.length } });
+      setNotifications(prev => prev.filter(n => !selectedIds.has(n.id)));
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+      setBulkPin('');
+      toast.success(`${ids.length} notification(s) deleted`);
+    } catch (err) {
+      toast.error('Delete failed: ' + (err instanceof Error ? err.message : 'unknown'));
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-12 text-muted-foreground">Loading notifications...</div>
@@ -103,14 +145,22 @@ export default function AdminNotifications() {
             </span>
           )}
         </div>
-        {unreadCount > 0 && (
-          <button
-            onClick={markAllRead}
-            className="h-9 px-4 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-1.5"
-          >
-            <CheckCheck className="w-4 h-4" /> Mark all read
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {notifications.length > 0 && (
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-muted-foreground">
+              <input type="checkbox" checked={notifications.length > 0 && selectedIds.size === notifications.length} onChange={toggleSelectAll} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer" />
+              Select all
+            </label>
+          )}
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllRead}
+              className="h-9 px-4 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-1.5"
+            >
+              <CheckCheck className="w-4 h-4" /> Mark all read
+            </button>
+          )}
+        </div>
       </div>
 
       {notifications.length === 0 ? (
@@ -128,6 +178,13 @@ export default function AdminNotifications() {
               } ${i > 0 ? 'border-t border-border' : ''}`}
               onClick={() => handleClick(notif)}
             >
+              <input
+                type="checkbox"
+                checked={selectedIds.has(notif.id)}
+                onChange={() => toggleSelect(notif.id)}
+                onClick={e => e.stopPropagation()}
+                className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer flex-shrink-0 mt-1"
+              />
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
                 notif.type === 'new_deal' ? 'bg-emerald-100' : 'bg-amber-100'
               }`}>
@@ -158,6 +215,59 @@ export default function AdminNotifications() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E5E7EB] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] px-6 py-3 flex items-center justify-between">
+          <span className="text-sm font-semibold text-foreground">{selectedIds.size} selected</span>
+          <button
+            onClick={() => setBulkDeleteOpen(true)}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors inline-flex items-center gap-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Hard Delete Selected
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Delete PIN Dialog */}
+      {bulkDeleteOpen && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => { setBulkDeleteOpen(false); setBulkPin(''); }}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[400px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Bulk Delete Notifications</h3>
+                <p className="text-xs text-red-600 font-semibold">Permanently delete {selectedIds.size} notification(s)</p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Enter PIN to confirm</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={bulkPin}
+                onChange={e => setBulkPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••"
+                className="w-full h-11 px-3 rounded-lg border border-border bg-background text-center text-lg font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-red-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setBulkDeleteOpen(false); setBulkPin(''); }} className="flex-1 h-11 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">Cancel</button>
+              <button
+                onClick={bulkDeleteNotifications}
+                disabled={bulkDeleting || bulkPin.length !== 4}
+                className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {bulkDeleting ? 'Deleting...' : 'Delete All'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

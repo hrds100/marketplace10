@@ -282,6 +282,40 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showAssignForm, setShowAssignForm] = useState<Set<string>>(new Set());
   const [assignLeadForms, setAssignLeadForms] = useState<Record<string, { name: string; email: string; phone: string; mode: 'direct' | 'nda' | 'nda_and_claim'; workflow: string }>>({});
+  const [selectedPhones, setSelectedPhones] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkPin, setBulkPin] = useState('');
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const toggleSelectPhone = (phone: string) => {
+    setSelectedPhones(prev => {
+      const next = new Set(prev);
+      if (next.has(phone)) next.delete(phone); else next.add(phone);
+      return next;
+    });
+  };
+
+  const bulkDeleteOutreach = async () => {
+    if (bulkPin !== '5891') { toast.error('Wrong PIN'); return; }
+    setBulkDeleting(true);
+    try {
+      const phones = Array.from(selectedPhones);
+      // Delete all inquiries linked to selected landlord phones
+      const { error } = await (supabase.from('inquiries') as any).delete().in('lister_phone', phones);
+      if (error) throw error;
+      if (user) logAdminAction(user.id, { action: 'bulk_delete_outreach', target_table: 'inquiries', target_id: phones.join(','), metadata: { count: phones.length } });
+      queryClient.invalidateQueries({ queryKey: ['outreach-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-pending'] });
+      setSelectedPhones(new Set());
+      setBulkDeleteOpen(false);
+      setBulkPin('');
+      toast.success(`Inquiries deleted for ${phones.length} landlord(s)`);
+    } catch (err) {
+      toast.error('Delete failed: ' + (err instanceof Error ? err.message : 'unknown'));
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   const toggleAssignForm = (phone: string) => {
     setShowAssignForm(prev => {
@@ -601,6 +635,13 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
           return (
           <div key={group.phone} className="rounded-2xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
             <div className="flex items-center justify-between gap-4 p-4 cursor-pointer" onClick={() => toggleExpand(group.phone)}>
+              <input
+                type="checkbox"
+                checked={selectedPhones.has(group.phone)}
+                onChange={() => toggleSelectPhone(group.phone)}
+                onClick={e => e.stopPropagation()}
+                className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer flex-shrink-0"
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Phone className="w-3.5 h-3.5" style={{ color: '#1E9A80' }} />
@@ -852,6 +893,59 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
           );
         })}
       </div>
+
+      {/* Floating Bulk Action Bar */}
+      {selectedPhones.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E5E7EB] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] px-6 py-3 flex items-center justify-between">
+          <span className="text-sm font-semibold text-foreground">{selectedPhones.size} selected</span>
+          <button
+            onClick={() => setBulkDeleteOpen(true)}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors inline-flex items-center gap-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Hard Delete Selected
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Delete PIN Dialog */}
+      {bulkDeleteOpen && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => { setBulkDeleteOpen(false); setBulkPin(''); }}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[400px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Bulk Delete Outreach</h3>
+                <p className="text-xs text-red-600 font-semibold">Delete all inquiries for {selectedPhones.size} landlord(s)</p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Enter PIN to confirm</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={bulkPin}
+                onChange={e => setBulkPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••"
+                className="w-full h-11 px-3 rounded-lg border border-border bg-background text-center text-lg font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-red-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setBulkDeleteOpen(false); setBulkPin(''); }} className="flex-1 h-11 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">Cancel</button>
+              <button
+                onClick={bulkDeleteOutreach}
+                disabled={bulkDeleting || bulkPin.length !== 4}
+                className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {bulkDeleting ? 'Deleting...' : 'Delete All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

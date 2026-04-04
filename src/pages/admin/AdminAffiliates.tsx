@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Search, TrendingUp, Users, MousePointerClick, Wallet } from 'lucide-react';
+import { Check, Search, TrendingUp, Users, MousePointerClick, Wallet, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +11,10 @@ export default function AdminAffiliates() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending_payouts'>('all');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkPin, setBulkPin] = useState('');
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Fetch all affiliates with profile names
   const { data: affiliates = [], isLoading } = useQuery({
@@ -114,6 +118,42 @@ export default function AdminAffiliates() {
     return matchesSearch && matchesFilter;
   });
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((a: Record<string, unknown>) => a.id as string)));
+    }
+  };
+
+  const bulkDeleteAffiliates = async () => {
+    if (bulkPin !== '5891') { toast.error('Wrong PIN'); return; }
+    setBulkDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error } = await (supabase.from('aff_profiles') as any).delete().in('id', ids);
+      if (error) throw error;
+      if (user) logAdminAction(user.id, { action: 'bulk_delete_affiliates', target_table: 'aff_profiles', target_id: ids.join(','), metadata: { count: ids.length } });
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] });
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+      setBulkPin('');
+      toast.success(`${ids.length} affiliate(s) deleted`);
+    } catch (err) {
+      toast.error('Delete failed: ' + (err instanceof Error ? err.message : 'unknown'));
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   return (
     <div data-feature="ADMIN">
       <h1 className="text-[28px] font-bold text-foreground mb-6">Affiliate Agents</h1>
@@ -202,6 +242,9 @@ export default function AdminAffiliates() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
+                <th className="p-3.5 w-10">
+                  <input type="checkbox" checked={filtered.length > 0 && selectedIds.size === filtered.length} onChange={toggleSelectAll} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer" />
+                </th>
                 {['Agent', 'Code', 'Clicks', 'Signups', 'Paid Users', 'Earned', 'Pending', 'Tier'].map(h => (
                   <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
                 ))}
@@ -210,6 +253,9 @@ export default function AdminAffiliates() {
             <tbody>
               {filtered.map((a: Record<string, unknown>, i: number) => (
                 <tr key={a.id as string} className={i % 2 === 1 ? 'bg-secondary/50' : ''}>
+                  <td className="p-3.5 w-10">
+                    <input type="checkbox" checked={selectedIds.has(a.id as string)} onChange={() => toggleSelect(a.id as string)} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer" />
+                  </td>
                   <td className="p-3.5">
                     <div className="font-medium text-foreground">{a.name as string}</div>
                     <div className="text-[11px] text-muted-foreground">{a.email as string}</div>
@@ -242,6 +288,59 @@ export default function AdminAffiliates() {
           </table>
         )}
       </div>
+
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E5E7EB] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] px-6 py-3 flex items-center justify-between">
+          <span className="text-sm font-semibold text-foreground">{selectedIds.size} selected</span>
+          <button
+            onClick={() => setBulkDeleteOpen(true)}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors inline-flex items-center gap-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Hard Delete Selected
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Delete PIN Dialog */}
+      {bulkDeleteOpen && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => { setBulkDeleteOpen(false); setBulkPin(''); }}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[400px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Bulk Delete Affiliates</h3>
+                <p className="text-xs text-red-600 font-semibold">Permanently delete {selectedIds.size} affiliate(s) — cannot be undone</p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Enter PIN to confirm</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={bulkPin}
+                onChange={e => setBulkPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••"
+                className="w-full h-11 px-3 rounded-lg border border-border bg-background text-center text-lg font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-red-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setBulkDeleteOpen(false); setBulkPin(''); }} className="flex-1 h-11 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">Cancel</button>
+              <button
+                onClick={bulkDeleteAffiliates}
+                disabled={bulkDeleting || bulkPin.length !== 4}
+                className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {bulkDeleting ? 'Deleting...' : 'Delete All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
