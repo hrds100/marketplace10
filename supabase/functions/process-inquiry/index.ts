@@ -19,7 +19,9 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const N8N_BASE = 'https://n8n.srv886554.hstgr.cloud'
+const GHL_TOKEN = Deno.env.get('GHL_BEARER_TOKEN') || ''
+const GHL_LOCATION_ID = 'eFBsWXY3BmWDGIRez13x'
+const GHL_BASE = 'https://services.leadconnectorhq.com'
 const BASE_URL = 'https://hub.nfstay.com'
 
 serve(async (req) => {
@@ -205,22 +207,64 @@ serve(async (req) => {
       magicToken = ''
     }
 
-    // 5. Send WhatsApp courtesy reply to tenant (if they inquired via WhatsApp)
-    if (channel === 'whatsapp' && resolvedTenantPhone) {
+    // 5. Send WhatsApp confirmation to tenant (direct GHL — no n8n)
+    if (resolvedTenantPhone && GHL_TOKEN) {
       try {
-        await fetch(`${N8N_BASE}/webhook/inquiry-tenant-reply`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: resolvedTenantPhone,
-            tenant_name: tenant_name || 'there',
-            property_name: propertyName,
-            lister_type: listerType,
-          }),
-        })
-        console.log(`Tenant WhatsApp reply sent to ${resolvedTenantPhone}`)
+        const ghlHeaders: Record<string, string> = {
+          'Authorization': `Bearer ${GHL_TOKEN}`,
+          'Version': '2021-07-28',
+          'Content-Type': 'application/json',
+        }
+
+        // Find GHL contact by phone
+        let contactId = ''
+        const searchRes = await fetch(
+          `${GHL_BASE}/contacts/?query=${encodeURIComponent(resolvedTenantPhone)}&locationId=${GHL_LOCATION_ID}`,
+          { headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version } }
+        )
+        if (searchRes.ok) {
+          const searchData = await searchRes.json()
+          contactId = searchData?.contacts?.[0]?.id || ''
+        }
+
+        // Create contact if not found
+        if (!contactId) {
+          const createRes = await fetch(`${GHL_BASE}/contacts/`, {
+            method: 'POST',
+            headers: ghlHeaders,
+            body: JSON.stringify({
+              locationId: GHL_LOCATION_ID,
+              phone: resolvedTenantPhone,
+              name: tenant_name || resolvedTenantPhone,
+              tags: ['nfstay', 'tenant'],
+            }),
+          })
+          if (createRes.ok) {
+            const createData = await createRes.json()
+            contactId = createData?.contact?.id || ''
+          }
+        }
+
+        // Send WhatsApp message
+        if (contactId) {
+          const msgRes = await fetch(`${GHL_BASE}/conversations/messages`, {
+            method: 'POST',
+            headers: ghlHeaders,
+            body: JSON.stringify({
+              type: 'WhatsApp',
+              contactId,
+              message: "Hello, thanks for contacting nfstay.\n\nWe've passed your enquiry to the Landlord or Agent, they'll reach out to you shortly. \ud83d\udc4d",
+            }),
+          })
+          if (!msgRes.ok) {
+            console.error('[process-inquiry] GHL WhatsApp failed:', msgRes.status, await msgRes.text().catch(() => ''))
+          } else {
+            console.log('[process-inquiry] WhatsApp sent to', resolvedTenantPhone)
+          }
+        }
       } catch (e) {
-        console.error('Failed to send tenant WhatsApp reply:', e)
+        console.error('[process-inquiry] GHL WhatsApp error:', e)
+        // Non-blocking — email still sends below
       }
     }
 

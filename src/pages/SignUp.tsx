@@ -264,8 +264,6 @@ export default function SignUp() {
       supabase.functions.invoke('send-email', { body: { type: 'welcome-member', data: { email: cleanEmail, name: cleanName } } }).catch(() => {});
       supabase.functions.invoke('send-email', { body: { type: 'new-signup-admin', data: { email: cleanEmail, name: cleanName, phone: fullPhone } } }).catch(() => {});
       (supabase.from('notifications') as any).insert({ type: 'new_signup', title: 'New user signed up', body: `${cleanName} (${cleanEmail}) just created an account.` }).then(() => {}).catch(() => {});
-      // Fire-and-forget: n8n welcome webhook
-      fetch('https://n8n.srv886554.hstgr.cloud/webhook/signup-welcome', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: cleanEmail, name: cleanName, phone: fullPhone }) }).catch(() => {});
 
       try { await sendOtp(fullPhone); toast.success('Account created! Check WhatsApp for your code.'); }
       catch { toast.success('Account created! Sending verification code...'); }
