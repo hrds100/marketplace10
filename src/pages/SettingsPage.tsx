@@ -86,6 +86,10 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async () => {
     if (!user) return;
+    if (!profile.whatsapp.trim()) {
+      toast.error('WhatsApp is required');
+      return;
+    }
     if (profile.whatsapp) {
       const normalized = normalizeUKPhone(profile.whatsapp);
       if (!normalized) {
@@ -286,7 +290,16 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground block mb-1.5">WhatsApp</label>
-                  <input value={profile.whatsapp} onChange={e => setProfile(p => ({ ...p, whatsapp: e.target.value }))} className="input-nfstay w-full" placeholder="+44 7911 123456" />
+                  <input
+                    value={profile.whatsapp}
+                    onChange={e => setProfile(p => ({ ...p, whatsapp: e.target.value }))}
+                    disabled={!!profile.whatsapp}
+                    className={`input-nfstay w-full ${profile.whatsapp ? 'opacity-60' : ''}`}
+                    placeholder="+44 7911 123456"
+                  />
+                  {profile.whatsapp && (
+                    <p className="text-[11px] text-muted-foreground mt-1">WhatsApp cannot be changed. Contact support@nfstay.com to update.</p>
+                  )}
                 </div>
                 <button data-feature="SETTINGS__SAVE" onClick={handleSaveProfile} disabled={saving} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
                   {saving ? 'Saving...' : 'Save changes'}
