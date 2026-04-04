@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [2026-04-04a] - Social Login Existing User Dead-End Fix
+
+### Fixed
+- **Social sign-in dead-end for existing users:** When an existing email/password user tried social login (Google/Apple/X/Facebook) for the first time, `ParticleAuthCallback.tsx` would show "Could not create account: User already registered" with no way forward. Now redirects to `/signin?email=...` with a toast explaining they already have an account.
+- **Callback error page escape routes:** Error state on `/auth/particle` now shows both "Sign in" and "Sign up" links instead of only "Sign up".
+- **Empty identities check:** Added detection for Supabase's silent "already registered" response (user returned with no identities) to prevent a second dead-end path.
+
+### Added
+- Playwright test `e2e/social-auth-existing-user.spec.ts` covering 5 callback/error-handling scenarios.
+
 ## [2026-04-03e] - Agent Roster + Handoff Protocol
 
 ### Added

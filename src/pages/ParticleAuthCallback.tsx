@@ -124,8 +124,27 @@ export default function ParticleAuthCallback() {
         });
 
         if (signUpErr) {
+          // Case (c): existing email/password user trying social login for the first time.
+          // Their Supabase password doesn't match the derived password, and signUp fails
+          // because the email is already registered. Redirect to sign-in instead of dead-ending.
+          const isAlreadyRegistered =
+            signUpErr.message?.toLowerCase().includes('already registered') ||
+            signUpErr.message?.toLowerCase().includes('already been registered');
+          if (isAlreadyRegistered) {
+            toast.error('You already have an nfstay account with this email. Please sign in with your password.');
+            window.location.href = `/signin?email=${encodeURIComponent(email)}`;
+            return;
+          }
           setErrMsg(`Could not create account: ${signUpErr.message}`);
           setStatus('error');
+          return;
+        }
+
+        // Supabase may return a user with no identities when the email already exists
+        // but hasn't been confirmed — treat as existing account
+        if (signUpData?.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
+          toast.error('You already have an nfstay account with this email. Please sign in with your password.');
+          window.location.href = `/signin?email=${encodeURIComponent(email)}`;
           return;
         }
 
@@ -199,9 +218,14 @@ export default function ParticleAuthCallback() {
         <div className="text-center max-w-sm">
           <p className="text-red-500 font-medium">Sign in failed</p>
           <p className="text-sm text-muted-foreground mt-2">{errMsg}</p>
-          <a href="/signup" className="text-primary font-semibold text-sm mt-4 inline-block">
-            Back to sign up
-          </a>
+          <div className="flex gap-4 mt-4 justify-center">
+            <a href="/signin" className="text-primary font-semibold text-sm">
+              Sign in
+            </a>
+            <a href="/signup" className="text-primary font-semibold text-sm">
+              Sign up
+            </a>
+          </div>
         </div>
       </div>
     );

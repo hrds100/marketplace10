@@ -23,10 +23,10 @@
 
 | Item | Value |
 |------|-------|
-| **Latest known live commit** | `4c58f4c` - feat(outreach): Reset Test Data button + PIN dialog (PR #175) |
-| **Latest meaningful merged PRs** | #203 agent roster, #193 email inquiry gate (process-inquiry redeployed 2026-04-03), #175 outreach reset button, #202 admin settings |
-| **Open but important** | Check `gh pr list --state open` for current state |
-| **Unproven / not yet merged** | Check active branches below |
+| **Latest known live commit** | `1e9283a` - Merge PR #234 feat(signup): remove role selection step from signup flow |
+| **Latest meaningful merged PRs** | #234 signup flow (no role step), #233 lister role on List a Deal; prior: admin bulk delete #235–#237 merged |
+| **Open but important** | `gh pr list --state open` → **none** (verified 2026-04-04) |
+| **Unproven / not yet merged** | No open PRs; verify Vercel production matches `main` after each merge |
 
 ---
 
@@ -34,7 +34,7 @@
 
 - **Branch workflow:** Never push to main. All work on feature branches (`feat/`, `fix/`, `docs/`). PR required to merge.
 - **Preview workflow:** Every push gets a Vercel preview. Fetch real URL from PR comments. Never guess.
-- **Co-Pilot audit before merge:** Hugo brings branch/PR/preview details to the Co-Pilot. Co-Pilot audits GitHub reality before merge approval. Claude's claim is not the source of truth - GitHub is.
+- **Co-Pilot audit before merge:** Hugo brings branch/PR/preview details to the Co-Pilot. Co-Pilot audits GitHub reality (including a strict code review via `gh pr diff`) before merge approval. Claude's claim is not the source of truth - GitHub is.
 - **Tests required before DONE:** Playwright e2e test mandatory. `npm run check` mandatory before push. Zero TypeScript errors always.
 - **Visibility gate:** If work is not pushed to a GitHub feature branch, it is not done. Local-only changes are not proof.
 
@@ -57,6 +57,7 @@
 ## 5. Known Issues / Watchlist
 
 - Check `gh issue list` for current bugs
+- Social login dead-end for existing users: fixed in `fix/legacy-social-auth-reconcile` branch (2026-04-04). Existing email/password users trying social login were hitting "User already registered" dead-end. Now redirects to /signin.
 - Password seed `_NFsTay2!` must never be renamed (broke all social logins on 2026-03-23)
 - `vite.config.ts` is fragile - no React aliases, no polyfill changes
 - Supabase edge function deploys reset `verify_jwt` to true - must patch after every deploy
@@ -68,6 +69,7 @@
 
 | Branch | Purpose | Status |
 |--------|---------|--------|
+| `fix/legacy-social-auth-reconcile` | Fix social login dead-end for existing email/password users | Open — PR pending |
 | `fix/hospitable-clean-sync` | PR #189 — consistent listing sync mapping across n8n workflows | Open — hospitable backlog |
 | `fix/hospitable-photo-quality` | PR #188 — full-res Airbnb photos instead of thumbnails | Open — hospitable backlog |
 | `fix/hospitable-sync-listings` | PR #187 — real Airbnb listings sync to nfstay | Open — hospitable backlog |
@@ -160,4 +162,4 @@ When Hugo brings output back to the Co-Pilot, he must paste the exact `AGENT:` l
 
 ---
 
-*Last updated: 2026-04-03 — PR #193 (email inquiry gate) + PR #175 (outreach reset button) merged*
+*Last updated: 2026-04-04 — `main` @ `1e9283a`; open PRs: none (GitHub CLI)*
