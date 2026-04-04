@@ -8,7 +8,7 @@ const corsHeaders = {
 const GHL_TOKEN = Deno.env.get('GHL_BEARER_TOKEN') || ''
 const GHL_LOCATION_ID = 'eFBsWXY3BmWDGIRez13x'
 const GHL_BASE = 'https://services.leadconnectorhq.com'
-const GHL_OTP_WORKFLOW = 'baabc69a'
+const GHL_OTP_WORKFLOW = 'baabc69a-a00f-412a-863e-7189ae025091'
 
 const ghlHeaders: Record<string, string> = {
   'Authorization': `Bearer ${GHL_TOKEN}`,
@@ -22,6 +22,8 @@ function normalizePhone(raw: string): string {
   let digits = stripped.startsWith('+') ? stripped.slice(1) : stripped
   if (digits.startsWith('00')) digits = digits.slice(2)
   if (digits.startsWith('0') && digits.length === 11) digits = '44' + digits.slice(1)
+  // Fix +4407... → +447... (leading 0 after country code)
+  if (digits.startsWith('440') && digits.length === 13) digits = '44' + digits.slice(3)
   return '+' + digits
 }
 
