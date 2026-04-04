@@ -424,7 +424,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       const result = await callOutreachWebhook({
         landlord_whatsapp: group.phone,
         landlord_name: group.name || 'Property Owner',
-        property_ref_code: firstProp?.name || firstProp?.city || 'Property',
+        property_ref_code: '',
         property_title: firstProp?.name || firstProp?.city || 'Property',
         property_city: firstProp?.city || '',
         inquiry_count: group.properties.reduce((s, p) => s + p.totalCount, 0),
@@ -484,7 +484,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       const outreachResult = await callOutreachWebhook({
         landlord_whatsapp: group.phone,
         landlord_name: group.name || 'Property Owner',
-        property_ref_code: firstProp?.name || firstProp?.city || 'Property',
+        property_ref_code: '',
         property_title: firstProp?.name || firstProp?.city || 'Property',
         property_city: firstProp?.city || '',
         inquiry_count: 1,
