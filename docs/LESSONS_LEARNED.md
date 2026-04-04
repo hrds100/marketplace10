@@ -5,6 +5,20 @@
 
 ---
 
+## 2026-04-04 - Social login dead-end for existing email/password users
+
+**What happened:** Existing email/password users who tried social login (Google/Apple/X/Facebook) for the first time hit a dead-end error: "Could not create account: User already registered". No way forward, no escape.
+
+**Root cause:** `ParticleAuthCallback.tsx` sign-in path tried `signInWithPassword(email, derivedPassword(uuid))`. When this failed (because the user's real password ≠ derived password), it fell back to `signUp()`. Supabase returned "User already registered" because the email exists, and the code showed this as a terminal error.
+
+**Fix:** Detect "already registered" errors specifically and redirect to `/signin?email=...` with a toast instead of dead-ending. Also added an empty-identities check for Supabase's silent duplicate response. Error page now shows both sign-in and sign-up links.
+
+**Rule:** Never treat a `signUp` failure as a terminal error without checking whether the user already exists. In auth reconciliation flows, "already registered" is a legitimate state that needs a graceful redirect, not an error screen. The same email can enter the system through multiple auth paths (email/password, social login, magic link) — the fallback must handle all of them.
+
+**File:** `src/pages/ParticleAuthCallback.tsx` lines 126-149 (after fix).
+
+---
+
 ## 2026-04-03 - AI prompts not visible in admin settings
 
 **What happened:** The AI Engine section in Admin Settings loaded but all textareas were empty. The ai_settings table had data but RLS blocked the admin from reading it.
