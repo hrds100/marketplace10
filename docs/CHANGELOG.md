@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [2026-04-04f] - WhatsApp Gate, Email Backfill, Auto Wallets & Admin Enhancements
+
+### Added
+- **Admin wallet column (PR #245):** Admin users table now shows each user's crypto wallet address (truncated with full address on hover).
+- **Auto wallet creation (PR #248):** Wallets now auto-create silently 5 seconds after dashboard load instead of waiting for users to click a button. One attempt per session, fails silently.
+
+### Fixed
+- **WhatsApp gate OTP enforcement (PR #246):** The dashboard WhatsApp gate previously accepted any phone number without verification. Now redirects to the real OTP page so users must enter a code sent to their WhatsApp. Also resets `whatsapp_verified` for users who have no phone but were previously marked verified.
+- **Email backfill on all signup paths (PR #247):** Fixed 4 places where email was missing after signup: database trigger (`handle_new_user`), `SignUp.tsx`, `VerifyOtp.tsx`, and `ProtectedRoute` orphan repair. Migration backfilled all existing users from `auth.users`.
+
+### In Progress
+- **Bulk hard-delete FK constraints:** Identified missing FK table cleanups in the `hard-delete-user` edge function (investment tables, pipeline, bank accounts). Fix assigned to Dimitri, PR pending.
+
 ## [2026-04-04a] - Social Login Existing User Dead-End Fix
 
 ### Fixed
