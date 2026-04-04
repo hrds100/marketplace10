@@ -7,6 +7,9 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const BASE_URL = 'https://hub.nfstay.com'
+const GHL_TOKEN = Deno.env.get('GHL_BEARER_TOKEN') || ''
+const GHL_LOCATION_ID = 'eFBsWXY3BmWDGIRez13x'
+const GHL_BASE = 'https://services.leadconnectorhq.com'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -180,6 +183,49 @@ serve(async (req) => {
         console.log(`[receive-tenant-whatsapp] Tenant confirmation email sent to ${tenant_email}`)
       } catch (e) {
         console.error('[receive-tenant-whatsapp] Failed to send tenant confirmation email:', e)
+      }
+    }
+
+    // 5c. Send WhatsApp auto-reply to tenant (direct GHL — no n8n)
+    if (tenant_phone && GHL_TOKEN) {
+      try {
+        const ghlHeaders: Record<string, string> = {
+          'Authorization': `Bearer ${GHL_TOKEN}`,
+          'Version': '2021-07-28',
+          'Content-Type': 'application/json',
+        }
+        // Clean property name for message
+        const cleanName = (property.name || 'your property').replace(/^Property\s*#\d+\s*-\s*/, '').replace(/\s*\(\s*\)\s*$/, '').trim()
+
+        // Find GHL contact by phone
+        let contactId = ''
+        const searchRes = await fetch(
+          `${GHL_BASE}/contacts/?query=${encodeURIComponent(tenant_phone)}&locationId=${GHL_LOCATION_ID}`,
+          { headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version } }
+        )
+        if (searchRes.ok) {
+          const searchData = await searchRes.json()
+          contactId = searchData?.contacts?.[0]?.id || ''
+        }
+
+        if (contactId) {
+          const msgRes = await fetch(`${GHL_BASE}/conversations/messages`, {
+            method: 'POST',
+            headers: ghlHeaders,
+            body: JSON.stringify({
+              type: 'WhatsApp',
+              contactId,
+              message: `Hello, thanks for contacting nfstay.\n\nWe've passed your enquiry for ${cleanName} to the Landlord or Agent, they'll reach out to you shortly. \ud83d\udc4d`,
+            }),
+          })
+          if (!msgRes.ok) {
+            console.error('[receive-tenant-whatsapp] GHL WhatsApp reply failed:', msgRes.status)
+          } else {
+            console.log('[receive-tenant-whatsapp] WhatsApp reply sent to', tenant_phone)
+          }
+        }
+      } catch (e) {
+        console.error('[receive-tenant-whatsapp] GHL WhatsApp error:', e)
       }
     }
 
