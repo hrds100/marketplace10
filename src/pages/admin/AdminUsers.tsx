@@ -22,6 +22,7 @@ interface Profile {
   name: string | null;
   email: string | null;
   whatsapp: string | null;
+  wallet_address?: string | null;
   tier: string | null;
   suspended: boolean | null;
   created_at?: string;
@@ -261,7 +262,7 @@ export default function AdminUsers() {
                     className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer"
                   />
                 </th>
-                {['Name', 'Email', 'User ID', 'WhatsApp', 'Tier', 'Status', 'Actions'].map(h => (
+                {['Name', 'Email', 'User ID', 'Wallet', 'WhatsApp', 'Tier', 'Status', 'Actions'].map(h => (
                   <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
                 ))}
               </tr>
@@ -286,6 +287,11 @@ export default function AdminUsers() {
                       {u.email || <span className="italic">—</span>}
                     </td>
                     <td className="p-3.5 text-muted-foreground text-xs font-mono">{u.id.slice(0, 8)}...</td>
+                    <td className="p-3.5 text-muted-foreground text-xs font-mono">
+                      {u.wallet_address
+                        ? <span title={u.wallet_address}>{u.wallet_address.slice(0, 6)}...{u.wallet_address.slice(-4)}</span>
+                        : <span className="italic">—</span>}
+                    </td>
                     <td className="p-3.5">
                       {u.whatsapp ? (
                         <a
@@ -352,7 +358,7 @@ export default function AdminUsers() {
               })}
               {paginated.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-muted-foreground">No users found</td>
+                  <td colSpan={9} className="p-8 text-center text-muted-foreground">No users found</td>
                 </tr>
               )}
             </tbody>
