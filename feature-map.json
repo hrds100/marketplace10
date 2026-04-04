@@ -3,6 +3,9 @@
     "description": "User authentication: sign-in, sign-up, OTP, password reset, social login (Particle)",
     "session": "AUTH",
     "active": true,
+    "locked_files": [
+      "src/hooks/useAuth.ts"
+    ],
     "files": [
       "src/pages/SignIn.tsx",
       "src/pages/SignUp.tsx",
@@ -84,7 +87,9 @@
   "CRM_INBOX": {
     "description": "CRM pipeline and landlord-tenant messaging inbox with NDA enforcement",
     "session": "CRM_INBOX",
-    "active": true,
+    "active": false,
+    "deprecated": true,
+    "note": "Inbox removed 2026-04-04 — leads now live in CRM > My Leads tab.",
     "files": [
       "src/pages/CRMPage.tsx",
       "src/pages/InboxPage.tsx",
@@ -267,6 +272,11 @@
     "description": "Dashboard sidebar, top nav, landing nav, admin layout, burger menu",
     "session": "NAV_LAYOUT",
     "active": true,
+    "locked_files": [
+      "src/components/DashboardSidebar.tsx",
+      "src/layouts/DashboardLayout.tsx",
+      "src/layouts/AdminLayout.tsx"
+    ],
     "files": [
       "src/components/DashboardSidebar.tsx",
       "src/components/DashboardTopNav.tsx",
@@ -581,6 +591,9 @@
     "description": "Cross-feature utilities, UI primitives, data, contexts, and shared hooks",
     "session": "SHARED",
     "active": true,
+    "locked_files": [
+      "src/App.tsx"
+    ],
     "files": [
       "src/App.tsx",
       "src/main.tsx",
