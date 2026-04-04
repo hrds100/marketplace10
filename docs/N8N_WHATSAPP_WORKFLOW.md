@@ -106,8 +106,7 @@ This prevents duplicate replies when both paths observe the same message.
 **Source:**
 - n8n webhook workflow `IvXzbcqzv5bKtu01` (instant, when GHL triggers it)
 - n8n poll workflow `ReoIHnniLpB632Ir` (every 2 min, backup)
-**Text:** "Thanks for contacting NFsTay! Your inquiry for [property] has been received
-and is being reviewed by our team. We will be in touch shortly."
+**Text:** "Hello, thanks for contacting nfstay.\n\nWe've passed your enquiry to the Landlord or Agent, they'll reach out to you shortly. 👍"
 **Trigger:** Fires immediately after `receive-tenant-whatsapp` creates/deduplicates the inquiry.
 **Sends via:** GHL conversations API (PIT token).
 
@@ -140,7 +139,7 @@ This text is correct for the admin-gated flow. This workflow only fires
 for email inquiries via `process-inquiry` (not for WhatsApp).
 
 The main inbound WhatsApp workflow (`IvXzbcqzv5bKtu01`) has its own auto-reply:
-"Your inquiry has been received and is being reviewed. We will get back to you shortly."
+"Hello, thanks for contacting nfstay.\n\nWe've passed your enquiry to the Landlord or Agent, they'll reach out to you shortly. 👍"
 
 ## GHL Custom Fields
 | Field | ID | Key |
