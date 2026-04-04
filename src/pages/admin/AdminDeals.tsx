@@ -35,6 +35,9 @@ export default function AdminDeals() {
   const [pin, setPin] = useState('');
   const [pricingLoading, setPricingLoading] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkPin, setBulkPin] = useState('');
 
   // ── Data ──────────────────────────────────────────────────────
   const { data: allProperties = [] } = useQuery({
@@ -241,6 +244,45 @@ export default function AdminDeals() {
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to hard delete'),
   });
+
+  // Bulk hard delete mutation
+  const bulkHardDeleteMutation = useMutation({
+    mutationFn: async ({ ids, userPin }: { ids: string[]; userPin: string }) => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const res = await fetch(`${supabaseUrl}/functions/v1/hard-delete-property`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ propertyIds: ids, pin: userPin }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to bulk delete');
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-deals'] });
+      setBulkDeleteOpen(false);
+      setBulkPin('');
+      setSelectedIds(new Set());
+      toast.success(`${variables.ids.length} deal(s) permanently deleted`);
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to bulk delete'),
+  });
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === currentList.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(currentList.map(p => p.id)));
+    }
+  };
 
   // ── CSV (from Listings) ──────────────────────────────────────
   const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -454,6 +496,8 @@ export default function AdminDeals() {
                       refetchPricing={refetchPricing}
                       queryClient={queryClient}
                       user={user}
+                      selected={selectedIds.has(s.id)}
+                      onToggleSelect={toggleSelect}
                     />
                   ))}
                 </div>
@@ -471,6 +515,7 @@ export default function AdminDeals() {
           {currentList.map(s => (
             <div key={s.id} className="bg-card border border-border rounded-2xl overflow-hidden">
               <div className="flex items-center gap-4 p-4 cursor-pointer" onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}>
+                <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleSelect(s.id)} onClick={e => e.stopPropagation()} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground truncate">{s.name}</span>
@@ -691,6 +736,9 @@ export default function AdminDeals() {
                   <table className="w-full text-sm min-w-[900px]">
                     <thead>
                       <tr className="border-b border-border">
+                        <th className="p-3.5 w-10">
+                          <input type="checkbox" checked={group.properties.length > 0 && group.properties.every(p => selectedIds.has(p.id))} onChange={() => { const allSelected = group.properties.every(p => selectedIds.has(p.id)); setSelectedIds(prev => { const next = new Set(prev); group.properties.forEach(p => allSelected ? next.delete(p.id) : next.add(p.id)); return next; }); }} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer" />
+                        </th>
                         {['Name', 'City', 'Type', 'Rent', 'Profit', 'Status', 'Featured', 'WhatsApp', 'Actions'].map(h => (
                           <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
                         ))}
@@ -698,7 +746,7 @@ export default function AdminDeals() {
                     </thead>
                     <tbody>
                       {group.properties.map((l, i) => (
-                        <LiveTableRow key={l.id} l={l} i={i} changeStatus={changeStatus} toggleFeatured={toggleFeatured} startEdit={startEdit} deleteProperty={deleteProperty} setHardDeleteTarget={setHardDeleteTarget} />
+                        <LiveTableRow key={l.id} l={l} i={i} changeStatus={changeStatus} toggleFeatured={toggleFeatured} startEdit={startEdit} deleteProperty={deleteProperty} setHardDeleteTarget={setHardDeleteTarget} selected={selectedIds.has(l.id)} onToggleSelect={toggleSelect} />
                       ))}
                     </tbody>
                   </table>
@@ -716,6 +764,9 @@ export default function AdminDeals() {
           <table className="w-full text-sm min-w-[900px]">
             <thead>
               <tr className="border-b border-border">
+                <th className="p-3.5 w-10">
+                  <input type="checkbox" checked={currentList.length > 0 && selectedIds.size === currentList.length} onChange={toggleSelectAll} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer" />
+                </th>
                 {['Name', 'City', 'Type', 'Rent', 'Profit', 'Status', 'Featured', 'WhatsApp', 'Actions'].map(h => (
                   <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
                 ))}
@@ -723,7 +774,7 @@ export default function AdminDeals() {
             </thead>
             <tbody>
               {currentList.map((l, i) => (
-                <LiveTableRow key={l.id} l={l} i={i} changeStatus={changeStatus} toggleFeatured={toggleFeatured} startEdit={startEdit} deleteProperty={deleteProperty} setHardDeleteTarget={setHardDeleteTarget} />
+                <LiveTableRow key={l.id} l={l} i={i} changeStatus={changeStatus} toggleFeatured={toggleFeatured} startEdit={startEdit} deleteProperty={deleteProperty} setHardDeleteTarget={setHardDeleteTarget} selected={selectedIds.has(l.id)} onToggleSelect={toggleSelect} />
               ))}
             </tbody>
           </table>
@@ -763,7 +814,7 @@ export default function AdminDeals() {
               {!collapsedGroups.has(group.phone) && (
                 <div className="divide-y divide-border">
                   {group.properties.map(s => (
-                    <InactiveCard key={s.id} s={s} statusBadge={statusBadge} sourceTag={sourceTag} changeStatus={changeStatus} setHardDeleteTarget={setHardDeleteTarget} />
+                    <InactiveCard key={s.id} s={s} statusBadge={statusBadge} sourceTag={sourceTag} changeStatus={changeStatus} setHardDeleteTarget={setHardDeleteTarget} selected={selectedIds.has(s.id)} onToggleSelect={toggleSelect} />
                   ))}
                 </div>
               )}
@@ -782,6 +833,59 @@ export default function AdminDeals() {
           {currentList.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-12">No inactive deals.</p>
           )}
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E5E7EB] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] px-6 py-3 flex items-center justify-between">
+          <span className="text-sm font-semibold text-foreground">{selectedIds.size} selected</span>
+          <button
+            onClick={() => setBulkDeleteOpen(true)}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors inline-flex items-center gap-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Hard Delete Selected
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Hard Delete PIN Dialog */}
+      {bulkDeleteOpen && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => { setBulkDeleteOpen(false); setBulkPin(''); }}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[400px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Bulk Hard Delete</h3>
+                <p className="text-xs text-red-600 font-semibold">Permanently delete {selectedIds.size} deal(s) — cannot be undone</p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Enter PIN to confirm</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={bulkPin}
+                onChange={e => setBulkPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••"
+                className="w-full h-11 px-3 rounded-lg border border-border bg-background text-center text-lg font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-red-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setBulkDeleteOpen(false); setBulkPin(''); }} className="flex-1 h-11 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">Cancel</button>
+              <button
+                onClick={() => bulkHardDeleteMutation.mutate({ ids: Array.from(selectedIds), userPin: bulkPin })}
+                disabled={bulkHardDeleteMutation.isPending || bulkPin.length !== 4}
+                className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {bulkHardDeleteMutation.isPending ? 'Deleting...' : 'Hard Delete All'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -899,7 +1003,7 @@ function Field({ label, value, onChange, type = 'text' }: { label: string; value
 }
 
 /** Reusable live-tab table row used in both flat and grouped views */
-function LiveTableRow({ l, i, changeStatus, toggleFeatured, startEdit, deleteProperty, setHardDeleteTarget }: {
+function LiveTableRow({ l, i, changeStatus, toggleFeatured, startEdit, deleteProperty, setHardDeleteTarget, selected, onToggleSelect }: {
   l: Record<string, any>;
   i: number;
   changeStatus: (id: string, status: string) => void;
@@ -907,9 +1011,16 @@ function LiveTableRow({ l, i, changeStatus, toggleFeatured, startEdit, deletePro
   startEdit: (p: any) => void;
   deleteProperty: (id: string) => void;
   setHardDeleteTarget: (t: { id: string; name: string }) => void;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) {
   return (
     <tr className={i % 2 === 1 ? 'bg-secondary' : ''}>
+      {onToggleSelect && (
+        <td className="p-3.5 w-10">
+          <input type="checkbox" checked={!!selected} onChange={() => onToggleSelect(l.id)} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer" />
+        </td>
+      )}
       <td className="p-3.5 font-medium text-foreground">{l.name || '-'}</td>
       <td className="p-3.5 text-muted-foreground">{l.city || '-'}</td>
       <td className="p-3.5">
@@ -950,16 +1061,21 @@ function LiveTableRow({ l, i, changeStatus, toggleFeatured, startEdit, deletePro
 }
 
 /** Reusable inactive-tab card used in both flat and grouped views */
-function InactiveCard({ s, statusBadge, sourceTag, changeStatus, setHardDeleteTarget }: {
+function InactiveCard({ s, statusBadge, sourceTag, changeStatus, setHardDeleteTarget, selected, onToggleSelect }: {
   s: Record<string, any>;
   statusBadge: (status: string) => React.ReactNode;
   sourceTag: (s: Record<string, unknown>) => React.ReactNode;
   changeStatus: (id: string, status: string) => void;
   setHardDeleteTarget: (t: { id: string; name: string }) => void;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) {
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
       <div className="flex items-center gap-4 p-4">
+        {onToggleSelect && (
+          <input type="checkbox" checked={!!selected} onChange={() => onToggleSelect(s.id)} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer flex-shrink-0" />
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground truncate">{s.name}</span>
@@ -978,7 +1094,7 @@ function InactiveCard({ s, statusBadge, sourceTag, changeStatus, setHardDeleteTa
 }
 
 /** Reusable pending property card used in both flat and grouped views */
-function PropertyCard({ s, expandedId, setExpandedId, statusBadge, sourceTag, saLabel, startEdit, approve, reject, featuredCount, pricingLoading, refetchPricing, queryClient, user }: {
+function PropertyCard({ s, expandedId, setExpandedId, statusBadge, sourceTag, saLabel, startEdit, approve, reject, featuredCount, pricingLoading, refetchPricing, queryClient, user, selected, onToggleSelect }: {
   s: Record<string, any>;
   expandedId: string | null;
   setExpandedId: (id: string | null) => void;
@@ -993,10 +1109,15 @@ function PropertyCard({ s, expandedId, setExpandedId, statusBadge, sourceTag, sa
   refetchPricing: (p: any) => void;
   queryClient: any;
   user: any;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) {
   return (
     <div className="bg-card overflow-hidden">
       <div className="flex items-center gap-4 p-4 cursor-pointer" onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}>
+        {onToggleSelect && (
+          <input type="checkbox" checked={!!selected} onChange={(e) => { e.stopPropagation(); onToggleSelect(s.id); }} onClick={e => e.stopPropagation()} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer flex-shrink-0" />
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground truncate">{s.name}</span>
