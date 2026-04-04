@@ -42,8 +42,10 @@
 - **Payload**: `{ propertyId, city, type, editedBy }`
 - **Response**: `{ ok: true }`
 
-#### POST /webhook/send-otp / verify-otp
-- **Purpose**: Phone number verification via Twilio (managed in n8n)
+#### ~~POST /webhook/send-otp / verify-otp~~ — DEPRECATED
+- **Status**: DEPRECATED — moved to Supabase Edge Functions `send-otp` and `verify-otp` (PR #251, 4 April 2026)
+- **Old purpose**: Phone number verification via Twilio (managed in n8n)
+- **New flow**: `send-otp` edge function calls GHL directly (workflow `baabc69a-a00f-412a-863e-7189ae025091`). `verify-otp` edge function handles code acceptance natively. No n8n involved.
 - **Called from**: `SignUp.tsx`, `VerifyOtp.tsx`
 
 #### POST /webhook/move-crm-stage
@@ -256,7 +258,7 @@ Stored in `aff_commission_settings` (NULL user_id = global). Per-user overrides 
 
 ## Supabase Auth
 - Email/password signup via `supabase.auth.signUp()`
-- Phone OTP via n8n (Twilio) - not Supabase native OTP
+- Phone OTP via `send-otp` / `verify-otp` Supabase Edge Functions → GHL WhatsApp workflow (formerly n8n/Twilio, deprecated PR #251)
 - Admin detection: JWT email checked against hardcoded `ADMIN_EMAILS` array in `useAuth.ts`
 - Session persistence: localStorage with auto-refresh
 
