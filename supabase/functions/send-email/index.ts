@@ -366,13 +366,13 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
     case 'inquiry-tenant-confirmation':
       return {
         to: String(data.tenant_email),
-        subject: 'Your inquiry has been sent!',
-        html: layout('Inquiry sent', `
+        subject: 'Your enquiry has been sent!',
+        html: layout('Enquiry sent', `
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-            Hi ${data.tenant_name || 'there'}, your inquiry about <strong>${data.property_name}</strong> has been received. We've received your inquiry and will forward it to the property owner shortly. You'll hear back within 24 hours.
+            Hello, thanks for contacting nfstay.
           </p>
-          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 20px;">
-            Have a great day!
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            We've passed your enquiry to the Landlord or Agent, they'll reach out to you shortly. \ud83d\udc4d
           </p>
           ${data.property_url ? btn('View Property', String(data.property_url)) : ''}
         `),

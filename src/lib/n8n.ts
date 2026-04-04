@@ -5,22 +5,24 @@ function cleanPhone(phone: string): string {
   return phone.replace(/[^0-9+]/g, '');
 }
 
-/** POST /webhook/send-otp → { phone } → { success, message_id } */
+/** POST edge function send-otp → { phone } → { success, message_id } */
 export async function sendOtp(phone: string): Promise<{ success: boolean; message_id?: string }> {
   const clean = cleanPhone(phone);
   console.log('sendOtp PHONE:', phone, 'CLEAN:', clean);
-  const res = await fetch(`${N8N_BASE}/webhook/send-otp`, {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+  const res = await fetch(`${supabaseUrl}/functions/v1/send-otp`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
     body: JSON.stringify({ phone: clean }),
   });
   if (!res.ok) {
     const errText = await res.text();
-    console.error('n8n sendOtp ERROR:', res.status, errText);
+    console.error('send-otp ERROR:', res.status, errText);
     throw new Error(errText);
   }
   const data = await res.json();
-  console.log('n8n sendOtp RESP:', data);
+  console.log('send-otp RESP:', data);
   return data;
 }
 
@@ -56,11 +58,7 @@ export async function submitInquiry(params: {
   return res.json();
 }
 
-/** POST /webhook/verify-otp → { phone, code, name, email? } → { success, error? }
- *  NOTE: n8n verify-otp currently has no "Respond to Webhook" node so returns empty body.
- *  We treat empty 200 as success (pass-through) until the workflow is configured to
- *  explicitly return { success: false } for wrong codes.
- */
+/** POST edge function verify-otp → { phone, code, name, email? } → { success, error? } */
 export async function verifyOtp(params: {
   phone: string;
   code: string;
@@ -69,24 +67,20 @@ export async function verifyOtp(params: {
 }): Promise<{ success: boolean; error?: string }> {
   const clean = cleanPhone(params.phone);
   console.log('verifyOtp PHONE:', params.phone, 'CLEAN:', clean);
-  const res = await fetch(`${N8N_BASE}/webhook/verify-otp`, {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+  const res = await fetch(`${supabaseUrl}/functions/v1/verify-otp`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
     body: JSON.stringify({ ...params, phone: clean }),
   });
   if (!res.ok) {
     const errText = await res.text();
-    console.error('n8n verifyOtp ERROR:', res.status, errText);
+    console.error('verify-otp ERROR:', res.status, errText);
     throw new Error(errText);
   }
-  const text = await res.text();
-  if (!text.trim()) {
-    // n8n workflow ran but has no Respond to Webhook node — treat as success
-    console.log('verifyOtp: empty response from n8n — treating as success (TODO: add Respond to Webhook node)');
-    return { success: true };
-  }
-  const data = JSON.parse(text);
-  console.log('n8n verifyOtp RESP:', data);
+  const data = await res.json();
+  console.log('verify-otp RESP:', data);
   return data;
 }
 
