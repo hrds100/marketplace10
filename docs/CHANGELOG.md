@@ -10,10 +10,14 @@
 - **Redundant n8n signup-welcome webhook removed** from SignUp.tsx — welcome email already sent natively via Resend.
 
 ### Fixed
-- **Email inquiry template updated:** Tenant confirmation email now uses Hugo's approved copy: "Hello, thanks for contacting nfstay. We've passed your enquiry to the Landlord or Agent..."
+- **Email inquiry template updated:** Tenant confirmation email now uses Hugo's approved copy: "Hello, thanks for contacting nfstay. We've passed your enquiry for [property] to the Landlord or Agent..."
+- **Enquiry messages include property name:** WhatsApp + email replies now say "your enquiry for Property #1001 - Name".
+- **GHL cold outreach strips ref number:** Workflow `67250bfa` property reference shows clean name (no `#XXXX`, no `()`).
+- **Empty `()` stripped from property names** in Quick List publish and all outgoing messages.
 - **GHL OTP workflow ID corrected:** Was truncated (`baabc69a`), now full UUID (`baabc69a-a00f-412a-863e-7189ae025091`).
 - **Phone normalization:** Fixed +4407... → +447... (strip leading 0 after country code).
 - **All 10 edge functions redeployed** with `--no-verify-jwt` to prevent 401 errors.
+- **Dead n8n code removed:** `submitInquiry` and `sendSignupWelcome` deleted from `n8n.ts`. File reorganized with clear NATIVE vs STILL ON N8N sections.
 
 ### Fixed (earlier in session)
 - **Admin wallet column (PR #245):** Shows crypto wallet in admin users table.
