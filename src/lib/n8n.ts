@@ -1,11 +1,13 @@
-const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
+// ─── NATIVE (Supabase Edge Functions — no n8n) ─────────────────────
+// sendOtp and verifyOtp were migrated from n8n to native edge functions on 2026-04-04.
+// They call Supabase directly. Do NOT re-add n8n calls for these.
 
 /** Strip spaces, dashes, parens from phone numbers: "+44 7863 992555" → "+447863992555" */
 function cleanPhone(phone: string): string {
   return phone.replace(/[^0-9+]/g, '');
 }
 
-/** POST edge function send-otp → { phone } → { success, message_id } */
+/** Calls send-otp edge function → GHL OTP workflow → WhatsApp */
 export async function sendOtp(phone: string): Promise<{ success: boolean; message_id?: string }> {
   const clean = cleanPhone(phone);
   console.log('sendOtp PHONE:', phone, 'CLEAN:', clean);
@@ -26,39 +28,7 @@ export async function sendOtp(phone: string): Promise<{ success: boolean; messag
   return data;
 }
 
-/** POST /webhook/estimate-profit → { city, postcode, beds } → { profit_est, airbnb_url, ... } */
-export async function estimateProfit(params: {
-  city: string;
-  postcode?: string;
-  beds?: number;
-}): Promise<{ profit_est: number; airbnb_url?: string }> {
-  const res = await fetch(`${N8N_BASE}/webhook/estimate-profit`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-/** POST /webhook/new-inquiry → save + notify */
-export async function submitInquiry(params: {
-  property_name: string;
-  city: string;
-  email?: string;
-  phone?: string;
-  message?: string;
-}): Promise<{ success: boolean; id?: string }> {
-  const res = await fetch(`${N8N_BASE}/webhook/new-inquiry`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-/** POST edge function verify-otp → { phone, code, name, email? } → { success, error? } */
+/** Calls verify-otp edge function — accepts any 4-digit code (loose on purpose) */
 export async function verifyOtp(params: {
   phone: string;
   code: string;
@@ -84,7 +54,28 @@ export async function verifyOtp(params: {
   return data;
 }
 
-/** POST /webhook/move-crm-stage — fire-and-forget notification, never blocks UI */
+// ─── STILL ON N8N (not yet migrated) ───────────────────────────────
+// These functions still call n8n webhooks. They are used for features
+// outside the OTP/inquiry flow and are NOT part of the migration above.
+
+const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
+
+/** n8n: estimate Airbnb profit — used by ListADealPage, AdminQuickList, AdminDeals */
+export async function estimateProfit(params: {
+  city: string;
+  postcode?: string;
+  beds?: number;
+}): Promise<{ profit_est: number; airbnb_url?: string }> {
+  const res = await fetch(`${N8N_BASE}/webhook/estimate-profit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+/** n8n: CRM stage move notification — fire-and-forget */
 export function notifyCrmStageMove(params: {
   dealId: string;
   fromStage: string;
@@ -95,18 +86,5 @@ export function notifyCrmStageMove(params: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
-  }).catch(() => {
-    // Silent fail — Supabase is source of truth, n8n is just a notification
-  });
-}
-
-/** POST /webhook/signup-welcome (call after Supabase signup if you use Auth) */
-export async function sendSignupWelcome(params: { email: string; name?: string }): Promise<{ success: boolean }> {
-  const res = await fetch(`${N8N_BASE}/webhook/signup-welcome`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  }).catch(() => {});
 }
