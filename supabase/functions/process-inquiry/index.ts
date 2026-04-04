@@ -253,7 +253,7 @@ serve(async (req) => {
             body: JSON.stringify({
               type: 'WhatsApp',
               contactId,
-              message: "Hello, thanks for contacting nfstay.\n\nWe've passed your enquiry to the Landlord or Agent, they'll reach out to you shortly. \ud83d\udc4d",
+              message: `Hello, thanks for contacting nfstay.\n\nWe've passed your enquiry for ${propertyName} to the Landlord or Agent, they'll reach out to you shortly. \ud83d\udc4d`,
             }),
           })
           if (!msgRes.ok) {

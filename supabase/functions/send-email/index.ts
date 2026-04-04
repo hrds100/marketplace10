@@ -372,7 +372,7 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
             Hello, thanks for contacting nfstay.
           </p>
           <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-            We've passed your enquiry to the Landlord or Agent, they'll reach out to you shortly. \ud83d\udc4d
+            We've passed your enquiry for <strong>${data.property_name || 'your property'}</strong> to the Landlord or Agent, they'll reach out to you shortly. \ud83d\udc4d
           </p>
           ${data.property_url ? btn('View Property', String(data.property_url)) : ''}
         `),
