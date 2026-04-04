@@ -145,7 +145,11 @@ serve(async (req) => {
       // GHL custom fields — use FIELD IDs, not friendly names
       // Documented in docs/INTEGRATIONS.md and docs/N8N_WHATSAPP_WORKFLOW.md
       const customFieldUpdates: Array<{ id: string; field_value: string }> = []
-      if (property_name) customFieldUpdates.push({ id: 'Z0thvOTyoO2KxTMt5sP8', field_value: property_name })  // property_reference
+      if (property_name) {
+        // Strip "Property #XXXX - " prefix and "()" for landlord-facing WhatsApp templates
+        const cleanPropertyName = property_name.replace(/^Property\s*#\d+\s*-\s*/, '').replace(/\s*\(\s*\)\s*$/, '').trim() || property_name
+        customFieldUpdates.push({ id: 'Z0thvOTyoO2KxTMt5sP8', field_value: cleanPropertyName })  // property_reference
+      }
       if (magic_link) customFieldUpdates.push({ id: 'gWb4evAKLWCK0y8RHp32', field_value: magic_link })        // magic_link_url
 
       if (customFieldUpdates.length > 0) {
