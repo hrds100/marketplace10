@@ -20,6 +20,7 @@ const WALLET_DURATION_OPTIONS = [
 interface Profile {
   id: string;
   name: string | null;
+  email: string | null;
   whatsapp: string | null;
   tier: string | null;
   suspended: boolean | null;
@@ -42,6 +43,8 @@ export default function AdminUsers() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkPin, setBulkPin] = useState('');
+  const [editTarget, setEditTarget] = useState<Profile | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', whatsapp: '', email: '' });
 
   // Fetch profiles
   const { data: allProfiles = [], isLoading } = useQuery({
@@ -192,6 +195,24 @@ export default function AdminUsers() {
     onError: (err: unknown) => toast.error((err as Error).message || 'Failed to grant permission'),
   });
 
+  const editUserMutation = useMutation({
+    mutationFn: async ({ id, name, whatsapp, email }: { id: string; name: string; whatsapp: string; email: string }) => {
+      const updates: Record<string, string> = {};
+      if (name) updates.name = name;
+      if (whatsapp) updates.whatsapp = whatsapp;
+      if (email) updates.email = email;
+      const { error } = await supabase.from('profiles').update(updates).eq('id', id);
+      if (error) throw error;
+      if (adminUser) logAdminAction(adminUser.id, { action: 'edit_user', target_table: 'profiles', target_id: id, metadata: { name, whatsapp, email } });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      setEditTarget(null);
+      toast.success('User updated');
+    },
+    onError: (err: unknown) => toast.error((err as Error).message || 'Failed to update'),
+  });
+
   const tierBadge = (tier: string | null) => {
     const t = tier || 'free';
     const styles: Record<string, string> = {
@@ -240,7 +261,7 @@ export default function AdminUsers() {
                     className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer"
                   />
                 </th>
-                {['Name', 'User ID', 'WhatsApp', 'Tier', 'Status', 'Actions'].map(h => (
+                {['Name', 'Email', 'User ID', 'WhatsApp', 'Tier', 'Status', 'Actions'].map(h => (
                   <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
                 ))}
               </tr>
@@ -260,6 +281,9 @@ export default function AdminUsers() {
                     </td>
                     <td className="p-3.5 font-medium text-foreground">
                       {u.name || <span className="text-muted-foreground italic">No name</span>}
+                    </td>
+                    <td className="p-3.5 text-muted-foreground text-xs">
+                      {u.email || <span className="italic">—</span>}
                     </td>
                     <td className="p-3.5 text-muted-foreground text-xs font-mono">{u.id.slice(0, 8)}...</td>
                     <td className="p-3.5">
@@ -286,6 +310,12 @@ export default function AdminUsers() {
                     </td>
                     <td className="p-3.5">
                       <div className="flex gap-2">
+                        <button
+                          onClick={() => { setEditTarget(u); setEditForm({ name: u.name || '', whatsapp: u.whatsapp || '', email: u.email || '' }); }}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg border border-border text-foreground hover:bg-secondary transition-colors"
+                        >
+                          Edit
+                        </button>
                         <button
                           data-feature="ADMIN__USERS_SUSPEND"
                           onClick={() => suspendMutation.mutate({ id: u.id, suspended: !isSuspended })}
@@ -322,7 +352,7 @@ export default function AdminUsers() {
               })}
               {paginated.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">No users found</td>
+                  <td colSpan={8} className="p-8 text-center text-muted-foreground">No users found</td>
                 </tr>
               )}
             </tbody>
@@ -499,6 +529,39 @@ export default function AdminUsers() {
                 className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 {bulkHardDeleteMutation.isPending ? 'Deleting...' : 'Hard Delete All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editTarget && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => setEditTarget(null)}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[420px]" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-foreground mb-4">Edit User</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Name</label>
+                <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} className="w-full h-11 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">WhatsApp</label>
+                <input value={editForm.whatsapp} onChange={e => setEditForm(f => ({ ...f, whatsapp: e.target.value }))} className="w-full h-11 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="+44 7911 123456" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Email</label>
+                <input value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full h-11 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="user@example.com" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setEditTarget(null)} className="flex-1 h-11 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">Cancel</button>
+              <button
+                onClick={() => editUserMutation.mutate({ id: editTarget.id, name: editForm.name, whatsapp: editForm.whatsapp, email: editForm.email })}
+                disabled={editUserMutation.isPending}
+                className="flex-1 h-11 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {editUserMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
