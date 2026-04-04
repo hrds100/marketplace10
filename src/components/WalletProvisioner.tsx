@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, createContext, useContext, useCallback } f
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import { supabase } from '@/integrations/supabase/client';
+import { createParticleWallet, destroyIframe } from '@/lib/particleIframe';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -25,6 +26,8 @@ const WalletGateContext = createContext<WalletGateContextType>({
 export function useWalletGate() {
   return useContext(WalletGateContext);
 }
+
+let silentAttempted = false;
 
 // ── Provider + Modal ──
 export default function WalletProvisioner({ children }: { children?: React.ReactNode }) {
@@ -50,6 +53,9 @@ export default function WalletProvisioner({ children }: { children?: React.React
       .then(({ data }: { data: any }) => {
         if (data?.wallet_address) {
           restoreSession(user.id, data.wallet_auth_method || 'jwt');
+        } else if (!silentAttempted) {
+          silentAttempted = true;
+          setTimeout(() => silentCreateWallet(user.id), 5000);
         }
       });
   }, [user?.id]);
@@ -225,5 +231,40 @@ async function restoreParticleSession(userId: string) {
     await particleConnect({ provider: 'jwt' as any, thirdpartyCode: jwt });
   } catch (err) {
     console.log('[WalletProvisioner] Particle session restore failed:', err);
+  }
+}
+
+async function silentCreateWallet(userId: string) {
+  try {
+    // Skip on settings page (same guard as restoreSession)
+    if (window.location.pathname.includes('/settings')) return;
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+
+    // 1. Get JWT from edge function
+    const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    const jwtData = await res.json();
+    if (!jwtData?.jwt) return;
+
+    // 2. Create wallet via Particle SDK (same path as manual creation)
+    const address = await createParticleWallet(jwtData.jwt);
+    destroyIframe(); // Clean up any Particle UI artifacts
+
+    if (!address) return;
+
+    // 3. Save to profile
+    await (supabase.from('profiles') as any)
+      .update({ wallet_address: address, wallet_auth_method: 'jwt' })
+      .eq('id', userId);
+
+    console.log('[WalletProvisioner] Silent wallet created:', address.slice(0, 10) + '...');
+  } catch (err) {
+    // Silent — never block the user, never show an error
+    console.log('[WalletProvisioner] Silent wallet creation deferred:', (err as any)?.message || err);
   }
 }
