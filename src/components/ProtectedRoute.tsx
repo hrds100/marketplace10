@@ -52,12 +52,29 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           .eq('id', user.id)
           .single();
 
-        // Profile doesn't exist — stale session with no matching DB record.
-        // Sign out and hard-redirect to /signin so React state can't trigger verify-otp.
+        // Profile doesn't exist — auth user is orphaned (trigger may have failed).
+        // Create the missing profile row so the user isn't locked out.
+        // Requires INSERT RLS policy on profiles (see migration 20260404_fix_handle_new_user_trigger).
         if (queryErr && queryErr.code === 'PGRST116') {
+          try {
+            const meta = user.user_metadata as Record<string, string> | undefined;
+            const { error: repairErr } = await (supabase.from('profiles') as any).upsert({
+              id: user.id,
+              name: meta?.name || user.email || 'User',
+              whatsapp: meta?.whatsapp || null,
+              whatsapp_verified: false,
+            } as any);
+            if (repairErr) throw repairErr;
+          } catch (repairErr) {
+            console.error('Profile auto-repair failed:', repairErr);
+            queryInFlight.current = false;
+            await supabase.auth.signOut();
+            window.location.href = '/signin';
+            return;
+          }
+          // Profile created but whatsapp not verified — fall through to 'unverified'
           queryInFlight.current = false;
-          await supabase.auth.signOut();
-          window.location.href = '/signin';
+          setStatus('unverified');
           return;
         }
 
