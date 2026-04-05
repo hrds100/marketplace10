@@ -106,7 +106,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     onInquire?.(listing);
   };
 
-  const handleWhatsApp = async (e: React.MouseEvent) => {
+  const handleWhatsApp = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (forceSignUp) { navigate('/signup'); return; }
@@ -120,22 +120,8 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     const ref = listing.id.slice(0, 5).toUpperCase();
     const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${ref}\nPlease contact me at your earliest convenience.`;
 
-    // Create inquiry + enroll workflow BEFORE opening WhatsApp
-    // This triggers the auto-reply via GHL workflow cf089a15
-    const session = await supabase.auth.getSession();
-    if (session.data.session) {
-      supabase.functions.invoke('process-inquiry', {
-        body: {
-          property_id: listing.id,
-          channel: 'whatsapp',
-          message: plainMsg,
-          tenant_name: user.user_metadata?.name || user.email || '',
-          tenant_email: user.email || '',
-          property_url: propertyUrl,
-        },
-      }).catch(() => {}); // Non-blocking — don't prevent WhatsApp from opening
-    }
-
+    // Inquiry is created by receive-tenant-whatsapp edge function
+    // when the message arrives in GHL (triggered by GHL workflow cf089a15)
     window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${encodeURIComponent(plainMsg)}`, '_blank');
   };
 
