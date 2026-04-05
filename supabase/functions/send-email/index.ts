@@ -362,6 +362,19 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
         `),
       };
 
+    // ─── BROADCAST EMAILS ─────────────────────────────────
+    case 'admin-broadcast':
+      return {
+        to: ADMIN_EMAILS,
+        subject: String(data.title || 'nfstay update'),
+        html: layout(String(data.title || 'nfstay update'), `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            ${String(data.body || 'You have a new notification from nfstay.')}
+          </p>
+          ${btn('Go to Dashboard →', `${BASE_URL}/dashboard/deals`)}
+        `),
+      };
+
     // ─── INQUIRY EMAILS ──────────────────────────────────
     case 'inquiry-tenant-confirmation':
       return {
