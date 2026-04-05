@@ -1,4 +1,121 @@
 project_id = "asazddtvjvmckouxcmmo"
 
+# Source of truth for verify_jwt settings.
+# Every public-facing edge function that handles its own auth
+# (JWT check in code, or webhook receiver) must be listed here.
+# See docs/rebuild/REBUILD_PLAN.md section 22.
+
+[functions.send-otp]
+verify_jwt = false
+
+[functions.verify-otp]
+verify_jwt = false
+
+[functions.process-inquiry]
+verify_jwt = false
+
+[functions.receive-tenant-whatsapp]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.hard-delete-user]
+verify_jwt = false
+
+[functions.hard-delete-property]
+verify_jwt = false
+
+[functions.landlord-magic-login]
+verify_jwt = false
+
+[functions.lead-magic-login]
+verify_jwt = false
+
+[functions.claim-landlord-account]
+verify_jwt = false
+
+[functions.ghl-enroll]
+verify_jwt = false
+
+[functions.track-referral]
+verify_jwt = false
+
 [functions.health]
 verify_jwt = false
+
+[functions.reset-for-testing]
+verify_jwt = false
+
+[functions.ai-parse-listing]
+verify_jwt = false
+
+[functions.deal-expiry]
+verify_jwt = false
+
+[functions.particle-generate-jwt]
+verify_jwt = false
+
+[functions.particle-jwks]
+verify_jwt = false
+
+# FROZEN — investment + nfstay booking functions
+# Listed for completeness but NEVER modify these without Hugo's approval
+[functions.inv-process-order]
+verify_jwt = false
+
+[functions.inv-approve-order]
+verify_jwt = false
+
+[functions.inv-crypto-confirm]
+verify_jwt = false
+
+[functions.inv-samcart-webhook]
+verify_jwt = false
+
+[functions.submit-payout-claim]
+verify_jwt = false
+
+[functions.save-bank-details]
+verify_jwt = false
+
+[functions.revolut-pay]
+verify_jwt = false
+
+[functions.revolut-webhook]
+verify_jwt = false
+
+[functions.revolut-token-refresh]
+verify_jwt = false
+
+[functions.revolut-check-status]
+verify_jwt = false
+
+[functions.nfs-stripe-checkout]
+verify_jwt = false
+
+[functions.nfs-stripe-webhook]
+verify_jwt = false
+
+[functions.nfs-stripe-connect-oauth]
+verify_jwt = false
+
+[functions.nfs-domain-verify]
+verify_jwt = false
+
+[functions.nfs-hospitable-oauth]
+verify_jwt = false
+
+[functions.nfs-ical-feed]
+verify_jwt = false
+
+[functions.nfs-email-send]
+verify_jwt = false
+
+# Placeholder for new edge functions (Phase 2)
+# [functions.ai-chat]
+# verify_jwt = false
+# [functions.ai-description]
+# verify_jwt = false
+# [functions.airbnb-pricing]
+# verify_jwt = false

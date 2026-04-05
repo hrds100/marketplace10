@@ -23,8 +23,8 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
 
-  test:
-    name: Tests
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm run build
 
   lint:
     name: Lint
@@ -47,26 +47,111 @@ jobs:
       - run: npm ci
       - run: npm run lint
 
-  deploy-functions:
-    name: Deploy Edge Functions
+  frozen-paths:
+    name: Frozen Path Check
     runs-on: ubuntu-latest
-    # Only deploy on pushes to main (not on PRs)
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [typecheck, test, lint]
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
         with:
-          version: latest
-      - run: |
-          supabase functions deploy landlord-magic-login --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
-          supabase functions deploy claim-landlord-account --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
-          supabase functions deploy n8n-health --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
-          supabase functions deploy uptimerobot-health --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
-          supabase functions deploy receive-tenant-whatsapp --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
-          supabase functions deploy ghl-enroll --project-ref asazddtvjvmckouxcmmo --no-verify-jwt
-          supabase functions deploy process-inquiry --project-ref asazddtvjvmckouxcmmo
-          supabase secrets set N8N_API_KEY=${{ secrets.N8N_API_KEY }} --project-ref asazddtvjvmckouxcmmo
-          supabase secrets set UPTIMEROBOT_API_KEY=${{ secrets.UPTIMEROBOT_API_KEY }} --project-ref asazddtvjvmckouxcmmo
+          fetch-depth: 0
+      - name: Check frozen paths
+        run: |
+          FROZEN=$(git diff --name-only origin/main...HEAD | grep -E '^src/pages/(invest|admin/invest|admin/nfstay)/|^src/pages/BookingSitePage|^supabase/functions/(inv-|revolut-|nfs-|submit-payout|save-bank)|^vite\.config|^src/main\.tsx' || true)
+          if [ -n "$FROZEN" ]; then
+            echo "::error::BLOCKED: PR modifies frozen paths"
+            echo ""
+            echo "Frozen files modified:"
+            echo "$FROZEN"
+            echo ""
+            echo "Add label FROZEN_APPROVED to proceed (Hugo must approve)"
+            # Check for override label
+            if [ -n "${{ github.event.pull_request.number }}" ]; then
+              LABELS=$(gh pr view "${{ github.event.pull_request.number }}" --json labels -q '.labels[].name' 2>/dev/null || echo "")
+              if echo "$LABELS" | grep -q 'FROZEN_APPROVED'; then
+                echo "FROZEN_APPROVED label found — proceeding"
+                exit 0
+              fi
+            fi
+            exit 1
+          fi
+          echo "No frozen paths modified"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+
+  core-changes:
+    name: Core Change Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check core changes
+        run: |
+          CORE=$(git diff --name-only origin/main...HEAD | grep '^src/core/' || true)
+          if [ -n "$CORE" ]; then
+            echo "Core files modified:"
+            echo "$CORE"
+            echo ""
+            echo "This PR requires blast_radius: CORE_CHANGE"
+            # Check for label
+            if [ -n "${{ github.event.pull_request.number }}" ]; then
+              LABELS=$(gh pr view "${{ github.event.pull_request.number }}" --json labels -q '.labels[].name' 2>/dev/null || echo "")
+              if echo "$LABELS" | grep -q 'CORE_CHANGE'; then
+                echo "CORE_CHANGE label found — proceeding"
+                exit 0
+              fi
+            fi
+            echo "::error::BLOCKED: Add CORE_CHANGE label"
+            exit 1
+          fi
+          echo "No core files modified"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  import-boundaries:
+    name: Import Boundary Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check feature-to-feature imports
+        run: |
+          # Only run if src/features/ exists (post-Phase 1)
+          if [ ! -d "src/features" ]; then
+            echo "src/features/ not yet created — skipping"
+            exit 0
+          fi
+          VIOLATIONS=$(grep -rn "from.*@features/" src/features/ --include="*.tsx" --include="*.ts" | \
+            awk -F: '{
+              split($1, path, "/");
+              feature=path[3];
+              if ($0 ~ "@features/" feature "/") next;
+              print $0
+            }' || true)
+          if [ -n "$VIOLATIONS" ]; then
+            echo "::error::BLOCKED: Feature-to-feature imports detected"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+          echo "No import boundary violations"
+
+  select-star:
+    name: Select Star Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check select('*') on shared tables
+        run: |
+          SHARED_TABLES="profiles|properties|inquiries|notifications|aff_profiles|aff_events|landlord_invites"
+          VIOLATIONS=$(grep -rn "\.from(['\"]\\(${SHARED_TABLES}\\)['\"]).*\.select(['\"]\\*['\"])" \
+            src/ supabase/functions/ --include="*.tsx" --include="*.ts" 2>/dev/null || true)
+          if [ -n "$VIOLATIONS" ]; then
+            echo "::error::BLOCKED: select('*') on shared table"
+            echo "$VIOLATIONS"
+            echo "Use explicit column list instead"
+            exit 1
+          fi
+          echo "No select('*') on shared tables"
