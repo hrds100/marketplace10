@@ -453,6 +453,42 @@ serve(async (req) => {
     const { type, data } = await req.json();
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Handle broadcast: fetch all user emails, send in batches via BCC
+    if (type === 'admin-broadcast') {
+      const { data: profiles } = await supabaseAdmin
+        .from('profiles')
+        .select('email')
+        .not('email', 'is', null);
+      const allEmails = (profiles || [])
+        .map((p: { email: string | null }) => p.email)
+        .filter((e: string | null): e is string => !!e && e.includes('@'));
+
+      const subject = String(data.title || 'nfstay update');
+      const html = layout(subject, `
+        <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+          ${String(data.body || 'You have a new notification from nfstay.')}
+        </p>
+        ${btn('Go to Dashboard →', `${BASE_URL}/dashboard/deals`)}
+      `);
+
+      // Send in batches of 45 via BCC (Resend limit is 50 per call)
+      const BATCH = 45;
+      let sent = 0;
+      for (let i = 0; i < allEmails.length; i += BATCH) {
+        const batch = allEmails.slice(i, i + BATCH);
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from: FROM_EMAIL, to: ADMIN_EMAILS[0], bcc: batch, subject, html }),
+        });
+        sent += batch.length;
+      }
+
+      return new Response(JSON.stringify({ success: true, sent, total: allEmails.length }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Check admin-level notification toggle
     const eventKey = mapTypeToEventKey(type);
     if (eventKey) {
