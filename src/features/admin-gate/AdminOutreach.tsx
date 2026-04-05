@@ -1129,9 +1129,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
       inquiries: group.inquiries.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     }))
     .sort((a, b) => {
-      const aPending = a.inquiries.filter(i => !i.authorized).length;
-      const bPending = b.inquiries.filter(i => !i.authorized).length;
-      if (bPending !== aPending) return bPending - aPending;
+      // Newest inquiry first — most recent activity on top
       const aLatest = new Date(a.inquiries[0]?.created_at || 0).getTime();
       const bLatest = new Date(b.inquiries[0]?.created_at || 0).getTime();
       return bLatest - aLatest;
