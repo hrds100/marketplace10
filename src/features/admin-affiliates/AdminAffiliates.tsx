@@ -188,7 +188,7 @@ export default function AdminAffiliates() {
                 <div className="flex-1 min-w-0">
                   <span className="text-[13px] font-semibold text-foreground">{p.name}</span>
                   <div className="text-[11px] text-muted-foreground">
-                    {p.email} · PayPal: {p.paypal || '(not set)'} · {new Date(p.created_at).toLocaleDateString('en-GB')}
+                    {p.email} · PayPal: {p.paypal || '(not set)'} · {new Date(p.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} {new Date(p.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
                 <span className="text-[15px] font-bold text-foreground">£{Number(p.amount).toFixed(2)}</span>
@@ -245,7 +245,7 @@ export default function AdminAffiliates() {
                 <th className="p-3.5 w-10">
                   <input type="checkbox" checked={filtered.length > 0 && selectedIds.size === filtered.length} onChange={toggleSelectAll} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer" />
                 </th>
-                {['Agent', 'Code', 'Clicks', 'Signups', 'Paid Users', 'Earned', 'Pending', 'Tier'].map(h => (
+                {['Agent', 'Code', 'Clicks', 'Signups', 'Paid Users', 'Earned', 'Pending', 'Joined', 'Tier'].map(h => (
                   <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
                 ))}
               </tr>
@@ -271,6 +271,10 @@ export default function AdminAffiliates() {
                     ) : (
                       <span className="text-muted-foreground">£0.00</span>
                     )}
+                  </td>
+                  <td className="p-3.5 text-xs text-muted-foreground whitespace-nowrap">
+                    {a.created_at ? new Date(a.created_at as string).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                    {a.created_at && <span className="block text-[10px]">{new Date(a.created_at as string).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>}
                   </td>
                   <td className="p-3.5">
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
