@@ -105,10 +105,13 @@ serve(async (req) => {
     if (propertyId) {
       try {
         const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+        const monthlyRev = parsed.estimated_monthly_revenue || 0
+        const rentNum = parseInt(rent) || 0
         await supabase.from('properties').update({
           estimated_nightly_rate: parsed.estimated_nightly_rate,
           estimated_occupancy: parsed.estimated_occupancy,
           estimated_monthly_revenue: parsed.estimated_monthly_revenue,
+          estimated_profit: monthlyRev - rentNum,
           airbnb_url_7d,
           airbnb_url_30d,
           airbnb_url_90d,
@@ -118,8 +121,16 @@ serve(async (req) => {
       }
     }
 
+    // Compute fields the frontend expects but OpenAI doesn't return
+    const monthlyRevenue = parsed.estimated_monthly_revenue || 0
+    const monthlyRent = parseInt(rent) || 0
+    const estimated_profit = monthlyRevenue - monthlyRent
+
     return new Response(JSON.stringify({
       ...parsed,
+      estimated_profit,
+      confidence: parsed.confidence || (parsed.estimated_occupancy >= 70 ? 'high' : parsed.estimated_occupancy >= 50 ? 'medium' : 'low'),
+      notes: parsed.reasoning || parsed.notes || '',
       airbnb_url_7d,
       airbnb_url_30d,
       airbnb_url_90d,
