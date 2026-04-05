@@ -2,38 +2,44 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import MagicLoginPage from "./pages/MagicLoginPage";
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
-import VerifyOtp from "./pages/VerifyOtp";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
+// Auth
+import MagicLoginPage from "@/features/landlord/MagicLoginPage";
+import SignIn from "@/features/auth/SignIn";
+import SignUp from "@/features/auth/SignUp";
+import VerifyOtp from "@/features/auth/VerifyOtp";
+import ForgotPassword from "@/features/auth/ForgotPassword";
+import ResetPassword from "@/features/auth/ResetPassword";
+// Static pages (stay in src/pages/)
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
+// Layouts (stay in src/layouts/ — locked)
 import DashboardLayout from "./layouts/DashboardLayout";
-import DealsPageV2 from "./pages/DealsPageV2";
-// FavouritesPage removed — replaced by FavouritesDropdown in top bar
-import DealDetail from "./pages/DealDetail";
-import CRMPage from "./pages/CRMPage";
-import UniversityPage from "./pages/UniversityPage";
-import ModuleOverviewPage from "./pages/ModuleOverviewPage";
-import LessonPage from "./pages/LessonPage";
-import AffiliatesPage from "./pages/AffiliatesPage";
-import ListADealPage from "./pages/ListADealPage";
-import SettingsPage from "./pages/SettingsPage";
+// Features
+import DealsPage from "@/features/deals/DealsPage";
+import DealDetail from "@/features/deals/DealDetail";
+import CRMPage from "@/features/crm/CRMPage";
+import UniversityPage from "@/features/university/UniversityPage";
+import ModuleOverviewPage from "@/features/university/ModuleOverviewPage";
+import LessonPage from "@/features/university/LessonPage";
+import AffiliatesPage from "@/features/affiliates/AffiliatesPage";
+import ListADealPage from "@/features/deal-submit/ListADealPage";
+import SettingsPage from "@/features/settings/SettingsPage";
+// Frozen — stays in src/pages/
 import BookingSitePage from "./pages/BookingSitePage";
+// Layouts (stay in src/layouts/ — locked)
 import AdminLayout from "./layouts/AdminLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminQuickList from "./pages/admin/AdminQuickList";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminPricing from "./pages/admin/AdminPricing";
-import AdminFAQ from "./pages/admin/AdminFAQ";
-import AdminAffiliates from "./pages/admin/AdminAffiliates";
-import AdminDeals from "./pages/admin/AdminDeals";
-import AdminOutreach from "./pages/admin/AdminOutreachV2";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminNotifications from "./pages/admin/AdminNotifications";
-import AdminUniversity from "./pages/admin/AdminUniversity";
+// Admin features
+import AdminDashboard from "@/features/admin-dashboard/AdminDashboard";
+import AdminQuickList from "@/features/admin-deals/AdminQuickList";
+import AdminUsers from "@/features/admin-users/AdminUsers";
+import AdminPricing from "@/features/admin-pricing/AdminPricing";
+import AdminFAQ from "@/features/admin-faq/AdminFAQ";
+import AdminAffiliates from "@/features/admin-affiliates/AdminAffiliates";
+import AdminDeals from "@/features/admin-deals/AdminDeals";
+import AdminOutreach from "@/features/admin-gate/AdminOutreach";
+import AdminSettings from "@/features/admin-settings/AdminSettings";
+import AdminNotifications from "@/features/admin-notifications/AdminNotifications";
+import AdminUniversity from "@/features/admin-university/AdminUniversity";
 import AdminInvestDashboard from "./pages/admin/invest/AdminInvestDashboard";
 import AdminInvestProperties from "./pages/admin/invest/AdminInvestProperties";
 import AdminInvestOrders from "./pages/admin/invest/AdminInvestOrders";
@@ -44,8 +50,8 @@ import AdminInvestPayouts from "./pages/admin/invest/AdminInvestPayouts";
 import AdminInvestProposals from "./pages/admin/invest/AdminInvestProposals";
 import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
 import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
-import AdminWorkspaceSelector from "./pages/admin/AdminWorkspaceSelector";
-import AdminArchitecture from "./pages/admin/AdminArchitecture";
+import AdminWorkspaceSelector from "@/features/admin-dashboard/AdminWorkspaceSelector";
+import AdminArchitecture from "@/features/admin-dashboard/AdminArchitecture";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 import BrandPage from "./pages/BrandPage";
@@ -83,10 +89,10 @@ import NfsTravelerReservationDetail from "./pages/nfstay/NfsTravelerReservationD
 import NfsOAuthCallbackPage from "./pages/NfsOAuthCallbackPage";
 import NfsVerifyEmailPage from "./pages/NfsVerifyEmailPage";
 import NfsAuthCallbackPage from "./pages/NfsAuthCallbackPage";
-import ParticleAuthCallback from "./pages/ParticleAuthCallback";
-import AuthBridgePage from "./pages/AuthBridgePage";
-import LeadDetailsPage from "./pages/LeadDetailsPage";
-import LeadNDAPage from "./pages/LeadNDAPage";
+import ParticleAuthCallback from "@/features/auth/ParticleAuthCallback";
+import AuthBridgePage from "@/features/auth/AuthBridgePage";
+import LeadDetailsPage from "@/features/landlord/LeadDetailsPage";
+import LeadNDAPage from "@/features/landlord/LeadNDAPage";
 import { NfsCurrencyProvider } from "./contexts/NfsCurrencyContext";
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
@@ -141,7 +147,7 @@ const App = () => (
           <Route path="/lead/:token/nda" element={<LeadNDAPage />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="deals" replace />} />
-            <Route path="deals" element={<DealsPageV2 />} />
+            <Route path="deals" element={<DealsPage />} />
             {/* Favourites page removed — now a dropdown in top bar */}
             <Route path="crm" element={<CRMPage />} />
             <Route path="university" element={<UniversityPage />} />
