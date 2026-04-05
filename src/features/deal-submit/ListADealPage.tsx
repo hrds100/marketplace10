@@ -351,8 +351,9 @@ export default function ListADealPage() {
       return;
     }
 
-    // Validate and normalize WhatsApp number
-    if (form.contactWhatsapp) {
+    // Validate and normalize WhatsApp number — skip if it came from the profile
+    // (the system already accepted it during signup, and the field is read-only)
+    if (form.contactWhatsapp && !profileWhatsapp) {
       const normalized = normalizeUKPhone(form.contactWhatsapp);
       if (!normalized) {
         toast.error('WhatsApp must be a valid UK mobile (e.g. 07839 925555 or +447839925555)');
