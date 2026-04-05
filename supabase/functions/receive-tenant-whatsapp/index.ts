@@ -229,8 +229,42 @@ serve(async (req) => {
       }
     }
 
-    // 5c. WhatsApp auto-reply REMOVED — GHL workflow cf089a15 is the single
-    // sender for inbound WhatsApp auto-replies. Code must NOT also send one.
+    // 5c. WhatsApp auto-reply to tenant (single sender — our code, not GHL workflow)
+    if (tenant_phone && GHL_TOKEN) {
+      try {
+        const ghlHeaders: Record<string, string> = {
+          'Authorization': `Bearer ${GHL_TOKEN}`,
+          'Version': '2021-07-28',
+          'Content-Type': 'application/json',
+        }
+        const cleanName = (property.name || 'your property').replace(/^Property\s*#\d+\s*-\s*/, '').replace(/\s*\(\s*\)\s*$/, '').trim()
+
+        // Find GHL contact by phone
+        let contactId = ''
+        const searchRes = await fetch(
+          `${GHL_BASE}/contacts/?query=${encodeURIComponent(tenant_phone)}&locationId=${GHL_LOCATION_ID}`,
+          { headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version } }
+        )
+        if (searchRes.ok) {
+          const searchData = await searchRes.json()
+          contactId = searchData?.contacts?.[0]?.id || ''
+        }
+
+        if (contactId) {
+          await fetch(`${GHL_BASE}/conversations/messages`, {
+            method: 'POST',
+            headers: ghlHeaders,
+            body: JSON.stringify({
+              type: 'WhatsApp',
+              contactId,
+              message: `Hello, thanks for contacting nfstay.\n\nYour inquiry for ${cleanName} has been received and we have forwarded it to the landlord. They'll reach out to you shortly. 👍`,
+            }),
+          })
+        }
+      } catch (e) {
+        console.error('[receive-tenant-whatsapp] WhatsApp reply error:', e)
+      }
+    }
 
     return new Response(JSON.stringify({
       success: true,
