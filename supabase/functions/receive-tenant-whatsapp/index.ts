@@ -1,15 +1,15 @@
-// receive-tenant-whatsapp -- Create inquiry from inbound tenant WhatsApp via GHL
-// Input: { tenant_phone, tenant_name, message_body, property_ref, property_id, tenant_email? }
-// Output: { success, inquiry_id } or { error }
-// Inquiry appears in Admin > Outreach > Tenant Requests. Nothing sent to landlord.
+// receive-tenant-whatsapp — Orchestrator (thin)
+// Calls 5 small modules in sequence. Each module is independent and testable.
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { parseBody, parseMessage } from './parse-message.ts'
+import { findProperty } from './find-property.ts'
+import { createInquiry } from './create-inquiry.ts'
+import { notifyAdmin, notifyTenantEmail } from './notify.ts'
+import { enrollReply } from './enroll-reply.ts'
 
-const BASE_URL = 'https://hub.nfstay.com'
 const GHL_TOKEN = Deno.env.get('GHL_BEARER_TOKEN') || ''
-const GHL_LOCATION_ID = 'eFBsWXY3BmWDGIRez13x'
-const GHL_BASE = 'https://services.leadconnectorhq.com'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,113 +20,28 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    // Log raw request for debugging GHL webhook format
-    const contentType = req.headers.get('content-type') || ''
+    // 1. Parse
     const bodyText = await req.text()
-    console.log('[receive-tenant-whatsapp] Content-Type:', contentType)
-    console.log('[receive-tenant-whatsapp] Body preview:', bodyText.substring(0, 500))
+    console.log('[receive-tenant-whatsapp] Body:', bodyText.substring(0, 300))
+    const raw = parseBody(bodyText)
+    const parsed = parseMessage(raw)
 
-    // Parse body: handle JSON, form-urlencoded, or GHL's format
-    let raw: Record<string, unknown>
-    try {
-      raw = JSON.parse(bodyText)
-    } catch {
-      // Not JSON — try form-urlencoded
-      const params = new URLSearchParams(bodyText)
-      raw = Object.fromEntries(params.entries())
+    if ('skip' in parsed) {
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: parsed.reason }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
-
-    // Accept BOTH formats:
-    // A) Our edge function format: { tenant_phone, tenant_name, message_body, ... }
-    // B) GHL raw webhook format: { phone, contactPhone, message, body, contactId, ... }
-    let tenant_phone: string
-    let tenant_name: string | null
-    let message_body: string
-    let property_ref: string | null
-    let property_id: string | null
-    let tenant_email: string | null
-
-    if (raw.tenant_phone) {
-      // Format A — already parsed (direct call)
-      tenant_phone = raw.tenant_phone
-      tenant_name = raw.tenant_name || null
-      message_body = raw.message_body || ''
-      property_ref = raw.property_ref || null
-      property_id = raw.property_id || null
-      tenant_email = raw.tenant_email || null
-    } else {
-      // Format B — raw GHL webhook payload (direct from GHL)
-      const ghlBody = raw.body || raw
-      message_body = ghlBody.message || ghlBody.body || ghlBody.text || ''
-      tenant_phone = (ghlBody.phone || ghlBody.contactPhone || ghlBody.from || '').replace(/[^0-9+]/g, '')
-      tenant_name = ghlBody.contactName || ghlBody.contact_name || null
-      tenant_email = ghlBody.contactEmail || ghlBody.contact_email || null
-
-      // Parse property reference from message (e.g. "Reference no.: A1B2C")
-      const refMatch = message_body.match(/Ref(?:erence)?\s*(?:no\.)?[:#]?\s*([A-Z0-9]{5})/i)
-      property_ref = refMatch ? refMatch[1].toUpperCase() : null
-
-      // Parse property UUID from "ID: xxxxxxxx-..." in message
-      const idMatch = message_body.match(/ID:\s*([0-9a-f-]{36})/i)
-      property_id = idMatch ? idMatch[1] : null
-
-      // Check if this is actually an nfstay inquiry
-      const isInquiry = message_body.toLowerCase().includes('nfstay') || property_ref || property_id
-        || message_body.match(/\/deals\//)
-      if (!isInquiry) {
-        return new Response(JSON.stringify({ success: true, skipped: true, reason: 'Not an nfstay inquiry' }), {
-          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-    }
-
-    if (!tenant_phone) {
-      return new Response(JSON.stringify({ error: 'Missing tenant_phone' }), {
+    if ('error' in parsed) {
+      return new Response(JSON.stringify({ error: parsed.error }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
+    const { tenant_phone, tenant_name, message_body, property_ref, property_id, tenant_email } = parsed
+
+    // 2. Find property
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
-
-    // 1. Find property via multiple strategies
-    let property: any = null
-
-    // A: Direct property_id (full UUID)
-    if (property_id) {
-      const { data } = await supabase.from('properties').select('*').eq('id', property_id).single()
-      if (data) property = data
-    }
-
-    // B: Extract from /deals/ link in message (primary - tenant message always has this)
-    if (!property && message_body) {
-      const slugMatch = message_body.match(/\/deals\/([^\s\n]+)/i)
-      if (slugMatch) {
-        const slugOrId = slugMatch[1]
-        const { data: bySlug } = await supabase.from('properties').select('*').eq('slug', slugOrId).single()
-        if (bySlug) {
-          property = bySlug
-        } else {
-          const { data: byId } = await supabase.from('properties').select('*').eq('id', slugOrId).single()
-          if (byId) property = byId
-        }
-      }
-    }
-
-    // C: Extract short reference from message (e.g. "Reference no.: A1B2C")
-    if (!property && message_body) {
-      const refMatch = message_body.match(/Ref(?:erence)?\s*(?:no\.)?[:#]?\s*([A-Z0-9]{5})/i)
-      if (refMatch) {
-        const shortRef = refMatch[1].toLowerCase()
-        const { data: candidates } = await supabase.from('properties').select('*').ilike('id', `${shortRef}%`)
-        if (candidates && candidates.length === 1) property = candidates[0]
-      }
-    }
-
-    // D: property_ref from payload (short ref fallback)
-    if (!property && property_ref) {
-      const { data: candidates } = await supabase.from('properties').select('*').ilike('id', `${property_ref}%`)
-      if (candidates && candidates.length === 1) property = candidates[0]
-    }
+    const property = await findProperty(supabase, message_body, property_id, property_ref)
 
     if (!property) {
       return new Response(JSON.stringify({
@@ -138,163 +53,34 @@ serve(async (req) => {
       })
     }
 
-    // 2. Idempotency: if the same tenant_phone + property_id was created within 5 minutes, return existing
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
-    const { data: recentDup } = await supabase
-      .from('inquiries')
-      .select('id')
-      .eq('tenant_phone', tenant_phone)
-      .eq('property_id', property.id)
-      .gte('created_at', fiveMinAgo)
-      .limit(1)
+    // 3. Create inquiry (with dedup + auto-auth)
+    const { inquiryId, isDuplicate } = await createInquiry(
+      supabase, property, tenant_phone, tenant_name, tenant_email, message_body
+    )
 
-    const isDuplicate = recentDup && recentDup.length > 0
-    let inquiryId = isDuplicate ? recentDup[0].id : null
-
+    // 4. Notify (non-blocking — don't fail if these fail)
     if (!isDuplicate) {
-      // 3. Check if always_authorised for this lister phone
-      const listerPhone = property.landlord_whatsapp || property.contact_phone || null
-      let autoAuth = false
-      let autoAuthType: string | null = null
-
-      if (listerPhone) {
-        const { data: existing } = await supabase
-          .from('inquiries')
-          .select('always_authorised, authorisation_type')
-          .eq('lister_phone', listerPhone)
-          .eq('always_authorised', true)
-          .limit(1)
-        if (existing && existing.length > 0) {
-          autoAuth = true
-          autoAuthType = existing[0].authorisation_type || null
-        }
-      }
-
-      // 4. Insert inquiry
-      const token = crypto.randomUUID()
-      const { data: inquiry, error: insertErr } = await supabase
-        .from('inquiries')
-        .insert({
-          property_id: property.id,
-          lister_type: property.lister_type || 'landlord',
-          lister_phone: listerPhone,
-          lister_email: property.contact_email || null,
-          lister_name: property.contact_name || null,
-          channel: 'whatsapp',
-          message: message_body || '',
-          tenant_name: tenant_name || null,
-          tenant_phone: tenant_phone,
-          tenant_email: tenant_email || null,
-          token,
-          status: 'new',
-          nda_required: property.nda_required || false,
-          authorized: autoAuth,
-          always_authorised: autoAuth,
-          authorisation_type: autoAuthType,
-        })
-        .select('id')
-        .single()
-
-      if (insertErr) {
-        return new Response(JSON.stringify({ error: 'Failed to create inquiry', detail: insertErr.message }), {
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-      inquiryId = inquiry.id
-    }
-
-    // 5a. Admin bell notification (non-blocking, same pattern as process-inquiry)
-    try {
-      await supabase.from('notifications').insert({
-        user_id: null,
-        type: 'new_inquiry',
-        title: `New inquiry for ${property.name}`,
-        body: `${tenant_name || 'Someone'} inquired about ${property.name} via whatsapp`,
-        property_id: property.id,
-      } as Record<string, unknown>);
-    } catch (e) {
-      console.error('[receive-tenant-whatsapp] Failed to create admin notification:', e);
-    }
-
-    // 5b. Tenant confirmation email (non-blocking, same pattern as process-inquiry)
-    if (tenant_email) {
-      try {
-        await supabase.functions.invoke('send-email', {
-          body: {
-            type: 'inquiry-tenant-confirmation',
-            data: {
-              tenant_name: tenant_name || 'there',
-              tenant_email,
-              property_name: property.name,
-              property_url: `${BASE_URL}/deals/${property.id}`,
-              lister_name: property.contact_name || 'Property Lister',
-            },
-          },
-        })
-        console.log(`[receive-tenant-whatsapp] Tenant confirmation email sent to ${tenant_email}`)
-      } catch (e) {
-        console.error('[receive-tenant-whatsapp] Failed to send tenant confirmation email:', e)
+      notifyAdmin(supabase, property.name, property.id, tenant_name).catch(() => {})
+      if (tenant_email) {
+        notifyTenantEmail(supabase, tenant_email, tenant_name, property.name, property.id, property.contact_name || 'Property Lister').catch(() => {})
       }
     }
 
-    // 5c. WhatsApp auto-reply — enroll contact in GHL workflow cf089a15
-    // Workflow has NO trigger — enrollment via API is the only way to fire it.
-    // No circular dependency because the workflow doesn't call back to us.
-    if (tenant_phone && GHL_TOKEN) {
-      const INQUIRY_WORKFLOW = 'cf089a15-1d42-4d9a-85d1-ab35b82b4ad5'
-      try {
-        const ghlHeaders = {
-          'Authorization': `Bearer ${GHL_TOKEN}`,
-          'Version': '2021-07-28',
-          'Content-Type': 'application/json',
-        }
+    // 5. Enroll in WhatsApp reply workflow
+    enrollReply(tenant_phone, property.name || 'your property', GHL_TOKEN).catch(() => {})
 
-        // Find GHL contact
-        let contactId = ''
-        const searchRes = await fetch(
-          `${GHL_BASE}/contacts/?query=${encodeURIComponent(tenant_phone)}&locationId=${GHL_LOCATION_ID}`,
-          { headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version } }
-        )
-        if (searchRes.ok) {
-          const searchData = await searchRes.json()
-          contactId = searchData?.contacts?.[0]?.id || ''
-        }
-
-        if (contactId) {
-          // Set property name on contact for the WhatsApp template
-          const cleanName = (property.name || 'your property').replace(/^Property\s*#\d+\s*-\s*/, '').replace(/\s*\(\s*\)\s*$/, '').trim()
-          await fetch(`${GHL_BASE}/contacts/${contactId}`, {
-            method: 'PUT',
-            headers: ghlHeaders,
-            body: JSON.stringify({
-              customFields: [{ id: 'Z0thvOTyoO2KxTMt5sP8', field_value: cleanName }],
-            }),
-          }).catch(() => {})
-
-          // Remove + re-enroll (idempotent)
-          await fetch(`${GHL_BASE}/contacts/${contactId}/workflow/${INQUIRY_WORKFLOW}`, {
-            method: 'DELETE', headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version },
-          }).catch(() => {})
-
-          await fetch(`${GHL_BASE}/contacts/${contactId}/workflow/${INQUIRY_WORKFLOW}`, {
-            method: 'POST', headers: ghlHeaders, body: '{}',
-          }).catch(() => {})
-        }
-      } catch (e) {
-        console.error('[receive-tenant-whatsapp] GHL enrollment error:', e)
-      }
-    }
-
+    // Respond immediately — notifications and enrollment run in background
     return new Response(JSON.stringify({
       success: true,
       inquiry_id: inquiryId,
       property_name: property.name,
-      auto_authorised: autoAuth,
+      deduplicated: isDuplicate,
     }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
   } catch (err) {
+    console.error('[receive-tenant-whatsapp] Error:', err)
     return new Response(JSON.stringify({ error: 'Internal error', detail: String(err) }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
