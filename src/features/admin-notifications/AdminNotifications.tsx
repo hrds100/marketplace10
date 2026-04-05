@@ -23,6 +23,7 @@ interface Notification {
   title: string;
   body: string | null;
   property_id: string | null;
+  user_id: string | null;
   read: boolean;
   created_at: string;
 }
@@ -43,6 +44,7 @@ export default function AdminNotifications() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'all' | 'admin' | 'user'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkPin, setBulkPin] = useState('');
@@ -83,7 +85,10 @@ export default function AdminNotifications() {
       .eq('read', false);
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const filtered = tab === 'all' ? notifications
+    : tab === 'admin' ? notifications.filter(n => !n.user_id)
+    : notifications.filter(n => !!n.user_id);
+  const unreadCount = filtered.filter(n => !n.read).length;
 
   const handleClick = (notif: Notification) => {
     markRead(notif.id);
@@ -101,10 +106,10 @@ export default function AdminNotifications() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === notifications.length) {
+    if (selectedIds.size === filtered.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(notifications.map(n => n.id)));
+      setSelectedIds(new Set(filtered.map(n => n.id)));
     }
   };
 
@@ -146,9 +151,14 @@ export default function AdminNotifications() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          {notifications.length > 0 && (
+          <div className="flex rounded-lg border border-border overflow-hidden mr-2">
+            {(['all', 'admin', 'user'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${tab === t ? 'bg-primary text-white' : 'text-foreground hover:bg-secondary'}`}>{t === 'admin' ? 'Platform' : t === 'user' ? 'Personal' : 'All'}</button>
+            ))}
+          </div>
+          {filtered.length > 0 && (
             <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-muted-foreground">
-              <input type="checkbox" checked={notifications.length > 0 && selectedIds.size === notifications.length} onChange={toggleSelectAll} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer" />
+              <input type="checkbox" checked={filtered.length > 0 && selectedIds.size === filtered.length} onChange={toggleSelectAll} className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer" />
               Select all
             </label>
           )}
@@ -163,14 +173,14 @@ export default function AdminNotifications() {
         </div>
       </div>
 
-      {notifications.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="text-center py-16">
           <Bell className="w-10 h-10 text-border mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">No notifications yet.</p>
         </div>
       ) : (
         <div data-feature="ADMIN__NOTIFICATIONS_LIST" className="bg-card border border-border rounded-2xl overflow-hidden">
-          {notifications.map((notif, i) => (
+          {filtered.map((notif, i) => (
             <div
               key={notif.id}
               className={`flex items-start gap-3 p-4 cursor-pointer transition-colors hover:bg-secondary/50 ${

@@ -262,7 +262,7 @@ export default function AdminUsers() {
                     className="w-4 h-4 rounded border-border accent-[#1E9A80] cursor-pointer"
                   />
                 </th>
-                {['Name', 'Email', 'User ID', 'Wallet', 'WhatsApp', 'Tier', 'Status', 'Actions'].map(h => (
+                {['Name', 'Email', 'User ID', 'Wallet', 'WhatsApp', 'Tier', 'Registered', 'Status', 'Actions'].map(h => (
                   <th key={h} className="text-left p-3.5 text-xs font-semibold text-muted-foreground">{h}</th>
                 ))}
               </tr>
@@ -307,6 +307,10 @@ export default function AdminUsers() {
                       )}
                     </td>
                     <td className="p-3.5">{tierBadge(u.tier)}</td>
+                    <td className="p-3.5 text-xs text-muted-foreground whitespace-nowrap">
+                      {u.created_at ? new Date(u.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      {u.created_at && <span className="block text-[10px]">{new Date(u.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>}
+                    </td>
                     <td className="p-3.5">
                       {isSuspended ? (
                         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-800">Suspended</span>

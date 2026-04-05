@@ -38,7 +38,11 @@ export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const { tier } = useUserTier();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState(() => {
+    const hash = window.location.hash.replace('#', '');
+    const valid = settingsTabs.map(t => t.id);
+    return valid.includes(hash) ? hash : 'profile';
+  });
   const [profile, setProfile] = useState({ name: '', email: '', whatsapp: '' });
   const [saving, setSaving] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', new_pw: '', confirm: '' });

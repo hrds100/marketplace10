@@ -730,7 +730,7 @@ export default function AffiliatesPage() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Manage your bank details and claim commissions from the Payout Settings page.
                 </p>
-                <a href="/dashboard/settings" className="inline-flex items-center gap-2 px-4 py-2.5 bg-nfstay-black text-nfstay-black-foreground text-[13px] font-semibold rounded-lg hover:opacity-90 transition-opacity">
+                <a href="/dashboard/settings#payouts" className="inline-flex items-center gap-2 px-4 py-2.5 bg-nfstay-black text-nfstay-black-foreground text-[13px] font-semibold rounded-lg hover:opacity-90 transition-opacity">
                   Go to Payout Settings
                 </a>
               </div>
