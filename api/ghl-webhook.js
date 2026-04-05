@@ -1,11 +1,9 @@
 // Vercel serverless function — receives GHL webhook and forwards to Supabase
-const https = require('https');
+import https from 'node:https';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(200).end();
   }
 
@@ -35,4 +33,4 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
-};
+}
