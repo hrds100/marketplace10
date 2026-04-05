@@ -369,6 +369,38 @@ export default function AdminSettings() {
                 </div>
               ))}
 
+              {/* Notification Timing */}
+              <div className="pt-3 border-t border-border mb-4">
+                <div className="flex items-center justify-between py-2.5">
+                  <div>
+                    <span className="text-sm text-foreground">Notification scheduling</span>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Set quiet hours and batch notifications</p>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">Coming soon</span>
+                </div>
+              </div>
+
+              {/* WhatsApp + SMS channels */}
+              <div className="pt-3 border-t border-border mb-4">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                  Additional Channels
+                </h3>
+                <div className="flex items-center justify-between py-2.5 border-b border-border">
+                  <div>
+                    <span className="text-sm text-foreground">WhatsApp notifications</span>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Send notifications via WhatsApp (GHL)</p>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">Coming soon</span>
+                </div>
+                <div className="flex items-center justify-between py-2.5">
+                  <div>
+                    <span className="text-sm text-foreground">SMS notifications</span>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Send notifications via SMS</p>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">Coming soon</span>
+                </div>
+              </div>
+
               {/* Admin email recipients */}
               <div className="pt-3 border-t border-border">
                 <label className="text-xs font-semibold text-foreground block mb-1.5">
