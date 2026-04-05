@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, CheckCheck, ExternalLink, Trash2 } from 'lucide-react';
+import { Bell, CheckCheck, ExternalLink, Trash2, Send, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +49,9 @@ export default function AdminNotifications() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkPin, setBulkPin] = useState('');
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [sendForm, setSendForm] = useState({ title: '', body: '', sendEmail: false });
+  const [sending, setSending] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -70,6 +73,40 @@ export default function AdminNotifications() {
     const interval = setInterval(fetchNotifications, 30_000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
+
+  const sendToAll = async () => {
+    if (!sendForm.title.trim()) { toast.error('Title is required'); return; }
+    setSending(true);
+    try {
+      // Insert bell notification for all users (user_id = null means admin-wide)
+      const { error } = await (supabase.from('notifications') as any).insert({
+        user_id: null,
+        type: 'admin_broadcast',
+        title: sendForm.title.trim(),
+        body: sendForm.body.trim() || null,
+      });
+      if (error) throw error;
+
+      // Optionally send email to all users
+      if (sendForm.sendEmail) {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'admin-broadcast',
+            data: { title: sendForm.title.trim(), body: sendForm.body.trim() },
+          },
+        }).catch(() => {});
+      }
+
+      toast.success('Notification sent to all users');
+      setSendOpen(false);
+      setSendForm({ title: '', body: '', sendEmail: false });
+      fetchNotifications();
+    } catch (err) {
+      toast.error('Failed to send: ' + (err instanceof Error ? err.message : 'unknown'));
+    } finally {
+      setSending(false);
+    }
+  };
 
   const markRead = async (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
@@ -162,6 +199,12 @@ export default function AdminNotifications() {
               Select all
             </label>
           )}
+          <button
+            onClick={() => setSendOpen(true)}
+            className="h-9 px-4 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 transition-opacity inline-flex items-center gap-1.5"
+          >
+            <Send className="w-4 h-4" /> Send to all
+          </button>
           {unreadCount > 0 && (
             <button
               onClick={markAllRead}
@@ -275,6 +318,44 @@ export default function AdminNotifications() {
                 className="flex-1 h-11 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 {bulkDeleting ? 'Deleting...' : 'Delete All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send to All Modal */}
+      {sendOpen && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => setSendOpen(false)}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[460px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                <Send className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Send Notification</h3>
+                <p className="text-xs text-muted-foreground">This will appear in every user's notification bell</p>
+              </div>
+            </div>
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">Title</label>
+                <input value={sendForm.title} onChange={e => setSendForm(p => ({ ...p, title: e.target.value }))} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm" placeholder="e.g. New feature launched!" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">Message (optional)</label>
+                <textarea value={sendForm.body} onChange={e => setSendForm(p => ({ ...p, body: e.target.value }))} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none" rows={3} placeholder="Additional details..." />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={sendForm.sendEmail} onChange={e => setSendForm(p => ({ ...p, sendEmail: e.target.checked }))} className="w-4 h-4 rounded border-border accent-[#1E9A80]" />
+                <span className="text-sm text-foreground">Also send via email</span>
+              </label>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setSendOpen(false)} className="flex-1 h-11 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">Cancel</button>
+              <button onClick={sendToAll} disabled={sending} className="flex-1 h-11 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {sending ? 'Sending...' : 'Send to all users'}
               </button>
             </div>
           </div>
