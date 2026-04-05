@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe, Pencil, X, Loader2 } from 'lucide-react';
+import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe, Pencil, X, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import BankDetailsForm from '@/components/BankDetailsForm';
 import { useMyAffiliateProfile, useInvestProperties, useMyCommissions } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -58,6 +59,7 @@ export default function AffiliatesPage() {
   }, []);
   // TODO: Wire realAffProfile to replace mock affiliate data when available
   const [copied, setCopied] = useState(false);
+  const [payoutOpen, setPayoutOpen] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
   const [calcMode, setCalcMode] = useState<'subscriptions' | 'jv'>('subscriptions');
   const [calcPlan, setCalcPlan] = useState<'yearly' | 'monthly' | 'lifetime'>('lifetime');
@@ -724,15 +726,20 @@ export default function AffiliatesPage() {
             {/* ─── RIGHT COLUMN ───────────────────────────── */}
             <div className="space-y-6">
 
-              {/* Payouts — redirects to centralized Payout Settings */}
+              {/* Payout Settings — inline expandable */}
               <div className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="text-sm font-semibold text-foreground mb-2">Payouts</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Manage your bank details and claim commissions from the Payout Settings page.
-                </p>
-                <a href="/dashboard/settings#payouts" className="inline-flex items-center gap-2 px-4 py-2.5 bg-nfstay-black text-nfstay-black-foreground text-[13px] font-semibold rounded-lg hover:opacity-90 transition-opacity">
-                  Go to Payout Settings
-                </a>
+                <button onClick={() => setPayoutOpen(!payoutOpen)} className="w-full flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Payout Settings</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Manage your bank details for commission payouts</p>
+                  </div>
+                  {payoutOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </button>
+                {payoutOpen && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <BankDetailsForm />
+                  </div>
+                )}
               </div>
 
               {/* Commission breakdown */}
