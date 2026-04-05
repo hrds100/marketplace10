@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, ArrowLeft, CheckCircle2, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { sendOtp, verifyOtp } from '@/lib/n8n';
+import { sendOtp, verifyOtp } from '@/core/auth/otp';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import CountryCodeSelect from '@/components/CountryCodeSelect';

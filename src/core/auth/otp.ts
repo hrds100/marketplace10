@@ -1,5 +1,7 @@
-// ─── OTP + Inquiry: Native Supabase Edge Functions (no n8n) ────────
-// Migrated from n8n on 2026-04-04. Do NOT re-add n8n calls for these.
+/**
+ * OTP functions — call Supabase edge functions directly (no n8n).
+ * Migrated from src/lib/n8n.ts on 2026-04-05.
+ */
 
 /** Strip spaces, dashes, parens from phone numbers */
 function cleanPhone(phone: string): string {
@@ -37,21 +39,4 @@ export async function verifyOtp(params: {
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
-}
-
-// ─── Legacy n8n (CRM only — to be migrated later) ─────────────────
-const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
-
-/** CRM stage move notification — fire-and-forget */
-export function notifyCrmStageMove(params: {
-  dealId: string;
-  fromStage: string;
-  toStage: string;
-  userId: string;
-}): void {
-  fetch(`${N8N_BASE}/webhook/move-crm-stage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  }).catch(() => {});
 }

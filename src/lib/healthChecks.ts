@@ -77,7 +77,7 @@ export async function checkN8n(): Promise<HealthCheckResult> {
   const { signal, clear } = makeController();
   try {
     const res = await fetch(
-      'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/n8n-health',
+      'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/health',
       { signal },
     );
     clear();
