@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Globe, Bell, Sparkles, Mail, Loader2, Send, ChevronDown, ChevronUp } from 'lucide-react';
+import { Globe, Bell, Sparkles, Mail, Loader2, Send, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -312,12 +312,18 @@ export default function AdminSettings() {
           ) : (
             <div className="space-y-5">
               {/* Column headers */}
-              <div className="flex items-center justify-end gap-6 pr-1">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+              <div className="flex items-center justify-end gap-4 pr-1">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1 w-12 justify-center">
                   <Bell className="w-3 h-3" /> Bell
                 </span>
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1 w-12 justify-center">
                   <Mail className="w-3 h-3" /> Email
+                </span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1 w-16 justify-center">
+                  <MessageCircle className="w-3 h-3" /> WhatsApp
+                </span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1 w-10 justify-center">
+                  SMS
                 </span>
               </div>
 
@@ -333,35 +339,43 @@ export default function AdminSettings() {
                         className="flex items-center justify-between py-2.5 border-b border-border last:border-0"
                       >
                         <span className="text-sm text-foreground">{setting.label}</span>
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4">
                           {/* Bell toggle */}
-                          <button
-                            onClick={() => toggleNotif(setting.id, 'bell_enabled', setting.bell_enabled)}
-                            className={`w-9 h-5 rounded-full relative transition-colors ${
-                              setting.bell_enabled ? 'bg-primary' : 'bg-border'
-                            }`}
-                            aria-label={`Bell notification for ${setting.label}`}
-                          >
-                            <span
-                              className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                                setting.bell_enabled ? 'left-[18px]' : 'left-0.5'
+                          <div className="w-12 flex justify-center">
+                            <button
+                              onClick={() => toggleNotif(setting.id, 'bell_enabled', setting.bell_enabled)}
+                              className={`w-9 h-5 rounded-full relative transition-colors ${
+                                setting.bell_enabled ? 'bg-primary' : 'bg-border'
                               }`}
-                            />
-                          </button>
+                              aria-label={`Bell notification for ${setting.label}`}
+                            >
+                              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${setting.bell_enabled ? 'left-[18px]' : 'left-0.5'}`} />
+                            </button>
+                          </div>
                           {/* Email toggle */}
-                          <button
-                            onClick={() => toggleNotif(setting.id, 'email_enabled', setting.email_enabled)}
-                            className={`w-9 h-5 rounded-full relative transition-colors ${
-                              setting.email_enabled ? 'bg-primary' : 'bg-border'
-                            }`}
-                            aria-label={`Email notification for ${setting.label}`}
-                          >
-                            <span
-                              className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                                setting.email_enabled ? 'left-[18px]' : 'left-0.5'
+                          <div className="w-12 flex justify-center">
+                            <button
+                              onClick={() => toggleNotif(setting.id, 'email_enabled', setting.email_enabled)}
+                              className={`w-9 h-5 rounded-full relative transition-colors ${
+                                setting.email_enabled ? 'bg-primary' : 'bg-border'
                               }`}
-                            />
-                          </button>
+                              aria-label={`Email notification for ${setting.label}`}
+                            >
+                              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${setting.email_enabled ? 'left-[18px]' : 'left-0.5'}`} />
+                            </button>
+                          </div>
+                          {/* WhatsApp toggle (coming soon — disabled) */}
+                          <div className="w-16 flex justify-center">
+                            <button disabled className="w-9 h-5 rounded-full relative bg-border opacity-40 cursor-not-allowed" title="WhatsApp — coming soon">
+                              <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow" />
+                            </button>
+                          </div>
+                          {/* SMS toggle (coming soon — disabled) */}
+                          <div className="w-10 flex justify-center">
+                            <button disabled className="w-9 h-5 rounded-full relative bg-border opacity-40 cursor-not-allowed" title="SMS — coming soon">
+                              <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -375,27 +389,6 @@ export default function AdminSettings() {
                   <div>
                     <span className="text-sm text-foreground">Notification scheduling</span>
                     <p className="text-[10px] text-muted-foreground mt-0.5">Set quiet hours and batch notifications</p>
-                  </div>
-                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">Coming soon</span>
-                </div>
-              </div>
-
-              {/* WhatsApp + SMS channels */}
-              <div className="pt-3 border-t border-border mb-4">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                  Additional Channels
-                </h3>
-                <div className="flex items-center justify-between py-2.5 border-b border-border">
-                  <div>
-                    <span className="text-sm text-foreground">WhatsApp notifications</span>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Send notifications via WhatsApp (GHL)</p>
-                  </div>
-                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">Coming soon</span>
-                </div>
-                <div className="flex items-center justify-between py-2.5">
-                  <div>
-                    <span className="text-sm text-foreground">SMS notifications</span>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Send notifications via SMS</p>
                   </div>
                   <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">Coming soon</span>
                 </div>

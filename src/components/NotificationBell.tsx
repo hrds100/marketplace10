@@ -33,12 +33,8 @@ export default function NotificationBell() {
         .order('created_at', { ascending: false })
         .limit(30);
 
-      if (isAdmin) {
-        // Admin: own + admin-wide (null user_id)
-        query = query.or(`user_id.eq.${user.id},user_id.is.null`);
-      } else {
-        query = query.eq('user_id', user.id);
-      }
+      // All users see: own notifications + broadcasts (user_id IS NULL)
+      query = query.or(`user_id.eq.${user.id},user_id.is.null`);
 
       const { data } = await query;
       if (data) {
