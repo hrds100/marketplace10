@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Eye, EyeOff, CheckCircle2, ArrowLeft, Mail, Lock, User, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
-import { sendOtp } from '@/lib/n8n';
+import { sendOtp } from '@/core/auth/otp';
 import { supabase } from '@/integrations/supabase/client';
 import { signupSchema, type SignupFormData, passwordStrength, strengthLabels, strengthColors } from '@/lib/validation';
 import CountryCodeSelect from '@/components/CountryCodeSelect';
