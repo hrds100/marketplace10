@@ -15,8 +15,6 @@ import { Pencil, Trash2, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
-
 interface PropertyRow {
   id: string;
   name: string;
@@ -143,16 +141,7 @@ export default function MyListingsPanel({ userId }: Props) {
 
       if (error) throw error;
 
-      // Non-blocking n8n notification
-      const listing = listings.find(l => l.id === propertyId);
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10_000);
-      fetch(`${N8N_BASE}/webhook/notify-admin-edit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propertyId, city: editForm.city, type: listing?.type || '', editedBy: userId }),
-        signal: controller.signal,
-      }).catch(() => {}).finally(() => clearTimeout(timeout));
+      // Admin edit notification removed — n8n eliminated
 
       setEditingId(null);
       toast.success('Edit submitted — awaiting admin approval');

@@ -5,7 +5,6 @@ import { CRM_STAGES, type CRMDeal } from '@/data/mockData';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { notifyCrmStageMove } from '@/lib/n8n';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 import LeadsTab from '@/components/crm/LeadsTab';
@@ -90,7 +89,7 @@ export default function CRMPage() {
     setDeals(prev => prev.map(d => d.id === dragId ? { ...d, stage: toStage } : d));
     if (user) {
       await supabase.from('crm_deals').update({ stage: toStage }).eq('id', dragId);
-      notifyCrmStageMove({ dealId: dragId, fromStage, toStage, userId: user.id });
+      // CRM stage move notification removed (Hugo confirmed: not needed)
     }
     setDragId(null);
     toast.success('Deal moved');

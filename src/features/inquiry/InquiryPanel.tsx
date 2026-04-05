@@ -88,19 +88,17 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
         if (data?.tier && data.tier !== 'free') {
           if (pollRef.current) clearInterval(pollRef.current);
-          // Fire affiliate commission now that we know the tier
+          // Record affiliate commission event (replaces n8n webhook)
           if (referredBy) {
             const tierAmounts: Record<string, number> = { monthly: 67, yearly: 397, lifetime: 997 };
-            fetch('https://n8n.srv886554.hstgr.cloud/webhook/aff-commission-subscription', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                referral_code: referredBy,
-                user_id: user!.id,
-                amount: tierAmounts[data.tier] || 67,
-                payment_id: `ghl-${user!.id}-${Date.now()}`,
-              }),
-            }).catch(() => {});
+            supabase.from('aff_events' as any).insert({
+              referral_code: referredBy,
+              user_id: user!.id,
+              event_type: 'subscription',
+              amount: tierAmounts[data.tier] || 67,
+              payment_id: `ghl-${user!.id}-${Date.now()}`,
+              tier: data.tier,
+            }).then(() => {}).catch(() => {});
           }
           setTimeout(() => {
             handleClose();
