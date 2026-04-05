@@ -20,7 +20,16 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const raw = await req.json()
+    // GHL sends webhooks as form-urlencoded, not JSON. Handle both.
+    let raw: Record<string, unknown>
+    const contentType = req.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      raw = await req.json()
+    } else {
+      const text = await req.text()
+      const params = new URLSearchParams(text)
+      raw = Object.fromEntries(params.entries())
+    }
 
     // Accept BOTH formats:
     // A) Our edge function format: { tenant_phone, tenant_name, message_body, ... }
