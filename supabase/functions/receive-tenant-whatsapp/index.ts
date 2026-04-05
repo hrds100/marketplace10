@@ -44,6 +44,22 @@ serve(async (req) => {
     const property = await findProperty(supabase, message_body, property_id, property_ref)
 
     if (!property) {
+      // GHL follow-up replies won't have a property ref — just enroll for reply
+      const rawBody = (raw.body as Record<string, unknown>) || raw
+      const isGhlWebhook = !!(rawBody.contactName || rawBody.contact_name || rawBody.contactEmail || rawBody.contact_email || rawBody.contactPhone)
+
+      if (isGhlWebhook) {
+        enrollReply(tenant_phone, 'your property', GHL_TOKEN).catch(() => {})
+        return new Response(JSON.stringify({
+          success: true,
+          ghl_reply_only: true,
+          message: 'GHL follow-up reply — enrolled for WhatsApp response',
+        }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Cold inbound without property ref — still reject
       return new Response(JSON.stringify({
         error: 'Could not identify property from message',
         hint: 'Include a /deals/ link or reference number in the message',
