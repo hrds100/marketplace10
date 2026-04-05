@@ -207,58 +207,9 @@ serve(async (req) => {
       magicToken = ''
     }
 
-    // 5. WhatsApp auto-reply to tenant (direct GHL conversations API)
-    if (resolvedTenantPhone && GHL_TOKEN) {
-      try {
-        const ghlHeaders = {
-          'Authorization': `Bearer ${GHL_TOKEN}`,
-          'Version': '2021-07-28',
-          'Content-Type': 'application/json',
-        }
-
-        // Find or create GHL contact
-        let contactId = ''
-        const searchRes = await fetch(
-          `${GHL_BASE}/contacts/?query=${encodeURIComponent(resolvedTenantPhone)}&locationId=${GHL_LOCATION_ID}`,
-          { headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version } }
-        )
-        if (searchRes.ok) {
-          const searchData = await searchRes.json()
-          contactId = searchData?.contacts?.[0]?.id || ''
-        }
-
-        if (!contactId) {
-          const createRes = await fetch(`${GHL_BASE}/contacts/`, {
-            method: 'POST',
-            headers: ghlHeaders,
-            body: JSON.stringify({
-              locationId: GHL_LOCATION_ID,
-              phone: resolvedTenantPhone,
-              name: tenant_name || resolvedTenantPhone,
-              tags: ['nfstay', 'tenant'],
-            }),
-          })
-          if (createRes.ok) {
-            const createData = await createRes.json()
-            contactId = createData?.contact?.id || ''
-          }
-        }
-
-        if (contactId) {
-          await fetch(`${GHL_BASE}/conversations/messages`, {
-            method: 'POST',
-            headers: ghlHeaders,
-            body: JSON.stringify({
-              type: 'WhatsApp',
-              contactId,
-              message: `Hello, thanks for contacting nfstay.\n\nYour inquiry for ${propertyName} has been received and we have forwarded it to the landlord. They'll reach out to you shortly.`,
-            }),
-          })
-        }
-      } catch (e) {
-        console.error('[process-inquiry] WhatsApp reply error:', e)
-      }
-    }
+    // 5. WhatsApp auto-reply — NOT handled here.
+    // Email inquiries get an email confirmation (step 6 below).
+    // WhatsApp inquiries go through GHL workflow cf089a15 which handles the reply.
 
     // 6. Send confirmation email to tenant
     if (tenant_email) {

@@ -229,56 +229,10 @@ serve(async (req) => {
       }
     }
 
-    // 5c. WhatsApp auto-reply via GHL workflow enrollment
-    // Workflow cf089a15 sends the templated WhatsApp with buttons (Read more / Open Chat)
-    if (tenant_phone && GHL_TOKEN) {
-      const INQUIRY_WORKFLOW = 'cf089a15-1d42-4d9a-85d1-ab35b82b4ad5'
-      try {
-        const ghlHeaders = {
-          'Authorization': `Bearer ${GHL_TOKEN}`,
-          'Version': '2021-07-28',
-          'Content-Type': 'application/json',
-        }
-        const cleanName = (property.name || 'your property').replace(/^Property\s*#\d+\s*-\s*/, '').replace(/\s*\(\s*\)\s*$/, '').trim()
-
-        // Find GHL contact by phone
-        let contactId = ''
-        const searchRes = await fetch(
-          `${GHL_BASE}/contacts/?query=${encodeURIComponent(tenant_phone)}&locationId=${GHL_LOCATION_ID}`,
-          { headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version } }
-        )
-        if (searchRes.ok) {
-          const searchData = await searchRes.json()
-          contactId = searchData?.contacts?.[0]?.id || ''
-        }
-
-        if (contactId) {
-          // Set property name custom field so the workflow template includes it
-          await fetch(`${GHL_BASE}/contacts/${contactId}`, {
-            method: 'PUT',
-            headers: ghlHeaders,
-            body: JSON.stringify({
-              customFields: [{ id: 'Z0thvOTyoO2KxTMt5sP8', field_value: cleanName }],
-            }),
-          })
-
-          // Remove from workflow first (idempotent), then re-enroll
-          await fetch(`${GHL_BASE}/contacts/${contactId}/workflow/${INQUIRY_WORKFLOW}`, {
-            method: 'DELETE', headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version },
-          }).catch(() => {})
-
-          // Enroll in workflow — GHL sends the templated WhatsApp
-          const enrollRes = await fetch(`${GHL_BASE}/contacts/${contactId}/workflow/${INQUIRY_WORKFLOW}`, {
-            method: 'POST', headers: ghlHeaders, body: '{}',
-          })
-          if (!enrollRes.ok) {
-            console.error('[receive-tenant-whatsapp] Workflow enrollment failed:', enrollRes.status)
-          }
-        }
-      } catch (e) {
-        console.error('[receive-tenant-whatsapp] GHL workflow enrollment error:', e)
-      }
-    }
+    // 5c. WhatsApp auto-reply is handled by GHL workflow cf089a15.
+    // This function is CALLED BY that workflow's webhook step.
+    // The workflow proceeds to the WhatsApp reply step after this returns.
+    // Do NOT enroll the contact here — that creates a circular dependency.
 
     return new Response(JSON.stringify({
       success: true,
