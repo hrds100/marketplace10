@@ -66,7 +66,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
 
         if (data?.tier && data.tier !== 'free') {
           if (pollRef.current) clearInterval(pollRef.current);
-          // Record affiliate commission event (replaces n8n webhook)
+          // Record affiliate commission event
           if (referredBy) {
             const tierAmounts: Record<string, number> = { monthly: 67, yearly: 397, lifetime: 997 };
             supabase.from('aff_events' as any).insert({
@@ -98,7 +98,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
 
   // Fallback poll: every 3 s while the sheet is open, check if tier changed in DB.
   // Handles the case where GHL's iframe never fires a postMessage and cross-origin
-  // blocks reading the thank-you URL — but n8n already wrote the paid tier.
+  // blocks reading the thank-you URL — but GHL webhook already wrote the paid tier.
   useEffect(() => {
     if (!open || !user?.id || paymentComplete) return;
     const id = setInterval(async () => {

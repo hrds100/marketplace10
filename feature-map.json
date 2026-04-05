@@ -45,7 +45,6 @@
       }
     }
   },
-
   "DEALS": {
     "description": "Browse, filter, and view rent-to-rent property deals",
     "session": "DEALS",
@@ -63,15 +62,21 @@
     "sub_features": {
       "DEALS__PROPERTY_CARD": {
         "description": "Deal card showing image, rent, profit, badges, favourite toggle",
-        "files": ["src/components/PropertyCard.tsx"]
+        "files": [
+          "src/components/PropertyCard.tsx"
+        ]
       },
       "DEALS__DEALS_MAP": {
         "description": "Google Maps overlay with property markers by city",
-        "files": ["src/components/DealsMap.tsx"]
+        "files": [
+          "src/components/DealsMap.tsx"
+        ]
       },
       "DEALS__INQUIRY_PANEL": {
         "description": "Property inquiry panel with NDA, contact masking, WhatsApp",
-        "files": ["src/components/InquiryPanel.tsx"]
+        "files": [
+          "src/components/InquiryPanel.tsx"
+        ]
       },
       "DEALS__LIST_A_DEAL": {
         "description": "Multi-section property submission form with photo upload and My Listings",
@@ -83,7 +88,6 @@
       }
     }
   },
-
   "CRM_INBOX": {
     "description": "CRM pipeline and landlord-tenant messaging inbox with NDA enforcement",
     "session": "CRM_INBOX",
@@ -123,19 +127,24 @@
       },
       "CRM_INBOX__NDA_AGREEMENT": {
         "description": "Landlord NDA signing modal",
-        "files": ["src/components/inbox/AgreementModal.tsx"]
+        "files": [
+          "src/components/inbox/AgreementModal.tsx"
+        ]
       },
       "CRM_INBOX__EARNINGS_ESTIMATOR": {
         "description": "Interactive profit calculator inside inbox",
-        "files": ["src/components/inbox/EarningsEstimator.tsx"]
+        "files": [
+          "src/components/inbox/EarningsEstimator.tsx"
+        ]
       },
       "CRM_INBOX__CRM_PIPELINE": {
         "description": "Kanban board for deal stages (New Lead to Deal Won)",
-        "files": ["src/pages/CRMPage.tsx"]
+        "files": [
+          "src/pages/CRMPage.tsx"
+        ]
       }
     }
   },
-
   "INVEST": {
     "description": "Blockchain-based property investment: marketplace, portfolio, governance, payouts",
     "session": "INVEST",
@@ -166,15 +175,21 @@
     "sub_features": {
       "INVEST__MARKETPLACE": {
         "description": "Browse and purchase investment property shares",
-        "files": ["src/pages/invest/InvestMarketplacePage.tsx"]
+        "files": [
+          "src/pages/invest/InvestMarketplacePage.tsx"
+        ]
       },
       "INVEST__PORTFOLIO": {
         "description": "Holdings, claimable rent, performance chart",
-        "files": ["src/pages/invest/InvestPortfolioPage.tsx"]
+        "files": [
+          "src/pages/invest/InvestPortfolioPage.tsx"
+        ]
       },
       "INVEST__PROPOSALS": {
         "description": "Governance voting on investment proposals",
-        "files": ["src/pages/invest/InvestProposalsPage.tsx"]
+        "files": [
+          "src/pages/invest/InvestProposalsPage.tsx"
+        ]
       },
       "INVEST__PAYOUTS": {
         "description": "Claim rent payouts with bank details",
@@ -185,7 +200,6 @@
       }
     }
   },
-
   "BLOCKCHAIN_WALLET": {
     "description": "Particle Network wallet provisioning and legacy wallet migration",
     "session": "BLOCKCHAIN_WALLET",
@@ -196,7 +210,6 @@
       "src/hooks/useWallet.ts"
     ]
   },
-
   "PAYMENTS": {
     "description": "GoHighLevel payment funnel, tier gating, and payment success handling",
     "session": "PAYMENTS",
@@ -208,7 +221,6 @@
       "src/lib/ghl.ts"
     ]
   },
-
   "UNIVERSITY": {
     "description": "Educational academy with modules, lessons, XP, achievements, AI chat",
     "session": "UNIVERSITY",
@@ -222,7 +234,6 @@
       "src/data/universityData.ts"
     ]
   },
-
   "AFFILIATES": {
     "description": "Referral program: share link, stats, commission earnings, referral tracking",
     "session": "AFFILIATES",
@@ -232,16 +243,13 @@
       "supabase/functions/track-referral/index.ts"
     ],
     "sub_features": {
-      "AFFILIATES__COMMISSION_WEBHOOK": {
-        "description": "n8n workflow and webhook for affiliate commission on subscription/investment",
-        "files": [
-          "n8n-workflows/inv-commission-subscription.json"
-        ],
-        "note": "Shared with INVEST - fires from PaymentSheet.tsx and InquiryPanel.tsx"
+      "AFFILIATES__COMMISSION": {
+        "description": "Affiliate commission tracking via aff_events table INSERT",
+        "files": [],
+        "note": "Fires from PaymentSheet.tsx and InquiryPanel.tsx via Supabase aff_events INSERT"
       }
     }
   },
-
   "FAVOURITES": {
     "description": "Save and manage favourite deals",
     "session": "FAVOURITES",
@@ -251,7 +259,6 @@
       "src/hooks/useFavourites.ts"
     ]
   },
-
   "SETTINGS": {
     "description": "User profile, security, membership, notifications, payout settings",
     "session": "SETTINGS",
@@ -260,7 +267,6 @@
       "src/pages/SettingsPage.tsx"
     ]
   },
-
   "BRAND": {
     "description": "Design system reference page (colour palette, shadows, buttons, cards)",
     "session": "BRAND",
@@ -269,7 +275,6 @@
       "src/pages/BrandPage.tsx"
     ]
   },
-
   "NAV_LAYOUT": {
     "description": "Dashboard sidebar, top nav, landing nav, admin layout, burger menu",
     "session": "NAV_LAYOUT",
@@ -294,7 +299,6 @@
       "src/layouts/AdminLayout.tsx"
     ]
   },
-
   "NOTIFICATIONS": {
     "description": "Notification bell, unread count, realtime updates",
     "session": "NOTIFICATIONS",
@@ -304,7 +308,6 @@
     ],
     "note": "NotificationBell also appears in NAV_LAYOUT - shared component"
   },
-
   "BOOKING_NFSTAY": {
     "description": "NFStay vacation rental platform: operator dashboard, properties, reservations, guest booking",
     "session": "BOOKING_NFSTAY",
@@ -449,7 +452,6 @@
       }
     }
   },
-
   "ADMIN": {
     "description": "Admin panel: dashboard, listings, users, submissions, FAQ, notifications, pricing, university, affiliates, settings",
     "session": "ADMIN",
@@ -519,11 +521,12 @@
       },
       "ADMIN__QUICK_LIST": {
         "description": "Rapid property listing from WhatsApp text via AI parsing",
-        "files": ["src/pages/admin/AdminQuickList.tsx"]
+        "files": [
+          "src/pages/admin/AdminQuickList.tsx"
+        ]
       }
     }
   },
-
   "SUPABASE_BACKEND": {
     "description": "Supabase client, generated types, edge functions, migrations",
     "session": "SUPABASE_BACKEND",
@@ -567,38 +570,12 @@
       },
       "SUPABASE_BACKEND__MIGRATIONS": {
         "description": "All SQL migration files",
-        "files": ["supabase/migrations/*.sql"]
+        "files": [
+          "supabase/migrations/*.sql"
+        ]
       }
     }
   },
-
-  "N8N_WORKFLOWS": {
-    "description": "n8n workflow JSON exports and automation docs",
-    "session": "N8N_WORKFLOWS",
-    "active": true,
-    "files": [
-      "n8n-workflows/03-ghl-webhook.json",
-      "n8n-workflows/13-inbox-new-message.json",
-      "n8n-workflows/14-inbox-landlord-replied.json",
-      "n8n-workflows/nfs-hospitable-init-sync.json",
-      "n8n-workflows/nfs-hospitable-listing-sync.json",
-      "n8n-workflows/nfs-hospitable-reservation-sync.json",
-      "n8n-workflows/nfs-hospitable-manual-sync.json",
-      "n8n-workflows/nfs-hospitable-retry.json",
-      "n8n-workflows/nfs-cleanup-expired.json",
-      "n8n-workflows/inv-notify-events.json",
-      "n8n-workflows/inv-notify-ghl-whatsapp.json",
-      "n8n-workflows/inv-tuesday-payout-batch.json",
-      "n8n-workflows/inv-revolut-token-refresh.json",
-      "n8n-workflows/university-ai-chat.json",
-      "n8n-workflows/README.md",
-      "n8n-workflows/IMPORT_AND_ACTIVATE.md",
-      "n8n-workflows/NEXT_3MINS.md",
-      "src/lib/n8n.ts",
-      "scripts/import-n8n-workflows.mjs"
-    ]
-  },
-
   "SHARED": {
     "description": "Cross-feature utilities, UI primitives, data, contexts, and shared hooks",
     "session": "SHARED",
@@ -631,11 +608,15 @@
     "sub_features": {
       "SHARED__UI_PRIMITIVES": {
         "description": "shadcn/ui components (50+ files) - never hand-edit",
-        "files": ["src/components/ui/*"]
+        "files": [
+          "src/components/ui/*"
+        ]
       },
       "SHARED__NFSTAY_HOOKS": {
         "description": "21 nfstay-specific React hooks for property, reservation, operator management",
-        "files": ["src/hooks/nfstay/*"]
+        "files": [
+          "src/hooks/nfstay/*"
+        ]
       },
       "SHARED__NFSTAY_LIB": {
         "description": "NFStay constants, pricing, types, white-label detection",
@@ -656,7 +637,6 @@
       }
     }
   },
-
   "NICKEL": {
     "description": "Nickel product landing page (separate product)",
     "session": "NICKEL",

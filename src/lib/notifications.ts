@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const GHL_TOKEN = import.meta.env.VITE_GHL_BEARER_TOKEN || '';
 
-// Send notification via n8n webhook → GHL WhatsApp + in-app
+// Send investment notification via GHL WhatsApp + in-app bell
 export async function sendInvestNotification(event: {
   type: string;
   user_id?: string;
@@ -14,30 +14,21 @@ export async function sendInvestNotification(event: {
   ghl_contact_id?: string;
   [key: string]: unknown;
 }) {
-  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud/webhook';
-
   try {
-    // Try n8n webhook first, fallback to direct GHL trigger
-    fetch(`${webhookUrl}/inv-notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(event),
-    }).catch(() => {
-      // n8n webhook failed — trigger GHL workflow directly as fallback
-      if (event.ghl_contact_id) {
-        fetch(`https://services.leadconnectorhq.com/contacts/${event.ghl_contact_id}/workflow/75b14201-f492-44e9-a6e8-4423842fa07e`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${GHL_TOKEN}`,
-            'Version': '2021-07-28',
-            'Content-Type': 'application/json',
-          },
-          body: '{}',
-        }).catch(() => {});
-      }
-    });
+    // Trigger GHL workflow directly for WhatsApp notification
+    if (event.ghl_contact_id) {
+      fetch(`https://services.leadconnectorhq.com/contacts/${event.ghl_contact_id}/workflow/75b14201-f492-44e9-a6e8-4423842fa07e`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GHL_TOKEN}`,
+          'Version': '2021-07-28',
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      }).catch(() => {});
+    }
 
-    // Also create in-app notification if user_id provided
+    // Create in-app notification if user_id provided
     if (event.user_id) {
       await (supabase.from('notifications') as any).insert({
         user_id: event.user_id,

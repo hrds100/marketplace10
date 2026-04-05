@@ -17,7 +17,7 @@ You never touch product code. You only read and edit markdown docs.
 | Doc | Update when... |
 |-----|---------------|
 | `docs/ARCHITECTURE.md` | Routes, folder structure, auth flow, data flow, tier system, or key UI patterns change |
-| `docs/INTEGRATIONS.md` | n8n workflows, GHL config, Pexels, Resend, Supabase Auth, env vars, webhook endpoints, or commission logic changes |
+| `docs/INTEGRATIONS.md` | GHL config, Pexels, Resend, Supabase Auth, env vars, webhook endpoints, or commission logic changes |
 | `docs/COMMUNICATIONS.md` | Any email, WhatsApp, in-app notification, or messaging flow is added, removed, or changed |
 | `docs/CHANGELOG.md` | Any user-facing behavior ships (new feature, bug fix, UX change) |
 | `docs/LESSONS_LEARNED.md` | A root cause is discovered, a recurring mistake happens, or a "don't do this again" pattern emerges |
@@ -61,12 +61,12 @@ You never touch product code. You only read and edit markdown docs.
 ### INTEGRATIONS.md
 - Include webhook URLs, workflow IDs, env var names
 - Update commission rates if they changed
-- Include the GHL/n8n/Supabase connection details
+- Include the GHL/Supabase connection details
 
 ### COMMUNICATIONS.md
 - Every notification type must be listed: trigger, channel, template/content, recipient
 - Update the "live vs planned" status matrix
-- Include n8n workflow IDs for WhatsApp flows
+- Include GHL workflow IDs for WhatsApp flows
 
 ## How to report
 

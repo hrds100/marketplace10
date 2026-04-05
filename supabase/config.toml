@@ -112,7 +112,7 @@ verify_jwt = false
 [functions.nfs-email-send]
 verify_jwt = false
 
-# Phase 2 — AI edge functions (replaces n8n)
+# AI edge functions
 [functions.ai-chat]
 verify_jwt = false
 

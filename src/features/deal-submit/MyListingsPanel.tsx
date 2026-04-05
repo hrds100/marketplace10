@@ -141,7 +141,7 @@ export default function MyListingsPanel({ userId }: Props) {
 
       if (error) throw error;
 
-      // Admin edit notification removed — n8n eliminated
+      // Admin edit notification removed
 
       setEditingId(null);
       toast.success('Edit submitted — awaiting admin approval');

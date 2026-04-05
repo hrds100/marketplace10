@@ -70,8 +70,8 @@ export function getAllExecutionsForFlow(flow: FlowDef): ExecutionEntry[] {
   return all.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
 }
 
-export async function checkN8n(): Promise<HealthCheckResult> {
-  const name = 'n8n';
+export async function checkAutomations(): Promise<HealthCheckResult> {
+  const name = 'automations';
   const label = 'Automations';
 
   const { signal, clear } = makeController();
@@ -164,7 +164,7 @@ export interface ServiceDef {
 export const MARKETPLACE_SERVICES: ServiceDef[] = [
   { key: 'supabase', name: 'Database & Login', icon: 'Database', check: checkSupabase },
   { key: 'stripe', name: 'Payments', icon: 'CreditCard', check: () => healthyResult('stripe', 'Payments', 'Stripe is managed externally — check Stripe dashboard for issues') },
-  { key: 'n8n', name: 'Automations', icon: 'Workflow', check: checkN8n },
+  { key: 'automations', name: 'Automations', icon: 'Workflow', check: checkAutomations },
   { key: 'gohighlevel', name: 'CRM & WhatsApp', icon: 'MessageSquare', check: () => healthyResult('gohighlevel', 'CRM & WhatsApp', 'GoHighLevel is managed externally — check GHL dashboard for issues') },
   { key: 'particle', name: 'Blockchain & Wallets', icon: 'Coins', check: () => healthyResult('particle', 'Blockchain & Wallets', 'Particle Network is managed externally') },
   { key: 'sentry', name: 'Error Tracking', icon: 'Bug', check: checkSentry },
@@ -175,7 +175,7 @@ export const MARKETPLACE_SERVICES: ServiceDef[] = [
 export const BOOKING_SERVICES: ServiceDef[] = [
   { key: 'supabase', name: 'Database & Login', icon: 'Database', check: checkSupabase },
   { key: 'stripe', name: 'Payments', icon: 'CreditCard', check: () => healthyResult('stripe', 'Payments', 'Stripe is managed externally — check Stripe dashboard for issues') },
-  { key: 'n8n', name: 'Automations', icon: 'Workflow', check: checkN8n },
+  { key: 'automations', name: 'Automations', icon: 'Workflow', check: checkAutomations },
   { key: 'uptimerobot', name: 'Uptime Monitoring', icon: 'Activity', check: checkUptimeRobot },
 ];
 
@@ -192,7 +192,7 @@ export interface ExecutionEntry {
 export interface FlowStep {
   label: string;
   dependsOn: string; // service key
-  workflowName?: string; // n8n workflow name for execution data
+  workflowName?: string; // workflow name for execution data
 }
 
 export interface FlowDef {
@@ -207,14 +207,14 @@ export const MARKETPLACE_FLOWS: FlowDef[] = [
       { label: 'Frontend', dependsOn: 'vercel' },
       { label: 'Saved to Database', dependsOn: 'supabase' },
       { label: 'Images on CDN', dependsOn: 'supabase' },
-      { label: 'Email Sent', dependsOn: 'n8n', workflowName: 'NFsTay – Notify Admin New Deal' },
+      { label: 'Email Sent', dependsOn: 'automations' },
     ],
   },
   {
     name: 'Payment Processing',
     steps: [
       { label: 'Stripe Checkout', dependsOn: 'stripe' },
-      { label: 'Webhook Received', dependsOn: 'n8n', workflowName: 'NFsTay -- Subscription Commission' },
+      { label: 'Webhook Received', dependsOn: 'automations' },
       { label: 'Database Updated', dependsOn: 'supabase' },
       { label: 'CRM Notified', dependsOn: 'gohighlevel' },
     ],
@@ -232,7 +232,7 @@ export const MARKETPLACE_FLOWS: FlowDef[] = [
     name: 'User Signup',
     steps: [
       { label: 'Registration', dependsOn: 'supabase', workflowName: 'marketplace10 – Send OTP' },
-      { label: 'Email Sent', dependsOn: 'n8n', workflowName: 'marketplace10 – Signup Welcome Email' },
+      { label: 'Email Sent', dependsOn: 'automations' },
       { label: 'Account Created', dependsOn: 'supabase' },
       { label: 'CRM Contact', dependsOn: 'gohighlevel' },
     ],
@@ -252,7 +252,7 @@ export const MARKETPLACE_FLOWS: FlowDef[] = [
       { label: 'Property Selected', dependsOn: 'vercel' },
       { label: 'Stripe Checkout', dependsOn: 'stripe' },
       { label: 'Booking Confirmed', dependsOn: 'supabase' },
-      { label: 'Host Notified', dependsOn: 'n8n', workflowName: 'nfs-hospitable-listing-sync' },
+      { label: 'Host Notified', dependsOn: 'automations' },
     ],
   },
 ];
@@ -264,7 +264,7 @@ export const BOOKING_FLOWS: FlowDef[] = [
       { label: 'Property Selected', dependsOn: 'supabase' },
       { label: 'Stripe Checkout', dependsOn: 'stripe' },
       { label: 'Booking Confirmed', dependsOn: 'supabase' },
-      { label: 'Host Notified', dependsOn: 'n8n' },
+      { label: 'Host Notified', dependsOn: 'automations' },
     ],
   },
 ];

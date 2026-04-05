@@ -1,5 +1,5 @@
 // ai-chat — University AI consultant
-// Replaces n8n /webhook/ai-university-chat
+// University AI consultant — calls OpenAI directly
 // Input: { message, lessonTitle, moduleTitle, lessonContext, userId? }
 // Output: { reply: string }
 

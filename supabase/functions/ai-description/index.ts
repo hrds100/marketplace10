@@ -1,5 +1,5 @@
 // ai-description — Generate property listing description
-// Replaces n8n /webhook/ai-generate-listing
+// Generates property listing descriptions via OpenAI
 // Input: { city, postcode, bedrooms, bathrooms, type, rent, profit, deposit, features, notes }
 // Output: { description: string }
 

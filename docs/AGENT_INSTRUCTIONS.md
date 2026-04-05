@@ -224,19 +224,18 @@ Never assume Hugo knows what a terminal is, what an API is, or how any dashboard
 
 ## 7. FEATURE BRANCH + PREVIEW WORKFLOW
 
-**Claude never works directly on main. No exceptions.**
+**No agent pushes, merges, or deploys. All git operations are handled by Co-Pilot after review.**
 
 ### Branch rules
 
-1. Every task gets a feature branch. Claude creates it if it doesn't exist.
-2. Branch naming: `feat/[short-description]`, `fix/[short-description]`, `docs/[short-description]`
-3. All commits go to the feature branch - never to main.
-4. The same branch is used for all iterations of a task until Hugo says **"merge to main"** or **"ship to production"**.
-5. Claude merges to main only on explicit instruction from Hugo.
+1. Every task gets a feature branch. Branch naming: `feat/[short-description]`, `fix/[short-description]`, `docs/[short-description]`.
+2. Agents prepare code edits locally. Co-Pilot handles `git add`, `git commit`, `git push` after reviewing the diff.
+3. No commits go to main directly — always via PR.
+4. The same branch is used for all iterations of a task until Co-Pilot decides to merge.
 
-### After every push - mandatory preview status report
+### After Co-Pilot pushes - mandatory preview status report
 
-After every `git push`, Claude must output this block before anything else:
+After Co-Pilot pushes, the following block must be reported:
 
 ```
 🌿 BRANCH:   feat/[branch-name]
@@ -245,7 +244,7 @@ After every `git push`, Claude must output this block before anything else:
 🔗 PREVIEW:  [real Vercel preview URL fetched from GitHub PR comments or the Vercel deployment]
 ```
 
-Hugo uses the preview URL to test. Claude does not merge until Hugo confirms the preview looks correct.
+Hugo uses the preview URL to test. Co-Pilot does not merge until Hugo confirms the preview looks correct.
 
 ### Preview URL retrieval
 
@@ -264,14 +263,13 @@ If no real preview URL exists yet, report:
 
 ### Merge to main
 
-Hugo says **"merge to main"** or **"ship to production"** →
-Claude:
-1. Confirms CI is green on the branch.
-2. Creates a PR via GitHub API.
-3. Merges the PR via GitHub API.
-4. Reports the production URL: `hub.nfstay.com`
+**No agent merges anything.** When work is ready:
+1. Agent reports branch, commit, PR link, CI status, and preview URL to the Co-Pilot.
+2. Co-Pilot reviews the real diff and test results on GitHub.
+3. Co-Pilot decides whether to approve and handles the merge path (via `gh pr merge`).
+4. Only after Co-Pilot confirms does the change reach production.
 
-Hugo never touches git or GitHub directly.
+Hugo never touches git or GitHub directly. Agents never push, merge, or deploy.
 
 ---
 
@@ -346,12 +344,13 @@ Every production change follows this path:
 ```
 IDEA / TASK
 → Phase 1 Prompt Refinement
-→ Phase 2 Execution Prompt
-→ Feature Branch Implementation
+→ Phase 2 Execution (code edits + tests, NO push/deploy by agents)
+→ Co-Pilot reviews diffs and tests
+→ Co-Pilot handles branch, PR, and push
 → CI Verification (TypeScript + tests + lint)
 → Preview Deploy (Vercel auto-preview - Hugo tests here)
 → Hugo approves preview
-→ Production Promotion (Claude merges PR → hub.nfstay.com updates)
+→ Co-Pilot merges PR → hub.nfstay.com updates
 → Health Monitoring (UptimeRobot + Sentry)
 ```
 
@@ -509,13 +508,40 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
 ## 17. HARD RULES
 
+### GLOBAL SAFETY OVERRIDE (non-negotiable — applies to ALL agents, ALL modes)
+
+**No agent may change git history or deploy anything. Ever.**
+
+| Forbidden | Examples |
+|-----------|---------|
+| Git state changes | `git add`, `git commit`, `git push`, `git merge`, `git rebase`, `git tag`, `git reset` |
+| Deploy / infra mutations | `supabase functions deploy`, any CLI deploy, any command that writes to production resources |
+| Claiming completion | Saying "merged", "deployed", or "live" — only Co-Pilot decides this after review |
+
+| Allowed | Examples |
+|---------|---------|
+| Read-only inspection | `git log`, `git status`, `git diff`, `gh pr list/view/diff`, `cat`, `grep`, `rg`, `ls` |
+| Read-only test commands | `npx tsc --noEmit`, `npm run check`, `npx playwright test` |
+
+**Modes:**
+- **Research mode (default):** read code, docs, logs. Output findings only. No edits, no state changes.
+- **Edit mode (only when Co-Pilot explicitly asks):** use editor tools to propose changes. Run tests read-only. Still NO git push, NO deploy.
+- **If unsure whether an action is allowed, stop and ask.**
+
+**Roles:**
+- **Hugo:** describes what he wants and tests the live site when Co-Pilot says it is ready.
+- **Co-Pilot:** the only one who can approve the final path — reviews real diffs and tests, then handles merge/deploy. Agents do not do it themselves.
+- **Dimitri, Mario, Scarlett (all agents):** obey the same no-push / no-deploy rule. No exceptions.
+
+---
+
 1. **Zero TypeScript errors always.** Run `tsc --noEmit` before AND after every change.
 2. **Never hardcode API keys or secrets.** Env vars only. See Section 15.
 3. **Never use `as any`** unless table is missing from generated types - comment why.
 4. **Never delete or modify existing tests** unless explicitly told.
 5. **Never add unrequested features.** Do only what is asked.
-6. **Never push to main directly.** All work goes on a feature branch. See Section 7.
-7. **Always return the preview URL after every push.** No exceptions. See Section 7.
+6. **No agent may run git add, git commit, git push, git merge, git rebase, or git tag.** Co-Pilot handles the approval path after reviewing diffs and tests.
+7. **No agent may claim work is "merged", "deployed", or "live".** Only Co-Pilot decides after audit.
 8. **Destructive actions** (delete, drop, force push, rm -rf): **STOP and ask Hugo.**
 9. **Keep code minimal.** No extra abstractions, no over-engineering.
 10. **Never speculate about unread code.** Open the file first.
@@ -558,13 +584,14 @@ Use MCP tools instead of terminal commands wherever possible (see Hard Rule 17).
 
 | Action | Rule |
 |--------|------|
-| Local file edits | Safe - proceed |
-| Git commit to feature branch | Safe - proceed |
-| Git push to feature branch | Safe - proceed (always include preview URL after) |
-| Git push to main | Never directly - use PR via GitHub API |
+| Local file edits (Edit mode only) | Safe - proceed when Co-Pilot has asked for edits |
+| Read-only commands (`git log`, `git diff`, `tsc --noEmit`, tests) | Safe - proceed |
+| `git add`, `git commit`, `git push` | **FORBIDDEN** — agents never run these. Co-Pilot handles. |
+| `git merge`, `git rebase`, `git tag`, `git reset` | **FORBIDDEN** — agents never run these. Co-Pilot handles. |
+| Any deploy command (`supabase functions deploy`, etc.) | **FORBIDDEN** — Co-Pilot handles all deploy decisions. |
 | DB schema changes | Show Hugo the SQL before running |
 | DB data deletion | Ask Hugo first |
-| Force push / reset --hard | Ask Hugo first |
+| Any command that writes to production resources | **FORBIDDEN** — stop and ask. |
 | Anything irreversible | Ask Hugo first |
 
 ---

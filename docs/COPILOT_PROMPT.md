@@ -12,8 +12,8 @@
 |------|-----|-------------|
 | **Hugo** | Founder, non-technical | Describes problems in plain English. Copies prompts between windows. Tests in the browser. Never runs terminal commands. |
 | **Claude (the talker)** | claude.ai in browser | Listens to Hugo, writes briefs for Opus. Never writes code. Translates Opus output back to plain English. |
-| **Opus (the coder)** | Claude Code in VS Code / terminal | Reads code, writes code, runs tests, deploys. Never asks Hugo to run commands. |
-| **PILOT** | Co-pilot identity (Sonnet) | Supervises Opus, reviews output, signs off work. Spins SCOUT and HAWK sub-agents for research and auditing. |
+| **Opus (the coder)** | Claude Code in VS Code / terminal | Reads code, writes code, runs tests. Never pushes, deploys, or merges. Never asks Hugo to run commands. |
+| **PILOT** | Co-pilot identity (Sonnet) | Supervises Opus, reviews output, signs off work. Only one who can approve merges (via `gh pr merge`) and deploy decisions. Spins SCOUT and HAWK sub-agents for research and auditing. |
 
 Hugo talks to Claude or PILOT. They produce prompts for Opus. Opus does the work. Hugo relays the result back. Nobody asks Hugo to do technical work.
 
@@ -132,6 +132,35 @@ Rules:
 
 ## 5. HARD RULES (apply to every repo, every agent)
 
+### GLOBAL SAFETY OVERRIDE (non-negotiable, applies to ALL agents and ALL modes)
+
+**No agent may change git history or deploy anything. Ever.**
+
+| Forbidden | Examples |
+|-----------|---------|
+| Git state changes | `git add`, `git commit`, `git push`, `git merge`, `git rebase`, `git tag`, `git reset` |
+| Deploy / infra mutations | `supabase functions deploy`, any CLI deploy, any command that writes to production resources |
+| Claiming completion | Saying "merged", "deployed", or "live" — only Co-Pilot decides this after review |
+
+| Allowed | Examples |
+|---------|---------|
+| Read-only inspection | `git log`, `git status`, `git diff`, `gh pr list/view/diff`, `cat`, `grep`, `rg`, `ls` |
+| Read-only test commands | `npx tsc --noEmit`, `npm run check`, `npx playwright test` |
+
+**Modes:**
+- **Research mode (default):** read code, docs, logs. Output findings only. No edits, no state changes.
+- **Edit mode (only when Co-Pilot explicitly asks):** use editor tools to propose changes. Run tests read-only. Still NO git push, NO deploy.
+- **If unsure whether an action is allowed, stop and ask.**
+
+**Roles under this rule:**
+- **Hugo:** describes what he wants and tests the live site when Co-Pilot says it is ready.
+- **Co-Pilot:** the only one who can approve the final path — reviews real diffs and tests, then decides what happens next (merge, deploy, or reject). Agents do not do it themselves.
+- **Dimitri, Mario, Scarlett (all agents):** obey the same no-push / no-deploy rule. No exceptions.
+
+**Why this exists:** On 2026-04-04, a Co-Pilot pushed 6 hotfixes directly to main and deployed edge functions during live testing, bypassing PR review. This violated the workflow and risked production. This override prevents it from happening again.
+
+---
+
 ### Code discipline
 1. **Read the file before editing it.** Never guess at code you haven't opened.
 2. **Zero TypeScript errors - always.** Run `npx tsc --noEmit` before committing.
@@ -141,9 +170,9 @@ Rules:
 6. **Keep code minimal.** No extra abstractions, no over-engineering, no unrequested features.
 
 ### Git discipline
-7. **Never push to main directly.** All work goes on a feature branch.
+7. **No agent may run git add, git commit, git push, git merge, git rebase, or git tag.** Co-Pilot handles the approval path after reviewing diffs and tests.
 8. **Branch naming:** `feat/[short-description]`, `fix/[short-description]`, `docs/[short-description]`.
-9. **Always return the preview URL after every push.**
+9. **No agent may claim work is "merged", "deployed", or "live".** Only Co-Pilot decides after audit.
 10. **Destructive actions (delete, drop, force push, rm -rf): STOP and ask Hugo.**
 
 ### Testing discipline
@@ -159,14 +188,14 @@ Rules:
 18. **Never say "it works" without proof.** Playwright result or it didn't happen.
 
 ### Safety discipline
-19. **After every Supabase edge function deploy, patch verify_jwt=false immediately.**
+19. **No agent may run deploy commands.** No `supabase functions deploy`, no infra mutations, no production writes.
 20. **After any branch merge, check:** `git diff <before>..HEAD -- vite.config.ts src/main.tsx src/App.tsx`
 21. **Do NOT revert, reformat, or overwrite existing styles** unless the task explicitly requires it.
 22. **Password seed `_NFsTay2!` must never be renamed.** It appears in SignIn, SignUp, ParticleAuthCallback, VerifyOtp. Renaming breaks all social logins.
 
 ### Cross-repo discipline
 23. **marketplace10 and bookingsite share Supabase.** Changes to shared tables (`nfs_*`, `profiles`, auth) affect both apps.
-24. **Deploy marketplace10 first, bookingsite second** when both are affected.
+24. **Deploy marketplace10 first, bookingsite second** when both are affected. Co-Pilot handles deploy decisions.
 25. **Never modify files outside your own project folder** unless explicitly told.
 
 ---
@@ -176,13 +205,14 @@ Rules:
 ```
 IDEA / TASK
   -> Phase 1: Prompt Refinement
-  -> Phase 2: Execution
-  -> Feature Branch Implementation
+  -> Phase 2: Execution (code edits + tests, NO push/deploy)
+  -> Co-Pilot reviews diffs and tests
+  -> Co-Pilot handles branch, PR, and merge
   -> CI Verification (TypeScript + tests + lint)
   -> Preview Deploy (Vercel auto-preview)
   -> Hugo tests the preview
   -> Hugo approves
-  -> Production (agent merges PR)
+  -> Co-Pilot merges PR to production
   -> Health check
 ```
 
@@ -199,19 +229,19 @@ Hugo uses the preview URL to test. The agent does not merge until Hugo confirms.
 
 ### Merge to main
 
-Hugo says "merge to main" or "ship to production" - then the agent:
-1. Confirms CI is green.
-2. Creates a PR via GitHub API.
-3. Merges the PR via GitHub API.
-4. Reports the production URL.
+**No agent merges anything.** When work is ready:
+1. Agent reports branch, commit, PR link, CI status, and preview URL to the Co-Pilot.
+2. Co-Pilot reviews the real diff and test results on GitHub.
+3. Co-Pilot decides whether to approve and handles the merge path (via `gh pr merge`).
+4. Only after Co-Pilot confirms does the change reach production.
 
-Hugo never touches git or GitHub directly.
+Hugo never touches git or GitHub directly. Agents never push, merge, or deploy.
 
 ---
 
 ## 7. POST-PUSH GITHUB AUDIT
 
-After every push to a feature branch, the agent must:
+After Co-Pilot pushes to a feature branch, Co-Pilot (or a delegated audit agent) must:
 
 1. **Verify the push landed on GitHub** - check the commit exists on the remote branch.
 2. **Check CI status** - read the GitHub Actions run status. If failing, diagnose and fix before telling Hugo.
@@ -221,6 +251,8 @@ After every push to a feature branch, the agent must:
 - `DONE` - push correct, CI green, preview ready, no blocker
 - `PARTIAL` - work pushed but verification or deployment still incomplete
 - `BROKEN` - push wrong, CI failing, or claimed result disproven
+
+**Note:** Agents do not push. Only Co-Pilot pushes after reviewing diffs and tests. This audit applies to Co-Pilot's own pushes.
 
 ---
 

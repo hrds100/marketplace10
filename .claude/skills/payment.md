@@ -13,7 +13,7 @@ DIAGNOSE FIRST: GHL funnel → tier in profiles table → useUserTier hook → t
 
 WORKFLOW: diagnose → read → PLAN → approve → execute → test
 
-NOTE: PaymentSheet has hardcoded n8n aff-commission call (to be replaced in Phase 2).
+NOTE: PaymentSheet records commission via aff_events INSERT.
 NOTE: useUserTier uses Realtime subscription on profiles.tier.
 
 TESTS: payment + smoke

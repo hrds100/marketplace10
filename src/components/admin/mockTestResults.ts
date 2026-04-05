@@ -215,7 +215,7 @@ Context:
 - Backend is Supabase (Postgres + Auth + Edge Functions + Storage)
 - Blockchain features use BNB Chain + Particle Wallet
 - Booking site uses Stripe for payments
-- Automations run on n8n
+- Automations run on Supabase Edge Functions + GHL workflows
 
 When given a test failure, you must:
 1. Identify the root cause from the error message

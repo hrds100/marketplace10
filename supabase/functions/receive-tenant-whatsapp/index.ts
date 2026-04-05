@@ -33,7 +33,7 @@ serve(async (req) => {
     let tenant_email: string | null
 
     if (raw.tenant_phone) {
-      // Format A — already parsed (legacy n8n or direct call)
+      // Format A — already parsed (direct call)
       tenant_phone = raw.tenant_phone
       tenant_name = raw.tenant_name || null
       message_body = raw.message_body || ''
@@ -41,7 +41,7 @@ serve(async (req) => {
       property_id = raw.property_id || null
       tenant_email = raw.tenant_email || null
     } else {
-      // Format B — raw GHL webhook payload (direct from GHL, no n8n)
+      // Format B — raw GHL webhook payload (direct from GHL)
       const ghlBody = raw.body || raw
       message_body = ghlBody.message || ghlBody.body || ghlBody.text || ''
       tenant_phone = (ghlBody.phone || ghlBody.contactPhone || ghlBody.from || '').replace(/[^0-9+]/g, '')
@@ -77,7 +77,7 @@ serve(async (req) => {
     // 1. Find property via multiple strategies
     let property: any = null
 
-    // A: Direct property_id (full UUID from n8n)
+    // A: Direct property_id (full UUID)
     if (property_id) {
       const { data } = await supabase.from('properties').select('*').eq('id', property_id).single()
       if (data) property = data
@@ -108,7 +108,7 @@ serve(async (req) => {
       }
     }
 
-    // D: property_ref from n8n payload (short ref fallback)
+    // D: property_ref from payload (short ref fallback)
     if (!property && property_ref) {
       const { data: candidates } = await supabase.from('properties').select('*').ilike('id', `${property_ref}%`)
       if (candidates && candidates.length === 1) property = candidates[0]

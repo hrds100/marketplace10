@@ -13,7 +13,7 @@ DIAGNOSE FIRST: track-referral function logs → aff_profiles data → then code
 
 WORKFLOW: diagnose → read → PLAN → approve → execute → test
 
-NOTE: Commission n8n calls in PaymentSheet + InquiryPanel to be replaced with aff_events INSERT (Phase 2).
+NOTE: Commission recorded via aff_events INSERT in PaymentSheet + InquiryPanel.
 
 TESTS: affiliates + smoke
 BLAST RADIUS: LOW (feature-local)

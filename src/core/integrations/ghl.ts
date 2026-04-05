@@ -24,7 +24,7 @@ export const GHL_PRODUCTS = {
   },
 } as const;
 
-/** Map GHL product IDs -> tier names (used by n8n webhook) */
+/** Map GHL product IDs -> tier names (used by payment webhook) */
 export const PRODUCT_ID_TO_TIER: Record<string, string> = {
   // Current funnel product IDs (from GHL dashboard 2026-03-29)
   [GHL_PRODUCTS.monthly.productId]: 'monthly',
