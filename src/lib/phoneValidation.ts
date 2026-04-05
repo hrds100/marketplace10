@@ -1,10 +1,11 @@
 /**
  * Normalize a UK phone number to E.164 format: +44XXXXXXXXXX
- * Accepts: 07839925555, +447839925555, 447839925555, 0044 7839 925555
+ * Accepts: 07839925555, +447839925555, 447839925555, 0044 7839 925555,
+ *          +44 7839 925555, 44 7839925555, 7839925555
  * Returns null if invalid.
  */
 export function normalizeUKPhone(raw: string): string | null {
-  // Strip spaces, dashes, parens
+  // Strip spaces, dashes, parens, dots
   const stripped = raw.replace(/[\s\-().]/g, '');
 
   // Remove leading 00 (international dialing prefix)
@@ -18,11 +19,22 @@ export function normalizeUKPhone(raw: string): string | null {
     digits = '44' + digits.slice(1);
   }
 
-  // Must start with 44 and have 12 digits total (44 + 10 digit UK mobile)
-  if (!digits.startsWith('447') || digits.length !== 12) return null;
+  // Handle +4407... or 004407... (redundant 0 after country code)
+  // e.g. +4407839925555 → strips to 4407839925555 (13 digits, starts with 440)
+  if (digits.startsWith('440') && digits.length === 13) {
+    digits = '44' + digits.slice(3);
+  }
+
+  // Convert bare 7... (10 digits) to 447...
+  if (digits.startsWith('7') && digits.length === 10) {
+    digits = '44' + digits;
+  }
 
   // All digits check
   if (!/^\d+$/.test(digits)) return null;
+
+  // Must start with 447 and have 12 digits total (44 + 10 digit UK mobile)
+  if (!digits.startsWith('447') || digits.length !== 12) return null;
 
   return '+' + digits;
 }
