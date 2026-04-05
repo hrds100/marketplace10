@@ -112,10 +112,12 @@ verify_jwt = false
 [functions.nfs-email-send]
 verify_jwt = false
 
-# Placeholder for new edge functions (Phase 2)
-# [functions.ai-chat]
-# verify_jwt = false
-# [functions.ai-description]
-# verify_jwt = false
-# [functions.airbnb-pricing]
-# verify_jwt = false
+# Phase 2 — AI edge functions (replaces n8n)
+[functions.ai-chat]
+verify_jwt = false
+
+[functions.ai-description]
+verify_jwt = false
+
+[functions.airbnb-pricing]
+verify_jwt = false

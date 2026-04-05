@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import { fetchPexelsPhotos } from '@/lib/pexels';
 import { normalizeUKPhone } from '@/lib/phoneValidation';
 
-const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co').replace(/\/$/, '');
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 
 interface ParsedListing {
   name: string | null;
@@ -342,8 +343,8 @@ export default function AdminQuickList() {
         const pricingFetch = (async (): Promise<AIPricingResult | null> => {
           const c = new AbortController(); const t = setTimeout(() => c.abort(), 25_000);
           try {
-            const res = await fetch(`${N8N_BASE}/webhook/airbnb-pricing`, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/airbnb-pricing`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
               body: JSON.stringify({
                 city: item.city || '', postcode: item.postcode || '',
                 bedrooms: item.bedrooms || 0, bathrooms: item.bathrooms || 0,

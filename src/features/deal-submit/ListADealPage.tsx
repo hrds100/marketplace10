@@ -11,7 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { normalizeUKPhone } from '@/lib/phoneValidation';
 
-const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co').replace(/\/$/, '');
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 
 const FLAT_BEDS = ['1-bed', '2-bed', '3-bed', '4-bed', '5-bed', '6-bed'];
 const HOUSE_BEDS = ['2-bed', '3-bed', '4-bed', '5-bed', '6-bed', '7-bed', '8-bed', '9-bed', '10-bed'];
@@ -260,9 +261,9 @@ export default function ListADealPage() {
     }
     setGenerating(true);
     try {
-      const res = await fetch(`${N8N_BASE}/webhook/ai-generate-listing`, {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-description`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
         body: JSON.stringify({
           city: form.city || '', postcode: form.postcode || '', bedrooms: parseInt(form.bedrooms) || 0, bathrooms: parseInt(form.bathrooms) || 0,
           type: form.type || form.propertyCategory || '', rent: parseInt(form.rent) || 0, profit: parseInt(form.profit) || 0, deposit: parseInt(form.deposit) || 0,
@@ -391,13 +392,6 @@ export default function ListADealPage() {
       setSubmitPhase('analysing');
       setLoading(false);
 
-      // Notify admin (non-blocking)
-      const nc = new AbortController();
-      const nt = setTimeout(() => nc.abort(), 10_000);
-      fetch(`${N8N_BASE}/webhook/notify-admin-new-deal`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propertyId, city: form.city, postcode: form.postcode, type: resolvedType, submittedBy: user?.id, rent: parseInt(form.rent) || 0 }),
-        signal: nc.signal }).catch(() => {}).finally(() => clearTimeout(nt));
-
       // Email admin via Resend (non-blocking)
       supabase.functions.invoke('send-email', {
         body: {
@@ -411,7 +405,7 @@ export default function ListADealPage() {
       const pricingFetch = (async (): Promise<AIPricingResult | null> => {
         const c = new AbortController(); const t = setTimeout(() => c.abort(), 25_000);
         try {
-          const res = await fetch(`${N8N_BASE}/webhook/airbnb-pricing`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          const res = await fetch(`${SUPABASE_URL}/functions/v1/airbnb-pricing`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
             body: JSON.stringify({ city: form.city, postcode: form.postcode, bedrooms: parseInt(form.bedrooms) || 0, bathrooms: parseInt(form.bathrooms) || 0, type: resolvedType, rent: parseInt(form.rent) || 0, propertyId }),
             signal: c.signal });
           clearTimeout(t);

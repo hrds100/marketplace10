@@ -1,15 +1,16 @@
 /**
- * University AI Chat — calls n8n webhook for real AI responses.
+ * University AI Chat — calls ai-chat edge function for AI responses.
  *
  * Expected behaviour:
- * - POST to /webhook/ai-university-chat with lesson context
+ * - POST to Supabase ai-chat edge function with lesson context
  * - 10-second timeout via AbortController
  * - Returns reply string on success
  * - Returns fallback message on ANY failure (network, timeout, empty reply)
  * - Never returns empty string
  */
 
-const N8N_BASE = (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.srv886554.hstgr.cloud').replace(/\/$/, '');
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co').replace(/\/$/, '');
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 
 const FALLBACK = 'Our AI consultant is temporarily unavailable. Please try again shortly.';
 
@@ -26,9 +27,9 @@ export async function callAIChat(payload: AIChatPayload): Promise<string> {
   const timeout = setTimeout(() => controller.abort(), 10_000);
 
   try {
-    const res = await fetch(`${N8N_BASE}/webhook/ai-university-chat`, {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
