@@ -51,13 +51,8 @@ serve(async (req) => {
 
     const { property_id, channel, message, tenant_name, tenant_email, tenant_phone, property_url } = await req.json()
 
-    // WhatsApp inquiries are created by the inbound route (receive-tenant-whatsapp).
-    // This edge function handles email inquiries only.
-    if (channel === 'whatsapp') {
-      return new Response(JSON.stringify({ error: 'WhatsApp inquiries use the inbound route, not process-inquiry' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    // process-inquiry handles both email and whatsapp inquiries from the site.
+    // receive-tenant-whatsapp handles direct inbound GHL messages only.
 
     // Resolve tenant phone: prefer explicit value, fall back to profiles.whatsapp
     let resolvedTenantPhone = tenant_phone || null

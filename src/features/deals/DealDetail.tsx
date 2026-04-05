@@ -120,8 +120,21 @@ export default function DealDetail() {
     const refId = ((listing.id as string) || '').slice(0, 5).toUpperCase();
     const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${refId}\nPlease contact me at your earliest convenience.`;
 
-    // Inquiry is created by receive-tenant-whatsapp edge function
-    // when the inbound WhatsApp message arrives via GHL. No duplicate insert here.
+    // Create inquiry + enroll workflow BEFORE opening WhatsApp
+    const session = await supabase.auth.getSession();
+    if (session.data.session) {
+      supabase.functions.invoke('process-inquiry', {
+        body: {
+          property_id: listing.id,
+          channel: 'whatsapp',
+          message: plainMsg,
+          tenant_name: user.user_metadata?.name || user.email || '',
+          tenant_email: user.email || '',
+          property_url: propertyUrl,
+        },
+      }).catch(() => {});
+    }
+
     window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${encodeURIComponent(plainMsg)}`, '_blank');
   };
 
