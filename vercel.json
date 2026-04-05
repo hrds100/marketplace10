@@ -19,6 +19,10 @@
       "destination": "https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/health"
     },
     {
+      "source": "/api/ghl-webhook",
+      "destination": "https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/receive-tenant-whatsapp"
+    },
+    {
       "source": "/auth/:path*",
       "destination": "/app.html"
     },

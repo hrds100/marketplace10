@@ -243,10 +243,53 @@ serve(async (req) => {
       }
     }
 
-    // 5c. WhatsApp auto-reply is handled by GHL workflow cf089a15.
-    // This function is CALLED BY that workflow's webhook step.
-    // The workflow proceeds to the WhatsApp reply step after this returns.
-    // Do NOT enroll the contact here — that creates a circular dependency.
+    // 5c. WhatsApp auto-reply — enroll contact in GHL workflow cf089a15
+    // Workflow has NO trigger — enrollment via API is the only way to fire it.
+    // No circular dependency because the workflow doesn't call back to us.
+    if (tenant_phone && GHL_TOKEN) {
+      const INQUIRY_WORKFLOW = 'cf089a15-1d42-4d9a-85d1-ab35b82b4ad5'
+      try {
+        const ghlHeaders = {
+          'Authorization': `Bearer ${GHL_TOKEN}`,
+          'Version': '2021-07-28',
+          'Content-Type': 'application/json',
+        }
+
+        // Find GHL contact
+        let contactId = ''
+        const searchRes = await fetch(
+          `${GHL_BASE}/contacts/?query=${encodeURIComponent(tenant_phone)}&locationId=${GHL_LOCATION_ID}`,
+          { headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version } }
+        )
+        if (searchRes.ok) {
+          const searchData = await searchRes.json()
+          contactId = searchData?.contacts?.[0]?.id || ''
+        }
+
+        if (contactId) {
+          // Set property name on contact for the WhatsApp template
+          const cleanName = (property.name || 'your property').replace(/^Property\s*#\d+\s*-\s*/, '').replace(/\s*\(\s*\)\s*$/, '').trim()
+          await fetch(`${GHL_BASE}/contacts/${contactId}`, {
+            method: 'PUT',
+            headers: ghlHeaders,
+            body: JSON.stringify({
+              customFields: [{ id: 'Z0thvOTyoO2KxTMt5sP8', field_value: cleanName }],
+            }),
+          }).catch(() => {})
+
+          // Remove + re-enroll (idempotent)
+          await fetch(`${GHL_BASE}/contacts/${contactId}/workflow/${INQUIRY_WORKFLOW}`, {
+            method: 'DELETE', headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version },
+          }).catch(() => {})
+
+          await fetch(`${GHL_BASE}/contacts/${contactId}/workflow/${INQUIRY_WORKFLOW}`, {
+            method: 'POST', headers: ghlHeaders, body: '{}',
+          }).catch(() => {})
+        }
+      } catch (e) {
+        console.error('[receive-tenant-whatsapp] GHL enrollment error:', e)
+      }
+    }
 
     return new Response(JSON.stringify({
       success: true,
