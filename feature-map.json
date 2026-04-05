@@ -140,6 +140,8 @@
     "description": "Blockchain-based property investment: marketplace, portfolio, governance, payouts",
     "session": "INVEST",
     "active": true,
+    "locked": true,
+    "frozen_reason": "Blockchain + Revolut. One bug = lost funds. NEVER touch without Hugo's approval.",
     "files": [
       "src/pages/invest/InvestMarketplacePage.tsx",
       "src/pages/invest/InvestPortfolioPage.tsx",
@@ -277,6 +279,10 @@
       "src/layouts/DashboardLayout.tsx",
       "src/layouts/AdminLayout.tsx"
     ],
+    "protected_dependencies": {
+      "DashboardLayout.tsx": "Wallet auto-creation depends on WalletProvisioner living inside DashboardLayout. If restructured, wallets stop creating.",
+      "AdminLayout.tsx": "All lucide-react icons must be imported. A missing icon = blank page everywhere."
+    },
     "files": [
       "src/components/DashboardSidebar.tsx",
       "src/components/DashboardTopNav.tsx",
@@ -303,6 +309,8 @@
     "description": "NFStay vacation rental platform: operator dashboard, properties, reservations, guest booking",
     "session": "BOOKING_NFSTAY",
     "active": true,
+    "locked": true,
+    "frozen_reason": "Hospitable + Stripe. Separate product. Never touch without Hugo's approval.",
     "files": [
       "src/pages/nfstay/NfsPropertyView.tsx",
       "src/pages/nfstay/NfsPropertyDetail.tsx",
@@ -467,6 +475,8 @@
     ],
     "sub_features": {
       "ADMIN__INVEST": {
+        "locked": true,
+        "frozen_reason": "Investment admin — frozen zone. Never touch without Hugo's approval.",
         "description": "Admin panel for investment module: properties, orders, shareholders, commissions, payouts, proposals, boost, endpoints, test console",
         "files": [
           "src/pages/admin/invest/AdminInvestDashboard.tsx",
@@ -483,6 +493,8 @@
         ]
       },
       "ADMIN__NFSTAY": {
+        "locked": true,
+        "frozen_reason": "NFStay booking admin — frozen zone. Hospitable + Stripe. Never touch without Hugo's approval.",
         "description": "Admin panel for NFStay booking: dashboard, properties, reservations, users, operators, analytics, settings",
         "files": [
           "src/pages/admin/nfstay/AdminNfsDashboard.tsx",
@@ -592,7 +604,9 @@
     "session": "SHARED",
     "active": true,
     "locked_files": [
-      "src/App.tsx"
+      "src/App.tsx",
+      "src/main.tsx",
+      "vite.config.ts"
     ],
     "files": [
       "src/App.tsx",
