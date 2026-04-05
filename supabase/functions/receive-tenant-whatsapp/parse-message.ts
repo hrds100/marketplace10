@@ -41,9 +41,14 @@ export function parseMessage(raw: Record<string, unknown>): ParsedMessage | { sk
     const idMatch = message_body.match(/ID:\s*([0-9a-f-]{36})/i)
     property_id = idMatch ? idMatch[1] : null
 
-    const isInquiry = message_body.toLowerCase().includes('nfstay') || property_ref || property_id || message_body.match(/\/deals\//)
-    if (!isInquiry) {
-      return { skip: true, reason: 'Not an nfstay inquiry' }
+    // GHL "Customer Replied" payloads include contact fields — these are existing
+    // nfstay conversations by definition, so skip the keyword filter for them.
+    const isGhlContact = !!(ghlBody.contactName || ghlBody.contact_name || ghlBody.contactEmail || ghlBody.contact_email || ghlBody.contactPhone)
+    if (!isGhlContact) {
+      const isInquiry = message_body.toLowerCase().includes('nfstay') || property_ref || property_id || message_body.match(/\/deals\//)
+      if (!isInquiry) {
+        return { skip: true, reason: 'Not an nfstay inquiry' }
+      }
     }
   }
 
