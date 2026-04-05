@@ -148,65 +148,59 @@ serve(async (req) => {
       .gte('created_at', fiveMinAgo)
       .limit(1)
 
-    if (recentDup && recentDup.length > 0) {
-      return new Response(JSON.stringify({
-        success: true,
-        inquiry_id: recentDup[0].id,
-        property_name: property.name,
-        auto_authorised: false,
-        deduplicated: true,
-      }), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    const isDuplicate = recentDup && recentDup.length > 0
+    let inquiryId = isDuplicate ? recentDup[0].id : null
 
-    // 3. Check if always_authorised for this lister phone
-    const listerPhone = property.landlord_whatsapp || property.contact_phone || null
-    let autoAuth = false
-    let autoAuthType: string | null = null
+    if (!isDuplicate) {
+      // 3. Check if always_authorised for this lister phone
+      const listerPhone = property.landlord_whatsapp || property.contact_phone || null
+      let autoAuth = false
+      let autoAuthType: string | null = null
 
-    if (listerPhone) {
-      const { data: existing } = await supabase
-        .from('inquiries')
-        .select('always_authorised, authorisation_type')
-        .eq('lister_phone', listerPhone)
-        .eq('always_authorised', true)
-        .limit(1)
-      if (existing && existing.length > 0) {
-        autoAuth = true
-        autoAuthType = existing[0].authorisation_type || null
+      if (listerPhone) {
+        const { data: existing } = await supabase
+          .from('inquiries')
+          .select('always_authorised, authorisation_type')
+          .eq('lister_phone', listerPhone)
+          .eq('always_authorised', true)
+          .limit(1)
+        if (existing && existing.length > 0) {
+          autoAuth = true
+          autoAuthType = existing[0].authorisation_type || null
+        }
       }
-    }
 
-    // 4. Insert inquiry -- authorized = false unless auto-authorised
-    const token = crypto.randomUUID()
-    const { data: inquiry, error: insertErr } = await supabase
-      .from('inquiries')
-      .insert({
-        property_id: property.id,
-        lister_type: property.lister_type || 'landlord',
-        lister_phone: listerPhone,
-        lister_email: property.contact_email || null,
-        lister_name: property.contact_name || null,
-        channel: 'whatsapp',
-        message: message_body || '',
-        tenant_name: tenant_name || null,
-        tenant_phone: tenant_phone,
-        tenant_email: tenant_email || null,
-        token,
-        status: 'new',
-        nda_required: property.nda_required || false,
-        authorized: autoAuth,
-        always_authorised: autoAuth,
-        authorisation_type: autoAuthType,
-      })
-      .select('id')
-      .single()
+      // 4. Insert inquiry
+      const token = crypto.randomUUID()
+      const { data: inquiry, error: insertErr } = await supabase
+        .from('inquiries')
+        .insert({
+          property_id: property.id,
+          lister_type: property.lister_type || 'landlord',
+          lister_phone: listerPhone,
+          lister_email: property.contact_email || null,
+          lister_name: property.contact_name || null,
+          channel: 'whatsapp',
+          message: message_body || '',
+          tenant_name: tenant_name || null,
+          tenant_phone: tenant_phone,
+          tenant_email: tenant_email || null,
+          token,
+          status: 'new',
+          nda_required: property.nda_required || false,
+          authorized: autoAuth,
+          always_authorised: autoAuth,
+          authorisation_type: autoAuthType,
+        })
+        .select('id')
+        .single()
 
-    if (insertErr) {
-      return new Response(JSON.stringify({ error: 'Failed to create inquiry', detail: insertErr.message }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      if (insertErr) {
+        return new Response(JSON.stringify({ error: 'Failed to create inquiry', detail: insertErr.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      inquiryId = inquiry.id
     }
 
     // 5a. Admin bell notification (non-blocking, same pattern as process-inquiry)
@@ -293,7 +287,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      inquiry_id: inquiry.id,
+      inquiry_id: inquiryId,
       property_name: property.name,
       auto_authorised: autoAuth,
     }), {
