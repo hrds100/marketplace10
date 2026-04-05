@@ -20,14 +20,19 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    // GHL sends webhooks as form-urlencoded, not JSON. Handle both.
-    let raw: Record<string, unknown>
+    // Log raw request for debugging GHL webhook format
     const contentType = req.headers.get('content-type') || ''
-    if (contentType.includes('application/json')) {
-      raw = await req.json()
-    } else {
-      const text = await req.text()
-      const params = new URLSearchParams(text)
+    const bodyText = await req.text()
+    console.log('[receive-tenant-whatsapp] Content-Type:', contentType)
+    console.log('[receive-tenant-whatsapp] Body preview:', bodyText.substring(0, 500))
+
+    // Parse body: handle JSON, form-urlencoded, or GHL's format
+    let raw: Record<string, unknown>
+    try {
+      raw = JSON.parse(bodyText)
+    } catch {
+      // Not JSON — try form-urlencoded
+      const params = new URLSearchParams(bodyText)
       raw = Object.fromEntries(params.entries())
     }
 
