@@ -120,7 +120,7 @@ export default function DealDetail() {
     const refId = ((listing.id as string) || '').slice(0, 5).toUpperCase();
     const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${refId}\nPlease contact me at your earliest convenience.`;
 
-    // Inquiry is created by n8n -> receive-tenant-whatsapp edge function
+    // Inquiry is created by receive-tenant-whatsapp edge function
     // when the inbound WhatsApp message arrives via GHL. No duplicate insert here.
     window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${encodeURIComponent(plainMsg)}`, '_blank');
   };

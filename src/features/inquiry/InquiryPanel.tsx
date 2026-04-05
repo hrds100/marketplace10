@@ -88,7 +88,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
         if (data?.tier && data.tier !== 'free') {
           if (pollRef.current) clearInterval(pollRef.current);
-          // Record affiliate commission event (replaces n8n webhook)
+          // Record affiliate commission event
           if (referredBy) {
             const tierAmounts: Record<string, number> = { monthly: 67, yearly: 397, lifetime: 997 };
             supabase.from('aff_events' as any).insert({
@@ -154,7 +154,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   if (!listing) return null;
 
   const handleSendWhatsApp = () => {
-    // Inquiry created by n8n -> receive-tenant-whatsapp when inbound message arrives via GHL
+    // Inquiry created by receive-tenant-whatsapp edge function when inbound message arrives via GHL
     window.open(`https://wa.me/447476368123?text=${encodeURIComponent(message)}`, '_blank');
     handleClose();
   };

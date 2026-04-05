@@ -6,7 +6,7 @@ import type { TierName } from '@/lib/ghl';
 /**
  * Fetches the current user's subscription tier from profiles table.
  * Also subscribes to Supabase Realtime so the tier updates instantly
- * when n8n's post-payment webhook writes to profiles.tier — no polling needed.
+ * when the post-payment webhook writes to profiles.tier — no polling needed.
  * Returns { tier, loading, refetch, refreshTier }.
  */
 export function useUserTier() {
@@ -33,7 +33,7 @@ export function useUserTier() {
     fetchTier();
   }, [fetchTier]);
 
-  // Realtime: automatically update tier the moment n8n writes it to profiles.
+  // Realtime: automatically update tier the moment the webhook writes to profiles.
   // This fires before any manual refreshTier() call and eliminates the race
   // between payment confirmation and the user hitting Send.
   useEffect(() => {

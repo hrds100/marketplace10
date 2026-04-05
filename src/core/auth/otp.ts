@@ -1,6 +1,6 @@
 /**
- * OTP functions — call Supabase edge functions directly (no n8n).
- * Migrated from src/lib/n8n.ts on 2026-04-05.
+ * OTP functions — call Supabase edge functions directly.
+ * Moved to core/auth/otp.ts on 2026-04-05.
  */
 
 /** Strip spaces, dashes, parens from phone numbers */

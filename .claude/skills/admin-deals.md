@@ -13,7 +13,7 @@ DIAGNOSE FIRST: OpenAI key → ai-parse-listing logs → properties data → the
 
 WORKFLOW: diagnose → read → PLAN → approve → execute → test
 
-NOTE: AdminQuickList + AdminDeals call n8n airbnb-pricing (to be replaced in Phase 2).
+NOTE: AdminQuickList + AdminDeals call airbnb-pricing edge function directly.
 NOTE: AdminDeals gets a simplified read-only PropertyCard (not the deals one).
 
 TESTS: admin-deals + smoke

@@ -37,9 +37,9 @@
 ### NOT using (removed)
 | Technology | Why removed |
 |-----------|------------|
-| ~~n8n~~ | Eliminated — all webhooks replaced with edge functions |
-| ~~Twilio~~ | Was used via n8n for OTP — now GHL handles it |
-| ~~OpenAI via n8n~~ | Now called directly from edge functions (no n8n middleman) |
+| ~~automation middleware~~ | Eliminated — all automations now run as Supabase Edge Functions |
+| ~~Twilio~~ | Was used for OTP — now GHL handles it directly |
+| ~~OpenAI via middleware~~ | Now called directly from edge functions |
 
 ---
 
@@ -61,7 +61,7 @@
 | 1 | OTP - nfstay | `baabc69a-a00f-412a-863e-7189ae025091` | [Open](https://app.leadconnectorhq.com/location/eFBsWXY3BmWDGIRez13x/workflow/baabc69a-a00f-412a-863e-7189ae025091) | send-otp edge function enrolls contact | New user (WhatsApp OTP code) |
 | 2 | 1-landlord_enquiry (COLD) | `67250bfa-e1fc-4201-8bca-08c384a4a31d` | [Open](https://app.leadconnectorhq.com/location/eFBsWXY3BmWDGIRez13x/workflow/67250bfa-e1fc-4201-8bca-08c384a4a31d) | ghl-enroll edge function (admin clicks "Assign Lead") | Landlord (1st outreach WhatsApp) |
 | 3 | 2-Tenant to Landlord (WARM) | `0eb4395c-e493-43dc-be97-6c4455b5c7c4` | [Open](https://app.leadconnectorhq.com/location/eFBsWXY3BmWDGIRez13x/workflow/0eb4395c-e493-43dc-be97-6c4455b5c7c4) | ghl-enroll edge function (admin releases inquiry) | Landlord (tenant lead notification) |
-| 4 | 5-inbox-new-inquiry (Auto-reply) | `cf089a15-1d42-4d9a-85d1-ab35b82b4ad5` | [Open](https://app.leadconnectorhq.com/location/eFBsWXY3BmWDGIRez13x/workflow/cf089a15-1d42-4d9a-85d1-ab35b82b4ad5) | GHL trigger (inbound WhatsApp received) | Tenant (auto-reply). NOTE: GHL handles the reply natively. Our code must NOT also send a reply — remove WhatsApp send from receive-tenant-whatsapp edge function to avoid double messages. Also remove any n8n step inside this GHL workflow. |
+| 4 | 5-inbox-new-inquiry (Auto-reply) | `cf089a15-1d42-4d9a-85d1-ab35b82b4ad5` | [Open](https://app.leadconnectorhq.com/location/eFBsWXY3BmWDGIRez13x/workflow/cf089a15-1d42-4d9a-85d1-ab35b82b4ad5) | GHL trigger (inbound WhatsApp received) | Tenant (auto-reply). NOTE: GHL handles the reply natively. Our code must NOT also send a reply — GHL workflow is the single sender. Code must NOT also send a reply. |
 
 ### GHL Custom Fields
 
@@ -220,9 +220,9 @@ supabase/
     hard-delete-property/index.ts    ← domain: admin
     ghl-enroll/index.ts              ← domain: admin
     reset-for-testing/index.ts       ← domain: admin
-    ai-chat/index.ts                 ← domain: ai (NEW, replaces n8n)
-    ai-description/index.ts          ← domain: ai (NEW, replaces n8n)
-    airbnb-pricing/index.ts          ← domain: ai (NEW, replaces n8n)
+    ai-chat/index.ts                 ← domain: ai (NEW, native edge function)
+    ai-description/index.ts          ← domain: ai (NEW, native edge function)
+    airbnb-pricing/index.ts          ← domain: ai (NEW, native edge function)
     ai-parse-listing/index.ts        ← domain: ai (existing)
     send-email/index.ts              ← domain: email
     deal-expiry/index.ts             ← domain: email
@@ -463,10 +463,10 @@ If a change is needed, Hugo must explicitly unfreeze it first.
 | `src/pages/InboxPage.tsx` | Hugo asked to delete — replaced by CRM |
 | `src/components/inbox/*` (all files) | Part of inbox — delete |
 | `src/pages/admin/AdminOutreach.tsx` | Old outreach — replaced by The Gate |
-| `src/lib/n8n.ts` | All n8n calls migrated or deleted |
-| `src/lib/notifications.ts` | n8n investment notifications — replace with GHL direct |
-| `n8n-workflows/` folder | All 16 JSON files — no longer needed |
-| `supabase/functions/n8n-health/` | n8n monitoring — not needed |
+| `src/lib/legacy automation.ts` | Deleted — OTP functions moved to core/auth/otp.ts |
+| `src/lib/notifications.ts` | Investment notifications — GHL direct + in-app bell |
+| `legacy automation-workflows/` folder | Deleted — all workflows eliminated |
+| `supabase/functions/legacy automation-health/` | Deleted — replaced by /health endpoint |
 | `VITE_N8N_WEBHOOK_URL` env var | Remove from .env |
 
 ---
@@ -475,9 +475,9 @@ If a change is needed, Hugo must explicitly unfreeze it first.
 
 | Function | Replaces | What it does | OpenAI model |
 |----------|----------|-------------|-------------|
-| `ai/ai-chat` | n8n `ai-university-chat` | Lesson Q&A | Configurable via `ai_settings` |
-| `ai/ai-description` | n8n `ai-generate-listing` | Property descriptions | Configurable via `ai_settings` |
-| `ai/airbnb-pricing` | n8n `airbnb-pricing` + `estimate-profit` | Airbnb rate estimation | Configurable via `ai_settings` |
+| `ai/ai-chat` | legacy webhook | Lesson Q&A | Configurable via `ai_settings` |
+| `ai/ai-description` | legacy webhook | Property descriptions | Configurable via `ai_settings` |
+| `ai/airbnb-pricing` | legacy webhook | Airbnb rate estimation | Configurable via `ai_settings` |
 
 ---
 
@@ -519,11 +519,11 @@ If a change is needed, Hugo must explicitly unfreeze it first.
     - `LessonPage.tsx` → `features/university/`
 21. Verify TypeScript + build + full smoke after all moves complete
 
-### Phase 2: Build new edge functions + replace n8n (BEFORE deleting old code)
-22. Build ai-chat edge function → replace useAIChat n8n call
-23. Build ai-description edge function → replace ListADealPage n8n call
-24. Build airbnb-pricing edge function → replace 3 files' n8n calls
-25. Replace aff-commission n8n calls (PaymentSheet + InquiryPanel) with Supabase `aff_events` INSERT
+### Phase 2: Build new edge functions (DONE)
+22. Build ai-chat edge function → use edge function directly
+23. Build ai-description edge function → use edge function directly
+24. Build airbnb-pricing edge function → use edge function directlys
+25. use edge function directlys (PaymentSheet + InquiryPanel) with Supabase `aff_events` INSERT
 26. Delete `notifyCrmStageMove()` and its import from CRMPage (Hugo confirmed: not needed)
 27. Remove WhatsApp reply code from `receive-tenant-whatsapp` edge function
     (GHL workflow `cf089a15` is the single source of truth for that auto-reply)
@@ -534,12 +534,12 @@ If a change is needed, Hugo must explicitly unfreeze it first.
 ### Phase 3: Delete dead code (ONLY after Phase 2 replacements are proven)
 31. Delete inbox files (InboxPage + components/inbox/)
 32. Delete old AdminOutreach.tsx
-33. Delete n8n-workflows/ folder
-34. Delete n8n-health edge function
+33. DONE — deleted
+34. DONE — deleted
 35. Delete generate-description edge function (orphaned — not called anywhere)
-36. Delete n8n.ts (after all callers migrated)
-37. Delete notifications.ts (n8n investment notifications)
-38. Remove all n8n references from comments
+36. DONE — deleted, OTP moved to core/auth/otp.ts
+37. Kept — investment dependency, cleaned of all automation references
+38. DONE — all references purged
 39. Verify TypeScript + build + smoke
 
 ### Phase 4: Bug fixes
@@ -1578,7 +1578,7 @@ No exceptions.
     COPILOT_PROMPT.md            ← old copilot rules
     COMMUNICATIONS.md            ← old comms map
     INTEGRATIONS.md              ← old integration docs
-    N8N_WHATSAPP_WORKFLOW.md     ← old n8n docs
+    N8N_WHATSAPP_WORKFLOW.md     ← deleted
     STACK.md                     ← old stack reference
     CHANGELOG.md                 ← historical record
     SUPER_PROMPT_INQUIRY_FIX.md  ← old fix docs
@@ -1617,7 +1617,7 @@ No exceptions.
 
 ## 29. EDGE FUNCTION HEALTH MONITORING
 
-Replace the deleted `n8n-health` with a simple monitoring system.
+The /health endpoint handles monitoring.
 
 ### Health endpoint expansion:
 The existing `health/` edge function should be expanded to ping critical functions:

@@ -13,8 +13,8 @@ DIAGNOSE FIRST: OpenAI key → ai-description function logs → config.toml → 
 
 WORKFLOW: diagnose → read → PLAN → approve → execute → test
 
-NOTE: AI description calls n8n (to be replaced with ai-description edge function in Phase 2).
-NOTE: Airbnb pricing calls n8n (to be replaced with airbnb-pricing edge function in Phase 2).
+NOTE: AI description calls ai-description edge function directly.
+NOTE: Airbnb pricing calls airbnb-pricing edge function directly.
 
 TESTS: deal-submit + smoke
 BLAST RADIUS: MEDIUM (writes to properties table)

@@ -13,7 +13,7 @@ DIAGNOSE FIRST: ai-chat function logs → OpenAI key → module data → then co
 
 WORKFLOW: diagnose → read → PLAN → approve → execute → test
 
-NOTE: AI chat calls n8n (to be replaced with ai-chat edge function in Phase 2).
+NOTE: AI chat calls ai-chat edge function directly.
 NOTE: Tables: modules, lessons, user_progress (university owns all three).
 
 TESTS: university + smoke

@@ -482,7 +482,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       } as any);
       if (inqError) throw inqError;
 
-      // 2. Send outreach via GHL (direct — no n8n)
+      // 2. Send outreach via GHL
       const firstProp = group.properties[0];
       const outreachResult = await callGhlEnroll(group.phone, formData.workflow, {
         property_name: firstProp?.name || firstProp?.city || 'Property',

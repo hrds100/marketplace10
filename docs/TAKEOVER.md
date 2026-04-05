@@ -23,19 +23,32 @@
 
 | Item | Value |
 |------|-------|
-| **Latest known live commit** | `1e9283a` - Merge PR #234 feat(signup): remove role selection step from signup flow |
-| **Latest meaningful merged PRs** | #234 signup flow (no role step), #233 lister role on List a Deal; prior: admin bulk delete #235–#237 merged |
-| **Open but important** | `gh pr list --state open` → **none** (verified 2026-04-04) |
+| **Latest known live commit** | `70bcc38` - docs: changelog for 2026-04-04 — WhatsApp gate, email backfill, auto wallets, admin wallet column (#250) |
+| **Latest meaningful merged PRs** | #250 changelog; #249 hard-delete-user FK cleanups; #248 auto-create wallet on dashboard load |
+| **Open but important** | `gh pr list --state open` → **none** (verified 2026-04-04, repo `hrds100/marketplace10`) |
 | **Unproven / not yet merged** | No open PRs; verify Vercel production matches `main` after each merge |
 
 ---
 
 ## 3. Active Rules
 
-- **Branch workflow:** Never push to main. All work on feature branches (`feat/`, `fix/`, `docs/`). PR required to merge.
+### GLOBAL SAFETY OVERRIDE (permanent, non-negotiable)
+
+**No agent and no Co-Pilot may directly push or deploy.**
+
+- No agent may run: `git add`, `git commit`, `git push`, `git merge`, `git rebase`, `git tag`.
+- No agent may run: `supabase functions deploy`, any CLI deploy, any infra mutation.
+- No agent may claim something is "merged", "deployed", or "live".
+- Co-Pilot reviews code and tests, then decides what happens next. If a change is ready, Co-Pilot handles the approval path via `gh pr merge`. Agents do not do it themselves.
+- **Modes:** Research mode (read-only, default) and Edit mode (only when Co-Pilot explicitly asks, still no push/deploy). If unsure, stop and ask.
+- **Roles:** Hugo describes wants and tests live. Co-Pilot is the only approver. Dimitri, Mario, Scarlett all obey the same rule.
+
+---
+
+- **Branch workflow:** All work on feature branches (`feat/`, `fix/`, `docs/`). PR required to merge. Agents prepare code; Co-Pilot handles git operations.
 - **Preview workflow:** Every push gets a Vercel preview. Fetch real URL from PR comments. Never guess.
 - **Co-Pilot audit before merge:** Hugo brings branch/PR/preview details to the Co-Pilot. Co-Pilot audits GitHub reality (including a strict code review via `gh pr diff`) before merge approval. Claude's claim is not the source of truth - GitHub is.
-- **Tests required before DONE:** Playwright e2e test mandatory. `npm run check` mandatory before push. Zero TypeScript errors always.
+- **Tests required before DONE:** Playwright e2e test mandatory. `npm run check` mandatory. Zero TypeScript errors always.
 - **Visibility gate:** If work is not pushed to a GitHub feature branch, it is not done. Local-only changes are not proof.
 
 ---
@@ -162,4 +175,4 @@ When Hugo brings output back to the Co-Pilot, he must paste the exact `AGENT:` l
 
 ---
 
-*Last updated: 2026-04-04 — `main` @ `1e9283a`; open PRs: none (GitHub CLI)*
+*Last updated: 2026-04-04 — `main` @ `70bcc38`; open PRs: none (`gh pr list --repo hrds100/marketplace10`)*

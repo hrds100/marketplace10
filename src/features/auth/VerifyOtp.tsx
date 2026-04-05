@@ -58,7 +58,7 @@ export default function VerifyOtp() {
     verifyingRef.current = true;
     setLoading(true);
     setError('');
-    // Verify OTP via n8n webhook (real WhatsApp code)
+    // Verify OTP via edge function (real WhatsApp code)
     try {
       const result = await verifyOtp({ phone, code: otp, name, email });
       if (!result.success) {

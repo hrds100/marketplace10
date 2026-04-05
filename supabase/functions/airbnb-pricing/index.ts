@@ -1,5 +1,5 @@
 // airbnb-pricing — Estimate Airbnb nightly rate + occupancy
-// Replaces n8n /webhook/airbnb-pricing
+// Estimates Airbnb nightly rate + occupancy via OpenAI
 // Input: { city, postcode, bedrooms, bathrooms, type, rent, propertyId }
 // Output: { estimated_nightly_rate, estimated_occupancy, estimated_monthly_revenue,
 //           airbnb_url_7d, airbnb_url_30d, airbnb_url_90d }

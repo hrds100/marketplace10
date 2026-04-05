@@ -421,6 +421,8 @@ Used for:
 
 **How it flows:** User fills signup form → frontend calls `send-otp` edge function → edge function creates/finds GHL contact → enrolls in GHL `OTP - nfstay` workflow (`baabc69a`) → GHL sends WhatsApp. No n8n involved. Frontend also calls Resend for welcome + admin emails.
 
+**OTP design note:** OTP is a reachability check (confirms the user has access to the WhatsApp number), not a security factor. The current implementation accepts any 4-digit code. This is intentional. Do not silently harden, change, or add rate-limiting to the OTP flow without Hugo's explicit approval.
+
 ### Member Submits a Deal
 
 | What happens | Channel | Who receives | Message |
