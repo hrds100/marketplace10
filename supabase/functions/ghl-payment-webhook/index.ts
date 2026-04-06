@@ -148,57 +148,49 @@ serve(async (req) => {
     console.log(`[ghl-payment-webhook] Updated ${email} tier: ${previousTier} → ${tier}`)
 
     // 5. Handle affiliate commission
+    // aff_events schema: affiliate_id, event_type (click|signup|payment|payout_requested|payout_paid),
+    //   referred_user_id, amount, commission_type, metadata
     let affiliateHandled = false
     const referredBy = profile.referred_by
 
     if (referredBy) {
       try {
-        // Create aff_events row
-        const commissionAmount = TIER_AMOUNTS[tier] || 67
-        const { error: eventErr } = await supabase.from('aff_events').insert({
-          referral_code: referredBy,
-          user_id: profile.id,
-          event_type: 'subscription',
-          amount: commissionAmount,
-          payment_id: `ghl-${profile.id}-${Date.now()}`,
-          tier,
-        })
+        // Find the affiliate profile by referral code
+        const { data: affProfile } = await supabase
+          .from('aff_profiles')
+          .select('id, paid_users, total_earned')
+          .eq('referral_code', referredBy)
+          .single()
 
-        if (eventErr) {
-          console.error(`[ghl-payment-webhook] Failed to create aff_event:`, eventErr)
-        } else {
-          console.log(`[ghl-payment-webhook] Created aff_event: code=${referredBy} amount=${commissionAmount} tier=${tier}`)
-
-          // Increment aff_profiles.paid_users and total_earned
-          // Calculate commission: 40% of the tier amount
+        if (affProfile) {
+          const paymentAmount = TIER_AMOUNTS[tier] || 67
           const commissionRate = 0.40
-          const commission = Math.round(commissionAmount * commissionRate * 100) / 100
+          const commission = Math.round(paymentAmount * commissionRate * 100) / 100
 
-          const { error: affUpdateErr } = await supabase.rpc('increment_affiliate_stats', {
-            p_referral_code: referredBy,
-            p_paid_users_inc: 1,
-            p_earned_inc: commission,
+          // Create aff_events row (event_type must be 'payment')
+          const { error: eventErr } = await supabase.from('aff_events').insert({
+            affiliate_id: affProfile.id,
+            event_type: 'payment',
+            referred_user_id: profile.id,
+            amount: commission,
+            commission_type: 'subscription',
+            metadata: { tier, payment_amount: paymentAmount, source: 'ghl-payment-webhook' },
           })
 
-          if (affUpdateErr) {
-            // Fallback: manual update if RPC doesn't exist
-            console.warn(`[ghl-payment-webhook] RPC failed, trying manual update:`, affUpdateErr)
-            const { data: affProfile } = await supabase
-              .from('aff_profiles')
-              .select('id, paid_users, total_earned')
-              .eq('referral_code', referredBy)
-              .single()
+          if (eventErr) {
+            console.error(`[ghl-payment-webhook] Failed to create aff_event:`, eventErr)
+          } else {
+            // Increment aff_profiles counters
+            await supabase.from('aff_profiles').update({
+              paid_users: (affProfile.paid_users || 0) + 1,
+              total_earned: (affProfile.total_earned || 0) + commission,
+            }).eq('id', affProfile.id)
 
-            if (affProfile) {
-              await supabase.from('aff_profiles').update({
-                paid_users: (affProfile.paid_users || 0) + 1,
-                total_earned: (affProfile.total_earned || 0) + commission,
-              }).eq('id', affProfile.id)
-              console.log(`[ghl-payment-webhook] Updated aff_profiles: paid_users+1, earned+${commission}`)
-            }
+            console.log(`[ghl-payment-webhook] Affiliate: code=${referredBy} commission=£${commission} tier=${tier}`)
+            affiliateHandled = true
           }
-
-          affiliateHandled = true
+        } else {
+          console.warn(`[ghl-payment-webhook] Affiliate profile not found for code: ${referredBy}`)
         }
       } catch (e) {
         console.error(`[ghl-payment-webhook] Affiliate processing error:`, e)
