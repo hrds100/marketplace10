@@ -280,12 +280,11 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
       12 months. Unlimited contacts. <s>£804 on monthly.</s> You save £407.
     </div>
 
-    <!-- REPLACE WITH GHL ORDER BUTTON -->
-    <a href="#ghl-annual-order" class="btn-primary" style="text-decoration:none">
+    <!-- GHL DOWNSELL BUTTON — triggers #button-7dk6WUQ9Uy on GHL page -->
+    <button class="btn-primary" onclick="triggerGHL('button-7dk6WUQ9Uy')">
       Yes - Lock in 12 months for £397
       <small>Unlimited contacts. Full year access. Save £407.</small>
-    </a>
-    <!-- END GHL ORDER BUTTON -->
+    </button>
 
     <div class="secure-note">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -293,11 +292,9 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
     </div>
   </div>
 
-  <!-- DECLINE -->
+  <!-- SKIP TO DASHBOARD -->
   <div class="decline-wrap">
-    <!-- REPLACE WITH GHL DECLINE LINK -->
-    <button class="decline-link">No thanks, I will skip this offer.</button>
-    <!-- END GHL DECLINE LINK -->
+    <button class="decline-link" onclick="window.location.href='https://hub.nfstay.com/dashboard'">No thanks, I will skip this offer.</button>
   </div>
 
   <!-- FAQ -->
@@ -325,6 +322,13 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
 
 <script>
 function toggleFaq(el){el.closest('.faq-item').classList.toggle('open')}
+function triggerGHL(id){
+  var btn=document.getElementById(id);
+  if(btn){btn.click();return}
+  var el=document.querySelector('#'+id+', [data-element-id="'+id+'"], [href="#'+id+'"]');
+  if(el){el.click();return}
+  console.warn('GHL button not found:',id);
+}
 function copyPage(){var h=document.documentElement.outerHTML.replace(/<div class="copy-wrap">[\s\S]*?<\/div>/,'');navigator.clipboard.writeText(h).then(function(){var b=document.querySelector('.copy-btn');b.textContent='Copied!';setTimeout(function(){b.textContent='Copy HTML'},2e3)})}
 </script>
 </body>
