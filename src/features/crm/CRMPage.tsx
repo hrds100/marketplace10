@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore, Tag, ImagePlus, ChevronDown, ExternalLink, Users, Briefcase } from 'lucide-react';
+import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore, Tag, ImagePlus, ChevronDown, ExternalLink, Users, Briefcase, CheckCircle2 } from 'lucide-react';
 import { CRM_STAGES, type CRMDeal } from '@/data/mockData';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -325,17 +325,23 @@ export default function CRMPage() {
                           <div className="text-sm font-bold text-foreground mt-0.5 truncate">{deal.city}</div>
                         </div>
                       </div>
-                      {deal.notes && <p className="text-xs text-muted-foreground italic border-t border-border pt-2">{deal.notes}</p>}
-                      {deal.whatsapp && (
-                        <a href={`https://wa.me/${deal.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-primary font-medium hover:opacity-75 transition-opacity">
-                          <MessageCircle className="w-3.5 h-3.5" /> Contact via WhatsApp
-                        </a>
+                      {deal.notes && deal.notes !== 'Added after inquiry' && (
+                        <div className="border-t border-border pt-2">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Your message</p>
+                          <p className="text-xs text-foreground whitespace-pre-wrap">{deal.notes}</p>
+                        </div>
                       )}
                       <div className="flex gap-2 pt-1">
-                        <button type="button" onClick={() => { setInquiryListing(dealToListingShape(deal)); setInquiryOpen(true); }}
-                          className="flex-1 h-9 rounded-lg bg-nfstay-black text-nfstay-black-foreground text-xs font-semibold hover:opacity-90 transition-opacity">
-                          Inquire Now
-                        </button>
+                        {deal.notes ? (
+                          <div className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 text-xs font-medium" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Already contacted
+                          </div>
+                        ) : (
+                          <button type="button" onClick={() => { setInquiryListing(dealToListingShape(deal)); setInquiryOpen(true); }}
+                            className="flex-1 h-9 rounded-lg bg-nfstay-black text-nfstay-black-foreground text-xs font-semibold hover:opacity-90 transition-opacity">
+                            Inquire Now
+                          </button>
+                        )}
                         {deal.property_id && (
                           <Link to={`/deals/${deal.property_id}`}
                             className="h-9 px-3 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-secondary transition-colors flex items-center gap-1"

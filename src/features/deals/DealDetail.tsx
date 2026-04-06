@@ -102,6 +102,17 @@ export default function DealDetail() {
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [inquiryTarget, setInquiryTarget] = useState<ListingShape | null>(null);
 
+  // Check if user has already contacted this property
+  const { data: isContacted, refetch: refetchContacted } = useQuery({
+    queryKey: ['contacted', user?.id, id],
+    queryFn: async () => {
+      if (!user?.id || !id) return false;
+      const { data } = await supabase.from('inquiries').select('id').eq('tenant_id', user.id).eq('property_id', id).limit(1);
+      return (data && data.length > 0);
+    },
+    enabled: !!user?.id && !!id,
+  });
+
   const handleInquire = useCallback((l: ListingShape) => {
     if (l.id.startsWith('inv-')) { navigate('/dashboard/invest/marketplace'); return; }
     setInquiryTarget(l);
@@ -483,19 +494,25 @@ export default function DealDetail() {
               </div>
               {/* Contact buttons */}
               <div className="flex gap-2 mt-6">
-                <button data-feature="DEALS__DETAIL_WHATSAPP" onClick={handleDetailWhatsApp}
-                  disabled={isLoading}
-                  className="flex-1 h-12 rounded-xl inline-flex items-center justify-center gap-2.5 text-[14px] font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: '#1E9A80' }}>
-                  {isLoading ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>}
-                  WhatsApp
-                </button>
-                {contactEmail && (
-                  <button data-feature="DEALS__DETAIL_EMAIL" onClick={handleDetailEmail}
-                    className="flex-1 h-12 rounded-xl inline-flex items-center justify-center gap-2.5 text-[14px] font-semibold transition-all hover:brightness-[0.96]"
-                    style={{ backgroundColor: '#E8F0EF', color: '#2D6A5F' }}>
-                    <Mail className="w-[18px] h-[18px]" strokeWidth={1.8} /> Email
-                  </button>
+                {isContacted ? (
+                  <div className="flex-1 h-12 rounded-xl inline-flex items-center justify-center gap-2 text-[14px] font-medium" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
+                    <CheckCircle className="w-[18px] h-[18px]" /> Already contacted
+                  </div>
+                ) : (
+                  <>
+                    <button data-feature="DEALS__DETAIL_WHATSAPP" onClick={handleDetailWhatsApp}
+                      disabled={isLoading}
+                      className="flex-1 h-12 rounded-xl inline-flex items-center justify-center gap-2.5 text-[14px] font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ backgroundColor: '#1E9A80' }}>
+                      {isLoading ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>}
+                      WhatsApp
+                    </button>
+                    <button data-feature="DEALS__DETAIL_EMAIL" onClick={handleDetailEmail}
+                      className="flex-1 h-12 rounded-xl inline-flex items-center justify-center gap-2.5 text-[14px] font-semibold transition-all hover:brightness-[0.96]"
+                      style={{ backgroundColor: '#E8F0EF', color: '#2D6A5F' }}>
+                      <Mail className="w-[18px] h-[18px]" strokeWidth={1.8} /> Email
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -539,8 +556,8 @@ export default function DealDetail() {
       )}
 
       {/* Inquiry modals */}
-      <InquiryChatModal open={emailModalOpen} listing={listingShape} onClose={() => setEmailModalOpen(false)} />
-      <InquiryChatModal channel="whatsapp" open={whatsappModalOpen} listing={listingShape} onClose={() => setWhatsappModalOpen(false)} />
+      <InquiryChatModal open={emailModalOpen} listing={listingShape} onClose={() => setEmailModalOpen(false)} contacted={!!isContacted} onContactSuccess={() => refetchContacted()} />
+      <InquiryChatModal channel="whatsapp" open={whatsappModalOpen} listing={listingShape} onClose={() => setWhatsappModalOpen(false)} contacted={!!isContacted} onContactSuccess={() => refetchContacted()} />
       {/* GHL payment panel (free users) */}
       <InquiryPanel open={inquiryOpen} listing={inquiryTarget} onClose={() => setInquiryOpen(false)} />
     </div>
