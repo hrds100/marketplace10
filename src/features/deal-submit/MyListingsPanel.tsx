@@ -11,9 +11,25 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Pencil, Trash2, X, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, X, Loader2, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { usePropertyImage } from '@/features/deals/usePropertyImage';
+
+function ListingImage({ id, photos, city, type }: { id: string; photos: string[] | null; city: string; type: string }) {
+  const resolvedImage = usePropertyImage(id, photos, city, type, 0, false);
+  const isPexels = resolvedImage?.includes('images.pexels.com') || false;
+  return (
+    <div className="relative w-full h-full">
+      <img src={resolvedImage || ''} alt="" className="w-full h-full object-cover" style={isPexels ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined} />
+      {isPexels && (
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <Lock className="w-3 h-3 text-white" />
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface PropertyRow {
   id: string;
@@ -260,11 +276,7 @@ export default function MyListingsPanel({ userId }: Props) {
             <div data-feature="DEALS__MY_LISTING_CARD" key={listing.id} className="border border-border rounded-xl overflow-hidden">
               <div className="flex items-start gap-3 p-3">
                 <div className="w-[60px] h-[60px] rounded-lg bg-secondary flex-shrink-0 overflow-hidden">
-                  {photo ? (
-                    <img src={photo} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">No img</div>
-                  )}
+                  <ListingImage id={listing.id} photos={listing.photos || null} city={listing.city} type={listing.type} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold text-foreground truncate">{listing.city} · {listing.postcode}</div>

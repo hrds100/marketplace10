@@ -270,7 +270,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
     { title: 'Express interest', body: "I'm very interested in this opportunity. I run a serviced accommodation business and would love to discuss terms." },
     { title: 'Request documents', body: 'Could you share the compliance documents and any existing EPC/gas safety certificates?' },
   ];
-  const { data: adminTemplates = [] } = useQuery({
+  const { data: adminTemplates = [], refetch: refetchTemplates } = useQuery({
     queryKey: ['admin-templates', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -284,6 +284,22 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
     },
     enabled: !!user?.id,
   });
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const [newTemplateBody, setNewTemplateBody] = useState('');
+  const [showNewTemplate, setShowNewTemplate] = useState(false);
+
+  // Admin leads (pre-filled)
+  const { data: adminLeads = [], refetch: refetchLeads } = useQuery({
+    queryKey: ['admin-leads', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase.from('admin_leads').select('id, name, email, phone, default_message, is_default').eq('user_id', user.id).order('created_at');
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+  const [showNewLead, setShowNewLead] = useState(false);
+  const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', default_message: '' });
 
   const toggleSelectPhone = (phone: string) => {
     setSelectedPhones(prev => {
@@ -720,7 +736,63 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                 {/* Assign a lead form */}
                 {showAssignForm.has(group.phone) && assignLeadForms[group.phone] && (
                   <div className="rounded-xl border p-4 mb-1" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
-                    <p className="text-xs font-bold mb-3" style={{ color: '#1A1A1A' }}>Assign a lead for this landlord</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-bold" style={{ color: '#1A1A1A' }}>Assign a lead for this landlord</p>
+                      <div className="flex items-center gap-2">
+                        <select
+                          onChange={e => {
+                            const lead = adminLeads.find(l => l.id === e.target.value);
+                            if (lead) {
+                              updateAssignForm(group.phone, 'name', lead.name);
+                              updateAssignForm(group.phone, 'email', lead.email);
+                              updateAssignForm(group.phone, 'phone', lead.phone);
+                              if (lead.default_message) updateAssignForm(group.phone, 'message', lead.default_message);
+                            }
+                            e.target.value = '';
+                          }}
+                          className="h-7 rounded-md border px-1.5 text-[10px]"
+                          style={{ borderColor: '#E5E5E5', color: '#6B7280' }}
+                        >
+                          <option value="">Select saved lead...</option>
+                          {adminLeads.map(l => (
+                            <option key={l.id} value={l.id}>{l.name} ({l.email})</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setShowNewLead(!showNewLead)}
+                          className="text-[10px] font-medium px-2 py-1 rounded-md hover:bg-gray-50"
+                          style={{ color: '#1E9A80' }}
+                        >
+                          + New Lead
+                        </button>
+                      </div>
+                    </div>
+                    {showNewLead && (
+                      <div className="rounded-lg border p-3 mb-3 space-y-2" style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA' }}>
+                        <p className="text-[10px] font-semibold" style={{ color: '#525252' }}>Create new saved lead</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input value={newLead.name} onChange={e => setNewLead(p => ({ ...p, name: e.target.value }))} placeholder="Name *" className="h-8 rounded-md border px-2 text-xs" style={{ borderColor: '#E5E5E5' }} />
+                          <input value={newLead.email} onChange={e => setNewLead(p => ({ ...p, email: e.target.value }))} placeholder="Email *" className="h-8 rounded-md border px-2 text-xs" style={{ borderColor: '#E5E5E5' }} />
+                          <input value={newLead.phone} onChange={e => setNewLead(p => ({ ...p, phone: e.target.value }))} placeholder="Phone *" className="h-8 rounded-md border px-2 text-xs" style={{ borderColor: '#E5E5E5' }} />
+                          <input value={newLead.default_message} onChange={e => setNewLead(p => ({ ...p, default_message: e.target.value }))} placeholder="Default message (optional)" className="h-8 rounded-md border px-2 text-xs" style={{ borderColor: '#E5E5E5' }} />
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => setShowNewLead(false)} className="h-7 px-3 rounded-md border text-[10px]" style={{ borderColor: '#E5E7EB' }}>Cancel</button>
+                          <button
+                            onClick={async () => {
+                              if (!newLead.name.trim() || !newLead.email.trim() || !newLead.phone.trim() || !user?.id) { toast.error('Fill in name, email, and phone'); return; }
+                              await supabase.from('admin_leads').insert({ ...newLead, user_id: user.id, is_default: adminLeads.length === 0 });
+                              refetchLeads();
+                              setNewLead({ name: '', email: '', phone: '', default_message: '' });
+                              setShowNewLead(false);
+                              toast.success('Lead saved');
+                            }}
+                            className="h-7 px-3 rounded-md text-[10px] font-semibold text-white" style={{ backgroundColor: '#1E9A80' }}
+                          >Save Lead</button>
+                        </div>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
                       <div>
                         <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Lead Name *</label>
@@ -786,16 +858,22 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[10px] font-semibold" style={{ color: '#525252' }}>Message (optional)</label>
-                        <select
-                          onChange={e => { if (e.target.value) updateAssignForm(group.phone, 'message', e.target.value); e.target.value = ''; }}
-                          className="h-7 rounded-md border px-1.5 text-[10px]"
-                          style={{ borderColor: '#E5E5E5', color: '#6B7280' }}
-                        >
-                          <option value="">Use template...</option>
-                          {adminTemplates.map(t => (
-                            <option key={t.id} value={t.body}>{t.title}</option>
-                          ))}
-                        </select>
+                        <div className="flex items-center gap-2">
+                          <select
+                            onChange={e => { if (e.target.value) updateAssignForm(group.phone, 'message', e.target.value); e.target.value = ''; }}
+                            className="h-7 rounded-md border px-1.5 text-[10px]"
+                            style={{ borderColor: '#E5E5E5', color: '#6B7280' }}
+                          >
+                            <option value="">Use template...</option>
+                            {adminTemplates.map(t => (
+                              <option key={t.id} value={t.body}>{t.title}</option>
+                            ))}
+                          </select>
+                          <button type="button" onClick={() => setShowNewTemplate(!showNewTemplate)}
+                            className="text-[10px] font-medium px-2 py-1 rounded-md hover:bg-gray-50 whitespace-nowrap" style={{ color: '#1E9A80' }}>
+                            + New
+                          </button>
+                        </div>
                       </div>
                       <textarea
                         value={assignLeadForms[group.phone]?.message || ''}
@@ -805,6 +883,26 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                         style={{ borderColor: '#E5E5E5', minHeight: 60 }}
                         rows={2}
                       />
+                      {showNewTemplate && (
+                        <div className="rounded-lg border p-3 mt-2 space-y-2" style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA' }}>
+                          <p className="text-[10px] font-semibold" style={{ color: '#525252' }}>Create new template</p>
+                          <input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="Template name *" className="w-full h-8 rounded-md border px-2 text-xs" style={{ borderColor: '#E5E5E5' }} />
+                          <textarea value={newTemplateBody} onChange={e => setNewTemplateBody(e.target.value)} placeholder="Template message *" className="w-full rounded-md border px-2 py-1.5 text-xs resize-none" style={{ borderColor: '#E5E5E5', minHeight: 50 }} />
+                          <div className="flex gap-2">
+                            <button onClick={() => { setShowNewTemplate(false); setNewTemplateName(''); setNewTemplateBody(''); }} className="h-7 px-3 rounded-md border text-[10px]" style={{ borderColor: '#E5E7EB' }}>Cancel</button>
+                            <button
+                              onClick={async () => {
+                                if (!newTemplateName.trim() || !newTemplateBody.trim() || !user?.id) { toast.error('Fill in name and message'); return; }
+                                await supabase.from('message_templates').insert({ title: newTemplateName.trim(), body: newTemplateBody.trim(), category: 'Custom', user_id: user.id });
+                                refetchTemplates();
+                                setNewTemplateName(''); setNewTemplateBody(''); setShowNewTemplate(false);
+                                toast.success('Template saved');
+                              }}
+                              className="h-7 px-3 rounded-md text-[10px] font-semibold text-white" style={{ backgroundColor: '#1E9A80' }}
+                            >Save Template</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="flex-1" />
