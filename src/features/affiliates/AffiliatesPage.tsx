@@ -196,7 +196,15 @@ export default function AffiliatesPage() {
       queryClient.invalidateQueries();
       toast.success('Payout requested! Payouts are processed every Tuesday.');
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => {
+      const msg = String(err.message || '');
+      if (msg.toLowerCase().includes('bank') || msg.toLowerCase().includes('details')) {
+        toast.error('Please add your bank details first.');
+        setPayoutOpen(true);
+      } else {
+        toast.error(msg || 'Payout request failed');
+      }
+    },
   });
 
   // Save payout details
@@ -244,6 +252,21 @@ export default function AffiliatesPage() {
   const referralLink = profile ? `${BASE_URL}/signup?ref=${profile.referral_code}` : '';
   const { data: investProperties } = useInvestProperties();
   const { data: myCommissions = [] } = useMyCommissions();
+
+  // Payout history
+  const { data: payoutHistory = [] } = useQuery({
+    queryKey: ['payout-history', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await (supabase.from('payout_claims') as any)
+        .select('id, amount_entitled, currency, status, claimed_at, paid_at, notes, created_at')
+        .eq('user_id', user.id)
+        .eq('user_type', 'affiliate')
+        .order('created_at', { ascending: false });
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
   const activeProperty = investProperties?.[0] || null;
   const investReferralLink = profile && activeProperty
     ? `${BASE_URL}/dashboard/invest/marketplace?ref=${profile.referral_code}&property=${activeProperty.id}`
@@ -694,6 +717,49 @@ export default function AffiliatesPage() {
                   </div>
                 );
               })()}
+
+              {/* Payout History */}
+              {payoutHistory.length > 0 && (
+                <div className="bg-card border border-border rounded-2xl p-5">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Payout History</h3>
+                  <div className="space-y-2">
+                    {payoutHistory.map((p: { id: string; amount_entitled: number; currency: string; status: string; claimed_at: string; paid_at: string | null; created_at: string }) => {
+                      // Calculate payment date: next Tuesday after 14 days from claimed_at
+                      const claimed = new Date(p.claimed_at || p.created_at);
+                      const holdbackEnd = new Date(claimed.getTime() + 14 * 24 * 60 * 60 * 1000);
+                      const day = holdbackEnd.getDay();
+                      const daysUntilTuesday = day <= 2 ? (2 - day) : (9 - day);
+                      const paymentDate = new Date(holdbackEnd.getTime() + daysUntilTuesday * 24 * 60 * 60 * 1000);
+
+                      return (
+                        <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 flex-shrink-0">
+                            <Wallet className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-medium text-foreground">
+                              Payout claim — £{Number(p.amount_entitled).toFixed(2)}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Claimed {new Date(p.claimed_at || p.created_at).toLocaleDateString('en-GB')}
+                              {p.status === 'pending' && ` · Payment due ${paymentDate.toLocaleDateString('en-GB')}`}
+                              {p.status === 'paid' && p.paid_at && ` · Paid ${new Date(p.paid_at).toLocaleDateString('en-GB')}`}
+                            </p>
+                          </div>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                            p.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                            p.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                            p.status === 'failed' || p.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                            'bg-amber-100 text-amber-700'
+                          }`}>
+                            {p.status === 'pending' ? 'Processing' : p.status === 'processing' ? 'Sending' : p.status === 'paid' ? 'Paid' : p.status === 'failed' ? 'Failed' : p.status === 'cancelled' ? 'Cancelled' : p.status}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Activity feed */}
               <div data-feature="AFFILIATES__EVENTS" className="bg-card border border-border rounded-2xl p-5">
