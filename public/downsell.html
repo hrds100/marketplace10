@@ -50,7 +50,7 @@
 }
 /* Hide GHL native buttons — they still exist for triggerGHL() to click */
 .ghl-hidden { display: none !important; }
-[id^="button-3HJT835XHc"], [id^="button-7dk6WUQ9Uy"] { display: none !important; }
+[id^="button-nvMb2BqcZZ"], [id^="button-ksCyR9CACz"] { display: none !important; }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
@@ -284,8 +284,8 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
       12 months. Unlimited contacts. <s>£804 on monthly.</s> You save £407.
     </div>
 
-    <!-- GHL DOWNSELL BUTTON — triggers #button-7dk6WUQ9Uy on GHL page -->
-    <button class="btn-primary" onclick="triggerGHL('button-7dk6WUQ9Uy')">
+    <!-- GHL DOWNSELL BUTTON — triggers #button-nvMb2BqcZZ on GHL page -->
+    <button class="btn-primary" onclick="triggerGHL('button-nvMb2BqcZZ')">
       Yes - Lock in 12 months for £397
       <small>Unlimited contacts. Full year access. Save £407.</small>
     </button>
@@ -298,7 +298,8 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
 
   <!-- SKIP TO DASHBOARD -->
   <div class="decline-wrap">
-    <button class="decline-link" onclick="window.location.href='https://hub.nfstay.com/dashboard'">No thanks, I will skip this offer.</button>
+    <!-- GHL NOT INTERESTED — triggers #button-ksCyR9CACz on GHL page -->
+    <button class="decline-link" onclick="triggerGHL('button-ksCyR9CACz')">No thanks, I will skip this offer.</button>
   </div>
 
   <!-- FAQ -->
