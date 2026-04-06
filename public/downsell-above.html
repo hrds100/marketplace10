@@ -1,0 +1,176 @@
+<!-- DOWNSELL BLOCK 1: ABOVE THE GHL BUTTONS -->
+<!-- Paste this into a Custom HTML/Javascript block ABOVE the GHL buttons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=Instrument+Serif:ital@0;1&family=Sora:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-body: 'Inter', 'Helvetica Neue', sans-serif;
+  --font-logo: 'Sora', sans-serif;
+  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+  --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+  --text-3xl: clamp(2.5rem, 1rem + 4vw, 4.5rem);
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+  --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem;
+  --space-8: 2rem; --space-10: 2.5rem;
+  --radius-md: 0.5rem; --radius-lg: 0.75rem; --radius-xl: 1rem; --radius-2xl: 1.5rem; --radius-full: 9999px;
+  --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  --green: #1E9A80; --green-tint: #ECFDF5; --green-muted: rgba(30,154,128,0.1);
+  --color-bg: #F3F3EE; --color-surface: #FFFFFF; --color-surface-3: #F3F3EE;
+  --color-border: #E5E7EB; --color-border-warm: #E8E5DF;
+  --color-text: #1A1A1A; --color-text-muted: #6B7280; --color-text-faint: #9CA3AF;
+  --shadow: rgba(0,0,0,0.06) 0 2px 16px -2px;
+  --shadow-md: rgba(0,0,0,0.08) 0 4px 24px -4px;
+  --shadow-glow: 0 0 60px rgba(30,154,128,0.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);color:var(--color-text);background:var(--color-bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+p{text-wrap:pretty} h1,h2,h3{text-wrap:balance;line-height:1.15}
+
+.warning-bar{background:#1A1A1A;padding:var(--space-4);text-align:center;font-size:var(--text-sm);font-weight:600;color:#FFFFFF;display:flex;align-items:center;justify-content:center;gap:var(--space-2);position:sticky;top:0;z-index:100}
+.warning-bar svg{flex-shrink:0;color:#facc15}
+.top-nav{padding:var(--space-5) var(--space-6);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--color-border);background:var(--color-surface)}
+.logo{display:flex;align-items:center;gap:3px;text-decoration:none;color:#0A0A0A}
+.logo .nf-box{width:36px;height:36px;border:2px solid #0A0A0A;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-logo);font-weight:700;font-size:16px;line-height:1}
+.logo .stay{font-family:var(--font-logo);font-weight:400;font-size:24px;letter-spacing:2px;line-height:1}
+.step-bar{display:flex;align-items:center;justify-content:center;gap:var(--space-2);padding:var(--space-4);font-size:var(--text-xs);color:var(--color-text-muted);background:var(--color-surface)}
+.step{display:flex;align-items:center;gap:var(--space-1)}
+.step-dot{width:22px;height:22px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;background:var(--color-surface-3);border:1px solid var(--color-border);color:var(--color-text-muted)}
+.step.done .step-dot{background:var(--green);border-color:var(--green);color:#fff}
+.step.active .step-dot{background:var(--color-surface);border:2px solid var(--green);color:var(--green)}
+.step-line{width:32px;height:1px;background:var(--color-border)}
+.step-label{display:none}
+@media(min-width:520px){.step-label{display:inline}}
+.col{max-width:680px;margin:0 auto;padding:0 16px}
+
+.hero-area{text-align:center;padding:var(--space-8) 0 var(--space-8)}
+.downsell-badge{display:inline-flex;align-items:center;gap:var(--space-2);background:var(--green-tint);border:1px solid rgba(30,154,128,0.2);color:var(--green);font-size:var(--text-xs);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);margin-bottom:var(--space-5)}
+.wait-headline{font-family:var(--font-display);font-size:var(--text-3xl);font-weight:400;color:var(--color-text);margin-bottom:var(--space-3);line-height:1.1}
+.wait-headline em{color:var(--green);font-style:italic}
+.sub-headline{font-size:var(--text-base);color:var(--color-text-muted);line-height:1.7;max-width:58ch;margin:0 auto}
+.sub-headline strong{color:var(--color-text);font-weight:600}
+
+.narrative{background:var(--color-surface);border:1px solid var(--color-border-warm);border-radius:var(--radius-xl);padding:var(--space-6);margin-bottom:var(--space-6);font-size:var(--text-base);color:var(--color-text-muted);line-height:1.8;box-shadow:var(--shadow)}
+.narrative p+p{margin-top:var(--space-4)}
+.narrative strong{color:var(--color-text)}
+
+.section-divider{display:flex;align-items:center;gap:var(--space-4);margin:var(--space-10) 0 var(--space-6);color:var(--color-text-faint);font-size:var(--text-xs);font-weight:600;letter-spacing:0.08em;text-transform:uppercase}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--color-border)}
+
+.value-stack{background:var(--color-surface);border:1px solid var(--color-border-warm);border-radius:var(--radius-xl);padding:var(--space-6);margin-bottom:var(--space-6);box-shadow:var(--shadow)}
+.value-stack h3{font-family:var(--font-display);font-size:var(--text-xl);font-weight:400;color:var(--color-text);margin-bottom:var(--space-5)}
+.value-stack h3 span{color:var(--green);font-style:italic}
+.value-item{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-3) 0;border-bottom:1px solid var(--color-border)}
+.value-item:last-child{border-bottom:none}
+.value-icon{width:32px;height:32px;border-radius:var(--radius-md);background:var(--green-tint);border:1px solid rgba(30,154,128,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--green)}
+.value-title{font-size:var(--text-sm);font-weight:600;color:var(--color-text);margin-bottom:2px}
+.value-desc{font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.5}
+
+.maths-block{background:var(--color-surface);border:1px solid var(--color-border-warm);border-radius:var(--radius-xl);padding:var(--space-6);margin-bottom:var(--space-6);box-shadow:var(--shadow)}
+.maths-block h3{font-size:var(--text-sm);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-text-muted);margin-bottom:var(--space-5)}
+.maths-row{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;border-bottom:1px solid var(--color-border);gap:var(--space-4)}
+.maths-row:last-child{border-bottom:none}
+.maths-label{font-size:var(--text-sm);color:var(--color-text-muted)}
+.maths-value{font-size:var(--text-base);font-weight:600;color:var(--color-text);font-variant-numeric:tabular-nums}
+.maths-value.highlight{color:var(--green)}
+.maths-row.featured{background:var(--green-tint);border-radius:var(--radius-lg);padding:var(--space-4);border:1px solid rgba(30,154,128,0.15);margin-top:var(--space-2);border-bottom:none}
+.maths-row.featured .maths-label{color:var(--color-text);font-weight:600}
+.maths-row.featured .maths-value{color:var(--green);font-size:var(--text-lg)}
+.savings-pill{background:var(--green-tint);border:1px solid rgba(30,154,128,0.2);color:var(--green);font-size:var(--text-xs);font-weight:700;padding:2px 10px;border-radius:var(--radius-full);white-space:nowrap}
+
+.price-block{background:var(--color-surface);border:2px solid var(--green);border-radius:var(--radius-2xl);padding:var(--space-8) var(--space-6) var(--space-6);text-align:center;box-shadow:var(--shadow-glow),var(--shadow-md)}
+.price-eyebrow{font-size:var(--text-xs);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--green);margin-bottom:var(--space-3)}
+.price-main{display:flex;align-items:baseline;justify-content:center;gap:var(--space-2);margin-bottom:var(--space-2)}
+.price-currency{font-size:clamp(1.5rem,1.2rem+1.25vw,2.25rem);font-weight:300;color:var(--color-text-muted)}
+.price-amount{font-family:var(--font-display);font-size:var(--text-3xl);font-weight:400;color:var(--color-text);line-height:1}
+.price-comparison{font-size:var(--text-sm);color:var(--color-text-muted)}
+.price-comparison s{color:var(--color-text-faint)}
+</style>
+
+<!-- WARNING BAR -->
+<div class="warning-bar" role="alert">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  ⚠️ Do not close or refresh this page to avoid double charge or order cancellation
+</div>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <a href="#" class="logo"><span class="nf-box">nf</span><span class="stay">stay</span></a>
+</nav>
+
+<!-- STEP PROGRESS -->
+<div class="step-bar">
+  <div class="step done"><div class="step-dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><span class="step-label">Payment</span></div>
+  <div class="step-line"></div>
+  <div class="step active"><div class="step-dot">2</div><span class="step-label">Upgrade</span></div>
+  <div class="step-line"></div>
+  <div class="step"><div class="step-dot">3</div><span class="step-label">Dashboard</span></div>
+</div>
+
+<div class="col">
+
+  <!-- HERO -->
+  <div class="hero-area">
+    <div class="downsell-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Special offer - Annual plan
+    </div>
+    <h1 class="wait-headline">I get it. Lifetime is a big step.<br><em>I have a better offer</em> for you.</h1>
+    <p class="sub-headline">Lock in 12 months of nfstay with <strong>unlimited contacts</strong> for less than half the monthly cost. Same platform. Same access. 51% cheaper.</p>
+  </div>
+
+  <!-- NARRATIVE -->
+  <div class="narrative">
+    <p>If lifetime felt like too big a step, I completely understand.</p>
+    <p>Right now you can lock in a full year of nfstay for <strong>£397.</strong> That is 51% less than paying monthly.</p>
+    <p>With the annual plan, you get <strong>unlimited contacts</strong> for the full 12 months. That means you can reach 10 landlords and agents per day. Multiple deals in your pipeline at all times. When one negotiation stalls, you already have the next one ready.</p>
+    <p>This is for operators who are <strong>serious about building their Airbnb portfolio this year.</strong></p>
+  </div>
+
+  <div class="section-divider">What you get</div>
+
+  <!-- VALUE STACK -->
+  <div class="value-stack">
+    <h3>nfstay <span>Annual Access</span> - unlimited for 12 months.</h3>
+    <div class="value-item">
+      <div class="value-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
+      <div class="value-text"><div class="value-title">Unlimited contacts for 12 months</div><div class="value-desc">Contact 300+ landlords per month. No cap. Full year of access.</div></div>
+    </div>
+    <div class="value-item">
+      <div class="value-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="value-text"><div class="value-title">Unlimited landlord access</div><div class="value-desc">Full access to the entire nfstay landlord database with no monthly limits.</div></div>
+    </div>
+    <div class="value-item">
+      <div class="value-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="value-text"><div class="value-title">12 months of full access</div><div class="value-desc">Deal marketplace, CRM pipeline, unified inbox, earnings estimator. Everything included.</div></div>
+    </div>
+    <div class="value-item">
+      <div class="value-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="value-text"><div class="value-title">Price locked for the year</div><div class="value-desc">Even if monthly rates rise for new members, your annual price stays the same.</div></div>
+    </div>
+  </div>
+
+  <div class="section-divider">The real value</div>
+
+  <!-- MATHS -->
+  <div class="maths-block">
+    <h3>What unlimited contacts is worth</h3>
+    <div class="maths-row"><span class="maths-label">Standard plan: £67/month for 100 contacts</span><span class="maths-value">£67/mo</span></div>
+    <div class="maths-row"><span class="maths-label">To get 300+ contacts on standard</span><span class="maths-value highlight">£201/mo</span></div>
+    <div class="maths-row"><span class="maths-label">That is £201/month over 12 months</span><span class="maths-value highlight">£2,412/year</span></div>
+    <div class="maths-row featured"><span class="maths-label">nfstay Annual - one payment</span><div style="display:flex;align-items:center;gap:0.5rem"><span class="maths-value highlight">£397</span><span class="savings-pill">Save £407 (51% off)</span></div></div>
+  </div>
+
+  <!-- PRICE BOX (no button — GHL button goes after this) -->
+  <div class="price-block">
+    <div class="price-eyebrow">✅ Best value for first-year operators</div>
+    <div class="price-main"><span class="price-currency">£</span><span class="price-amount">397</span></div>
+    <div class="price-comparison">12 months. Unlimited contacts. <s>£804 on monthly.</s> You save £407.</div>
+  </div>
+
+</div>
+<!-- END BLOCK 1 — Place GHL buttons directly below this -->

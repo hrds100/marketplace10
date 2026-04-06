@@ -1,0 +1,42 @@
+<!-- UPSELL BLOCK 2: BELOW THE GHL BUTTONS -->
+<!-- Paste this into a Custom HTML/Javascript block BELOW the GHL buttons -->
+<style>
+.secure-note-below{display:flex;align-items:center;justify-content:center;gap:0.5rem;font-size:clamp(0.75rem,0.7rem+0.25vw,0.875rem);color:#9CA3AF;margin-top:0.75rem;font-family:'Inter',sans-serif}
+.faq-section-below{max-width:680px;margin:2.5rem auto 0;padding:0 16px;font-family:'Inter',sans-serif}
+.faq-section-below h3{font-size:clamp(0.875rem,0.8rem+0.35vw,1rem);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6B7280;margin-bottom:1rem}
+.faq-item-below{border-bottom:1px solid #E5E7EB;padding:1rem 0}
+.faq-item-below:last-child{border-bottom:none}
+.faq-q-below{font-size:clamp(0.875rem,0.8rem+0.35vw,1rem);font-weight:600;color:#1A1A1A;display:flex;justify-content:space-between;align-items:center;cursor:pointer;gap:0.75rem}
+.faq-q-below svg{flex-shrink:0;transition:transform 0.18s;color:#9CA3AF}
+.faq-item-below.open .faq-q-below svg{transform:rotate(180deg)}
+.faq-a-below{font-size:clamp(0.875rem,0.8rem+0.35vw,1rem);color:#6B7280;line-height:1.7;max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding-top 0.3s ease}
+.faq-item-below.open .faq-a-below{max-height:200px;padding-top:0.75rem}
+</style>
+
+<!-- SECURE NOTE -->
+<div class="secure-note-below">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  Secure payment. Instant access.
+</div>
+
+<!-- FAQ -->
+<div class="faq-section-below">
+  <h3>Common questions</h3>
+  <div class="faq-item-below">
+    <div class="faq-q-below" onclick="this.parentElement.classList.toggle('open')">Can I upgrade to lifetime later?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="faq-a-below">This pricing is shown here once, immediately after joining. If you close this page, you will only see standard monthly and annual pricing going forward.</div>
+  </div>
+  <div class="faq-item-below">
+    <div class="faq-q-below" onclick="this.parentElement.classList.toggle('open')">Does lifetime include future features?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="faq-a-below">Yes. Every new tool, module, and improvement we release is automatically included in your lifetime account at no extra cost.</div>
+  </div>
+  <div class="faq-item-below">
+    <div class="faq-q-below" onclick="this.parentElement.classList.toggle('open')">How does unlimited contacts help me?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="faq-a-below">More contacts means more responses, more viewings, and more signed deals. Operators who scale to 5 to 10 properties send as many contacts as it takes, every single month.</div>
+  </div>
+  <div class="faq-item-below">
+    <div class="faq-q-below" onclick="this.parentElement.classList.toggle('open')">What if I am not sure yet?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="faq-a-below">If lifetime feels too big right now, you will see another option on the next page. But if you know you want to build a portfolio over the next 1 to 3 years, this is the smartest move.</div>
+  </div>
+</div>
+<!-- END BLOCK 2 -->
