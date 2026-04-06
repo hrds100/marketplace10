@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>nfstay - Annual Access</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=Instrument+Serif:ital@0;1&family=Sora:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --font-display: 'Instrument Serif', Georgia, serif;
   --font-body: 'Inter', 'Helvetica Neue', sans-serif;
+  --font-logo: 'Sora', sans-serif;
   --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
   --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
   --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
@@ -28,27 +29,24 @@
   --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
   --green: #1E9A80;
   --green-hover: #178a72;
-  --green-light: #4fb8a3;
-  --green-glow: rgba(30, 154, 128, 0.25);
-  --green-muted: rgba(30, 154, 128, 0.15);
+  --green-light: #1E9A80;
+  --green-tint: #ECFDF5;
+  --green-glow: rgba(30,154,128,0.25);
+  --green-muted: rgba(30,154,128,0.1);
   --gold: #d19900;
-  --gold-muted: rgba(209, 153, 0, 0.15);
-  --red-warn: #c0392b;
-  --red-warn-bg: rgba(192, 57, 43, 0.12);
-}
-[data-theme="dark"] {
-  --color-bg: #0e0f0f;
-  --color-surface: #141616;
-  --color-surface-2: #1a1c1c;
-  --color-surface-3: #202323;
-  --color-border: rgba(255,255,255,0.08);
-  --color-border-strong: rgba(255,255,255,0.14);
-  --color-text: #e8e8e6;
-  --color-text-muted: #8a8a87;
-  --color-text-faint: #555553;
-  --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
-  --shadow-lg: 0 12px 48px rgba(0,0,0,0.6);
-  --shadow-glow: 0 0 60px rgba(30, 154, 128, 0.18);
+  --gold-muted: rgba(209,153,0,0.12);
+  --color-bg: #F3F3EE;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #F9F9F7;
+  --color-surface-3: #F3F3EE;
+  --color-border: #E5E7EB;
+  --color-border-warm: #E8E5DF;
+  --color-text: #1A1A1A;
+  --color-text-muted: #6B7280;
+  --color-text-faint: #9CA3AF;
+  --shadow: rgba(0,0,0,0.06) 0 2px 16px -2px;
+  --shadow-md: rgba(0,0,0,0.08) 0 4px 24px -4px;
+  --shadow-glow: 0 0 60px rgba(30,154,128,0.12);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
@@ -57,75 +55,76 @@ button{cursor:pointer;font:inherit;border:none;background:none}
 p{text-wrap:pretty}
 h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
 
-.warning-bar{background:var(--red-warn-bg);border-bottom:1px solid rgba(192,57,43,0.3);padding:var(--space-3) var(--space-4);text-align:center;font-size:var(--text-sm);font-weight:600;color:#e57373;letter-spacing:0.01em;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:center;gap:var(--space-2)}
-.warning-bar svg{flex-shrink:0}
-.top-nav{padding:var(--space-5) var(--space-6);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--color-border)}
-.logo{display:flex;align-items:center;gap:var(--space-2);text-decoration:none;color:var(--color-text)}
-.logo-text{font-family:var(--font-display);font-size:var(--text-lg);font-weight:400;letter-spacing:-0.01em}
-.logo-text span{color:var(--green-light)}
-.logo-mark{width:36px;height:36px}
-.step-bar{display:flex;align-items:center;justify-content:center;gap:var(--space-2);padding:var(--space-4);font-size:var(--text-xs);color:var(--color-text-muted)}
+.warning-bar{background:#1A1A1A;padding:var(--space-4) var(--space-4);text-align:center;font-size:var(--text-sm);font-weight:600;color:#FFFFFF;letter-spacing:0.01em;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:center;gap:var(--space-2)}
+.warning-bar svg{flex-shrink:0;color:#facc15}
+.top-nav{padding:var(--space-5) var(--space-6);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--color-border);background:var(--color-surface)}
+.logo{display:flex;align-items:center;gap:4px;text-decoration:none;color:var(--color-text);font-family:var(--font-logo);font-size:20px;letter-spacing:2px}
+.logo .nf-box{display:inline-flex;align-items:center;justify-content:center;border:2px solid #0A0A0A;border-radius:6px;padding:2px 5px;font-size:14px;font-weight:700;line-height:1}
+.logo .stay{font-weight:400}
+.step-bar{display:flex;align-items:center;justify-content:center;gap:var(--space-2);padding:var(--space-4);font-size:var(--text-xs);color:var(--color-text-muted);background:var(--color-surface)}
 .step{display:flex;align-items:center;gap:var(--space-1)}
-.step-dot{width:20px;height:20px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;background:var(--color-surface-3);border:1px solid var(--color-border);color:var(--color-text-muted)}
+.step-dot{width:22px;height:22px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;background:var(--color-surface-3);border:1px solid var(--color-border);color:var(--color-text-muted)}
 .step.done .step-dot{background:var(--green);border-color:var(--green);color:#fff}
-.step.active .step-dot{background:var(--color-surface-3);border:2px solid var(--green);color:var(--green-light)}
+.step.active .step-dot{background:var(--color-surface);border:2px solid var(--green);color:var(--green)}
 .step-line{width:32px;height:1px;background:var(--color-border)}
 .step-label{display:none}
 @media(min-width:520px){.step-label{display:inline}}
 .page-wrapper{max-width:680px;margin-inline:auto;padding:var(--space-8) var(--space-4) var(--space-24)}
 
-.downsell-badge{display:inline-flex;align-items:center;gap:var(--space-2);background:rgba(79,152,163,0.1);border:1px solid rgba(79,152,163,0.25);color:var(--green-light);font-size:var(--text-xs);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);margin-bottom:var(--space-5)}
+.downsell-badge{display:inline-flex;align-items:center;gap:var(--space-2);background:var(--green-tint);border:1px solid rgba(30,154,128,0.2);color:var(--green);font-size:var(--text-xs);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);margin-bottom:var(--space-5)}
+.hero-area{text-align:center;margin-bottom:var(--space-8)}
 .wait-headline{font-family:var(--font-display);font-size:var(--text-3xl);font-weight:400;color:var(--color-text);margin-bottom:var(--space-3);line-height:1.1}
-.wait-headline em{color:var(--green-light);font-style:italic}
-.wait-headline strong{font-style:normal;font-weight:400;color:#fff}
-.sub-headline{font-size:var(--text-base);color:var(--color-text-muted);margin-bottom:var(--space-8);line-height:1.7;max-width:58ch}
+.wait-headline em{color:var(--green);font-style:italic}
+.wait-headline strong{font-style:normal;font-weight:400;color:var(--color-text)}
+.sub-headline{font-size:var(--text-base);color:var(--color-text-muted);margin-bottom:0;line-height:1.7;max-width:58ch;margin-inline:auto}
 .sub-headline strong{color:var(--color-text);font-weight:600}
 
-.narrative{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-6);margin-bottom:var(--space-6);font-size:var(--text-base);color:var(--color-text-muted);line-height:1.8}
+.narrative{background:var(--color-surface);border:1px solid var(--color-border-warm);border-radius:var(--radius-xl);padding:var(--space-6);margin-bottom:var(--space-6);font-size:var(--text-base);color:var(--color-text-muted);line-height:1.8;box-shadow:var(--shadow)}
 .narrative p+p{margin-top:var(--space-4)}
 .narrative strong{color:var(--color-text)}
 
-.value-stack{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-6);margin-bottom:var(--space-6)}
+.value-stack{background:var(--color-surface);border:1px solid var(--color-border-warm);border-radius:var(--radius-xl);padding:var(--space-6);margin-bottom:var(--space-6);box-shadow:var(--shadow)}
 .value-stack h3{font-family:var(--font-display);font-size:var(--text-xl);font-weight:400;color:var(--color-text);margin-bottom:var(--space-5)}
-.value-stack h3 span{color:var(--green-light);font-style:italic}
+.value-stack h3 span{color:var(--green);font-style:italic}
 .value-item{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-3) 0;border-bottom:1px solid var(--color-border)}
 .value-item:last-child{border-bottom:none}
-.value-icon{width:32px;height:32px;border-radius:var(--radius-md);background:var(--green-muted);border:1px solid rgba(30,154,128,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--green-light)}
+.value-icon{width:32px;height:32px;border-radius:var(--radius-md);background:var(--green-tint);border:1px solid rgba(30,154,128,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--green)}
 .value-text{flex:1}
 .value-title{font-size:var(--text-sm);font-weight:600;color:var(--color-text);margin-bottom:2px}
 .value-desc{font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.5}
 
-.maths-block{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-6);margin-bottom:var(--space-6)}
+.maths-block{background:var(--color-surface);border:1px solid var(--color-border-warm);border-radius:var(--radius-xl);padding:var(--space-6);margin-bottom:var(--space-6);box-shadow:var(--shadow)}
 .maths-block h3{font-size:var(--text-sm);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-text-muted);margin-bottom:var(--space-5)}
 .maths-row{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;border-bottom:1px solid var(--color-border);gap:var(--space-4)}
 .maths-row:last-child{border-bottom:none}
 .maths-label{font-size:var(--text-sm);color:var(--color-text-muted)}
 .maths-value{font-size:var(--text-base);font-weight:600;color:var(--color-text);font-variant-numeric:tabular-nums}
-.maths-value.highlight{color:var(--green-light)}
-.maths-value.strike{text-decoration:line-through;color:var(--color-text-faint);font-weight:400}
-.maths-row.featured{background:rgba(30,154,128,0.08);border-radius:var(--radius-lg);padding:var(--space-4);border:1px solid rgba(30,154,128,0.2);margin-top:var(--space-2);border-bottom:none}
+.maths-value.highlight{color:var(--green)}
+.maths-row.featured{background:var(--green-tint);border-radius:var(--radius-lg);padding:var(--space-4);border:1px solid rgba(30,154,128,0.15);margin-top:var(--space-2);border-bottom:none}
 .maths-row.featured .maths-label{color:var(--color-text);font-weight:600}
-.maths-row.featured .maths-value{color:var(--green-light);font-size:var(--text-lg)}
-.savings-pill{background:rgba(30,154,128,0.15);border:1px solid rgba(79,152,163,0.3);color:var(--green-light);font-size:var(--text-xs);font-weight:700;padding:2px 10px;border-radius:var(--radius-full);white-space:nowrap}
+.maths-row.featured .maths-value{color:var(--green);font-size:var(--text-lg)}
+.savings-pill{background:var(--green-tint);border:1px solid rgba(30,154,128,0.2);color:var(--green);font-size:var(--text-xs);font-weight:700;padding:2px 10px;border-radius:var(--radius-full);white-space:nowrap}
 
-.price-block{background:linear-gradient(135deg,rgba(30,154,128,0.12) 0%,rgba(30,154,128,0.04) 100%);border:1px solid rgba(30,154,128,0.3);border-radius:var(--radius-2xl);padding:var(--space-8) var(--space-6);margin-bottom:var(--space-4);text-align:center;box-shadow:var(--shadow-glow)}
-.price-eyebrow{font-size:var(--text-xs);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--green-light);margin-bottom:var(--space-3)}
+.price-block{background:var(--color-surface);border:2px solid var(--green);border-radius:var(--radius-2xl);padding:var(--space-8) var(--space-6);margin-bottom:var(--space-4);text-align:center;box-shadow:var(--shadow-glow),var(--shadow-md)}
+.price-eyebrow{font-size:var(--text-xs);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--green);margin-bottom:var(--space-3)}
 .price-main{display:flex;align-items:baseline;justify-content:center;gap:var(--space-2);margin-bottom:var(--space-2)}
 .price-currency{font-size:var(--text-xl);font-weight:300;color:var(--color-text-muted)}
-.price-amount{font-family:var(--font-display);font-size:var(--text-3xl);font-weight:400;color:#fff;line-height:1}
-.price-period{font-size:var(--text-sm);color:var(--color-text-muted)}
+.price-amount{font-family:var(--font-display);font-size:var(--text-3xl);font-weight:400;color:var(--color-text);line-height:1}
 .price-comparison{font-size:var(--text-sm);color:var(--color-text-muted);margin-bottom:var(--space-6)}
 .price-comparison s{color:var(--color-text-faint)}
 
-.btn-primary{display:block;width:100%;padding:var(--space-4) var(--space-6);background:var(--green);color:#fff;font-size:var(--text-base);font-weight:700;border-radius:var(--radius-lg);text-align:center;cursor:pointer;border:none;letter-spacing:-0.01em;transition:background var(--transition),transform var(--transition),box-shadow var(--transition);line-height:1.3;text-decoration:none}
+.btn-primary{display:block;width:100%;padding:var(--space-5) var(--space-6);background:var(--green);color:#fff;font-size:var(--text-lg);font-weight:700;border-radius:var(--radius-lg);text-align:center;cursor:pointer;border:none;letter-spacing:-0.01em;transition:background var(--transition),transform var(--transition),box-shadow var(--transition);line-height:1.3;text-decoration:none}
 .btn-primary:hover{background:var(--green-hover);transform:translateY(-1px);box-shadow:0 8px 24px rgba(30,154,128,0.35)}
 .btn-primary:active{transform:translateY(0)}
-.btn-primary small{display:block;font-weight:400;font-size:var(--text-xs);opacity:0.8;margin-top:2px}
+.btn-primary small{display:block;font-weight:400;font-size:var(--text-xs);opacity:0.85;margin-top:3px}
 .secure-note{display:flex;align-items:center;justify-content:center;gap:var(--space-2);font-size:var(--text-xs);color:var(--color-text-faint);margin-top:var(--space-3)}
 
 .decline-wrap{text-align:center;margin-top:var(--space-4)}
 .decline-link{font-size:var(--text-xs);color:var(--color-text-faint);text-decoration:none;cursor:pointer;border:none;background:none;transition:color var(--transition);line-height:1.6}
 .decline-link:hover{color:var(--color-text-muted);text-decoration:underline}
+
+.section-divider{display:flex;align-items:center;gap:var(--space-4);margin:var(--space-10) 0 var(--space-6);color:var(--color-text-faint);font-size:var(--text-xs);font-weight:600;letter-spacing:0.08em;text-transform:uppercase}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--color-border)}
 
 .faq-section{margin-top:var(--space-8)}
 .faq-section h3{font-size:var(--text-sm);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-text-muted);margin-bottom:var(--space-4)}
@@ -137,12 +136,9 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
 .faq-a{font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.7;max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding-top 0.3s ease}
 .faq-item.open .faq-a{max-height:200px;padding-top:var(--space-3)}
 
-.section-divider{display:flex;align-items:center;gap:var(--space-4);margin:var(--space-10) 0 var(--space-6);color:var(--color-text-faint);font-size:var(--text-xs);font-weight:600;letter-spacing:0.08em;text-transform:uppercase}
-.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--color-border)}
-
-.copy-wrap{position:fixed;top:44px;right:12px;z-index:200}
-.copy-btn{background:var(--color-surface-3);color:var(--color-text-muted);border:1px solid var(--color-border);padding:6px 12px;border-radius:var(--radius-md);font-size:var(--text-xs);font-weight:600;cursor:pointer;transition:all var(--transition)}
-.copy-btn:hover{background:var(--green);color:#fff;border-color:var(--green)}
+.copy-wrap{position:fixed;top:50px;right:12px;z-index:200}
+.copy-btn{background:var(--color-text);color:var(--color-surface);border:none;padding:6px 12px;border-radius:var(--radius-md);font-size:var(--text-xs);font-weight:600;cursor:pointer;opacity:0.6;transition:opacity var(--transition)}
+.copy-btn:hover{opacity:1}
 
 @media(max-width:520px){
   .page-wrapper{padding:var(--space-6) var(--space-3) var(--space-20)}
@@ -156,15 +152,14 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
 
 <!-- WARNING BAR -->
 <div class="warning-bar" role="alert">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-  ⚠️ WARNING: Do not close or refresh this page to avoid double charge
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  ⚠️ Do not close or refresh this page to avoid double charge or order cancellation
 </div>
 
 <!-- TOP NAV -->
 <nav class="top-nav">
   <a href="#" class="logo">
-    <svg class="logo-mark" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="8" fill="#1E9A80"/><text x="7" y="25" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#fff">nf</text></svg>
-    <span class="logo-text">nf<span>stay</span></span>
+    <span class="nf-box">nf</span><span class="stay">stay</span>
   </a>
 </nav>
 
@@ -189,25 +184,28 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
 <!-- PAGE -->
 <div class="page-wrapper">
 
-  <div class="downsell-badge">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-    Special offer - Annual plan
+  <!-- HERO (centered) -->
+  <div class="hero-area">
+    <div class="downsell-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Special offer - Annual plan
+    </div>
+
+    <h1 class="wait-headline">
+      I get it. Lifetime is a big step.<br><em>I have a better offer</em> for you.
+    </h1>
+
+    <p class="sub-headline">
+      Lock in 12 months of nfstay with <strong>unlimited contacts</strong> for less than half the monthly cost. Same platform. Same access. 51% cheaper.
+    </p>
   </div>
-
-  <h1 class="wait-headline">
-    I get it. Lifetime is a big step.<br><em>I have a better offer</em> for <strong>you.</strong>
-  </h1>
-
-  <p class="sub-headline">
-    Lock in 12 months of nfstay with <strong>unlimited contacts</strong> for less than half the monthly cost. Same platform. Same access. 51% cheaper.
-  </p>
 
   <!-- NARRATIVE -->
   <div class="narrative">
     <p>If lifetime felt like too big a step, I completely understand.</p>
-    <p>But here is what you need to know before you go back to the standard plan. At £67 per month, you will pay <strong>£804 over the next 12 months.</strong> And you will stay capped at 100 contacts per month the entire time.</p>
-    <p>Right now you can lock in a full year of nfstay for <strong>£397.</strong> That is 51% less than paying monthly. And instead of 100 contacts per month, you get <strong>unlimited contacts.</strong></p>
-    <p>That means you can contact 10 landlords and agents per day. Multiple deals in your pipeline at all times. When one negotiation stalls, you already have the next one ready.</p>
+    <p>Right now you can lock in a full year of nfstay for <strong>£397.</strong> That is 51% less than paying monthly.</p>
+    <p>With the annual plan, you get <strong>unlimited contacts</strong> for the full 12 months. That means you can reach 10 landlords and agents per day. Multiple deals in your pipeline at all times. When one negotiation stalls, you already have the next one ready.</p>
+    <p>This is for operators who are <strong>serious about building their Airbnb portfolio this year.</strong></p>
   </div>
 
   <div class="section-divider">What you get</div>
@@ -219,13 +217,13 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
       <div class="value-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
       <div class="value-text">
         <div class="value-title">Unlimited contacts for 12 months</div>
-        <div class="value-desc">Same as lifetime. No cap. Contact as many landlords as you need across the year.</div>
+        <div class="value-desc">Contact 300+ landlords per month. No cap. Full year of access.</div>
       </div>
     </div>
     <div class="value-item">
       <div class="value-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div class="value-text">
-        <div class="value-title">Unlimited landlord contacts</div>
+        <div class="value-title">Unlimited landlord access</div>
         <div class="value-desc">Full access to the entire nfstay landlord database with no monthly limits.</div>
       </div>
     </div>
@@ -255,7 +253,7 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
       <span class="maths-value">£67/mo</span>
     </div>
     <div class="maths-row">
-      <span class="maths-label">To get 300+ contacts on standard, you would need</span>
+      <span class="maths-label">To get 300+ contacts on standard</span>
       <span class="maths-value highlight">£201/mo</span>
     </div>
     <div class="maths-row">
@@ -298,7 +296,7 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
   <!-- DECLINE -->
   <div class="decline-wrap">
     <!-- REPLACE WITH GHL DECLINE LINK -->
-    <button class="decline-link">No thanks - I will stay on £67/month with 100 contacts.</button>
+    <button class="decline-link">No thanks, I will skip this offer.</button>
     <!-- END GHL DECLINE LINK -->
   </div>
 
@@ -306,32 +304,20 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
   <div class="faq-section">
     <h3>Common questions</h3>
     <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">
-        Can I upgrade to lifetime from annual later?
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
+      <div class="faq-q" onclick="toggleFaq(this)">Can I upgrade to lifetime from annual later?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="faq-a">Yes. Reach out to support at any time. We will credit your remaining annual months toward the lifetime price.</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">
-        What happens after 12 months?
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
+      <div class="faq-q" onclick="toggleFaq(this)">What happens after 12 months?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="faq-a">You receive a renewal reminder 30 days before your year ends. You can renew at the same rate, upgrade to lifetime, or return to monthly. Your choice.</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">
-        Is the unlimited contact limit really no cap?
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="faq-a">Correct. Upgraded members have no monthly contact cap. Reach as many landlords as your workflow allows.</div>
+      <div class="faq-q" onclick="toggleFaq(this)">How does unlimited contacts help me?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="faq-a">More contacts means more responses, more viewings, and more signed deals. With unlimited contacts, you always have multiple deals in progress. You are never stuck waiting.</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">
-        Why does contact volume matter?
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="faq-a">Deals fall through. Landlords negotiate with multiple operators. Properties get taken before you respond. With unlimited contacts, you always have multiple deals in progress. You are never stuck waiting.</div>
+      <div class="faq-q" onclick="toggleFaq(this)">Is the unlimited contact limit really no cap?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="faq-a">Correct. Upgraded members have no monthly contact cap. Reach as many landlords as your workflow allows.</div>
     </div>
   </div>
 
