@@ -19,6 +19,7 @@ interface Props {
   onAddToCRM?: () => void;
   onInquire?: (listing: ListingShape) => void;
   onEmailInquire?: (listing: ListingShape) => void;
+  onWhatsAppInquire?: (listing: ListingShape) => void;
   showSavedBadge?: boolean;
   forceSignUp?: boolean;
   contacted?: boolean;
@@ -46,7 +47,6 @@ const GOLD = {
   textLight: '#A67C00',
 };
 
-const NFSTAY_WHATSAPP = '447476368123';
 
 const LISTER_LABELS: Record<string, string> = {
   landlord: 'Direct Landlord',
@@ -54,7 +54,7 @@ const LISTER_LABELS: Record<string, string> = {
   deal_sourcer: 'Deal Sourcer',
 };
 
-export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, onEmailInquire, showSavedBadge, forceSignUp, contacted }: Props) {
+export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, onEmailInquire, onWhatsAppInquire, showSavedBadge, forceSignUp, contacted }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { tier } = useUserTier();
@@ -115,14 +115,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       return;
     }
     if (!user) { navigate('/signup'); return; }
-
-    const propertyUrl = `https://hub.nfstay.com/deals/${listing.slug || listing.id}`;
-    const ref = listing.id.slice(0, 5).toUpperCase();
-    const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${ref}\nPlease contact me at your earliest convenience.`;
-
-    // Inquiry is created by receive-tenant-whatsapp edge function
-    // when the message arrives in GHL (triggered by GHL workflow cf089a15)
-    window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${encodeURIComponent(plainMsg)}`, '_blank');
+    onWhatsAppInquire?.(listing);
   };
 
   const handleEmail = (e: React.MouseEvent) => {

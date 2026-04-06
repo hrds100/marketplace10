@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Mail, Loader2, CheckCircle } from 'lucide-react';
+import { X, Mail, MessageCircle, Loader2, CheckCircle } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,9 +11,27 @@ interface Props {
   listing: ListingShape | null;
   onClose: () => void;
   onContactSuccess?: (propertyId: string) => void;
+  channel?: 'email' | 'whatsapp';
 }
 
-export default function EmailInquiryModal({ open, listing, onClose, onContactSuccess }: Props) {
+const THEME = {
+  email: {
+    icon: Mail,
+    color: '#1E9A80',
+    title: 'Email for more information',
+    button: 'Send Email',
+    sending: 'Sending...',
+  },
+  whatsapp: {
+    icon: MessageCircle,
+    color: '#25D366',
+    title: 'WhatsApp for more information',
+    button: 'Send via WhatsApp',
+    sending: 'Sending...',
+  },
+} as const;
+
+export default function EmailInquiryModal({ open, listing, onClose, onContactSuccess, channel = 'email' }: Props) {
   const { user } = useAuth();
   const [name, setName] = useState(user?.user_metadata?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -21,6 +39,9 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+
+  const theme = THEME[channel];
+  const Icon = theme.icon;
 
   // Reset form when listing changes
   const listingId = listing?.id;
@@ -58,7 +79,7 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
       const { data, error } = await supabase.functions.invoke('process-inquiry', {
         body: {
           property_id: listing!.id,
-          channel: 'email',
+          channel,
           message: message.trim(),
           tenant_name: name.trim(),
           tenant_email: email.trim(),
@@ -66,7 +87,7 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
           property_url: `https://hub.nfstay.com/deals/${listing!.slug || listing!.id}`,
         },
       });
-      console.log('[EmailInquiry] process-inquiry response:', data, error);
+      console.log('[InquiryModal] process-inquiry response:', data, error);
       if (error) throw error;
       setSent(true);
       onContactSuccess?.(listing!.id);
@@ -85,7 +106,7 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
   }
 
   const modal = (
-    <div data-testid="email-inquiry-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div data-testid="inquiry-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-white rounded-xl border w-full max-w-md mx-auto overflow-hidden"
@@ -95,9 +116,9 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
         {/* Header */}
         <div className="flex items-center justify-between p-5 pb-0">
           <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5" style={{ color: '#1E9A80' }} />
+            <Icon className="h-5 w-5" style={{ color: theme.color }} />
             <h3 className="text-base font-bold" style={{ color: '#1A1A1A' }}>
-              Email for more information
+              {theme.title}
             </h3>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-50 transition-colors">
@@ -107,9 +128,9 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
 
         {sent ? (
           <div className="p-8 text-center">
-            <CheckCircle className="h-12 w-12 mx-auto mb-3" style={{ color: '#1E9A80' }} />
+            <CheckCircle className="h-12 w-12 mx-auto mb-3" style={{ color: theme.color }} />
             <h3 className="text-lg font-bold mb-1" style={{ color: '#1A1A1A' }}>
-              Your message has been sent!
+              Your inquiry has been sent!
             </h3>
             <p className="text-sm mb-6" style={{ color: '#6B7280' }}>
               Our partner will get in touch with you soon.
@@ -117,7 +138,7 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
             <button
               onClick={onClose}
               className="px-6 py-2.5 rounded-lg text-sm font-medium text-white"
-              style={{ backgroundColor: '#1E9A80' }}
+              style={{ backgroundColor: theme.color }}
             >
               Close
             </button>
@@ -150,21 +171,20 @@ export default function EmailInquiryModal({ open, listing, onClose, onContactSuc
             />
             <textarea
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-              className="w-full rounded-[10px] border px-3 py-2.5 text-sm resize-none"
+              readOnly
+              className="w-full rounded-[10px] border px-3 py-2.5 text-sm resize-none bg-muted/30 cursor-not-allowed min-h-[120px]"
               style={{ borderColor: '#E5E5E5', color: '#0A0A0A' }}
             />
             <button
               type="submit"
               disabled={sending}
               className="w-full h-11 rounded-[10px] text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-50"
-              style={{ backgroundColor: '#1E9A80' }}
+              style={{ backgroundColor: theme.color }}
             >
               {sending ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</>
+                <><Loader2 className="h-4 w-4 animate-spin" /> {theme.sending}</>
               ) : (
-                <><Mail className="h-4 w-4" /> Send Email</>
+                <><Icon className="h-4 w-4" /> {theme.button}</>
               )}
             </button>
           </form>

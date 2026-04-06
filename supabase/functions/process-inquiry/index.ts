@@ -1,8 +1,8 @@
-// process-inquiry — Handle tenant EMAIL inquiry submission
-// Trigger: POST from frontend when tenant submits inquiry via email
-// Input: { property_id, channel: 'email', message, tenant_name, tenant_email, tenant_phone }
+// process-inquiry — Handle tenant inquiry submission (email or WhatsApp)
+// Trigger: POST from frontend when tenant submits inquiry via modal
+// Input: { property_id, channel: 'email'|'whatsapp', message, tenant_name, tenant_email, tenant_phone }
 // Output: { success, inquiry_id }
-// NOTE: WhatsApp inquiries are handled by receive-tenant-whatsapp (GHL webhook → edge function)
+// Both channels: create inquiry + email confirmation. WhatsApp also gets GHL template message.
 // DEPLOY NOTE: This function must have verify_jwt=false (it handles JWT internally).
 // Every Supabase deploy resets verify_jwt to true. After deploy, patch via Management API:
 // curl -X PATCH -H "Authorization: Bearer <PAT>" -H "Content-Type: application/json" \
@@ -51,13 +51,8 @@ serve(async (req) => {
 
     const { property_id, channel, message, tenant_name, tenant_email, tenant_phone, property_url } = await req.json()
 
-    // WhatsApp inquiries are handled by receive-tenant-whatsapp (GHL → webhook → edge function).
-    // This edge function handles email inquiries from the site only.
-    if (channel === 'whatsapp') {
-      return new Response(JSON.stringify({ error: 'WhatsApp inquiries use the inbound route via GHL workflow' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    // Both email and whatsapp inquiries are handled here.
+    // The frontend modal sends channel: 'email' or 'whatsapp'.
 
     // Resolve tenant phone: prefer explicit value, fall back to profiles.whatsapp
     let resolvedTenantPhone = tenant_phone || null
@@ -229,6 +224,53 @@ serve(async (req) => {
         console.log(`Tenant confirmation email sent to ${tenant_email}`)
       } catch (tenantEmailErr) {
         console.error('Failed to send tenant confirmation email:', tenantEmailErr)
+        // Non-blocking
+      }
+    }
+
+    // 7. WhatsApp confirmation — enroll tenant in GHL workflow for approved template message
+    if (channel === 'whatsapp' && resolvedTenantPhone && GHL_TOKEN) {
+      try {
+        const ghlHeaders = { 'Authorization': `Bearer ${GHL_TOKEN}`, 'Version': '2021-07-28', 'Content-Type': 'application/json' }
+
+        // Search for GHL contact by phone
+        const searchRes = await fetch(
+          `${GHL_BASE}/contacts/?query=${encodeURIComponent(resolvedTenantPhone)}&locationId=${GHL_LOCATION_ID}`,
+          { headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version } }
+        )
+        let contactId = ''
+        if (searchRes.ok) {
+          const searchData = await searchRes.json()
+          contactId = searchData?.contacts?.[0]?.id || ''
+        }
+
+        if (contactId) {
+          // Set property name custom field for WhatsApp template
+          await fetch(`${GHL_BASE}/contacts/${contactId}`, {
+            method: 'PUT',
+            headers: ghlHeaders,
+            body: JSON.stringify({ customFields: [{ id: 'Z0thvOTyoO2KxTMt5sP8', field_value: propertyName }] }),
+          }).catch(() => {})
+
+          // Remove + re-enroll in WhatsApp reply workflow (idempotent)
+          const WHATSAPP_WORKFLOW = 'cf089a15-1d42-4d9a-85d1-ab35b82b4ad5'
+          await fetch(`${GHL_BASE}/contacts/${contactId}/workflow/${WHATSAPP_WORKFLOW}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': ghlHeaders.Authorization, 'Version': ghlHeaders.Version },
+          }).catch(() => {})
+
+          await fetch(`${GHL_BASE}/contacts/${contactId}/workflow/${WHATSAPP_WORKFLOW}`, {
+            method: 'POST',
+            headers: ghlHeaders,
+            body: '{}',
+          }).catch(() => {})
+
+          console.log(`[process-inquiry] WhatsApp enrollment done for ${resolvedTenantPhone}`)
+        } else {
+          console.log(`[process-inquiry] No GHL contact found for ${resolvedTenantPhone} — skipping WhatsApp enrollment`)
+        }
+      } catch (e) {
+        console.error('[process-inquiry] GHL WhatsApp enrollment failed:', e)
         // Non-blocking
       }
     }

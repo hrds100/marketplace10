@@ -96,6 +96,7 @@ export default function DealsPageV2() {
   const [listerTypeFilter, setListerTypeFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [emailListing, setEmailListing] = useState<ListingShape | null>(null);
+  const [whatsappListing, setWhatsappListing] = useState<ListingShape | null>(null);
   const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -452,6 +453,7 @@ export default function DealsPageV2() {
                       onAddToCRM={handleAddToCRM}
                       onInquire={handleInquire}
                       onEmailInquire={setEmailListing}
+                      onWhatsAppInquire={setWhatsappListing}
                       contacted={contactedSet.has(l.id)}
                     />
                   </div>
@@ -542,6 +544,15 @@ export default function DealsPageV2() {
         open={!!emailListing}
         listing={emailListing}
         onClose={() => setEmailListing(null)}
+        onContactSuccess={handleContactSuccess}
+      />
+
+      {/* WhatsApp inquiry modal */}
+      <EmailInquiryModal
+        channel="whatsapp"
+        open={!!whatsappListing}
+        listing={whatsappListing}
+        onClose={() => setWhatsappListing(null)}
         onContactSuccess={handleContactSuccess}
       />
 

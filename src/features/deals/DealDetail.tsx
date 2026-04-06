@@ -15,7 +15,6 @@ import EmailInquiryModal from '@/components/EmailInquiryModal';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 
-const NFSTAY_WHATSAPP = '447476368123';
 
 export default function DealDetail() {
   useEffect(() => { document.title = 'nfstay - Deal Detail'; }, []);
@@ -98,6 +97,7 @@ export default function DealDetail() {
   const navigate = useNavigate();
   const { tier } = useUserTier();
   const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
 
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [inquiryTarget, setInquiryTarget] = useState<ListingShape | null>(null);
@@ -112,17 +112,11 @@ export default function DealDetail() {
   const contactPhone = landlordWhatsapp || (listing?.contact_phone as string) || null;
   const listerType = (listing?.lister_type as string) || null;
 
-  const handleDetailWhatsApp = async () => {
+  const handleDetailWhatsApp = () => {
     if (!listing || isLoading) return;
     if (!user) { navigate('/signup'); return; }
     if (!isPaidTier(tier)) { handleInquire(listingShape); return; }
-    const propertyUrl = `https://hub.nfstay.com/deals/${(listing.slug as string) || (listing.id as string)}`;
-    const refId = ((listing.id as string) || '').slice(0, 5).toUpperCase();
-    const plainMsg = `Hi, I am interested in a property on nfstay.\nLink: ${propertyUrl}\nReference no.: ${refId}\nPlease contact me at your earliest convenience.`;
-
-    // Inquiry is created by receive-tenant-whatsapp edge function
-    // when the message arrives in GHL (triggered by GHL workflow cf089a15)
-    window.open(`https://wa.me/${NFSTAY_WHATSAPP}?text=${encodeURIComponent(plainMsg)}`, '_blank');
+    setWhatsappModalOpen(true);
   };
 
   const handleDetailEmail = () => {
@@ -514,7 +508,7 @@ export default function DealDetail() {
             <h2 className="text-xl font-bold text-foreground mb-6">More deals near {city}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {nearbyDeals.map(l => (
-                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} onEmailInquire={(listing) => { setEmailModalOpen(true); }} />
+                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} onEmailInquire={() => { setEmailModalOpen(true); }} onWhatsAppInquire={() => { setWhatsappModalOpen(true); }} />
               ))}
             </div>
           </div>
@@ -526,7 +520,7 @@ export default function DealDetail() {
             <h2 className="text-xl font-bold text-foreground mb-6">More deals near {city}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {moreDeals.map(l => (
-                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} onEmailInquire={(listing) => { setEmailModalOpen(true); }} />
+                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} onEmailInquire={() => { setEmailModalOpen(true); }} onWhatsAppInquire={() => { setWhatsappModalOpen(true); }} />
               ))}
             </div>
           </section>
@@ -546,6 +540,7 @@ export default function DealDetail() {
 
       {/* Email inquiry modal */}
       <EmailInquiryModal open={emailModalOpen} listing={listingShape} onClose={() => setEmailModalOpen(false)} />
+      <EmailInquiryModal channel="whatsapp" open={whatsappModalOpen} listing={listingShape} onClose={() => setWhatsappModalOpen(false)} />
       {/* GHL payment panel (free users) */}
       <InquiryPanel open={inquiryOpen} listing={inquiryTarget} onClose={() => setInquiryOpen(false)} />
     </div>
