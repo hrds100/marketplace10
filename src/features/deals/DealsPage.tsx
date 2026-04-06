@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import PropertyCard from '@/components/PropertyCard';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
-import EmailInquiryModal from '@/components/EmailInquiryModal';
+import InquiryChatModal from '@/features/inquiry/InquiryChatModal';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -540,20 +540,22 @@ export default function DealsPageV2() {
       </div>
 
       {/* Email inquiry modal */}
-      <EmailInquiryModal
+      <InquiryChatModal
         open={!!emailListing}
         listing={emailListing}
         onClose={() => setEmailListing(null)}
         onContactSuccess={handleContactSuccess}
+        contacted={emailListing ? contactedSet.has(emailListing.id) : false}
       />
 
       {/* WhatsApp inquiry modal */}
-      <EmailInquiryModal
+      <InquiryChatModal
         channel="whatsapp"
         open={!!whatsappListing}
         listing={whatsappListing}
         onClose={() => setWhatsappListing(null)}
         onContactSuccess={handleContactSuccess}
+        contacted={whatsappListing ? contactedSet.has(whatsappListing.id) : false}
       />
 
       {/* GHL payment panel (for free users) */}
