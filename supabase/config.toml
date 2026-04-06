@@ -17,8 +17,6 @@ verify_jwt = false
 [functions.receive-tenant-whatsapp]
 verify_jwt = false
 
-[functions.poll-whatsapp-inquiries]
-verify_jwt = false
 
 [functions.send-email]
 verify_jwt = false

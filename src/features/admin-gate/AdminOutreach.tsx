@@ -28,6 +28,9 @@ interface InquiryRow {
   id: string;
   property_id: string;
   tenant_name: string | null;
+  tenant_email: string | null;
+  tenant_phone: string | null;
+  channel: string | null;
   lister_phone: string | null;
   lister_type: string | null;
   lister_name: string | null;
@@ -929,7 +932,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
     queryFn: async () => {
       // Show ALL inquiries -- pending first, then authorized with their sent status
       const { data: inquiries, error } = await supabase.from('inquiries')
-        .select('id, property_id, tenant_name, lister_phone, lister_type, lister_name, nda_signed, nda_signed_at, authorized, always_authorised, authorisation_type, authorized_at, created_at')
+        .select('id, property_id, tenant_name, tenant_email, tenant_phone, channel, lister_phone, lister_type, lister_name, nda_signed, nda_signed_at, authorized, always_authorised, authorisation_type, authorized_at, created_at')
         .order('authorized', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -1255,6 +1258,14 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{inq.tenant_name || 'Unknown tenant'}</span>
                           <span className="text-xs" style={{ color: '#6B7280' }}>{inq.propertyName}</span>
+                          {inq.channel && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{
+                              backgroundColor: inq.channel === 'whatsapp' ? '#DCFCE7' : '#ECFDF5',
+                              color: inq.channel === 'whatsapp' ? '#25D366' : '#1E9A80',
+                            }}>
+                              {inq.channel === 'whatsapp' ? 'WhatsApp' : 'Email'}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
                           <span className="inline-flex items-center gap-1 text-xs" style={{ color: '#9CA3AF' }}>
@@ -1262,6 +1273,12 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
                             {new Date(inq.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}{' '}
                             {new Date(inq.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                           </span>
+                          {inq.tenant_email && (
+                            <span className="text-xs" style={{ color: '#9CA3AF' }}>{inq.tenant_email}</span>
+                          )}
+                          {inq.tenant_phone && (
+                            <span className="text-xs" style={{ color: '#9CA3AF' }}>{inq.tenant_phone}</span>
+                          )}
                           {inq.lister_type && (
                             <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
                               {inq.lister_type}
