@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFStay — Annual Access</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+<style>
+/* ── RESET + BASE ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: #1A1A1A; background: #F3F3EE; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+a { color: #1E9A80; text-decoration: none; }
+img { max-width: 100%; }
+
+/* ── BRAND TOKENS ── */
+:root {
+  --green: #1E9A80;
+  --green-tint: #ECFDF5;
+  --heading: #1A1A1A;
+  --body-grey: #6B7280;
+  --muted: #9CA3AF;
+  --off-white: #F3F3EE;
+  --white: #FFFFFF;
+  --border: #E5E7EB;
+  --border-warm: #E8E5DF;
+  --green-glow: rgba(30,154,128,0.35);
+}
+
+/* ── WARNING BAR ── */
+.warning-bar {
+  background: #1A1A1A;
+  color: #FFFFFF;
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.warning-bar span { color: #facc15; }
+
+/* ── CONTAINER ── */
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── LOGO BAR ── */
+.logo-bar {
+  text-align: center;
+  padding: 28px 0 0;
+}
+.logo-bar .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0A0A0A;
+  letter-spacing: 2px;
+}
+.logo-bar .logo .nf-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #0A0A0A;
+  border-radius: 6px;
+  padding: 2px 5px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── HERO ── */
+.hero {
+  text-align: center;
+  padding: 48px 0 40px;
+}
+.hero-badge {
+  display: inline-block;
+  background: var(--green-tint);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 100px;
+  margin-bottom: 20px;
+}
+.hero h1 {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  color: var(--heading);
+  margin-bottom: 16px;
+}
+.hero h1 span { color: var(--green); }
+.hero .sub {
+  font-size: 17px;
+  color: var(--body-grey);
+  max-width: 540px;
+  margin: 0 auto;
+  line-height: 1.65;
+}
+.hero .sub em {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  color: var(--heading);
+}
+
+/* ── SECTIONS ── */
+.section-divider {
+  width: 48px;
+  height: 3px;
+  background: var(--green);
+  border-radius: 2px;
+  margin: 0 auto 48px;
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border-warm);
+  border-radius: 16px;
+  padding: 32px 28px;
+  margin-bottom: 24px;
+}
+
+/* ── BODY COPY ── */
+.body-copy {
+  background: var(--white);
+  border: 1px solid var(--border-warm);
+  border-radius: 16px;
+  padding: 40px 32px;
+  margin-bottom: 32px;
+}
+.body-copy p {
+  font-size: 16px;
+  color: var(--body-grey);
+  margin-bottom: 20px;
+  line-height: 1.75;
+}
+.body-copy p:last-child { margin-bottom: 0; }
+.body-copy p strong { color: var(--heading); font-weight: 600; }
+
+/* ── SAVINGS CALLOUT ── */
+.savings-callout {
+  background: var(--green-tint);
+  border: 2px solid var(--green);
+  border-radius: 12px;
+  padding: 20px 24px;
+  text-align: center;
+  margin: 24px 0;
+}
+.savings-callout .big-num {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--green);
+}
+.savings-callout .label {
+  font-size: 14px;
+  color: var(--body-grey);
+  font-weight: 500;
+}
+
+/* ── VALUE STACK ── */
+.value-stack h2 {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.value-stack .price-tag {
+  text-align: center;
+  font-size: 15px;
+  color: var(--body-grey);
+  margin-bottom: 28px;
+}
+.value-stack .price-tag strong {
+  color: var(--green);
+  font-size: 28px;
+  font-weight: 800;
+}
+.value-stack .price-tag .compare {
+  text-decoration: line-through;
+  color: var(--muted);
+  font-size: 16px;
+  margin-right: 6px;
+}
+.value-stack ul {
+  list-style: none;
+  padding: 0;
+}
+.value-stack li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+  color: var(--heading);
+  font-weight: 500;
+}
+.value-stack li:last-child { border-bottom: none; }
+.value-stack li .check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  background: var(--green-tint);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+.value-stack li .check svg { width: 13px; height: 13px; }
+
+/* ── MATHS BLOCK ── */
+.maths-block {
+  border-top: 4px solid var(--green);
+}
+.maths-block h2 {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 28px;
+}
+.maths-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+}
+.maths-row .label { color: var(--body-grey); }
+.maths-row .value { font-weight: 700; color: var(--heading); }
+.maths-row.strikethrough .value {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.maths-row.highlight {
+  background: var(--green-tint);
+  margin: 0 -28px;
+  padding: 16px 28px;
+  border-radius: 8px;
+  border-bottom: none;
+  margin-top: 8px;
+}
+.maths-row.highlight .label { color: var(--green); font-weight: 700; }
+.maths-row.highlight .value { color: var(--green); font-size: 22px; }
+.maths-savings {
+  text-align: center;
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--heading);
+  color: var(--white);
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.maths-savings span { color: #facc15; font-size: 20px; font-weight: 800; }
+
+/* ── CTA SECTION ── */
+.cta-section {
+  text-align: center;
+  padding: 40px 0 48px;
+}
+.cta-btn {
+  display: inline-block;
+  width: 100%;
+  max-width: 480px;
+  background: var(--green);
+  color: var(--white);
+  font-size: 17px;
+  font-weight: 700;
+  padding: 18px 32px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px var(--green-glow);
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-align: center;
+  text-decoration: none;
+  line-height: 1.4;
+}
+.cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px var(--green-glow);
+}
+.cta-sub {
+  font-size: 13px;
+  color: var(--body-grey);
+  margin-top: 10px;
+}
+.decline-link {
+  display: block;
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.decline-link:hover { color: var(--body-grey); }
+
+/* ── GUARANTEE ── */
+.guarantee {
+  text-align: center;
+  border: 2px solid var(--green);
+  border-radius: 16px;
+  padding: 32px 28px;
+  margin-bottom: 24px;
+}
+.guarantee .shield {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+.guarantee h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.guarantee p {
+  font-size: 14px;
+  color: var(--body-grey);
+  line-height: 1.7;
+}
+
+/* ── FAQ ── */
+.faq h2 {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 24px;
+}
+.faq-item {
+  border-bottom: 1px solid var(--border);
+  padding: 18px 0;
+}
+.faq-item:last-child { border-bottom: none; }
+.faq-q {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--heading);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.faq-q::after {
+  content: '+';
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+.faq-item.open .faq-q::after {
+  content: '−';
+  color: var(--green);
+}
+.faq-a {
+  display: none;
+  padding-top: 10px;
+  font-size: 14px;
+  color: var(--body-grey);
+  line-height: 1.7;
+}
+.faq-item.open .faq-a { display: block; }
+
+/* ── FOOTER ── */
+.page-footer {
+  text-align: center;
+  padding: 32px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── STICKY MOBILE CTA ── */
+.sticky-cta {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(12px);
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  text-align: center;
+}
+.sticky-cta .cta-btn {
+  font-size: 15px;
+  padding: 14px 24px;
+  width: 100%;
+}
+
+/* ── COPY BUTTON ── */
+.copy-btn-wrap {
+  position: fixed;
+  top: 48px;
+  right: 12px;
+  z-index: 200;
+}
+.copy-btn {
+  background: var(--heading);
+  color: var(--white);
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.copy-btn:hover { opacity: 1; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  .hero h1 { font-size: 26px; }
+  .hero .sub { font-size: 15px; }
+  .body-copy { padding: 28px 20px; }
+  .card { padding: 24px 20px; }
+  .value-stack h2 { font-size: 22px; }
+  .maths-row.highlight { margin: 0 -20px; padding: 14px 20px; }
+  .cta-btn { font-size: 15px; padding: 16px 24px; }
+  .sticky-cta { display: block; }
+  .page-footer { padding-bottom: 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- COPY BUTTON (remove before transferring to GHL) -->
+<div class="copy-btn-wrap">
+  <button class="copy-btn" onclick="copyPage()">Copy HTML</button>
+</div>
+
+<!-- WARNING BAR -->
+<div class="warning-bar">
+  <span>⚠</span> WARNING: Please do not close or refresh this page to avoid double charge.
+</div>
+
+<!-- LOGO -->
+<div class="logo-bar">
+  <div class="logo"><span class="nf-box">nf</span>stay</div>
+</div>
+
+<!-- HERO -->
+<section class="hero container">
+  <div class="hero-badge">Special Offer — Before You Go</div>
+  <h1>Not ready for lifetime? <span>That's fine.</span></h1>
+  <p class="sub">Then lock in 12 months of NFStay for <em>less than half the monthly cost.</em></p>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- BODY COPY -->
+<div class="container">
+  <div class="body-copy">
+    <p>That is completely fine.</p>
+
+    <p>If lifetime feels like too big a jump today, the smart next option is to <strong>secure your next 12 months now.</strong></p>
+
+    <p>Because if you stay monthly, you will pay <strong>£804 over the next year.</strong></p>
+
+    <p>But today you can get 12 months of NFStay for just <strong>£397.</strong></p>
+
+    <div class="savings-callout">
+      <div class="big-num">£407 saved</div>
+      <div class="label">That's about 51% off compared with paying monthly</div>
+    </div>
+
+    <p>And yes — you still get the real growth advantage:</p>
+    <p><strong>Unlimited inquiries. Unlimited landlord contacts. Unlimited lead access. Full access for 12 months.</strong></p>
+
+    <p>This is for members who know they are serious this year, but are not ready to commit to lifetime yet.</p>
+  </div>
+</div>
+
+<!-- VALUE STACK -->
+<div class="container">
+  <div class="card value-stack">
+    <h2>NFStay Annual Access</h2>
+    <div class="price-tag"><span class="compare">£804</span> <strong>£397</strong> for 12 months</div>
+    <ul>
+      <li>
+        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <span>Unlimited inquiries — no monthly cap</span>
+      </li>
+      <li>
+        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <span>Unlimited landlord contacts — direct access</span>
+      </li>
+      <li>
+        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <span>Unlimited lead flow — no restrictions</span>
+      </li>
+      <li>
+        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <span>Full platform access for 12 months</span>
+      </li>
+      <li>
+        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <span>All updates included during your year</span>
+      </li>
+      <li>
+        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <span>51% cheaper than paying monthly</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- MATHS BLOCK -->
+<div class="container">
+  <div class="card maths-block">
+    <h2>Simple maths</h2>
+    <div class="maths-row strikethrough">
+      <span class="label">12 months at £67/month</span>
+      <span class="value">£804</span>
+    </div>
+    <div class="maths-row highlight">
+      <span class="label">Annual access — today</span>
+      <span class="value">£397</span>
+    </div>
+    <div class="maths-savings">
+      You save <span>£407</span> — that's 51% off
+    </div>
+  </div>
+</div>
+
+<!-- CTA SECTION -->
+<div class="container">
+  <div class="cta-section">
+
+    <!-- ⬇️ REPLACE THIS LINK WITH YOUR GHL ORDER BUTTON/FORM ⬇️ -->
+    <a href="#ghl-annual-order" class="cta-btn">Yes — Give Me 12 Months for £397</a>
+    <!-- ⬆️ END GHL ORDER BUTTON ⬆️ -->
+
+    <p class="cta-sub">Save £407 today. Unlimited inquiries for 12 months.</p>
+
+    <!-- ⬇️ REPLACE THIS LINK WITH YOUR GHL DECLINE/SKIP LINK ⬇️ -->
+    <a href="#ghl-decline" class="decline-link">No thanks — I'll stay on £67/month and keep the limited plan.</a>
+    <!-- ⬆️ END GHL DECLINE LINK ⬆️ -->
+
+  </div>
+</div>
+
+<!-- GUARANTEE -->
+<div class="container">
+  <div class="guarantee">
+    <div class="shield">🛡</div>
+    <h3>NFStay Quality Guarantee</h3>
+    <p>Every property listed on NFStay is vetted and landlord-approved. You get direct access to real landlords with real deals. If you have any concerns about the platform after signing up, our support team is available to help you get the most out of your membership.</p>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="container">
+  <div class="card faq">
+    <h2>Common Questions</h2>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Can I upgrade to lifetime later?</div>
+      <div class="faq-a">Yes, you can upgrade to lifetime at any time from your account settings. However, the price may be higher than the one-time offer you saw on the previous page.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Do I get future updates?</div>
+      <div class="faq-a">Yes. During your 12-month access period, every update, feature, and improvement is included at no extra cost.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Why do unlimited inquiries matter?</div>
+      <div class="faq-a">Building a rent-to-rent or Airbnb portfolio requires volume. You need to contact many landlords, negotiate multiple deals, and move quickly when the right property appears. A cap on inquiries limits your momentum. Unlimited means you operate at full speed.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What happens after 12 months?</div>
+      <div class="faq-a">After your 12-month period ends, you can renew at the current annual rate, upgrade to lifetime, or switch to the monthly plan. You will not be charged automatically — it is your choice.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SECOND CTA -->
+<div class="container">
+  <div class="cta-section">
+    <a href="#ghl-annual-order" class="cta-btn">Yes — Give Me 12 Months for £397</a>
+    <p class="cta-sub">Save £407. Unlimited everything. Full year of access.</p>
+    <a href="#ghl-decline" class="decline-link">No thanks — I'll stay on £67/month and keep the limited plan.</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="page-footer">
+  <p>&copy; 2026 NFStay Ltd. All rights reserved.</p>
+</div>
+
+<!-- STICKY MOBILE CTA -->
+<div class="sticky-cta" id="stickyCta">
+  <a href="#ghl-annual-order" class="cta-btn">Get 12 Months — £397</a>
+</div>
+
+<script>
+// Show sticky CTA on mobile after scrolling
+if (window.innerWidth <= 640) {
+  const sticky = document.getElementById('stickyCta');
+  window.addEventListener('scroll', () => {
+    sticky.style.display = window.scrollY > 600 ? 'block' : 'none';
+  });
+}
+
+// Copy full page HTML
+function copyPage() {
+  const html = document.documentElement.outerHTML;
+  const cleaned = html.replace(/<div class="copy-btn-wrap">[\s\S]*?<\/div>/, '');
+  navigator.clipboard.writeText(cleaned).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy HTML', 2000);
+  });
+}
+</script>
+
+</body>
+</html>
