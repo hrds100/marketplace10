@@ -223,28 +223,15 @@ export default function InquiryChatModal({ open, listing, onClose, onContactSucc
             </div>
           )}
 
-          {/* System confirmation */}
+          {/* Confirmation — one message only */}
           {isContacted && (
             <div className="text-center py-4">
               <CheckCircle className="h-8 w-8 mx-auto mb-2" style={{ color: accentColor }} />
               <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
-                Inquiry sent to the landlord or agent
+                {contacted ? "You've already contacted the landlord or agent" : 'Inquiry sent to the landlord or agent'}
               </p>
               <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
-                They'll be in touch with you shortly.
-              </p>
-            </div>
-          )}
-
-          {/* Already contacted notice (from prop) */}
-          {contacted && !sentMessage && (
-            <div className="text-center py-4">
-              <CheckCircle className="h-8 w-8 mx-auto mb-2" style={{ color: accentColor }} />
-              <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
-                You've already contacted the landlord or agent
-              </p>
-              <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
-                Please wait for them to get back to you.
+                {contacted ? 'Please wait for them to get back to you.' : "They'll be in touch with you shortly."}
               </p>
             </div>
           )}
