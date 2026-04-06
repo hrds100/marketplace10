@@ -76,7 +76,7 @@ serve(async (req) => {
         if (msgDate < cutoff) continue
 
         const body = msg.body || msg.message || ''
-        if (!body.toLowerCase().includes('nfstay')) continue
+        if (!body.includes('/deals/')) continue
 
         const phone = conv.phone || conv.contactPhone || ''
         if (!phone) continue
