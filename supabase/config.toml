@@ -17,6 +17,8 @@ verify_jwt = false
 [functions.receive-tenant-whatsapp]
 verify_jwt = false
 
+[functions.ghl-payment-webhook]
+verify_jwt = false
 
 [functions.send-email]
 verify_jwt = false
