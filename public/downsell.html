@@ -48,9 +48,35 @@
   --shadow-md: rgba(0,0,0,0.08) 0 4px 24px -4px;
   --shadow-glow: 0 0 60px rgba(30,154,128,0.12);
 }
-/* Hide GHL native buttons — they still exist for triggerGHL() to click */
-.ghl-hidden { display: none !important; }
-[id^="button-nvMb2BqcZZ"], [id^="button-ksCyR9CACz"] { display: none !important; }
+/* Style GHL native buttons to match premium design */
+[id^="button-"] .btn-text,
+[id^="button-"] a,
+[id^="button-"] button {
+  display: block !important;
+  width: 100% !important;
+  max-width: 680px !important;
+  margin: 0 auto !important;
+  padding: 1.25rem 1.5rem !important;
+  background: #1E9A80 !important;
+  color: #fff !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 6px 20px rgba(30,154,128,0.35) !important;
+  transition: transform 0.18s, box-shadow 0.18s !important;
+  text-decoration: none !important;
+  letter-spacing: -0.01em !important;
+}
+[id^="button-"] a:hover,
+[id^="button-"] button:hover {
+  background: #178a72 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 28px rgba(30,154,128,0.4) !important;
+}
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
@@ -283,23 +309,13 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
     <div class="price-comparison">
       12 months. Unlimited contacts. <s>£804 on monthly.</s> You save £407.
     </div>
-
-    <!-- GHL DOWNSELL BUTTON — triggers #button-nvMb2BqcZZ on GHL page -->
-    <button class="btn-primary" onclick="triggerGHL('button-nvMb2BqcZZ')">
-      Yes - Lock in 12 months for £397
-      <small>Unlimited contacts. Full year access. Save £407.</small>
-    </button>
-
-    <div class="secure-note">
+    <div class="secure-note" style="margin-top:var(--space-4)">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Secure payment. Instant access.
     </div>
   </div>
 
-  <!-- SKIP TO DASHBOARD -->
-  <div class="decline-wrap">
-    <!-- GHL NOT INTERESTED — triggers #button-ksCyR9CACz on GHL page -->
-    <button class="decline-link" onclick="triggerGHL('button-ksCyR9CACz')">No thanks, I will skip this offer.</button>
+  <!-- GHL NATIVE BUTTONS GO BELOW THIS LINE — do not remove them from GHL -->
   </div>
 
   <!-- FAQ -->
@@ -327,13 +343,6 @@ h1,h2,h3,h4{text-wrap:balance;line-height:1.15}
 
 <script>
 function toggleFaq(el){el.closest('.faq-item').classList.toggle('open')}
-function triggerGHL(id){
-  var btn=document.getElementById(id);
-  if(btn){btn.click();return}
-  var el=document.querySelector('#'+id+', [data-element-id="'+id+'"], [href="#'+id+'"]');
-  if(el){el.click();return}
-  console.warn('GHL button not found:',id);
-}
 function copyPage(){var h=document.documentElement.outerHTML.replace(/<div class="copy-wrap">[\s\S]*?<\/div>/,'');navigator.clipboard.writeText(h).then(function(){var b=document.querySelector('.copy-btn');b.textContent='Copied!';setTimeout(function(){b.textContent='Copy HTML'},2e3)})}
 </script>
 </body>
