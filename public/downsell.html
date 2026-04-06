@@ -48,6 +48,10 @@
   --shadow-md: rgba(0,0,0,0.08) 0 4px 24px -4px;
   --shadow-glow: 0 0 60px rgba(30,154,128,0.12);
 }
+/* Hide GHL native buttons — they still exist for triggerGHL() to click */
+.ghl-hidden { display: none !important; }
+[id^="button-3HJT835XHc"], [id^="button-7dk6WUQ9Uy"] { display: none !important; }
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
 body{font-family:var(--font-body);font-size:var(--text-base);color:var(--color-text);background:var(--color-bg);line-height:1.6;min-height:100dvh}
