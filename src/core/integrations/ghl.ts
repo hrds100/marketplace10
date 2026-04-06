@@ -68,8 +68,9 @@ export function getFunnelUrl(contactInfo?: { email?: string; name?: string; phon
   if (contactInfo?.name) params.set('name', contactInfo.name);
   if (contactInfo?.phone) params.set('phone', contactInfo.phone);
   if (contactInfo?.ref) params.set('ref', contactInfo.ref);
-  const qs = params.toString();
-  return qs ? `${base}?${qs}` : base;
+  // Cache-bust to prevent stale GHL page versions loading in iframe
+  params.set('_t', String(Date.now()));
+  return `${base}?${params.toString()}`;
 }
 
 /**

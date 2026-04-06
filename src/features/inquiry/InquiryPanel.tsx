@@ -88,20 +88,8 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
         if (data?.tier && data.tier !== 'free') {
           if (pollRef.current) clearInterval(pollRef.current);
-          // Record affiliate commission event
-          if (referredBy) {
-            const tierAmounts: Record<string, number> = { monthly: 67, yearly: 397, lifetime: 997 };
-            supabase.from('aff_events' as any).insert({
-              referral_code: referredBy,
-              user_id: user!.id,
-              event_type: 'subscription',
-              amount: tierAmounts[data.tier] || 67,
-              payment_id: `ghl-${user!.id}-${Date.now()}`,
-              tier: data.tier,
-            }).then(() => {}).catch(() => {});
-          }
+          // Redirect straight to deals — do NOT re-trigger inquiry/WhatsApp
           setTimeout(() => {
-            handleClose();
             window.location.href = '/dashboard/deals';
           }, 1500);
           return;
@@ -112,7 +100,6 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
       if (attempts >= 45) {
         if (pollRef.current) clearInterval(pollRef.current);
-        handleClose();
         window.location.href = '/dashboard/deals';
       }
     }, 1000);
@@ -269,10 +256,10 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
                 />
               </div>
               {/* Persistent back button - always visible outside iframe so user is never stuck */}
-              <div className="flex-shrink-0 border-t border-border p-3 bg-card">
+              <div className="flex-shrink-0 border-t border-border p-4 bg-card">
                 <button
                   onClick={() => { handleClose(); window.location.href = '/dashboard/deals'; }}
-                  className="w-full h-10 rounded-lg bg-secondary text-foreground text-sm font-semibold hover:bg-secondary/80 transition-colors"
+                  className="w-full h-12 rounded-xl bg-[#1E9A80] text-white text-sm font-bold hover:bg-[#178a72] transition-colors shadow-[0_4px_16px_rgba(30,154,128,0.35)]"
                 >
                   Back to Deals
                 </button>

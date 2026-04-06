@@ -68,21 +68,9 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
 
         if (data?.tier && data.tier !== 'free') {
           if (pollRef.current) clearInterval(pollRef.current);
-          // Record affiliate commission event
-          if (referredBy) {
-            const tierAmounts: Record<string, number> = { monthly: 67, yearly: 397, lifetime: 997 };
-            supabase.from('aff_events' as any).insert({
-              referral_code: referredBy,
-              user_id: user!.id,
-              event_type: 'subscription',
-              amount: tierAmounts[data.tier] || 67,
-              payment_id: `ghl-${user!.id}-${Date.now()}`,
-              tier: data.tier,
-            }).then(() => {}).catch(() => {});
-          }
+          // Redirect straight to deals — do NOT re-trigger inquiry/WhatsApp
           setTimeout(() => {
-            handleClose();
-            onUnlocked();
+            window.location.href = '/dashboard/deals';
           }, 1500);
           return;
         }
