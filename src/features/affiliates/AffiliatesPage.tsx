@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe, Pencil, X, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import BankDetailsForm from '@/components/BankDetailsForm';
-import { useMyAffiliateProfile, useInvestProperties, useMyCommissions } from '@/hooks/useInvestData';
+import { useMyAffiliateProfile, useInvestProperties, useMyCommissions, useMyBankAccount } from '@/hooks/useInvestData';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,6 +47,7 @@ export default function AffiliatesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: realAffProfile } = useMyAffiliateProfile();
+  const { data: bankAccount } = useMyBankAccount();
   const { requireWallet } = useWalletGate();
 
   // Live GBP→USD rate (same API as admin payouts page)
@@ -178,11 +179,13 @@ export default function AffiliatesPage() {
   const payoutMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id || !profile?.pending_balance || profile.pending_balance <= 0) throw new Error('No claimable balance');
+      if (!bankAccount) throw new Error('Please add your bank details in Payout Settings before claiming.');
       const { data, error } = await supabase.functions.invoke('submit-payout-claim', {
-        body: { user_id: user.id, user_type: 'affiliate', currency: 'USD', amount: profile.pending_balance },
+        body: { user_id: user.id, user_type: 'affiliate', currency: 'GBP', amount: profile.pending_balance },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      // Edge function returns error details in data body, not in error object
+      const errorMsg = data?.error || data?.message || (error ? String(error.message || error) : '');
+      if (errorMsg) throw new Error(errorMsg);
       // Notify admin
       supabase.functions.invoke('send-email', {
         body: { type: 'payout-requested-admin', data: { name: userName, amount: profile.pending_balance, paypal: profile.payout_details?.paypal || '(not set)', email: user?.email } },
