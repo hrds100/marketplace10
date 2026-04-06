@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useInvestOrders } from '@/hooks/useInvestData';
+import { useInvestOrders, useLegacyOrders } from '@/hooks/useInvestData';
 import { supabase } from '@/integrations/supabase/client';
 import { Check, Pencil, X, Link2, Search, Download, Loader2 } from 'lucide-react';
 import { exportToCSV } from '@/lib/csvExport';
@@ -27,6 +27,7 @@ interface Order {
   tx_hash: string;
   wallet_address: string;
   created_at: string;
+  _source?: 'supabase' | 'legacy';
 }
 
 const paymentColors: Record<string, string> = {
@@ -55,6 +56,7 @@ export default function AdminInvestOrders() {
     isError: ordersError,
     error: ordersQueryError,
   } = useInvestOrders();
+  const { data: legacyOrders = [], isLoading: legacyLoading } = useLegacyOrders();
 
   const [statusFilter, setStatusFilter] = useState('All');
   const [propertyFilter, setPropertyFilter] = useState('All');
@@ -64,8 +66,8 @@ export default function AdminInvestOrders() {
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [confirmApprove, setConfirmApprove] = useState<Order | null>(null);
 
-  // Map real data to display format
-  const orders: Order[] = realOrders.map((o: any) => ({
+  // Map Supabase orders to display format
+  const supabaseOrders: Order[] = realOrders.map((o: any) => ({
     id: o.id?.toString() || '',
     user_id: o.user_id || '',
     user_email: o.user_email || o.email || '',
@@ -85,7 +87,16 @@ export default function AdminInvestOrders() {
           timeStyle: 'medium',
         })
       : '',
+    _source: 'supabase' as const,
   }));
+
+  // Deduplicate: remove legacy orders that have matching tx_hash in Supabase
+  const supabaseTxHashes = new Set(supabaseOrders.map((o) => o.tx_hash).filter(Boolean));
+  const dedupedLegacy: Order[] = (legacyOrders as Order[])
+    .filter((o) => !o.tx_hash || !supabaseTxHashes.has(o.tx_hash));
+
+  // Merge: Supabase first (newest), then legacy
+  const orders: Order[] = [...supabaseOrders, ...dedupedLegacy];
 
   // Get unique property names for filter
   const propertyOptions = ['All', ...Array.from(new Set(orders.map((o) => o.property_title)))];
@@ -160,7 +171,7 @@ export default function AdminInvestOrders() {
     setEditModal(null);
   };
 
-  if (ordersLoading) {
+  if (ordersLoading && legacyLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -217,6 +228,11 @@ export default function AdminInvestOrders() {
         </div>
       </div>
 
+      {!legacyLoading && legacyOrders.length === 0 && supabaseOrders.length === 0 && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-700 mb-4">
+          Legacy orders could not be loaded from be.nfstay.com. Showing Supabase orders only.
+        </div>
+      )}
       <p className="text-xs text-muted-foreground mb-4 max-w-3xl">
         Rows are newest first. <strong>Partner wallet</strong> comes from the user&apos;s profile (same wallet used for JV).{' '}
         On-chain shares are sent by the <strong>SamCart webhook</strong> when payment succeeds (see Tx Hash).{' '}
@@ -239,6 +255,7 @@ export default function AdminInvestOrders() {
                 <TableHead>Referrer</TableHead>
                 <TableHead>Tx Hash</TableHead>
                 <TableHead>Date & time</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -287,9 +304,14 @@ export default function AdminInvestOrders() {
                     )}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">{o.created_at}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={cn('text-xs', o._source === 'legacy' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20')}>
+                      {o._source === 'legacy' ? 'Legacy' : 'New'}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {o.status === 'pending' && (
+                      {o.status === 'pending' && o._source !== 'legacy' && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -319,7 +341,7 @@ export default function AdminInvestOrders() {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                     No orders yet
                   </TableCell>
                 </TableRow>
