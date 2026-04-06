@@ -3,663 +3,506 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NFStay — Lifetime Access</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+<title>nfstay - Lifetime Access</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital@1&family=Sora:wght@400;700&display=swap" rel="stylesheet">
 <style>
-/* ── RESET + BASE ── */
+/* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: #1A1A1A; background: #F3F3EE; line-height: 1.7; -webkit-font-smoothing: antialiased; }
 a { color: #1E9A80; text-decoration: none; }
-img { max-width: 100%; }
 
-/* ── BRAND TOKENS ── */
+/* ── TOKENS ── */
 :root {
   --green: #1E9A80;
   --green-tint: #ECFDF5;
   --heading: #1A1A1A;
-  --body-grey: #6B7280;
+  --body: #6B7280;
   --muted: #9CA3AF;
-  --off-white: #F3F3EE;
+  --label: #525252;
   --white: #FFFFFF;
+  --off-white: #F3F3EE;
   --border: #E5E7EB;
   --border-warm: #E8E5DF;
   --green-glow: rgba(30,154,128,0.35);
+  --green-glow-soft: rgba(30,154,128,0.2);
+  --shadow-card: rgba(0,0,0,0.08) 0 4px 24px -2px;
 }
 
 /* ── WARNING BAR ── */
 .warning-bar {
-  background: #1A1A1A;
-  color: #FFFFFF;
-  text-align: center;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-.warning-bar span { color: #facc15; }
-
-/* ── CONTAINER ── */
-.container {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 0 20px;
+  background: var(--heading); color: var(--white); text-align: center;
+  padding: 11px 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase;
 }
 
-/* ── LOGO BAR ── */
-.logo-bar {
-  text-align: center;
-  padding: 28px 0 0;
+/* ── LAYOUT ── */
+.container { max-width: 640px; margin: 0 auto; padding: 0 20px; }
+.spacer-40 { height: 40px; }
+.spacer-48 { height: 48px; }
+.spacer-56 { height: 56px; }
+.spacer-64 { height: 64px; }
+.spacer-80 { height: 80px; }
+
+/* ── LOGO ── */
+.logo-bar { text-align: center; padding: 32px 0 0; }
+.logo {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: 'Sora', sans-serif; font-size: 20px; color: #0A0A0A; letter-spacing: 2px;
 }
-.logo-bar .logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-family: 'Inter', sans-serif;
-  font-size: 22px;
-  font-weight: 700;
-  color: #0A0A0A;
-  letter-spacing: 2px;
+.logo .nf-box {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 2px solid #0A0A0A; border-radius: 6px; padding: 2px 5px;
+  font-size: 14px; font-weight: 700; line-height: 1;
 }
-.logo-bar .logo .nf-box {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #0A0A0A;
-  border-radius: 6px;
-  padding: 2px 5px;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
-}
+.logo .stay { font-weight: 400; }
 
 /* ── HERO ── */
-.hero {
-  text-align: center;
-  padding: 48px 0 40px;
-}
-.hero-badge {
-  display: inline-block;
-  background: var(--green-tint);
-  color: var(--green);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  padding: 5px 14px;
-  border-radius: 100px;
-  margin-bottom: 20px;
+.hero { text-align: center; padding: 56px 0 0; }
+.hero-label {
+  display: inline-block; background: var(--heading); color: var(--white);
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+  padding: 6px 16px; border-radius: 4px; margin-bottom: 28px;
 }
 .hero h1 {
-  font-size: 34px;
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: -0.5px;
-  color: var(--heading);
-  margin-bottom: 16px;
+  font-size: 42px; font-weight: 900; line-height: 1.12; letter-spacing: -1.2px;
+  color: var(--heading); margin-bottom: 20px;
 }
-.hero h1 span { color: var(--green); }
+.hero h1 .accent { color: var(--green); }
 .hero .sub {
-  font-size: 17px;
-  color: var(--body-grey);
-  max-width: 560px;
-  margin: 0 auto;
-  line-height: 1.65;
+  font-size: 18px; color: var(--body); max-width: 520px; margin: 0 auto; line-height: 1.6;
 }
-.hero .sub em {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  color: var(--heading);
-}
+.hero .sub strong { color: var(--heading); font-weight: 600; }
 
-/* ── SECTIONS ── */
-.section {
-  padding: 48px 0;
-}
-.section-divider {
-  width: 48px;
-  height: 3px;
-  background: var(--green);
-  border-radius: 2px;
-  margin: 0 auto 48px;
-}
-
-/* ── CARD ── */
-.card {
-  background: var(--white);
-  border: 1px solid var(--border-warm);
-  border-radius: 16px;
-  padding: 32px 28px;
-  margin-bottom: 24px;
-}
+/* ── DIVIDER ── */
+.divider { width: 40px; height: 3px; background: var(--green); border-radius: 2px; margin: 0 auto; }
 
 /* ── BODY COPY ── */
-.body-copy {
-  background: var(--white);
-  border: 1px solid var(--border-warm);
-  border-radius: 16px;
-  padding: 40px 32px;
-  margin-bottom: 32px;
+.copy-block {
+  background: var(--white); border: 1px solid var(--border-warm); border-radius: 16px;
+  padding: 44px 36px; box-shadow: var(--shadow-card);
 }
-.body-copy p {
-  font-size: 16px;
-  color: var(--body-grey);
-  margin-bottom: 20px;
-  line-height: 1.75;
+.copy-block p {
+  font-size: 16px; color: var(--body); margin-bottom: 22px; line-height: 1.8;
 }
-.body-copy p:last-child { margin-bottom: 0; }
-.body-copy p strong { color: var(--heading); font-weight: 600; }
-.body-copy .highlight-line {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--heading);
-  text-align: center;
-  padding: 16px 0;
-  margin: 24px 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+.copy-block p:last-child { margin-bottom: 0; }
+.copy-block strong { color: var(--heading); font-weight: 700; }
+.copy-block .pull-quote {
+  font-size: 20px; font-weight: 800; color: var(--heading); text-align: center;
+  padding: 24px 0; margin: 28px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  letter-spacing: -0.3px;
 }
 
-/* ── VALUE STACK ── */
-.value-stack h2 {
-  text-align: center;
-  font-size: 26px;
-  font-weight: 800;
-  margin-bottom: 8px;
+/* ── DANGER BOX ── */
+.danger-box {
+  background: var(--white); border: 1px solid var(--border-warm); border-left: 4px solid var(--heading);
+  border-radius: 12px; padding: 28px 28px; box-shadow: var(--shadow-card);
 }
-.value-stack .price-tag {
-  text-align: center;
-  font-size: 15px;
-  color: var(--body-grey);
-  margin-bottom: 28px;
+.danger-box .danger-title {
+  font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--heading); margin-bottom: 16px;
 }
-.value-stack .price-tag strong {
-  color: var(--green);
-  font-size: 28px;
-  font-weight: 800;
-}
-.value-stack ul {
-  list-style: none;
-  padding: 0;
-}
-.value-stack li {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 15px;
-  color: var(--heading);
-  font-weight: 500;
-}
-.value-stack li:last-child { border-bottom: none; }
-.value-stack li .check {
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  background: var(--green-tint);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 1px;
-}
-.value-stack li .check svg { width: 13px; height: 13px; }
+.danger-box p { font-size: 15px; color: var(--body); line-height: 1.75; margin-bottom: 12px; }
+.danger-box p:last-child { margin-bottom: 0; }
+.danger-box strong { color: var(--heading); }
 
-/* ── MATHS BLOCK ── */
-.maths-block {
-  border-top: 4px solid var(--green);
+/* ── LEAD VALUE ── */
+.lead-value {
+  background: var(--heading); border-radius: 16px; padding: 40px 32px;
+  color: var(--white); text-align: center;
 }
-.maths-block h2 {
-  text-align: center;
-  font-size: 22px;
-  font-weight: 800;
-  margin-bottom: 28px;
+.lead-value h2 { font-size: 24px; font-weight: 800; margin-bottom: 32px; letter-spacing: -0.3px; }
+.lead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+.lead-cell {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; padding: 20px 16px;
 }
+.lead-cell .num { font-size: 32px; font-weight: 900; color: var(--white); letter-spacing: -1px; }
+.lead-cell .lbl { font-size: 12px; color: rgba(255,255,255,0.6); font-weight: 500; margin-top: 4px; }
+.lead-value .info-row {
+  font-size: 14px; color: rgba(255,255,255,0.6); padding: 12px 0;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.lead-value .info-row strong { color: var(--white); font-weight: 700; }
+.lead-value .total-row {
+  font-size: 14px; color: rgba(255,255,255,0.7); padding: 14px 0;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.lead-value .total-row strong { color: var(--white); font-size: 20px; font-weight: 800; }
+.lead-value .bottom-line {
+  margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.15);
+  font-size: 15px; color: rgba(255,255,255,0.8); line-height: 1.6;
+}
+.lead-value .bottom-line strong { color: #ECFDF5; }
+
+/* ── OFFER BOX ── */
+.offer-box {
+  background: var(--white); border: 2px solid var(--green); border-radius: 20px;
+  padding: 0; overflow: hidden; box-shadow: 0 8px 32px var(--green-glow-soft);
+}
+.offer-header { background: var(--green); padding: 14px 20px; text-align: center; }
+.offer-header span { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--white); }
+.offer-body { padding: 36px 32px; }
+.offer-body h2 { text-align: center; font-size: 28px; font-weight: 900; margin-bottom: 8px; letter-spacing: -0.5px; }
+.offer-price { text-align: center; margin-bottom: 32px; }
+.offer-price .amount { font-size: 48px; font-weight: 900; color: var(--green); letter-spacing: -2px; }
+.offer-price .period { font-size: 15px; color: var(--body); font-weight: 500; }
+.offer-list { list-style: none; padding: 0; }
+.offer-list li {
+  display: flex; align-items: center; gap: 14px; padding: 13px 0;
+  border-bottom: 1px solid var(--border); font-size: 15px; font-weight: 500; color: var(--heading);
+}
+.offer-list li:last-child { border-bottom: none; }
+.offer-list .icon { flex-shrink: 0; width: 20px; height: 20px; color: var(--green); }
+
+/* ── MATHS ── */
+.maths-card {
+  background: var(--white); border: 1px solid var(--border-warm); border-radius: 16px;
+  padding: 36px 32px; box-shadow: var(--shadow-card);
+}
+.maths-card h2 { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 28px; letter-spacing: -0.3px; }
 .maths-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 15px;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 13px 0; border-bottom: 1px solid var(--border); font-size: 15px;
 }
-.maths-row .label { color: var(--body-grey); }
-.maths-row .value { font-weight: 700; color: var(--heading); }
-.maths-row.strikethrough .value {
-  text-decoration: line-through;
-  color: var(--muted);
+.maths-row .label { color: var(--body); }
+.maths-row .val { font-weight: 700; color: var(--heading); }
+.maths-row.strike .val { text-decoration: line-through; color: var(--muted); }
+.maths-row.green {
+  background: var(--green-tint); margin: 8px -32px 0; padding: 16px 32px;
+  border-bottom: none; border-radius: 0 0 16px 16px;
 }
-.maths-row.highlight {
-  background: var(--green-tint);
-  margin: 0 -28px;
-  padding: 16px 28px;
-  border-radius: 8px;
-  border-bottom: none;
-  margin-top: 8px;
+.maths-row.green .label { color: var(--green); font-weight: 700; }
+.maths-row.green .val { color: var(--green); font-size: 24px; font-weight: 900; }
+.maths-bottom {
+  background: var(--heading); color: var(--white); border-radius: 10px;
+  padding: 16px 20px; text-align: center; margin-top: 20px; font-size: 15px; font-weight: 600;
 }
-.maths-row.highlight .label { color: var(--green); font-weight: 700; }
-.maths-row.highlight .value { color: var(--green); font-size: 22px; }
-.maths-savings {
-  text-align: center;
-  margin-top: 20px;
-  padding: 16px;
-  background: var(--heading);
-  color: var(--white);
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-}
-.maths-savings span { color: #facc15; font-size: 20px; font-weight: 800; }
+.maths-bottom .highlight { color: #ECFDF5; font-size: 22px; font-weight: 900; }
 
-/* ── CLOSING COPY ── */
-.closing-copy {
-  text-align: center;
-  padding: 40px 24px;
-}
-.closing-copy p {
-  font-size: 16px;
-  color: var(--body-grey);
-  margin-bottom: 16px;
-  line-height: 1.75;
-}
-.closing-copy .big-question {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--heading);
-  margin: 24px 0 8px;
-}
-.closing-copy .italic-line {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-size: 18px;
-  color: var(--heading);
-}
-
-/* ── CTA SECTION ── */
-.cta-section {
-  text-align: center;
-  padding: 40px 0 48px;
-}
+/* ── CTA ── */
+.cta-wrap { text-align: center; padding: 8px 0; }
 .cta-btn {
-  display: inline-block;
-  width: 100%;
-  max-width: 480px;
-  background: var(--green);
-  color: var(--white);
-  font-size: 17px;
-  font-weight: 700;
-  padding: 18px 32px;
-  border-radius: 14px;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 16px var(--green-glow);
-  transition: transform 0.2s, box-shadow 0.2s;
-  text-align: center;
-  text-decoration: none;
-  line-height: 1.4;
+  display: block; width: 100%; background: var(--green); color: var(--white);
+  font-size: 19px; font-weight: 800; padding: 20px 32px; border-radius: 14px;
+  border: none; cursor: pointer; text-align: center; text-decoration: none;
+  box-shadow: 0 6px 20px var(--green-glow); transition: transform 0.2s, box-shadow 0.2s;
+  letter-spacing: -0.2px; line-height: 1.35;
 }
-.cta-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px var(--green-glow);
-}
-.cta-sub {
-  font-size: 13px;
-  color: var(--body-grey);
-  margin-top: 10px;
-}
-.decline-link {
-  display: block;
-  margin-top: 20px;
-  font-size: 13px;
-  color: var(--muted);
-  text-decoration: underline;
-  cursor: pointer;
-}
-.decline-link:hover { color: var(--body-grey); }
+.cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px var(--green-glow); color: var(--white); }
+.cta-sub { font-size: 13px; color: var(--body); margin-top: 12px; font-weight: 500; }
+.decline { display: block; margin-top: 16px; font-size: 12px; color: var(--muted); text-decoration: underline; cursor: pointer; }
+.decline:hover { color: var(--body); }
 
 /* ── GUARANTEE ── */
 .guarantee {
-  text-align: center;
-  border: 2px solid var(--green);
-  border-radius: 16px;
-  padding: 32px 28px;
-  margin-bottom: 24px;
+  background: var(--white); border: 1px solid var(--border-warm); border-radius: 16px;
+  padding: 36px 32px; text-align: center; box-shadow: var(--shadow-card);
 }
-.guarantee .shield {
-  font-size: 36px;
-  margin-bottom: 12px;
+.guarantee-icon {
+  width: 48px; height: 48px; margin: 0 auto 16px;
+  background: var(--green-tint); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
 }
-.guarantee h3 {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-.guarantee p {
-  font-size: 14px;
-  color: var(--body-grey);
-  line-height: 1.7;
-}
+.guarantee-icon svg { width: 24px; height: 24px; color: var(--green); }
+.guarantee h3 { font-size: 17px; font-weight: 800; margin-bottom: 12px; }
+.guarantee p { font-size: 14px; color: var(--body); line-height: 1.7; max-width: 480px; margin: 0 auto; }
 
 /* ── FAQ ── */
-.faq h2 {
-  text-align: center;
-  font-size: 22px;
-  font-weight: 800;
-  margin-bottom: 24px;
+.faq-card {
+  background: var(--white); border: 1px solid var(--border-warm); border-radius: 16px;
+  padding: 36px 32px; box-shadow: var(--shadow-card);
 }
-.faq-item {
-  border-bottom: 1px solid var(--border);
-  padding: 18px 0;
-}
+.faq-card h2 { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 24px; }
+.faq-item { border-bottom: 1px solid var(--border); }
 .faq-item:last-child { border-bottom: none; }
 .faq-q {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--heading);
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+  padding: 16px 0; font-size: 14px; font-weight: 700; color: var(--heading);
 }
-.faq-q::after {
-  content: '+';
-  font-size: 20px;
-  font-weight: 400;
-  color: var(--muted);
-  transition: transform 0.2s;
-}
-.faq-item.open .faq-q::after {
-  content: '−';
-  color: var(--green);
-}
-.faq-a {
-  display: none;
-  padding-top: 10px;
-  font-size: 14px;
-  color: var(--body-grey);
-  line-height: 1.7;
-}
+.faq-q::after { content: '+'; font-size: 18px; color: var(--muted); }
+.faq-item.open .faq-q::after { content: '\2212'; color: var(--green); }
+.faq-a { display: none; padding: 0 0 16px; font-size: 14px; color: var(--body); line-height: 1.7; }
 .faq-item.open .faq-a { display: block; }
 
 /* ── FOOTER ── */
-.page-footer {
-  text-align: center;
-  padding: 32px 0;
-  font-size: 12px;
-  color: var(--muted);
-}
+.footer { text-align: center; padding: 40px 0; font-size: 11px; color: var(--muted); }
 
-/* ── STICKY MOBILE CTA ── */
-.sticky-cta {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(12px);
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-  z-index: 100;
-  text-align: center;
+/* ── STICKY MOBILE ── */
+.sticky-mobile {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(255,255,255,0.96); backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border); padding: 12px 16px; text-align: center;
 }
-.sticky-cta .cta-btn {
-  font-size: 15px;
-  padding: 14px 24px;
-  width: 100%;
-}
+.sticky-mobile .cta-btn { font-size: 16px; padding: 16px 24px; }
 
-/* ── COPY BUTTON ── */
-.copy-btn-wrap {
-  position: fixed;
-  top: 48px;
-  right: 12px;
-  z-index: 200;
-}
+/* ── COPY BTN ── */
+.copy-wrap { position: fixed; top: 44px; right: 12px; z-index: 200; }
 .copy-btn {
-  background: var(--heading);
-  color: var(--white);
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  background: var(--heading); color: var(--white); border: none; padding: 7px 11px;
+  border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; opacity: 0.6;
 }
 .copy-btn:hover { opacity: 1; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 640px) {
-  .hero h1 { font-size: 26px; }
-  .hero .sub { font-size: 15px; }
-  .body-copy { padding: 28px 20px; }
-  .card { padding: 24px 20px; }
-  .value-stack h2 { font-size: 22px; }
-  .maths-row.highlight { margin: 0 -20px; padding: 14px 20px; }
-  .cta-btn { font-size: 15px; padding: 16px 24px; }
-  .sticky-cta { display: block; }
-  .page-footer { padding-bottom: 80px; }
+  .hero h1 { font-size: 30px; letter-spacing: -0.8px; }
+  .hero .sub { font-size: 16px; }
+  .copy-block { padding: 32px 24px; }
+  .danger-box { padding: 24px 20px; }
+  .lead-value { padding: 32px 20px; }
+  .lead-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .lead-cell .num { font-size: 26px; }
+  .offer-body { padding: 28px 20px; }
+  .offer-price .amount { font-size: 40px; }
+  .maths-card { padding: 28px 20px; }
+  .maths-row.green { margin: 8px -20px 0; padding: 14px 20px; }
+  .cta-btn { font-size: 17px; padding: 18px 24px; }
+  .guarantee { padding: 28px 20px; }
+  .faq-card { padding: 28px 20px; }
+  .sticky-mobile { display: block; }
+  .footer { padding-bottom: 88px; }
 }
 </style>
 </head>
 <body>
 
-<!-- COPY BUTTON (remove before transferring to GHL) -->
-<div class="copy-btn-wrap">
-  <button class="copy-btn" onclick="copyPage()">Copy HTML</button>
-</div>
+<!-- COPY BUTTON -->
+<div class="copy-wrap"><button class="copy-btn" onclick="copyPage()">Copy HTML</button></div>
 
 <!-- WARNING BAR -->
 <div class="warning-bar">
-  <span>⚠</span> WARNING: Please do not close or refresh this page to avoid double charge.
+  Warning: Do not close or refresh this page to avoid double charge
 </div>
 
 <!-- LOGO -->
 <div class="logo-bar">
-  <div class="logo"><span class="nf-box">nf</span>stay</div>
+  <div class="logo"><span class="nf-box">nf</span><span class="stay">stay</span></div>
 </div>
 
 <!-- HERO -->
 <section class="hero container">
-  <div class="hero-badge">One-Time Offer — This Page Only</div>
-  <h1>Wait — before you access NFStay, <span>read this carefully.</span></h1>
-  <p class="sub">If you are serious about building a real rent-to-rent or Airbnb portfolio, paying every month for access to deals <em>makes no sense.</em></p>
+  <div class="hero-label">Private upgrade offer</div>
+  <h1>Stop. <span class="accent">Read this before you continue.</span></h1>
+  <p class="sub">You just secured your nfstay membership. But <strong>your plan limits you to 100 landlord contacts per month.</strong> If you are serious about building a portfolio, that is not enough.</p>
 </section>
 
-<div class="section-divider"></div>
+<div class="spacer-48"></div>
+<div class="divider"></div>
+<div class="spacer-48"></div>
 
 <!-- BODY COPY -->
 <div class="container">
-  <div class="body-copy">
-    <p>You did not join NFStay to test one or two properties.</p>
+  <div class="copy-block">
+    <p>Let me be straight with you.</p>
 
-    <p>You joined because you want consistent access to <strong>landlord-approved deals</strong>, <strong>direct landlord contacts</strong>, and enough volume to actually build a serious portfolio.</p>
+    <p>You did not join nfstay to browse a few listings. You joined because you want to <strong>build a rent-to-rent or Airbnb portfolio</strong> that actually generates real income.</p>
 
-    <p>But here is the truth:</p>
+    <p>But here is the reality of 100 contacts per month:</p>
 
-    <p><strong>The standard plan is designed to get you started.</strong><br>
-    It gives you access, but it keeps a cap on how aggressively you can move.</p>
+    <p>You reach out to 100 landlords. Some are already in talks with other operators. Some need convincing. Some fall through during negotiation. By the time you filter, follow up, and negotiate, you might close <strong>one or two deals per month.</strong> Maybe.</p>
 
-    <p>If you stay on the normal plan, you will keep paying £67 every month, again and again, while growing your portfolio over the next few years.</p>
+    <p>Now picture this. You contact <strong>10 landlords and agents every single day.</strong> That is 300 contacts per month. You are negotiating multiple deals at once. When one falls through, you already have three more lined up. You are not waiting. You are not hoping. You are operating.</p>
 
-    <p>And if you are serious, that is exactly what will happen — because <strong>serious operators do not build a proper portfolio in 30 days.</strong></p>
+    <p><strong>That is the difference between someone who is trying and someone who is building.</strong></p>
 
-    <p>They build it over 1 year, 2 years, 3 years and beyond.</p>
-
-    <div class="highlight-line">That is why this page exists.</div>
+    <div class="pull-quote">This page gives you the chance to remove the cap. Right now.</div>
   </div>
 </div>
 
-<!-- VALUE STACK -->
+<div class="spacer-56"></div>
+
+<!-- DANGER BOX -->
 <div class="container">
-  <div class="card value-stack">
-    <h2>NFStay Lifetime Access</h2>
-    <div class="price-tag">One payment of <strong>£997</strong></div>
-    <ul>
-      <li>
-        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
-        <span>Unlimited inquiries — no monthly cap</span>
-      </li>
-      <li>
-        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
-        <span>Unlimited landlord contacts — direct access</span>
-      </li>
-      <li>
-        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
-        <span>Unlimited lead flow — no restrictions</span>
-      </li>
-      <li>
-        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
-        <span>Full platform access — everything included</span>
-      </li>
-      <li>
-        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
-        <span>No monthly subscription — ever again</span>
-      </li>
-      <li>
-        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
-        <span>No future price increases — locked in today</span>
-      </li>
-      <li>
-        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#1E9A80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
-        <span>All future updates included — free forever</span>
-      </li>
-    </ul>
+  <div class="danger-box">
+    <div class="danger-title">The cost of staying limited</div>
+    <p>At 100 contacts per month, you are competing against operators who move 3x faster than you. Properties you want are being secured by people who contacted the landlord before you did.</p>
+    <p>Every month you stay capped is a month where <strong>deals go to someone else.</strong></p>
+    <p>This is not about spending more. It is about not losing the deals you should be closing.</p>
   </div>
 </div>
 
-<!-- MATHS BLOCK -->
+<div class="spacer-56"></div>
+
+<!-- LEAD VALUE BLOCK -->
 <div class="container">
-  <div class="card maths-block">
-    <h2>Do the maths</h2>
-    <div class="maths-row strikethrough">
-      <span class="label">Pay monthly for 12 months</span>
-      <span class="value">£804</span>
+  <div class="lead-value">
+    <h2>What unlimited access is actually worth</h2>
+    <div class="lead-grid">
+      <div class="lead-cell">
+        <div class="num">100</div>
+        <div class="lbl">Contacts/month on standard</div>
+      </div>
+      <div class="lead-cell">
+        <div class="num">300+</div>
+        <div class="lbl">Contacts/month on lifetime</div>
+      </div>
+      <div class="lead-cell">
+        <div class="num">1,200</div>
+        <div class="lbl">Contacts per year (standard)</div>
+      </div>
+      <div class="lead-cell">
+        <div class="num">3,600+</div>
+        <div class="lbl">Contacts per year (lifetime)</div>
+      </div>
     </div>
-    <div class="maths-row strikethrough">
-      <span class="label">Pay monthly for 24 months</span>
-      <span class="value">£1,608</span>
-    </div>
-    <div class="maths-row strikethrough">
-      <span class="label">Pay monthly for 36 months</span>
-      <span class="value">£2,412</span>
-    </div>
-    <div class="maths-row highlight">
-      <span class="label">Lifetime access — today only</span>
-      <span class="value">£997</span>
-    </div>
-    <div class="maths-savings">
-      Break-even in ~15 months &nbsp;·&nbsp; Save <span>£1,415</span> over 3 years
+    <div class="info-row">A lead generation agency charges roughly <strong>50p per qualified landlord contact</strong></div>
+    <div class="total-row">3,600 contacts/year x 50p = <strong>£1,800/year</strong> in lead value</div>
+    <div class="total-row">Over 3 years that is <strong>£5,400</strong> worth of direct landlord access</div>
+    <div class="bottom-line">
+      You get all of this for a single payment of <strong>£997.</strong><br>
+      That is less than 7 months of your current plan. And you keep access forever.
     </div>
   </div>
 </div>
 
-<!-- CLOSING COPY -->
+<div class="spacer-56"></div>
+
+<!-- OFFER BOX -->
 <div class="container">
-  <div class="closing-copy">
-    <p>If you stay with NFStay for more than 15 months, lifetime becomes the cheaper option.</p>
-    <p>If you stay for 3 years while building your portfolio, you save £1,415.</p>
-    <p class="big-question">So the question is not whether lifetime is more money today.</p>
-    <p class="italic-line">The real question is: why keep renting access every month when you can lock it in forever today?</p>
+  <div class="offer-box">
+    <div class="offer-header"><span>One-time upgrade. This page only.</span></div>
+    <div class="offer-body">
+      <h2>nfstay lifetime access</h2>
+      <div class="offer-price">
+        <div class="amount">£997</div>
+        <div class="period">One payment. Access forever.</div>
+      </div>
+      <ul class="offer-list">
+        <li>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+          <span><strong>Unlimited contacts.</strong> No monthly cap. Contact 300+ landlords per month.</span>
+        </li>
+        <li>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span><strong>Unlimited landlord access.</strong> Direct contact with every listing on the platform.</span>
+        </li>
+        <li>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span><strong>Full platform access.</strong> CRM, pipeline, everything. Nothing locked.</span>
+        </li>
+        <li>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span><strong>No monthly fees.</strong> One payment. Done. Never pay again.</span>
+        </li>
+        <li>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+          <span><strong>All future updates.</strong> New features, new listings, new tools. Included.</span>
+        </li>
+        <li>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span><strong>Price locked today.</strong> This price will not be available again.</span>
+        </li>
+      </ul>
+    </div>
   </div>
 </div>
 
-<!-- CTA SECTION -->
+<div class="spacer-48"></div>
+
+<!-- MATHS -->
 <div class="container">
-  <div class="cta-section">
-
-    <!-- ⬇️ REPLACE THIS LINK WITH YOUR GHL ORDER BUTTON/FORM ⬇️ -->
-    <a href="#ghl-lifetime-order" class="cta-btn">Yes — Upgrade Me to Lifetime for £997</a>
-    <!-- ⬆️ END GHL ORDER BUTTON ⬆️ -->
-
-    <p class="cta-sub">Unlimited inquiries. Unlimited landlord contacts. Lifetime access.</p>
-
-    <!-- ⬇️ REPLACE THIS LINK WITH YOUR GHL DECLINE/SKIP LINK ⬇️ -->
-    <a href="#ghl-decline" class="decline-link">No thanks — I'll stay on the limited monthly plan.</a>
-    <!-- ⬆️ END GHL DECLINE LINK ⬆️ -->
-
+  <div class="maths-card">
+    <h2>The real cost of staying monthly</h2>
+    <div class="maths-row strike">
+      <span class="label">12 months at £67/month</span>
+      <span class="val">£804</span>
+    </div>
+    <div class="maths-row strike">
+      <span class="label">24 months at £67/month</span>
+      <span class="val">£1,608</span>
+    </div>
+    <div class="maths-row strike">
+      <span class="label">36 months at £67/month</span>
+      <span class="val">£2,412</span>
+    </div>
+    <div class="maths-row green">
+      <span class="label">Lifetime access today</span>
+      <span class="val">£997</span>
+    </div>
+    <div class="maths-bottom">
+      You save <span class="highlight">£1,415</span> over 3 years. And you get 3x the contacts from day one.
+    </div>
   </div>
 </div>
+
+<div class="spacer-64"></div>
+
+<!-- CTA 1 -->
+<div class="container">
+  <div class="cta-wrap">
+    <!-- REPLACE WITH GHL ORDER BUTTON -->
+    <a href="#ghl-lifetime-order" class="cta-btn">Yes, upgrade me to lifetime for £997</a>
+    <!-- END GHL ORDER BUTTON -->
+    <p class="cta-sub">300+ contacts/month. Unlimited access. One payment. Forever.</p>
+    <!-- REPLACE WITH GHL DECLINE LINK -->
+    <a href="#ghl-decline" class="decline">No thanks, I will stay on 100 contacts per month.</a>
+    <!-- END GHL DECLINE LINK -->
+  </div>
+</div>
+
+<div class="spacer-80"></div>
 
 <!-- GUARANTEE -->
 <div class="container">
   <div class="guarantee">
-    <div class="shield">🛡</div>
-    <h3>NFStay Quality Guarantee</h3>
-    <p>Every property listed on NFStay is vetted and landlord-approved. You get direct access to real landlords with real deals. If you have any concerns about the platform after signing up, our support team is available to help you get the most out of your membership.</p>
+    <div class="guarantee-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </div>
+    <h3>nfstay quality guarantee</h3>
+    <p>Every property on nfstay is vetted and landlord-approved. You get direct access to real landlords with real deals. Our support team is here to help you get the most from your membership from day one.</p>
   </div>
 </div>
+
+<div class="spacer-48"></div>
 
 <!-- FAQ -->
 <div class="container">
-  <div class="card faq">
-    <h2>Common Questions</h2>
-
+  <div class="faq-card">
+    <h2>Questions</h2>
     <div class="faq-item">
-      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Can I upgrade later?</div>
-      <div class="faq-a">You can, but this offer is only available on this page at this price. If you go to the monthly plan now and decide to upgrade later, the lifetime price may be higher. This is the best deal we offer.</div>
+      <div class="faq-q">Can I upgrade later instead?</div>
+      <div class="faq-a">You can, but this price is only available on this page right now. If you skip and want lifetime later, the price will be higher. This is the lowest it will ever be.</div>
     </div>
-
     <div class="faq-item">
-      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Do I get future updates?</div>
-      <div class="faq-a">Yes. Lifetime access includes every future update, feature, and improvement we add to the platform. You will never pay extra for new functionality.</div>
+      <div class="faq-q">Do I get all future updates?</div>
+      <div class="faq-a">Yes. Lifetime means lifetime. Every new feature, listing source, and tool we add is yours automatically. No extra charges ever.</div>
     </div>
-
     <div class="faq-item">
-      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Why do unlimited inquiries matter?</div>
-      <div class="faq-a">Building a rent-to-rent or Airbnb portfolio requires volume. You need to send multiple inquiries, speak to multiple landlords, and negotiate multiple deals before you secure the right properties. A cap on inquiries slows down your growth. Unlimited means you can move at the speed your ambition demands.</div>
+      <div class="faq-q">Why does contact volume matter so much?</div>
+      <div class="faq-a">Portfolio building is a numbers game. For every 10 landlords you contact, maybe 2 to 3 respond, and maybe 1 converts. If you are capped at 100, you close 1 to 2 deals per month. At 300+, you are closing 3 to 5. That is the difference between a side hustle and a real business.</div>
     </div>
-
     <div class="faq-item">
-      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What if I am not sure yet?</div>
-      <div class="faq-a">That is completely fine. If lifetime feels like too big a step right now, you will see another option on the next page. But if you know you are serious about building a portfolio over the next 1–3 years, lifetime is the smartest financial decision.</div>
+      <div class="faq-q">What if I am not sure yet?</div>
+      <div class="faq-a">If lifetime feels like too big a step right now, you will see another option on the next page. But if you know you are serious about building a portfolio over the next 1 to 3 years, this is the smartest move.</div>
     </div>
-
   </div>
 </div>
 
-<!-- SECOND CTA -->
+<div class="spacer-48"></div>
+
+<!-- CTA 2 -->
 <div class="container">
-  <div class="cta-section">
-    <a href="#ghl-lifetime-order" class="cta-btn">Yes — Upgrade Me to Lifetime for £997</a>
+  <div class="cta-wrap">
+    <a href="#ghl-lifetime-order" class="cta-btn">Yes, upgrade me to lifetime for £997</a>
     <p class="cta-sub">One payment. No monthly fees. Unlimited everything.</p>
-    <a href="#ghl-decline" class="decline-link">No thanks — I'll stay on the limited monthly plan.</a>
+    <a href="#ghl-decline" class="decline">No thanks, I will keep the limited plan.</a>
   </div>
 </div>
+
+<div class="spacer-48"></div>
 
 <!-- FOOTER -->
-<div class="page-footer">
-  <p>&copy; 2026 NFStay Ltd. All rights reserved.</p>
-</div>
+<div class="footer">nfstay Ltd. All rights reserved.</div>
 
 <!-- STICKY MOBILE CTA -->
-<div class="sticky-cta" id="stickyCta">
-  <a href="#ghl-lifetime-order" class="cta-btn">Upgrade to Lifetime — £997</a>
+<div class="sticky-mobile" id="stickyCta">
+  <a href="#ghl-lifetime-order" class="cta-btn">Upgrade to lifetime. £997</a>
 </div>
 
 <script>
-// Show sticky CTA on mobile after scrolling past first CTA
-if (window.innerWidth <= 640) {
-  const sticky = document.getElementById('stickyCta');
-  window.addEventListener('scroll', () => {
-    sticky.style.display = window.scrollY > 800 ? 'block' : 'none';
-  });
-}
-
-// Copy full page HTML
-function copyPage() {
-  const html = document.documentElement.outerHTML;
-  // Remove copy button from copied content
-  const cleaned = html.replace(/<div class="copy-btn-wrap">[\s\S]*?<\/div>/, '');
-  navigator.clipboard.writeText(cleaned).then(() => {
-    const btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy HTML', 2000);
-  });
-}
+if(window.innerWidth<=640){var s=document.getElementById('stickyCta');window.addEventListener('scroll',function(){s.style.display=window.scrollY>900?'block':'none'});}
+function copyPage(){var h=document.documentElement.outerHTML.replace(/<div class="copy-wrap">[\s\S]*?<\/div>/,'');navigator.clipboard.writeText(h).then(function(){var b=document.querySelector('.copy-btn');b.textContent='Copied!';setTimeout(function(){b.textContent='Copy HTML'},2e3)});}
+document.querySelectorAll('.faq-q').forEach(function(q){q.addEventListener('click',function(){this.parentElement.classList.toggle('open')})});
 </script>
 
 </body>
