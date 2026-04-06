@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { isPaidTier, tierDisplayName, getFunnelUrl, getUpgradeUrl } from '@/lib/ghl';
 import { normalizeUKPhone } from '@/lib/phoneValidation';
+import PaymentSheet from '@/features/payment/PaymentSheet';
 
 const settingsTabs = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -48,6 +49,7 @@ export default function SettingsPage() {
   const [passwords, setPasswords] = useState({ current: '', new_pw: '', confirm: '' });
   const { address: walletAddress, connected: walletConnected, connect: connectWallet, connecting } = useWallet();
   const [copied, setCopied] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [notifs, setNotifs] = useState<NotifPrefs>(defaultNotifs);
   // Wallet change permission
   const [walletChangeUntil, setWalletChangeUntil] = useState<string | null>(null);
@@ -350,12 +352,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      const url = isPaidTier(tier)
-                        ? getUpgradeUrl(tier, { email: user?.email, ref: referredBy || undefined })
-                        : getFunnelUrl({ email: user?.email, ref: referredBy || undefined });
-                      if (url) window.open(url, '_blank');
-                    }}
+                    onClick={() => setPaymentOpen(true)}
                     className="px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
                   >
                     {isPaidTier(tier) ? 'Manage Plan' : 'Upgrade Now'}
@@ -399,7 +396,7 @@ export default function SettingsPage() {
               {/* Upgrade option for free users only - upsell/downsell hidden (secret in funnel) */}
               {!isPaidTier(tier) && (
                 <div className="mt-6 max-w-[480px]">
-                  <button onClick={() => { const url = getFunnelUrl({ email: user?.email, ref: referredBy || undefined }); if (url) window.open(url, '_blank'); }}
+                  <button onClick={() => setPaymentOpen(true)}
                     className="block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors">
                     <div className="flex items-baseline gap-1">
                       <span className="text-lg font-bold text-foreground">£67</span>
@@ -621,6 +618,7 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+      <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); window.location.reload(); }} />
     </div>
   );
 }
