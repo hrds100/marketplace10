@@ -27,6 +27,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   const [pollTimedOut, setPollTimedOut] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const iframeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const iframeLoadCount = useRef(0);
 
   useEffect(() => {
     if (open) {
@@ -35,6 +36,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
       setIframeLoaded(false);
       setIframeTimedOut(false);
       setPollTimedOut(false);
+      iframeLoadCount.current = 0;
       // 8s iframe load timeout
       iframeTimerRef.current = setTimeout(() => {
         setIframeTimedOut(true);
@@ -96,25 +98,9 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     }, 1000);
   }, [handleClose, user, paymentComplete, onUnlocked]);
 
-  // Fallback poll: every 3 s while the sheet is open, check if tier changed in DB.
-  // Handles the case where GHL's iframe never fires a postMessage and cross-origin
-  // blocks reading the thank-you URL — but GHL webhook already wrote the paid tier.
-  useEffect(() => {
-    if (!open || !user?.id || paymentComplete) return;
-    const id = setInterval(async () => {
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('tier')
-          .eq('id', user.id)
-          .single();
-        if (data?.tier && data.tier !== 'free') {
-          handlePaymentSuccess();
-        }
-      } catch { /* ignore */ }
-    }, 3000);
-    return () => clearInterval(id);
-  }, [open, user?.id, paymentComplete, handlePaymentSuccess]);
+  // Fallback poll: DISABLED during funnel flow to avoid interrupting upsell/downsell.
+  // Only triggers when iframe navigates to thank-you page (detected via onLoad or postMessage).
+  // The "I've already paid" button below is the manual fallback if detection fails.
 
   // postMessage listener
   useEffect(() => {
@@ -152,7 +138,22 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     try {
       const url = (e.target as HTMLIFrameElement).contentWindow?.location?.href || '';
       if (url.includes('thank') || url.includes('Thank')) handlePaymentSuccess();
-    } catch { /* cross-origin */ }
+    } catch {
+      // Cross-origin: can't read iframe URL directly.
+      // Start a one-time tier check 3s after each iframe navigation.
+      // This catches the thank-you page when postMessage doesn't fire.
+      setTimeout(async () => {
+        if (paymentComplete || !user?.id) return;
+        try {
+          const { data } = await supabase.from('profiles').select('tier').eq('id', user.id).single();
+          if (data?.tier && data.tier !== 'free') {
+            // Double-check: only trigger if iframe has navigated multiple times (past upsell/downsell)
+            if (iframeLoadCount.current >= 3) handlePaymentSuccess();
+          }
+        } catch { /* ignore */ }
+      }, 3000);
+    }
+    iframeLoadCount.current += 1;
   };
 
   const funnelUrl = getFunnelUrl({
