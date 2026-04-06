@@ -22,6 +22,10 @@ const PRODUCT_ID_TO_TIER: Record<string, string> = {
   '69b5c27da3434d4750457c80': 'monthly',
   '69b5c2d26831635e6c3edb65': 'lifetime',
   '69b5cd925759e2ddcf750aa9': 'yearly',
+  // Human-readable IDs (used in GHL custom webhook bodies)
+  'nfstay-monthly-access': 'monthly',
+  'nfstay-lifetime-access': 'lifetime',
+  'nfstay-annual-access': 'yearly',
   // Legacy IDs
   '69b5b769081db66d1afbf145': 'monthly',
   '69b5b777711f98f382f110ff': 'lifetime',
@@ -107,6 +111,16 @@ serve(async (req) => {
       // Create profile with tier
       const tier = action === 'cancel' ? 'free' : (PRODUCT_ID_TO_TIER[productId] || AMOUNT_TO_TIER[amount] || 'monthly')
       await supabase.from('profiles').upsert({ id: matchedUser.id, email, tier, name: firstName || null }, { onConflict: 'id' })
+      // Auto-create aff_profiles so user appears in admin affiliates
+      if (action !== 'cancel') {
+        const code = 'AGEN' + Math.random().toString(36).substring(2, 4).toUpperCase()
+        await supabase.from('aff_profiles').insert({
+          user_id: matchedUser.id, referral_code: code,
+          full_name: firstName || email, tier: 'standard',
+          total_earned: 0, total_claimed: 0, pending_balance: 0,
+          link_clicks: 0, signups: 0, paid_users: 0,
+        }).catch(() => {}) // ignore if already exists
+      }
       return new Response(JSON.stringify({ success: true, tier, user_id: matchedUser.id }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -148,7 +162,27 @@ serve(async (req) => {
     await supabase.from('profiles').update({ tier }).eq('id', profile.id)
     console.log(`[ghl-payment-webhook] UPGRADED: ${email} tier ${previousTier} → ${tier}`)
 
-    // 7. Handle affiliate commission (only for the FIRST payment, not upgrades from paid→paid)
+    // 7. Auto-create aff_profiles for paying user (so they appear in admin affiliates)
+    const { data: existingAff } = await supabase
+      .from('aff_profiles')
+      .select('id')
+      .eq('user_id', profile.id)
+      .maybeSingle()
+
+    if (!existingAff) {
+      const code = 'AGEN' + Math.random().toString(36).substring(2, 4).toUpperCase()
+      await supabase.from('aff_profiles').insert({
+        user_id: profile.id,
+        referral_code: code,
+        full_name: firstName || email,
+        tier: 'standard',
+        total_earned: 0, total_claimed: 0, pending_balance: 0,
+        link_clicks: 0, signups: 0, paid_users: 0,
+      }).then(() => console.log(`[ghl-payment-webhook] Auto-created aff_profile for ${email} code=${code}`))
+        .catch(e => console.error('[ghl-payment-webhook] aff_profile auto-create error:', e))
+    }
+
+    // 8. Handle affiliate commission (only for the FIRST payment, not upgrades from paid→paid)
     let affiliateHandled = false
     const referredBy = profile.referred_by
     const isFirstPayment = !previousTier || previousTier === 'free'
