@@ -229,7 +229,8 @@ serve(async (req) => {
     }
 
     // 7. WhatsApp confirmation — enroll tenant in GHL workflow for approved template message
-    if (channel === 'whatsapp' && resolvedTenantPhone && GHL_TOKEN) {
+    // Fires for BOTH channels — tenant always gets WhatsApp + email confirmation
+    if (resolvedTenantPhone && GHL_TOKEN) {
       try {
         const ghlHeaders = { 'Authorization': `Bearer ${GHL_TOKEN}`, 'Version': '2021-07-28', 'Content-Type': 'application/json' }
 
