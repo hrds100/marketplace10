@@ -104,11 +104,13 @@ export default function SignIn() {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        window.location.href = redirectTo
-          ? decodeURIComponent(redirectTo)
-          : '/dashboard/deals';
+        if (!redirectTo && session.user?.id) {
+          const { data: op } = await supabase.from('nfs_operators').select('id').eq('user_id', session.user.id).limit(1);
+          if (op && op.length > 0) { window.location.href = '/dashboard/booking-site'; return; }
+        }
+        window.location.href = redirectTo ? decodeURIComponent(redirectTo) : '/dashboard/deals';
       }
     });
   }, [redirectTo]);
@@ -135,6 +137,14 @@ export default function SignIn() {
         localStorage.setItem(REMEMBER_KEY, email.trim().toLowerCase());
       } else {
         localStorage.removeItem(REMEMBER_KEY);
+      }
+      // Check if user is a booking site operator → redirect to booking-site
+      if (!redirectTo) {
+        const { data: { session: s } } = await supabase.auth.getSession();
+        if (s?.user?.id) {
+          const { data: op } = await supabase.from('nfs_operators').select('id').eq('user_id', s.user.id).limit(1);
+          if (op && op.length > 0) { window.location.href = '/dashboard/booking-site'; return; }
+        }
       }
       window.location.href = redirectTo ? decodeURIComponent(redirectTo) : '/dashboard/deals';
     } catch {

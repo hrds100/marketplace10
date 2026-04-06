@@ -472,25 +472,25 @@ export default function BookingSitePreview({ branding, isMobile, onPayment }: Pr
               {branding.heroSubheadline && <p className="text-[#9d9da1] mt-3 md:mt-6">{branding.heroSubheadline}</p>}
             </div>
             {/* Search bar (cloned from NfsHeroSearch) */}
-            <div className={`border border-gray-200 ${isMobile ? 'rounded-3xl p-5' : 'rounded-full p-1.5'} flex ${isMobile ? 'flex-col' : 'items-center'} shadow-sm hover:shadow-md transition-shadow bg-white`}>
-              <div className={`flex items-center flex-1 p-2 ${isMobile ? 'border-b border-gray-200' : ''}`}>
-                <MapPin className="w-5 h-5 text-black shrink-0" />
-                <span className="ml-2 text-sm text-black">London</span>
-                <ChevronDown className="w-4 h-4 text-black ml-auto shrink-0" />
-                {!isMobile && <div className="h-7 w-px bg-gray-200 ml-2" />}
+            <div className={`border border-gray-200 ${isMobile ? 'rounded-2xl p-4' : 'rounded-full p-1'} flex ${isMobile ? 'flex-col' : 'items-center'} shadow-sm hover:shadow-md transition-shadow bg-white`}>
+              <div className={`flex items-center flex-1 px-2 py-1 ${isMobile ? 'border-b border-gray-200' : ''}`}>
+                <MapPin className="w-3.5 h-3.5 text-black shrink-0" />
+                <span className="ml-1.5 text-xs text-black">London</span>
+                <ChevronDown className="w-3 h-3 text-black ml-auto shrink-0" />
+                {!isMobile && <div className="h-5 w-px bg-gray-200 ml-1.5" />}
               </div>
-              <div className={`flex items-center flex-1 p-2 ${isMobile ? 'border-b border-gray-200 mt-3' : ''}`}>
-                <Calendar className="w-5 h-5 text-black shrink-0" />
-                <span className="ml-2 text-sm text-black">Any dates</span>
-                <ChevronDown className="w-4 h-4 text-black ml-auto shrink-0" />
-                {!isMobile && <div className="h-7 w-px bg-gray-200 ml-2" />}
+              <div className={`flex items-center flex-1 px-2 py-1 ${isMobile ? 'border-b border-gray-200 mt-2' : ''}`}>
+                <Calendar className="w-3.5 h-3.5 text-black shrink-0" />
+                <span className="ml-1.5 text-xs text-black">Any dates</span>
+                <ChevronDown className="w-3 h-3 text-black ml-auto shrink-0" />
+                {!isMobile && <div className="h-5 w-px bg-gray-200 ml-1.5" />}
               </div>
-              <div className={`flex items-center flex-1 p-2 ${isMobile ? 'mt-3' : ''}`}>
-                <CircleUserRound className="w-5 h-5 text-black shrink-0" />
-                <span className="ml-2 text-sm text-black">Any guests</span>
-                <ChevronDown className="w-4 h-4 text-black ml-auto shrink-0" />
+              <div className={`flex items-center flex-1 px-2 py-1 ${isMobile ? 'mt-2' : ''}`}>
+                <CircleUserRound className="w-3.5 h-3.5 text-black shrink-0" />
+                <span className="ml-1.5 text-xs text-black">Any guests</span>
+                <ChevronDown className="w-3 h-3 text-black ml-auto shrink-0" />
               </div>
-              <button onClick={() => setPage('search')} className={`${isMobile ? 'w-full mt-4' : 'w-[140px]'} h-[50px] text-white font-semibold rounded-full text-sm flex items-center justify-center`} style={{ background: grad }}>Search</button>
+              <button onClick={() => setPage('search')} className={`${isMobile ? 'w-full mt-3' : 'w-[100px]'} h-[36px] text-white font-semibold rounded-full text-xs flex items-center justify-center`} style={{ background: grad }}>Search</button>
             </div>
           </div>
         </section>

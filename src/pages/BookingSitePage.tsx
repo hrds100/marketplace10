@@ -379,7 +379,7 @@ function BookingSiteDashboard() {
   const [hexInput, setHexInput] = useState(defaultBranding.accentColor);
   const [seeded, setSeeded] = useState(false);
   const { isAdmin } = useAuth();
-  const [topTab, setTopTab] = useState<'dashboard' | 'properties' | 'reservations' | 'branding' | 'analytics' | 'users'>('dashboard');
+  const [topTab, setTopTab] = useState<'dashboard' | 'properties' | 'reservations' | 'branding' | 'analytics' | 'users'>('branding');
 
   // Dashboard stats
   const [statsLoading, setStatsLoading] = useState(false);
