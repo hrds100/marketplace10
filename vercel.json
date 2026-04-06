@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/poll-whatsapp",
-      "schedule": "*/2 * * * *"
+      "schedule": "* * * * *"
     }
   ],
   "buildCommand": "npm run build",
