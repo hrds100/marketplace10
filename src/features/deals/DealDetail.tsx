@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchPexelsPhotos } from '@/lib/pexels';
 import PropertyCard from '@/components/PropertyCard';
-import EmailInquiryModal from '@/components/EmailInquiryModal';
+import InquiryChatModal from '@/features/inquiry/InquiryChatModal';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 
@@ -538,9 +538,9 @@ export default function DealDetail() {
         </div>
       )}
 
-      {/* Email inquiry modal */}
-      <EmailInquiryModal open={emailModalOpen} listing={listingShape} onClose={() => setEmailModalOpen(false)} />
-      <EmailInquiryModal channel="whatsapp" open={whatsappModalOpen} listing={listingShape} onClose={() => setWhatsappModalOpen(false)} />
+      {/* Inquiry modals */}
+      <InquiryChatModal open={emailModalOpen} listing={listingShape} onClose={() => setEmailModalOpen(false)} />
+      <InquiryChatModal channel="whatsapp" open={whatsappModalOpen} listing={listingShape} onClose={() => setWhatsappModalOpen(false)} />
       {/* GHL payment panel (free users) */}
       <InquiryPanel open={inquiryOpen} listing={inquiryTarget} onClose={() => setInquiryOpen(false)} />
     </div>
