@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore, Tag, ImagePlus, ChevronDown, ExternalLink, Users, Briefcase, CheckCircle2 } from 'lucide-react';
+import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore, Tag, ImagePlus, ChevronDown, ExternalLink, Users, Briefcase, CheckCircle2, Lock } from 'lucide-react';
+import { usePropertyImage } from '@/features/deals/usePropertyImage';
 import { CRM_STAGES, type CRMDeal } from '@/data/mockData';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +11,29 @@ import type { ListingShape } from '@/components/InquiryPanel';
 import LeadsTab from '@/components/crm/LeadsTab';
 
 type ExtendedDeal = CRMDeal & { photo_url?: string | null; property_id?: string | null };
+
+function CRMCardImage({ deal, height }: { deal: ExtendedDeal; height: string }) {
+  const resolvedImage = usePropertyImage(
+    deal.property_id || deal.id,
+    deal.photo_url ? [deal.photo_url] : null,
+    deal.city,
+    deal.type,
+    0,
+    false,
+  );
+  const isPexels = resolvedImage?.includes('images.pexels.com') || false;
+  return (
+    <div className={`relative w-full overflow-hidden ${height}`}>
+      <img src={resolvedImage || ''} alt="" className={`w-full ${height} object-cover`} loading="lazy"
+        style={isPexels ? { filter: 'blur(8px)', transform: 'scale(1.1)' } : undefined} />
+      {isPexels && (
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <Lock className="w-4 h-4 text-white" />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CRMPage() {
   useEffect(() => { document.title = 'nfstay - CRM'; }, []);
@@ -305,7 +329,7 @@ export default function CRMPage() {
 
                   {/* Expanded panel */}
                   <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedId === deal.id ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <img src={getDealImage(deal)} alt="" className="w-full h-[140px] object-cover" loading="lazy" />
+                    <CRMCardImage deal={deal} height="h-[140px]" />
                     <div className="p-4 space-y-3">
                       <div className="grid grid-cols-2 gap-2">
                         <div className="bg-secondary rounded-lg p-2.5">
@@ -367,7 +391,7 @@ export default function CRMPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {archivedDeals.map(deal => (
               <div key={deal.id} className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-                <img src={getDealImage(deal)} alt="" className="w-full h-[80px] object-cover" loading="lazy" />
+                <CRMCardImage deal={deal} height="h-[80px]" />
                 <div className="p-4">
                   <div className="text-sm font-bold text-foreground">{deal.name}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{deal.city} · {deal.postcode}</div>

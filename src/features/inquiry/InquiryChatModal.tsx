@@ -227,7 +227,7 @@ export default function InquiryChatModal({ open, listing, onClose, onContactSucc
               <h2 className="text-2xl font-bold text-center leading-snug" style={{ color: '#1A1A1A' }}>
                 You could earn{' '}
                 <span style={{ color: '#1E9A80' }}>£{estimatedProfit.toLocaleString()}/month</span>
-                {' '}hosting on Airbnb
+                {' '}hosting this property on Airbnb
               </h2>
               <div className="space-y-1 pt-1">
                 <div className="flex items-center justify-between">
