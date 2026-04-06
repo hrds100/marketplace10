@@ -129,11 +129,10 @@ serve(async (req) => {
     const orderId = order.id
 
     // 5. Create commission if agent found (same logic as inv-samcart-webhook createCommission)
-    let commissionAmount = 0
+    let commResult: { rate: number; commissionAmount: number } | null = null
     if (agentUserId) {
       try {
-        await createCommission(supabase, agentUserId, userId, dbPropertyId, amount, orderId)
-        commissionAmount = amount * 0.05 // approximation for email — real rate from createCommission
+        commResult = await createCommission(supabase, agentUserId, userId, dbPropertyId, amount, orderId)
       } catch (commErr) {
         console.error('Commission creation failed (non-blocking):', commErr)
       }
@@ -173,19 +172,19 @@ serve(async (req) => {
       amount,
       shares,
       agentName: agentUserId ? (await supabase.from('profiles').select('name').eq('id', agentUserId).maybeSingle()).data?.name : null,
-      commission: agentUserId ? commissionAmount : null,
+      commission: commResult?.commissionAmount ?? null,
     })
 
     // Agent email
-    if (agentUserId) {
+    if (agentUserId && commResult) {
       const { data: agentInfo } = await supabase.from('profiles').select('email, name').eq('id', agentUserId).maybeSingle()
       if (agentInfo?.email) {
         sendEmail('inv-purchase-agent', {
           agentEmail: agentInfo.email,
           property: propertyTitle,
           amount,
-          commission: commissionAmount,
-          rate: 5,
+          commission: commResult.commissionAmount,
+          rate: commResult.rate * 100,
           claimableDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
         })
       }
@@ -206,12 +205,12 @@ serve(async (req) => {
       body: `${userName} (${userEmail}) invested $${amount} in ${propertyTitle} via crypto.`,
     })
     // Agent notification
-    if (agentUserId) {
+    if (agentUserId && commResult) {
       await supabase.from('notifications').insert({
         user_id: agentUserId,
         type: 'commission_earned',
         title: 'You earned commission!',
-        body: `You earned $${commissionAmount.toFixed(2)} from a share purchase in ${propertyTitle}.`,
+        body: `You earned $${commResult.commissionAmount.toFixed(2)} from a share purchase in ${propertyTitle}.`,
       })
     }
 
@@ -244,6 +243,7 @@ serve(async (req) => {
 })
 
 // ── createCommission — copied from inv-samcart-webhook (single source of truth) ──
+/** Returns { rate, commissionAmount } or null */
 async function createCommission(
   supabase: any,
   agentUserId: string,
@@ -286,27 +286,40 @@ async function createCommission(
     affProfile = newAff
   }
 
-  // Get rate (user-specific or global)
+  // Detect if this is a repeat purchase (same agent → same buyer → same property)
+  const { data: existingCommission } = await supabase
+    .from('aff_commissions')
+    .select('id')
+    .eq('affiliate_id', affProfile.id)
+    .eq('referred_user_id', referredUserId)
+    .eq('property_id', propertyId)
+    .limit(1)
+    .maybeSingle()
+
+  const commissionType = existingCommission ? 'investment_recurring' : 'investment_first'
+
+  // Get rate (user-specific or global) for the determined commission type
   const { data: customRate } = await supabase
     .from('aff_commission_settings')
     .select('rate')
     .eq('user_id', agentUserId)
-    .eq('commission_type', 'investment_first')
+    .eq('commission_type', commissionType)
     .maybeSingle()
 
   const { data: globalRate } = await supabase
     .from('aff_commission_settings')
     .select('rate')
     .is('user_id', null)
-    .eq('commission_type', 'investment_first')
+    .eq('commission_type', commissionType)
     .maybeSingle()
 
-  const rate = customRate?.rate || globalRate?.rate || 0.05
+  const defaultRate = commissionType === 'investment_recurring' ? 0.02 : 0.05
+  const rate = customRate?.rate || globalRate?.rate || defaultRate
   const commissionAmount = amount * rate
 
   await supabase.from('aff_commissions').insert({
     affiliate_id: affProfile.id,
-    source: 'investment_first',
+    source: commissionType,
     source_id: orderId,
     referred_user_id: referredUserId,
     property_id: propertyId,
@@ -333,4 +346,6 @@ async function createCommission(
       })
       .eq('id', affProfile.id)
   }
+
+  return { rate, commissionAmount }
 }

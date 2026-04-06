@@ -482,8 +482,9 @@ serve(async (req) => {
       // Shareholdings and shares_sold are NOT updated — that happens on admin approve.
 
       // Create agent commission if applicable
+      let commResult: { rate: number; commissionAmount: number } | null = null
       if (agentUserId) {
-        await createCommission(supabase, agentUserId, userId, propertyId, amountPaid, order.id)
+        commResult = await createCommission(supabase, agentUserId, userId, propertyId, amountPaid, order.id)
       }
 
       // Send notification
@@ -515,17 +516,17 @@ serve(async (req) => {
         amount: amountPaid,
         shares: finalShares,
         agentName: agentUserId ? (await supabase.from('profiles').select('name').eq('id', agentUserId).maybeSingle()).data?.name : null,
-        commission: agentUserId ? amountPaid * 0.05 : null,
+        commission: commResult?.commissionAmount ?? null,
       })
-      if (agentUserId) {
+      if (agentUserId && commResult) {
         const agentInfo = await supabase.from('profiles').select('email, name').eq('id', agentUserId).maybeSingle()
         if (agentInfo.data?.email) {
           sendEmailLegacy('inv-purchase-agent', {
             agentEmail: agentInfo.data.email,
             property: legacyPropertyTitle,
             amount: amountPaid,
-            commission: amountPaid * 0.05,
-            rate: 5,
+            commission: commResult.commissionAmount,
+            rate: commResult.rate * 100,
             claimableDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
           })
         }
@@ -546,12 +547,12 @@ serve(async (req) => {
         body: `${customerFirstName || 'Investor'} (${customerEmail}) purchased $${amountPaid} of ${legacyPropertyTitle || 'a property'}.`,
       }).then(() => {}).catch(() => {})
       // Agent: commission earned
-      if (agentUserId) {
+      if (agentUserId && commResult) {
         supabase.from('notifications').insert({
           user_id: agentUserId,
           type: 'commission_earned',
           title: 'You earned commission!',
-          body: `You earned $${(amountPaid * 0.05).toFixed(2)} commission from a share purchase in ${legacyPropertyTitle || 'a property'}.`,
+          body: `You earned $${commResult.commissionAmount.toFixed(2)} commission from a share purchase in ${legacyPropertyTitle || 'a property'}.`,
         }).then(() => {}).catch(() => {})
       }
 
@@ -876,8 +877,9 @@ serve(async (req) => {
     // Shareholdings and shares_sold are NOT updated here — that happens on admin approve.
 
     // Create agent commission if applicable (commissions are created at webhook time)
+    let commResult2: { rate: number; commissionAmount: number } | null = null
     if (agentUserId) {
-      await createCommission(supabase, agentUserId, userId, propertyId, amount, order.id)
+      commResult2 = await createCommission(supabase, agentUserId, userId, propertyId, amount, order.id)
     }
 
     // Send notification via n8n
@@ -918,19 +920,18 @@ serve(async (req) => {
       amount,
       shares: sharesRequested,
       agentName: agentUserId ? (await supabase.from('profiles').select('name').eq('id', agentUserId).maybeSingle()).data?.name : null,
-      commission: agentUserId ? amount * 0.05 : null,
+      commission: commResult2?.commissionAmount ?? null,
     })
     // Email to agent
-    if (agentUserId) {
+    if (agentUserId && commResult2) {
       const agentProfile = await supabase.from('profiles').select('email, name').eq('id', agentUserId).maybeSingle()
       if (agentProfile.data?.email) {
-        const rate = 0.05
         sendEmail('inv-purchase-agent', {
           agentEmail: agentProfile.data.email,
           property: propertyTitle || productName,
           amount,
-          commission: amount * rate,
-          rate: rate * 100,
+          commission: commResult2.commissionAmount,
+          rate: commResult2.rate * 100,
           claimableDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
         })
       }
@@ -949,12 +950,12 @@ serve(async (req) => {
       title: 'New investment',
       body: `${firstName || 'Investor'} (${email}) purchased $${amount} of ${notifProperty}.`,
     }).then(() => {}).catch(() => {})
-    if (agentUserId) {
+    if (agentUserId && commResult2) {
       supabase.from('notifications').insert({
         user_id: agentUserId,
         type: 'commission_earned',
         title: 'You earned commission!',
-        body: `You earned $${(amount * 0.05).toFixed(2)} commission from a share purchase in ${notifProperty}.`,
+        body: `You earned $${commResult2.commissionAmount.toFixed(2)} commission from a share purchase in ${notifProperty}.`,
       }).then(() => {}).catch(() => {})
     }
 
@@ -998,7 +999,7 @@ serve(async (req) => {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-/** Create affiliate commission for an agent */
+/** Create affiliate commission for an agent. Returns { rate, commissionAmount } or null. */
 async function createCommission(
   supabase: any,
   agentUserId: string,
@@ -1050,27 +1051,40 @@ async function createCommission(
       affProfile = newAff
     }
 
-    // Get rate (user-specific or global)
+    // Detect if this is a repeat purchase (same agent → same buyer → same property)
+    const { data: existingCommission } = await supabase
+      .from('aff_commissions')
+      .select('id')
+      .eq('affiliate_id', affProfile.id)
+      .eq('referred_user_id', referredUserId)
+      .eq('property_id', propertyId)
+      .limit(1)
+      .maybeSingle()
+
+    const commissionType = existingCommission ? 'investment_recurring' : 'investment_first'
+
+    // Get rate (user-specific or global) for the determined commission type
     const { data: customRate } = await supabase
       .from('aff_commission_settings')
       .select('rate')
       .eq('user_id', agentUserId)
-      .eq('commission_type', 'investment_first')
+      .eq('commission_type', commissionType)
       .maybeSingle()
 
     const { data: globalRate } = await supabase
       .from('aff_commission_settings')
       .select('rate')
       .is('user_id', null)
-      .eq('commission_type', 'investment_first')
+      .eq('commission_type', commissionType)
       .maybeSingle()
 
-    const rate = customRate?.rate || globalRate?.rate || 0.05
+    const defaultRate = commissionType === 'investment_recurring' ? 0.02 : 0.05
+    const rate = customRate?.rate || globalRate?.rate || defaultRate
     const commissionAmount = amount * rate
 
     await supabase.from('aff_commissions').insert({
       affiliate_id: affProfile.id,
-      source: 'investment_first',
+      source: commissionType,
       source_id: orderId,
       referred_user_id: referredUserId,
       property_id: propertyId,
@@ -1097,9 +1111,12 @@ async function createCommission(
         })
         .eq('id', affProfile.id)
     }
+
+    return { rate, commissionAmount }
   } catch (e) {
     // Don't fail the webhook if commission creation fails
     console.log('Commission creation failed:', e)
+    return null
   }
 }
 

@@ -126,6 +126,41 @@ export function useInvestOrders() {
   });
 }
 
+/** Fetch historical orders from legacy backend (MongoDB via be.nfstay.com) */
+export function useLegacyOrders() {
+  return useQuery({
+    queryKey: ['legacy_orders'],
+    queryFn: async () => {
+      try {
+        const res = await fetch('https://be.nfstay.com/api/admin/get-orders');
+        if (!res.ok) return [];
+        const json = await res.json();
+        return (json.data || []).map((o: any) => ({
+          id: String(o.orderId ?? o._id ?? ''),
+          user_id: '',
+          user_email: '',
+          investor_wallet: o.walletAddress || '',
+          property_id: o.propertyId ?? 0,
+          property_title: `Property #${o.propertyId ?? 0}`,
+          shares: o.shares_requested ?? 0,
+          amount: o.amount_paid ?? 0,
+          payment_method: 'card',
+          agent_wallet: o.agentAddress || '',
+          status: o.status || 'pending',
+          tx_hash: o.txHash || '',
+          wallet_address: o.walletAddress || '',
+          created_at: '',
+          _source: 'legacy' as const,
+        }));
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+}
+
 export function useMyOrders() {
   const { user } = useAuth();
   return useQuery({

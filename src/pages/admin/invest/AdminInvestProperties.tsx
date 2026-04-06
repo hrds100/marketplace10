@@ -104,7 +104,46 @@ export default function AdminInvestProperties() {
   const [docFiles, setDocFiles] = useState<File[]>([]);
   const [highlightInput, setHighlightInput] = useState('');
   const [uploading, setUploading] = useState(false);
-  // Live blockchain stats for the editing property
+  // Live blockchain stats for ALL properties in the table
+  const [bcTableStats, setBcTableStats] = useState<Record<number, { totalShares: number; sold: number; remaining: number; aprPct: number; pricePerShare: number }>>({});
+  const [bcTableLoading, setBcTableLoading] = useState(false);
+  useEffect(() => {
+    const propsWithBc = (properties as Property[]).filter((p) => p.blockchain_property_id);
+    if (propsWithBc.length === 0) return;
+    let cancelled = false;
+    setBcTableLoading(true);
+    (async () => {
+      try {
+        const ethers = await import('ethers');
+        const provider = new ethers.providers.JsonRpcProvider('https://bnb-mainnet.g.alchemy.com/v2/cSfdT7vlZP9eG6Gn6HysdgrYaNXs9B6T');
+        const rwaIface = new ethers.utils.Interface(['function getProperty(uint256) view returns (tuple(uint256 pricePerShare, uint256 totalOwners, uint256 aprBips, uint256 totalShares, string uri))']);
+        const mktIface = new ethers.utils.Interface(['function getPrimarySale(uint256)']);
+        const results: Record<number, { totalShares: number; sold: number; remaining: number; aprPct: number; pricePerShare: number }> = {};
+        await Promise.all(propsWithBc.map(async (p) => {
+          try {
+            const bcId = p.blockchain_property_id;
+            const rwaData = await provider.call({ to: '0xA588E7dC42a956cc6c412925dE99240cc329157b', data: rwaIface.encodeFunctionData('getProperty', [bcId]) });
+            const d = ethers.utils.defaultAbiCoder.decode(['tuple(uint256 pricePerShare, uint256 totalOwners, uint256 aprBips, uint256 totalShares, string uri)'], rwaData)[0];
+            const raw = await provider.call({ to: '0xDD22fDC50062F49a460E5a6bADF96Cbec85ac128', data: mktIface.encodeFunctionData('getPrimarySale', [bcId]) });
+            const remaining = parseInt(raw.slice(2).slice(64, 128), 16);
+            const totalShares = d.totalShares.toNumber();
+            results[p.id] = {
+              totalShares,
+              sold: totalShares - remaining,
+              remaining,
+              aprPct: (d.aprBips.toNumber() / 10000) * 100,
+              pricePerShare: parseFloat(d.pricePerShare.toString()) / 1e18,
+            };
+          } catch { /* skip this property if chain read fails */ }
+        }));
+        if (!cancelled) setBcTableStats(results);
+      } catch { /* non-fatal */ }
+      if (!cancelled) setBcTableLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [properties]);
+
+  // Live blockchain stats for the editing property (modal)
   const [bcStats, setBcStats] = useState<{ totalShares: number; sold: number; remaining: number; aprPct: number; monthlyYield: number; pricePerShare: number } | null>(null);
   useEffect(() => {
     const bcId = editing?.blockchain_property_id;
@@ -338,7 +377,11 @@ export default function AdminInvestProperties() {
         <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
           <Loader2 className="w-5 h-5 animate-spin" /> Loading properties...
         </div>
-      ) : (
+      ) : (<>
+      <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1.5">
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        Green dots indicate live blockchain data. {bcTableLoading && <><Loader2 className="w-3 h-3 animate-spin inline" /> Fetching chain data...</>}
+      </p>
       <Card className="border-border">
         <CardContent className="p-0">
           <Table data-feature="ADMIN__INVEST_PROPERTIES_TABLE">
@@ -358,19 +401,34 @@ export default function AdminInvestProperties() {
             </TableHeader>
             <TableBody>
               {properties.map((p: Property) => {
-                const fundedPct = p.total_shares ? Math.round((p.shares_sold / p.total_shares) * 100) : 0;
+                const bc = bcTableStats[p.id];
+                const displayTotalShares = bc?.totalShares ?? p.total_shares;
+                const displaySold = bc?.sold ?? p.shares_sold;
+                const displayYield = bc ? parseFloat(bc.aprPct.toFixed(1)) : p.annual_yield;
+                const fundedPct = displayTotalShares ? Math.round((displaySold / displayTotalShares) * 100) : 0;
+                const isChainData = !!bc;
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.title}</TableCell>
                     <TableCell className="text-muted-foreground">{p.location}</TableCell>
-                    <TableCell className="text-right">${p.price_per_share}</TableCell>
-                    <TableCell className="text-right">{p.total_shares.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{p.shares_sold.toLocaleString()}</TableCell>
-                    <TableCell className="text-right text-emerald-600 font-medium">{p.annual_yield}%</TableCell>
+                    <TableCell className="text-right">${bc?.pricePerShare ?? p.price_per_share}</TableCell>
+                    <TableCell className="text-right">
+                      {displayTotalShares.toLocaleString()}
+                      {isChainData && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 ml-1.5 align-middle" title="Live from blockchain" />}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {displaySold.toLocaleString()}
+                      {isChainData && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 ml-1.5 align-middle" title="Live from blockchain" />}
+                    </TableCell>
+                    <TableCell className="text-right text-emerald-600 font-medium">
+                      {displayYield}%
+                      {isChainData && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 ml-1.5 align-middle" title="Live from blockchain" />}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Progress value={fundedPct} className="h-2 w-20" />
                         <span className="text-xs text-muted-foreground">{fundedPct}%</span>
+                        {isChainData && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 align-middle" title="Live from blockchain" />}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -411,7 +469,7 @@ export default function AdminInvestProperties() {
           </Table>
         </CardContent>
       </Card>
-      )}
+      </>)}
 
       {/* Create / Edit Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
