@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchPexelsPhotos } from '@/lib/pexels';
 import PropertyCard from '@/components/PropertyCard';
-import InquiryChatModal from '@/features/inquiry/InquiryChatModal';
+import InquiryChatModal from '@/components/InquiryChatModal';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 

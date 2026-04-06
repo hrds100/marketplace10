@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import PropertyCard from '@/components/PropertyCard';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
-import InquiryChatModal from '@/features/inquiry/InquiryChatModal';
+import InquiryChatModal from '@/components/InquiryChatModal';
 import { useFavourites } from '@/hooks/useFavourites';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';

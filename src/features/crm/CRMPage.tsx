@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { GripVertical, Plus, MessageCircle, X, Archive, ArchiveRestore, Tag, ImagePlus, ChevronDown, ExternalLink, Users, Briefcase, CheckCircle2, Lock } from 'lucide-react';
-import { usePropertyImage } from '@/features/deals/usePropertyImage';
+import { usePropertyImage } from '@/hooks/usePropertyImage';
 import { CRM_STAGES, type CRMDeal } from '@/data/mockData';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';

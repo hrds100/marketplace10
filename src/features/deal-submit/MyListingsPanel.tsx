@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Pencil, Trash2, X, Loader2, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { usePropertyImage } from '@/features/deals/usePropertyImage';
+import { usePropertyImage } from '@/hooks/usePropertyImage';
 
 function ListingImage({ id, photos, city, type }: { id: string; photos: string[] | null; city: string; type: string }) {
   const resolvedImage = usePropertyImage(id, photos, city, type, 0, false);
