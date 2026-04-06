@@ -612,22 +612,52 @@ export default function AffiliatesPage() {
                 const claimableTotal = myCommissions
                   .filter((c: { status: string }) => c.status === 'claimable')
                   .reduce((sum: number, c: { commission_amount: number }) => sum + Number(c.commission_amount), 0);
+                const pendingTotal = myCommissions
+                  .filter((c: { status: string }) => c.status === 'pending')
+                  .reduce((sum: number, c: { commission_amount: number }) => sum + Number(c.commission_amount), 0);
+                const claimedTotal = myCommissions
+                  .filter((c: { status: string }) => c.status === 'claimed' || c.status === 'paid')
+                  .reduce((sum: number, c: { commission_amount: number }) => sum + Number(c.commission_amount), 0);
                 return (
                   <div className="bg-card border border-border rounded-2xl p-5">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-semibold text-foreground">Your Commissions</h3>
                       <button
-                        disabled={!hasClaimable}
-                        onClick={() => { if (hasClaimable) payoutMutation.mutate(); }}
+                        onClick={() => {
+                          if (hasClaimable) {
+                            payoutMutation.mutate();
+                          } else if (pendingTotal > 0) {
+                            toast.info('Your commissions are still in the 14-day holdback period. Check the claimable date below.');
+                          } else {
+                            setPayoutOpen(true);
+                            toast.info('Set up your payout details first, then your commissions will appear here.');
+                          }
+                        }}
                         className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                           hasClaimable
                             ? 'bg-[#1E9A80] text-white hover:opacity-90 cursor-pointer'
-                            : 'bg-muted text-muted-foreground cursor-not-allowed'
+                            : 'bg-[#1E9A80]/20 text-[#1E9A80] cursor-pointer hover:bg-[#1E9A80]/30'
                         }`}
                       >
                         <Wallet className="w-3.5 h-3.5 inline mr-1.5" />
-                        {hasClaimable ? `Claim $${claimableTotal.toFixed(2)}` : 'Claim'}
+                        {hasClaimable ? `Claim £${claimableTotal.toFixed(2)}` : pendingTotal > 0 ? `£${pendingTotal.toFixed(2)} pending` : 'Claim'}
                       </button>
+                    </div>
+
+                    {/* Summary stats */}
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="rounded-lg p-2.5 text-center" style={{ backgroundColor: '#ECFDF5' }}>
+                        <p className="text-[10px] font-medium" style={{ color: '#1E9A80' }}>Claimable</p>
+                        <p className="text-sm font-bold" style={{ color: '#1E9A80' }}>£{claimableTotal.toFixed(2)}</p>
+                      </div>
+                      <div className="rounded-lg bg-amber-50 p-2.5 text-center">
+                        <p className="text-[10px] font-medium text-amber-700">Pending</p>
+                        <p className="text-sm font-bold text-amber-700">£{pendingTotal.toFixed(2)}</p>
+                      </div>
+                      <div className="rounded-lg bg-blue-50 p-2.5 text-center">
+                        <p className="text-[10px] font-medium text-blue-700">Claimed</p>
+                        <p className="text-sm font-bold text-blue-700">£{claimedTotal.toFixed(2)}</p>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       {myCommissions.map((c: { id: string; source: string; gross_amount: number; commission_amount: number; commission_rate: number; status: string; claimable_at: string; created_at: string; inv_properties?: { title: string } }) => (
