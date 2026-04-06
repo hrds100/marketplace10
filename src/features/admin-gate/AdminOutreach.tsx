@@ -257,11 +257,33 @@ interface LandlordGroup {
 function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showAssignForm, setShowAssignForm] = useState<Set<string>>(new Set());
-  const [assignLeadForms, setAssignLeadForms] = useState<Record<string, { name: string; email: string; phone: string; mode: 'direct' | 'nda' | 'nda_and_claim'; workflow: string }>>({});
+  const [assignLeadForms, setAssignLeadForms] = useState<Record<string, { name: string; email: string; phone: string; mode: 'direct' | 'nda' | 'nda_and_claim'; workflow: string; message: string }>>({});
   const [selectedPhones, setSelectedPhones] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkPin, setBulkPin] = useState('');
   const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // Load admin message templates
+  const DEFAULT_TEMPLATES = [
+    { title: 'Arrange viewing', body: "Hi, I'd love to arrange a viewing for this property. What day works best for you?" },
+    { title: 'Ask about property', body: "Could you tell me more about the property? I'm particularly interested in the SA approval status." },
+    { title: 'Express interest', body: "I'm very interested in this opportunity. I run a serviced accommodation business and would love to discuss terms." },
+    { title: 'Request documents', body: 'Could you share the compliance documents and any existing EPC/gas safety certificates?' },
+  ];
+  const { data: adminTemplates = [] } = useQuery({
+    queryKey: ['admin-templates', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, count } = await supabase.from('message_templates').select('id, title, body', { count: 'exact' }).eq('user_id', user.id).order('created_at');
+      if (count === 0 || !data || data.length === 0) {
+        const seedRows = DEFAULT_TEMPLATES.map(r => ({ ...r, category: 'General', user_id: user.id }));
+        const { data: seeded } = await supabase.from('message_templates').insert(seedRows).select('id, title, body');
+        return seeded || [];
+      }
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   const toggleSelectPhone = (phone: string) => {
     setSelectedPhones(prev => {
@@ -301,7 +323,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       } else {
         next.add(phone);
         if (!assignLeadForms[phone]) {
-          setAssignLeadForms(p => ({ ...p, [phone]: { name: '', email: '', phone: '', mode: 'nda_and_claim', workflow: GHL_WORKFLOW_COLD } }));
+          setAssignLeadForms(p => ({ ...p, [phone]: { name: '', email: '', phone: '', mode: 'nda_and_claim', workflow: GHL_WORKFLOW_COLD, message: '' } }));
         }
       }
       return next;
@@ -476,7 +498,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
         lister_phone: group.phone,
         lister_name: group.name || null,
         channel: 'email',
-        message: 'Admin-assigned lead via Landlord Activation outreach',
+        message: formData.message?.trim() || 'Admin-assigned lead via Landlord Activation outreach',
         authorized: true,
         authorisation_type: formData.mode,
         token,
@@ -758,6 +780,33 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                           <option value={GHL_WORKFLOW_WARM}>Tenant to Landlord</option>
                         </select>
                       </div>
+                      <div className="flex-1" />
+                    </div>
+                    {/* Message template */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-semibold" style={{ color: '#525252' }}>Message (optional)</label>
+                        <select
+                          onChange={e => { if (e.target.value) updateAssignForm(group.phone, 'message', e.target.value); e.target.value = ''; }}
+                          className="h-7 rounded-md border px-1.5 text-[10px]"
+                          style={{ borderColor: '#E5E5E5', color: '#6B7280' }}
+                        >
+                          <option value="">Use template...</option>
+                          {adminTemplates.map(t => (
+                            <option key={t.id} value={t.body}>{t.title}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <textarea
+                        value={assignLeadForms[group.phone]?.message || ''}
+                        onChange={e => updateAssignForm(group.phone, 'message', e.target.value)}
+                        placeholder="Write a message to include with this lead assignment..."
+                        className="w-full rounded-lg border px-3 py-2 text-xs resize-none"
+                        style={{ borderColor: '#E5E5E5', minHeight: 60 }}
+                        rows={2}
+                      />
+                    </div>
+                    <div className="flex items-center gap-3">
                       <div className="flex-1" />
                       <button
                         onClick={() => { setShowAssignForm(prev => { const next = new Set(prev); next.delete(group.phone); return next; }); }}

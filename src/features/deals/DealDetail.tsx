@@ -193,36 +193,6 @@ export default function DealDetail() {
     enabled: !!id && !!city,
   });
 
-  // Nearby deals from Supabase (same city, live only)
-  const { data: nearbyDeals = [] } = useQuery({
-    queryKey: ['nearby-deals', city, id],
-    queryFn: async () => {
-      const { data } = await (supabase.from('properties') as any)
-        .select('*')
-        .eq('city', city)
-        .eq('status', 'live')
-        .neq('id', id!)
-        .limit(3);
-      return (data || []).map((p: Record<string, unknown>) => ({
-        id: p.id as string,
-        name: p.name as string,
-        city: p.city as string,
-        postcode: p.postcode as string,
-        rent: (p.rent_monthly as number) || 0,
-        profit: (p.profit_est as number) || 0,
-        type: p.type as string,
-        status: (p.status as 'live' | 'on-offer' | 'inactive') || 'inactive',
-        featured: !!p.featured,
-        prime: !!(p as Record<string, unknown>).prime,
-        daysAgo: Math.max(0, Math.floor((Date.now() - new Date(p.created_at as string).getTime()) / 86400000)),
-        image: ((p.photos as string[] | null)?.[0]) || `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent((p.city as string) || 'Property')}`,
-        landlordApproved: p.sa_approved === 'yes',
-        landlordWhatsapp: (p.landlord_whatsapp as string) || null,
-        slug: (p.slug as string) || null,
-      })) as ListingShape[];
-    },
-    enabled: !!city && !!id,
-  });
 
   const estRevenue = nightlyRate * nights;
   const estProfit = estRevenue - rent;
@@ -519,19 +489,7 @@ export default function DealDetail() {
           </div>
         </div>
 
-        {/* Nearby deals */}
-        {nearbyDeals.length > 0 && (
-          <div className="mt-14">
-            <h2 className="text-xl font-bold text-foreground mb-6">More deals near {city}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {nearbyDeals.map(l => (
-                <PropertyCard key={l.id} listing={l} isFav={isFav(l.id)} onToggleFav={() => toggle(l.id)} onInquire={handleInquire} onEmailInquire={() => { setEmailModalOpen(true); }} onWhatsAppInquire={() => { setWhatsappModalOpen(true); }} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* More deals near city (same city only) */}
+        {/* More deals near city */}
         {moreDeals.length > 0 && (
           <section data-feature="DEALS__DETAIL_MORE_DEALS" className="mt-12 mb-8">
             <h2 className="text-xl font-bold text-foreground mb-6">More deals near {city}</h2>
