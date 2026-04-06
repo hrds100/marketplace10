@@ -158,7 +158,7 @@ serve(async (req) => {
         // Find the affiliate profile by referral code
         const { data: affProfile } = await supabase
           .from('aff_profiles')
-          .select('id, paid_users, total_earned')
+          .select('id, paid_users, total_earned, pending_balance')
           .eq('referral_code', referredBy)
           .single()
 
@@ -166,6 +166,25 @@ serve(async (req) => {
           const paymentAmount = TIER_AMOUNTS[tier] || 67
           const commissionRate = 0.40
           const commission = Math.round(paymentAmount * commissionRate * 100) / 100
+          const claimableAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days holdback
+
+          // Create aff_commissions row (the real commission record with holdback)
+          const { error: commErr } = await supabase.from('aff_commissions').insert({
+            affiliate_id: affProfile.id,
+            source: 'subscription',
+            source_id: `ghl-${profile.id}-${Date.now()}`,
+            referred_user_id: profile.id,
+            gross_amount: paymentAmount,
+            commission_rate: commissionRate,
+            commission_amount: commission,
+            currency: 'GBP',
+            status: 'pending',
+            claimable_at: claimableAt,
+          })
+
+          if (commErr) {
+            console.error(`[ghl-payment-webhook] Failed to create aff_commission:`, commErr)
+          }
 
           // Create aff_events row (event_type must be 'payment')
           const { error: eventErr } = await supabase.from('aff_events').insert({
@@ -179,16 +198,17 @@ serve(async (req) => {
 
           if (eventErr) {
             console.error(`[ghl-payment-webhook] Failed to create aff_event:`, eventErr)
-          } else {
-            // Increment aff_profiles counters
-            await supabase.from('aff_profiles').update({
-              paid_users: (affProfile.paid_users || 0) + 1,
-              total_earned: (affProfile.total_earned || 0) + commission,
-            }).eq('id', affProfile.id)
-
-            console.log(`[ghl-payment-webhook] Affiliate: code=${referredBy} commission=£${commission} tier=${tier}`)
-            affiliateHandled = true
           }
+
+          // Update aff_profiles: paid_users, total_earned, pending_balance
+          await supabase.from('aff_profiles').update({
+            paid_users: (affProfile.paid_users || 0) + 1,
+            total_earned: (affProfile.total_earned || 0) + commission,
+            pending_balance: (affProfile.pending_balance || 0) + commission,
+          }).eq('id', affProfile.id)
+
+          console.log(`[ghl-payment-webhook] Affiliate: code=${referredBy} commission=£${commission} pending=£${(affProfile.pending_balance || 0) + commission} claimable=${claimableAt}`)
+          affiliateHandled = true
         } else {
           console.warn(`[ghl-payment-webhook] Affiliate profile not found for code: ${referredBy}`)
         }

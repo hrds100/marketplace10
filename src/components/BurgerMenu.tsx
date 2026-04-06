@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Menu, User, Shield, CreditCard, Bell, LogOut } from 'lucide-react';
+import { Menu, User, Shield, CreditCard, Bell, Wallet, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -8,6 +8,7 @@ const menuItems = [
   { icon: Shield, label: 'Security', tab: 'security' },
   { icon: CreditCard, label: 'Membership', tab: 'membership' },
   { icon: Bell, label: 'Notifications', tab: 'notifications' },
+  { icon: Wallet, label: 'Payout Settings', tab: 'payout' },
 ];
 
 export default function BurgerMenu() {
