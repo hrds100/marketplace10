@@ -77,6 +77,14 @@
     {
       "source": "/flow",
       "destination": "/app.html"
+    },
+    {
+      "source": "/sms/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/(pt-br|ar|es|it|fr)/:path*",
+      "destination": "/app.html"
     }
   ]
 }
