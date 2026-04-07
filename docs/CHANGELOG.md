@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [2026-04-07a] - Payout Claim Flow Restored (revolut-pay + revolut-token-refresh)
+
+### Fixed
+- **`revolut-pay` redeployed:** Function was missing from Supabase — last known good deploy was before 2026-04-07. Caused CORS preflight failure ("Failed to send a request to the Edge Function") when admin clicked "Send £X.XX" on `/admin/invest/payouts`. No code change — deploy only.
+- **`revolut-token-refresh` redeployed:** Function was missing from Supabase (last deployed 2026-03-18, too old to serve). `revolut-pay` calls this internally to get a fresh Revolut access token. When it was absent, `revolut-pay` received no token and returned HTTP 500 "Could not get Revolut token". No code change — deploy only.
+
+### Root Cause
+Both functions were undeployed. Neither had been redeployed after a Supabase project-level reset or gap in the deploy history. The fix was two `./scripts/deploy-function.sh` calls. All code, credentials, and RLS policies were correct throughout.
+
+### Verified
+- Token refresh confirmed live: `revolut-token-refresh` returns valid `access_token` from Revolut Business API.
+- `revolut-pay` CORS preflight now returns 200. POST returns success.
+- Payout claim status updates to `processing` in `payout_claims` table.
+- Revolut payment draft created in Revolut Business app (requires Face ID approval there).
+
+### Not Changed (confirmed clean)
+- No code changes to any frozen zone file.
+- Schema, foreign keys, RLS policies, and env vars were all correct.
+- n8n is not involved in this flow.
+
 ## [2026-04-04g] - Eliminate n8n from OTP + Inquiry Flow
 
 ### Removed

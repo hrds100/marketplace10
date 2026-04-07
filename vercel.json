@@ -73,6 +73,10 @@
     {
       "source": "/brand",
       "destination": "/app.html"
+    },
+    {
+      "source": "/flow",
+      "destination": "/app.html"
     }
   ]
 }
