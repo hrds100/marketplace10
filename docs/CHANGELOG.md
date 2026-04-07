@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+## [2026-04-07h] - Smart Pathways, AI Flow Builder, Lead Tracking
+
+### Added
+- **Smart pathway routing** — AI evaluates which edge to follow based on user's actual response. Uses inline classifier with edge labels + descriptions in the prompt. Returns chosen_pathway + confidence score. Conversation history (last 10 messages) passed as context.
+- **Pause/resume** — when automation is waiting for a user reply, stores current_node_id. On next inbound message, resumes from that node instead of starting fresh.
+- **AI Flow Builder** — "AI Flow Builder" button on the flow canvas (Sparkles icon). Describe what you want in plain English → GPT-4o generates the complete flow with nodes, edges, pathways, prompts, and global prompt. Validates JSON, replaces flow, auto-saves.
+- **Lead tracking per automation** — "Leads" column on automations list shows unique contact count per automation.
+- **Lead tracking per node** — green badge on each flow node showing how many contacts reached it. Click → Popover with contact names + phone numbers.
+- **Campaign-linked automations** — `sms_campaigns.automation_id` links campaigns to specific automations. Inbound replies from campaign contacts route to that automation instead of general automations.
+- **Model selector** — 5 OpenAI models available per node: GPT-4o Mini, GPT-4o, GPT-4.1 Mini, GPT-4.1, GPT-3.5 Turbo.
+- **Integration status fix** — Settings > Integrations now shows real connected number count + actual phone numbers from DB (was hardcoded).
+
+### How Smart Pathways Work
+1. Hugo creates flow with branching edges (e.g., "User interested" / "User declined")
+2. Edge labels + descriptions are included in the AI prompt
+3. AI generates response AND classifies which pathway matches the user's message
+4. Automation follows the chosen edge to the next node
+5. If confidence < 0.5, logs warning but still follows (no blocking)
+
+### Database Changes
+- `sms_automation_runs.current_node_id` — tracks conversation position for resume
+- `sms_campaigns.automation_id` — links campaigns to automations
+
 ## [2026-04-07g] - SMS Phase 4 — Bulk Campaigns
 
 ### Added
