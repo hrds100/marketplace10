@@ -218,6 +218,20 @@ npx playwright test                      # e2e tests
 - Supabase project: `asazddtvjvmckouxcmmo`
 - Vercel team: `hugos-projects-f8cc36a8`
 
+## Debug Tools
+
+**Super Debug Report** — hidden browser-side debug artifact generator.
+
+- **Location:** `src/core/debug/` (4 files, isolated, no side effects)
+- **Kill switch:** `VITE_DEBUG_REPORT_ENABLED=true` in `.env.local` (or Vercel env vars). If not set, the entire system is inert.
+- **Activation:** Hugo types `nfsdebug` on any page (NOT inside a text field). A dark bug icon appears bottom-right for the rest of that browser session.
+- **What it does:** Clicking the button downloads a `nfstay-debug-*.json` file containing browser info, console errors, failed network requests, route history, user actions — all redacted of tokens, emails, and secrets.
+- **Runbook:** `docs/runbooks/DEBUG_REPORT.md`
+
+**For browser/UI bugs:** Ask Hugo to type `nfsdebug` on the affected page (not inside a text field), then click the Debug button. Hugo shares the downloaded `.json` file. Read it before proposing speculative fixes. Only available when `VITE_DEBUG_REPORT_ENABLED=true` is set.
+
+**If the debug artifact is unavailable** (env var not set, or Hugo cannot reproduce): say so explicitly and proceed with normal audit steps.
+
 ## Cross-Repo Coordination
 
 marketplace10 and bookingsite share Supabase project `asazddtvjvmckouxcmmo`.

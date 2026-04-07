@@ -95,6 +95,8 @@ import AuthBridgePage from "@/features/auth/AuthBridgePage";
 import LeadDetailsPage from "@/features/landlord/LeadDetailsPage";
 import LeadNDAPage from "@/features/landlord/LeadNDAPage";
 import { NfsCurrencyProvider } from "./contexts/NfsCurrencyContext";
+import DebugReportButton from '@/core/debug/DebugReportButton';
+import { setupDebugCapture } from '@/core/debug/useDebugCapture';
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -105,6 +107,11 @@ if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
 }
 
 const queryClient = new QueryClient();
+
+// Super Debug Report — only active when VITE_DEBUG_REPORT_ENABLED=true
+if (import.meta.env.VITE_DEBUG_REPORT_ENABLED === 'true') {
+  setupDebugCapture();
+}
 
 // Detect GHL payment redirect: ?payment=success
 if (typeof window !== 'undefined') {
@@ -265,6 +272,7 @@ const App = () => (
         </Routes>
       </NfsCurrencyProvider>
       </FavouritesProvider>
+      <DebugReportButton />
       </BrowserRouter>
     </TooltipProvider>
     </ParticleProvider>
@@ -272,4 +280,3 @@ const App = () => (
 );
 
 export default App;
-
