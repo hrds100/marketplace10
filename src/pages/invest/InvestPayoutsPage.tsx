@@ -6,6 +6,8 @@ import { sendInvestNotification } from '@/lib/notifications';
 import { useMyBankAccount, useInvestProperties } from '@/hooks/useInvestData';
 import { usePayoutsWithBlockchain } from '@/hooks/usePayoutsWithBlockchain';
 import { useBlockchain } from '@/hooks/useBlockchain';
+import { useKycStatus } from '@/hooks/useKycStatus';
+import KycVerificationModal from '@/components/KycVerificationModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,13 +35,16 @@ import {
   Coins,
   Sprout,
   Loader2,
+  ShieldCheck,
+  ShieldAlert,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fixIpfsUrl } from '@/lib/ipfs';
 import BankDetailsForm from '@/components/BankDetailsForm';
 
 type ClaimMethod = 'bank_transfer' | 'usdc' | 'stay_token' | 'lp_token';
-type ClaimStep = 'choose' | 'bank_setup' | 'processing' | 'success';
+type ClaimStep = 'choose' | 'kyc_required' | 'bank_setup' | 'processing' | 'success';
 type PayoutStatus = 'claimable' | 'claimed' | 'paid' | 'processing' | 'pending';
 
 interface PayoutItem {
@@ -169,6 +174,8 @@ function ClaimModal({
   onBuyStayTokens?: (propertyId: number, onStep?: (step: number, total: number) => void) => Promise<{ txHash: string; success: boolean }>;
   onBuyLpTokens?: (propertyId: number, onStep?: (step: number, total: number) => void) => Promise<{ txHash: string; success: boolean }>;
   onClaimSuccess?: () => void;
+  kycStatus?: string;
+  onKycRequired?: () => void;
 }) {
   const [txStep, setTxStep] = useState(0);
 
@@ -178,6 +185,12 @@ function ClaimModal({
     if (!selectedMethod) return;
     setClaimError(null);
     setTxStep(0);
+
+    // KYC gate: must be approved before any claim method
+    if (kycStatus !== 'approved') {
+      onKycRequired?.();
+      return;
+    }
 
     if (selectedMethod === 'bank_transfer' && !bankAccount) {
       // No bank details on file — show setup form before proceeding
@@ -275,12 +288,14 @@ function ClaimModal({
         <DialogHeader>
           <DialogTitle>
             {claimStep === 'choose' && 'Claim Rental Income'}
+            {claimStep === 'kyc_required' && 'Identity Verification Required'}
             {claimStep === 'bank_setup' && 'Add Bank Details'}
             {claimStep === 'processing' && 'Processing Claim'}
             {claimStep === 'success' && 'Claim Successful'}
           </DialogTitle>
           <DialogDescription>
             {claimStep === 'choose' && `${payout.propertyTitle} — ${formatCurrency(payout.amount)}`}
+            {claimStep === 'kyc_required' && 'You need to verify your identity before claiming payouts.'}
             {claimStep === 'bank_setup' && 'We need your bank details before processing your payout.'}
             {claimStep === 'processing' && 'Please wait while we process your claim.'}
             {claimStep === 'success' && 'Your claim has been completed.'}
@@ -582,7 +597,12 @@ export default function InvestPayoutsPage() {
   const { payouts: mergedPayouts, blockchainLoading, refetchRentData } = usePayoutsWithBlockchain();
   const { data: allProperties = [] } = useInvestProperties();
   const { data: bankAccount } = useMyBankAccount();
-  const { claimRent, buyStayTokens, buyLpTokens, loading: claimLoading } = useBlockchain();
+  const { claimRent, buyStayTokens, buyLpTokens, loading: claimLoading, walletAddress } = useBlockchain();
+  const { status: kycStatus, checkStatus: checkKyc, saveSession } = useKycStatus(user?.id);
+  const [showKycModal, setShowKycModal] = useState(false);
+
+  // Check KYC status on mount
+  useEffect(() => { checkKyc(); }, [checkKyc]);
 
   // F4: Fetch payout_claims from Supabase for history amount fallback
   const [dbPayoutClaims, setDbPayoutClaims] = useState<any[]>([]);
@@ -682,6 +702,68 @@ export default function InvestPayoutsPage() {
           </div>
         )}
       </div>
+
+      {/* KYC Status Card */}
+      {kycStatus === 'approved' && (
+        <Card className="border-green-500/20 bg-green-500/5">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                <ShieldCheck className="h-4 w-4 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-green-600">Identity Verified</p>
+                <p className="text-xs text-muted-foreground">You can claim payouts to any method.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {kycStatus === 'pending' && (
+        <Card className="border-amber-500/20 bg-amber-500/5">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Clock className="h-4 w-4 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-amber-600">Verification in progress</p>
+                <p className="text-xs text-muted-foreground">We'll update you shortly. You can check back later.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {(kycStatus === 'not_started' || kycStatus === 'declined' || kycStatus === 'error') && (
+        <Card className="border-border">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                  <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Verify your identity to claim payouts</p>
+                  <p className="text-xs text-muted-foreground">One-time KYC verification required before claiming rental income.</p>
+                </div>
+              </div>
+              <Button size="sm" onClick={() => setShowKycModal(true)}>
+                Verify Now
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {kycStatus === 'loading' && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {payouts.length === 0 ? (
         /* Empty state */
@@ -860,6 +942,23 @@ export default function InvestPayoutsPage() {
         onClaimSuccess={() => {
           // Auto-refresh payouts after successful claim
           setTimeout(() => refetchRentData(), 2000);
+        }}
+        kycStatus={kycStatus}
+        onKycRequired={() => {
+          setClaimModalOpen(false);
+          setShowKycModal(true);
+        }}
+      />
+
+      {/* KYC Verification Modal */}
+      <KycVerificationModal
+        open={showKycModal}
+        onClose={() => setShowKycModal(false)}
+        walletAddress={walletAddress || ''}
+        saveSession={saveSession}
+        onVerificationComplete={() => {
+          checkKyc();
+          setShowKycModal(false);
         }}
       />
     </div>

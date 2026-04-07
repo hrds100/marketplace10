@@ -134,6 +134,13 @@ verify_jwt = false
 [functions.sms-bulk-send]
 verify_jwt = false
 
+# KYC edge functions
+[functions.inv-kyc-check]
+verify_jwt = false
+
+[functions.inv-kyc-save-session]
+verify_jwt = false
+
 # AI edge functions
 [functions.ai-chat]
 verify_jwt = false
