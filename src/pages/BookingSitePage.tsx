@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload, Loader2, AlertCircle, CheckCircle2, LayoutDashboard, Building2, CalendarCheck, Paintbrush, TrendingUp, Star, Eye, Users } from 'lucide-react';
+import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload, Loader2, AlertCircle, CheckCircle2, LayoutDashboard, Building2, CalendarCheck, Paintbrush, TrendingUp, Star, Eye, Users, Settings } from 'lucide-react';
 import PaymentSheet from '@/components/PaymentSheet';
 import BookingSitePreview from './BookingSitePreview';
 import { getBridgeUrl } from '@/lib/authBridge';
@@ -9,6 +9,8 @@ import { useUserTier } from '@/hooks/useUserTier';
 import { isPaidTier } from '@/lib/ghl';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import NfsAnalytics from '@/pages/nfstay/NfsAnalytics';
+import NfsOperatorSettings from '@/pages/nfstay/NfsOperatorSettings';
 
 const defaultBranding = {
   brandName: '',
@@ -379,7 +381,7 @@ function BookingSiteDashboard() {
   const [hexInput, setHexInput] = useState(defaultBranding.accentColor);
   const [seeded, setSeeded] = useState(false);
   const { isAdmin } = useAuth();
-  const [topTab, setTopTab] = useState<'dashboard' | 'properties' | 'reservations' | 'branding' | 'analytics' | 'users'>('branding');
+  const [topTab, setTopTab] = useState<'branding' | 'dashboard' | 'properties' | 'reservations' | 'analytics' | 'settings'>('branding');
 
   // Dashboard stats
   const [statsLoading, setStatsLoading] = useState(false);
@@ -646,14 +648,12 @@ function BookingSiteDashboard() {
       <div className="border-b border-border bg-card px-5 flex-shrink-0">
         <div className="flex gap-1 py-2">
           {([
+            { id: 'branding' as const, label: 'Branding', icon: Paintbrush },
             { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
             { id: 'properties' as const, label: 'Properties', icon: Building2 },
             { id: 'reservations' as const, label: 'Reservations', icon: CalendarCheck },
-            { id: 'branding' as const, label: 'Branding', icon: Paintbrush },
-            ...(isAdmin ? [
-              { id: 'analytics' as const, label: 'Analytics', icon: TrendingUp },
-              { id: 'users' as const, label: 'Users', icon: Users },
-            ] : []),
+            { id: 'analytics' as const, label: 'Analytics', icon: TrendingUp },
+            { id: 'settings' as const, label: 'Settings', icon: Settings },
           ]).map(tab => (
             <button
               key={tab.id}
@@ -852,120 +852,17 @@ function BookingSiteDashboard() {
         </div>
       )}
 
-      {/* Analytics Tab (admin only) */}
-      {topTab === 'analytics' && isAdmin && (
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
-            <p className="text-sm text-muted-foreground">Revenue and booking metrics for the current month.</p>
-          </div>
-          {analyticsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-card border border-border rounded-2xl p-5">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Revenue This Month</div>
-                  <div className="text-2xl font-bold text-foreground mt-1">&pound;{analyticsData.monthlyRevenue.toLocaleString()}</div>
-                </div>
-                <div className="bg-card border border-border rounded-2xl p-5">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bookings This Month</div>
-                  <div className="text-2xl font-bold text-foreground mt-1">{analyticsData.monthlyBookings}</div>
-                </div>
-                <div className="bg-card border border-border rounded-2xl p-5">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avg Booking Value</div>
-                  <div className="text-2xl font-bold text-foreground mt-1">&pound;{analyticsData.avgBookingValue.toFixed(0)}</div>
-                </div>
-              </div>
-              <div className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="text-sm font-bold text-foreground mb-3">Recent Bookings</h3>
-                {recentBookings.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No recent bookings yet.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border text-left">
-                          <th className="pb-2 font-medium text-muted-foreground">Guest</th>
-                          <th className="pb-2 font-medium text-muted-foreground">Property</th>
-                          <th className="pb-2 font-medium text-muted-foreground">Operator</th>
-                          <th className="pb-2 font-medium text-muted-foreground">Check-in</th>
-                          <th className="pb-2 font-medium text-muted-foreground">Check-out</th>
-                          <th className="pb-2 font-medium text-muted-foreground">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {recentBookings.map((b) => {
-                          const bProp = b.nfs_properties as Record<string, unknown> | null;
-                          const bOp = b.nfs_operators as Record<string, unknown> | null;
-                          return (
-                            <tr key={String(b.id)} className="border-b border-border last:border-0">
-                              <td className="py-2 font-medium">{String(b.guest_name || '-')}</td>
-                              <td className="py-2 text-muted-foreground">{bProp ? String(bProp.name) : '-'}</td>
-                              <td className="py-2 text-muted-foreground">{bOp ? String(bOp.brand_name || 'Unknown') : '-'}</td>
-                              <td className="py-2 text-muted-foreground whitespace-nowrap">{b.check_in ? new Date(String(b.check_in)).toLocaleDateString() : '-'}</td>
-                              <td className="py-2 text-muted-foreground whitespace-nowrap">{b.check_out ? new Date(String(b.check_out)).toLocaleDateString() : '-'}</td>
-                              <td className="py-2 font-medium">&pound;{Number(b.total_price || 0).toFixed(2)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+      {/* Analytics Tab — real nfstay.app component */}
+      {topTab === 'analytics' && (
+        <div className="flex-1 overflow-y-auto">
+          <NfsAnalytics />
         </div>
       )}
 
-      {/* Users Tab (admin only) */}
-      {topTab === 'users' && isAdmin && (
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Booking Site Users</h1>
-            <p className="text-sm text-muted-foreground">All operators registered on the booking platform.</p>
-          </div>
-          {operatorsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : operators.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-medium text-foreground mb-1">No operators found</p>
-              <p className="text-sm text-muted-foreground">Operators will appear here once they register.</p>
-            </div>
-          ) : (
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left bg-muted/30">
-                      <th className="p-4 font-medium text-muted-foreground">Brand</th>
-                      <th className="p-4 font-medium text-muted-foreground">Email</th>
-                      <th className="p-4 font-medium text-muted-foreground">Subdomain</th>
-                      <th className="p-4 font-medium text-muted-foreground">Properties</th>
-                      <th className="p-4 font-medium text-muted-foreground">Joined</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {operators.map((op) => (
-                      <tr key={String(op.id)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                        <td className="p-4 font-medium">{String(op.brand_name || 'Unnamed')}</td>
-                        <td className="p-4 text-muted-foreground">{String(op.email || '-')}</td>
-                        <td className="p-4 text-muted-foreground">{op.subdomain ? `${String(op.subdomain)}.nfstay.app` : '-'}</td>
-                        <td className="p-4 font-medium">{String(op.property_count ?? 0)}</td>
-                        <td className="p-4 text-muted-foreground whitespace-nowrap">{op.created_at ? new Date(String(op.created_at)).toLocaleDateString() : '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+      {/* Settings Tab — real nfstay.app component */}
+      {topTab === 'settings' && (
+        <div className="flex-1 overflow-y-auto">
+          <NfsOperatorSettings />
         </div>
       )}
 
