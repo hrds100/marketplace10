@@ -33,7 +33,7 @@ export default function SmsCampaignsPage() {
   }
 
   return (
-    <div className="max-w-[1440px] mx-auto p-6 md:p-8">
+    <div className="p-6 md:p-8 overflow-y-auto h-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">

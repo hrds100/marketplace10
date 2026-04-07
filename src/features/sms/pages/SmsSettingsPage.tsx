@@ -28,7 +28,7 @@ export default function SmsSettingsPage() {
   const [browserNotifications, setBrowserNotifications] = useState(true);
 
   return (
-    <div className="max-w-[1440px] mx-auto p-6 md:p-8">
+    <div className="p-6 md:p-8 overflow-y-auto h-full">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <Settings className="h-6 w-6 text-[#1E9A80]" />
@@ -36,7 +36,7 @@ export default function SmsSettingsPage() {
       </div>
 
       <Tabs defaultValue="labels" className="space-y-6">
-        <TabsList className="bg-[#F3F3EE] rounded-xl p-1 h-auto flex-wrap">
+        <TabsList className="bg-[#F5F5F5] rounded-xl p-1 h-auto flex-wrap">
           <TabsTrigger value="labels" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:text-[#1E9A80]">Labels</TabsTrigger>
           <TabsTrigger value="stages" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:text-[#1E9A80]">Stages</TabsTrigger>
           <TabsTrigger value="quick-replies" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:text-[#1E9A80]">Quick Replies</TabsTrigger>

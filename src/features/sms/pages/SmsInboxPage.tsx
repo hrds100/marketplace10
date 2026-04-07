@@ -99,7 +99,7 @@ export default function SmsInboxPage() {
   if (isMobile) {
     if (selectedId && selectedContact) {
       return (
-        <div className="flex flex-col h-full bg-[#F3F3EE]">
+        <div className="flex flex-col h-full bg-white">
           {/* Mobile header with back */}
           <div className="flex items-center gap-2 px-3 py-2 border-b border-[#E5E7EB] bg-white">
             <Button variant="ghost" size="icon" onClick={() => setSelectedId(null)}>
@@ -153,7 +153,7 @@ export default function SmsInboxPage() {
 
   // Desktop: resizable split layout
   return (
-    <div className="h-full bg-[#F3F3EE]">
+    <div className="h-full bg-white">
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel defaultSize={30} minSize={20} maxSize={45}>
           <ConversationList

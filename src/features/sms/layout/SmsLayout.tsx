@@ -12,8 +12,7 @@ export default function SmsLayout() {
     <ProtectedRoute>
       <div
         data-feature="SMS__LAYOUT"
-        className="h-screen flex flex-col animate-in fade-in duration-300"
-        style={{ background: '#F3F3EE' }}
+        className="h-screen flex flex-col animate-in fade-in duration-300 bg-white"
       >
         {/* Top bar */}
         <header className="h-14 bg-white/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
@@ -42,7 +41,7 @@ export default function SmsLayout() {
         <div className="flex-1 flex overflow-hidden relative">
           <SmsSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
           <main
-            className={`${marginClass} flex-1 overflow-y-auto transition-all duration-300 ease-out pb-20 md:pb-8`}
+            className={`${marginClass} flex-1 overflow-hidden transition-all duration-300 ease-out pb-16 md:pb-0`}
           >
             <Outlet />
           </main>
