@@ -3,8 +3,10 @@ import { useDebugActivation } from './useDebugActivation';
 import { serializeDebugReport } from './debugSerializer';
 
 export default function DebugReportButton() {
-  if (import.meta.env.VITE_DEBUG_REPORT_ENABLED !== 'true') return null;
+  // Hook must be called unconditionally — kill switch is enforced inside the hook
   const active = useDebugActivation();
+
+  if (import.meta.env.VITE_DEBUG_REPORT_ENABLED !== 'true') return null;
   if (!active) return null;
 
   const handleClick = () => {
