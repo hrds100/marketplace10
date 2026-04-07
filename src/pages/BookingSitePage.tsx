@@ -11,6 +11,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import NfsAnalytics from '@/pages/nfstay/NfsAnalytics';
 import NfsOperatorSettings from '@/pages/nfstay/NfsOperatorSettings';
+import NfsPropertyNew from '@/pages/nfstay/NfsPropertyNew';
+import NfsCreateReservation from '@/pages/nfstay/NfsCreateReservation';
 
 const defaultBranding = {
   brandName: '',
@@ -384,8 +386,10 @@ function BookingSiteDashboard() {
   const [topTab, setTopTab] = useState<'branding' | 'dashboard' | 'properties' | 'reservations' | 'analytics' | 'settings'>('branding');
   const [propSearch, setPropSearch] = useState('');
   const [propStatusFilter, setPropStatusFilter] = useState('all');
+  const [propSubView, setPropSubView] = useState<'list' | 'add'>('list');
   const [resSearch, setResSearch] = useState('');
   const [resStatusFilter, setResStatusFilter] = useState('all');
+  const [resSubView, setResSubView] = useState<'list' | 'create'>('list');
 
   // Dashboard stats
   const [statsLoading, setStatsLoading] = useState(false);
@@ -713,7 +717,15 @@ function BookingSiteDashboard() {
       )}
 
       {/* Properties Tab — nfstay.app design */}
-      {topTab === 'properties' && (
+      {topTab === 'properties' && propSubView === 'add' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <button onClick={() => setPropSubView('list')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4">
+            <ChevronLeft className="w-4 h-4" /> Back to Properties
+          </button>
+          <NfsPropertyNew />
+        </div>
+      )}
+      {topTab === 'properties' && propSubView === 'list' && (
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Header + Add Property */}
           <div className="flex items-center justify-between">
@@ -722,7 +734,7 @@ function BookingSiteDashboard() {
               <p className="text-sm text-muted-foreground mt-1">Manage your vacation rental listings.</p>
             </div>
             <button
-              onClick={() => window.open(getBridgeUrl("https://nfstay.app", "/nfstay/properties/new"), "_blank")}
+              onClick={() => setPropSubView('add')}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
             >
               <Plus className="w-4 h-4" /> Add property
@@ -779,7 +791,7 @@ function BookingSiteDashboard() {
                 </p>
                 {properties.length === 0 && (
                   <button
-                    onClick={() => window.open(getBridgeUrl("https://nfstay.app", "/nfstay/properties/new"), "_blank")}
+                    onClick={() => setPropSubView('add')}
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg"
                   >
                     <Plus className="w-4 h-4" /> Create property
@@ -838,7 +850,15 @@ function BookingSiteDashboard() {
       )}
 
       {/* Reservations Tab — nfstay.app design */}
-      {topTab === 'reservations' && (
+      {topTab === 'reservations' && resSubView === 'create' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <button onClick={() => setResSubView('list')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4">
+            <ChevronLeft className="w-4 h-4" /> Back to Reservations
+          </button>
+          <NfsCreateReservation />
+        </div>
+      )}
+      {topTab === 'reservations' && resSubView === 'list' && (
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Header + New Reservation */}
           <div className="flex items-center justify-between">
@@ -847,7 +867,7 @@ function BookingSiteDashboard() {
               <p className="text-sm text-muted-foreground mt-1">{reservations.length} total reservations</p>
             </div>
             <button
-              onClick={() => window.open(getBridgeUrl("https://nfstay.app", "/nfstay/create-reservation"), "_blank")}
+              onClick={() => setResSubView('create')}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
             >
               <Plus className="w-4 h-4" /> Create
