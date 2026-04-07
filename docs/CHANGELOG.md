@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [2026-04-07g] - SMS Phase 4 — Bulk Campaigns
+
+### Added
+- **sms-bulk-send edge function** — processes campaigns: loads recipients, checks opt-outs (skips opted-out contacts), rate-limits at 1 msg/sec per number, round-robin number rotation, appends opt-out footer when enabled. Per-recipient error handling (failures don't stop campaign). Updates campaign counts in real-time.
+- **useCampaigns hook** — CRUD for sms_campaigns + sms_campaign_recipients. createCampaign inserts campaign + recipients. launchCampaign invokes sms-bulk-send.
+- **Campaigns page wired to real data** — wizard fetches real contacts/labels/stages from DB, shows live matching count, creates campaign in Supabase, optionally sends immediately.
+
+### Deployed
+- sms-bulk-send deployed and registered in config.toml
+
 ## [2026-04-07f] - SMS Phase 3 — AI Automation Engine
 
 ### Added
