@@ -65,6 +65,7 @@ export function EditNodePopup() {
   const [stageId, setStageId] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
   const [webhookMethod, setWebhookMethod] = useState('POST');
+  const [model, setModel] = useState('gpt-4o-mini');
 
   useEffect(() => {
     if (nodeData && node) {
@@ -75,6 +76,7 @@ export function EditNodePopup() {
       setUseAiPrompt(!nodeData.text);
       setDelay(nodeData.delay || 0);
       setTemperature(nodeData.modelOptions?.temperature ?? 0.7);
+      setModel(nodeData.modelOptions?.model || 'gpt-4o-mini');
       setSteps(nodeData.steps || []);
       setAssignTo(nodeData.assignTo || '');
       setLabelId(nodeData.labelId || '');
@@ -100,7 +102,7 @@ export function EditNodePopup() {
       updates.prompt = useAiPrompt ? prompt : undefined;
       updates.text = useAiPrompt ? undefined : text;
       updates.delay = delay;
-      updates.modelOptions = { temperature };
+      updates.modelOptions = { temperature, model };
     }
     if (type === SmsNodeType.FOLLOW_UP) {
       updates.steps = steps;
@@ -133,6 +135,7 @@ export function EditNodePopup() {
     text,
     delay,
     temperature,
+    model,
     steps,
     assignTo,
     labelId,
@@ -278,6 +281,21 @@ export function EditNodePopup() {
                       step={0.1}
                       className="py-2"
                     />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-[#6B7280]">AI Model</Label>
+                    <Select value={model} onValueChange={setModel}>
+                      <SelectTrigger className="rounded-lg border-[#E5E7EB]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gpt-4o-mini">GPT-4o Mini (default, fast + cheap)</SelectItem>
+                        <SelectItem value="gpt-4o">GPT-4o (smart, recommended)</SelectItem>
+                        <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini (newest, fast)</SelectItem>
+                        <SelectItem value="gpt-4.1">GPT-4.1 (newest, smartest)</SelectItem>
+                        <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo (legacy, cheapest)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </>
               )}

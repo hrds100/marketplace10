@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect, ty
 import { type Node, type Edge } from '@xyflow/react';
 import { SmsNodeType, type SmsNodeData, type SmsEdgeData } from '../../types';
 import type { SaveStatus } from '../../hooks/useAutomationFlow';
+import type { FlowLeadCounts } from '../../hooks/useFlowLeadCounts';
 
 interface FlowContextType {
   isEditingEdge: string | null;
@@ -25,6 +26,7 @@ interface FlowContextType {
   updateNode: (id: string, data: Partial<SmsNodeData>) => void;
   deleteEdge: (id: string) => void;
   saveStatus: SaveStatus;
+  leadCounts: FlowLeadCounts;
 }
 
 const FlowContext = createContext<FlowContextType | null>(null);
@@ -57,6 +59,7 @@ export function FlowContextProvider({
   initialEdges: Edge<SmsEdgeData>[];
   initialGlobalPrompt?: string;
   onSave?: (data: { nodes: Node<SmsNodeData>[]; edges: Edge<SmsEdgeData>[]; globalPrompt: string }) => Promise<void>;
+  leadCounts?: FlowLeadCounts;
 }) {
   const [nodes, setNodes] = useState<Node<SmsNodeData>[]>(initialNodes);
   const [edges, setEdges] = useState<Edge<SmsEdgeData>[]>(initialEdges);
@@ -184,6 +187,7 @@ export function FlowContextProvider({
         updateNode,
         deleteEdge,
         saveStatus,
+        leadCounts: leadCounts ?? {},
       }}
     >
       {children}

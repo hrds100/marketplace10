@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Handle, Position, NodeToolbar, type NodeProps } from '@xyflow/react';
+import { useState } from 'react';
 import {
   MessageSquare,
   CircleStop,
@@ -11,7 +12,13 @@ import {
   Play,
   Trash2,
   Copy,
+  Users,
 } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { SmsNodeType, type SmsNodeData } from '../../types';
 import { mockLabels } from '../../data/mockLabels';
@@ -67,7 +74,9 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
   const nodeType = type as SmsNodeType;
   const nodeData = data as SmsNodeData;
   const config = NODE_CONFIG[nodeType];
-  const { setIsEditingNode, duplicateNode, deleteNodes } = useFlowContext();
+  const { setIsEditingNode, duplicateNode, deleteNodes, leadCounts } = useFlowContext();
+  const [showLeads, setShowLeads] = useState(false);
+  const leadInfo = leadCounts[id];
 
   if (!config) return null;
 
@@ -148,6 +157,48 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
             {getNodeSummary(nodeType, nodeData)}
           </p>
         </div>
+
+        {/* Lead count badge */}
+        {leadInfo && leadInfo.count > 0 && (
+          <div className="px-3 pb-2">
+            <Popover open={showLeads} onOpenChange={setShowLeads}>
+              <PopoverTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowLeads(true);
+                  }}
+                  className="flex items-center gap-1 text-[10px] font-medium text-[#1E9A80] bg-[#ECFDF5] rounded-full px-2 py-0.5 hover:bg-[#1E9A80]/15 transition-colors"
+                >
+                  <Users className="w-3 h-3" />
+                  {leadInfo.count} {leadInfo.count === 1 ? 'lead' : 'leads'}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-0" align="start">
+                <div className="px-3 py-2 border-b border-[#E5E7EB]">
+                  <p className="text-xs font-semibold text-[#1A1A1A]">
+                    Contacts ({leadInfo.count})
+                  </p>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {leadInfo.contacts.map((contact, i) => (
+                    <div
+                      key={i}
+                      className="px-3 py-1.5 flex items-center justify-between border-b border-[#E5E7EB] last:border-0"
+                    >
+                      <span className="text-xs text-[#1A1A1A] truncate">
+                        {contact.name}
+                      </span>
+                      <span className="text-[10px] text-[#6B7280] ml-2 flex-shrink-0">
+                        {contact.phone}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
       </div>
 
       {/* Source handle — not on terminal nodes */}

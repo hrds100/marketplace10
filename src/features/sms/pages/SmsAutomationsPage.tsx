@@ -4,6 +4,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAutomations } from '../hooks/useAutomations';
+import { useAutomationLeadCounts } from '../hooks/useAutomationLeadCounts';
 import AutomationsList from '../components/automations/AutomationsList';
 
 export default function SmsAutomationsPage() {
@@ -15,6 +16,7 @@ export default function SmsAutomationsPage() {
     deleteAutomation,
     createAutomation,
   } = useAutomations();
+  const { leadCountMap } = useAutomationLeadCounts();
 
   const handleToggle = useCallback(
     async (id: string, isActive: boolean) => {
@@ -92,6 +94,7 @@ export default function SmsAutomationsPage() {
       ) : (
         <AutomationsList
           automations={automations}
+          leadCountMap={leadCountMap}
           onToggle={handleToggle}
           onDelete={handleDelete}
           onNew={handleNew}

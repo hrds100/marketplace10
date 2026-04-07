@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { SmsNodeType, type SmsNodeData, type SmsEdgeData } from '../types';
 import { useAutomationFlow, type FlowData } from '../hooks/useAutomationFlow';
 import { useAutomations } from '../hooks/useAutomations';
+import { useFlowLeadCounts } from '../hooks/useFlowLeadCounts';
 import { FlowContextProvider, useFlowContext } from '../components/automations/FlowContext';
 import { FlowCanvas } from '../components/automations/FlowCanvas';
 import { EditEdgeSidebar } from '../components/automations/EditEdgeSidebar';
@@ -165,6 +166,7 @@ export default function SmsFlowEditorPage() {
   }, [isNew, creatingNew, createAutomation, navigate]);
 
   const { flow, isLoading, saveFlow } = useAutomationFlow(id);
+  const { leadCounts } = useFlowLeadCounts(id === 'new' ? undefined : id);
 
   const handleFlowSave = useCallback(
     async (data: { nodes: Node<SmsNodeData>[]; edges: Edge<SmsEdgeData>[]; globalPrompt: string }) => {
@@ -198,6 +200,7 @@ export default function SmsFlowEditorPage() {
         initialEdges={initialEdges}
         initialGlobalPrompt={flow.globalPrompt}
         onSave={handleFlowSave}
+        leadCounts={leadCounts}
       >
         <FlowEditorInner flow={flow} saveFlow={saveFlow} />
       </FlowContextProvider>
