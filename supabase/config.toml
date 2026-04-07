@@ -115,6 +115,16 @@ verify_jwt = false
 [functions.nfs-email-send]
 verify_jwt = false
 
+# SMS Inbox edge functions
+[functions.sms-webhook-incoming]
+verify_jwt = false
+
+[functions.sms-webhook-status]
+verify_jwt = false
+
+[functions.sms-send]
+verify_jwt = false
+
 # AI edge functions
 [functions.ai-chat]
 verify_jwt = false
