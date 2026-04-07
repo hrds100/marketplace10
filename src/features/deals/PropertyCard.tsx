@@ -134,7 +134,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type, 0, isPrime);
   const isPexelsPhoto = resolvedImage?.includes('images.pexels.com') || false;
 
-  const placeholderUrl = `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(listing.city || 'Property')}`;
+  const placeholderUrl = `https://placehold.co/800x520/1a1a2e/ffffff`;
   const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
     if (img.src !== placeholderUrl) img.src = placeholderUrl;

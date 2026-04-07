@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 /** Placeholder — deterministic, never broken */
 function placeholder(city: string, index = 0): string {
-  return `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(city || 'Property')}${index > 0 ? `-${index}` : ''}`;
+  return `https://placehold.co/800x520/1a1a2e/ffffff`;
 }
 
 /** Synchronous — returns photo or placeholder. Use for initial render. */
