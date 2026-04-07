@@ -2,6 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "trailingSlash": false,
   "headers": [
     {
       "source": "/(.*)",
@@ -76,6 +77,10 @@
     },
     {
       "source": "/flow",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/sms",
       "destination": "/app.html"
     },
     {
