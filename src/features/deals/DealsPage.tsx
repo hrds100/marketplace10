@@ -35,7 +35,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
   const image =
     photos && photos.length > 0
       ? photos[0]
-      : `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(p.city || 'Property')}`;
+      : `https://placehold.co/800x520/1a1a2e/ffffff`;
   return {
     id: p.id,
     name: p.name,
@@ -230,7 +230,7 @@ export default function DealsPageV2() {
           featured: true,
           prime: true,
           daysAgo: 0,
-          image: invImage || `https://placehold.co/800x520/1a1a2e/ffffff?text=${encodeURIComponent(invLocation || 'Property')}`,
+          image: invImage || `https://placehold.co/800x520/1a1a2e/ffffff`,
           landlordApproved: true,
           landlordWhatsapp: null,
           listing_type: 'rental',
