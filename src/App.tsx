@@ -27,9 +27,6 @@ import ListADealPage from "@/features/deal-submit/ListADealPage";
 import SettingsPage from "@/features/settings/SettingsPage";
 // Booking Site — consolidated layout + sub-routes
 import BookingSiteLayout from "./layouts/BookingSiteLayout";
-import BSDashboard from "./pages/booking-site/BSDashboard";
-import BSProperties from "./pages/booking-site/BSProperties";
-import BSReservations from "./pages/booking-site/BSReservations";
 import BSBranding from "./pages/booking-site/BSBranding";
 import BookingSitePage from "./pages/BookingSitePage";
 // Layouts (stay in src/layouts/ — locked)
@@ -179,17 +176,24 @@ const App = () => (
             <Route path="affiliates" element={<AffiliatesPage />} />
             <Route path="list-a-deal" element={<ListADealPage />} />
             <Route path="booking-site" element={<BookingSiteLayout />}>
-              <Route index element={<BSBranding />} />
-              <Route path="dashboard" element={<BSDashboard />} />
-              <Route path="properties" element={<BSProperties />} />
-              <Route path="reservations" element={<BSReservations />} />
+              <Route index element={<Navigate to="dashboard" replace />} />
+              {/* Operator pages — same as nfstay.app */}
+              <Route path="dashboard" element={<NfsOperatorDashboard />} />
+              <Route path="properties" element={<NfsProperties />} />
+              <Route path="properties/new" element={<NfsPropertyNew />} />
+              <Route path="properties/:id" element={<NfsPropertyDetail />} />
+              <Route path="reservations" element={<NfsReservations />} />
+              <Route path="reservations/:id" element={<NfsReservationDetail />} />
+              <Route path="create-reservation" element={<NfsCreateReservation />} />
+              <Route path="analytics" element={<NfsAnalytics />} />
+              <Route path="settings" element={<NfsOperatorSettings />} />
+              <Route path="onboarding" element={<NfsOnboarding />} />
               <Route path="branding" element={<BSBranding />} />
-              <Route path="overview" element={<AdminNfsDashboard />} />
+              {/* Admin pages */}
+              <Route path="platform" element={<AdminNfsDashboard />} />
               <Route path="operators" element={<AdminNfsOperators />} />
               <Route path="operators/:operatorId" element={<AdminNfsOperatorDetail />} />
-              <Route path="users" element={<AdminNfsUsers />} />
-              <Route path="analytics" element={<AdminNfsAnalytics />} />
-              <Route path="settings" element={<AdminNfsSettings />} />
+              <Route path="all-users" element={<AdminNfsUsers />} />
             </Route>
             <Route path="settings" element={<SettingsPage />} />
             <Route path="invest/marketplace" element={<InvestMarketplacePage />} />
