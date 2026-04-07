@@ -149,7 +149,7 @@ export default function AdminNfsOperatorDetail() {
   if (error || !operator) {
     return (
       <div className="p-6 max-w-7xl space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/admin/nfstay/operators')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/booking-site/operators')}>
           <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Operators
         </Button>
         <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
@@ -219,7 +219,7 @@ export default function AdminNfsOperatorDetail() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/admin/nfstay/operators')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/booking-site/operators')}>
             <ArrowLeft className="w-4 h-4 mr-1.5" /> Back
           </Button>
           <div>

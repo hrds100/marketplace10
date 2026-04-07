@@ -106,7 +106,7 @@ export default function AdminNfsOperators() {
       ) : (
         <div data-feature="ADMIN__NFS_OPERATORS_TABLE" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filtered.map(op => (
-            <div key={op.id} onClick={() => navigate(`/admin/nfstay/operators/${op.id}`)} className="bg-card border border-border rounded-2xl p-5 space-y-4 cursor-pointer hover:border-[#1E9A80] transition-colors">
+            <div key={op.id} onClick={() => navigate(`/dashboard/booking-site/operators/${op.id}`)} className="bg-card border border-border rounded-2xl p-5 space-y-4 cursor-pointer hover:border-[#1E9A80] transition-colors">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold text-base">{op.brand_name || op.legal_name || 'Unnamed'}</h3>
