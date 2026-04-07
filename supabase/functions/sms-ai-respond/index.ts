@@ -36,7 +36,7 @@ interface AiRespondRequest {
   pathways?: Pathway[];
 }
 
-const SUPPORTED_MODELS = ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1', 'gpt-3.5-turbo'];
+const SUPPORTED_MODELS = ['gpt-5.4-nano', 'gpt-5.4-mini', 'gpt-5.4', 'gpt-5.4-pro', 'gpt-4o-mini', 'gpt-4o'];
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -52,7 +52,7 @@ serve(async (req: Request) => {
       system_prompt,
       user_message,
       contact_name,
-      model = 'gpt-4o-mini',
+      model = 'gpt-5.4-mini',
       temperature = 0.7,
       conversation_history = [],
       pathways,
@@ -74,7 +74,7 @@ serve(async (req: Request) => {
     }
 
     // Validate model
-    const resolvedModel = SUPPORTED_MODELS.includes(model) ? model : 'gpt-4o-mini';
+    const resolvedModel = SUPPORTED_MODELS.includes(model) ? model : 'gpt-5.4-mini';
 
     // Personalise system prompt with contact name if available
     let finalSystemPrompt = contact_name
