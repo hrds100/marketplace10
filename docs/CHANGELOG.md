@@ -2,6 +2,38 @@
 
 ## [Unreleased]
 
+## [2026-04-07d] - SMS Phase 2 — Backend Live, Real Messages
+
+### Added
+- **17 Supabase tables** created and verified (`sms_*` prefix, all with RLS)
+- **3 edge functions** deployed:
+  - `sms-webhook-incoming` — receives Twilio webhooks, validates signature (Web Crypto HMAC-SHA1), handles opt-out keywords (STOP/UNSUBSCRIBE), creates contacts, stores messages, upserts conversations, idempotent via UNIQUE twilio_sid
+  - `sms-send` — sends outbound SMS via Twilio API, checks opt-out, stores message, updates conversation, configures status callback
+  - `sms-webhook-status` — receives Twilio delivery status callbacks (sent/delivered/failed/undelivered), updates sms_messages
+- **Twilio secrets** set in Supabase (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+- **Twilio webhook** configured: +447380308316 → sms-webhook-incoming
+- **4 React hooks** for real data:
+  - `useConversations` — fetches from sms_conversations + contacts + labels, real-time subscription
+  - `useMessages` — fetches messages by contact with real-time INSERT subscription
+  - `useSendMessage` — calls sms-send edge function via supabase.functions.invoke
+  - `useMarkRead` — clears unread_count when conversation opened
+- **Inbox page** fully wired to real Supabase data (no more mock data for conversations/messages)
+- **Real-time**: new messages appear instantly without page refresh
+- **Default seeds**: 5 pipeline stages, 6 labels, 5 quick replies, Hugo's Twilio number
+
+### Verified
+- Inbound SMS from Hugo's phone (+447863992555) → stored in sms_messages as "Hello test"
+- Contact auto-created, conversation auto-created with unread_count: 1
+- All 17 tables confirmed via psql query
+- All 3 edge functions responding (deployed + verified)
+- Build + TypeScript clean
+
+### Not Changed
+- Templates, quick replies, labels still use mock data in UI (Phase 3)
+- Other 9 pages (pipeline, contacts, automations, etc.) still use mock data
+- No marketplace features touched
+- No frozen zones touched
+
 ## [2026-04-07c] - SMS Inbox Module — Phase 1 UI Complete
 
 ### Added
