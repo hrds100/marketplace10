@@ -2,6 +2,50 @@
 
 ## [Unreleased]
 
+## [2026-04-07c] - SMS Inbox Module — Phase 1 UI Complete
+
+### Added
+- **SMS Inbox module** at `/sms/*` — 10 fully interactive pages with mock data
+  - `/sms/inbox` — WhatsApp-style split-panel conversation view (resizable panels, message bubbles, compose box with templates + quick replies, contact info sheet)
+  - `/sms/pipeline` — Kanban board with @dnd-kit drag-and-drop across pipeline stages
+  - `/sms/contacts` — Table with search, filters, pagination, add/edit dialogs, CSV import (papaparse)
+  - `/sms/automations` — Flow list with active/inactive toggles
+  - `/sms/automations/:id` — React Flow editor rebuilt with agencfront patterns: one universal NodeWrapper, custom edges with labels + conditions, edge editing sidebar, add node panel, edit node popup, global prompt
+  - `/sms/campaigns` — Campaign list + 7-step creation wizard
+  - `/sms/templates` — Card grid with create/edit, variable insertion ({name}, {phone}), character count
+  - `/sms/numbers` — Phone number management with default selection
+  - `/sms/settings` — 7-tab settings (labels, stages, quick replies, team, integrations, opt-out, notifications)
+  - `/sms/dashboard` — Stat cards + recharts line/pie charts
+- **SmsLayout + SmsSidebar** — isolated layout with own sidebar (9 nav items), modeled on NfsOperatorLayout
+- **Admin workspace tab** "SMS" added to AdminLayout for easy access
+- **66 new files** in `src/features/sms/` — fully isolated, zero imports from other features
+- **New packages:** @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, papaparse
+- **Vercel rewrite** for `/sms/:path*` → app.html (SPA routing)
+- **Full plan doc** at `docs/NFSTAY_INBOX_PLAN.md` (v2, audit-hardened)
+
+### Flow Editor Architecture (agencfront-style)
+- 7 node types: DEFAULT, STOP_CONVERSATION, FOLLOW_UP, TRANSFER, LABEL, MOVE_STAGE, WEBHOOK
+- FlowContext (React Context) for all state + CRUD
+- Custom edges with inline labels + pathway conditions (AND/OR, CONTAIN/EQUALS operators)
+- Edge editing sidebar, add node panel, edit node popup (Dialog), global prompt popup
+- One universal NodeWrapper renders all node types (replaced 9 separate files)
+
+### Modified (existing files)
+- `src/App.tsx` — added `/sms/*` route block (11 routes)
+- `src/layouts/AdminLayout.tsx` — added "SMS" tab to workspace switcher
+
+### Not Changed
+- No marketplace features modified
+- No Supabase tables created yet (Phase 1 is UI only)
+- No edge functions deployed
+- No frozen zones touched
+
+### What's Next (Phase 2)
+- Wire Twilio API (send/receive SMS via webhooks)
+- Create `sms_*` Supabase tables with RLS
+- Real-time message subscriptions
+- Requires: Hugo's Twilio credentials (Account SID, Auth Token, phone numbers)
+
 ## [2026-04-07a] - Payout Claim Flow Restored (revolut-pay + revolut-token-refresh)
 
 ### Fixed
