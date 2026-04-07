@@ -8,6 +8,7 @@ import FlowCanvas from './FlowCanvas';
 import FlowSidebar from './FlowSidebar';
 import FlowJourneyPanel from './FlowJourneyPanel';
 import type { ViewMode } from './views';
+import { VIEW_MAP } from './views';
 import { usePlayMode } from './usePlayMode';
 import { flowEdges } from './data/edges';
 import { flowNodes } from './data/nodes';
