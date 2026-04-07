@@ -53,6 +53,7 @@ export function FlowContextProvider({
   initialEdges,
   initialGlobalPrompt,
   onSave,
+  leadCounts,
 }: {
   children: ReactNode;
   initialNodes: Node<SmsNodeData>[];
