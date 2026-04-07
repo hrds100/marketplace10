@@ -37,8 +37,13 @@ interface AiRespondRequest {
   pathways?: Pathway[];
 }
 
-// Models ordered by preference — try requested, fallback to gpt-4o
-const SUPPORTED_MODELS = ['gpt-4o', 'gpt-4o-mini', 'gpt-5.4-nano', 'gpt-5.4-mini', 'gpt-5.4', 'gpt-5.4-pro'];
+// Models — includes latest available. Fallback to gpt-4o if requested model not found.
+const SUPPORTED_MODELS = [
+  'gpt-4o', 'gpt-4o-mini',
+  'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano',
+  'o3', 'o3-mini', 'o4-mini',
+  'chatgpt-4o-latest',
+];
 const FALLBACK_MODEL = 'gpt-4o';
 
 serve(async (req: Request) => {
@@ -81,9 +86,16 @@ serve(async (req: Request) => {
     const resolvedModel = SUPPORTED_MODELS.includes(model) ? model : FALLBACK_MODEL;
 
     // Personalise system prompt with contact name if available
+    // CRITICAL: SMS is plain text — never use markdown formatting
+    const smsRules = `\n\nIMPORTANT RULES FOR SMS REPLIES:
+- This is an SMS conversation. NEVER use markdown formatting (no [text](url), no **bold**, no *italic*, no bullet points).
+- Write URLs as plain text: https://example.com (NOT [example.com](https://example.com))
+- Keep replies concise — SMS messages should be short and natural.
+- Write like a human texting, not a chatbot.`;
+
     let finalSystemPrompt = contact_name
-      ? `${system_prompt}\n\nThe contact's name is ${contact_name}.`
-      : system_prompt;
+      ? `${system_prompt}${smsRules}\n\nThe contact's name is ${contact_name}.`
+      : `${system_prompt}${smsRules}`;
 
     // Mode 2: pathway classification — append pathway instructions
     const hasPathways = pathways && pathways.length > 0;

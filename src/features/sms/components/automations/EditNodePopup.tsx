@@ -290,7 +290,12 @@ export function EditNodePopup() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="gpt-4o-mini">GPT-4o Mini (fast, cheap)</SelectItem>
-                        <SelectItem value="gpt-4o">GPT-4o (recommended)</SelectItem>
+                        <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                        <SelectItem value="gpt-4.1-nano">GPT-4.1 Nano (fastest)</SelectItem>
+                        <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini (fast + smart)</SelectItem>
+                        <SelectItem value="gpt-4.1">GPT-4.1 (recommended)</SelectItem>
+                        <SelectItem value="o3-mini">O3 Mini (reasoning)</SelectItem>
+                        <SelectItem value="o4-mini">O4 Mini (latest reasoning)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
