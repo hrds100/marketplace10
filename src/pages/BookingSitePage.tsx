@@ -11,6 +11,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import NfsAnalytics from '@/pages/nfstay/NfsAnalytics';
 import NfsOperatorSettings from '@/pages/nfstay/NfsOperatorSettings';
+import NfsOperatorDashboard from '@/pages/nfstay/NfsOperatorDashboard';
+import NfsProperties from '@/pages/nfstay/NfsProperties';
+import NfsReservations from '@/pages/nfstay/NfsReservations';
 
 const defaultBranding = {
   brandName: '',
@@ -667,188 +670,24 @@ function BookingSiteDashboard() {
         </div>
       </div>
 
-      {/* Dashboard Tab */}
+      {/* Dashboard Tab — real nfstay.app component */}
       {topTab === 'dashboard' && (
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">
-              {isAdmin ? 'Platform overview across all operators.' : `Welcome back${operator?.brand_name ? `, ${operator.brand_name}` : ''}! Here's your property overview.`}
-            </p>
-          </div>
-          {statsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { label: 'Total Revenue', value: `$${stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: TrendingUp, change: `${stats.reservations} bookings`, sub: 'all time' },
-                { label: 'Active Listings', value: stats.properties, icon: Building2, change: `${stats.properties} total`, sub: 'properties' },
-                { label: 'Reservations', value: stats.reservations, icon: CalendarCheck, change: `${stats.reservations} total`, sub: 'reservations' },
-                ...(isAdmin
-                  ? [{ label: 'Active Operators', value: stats.operators, icon: Users, change: `${stats.operators} total`, sub: 'operators' }]
-                  : [{ label: 'Avg Rating', value: '-', icon: Star, change: '-', sub: 'coming soon' }]),
-              ].map((s) => (
-                <div key={s.label} className="bg-card border border-border rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-medium text-muted-foreground">{s.label}</span>
-                    <div className="w-8 h-8 rounded-lg bg-accent-light flex items-center justify-center">
-                      <s.icon className="w-4 h-4 text-primary" />
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold">{s.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    <span className="text-primary font-medium">{s.change}</span> {s.sub}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="flex-1 overflow-y-auto">
+          <NfsOperatorDashboard />
         </div>
       )}
 
-      {/* Properties Tab */}
+      {/* Properties Tab — real nfstay.app component */}
       {topTab === 'properties' && (
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Properties</h1>
-              <p className="text-sm text-muted-foreground">{properties.length} properties managed</p>
-            </div>
-            <button
-              onClick={() => window.open(getBridgeUrl("https://nfstay.app", "/admin/nfstay/properties"), "_blank")}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
-            >
-              Add Property
-            </button>
-          </div>
-          {propsLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-          ) : properties.length === 0 ? (
-            <div className="text-center py-12">
-              <Building2 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-medium text-foreground mb-1">No properties found</p>
-              <p className="text-sm text-muted-foreground">Add your first property to get started</p>
-            </div>
-          ) : (
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left bg-muted/30">
-                      <th className="p-4 font-medium text-muted-foreground">Property</th>
-                      {isAdmin && <th className="p-4 font-medium text-muted-foreground">Operator</th>}
-                      <th className="p-4 font-medium text-muted-foreground">Location</th>
-                      <th className="p-4 font-medium text-muted-foreground">Status</th>
-                      <th className="p-4 font-medium text-muted-foreground w-12"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {properties.map((prop) => {
-                      const images = (prop.images as string[]) || [];
-                      const opData = prop.nfs_operators as Record<string, unknown> | null;
-                      return (
-                        <tr key={String(prop.id)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                          <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              {images[0] ? (
-                                <img src={String(images[0])} alt={String(prop.name)} className="w-12 h-12 rounded-lg object-cover" />
-                              ) : (
-                                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                                  <Building2 className="w-5 h-5 text-muted-foreground" />
-                                </div>
-                              )}
-                              <div>
-                                <p className="font-medium">{String(prop.name || 'Unnamed')}</p>
-                              </div>
-                            </div>
-                          </td>
-                          {isAdmin && <td className="p-4 text-muted-foreground">{opData ? String(opData.brand_name || 'Unknown') : '-'}</td>}
-                          <td className="p-4 text-muted-foreground">{String(prop.city || '-')}</td>
-                          <td className="p-4">
-                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${prop.status === 'active' || prop.status === 'listed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                              {String(prop.status || 'draft')}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            <button
-                              onClick={() => window.open(getBridgeUrl("https://nfstay.app", `/property/${String(prop.id)}`), "_blank")}
-                              className="p-1.5 rounded-lg hover:bg-secondary"
-                            >
-                              <Eye className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+        <div className="flex-1 overflow-y-auto">
+          <NfsProperties />
         </div>
       )}
 
-      {/* Reservations Tab */}
+      {/* Reservations Tab — real nfstay.app component */}
       {topTab === 'reservations' && (
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Reservations</h1>
-            <p className="text-sm text-muted-foreground">{reservations.length} total reservations</p>
-          </div>
-          {resLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-          ) : reservations.length === 0 ? (
-            <div className="text-center py-12">
-              <CalendarCheck className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-medium text-foreground mb-1">No reservations found</p>
-              <p className="text-sm text-muted-foreground">Reservations will appear here once guests book your properties.</p>
-            </div>
-          ) : (
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left bg-muted/30">
-                      <th className="p-4 font-medium text-muted-foreground">Guest</th>
-                      <th className="p-4 font-medium text-muted-foreground">Property</th>
-                      {isAdmin && <th className="p-4 font-medium text-muted-foreground">Operator</th>}
-                      <th className="p-4 font-medium text-muted-foreground">Check-in</th>
-                      <th className="p-4 font-medium text-muted-foreground">Check-out</th>
-                      <th className="p-4 font-medium text-muted-foreground">Amount</th>
-                      <th className="p-4 font-medium text-muted-foreground">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reservations.map((res) => {
-                      const propData = res.nfs_properties as Record<string, unknown> | null;
-                      const resOpData = res.nfs_operators as Record<string, unknown> | null;
-                      return (
-                        <tr key={String(res.id)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                          <td className="p-4 font-medium">{String(res.guest_name || '-')}</td>
-                          <td className="p-4 text-muted-foreground truncate max-w-[160px]">{propData ? String(propData.name) : '-'}</td>
-                          {isAdmin && <td className="p-4 text-muted-foreground">{resOpData ? String(resOpData.brand_name || 'Unknown') : '-'}</td>}
-                          <td className="p-4 text-muted-foreground whitespace-nowrap">{res.check_in ? new Date(String(res.check_in)).toLocaleDateString() : '-'}</td>
-                          <td className="p-4 text-muted-foreground whitespace-nowrap">{res.check_out ? new Date(String(res.check_out)).toLocaleDateString() : '-'}</td>
-                          <td className="p-4 font-medium">${Number(res.total_price || 0).toFixed(2)}</td>
-                          <td className="p-4">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${res.status === 'confirmed' ? 'bg-green-100 text-green-700' : res.status === 'cancelled' ? 'bg-red-100 text-red-700' : res.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                              {String(res.status || 'pending')}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+        <div className="flex-1 overflow-y-auto">
+          <NfsReservations />
         </div>
       )}
 
