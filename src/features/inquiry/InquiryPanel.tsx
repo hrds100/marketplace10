@@ -43,7 +43,7 @@ interface Props {
  * GHL payment funnel state machine.
  *
  * cart          → iframe showing, user can close (X / Escape / backdrop)
- * locked        → user paid on cart, now on upsell/downsell — X still visible, user can close
+ * locked        → user paid on cart, now on upsell/downsell — no X, user must complete funnel
  * complete      → thank-you postMessage received — success screen, then redirect
  * already-paid  → user opened panel after already having a paid tier
  */
@@ -83,7 +83,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, listing?.id]);
 
-  const canClose = funnelStage !== 'complete';
+  const canClose = funnelStage !== 'locked';
 
   const handleClose = useCallback(() => {
     setVisible(false);
