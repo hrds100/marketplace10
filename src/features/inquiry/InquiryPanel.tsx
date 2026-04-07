@@ -54,10 +54,12 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   const [message, setMessage] = useState('');
   const [paymentComplete, setPaymentComplete] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const iframeLoadCount = useRef(0);
 
   useEffect(() => {
     if (open && listing) {
       setVisible(true);
+      iframeLoadCount.current = 0;
       setPaymentComplete(false);
       setMessage(
         `Hi, I am interested in a property on nfstay.\nLink: https://hub.nfstay.com/deals/${listing.slug || listing.id}\nReference no.: ${listing.id.slice(0, 5).toUpperCase()}\nPlease contact me at your earliest convenience.`
@@ -112,25 +114,26 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
       // Allow messages from pay.nfstay.com and GHL domains
       if (!e.origin.includes('pay.nfstay.com') && !e.origin.includes('leadconnectorhq.com') && !e.origin.includes('gohighlevel.com')) return;
       const data = e.data;
-      const isSuccess =
-        data?.event === 'order_success' ||
-        data?.type === 'order_success' ||
-        data?.event === 'purchase' ||
+      // Only treat thank-you page as funnel complete.
+      // order_success / purchase fire on the FIRST cart payment — before upsell/downsell.
+      const isFunnelComplete =
         data?.page === 'thank-you' ||
         (typeof data === 'string' && data.includes('thank'));
-      if (isSuccess) handlePaymentSuccess();
+      if (isFunnelComplete) handlePaymentSuccess();
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [open, paid, handlePaymentSuccess]);
 
-  // Close on Escape key
+  // Close on Escape key — only allowed for paid users or after payment complete
   useEffect(() => {
     if (!open) return;
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && (paid || paymentComplete)) handleClose();
+    };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [open, handleClose]);
+  }, [open, handleClose, paid, paymentComplete]);
 
   // Cleanup poll on unmount
   useEffect(() => {
@@ -154,8 +157,21 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
         handlePaymentSuccess();
       }
     } catch {
-      // Cross-origin — can't read URL, postMessage will handle it
+      // Cross-origin: can't read iframe URL directly.
+      // Start a one-time tier check 3s after each iframe navigation.
+      // This catches the thank-you page when postMessage doesn't fire.
+      setTimeout(async () => {
+        if (paymentComplete || !user?.id) return;
+        try {
+          const { data } = await supabase.from('profiles').select('tier').eq('id', user.id).single();
+          if (data?.tier && data.tier !== 'free') {
+            // Only trigger if iframe has navigated multiple times (past upsell/downsell)
+            if (iframeLoadCount.current >= 3) handlePaymentSuccess();
+          }
+        } catch { /* ignore */ }
+      }, 3000);
     }
+    iframeLoadCount.current += 1;
   };
 
   const funnelUrl = getFunnelUrl({
@@ -167,10 +183,10 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
   const panel = (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — locked during payment funnel (free user in checkout) */}
       <div
         className={`fixed inset-0 z-[300] bg-black/40 backdrop-blur-sm transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
-        onClick={handleClose}
+        onClick={paid || paymentComplete ? handleClose : undefined}
         aria-hidden
       />
 
@@ -190,7 +206,8 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
               {paymentComplete ? 'Redirecting to your inbox...' : paid ? `${listing.name} · ${listing.city}` : "Building your Airbnb portfolio couldn't be easier"}
             </p>
           </div>
-          {!paymentComplete && (
+          {/* X button: only visible for paid users (WhatsApp view). Hidden during entire payment funnel until paymentComplete. */}
+          {paid && (
             <button
               data-feature="DEALS__INQUIRY_PANEL_CLOSE"
               onClick={handleClose}
@@ -255,15 +272,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
                   onLoad={handleIframeLoad}
                 />
               </div>
-              {/* Persistent back button - always visible outside iframe so user is never stuck */}
-              <div className="flex-shrink-0 border-t border-border p-4 bg-card">
-                <button
-                  onClick={() => { handleClose(); window.location.href = '/dashboard/deals'; }}
-                  className="w-full h-12 rounded-xl bg-[#1E9A80] text-white text-sm font-bold hover:bg-[#178a72] transition-colors shadow-[0_4px_16px_rgba(30,154,128,0.35)]"
-                >
-                  Back to Deals
-                </button>
-              </div>
+              {/* Back to Deals: ONLY visible after payment complete — funnel must not be escapable */}
             </div>
           )}
         </div>
