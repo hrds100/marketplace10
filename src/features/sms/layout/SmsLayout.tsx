@@ -6,43 +6,39 @@ import SmsSidebar from './SmsSidebar';
 
 export default function SmsLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const marginClass = sidebarCollapsed ? 'md:ml-16' : 'md:ml-56';
 
   return (
     <ProtectedRoute>
       <div
         data-feature="SMS__LAYOUT"
-        className="h-screen flex flex-col animate-in fade-in duration-300 bg-white"
+        className="h-screen flex flex-col bg-white"
       >
         {/* Top bar */}
-        <header className="h-14 bg-white/80 backdrop-blur-xl border-b border-border/30 flex items-center px-5 md:px-8 z-[101] relative flex-shrink-0">
+        <header className="h-14 bg-white border-b border-[#E5E7EB] flex items-center px-5 z-[101] flex-shrink-0">
           <Link
             to="/admin"
-            className="text-[17px] font-extrabold text-foreground tracking-tight hover:opacity-70 transition-opacity"
+            className="text-[17px] font-extrabold text-[#1A1A1A] tracking-tight hover:opacity-70 transition-opacity"
           >
             nfstay
           </Link>
-          <span className="ml-4 text-sm font-medium text-muted-foreground">
+          <span className="ml-3 text-sm font-medium text-[#9CA3AF]">
             SMS Inbox
           </span>
           <div className="ml-auto">
             <Link
               to="/admin"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-black/[0.04]"
-              title="Back to Admin"
+              className="flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors px-3 py-1.5 rounded-lg hover:bg-black/[0.04]"
             >
-              <ArrowLeft className="w-[15px] h-[15px]" strokeWidth={1.8} />
+              <ArrowLeft className="w-4 h-4" strokeWidth={1.8} />
               <span className="hidden sm:inline">Admin</span>
             </Link>
           </div>
         </header>
 
-        {/* Sidebar + main content */}
-        <div className="flex-1 flex overflow-hidden relative">
+        {/* Sidebar + main content — no margin, sidebar is in flex flow */}
+        <div className="flex-1 flex overflow-hidden">
           <SmsSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
-          <main
-            className={`${marginClass} flex-1 overflow-hidden transition-all duration-300 ease-out pb-16 md:pb-0`}
-          >
+          <main className="flex-1 overflow-hidden">
             <Outlet />
           </main>
         </div>
