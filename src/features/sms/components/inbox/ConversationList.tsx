@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import ConversationRow from './ConversationRow';
 import type { SmsConversation, SmsLabel } from '../../types';
 import { useMemo, useState } from 'react';
@@ -19,6 +20,7 @@ interface ConversationListProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
   labels: SmsLabel[];
+  isLoading?: boolean;
 }
 
 export default function ConversationList({
@@ -28,6 +30,7 @@ export default function ConversationList({
   searchTerm,
   onSearchChange,
   labels,
+  isLoading,
 }: ConversationListProps) {
   const [labelFilter, setLabelFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('inbox');
@@ -120,7 +123,19 @@ export default function ConversationList({
 
       {/* Conversation list */}
       <ScrollArea className="flex-1">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-start gap-3 px-3 py-3">
+                <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-sm text-[#9CA3AF]">
             No conversations found
           </div>
