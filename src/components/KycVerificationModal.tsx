@@ -1,12 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { MESSAGES } from '@veriff/incontext-sdk';
+import { X } from 'lucide-react';
 
 // Extend window for Veriff SDK globals loaded via CDN
 declare global {
@@ -82,19 +76,15 @@ export default function KycVerificationModal({
 
   useEffect(() => {
     if (!open) {
-      // Reset when modal closes so it can re-mount next time
       mountedRef.current = false;
       return;
     }
 
-    // If scripts already loaded, just init
     if (scriptsLoadedRef.current) {
-      // Small delay to ensure DOM is ready
       const timer = setTimeout(() => initVeriff(), 100);
       return () => clearTimeout(timer);
     }
 
-    // Load Veriff SDK scripts dynamically
     const script1 = document.createElement('script');
     script1.src = 'https://cdn.veriff.me/sdk/js/1.5/veriff.min.js';
     script1.async = true;
@@ -111,21 +101,32 @@ export default function KycVerificationModal({
     };
   }, [open, initVeriff]);
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
-      <DialogContent className="sm:max-w-xl p-0 overflow-hidden">
-        <div className="px-6 pt-6 pb-4 border-b border-[#E5E7EB]">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-[#1A1A1A]">Identity Verification</DialogTitle>
-            <DialogDescription className="text-sm text-[#6B7280] mt-1">
-              To claim your rental income, we need to verify your identity. This is a one-time process.
-            </DialogDescription>
-          </DialogHeader>
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/50">
+      <div className="bg-white rounded-2xl shadow-lg w-full max-w-md mx-4 relative overflow-hidden">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full flex items-center justify-center text-[#6B7280] hover:text-[#1A1A1A] hover:bg-[#F3F3EE] transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 text-center">
+          <h2 className="text-lg font-bold text-[#1A1A1A]">Identity Verification</h2>
+          <p className="text-sm text-[#6B7280] mt-1">
+            One-time verification to claim rental income.
+          </p>
         </div>
-        <div className="px-6 py-6">
-          <div id="veriff-root" className="min-h-[280px] flex items-center justify-center [&_button]:!bg-[#1E9A80] [&_button]:!rounded-[10px] [&_button]:!font-medium" />
+
+        {/* Veriff widget container */}
+        <div className="px-6 pb-6">
+          <div id="veriff-root" className="flex flex-col items-center [&_button]:!bg-[#1E9A80] [&_button]:!rounded-[10px] [&_button]:!font-medium [&_form]:!text-center" />
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
