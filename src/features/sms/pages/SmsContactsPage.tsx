@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import { Plus, Upload, Download, Users } from 'lucide-react';
+import { Plus, Upload, Download, Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
-import { mockContacts as initialContacts } from '../data/mockContacts';
-import { mockLabels } from '../data/mockLabels';
-import { mockStages } from '../data/mockStages';
-import type { SmsContact } from '../types';
+import { useContacts } from '../hooks/useContacts';
+import { useLabels } from '../hooks/useLabels';
+import { useStages } from '../hooks/useStages';
+import type { SmsContact, SmsLabel } from '../types';
 import ContactsTable from '../components/contacts/ContactsTable';
 import ContactForm from '../components/contacts/ContactForm';
 import CsvImportDialog from '../components/contacts/CsvImportDialog';
 
 export default function SmsContactsPage() {
-  const [contacts, setContacts] = useState<SmsContact[]>(initialContacts);
+  const { contacts, isLoading, createContact, updateContact, deleteContact, bulkCreateContacts } = useContacts();
+  const { labels } = useLabels();
+  const { stages } = useStages();
   const [formOpen, setFormOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<SmsContact | null>(null);
@@ -27,50 +29,44 @@ export default function SmsContactsPage() {
     setFormOpen(true);
   }
 
-  function handleSaveContact(data: {
+  async function handleSaveContact(data: {
     displayName: string;
     phoneNumber: string;
-    labels: typeof mockLabels;
+    labels: SmsLabel[];
     pipelineStageId: string | null;
     notes: string;
   }) {
-    if (editingContact) {
-      setContacts((prev) =>
-        prev.map((c) =>
-          c.id === editingContact.id
-            ? {
-                ...c,
-                displayName: data.displayName || null,
-                phoneNumber: data.phoneNumber,
-                labels: data.labels,
-                pipelineStageId: data.pipelineStageId,
-                notes: data.notes,
-                updatedAt: new Date().toISOString(),
-              }
-            : c
-        )
-      );
-    } else {
-      const newContact: SmsContact = {
-        id: `cnt-${Date.now()}`,
-        phoneNumber: data.phoneNumber,
-        displayName: data.displayName || null,
-        labels: data.labels,
-        pipelineStageId: data.pipelineStageId,
-        notes: data.notes,
-        assignedTo: null,
-        optedOut: false,
-        batchName: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setContacts((prev) => [newContact, ...prev]);
+    try {
+      if (editingContact) {
+        await updateContact({
+          id: editingContact.id,
+          phone_number: data.phoneNumber,
+          display_name: data.displayName || null,
+          notes: data.notes,
+          pipeline_stage_id: data.pipelineStageId,
+          labelIds: data.labels.map((l) => l.id),
+        });
+      } else {
+        await createContact({
+          phone_number: data.phoneNumber,
+          display_name: data.displayName || undefined,
+          notes: data.notes || undefined,
+          pipeline_stage_id: data.pipelineStageId,
+          labelIds: data.labels.map((l) => l.id),
+        });
+      }
+    } catch {
+      // Error already handled by hook toast
     }
   }
 
-  function handleDeleteContact(contactId: string) {
-    setContacts((prev) => prev.filter((c) => c.id !== contactId));
-    toast.success('Contact deleted');
+  async function handleDeleteContact(contactId: string) {
+    try {
+      await deleteContact(contactId);
+      toast.success('Contact deleted');
+    } catch {
+      // Error already handled by hook toast
+    }
   }
 
   function handleExportCsv() {
@@ -89,6 +85,14 @@ export default function SmsContactsPage() {
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Contacts exported');
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-[#1E9A80]" />
+      </div>
+    );
   }
 
   return (
@@ -134,8 +138,8 @@ export default function SmsContactsPage() {
       {/* Table */}
       <ContactsTable
         contacts={contacts}
-        labels={mockLabels}
-        stages={mockStages}
+        labels={labels}
+        stages={stages}
         onEdit={handleEditContact}
         onDelete={handleDeleteContact}
       />
@@ -143,8 +147,8 @@ export default function SmsContactsPage() {
       {/* Dialogs */}
       <ContactForm
         contact={editingContact}
-        labels={mockLabels}
-        stages={mockStages}
+        labels={labels}
+        stages={stages}
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSave={handleSaveContact}
@@ -154,6 +158,7 @@ export default function SmsContactsPage() {
         open={csvOpen}
         onClose={() => setCsvOpen(false)}
         existingContacts={contacts}
+        onImport={bulkCreateContacts}
       />
     </div>
   );

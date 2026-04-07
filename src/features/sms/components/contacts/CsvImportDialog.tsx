@@ -24,6 +24,7 @@ interface CsvImportDialogProps {
   open: boolean;
   onClose: () => void;
   existingContacts: SmsContact[];
+  onImport?: (rows: { phone_number: string; display_name?: string }[]) => Promise<void>;
 }
 
 interface ParsedRow {
@@ -34,7 +35,7 @@ interface ParsedRow {
 
 type Step = 'upload' | 'preview' | 'duplicates' | 'success';
 
-export default function CsvImportDialog({ open, onClose, existingContacts }: CsvImportDialogProps) {
+export default function CsvImportDialog({ open, onClose, existingContacts, onImport }: CsvImportDialogProps) {
   const [step, setStep] = useState<Step>('upload');
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [duplicateCount, setDuplicateCount] = useState(0);
@@ -83,11 +84,25 @@ export default function CsvImportDialog({ open, onClose, existingContacts }: Csv
     setStep('duplicates');
   }
 
-  function handleImport(skipDuplicates: boolean) {
+  async function handleImport(skipDuplicates: boolean) {
     const existingPhones = new Set(existingContacts.map((c) => c.phoneNumber));
     const toImport = skipDuplicates
       ? rows.filter((r) => r.phone && !existingPhones.has(r.phone))
       : rows.filter((r) => r.phone);
+
+    if (onImport && toImport.length > 0) {
+      try {
+        await onImport(
+          toImport.map((r) => ({
+            phone_number: r.phone!,
+            display_name: r.name || undefined,
+          }))
+        );
+      } catch {
+        // Error handled by hook toast
+      }
+    }
+
     setImportedCount(toImport.length);
     setStep('success');
   }

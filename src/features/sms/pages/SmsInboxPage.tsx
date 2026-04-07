@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   ResizablePanelGroup,
@@ -16,10 +17,10 @@ import { useConversations } from '../hooks/useConversations';
 import { useMessages } from '../hooks/useMessages';
 import { useSendMessage } from '../hooks/useSendMessage';
 import { useMarkRead } from '../hooks/useMarkRead';
+import { useUpdateContact } from '../hooks/useUpdateContact';
 import { mockTemplates } from '../data/mockTemplates';
 import { mockQuickReplies } from '../data/mockQuickReplies';
 import { mockLabels } from '../data/mockLabels';
-import { mockStages } from '../data/mockStages';
 
 // Mock internal notes — not yet in DB for this phase
 const mockInternalNotes: SmsInternalNote[] = [];
@@ -33,6 +34,15 @@ export default function SmsInboxPage() {
   const { conversations, isLoading: conversationsLoading } = useConversations();
   const { markRead } = useMarkRead();
   const { sendMessage, isSending } = useSendMessage();
+  const { updateContact } = useUpdateContact();
+
+  const handleUpdateName = useCallback(
+    async (contactId: string, newName: string) => {
+      await updateContact(contactId, { display_name: newName || null as never });
+      toast.success('Contact name updated');
+    },
+    [updateContact]
+  );
 
   const selectedConversation = useMemo(
     () => conversations.find((c) => c.id === selectedId) ?? null,
@@ -98,6 +108,7 @@ export default function SmsInboxPage() {
               contact={selectedContact}
               onOpenContactInfo={() => setContactInfoOpen(true)}
               isLoading={messagesLoading}
+              onUpdateName={handleUpdateName}
             />
           </div>
 
@@ -112,7 +123,6 @@ export default function SmsInboxPage() {
             contact={selectedContact}
             open={contactInfoOpen}
             onClose={() => setContactInfoOpen(false)}
-            stages={mockStages}
             internalNotes={notesForConversation}
           />
         </div>
@@ -160,6 +170,7 @@ export default function SmsInboxPage() {
                 contact={selectedContact}
                 onOpenContactInfo={() => setContactInfoOpen(true)}
                 isLoading={messagesLoading}
+                onUpdateName={handleUpdateName}
               />
             </div>
 
@@ -179,7 +190,6 @@ export default function SmsInboxPage() {
         contact={selectedContact}
         open={contactInfoOpen}
         onClose={() => setContactInfoOpen(false)}
-        stages={mockStages}
         internalNotes={notesForConversation}
       />
     </div>

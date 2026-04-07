@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
-import { Info, Loader2, MessageSquare } from 'lucide-react';
+import { Check, Info, Loader2, MessageSquare, Pencil, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import PhoneNumber from '../shared/PhoneNumber';
 import MessageBubble from './MessageBubble';
 import type { SmsContact, SmsMessage } from '../../types';
@@ -12,6 +13,7 @@ interface MessageThreadProps {
   contact: SmsContact | null;
   onOpenContactInfo: () => void;
   isLoading?: boolean;
+  onUpdateName?: (contactId: string, newName: string) => Promise<void>;
 }
 
 function groupByDate(messages: SmsMessage[]): Map<string, SmsMessage[]> {
@@ -33,8 +35,22 @@ function groupByDate(messages: SmsMessage[]): Map<string, SmsMessage[]> {
   return groups;
 }
 
-export default function MessageThread({ messages, contact, onOpenContactInfo, isLoading }: MessageThreadProps) {
+export default function MessageThread({ messages, contact, onOpenContactInfo, isLoading, onUpdateName }: MessageThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSaveName() {
+    if (!contact || !onUpdateName) return;
+    try {
+      setSaving(true);
+      await onUpdateName(contact.id, nameValue.trim());
+      setEditingName(false);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -55,11 +71,59 @@ export default function MessageThread({ messages, contact, onOpenContactInfo, is
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E7EB] bg-white">
-        <div>
-          <p className="text-sm font-semibold text-[#1A1A1A]">
-            {contact.displayName ?? <PhoneNumber number={contact.phoneNumber} />}
-          </p>
-          {contact.displayName && (
+        <div className="flex-1 min-w-0">
+          {editingName ? (
+            <div className="flex items-center gap-1.5">
+              <Input
+                value={nameValue}
+                onChange={(e) => setNameValue(e.target.value)}
+                className="h-7 text-sm max-w-[200px]"
+                placeholder="Contact name"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveName();
+                  if (e.key === 'Escape') setEditingName(false);
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={handleSaveName}
+                disabled={saving}
+              >
+                <Check className="h-3.5 w-3.5 text-[#1E9A80]" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={() => setEditingName(false)}
+              >
+                <X className="h-3.5 w-3.5 text-[#6B7280]" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-semibold text-[#1A1A1A] truncate">
+                {contact.displayName ?? <PhoneNumber number={contact.phoneNumber} />}
+              </p>
+              {onUpdateName && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={() => {
+                    setNameValue(contact.displayName ?? '');
+                    setEditingName(true);
+                  }}
+                >
+                  <Pencil className="h-3 w-3 text-[#9CA3AF]" />
+                </Button>
+              )}
+            </div>
+          )}
+          {contact.displayName && !editingName && (
             <PhoneNumber number={contact.phoneNumber} className="text-xs text-[#9CA3AF]" />
           )}
         </div>
