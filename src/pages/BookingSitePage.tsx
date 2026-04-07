@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload, Loader2, AlertCircle, CheckCircle2, LayoutDashboard, Building2, CalendarCheck, Paintbrush, TrendingUp, Star, Eye, Users, Settings } from 'lucide-react';
+import { Globe, Smartphone, Monitor, Copy, Check, Palette, Type, Image, Mail, Phone, Link2, Upload, Loader2, AlertCircle, CheckCircle2, LayoutDashboard, Building2, CalendarCheck, Paintbrush, TrendingUp, Star, Eye, Users, Settings, Search, Plus, ChevronLeft, User, MapPin } from 'lucide-react';
 import PaymentSheet from '@/components/PaymentSheet';
 import BookingSitePreview from './BookingSitePreview';
 import { getBridgeUrl } from '@/lib/authBridge';
@@ -382,6 +382,10 @@ function BookingSiteDashboard() {
   const [seeded, setSeeded] = useState(false);
   const { isAdmin } = useAuth();
   const [topTab, setTopTab] = useState<'branding' | 'dashboard' | 'properties' | 'reservations' | 'analytics' | 'settings'>('branding');
+  const [propSearch, setPropSearch] = useState('');
+  const [propStatusFilter, setPropStatusFilter] = useState('all');
+  const [resSearch, setResSearch] = useState('');
+  const [resStatusFilter, setResStatusFilter] = useState('all');
 
   // Dashboard stats
   const [statsLoading, setStatsLoading] = useState(false);
@@ -439,10 +443,10 @@ function BookingSiteDashboard() {
 
     const query = isAdmin
       ? (supabase.from('nfs_properties') as any)
-          .select('id, name, city, status, images, operator_id, nfs_operators(brand_name)')
+          .select('id, public_title, internal_title, city, country, listing_status, images, base_rate_amount, base_rate_currency, updated_at, operator_id, nfs_operators(brand_name)')
           .order('created_at', { ascending: false })
       : (supabase.from('nfs_properties') as any)
-          .select('id, name, city, status, images')
+          .select('id, public_title, internal_title, city, country, listing_status, images, base_rate_amount, base_rate_currency, updated_at')
           .eq('operator_id', operator!.id)
           .order('created_at', { ascending: false });
 
@@ -460,10 +464,10 @@ function BookingSiteDashboard() {
 
     const query = isAdmin
       ? (supabase.from('nfs_reservations') as any)
-          .select('id, guest_name, check_in, check_out, status, total_price, nfs_properties(name), nfs_operators(brand_name)')
+          .select('id, guest_first_name, guest_last_name, guest_email, check_in, check_out, status, total_amount, payment_currency, booking_source, nfs_properties(name), nfs_operators(brand_name)')
           .order('check_in', { ascending: false })
       : (supabase.from('nfs_reservations') as any)
-          .select('id, guest_name, check_in, check_out, status, total_price, nfs_properties(name)')
+          .select('id, guest_first_name, guest_last_name, guest_email, check_in, check_out, status, total_amount, payment_currency, booking_source, nfs_properties(name)')
           .eq('operator_id', operator!.id)
           .order('check_in', { ascending: false });
 
@@ -708,147 +712,247 @@ function BookingSiteDashboard() {
         </div>
       )}
 
-      {/* Properties Tab */}
+      {/* Properties Tab — nfstay.app design */}
       {topTab === 'properties' && (
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Header + Add Property */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Properties</h1>
-              <p className="text-sm text-muted-foreground">{properties.length} properties managed</p>
+              <p className="text-sm text-muted-foreground mt-1">Manage your vacation rental listings.</p>
             </div>
             <button
-              onClick={() => window.open(getBridgeUrl("https://nfstay.app", "/admin/nfstay/properties"), "_blank")}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
+              onClick={() => window.open(getBridgeUrl("https://nfstay.app", "/nfstay/properties/new"), "_blank")}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
             >
-              Add Property
+              <Plus className="w-4 h-4" /> Add property
             </button>
           </div>
+
+          {/* Filters: Status pills + Search */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex gap-1.5">
+              {['all', 'listed', 'unlisted', 'archived', 'draft'].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setPropStatusFilter(s)}
+                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                    propStatusFilter === s
+                      ? 'border-primary bg-primary/5 font-medium text-primary'
+                      : 'border-border/40 text-muted-foreground hover:border-primary/30'
+                  }`}
+                >
+                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                placeholder="Search properties..."
+                value={propSearch}
+                onChange={e => setPropSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-border/40 rounded-lg outline-none focus:border-primary/50 bg-background"
+              />
+            </div>
+          </div>
+
+          {/* Property list */}
           {propsLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <div className="flex items-center justify-center py-16">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : properties.length === 0 ? (
-            <div className="text-center py-12">
-              <Building2 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-medium text-foreground mb-1">No properties found</p>
-              <p className="text-sm text-muted-foreground">Add your first property to get started</p>
-            </div>
-          ) : (
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left bg-muted/30">
-                      <th className="p-4 font-medium text-muted-foreground">Property</th>
-                      {isAdmin && <th className="p-4 font-medium text-muted-foreground">Operator</th>}
-                      <th className="p-4 font-medium text-muted-foreground">Location</th>
-                      <th className="p-4 font-medium text-muted-foreground">Status</th>
-                      <th className="p-4 font-medium text-muted-foreground w-12"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {properties.map((prop) => {
-                      const images = (prop.images as string[]) || [];
-                      const opData = prop.nfs_operators as Record<string, unknown> | null;
-                      return (
-                        <tr key={String(prop.id)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                          <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              {images[0] ? (
-                                <img src={String(images[0])} alt={String(prop.name)} className="w-12 h-12 rounded-lg object-cover" />
-                              ) : (
-                                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                                  <Building2 className="w-5 h-5 text-muted-foreground" />
-                                </div>
-                              )}
-                              <div>
-                                <p className="font-medium">{String(prop.name || 'Unnamed')}</p>
-                              </div>
-                            </div>
-                          </td>
-                          {isAdmin && <td className="p-4 text-muted-foreground">{opData ? String(opData.brand_name || 'Unknown') : '-'}</td>}
-                          <td className="p-4 text-muted-foreground">{String(prop.city || '-')}</td>
-                          <td className="p-4">
-                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${prop.status === 'active' || prop.status === 'listed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                              {String(prop.status || 'draft')}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            <button
-                              onClick={() => window.open(getBridgeUrl("https://nfstay.app", `/property/${String(prop.id)}`), "_blank")}
-                              className="p-1.5 rounded-lg hover:bg-secondary"
-                            >
-                              <Eye className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+          ) : (() => {
+            const filtered = properties.filter(p => {
+              const title = String(p.public_title || p.internal_title || p.name || '');
+              const city = String(p.city || '');
+              const status = String(p.listing_status || p.status || 'draft');
+              const matchesStatus = propStatusFilter === 'all' || status === propStatusFilter;
+              const matchesSearch = !propSearch || title.toLowerCase().includes(propSearch.toLowerCase()) || city.toLowerCase().includes(propSearch.toLowerCase());
+              return matchesStatus && matchesSearch;
+            });
+            return filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-border/60 rounded-xl bg-muted/20">
+                <Building2 className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                <p className="text-sm text-muted-foreground mb-4">
+                  {properties.length > 0 ? 'No properties match your filters.' : 'No properties yet. Create your first property.'}
+                </p>
+                {properties.length === 0 && (
+                  <button
+                    onClick={() => window.open(getBridgeUrl("https://nfstay.app", "/nfstay/properties/new"), "_blank")}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg"
+                  >
+                    <Plus className="w-4 h-4" /> Create property
+                  </button>
+                )}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="grid gap-3">
+                {filtered.map((p) => {
+                  const images = (p.images as Array<{ url?: string }> | string[] | null) || [];
+                  const coverUrl = typeof images[0] === 'string' ? images[0] : (images[0] as { url?: string })?.url;
+                  const title = String(p.public_title || p.internal_title || p.name || 'Untitled');
+                  const location = [p.city, p.country].filter(Boolean).join(', ');
+                  const status = String(p.listing_status || p.status || 'draft');
+                  const updated = p.updated_at ? new Date(String(p.updated_at)).toLocaleDateString() : '';
+                  const statusColors: Record<string, string> = {
+                    listed: 'bg-green-100 text-green-700',
+                    draft: 'bg-gray-100 text-gray-600',
+                    unlisted: 'bg-yellow-100 text-yellow-700',
+                    archived: 'bg-red-100 text-red-700',
+                  };
+                  return (
+                    <div
+                      key={String(p.id)}
+                      className="flex items-center gap-4 p-4 rounded-xl border border-border/40 bg-white dark:bg-card hover:border-primary/30 transition-all"
+                    >
+                      <div className="w-16 h-12 rounded-lg bg-muted/40 overflow-hidden flex-shrink-0">
+                        {coverUrl ? (
+                          <img src={coverUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Building2 className="w-5 h-5 text-muted-foreground/30" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{title}</p>
+                        <p className="text-xs text-muted-foreground">{location || 'No location'}</p>
+                      </div>
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${statusColors[status] || statusColors.draft}`}>
+                        {status}
+                      </span>
+                      <div className="text-right">
+                        {p.base_rate_amount ? (
+                          <p className="text-sm font-medium">{String(p.base_rate_currency || 'GBP')} {Number(p.base_rate_amount).toFixed(0)}</p>
+                        ) : null}
+                        {updated && <p className="text-xs text-muted-foreground">{updated}</p>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
 
-      {/* Reservations Tab */}
+      {/* Reservations Tab — nfstay.app design */}
       {topTab === 'reservations' && (
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Reservations</h1>
-            <p className="text-sm text-muted-foreground">{reservations.length} total reservations</p>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Header + New Reservation */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Reservations</h1>
+              <p className="text-sm text-muted-foreground mt-1">{reservations.length} total reservations</p>
+            </div>
+            <button
+              onClick={() => window.open(getBridgeUrl("https://nfstay.app", "/nfstay/create-reservation"), "_blank")}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
+            >
+              <Plus className="w-4 h-4" /> Create
+            </button>
           </div>
+
+          {/* Filters: Search + Status dropdown */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                placeholder="Search by guest, property, or ID..."
+                value={resSearch}
+                onChange={e => setResSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-border/40 rounded-lg outline-none focus:border-primary/50 bg-background"
+              />
+            </div>
+            <select
+              className="rounded-lg border border-border/40 bg-background px-3 py-2 text-sm h-10"
+              value={resStatusFilter}
+              onChange={e => setResStatusFilter(e.target.value)}
+            >
+              <option value="all">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="completed">Completed</option>
+              <option value="no_show">No Show</option>
+            </select>
+          </div>
+
+          {/* Reservation cards */}
           {resLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <div className="flex items-center justify-center py-16">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : reservations.length === 0 ? (
-            <div className="text-center py-12">
-              <CalendarCheck className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-medium text-foreground mb-1">No reservations found</p>
-              <p className="text-sm text-muted-foreground">Reservations will appear here once guests book your properties.</p>
-            </div>
-          ) : (
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left bg-muted/30">
-                      <th className="p-4 font-medium text-muted-foreground">Guest</th>
-                      <th className="p-4 font-medium text-muted-foreground">Property</th>
-                      {isAdmin && <th className="p-4 font-medium text-muted-foreground">Operator</th>}
-                      <th className="p-4 font-medium text-muted-foreground">Check-in</th>
-                      <th className="p-4 font-medium text-muted-foreground">Check-out</th>
-                      <th className="p-4 font-medium text-muted-foreground">Amount</th>
-                      <th className="p-4 font-medium text-muted-foreground">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reservations.map((res) => {
-                      const propData = res.nfs_properties as Record<string, unknown> | null;
-                      const resOpData = res.nfs_operators as Record<string, unknown> | null;
-                      return (
-                        <tr key={String(res.id)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                          <td className="p-4 font-medium">{String(res.guest_name || '-')}</td>
-                          <td className="p-4 text-muted-foreground truncate max-w-[160px]">{propData ? String(propData.name) : '-'}</td>
-                          {isAdmin && <td className="p-4 text-muted-foreground">{resOpData ? String(resOpData.brand_name || 'Unknown') : '-'}</td>}
-                          <td className="p-4 text-muted-foreground whitespace-nowrap">{res.check_in ? new Date(String(res.check_in)).toLocaleDateString() : '-'}</td>
-                          <td className="p-4 text-muted-foreground whitespace-nowrap">{res.check_out ? new Date(String(res.check_out)).toLocaleDateString() : '-'}</td>
-                          <td className="p-4 font-medium">${Number(res.total_price || 0).toFixed(2)}</td>
-                          <td className="p-4">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${res.status === 'confirmed' ? 'bg-green-100 text-green-700' : res.status === 'cancelled' ? 'bg-red-100 text-red-700' : res.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                              {String(res.status || 'pending')}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+          ) : (() => {
+            const filtered = reservations.filter(r => {
+              const guestName = `${String(r.guest_first_name || '')} ${String(r.guest_last_name || '')}`.trim() || String(r.guest_name || '');
+              const email = String(r.guest_email || '');
+              const rid = String(r.id || '');
+              const status = String(r.status || 'pending');
+              const matchesStatus = resStatusFilter === 'all' || status === resStatusFilter;
+              const matchesSearch = !resSearch || guestName.toLowerCase().includes(resSearch.toLowerCase()) || email.toLowerCase().includes(resSearch.toLowerCase()) || rid.includes(resSearch);
+              return matchesStatus && matchesSearch;
+            });
+            const resStatusColors: Record<string, string> = {
+              pending: 'bg-yellow-100 text-yellow-800',
+              confirmed: 'bg-green-100 text-green-800',
+              cancelled: 'bg-red-100 text-red-800',
+              completed: 'bg-blue-100 text-blue-800',
+              no_show: 'bg-gray-100 text-gray-800',
+              expired: 'bg-gray-100 text-gray-600',
+            };
+            return filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-border/60 rounded-xl bg-muted/20">
+                <CalendarCheck className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  {resSearch ? 'No reservations match your search.' : 'No reservations yet.'}
+                </p>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">{filtered.length} reservation{filtered.length !== 1 ? 's' : ''}</p>
+                {filtered.map(r => {
+                  const guestName = `${String(r.guest_first_name || '')} ${String(r.guest_last_name || '')}`.trim() || String(r.guest_name || '-');
+                  const propData = r.nfs_properties as Record<string, unknown> | null;
+                  const status = String(r.status || 'pending');
+                  const checkIn = r.check_in ? new Date(String(r.check_in)).toLocaleDateString() : '-';
+                  const checkOut = r.check_out ? new Date(String(r.check_out)).toLocaleDateString() : '-';
+                  return (
+                    <div key={String(r.id)} className="border border-border/40 rounded-xl p-4 hover:border-border/80 transition-colors bg-white dark:bg-card">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-2 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            <span className="font-medium text-sm truncate">{guestName}</span>
+                            {r.guest_email && <span className="text-xs text-muted-foreground truncate hidden sm:inline">{String(r.guest_email)}</span>}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <CalendarCheck className="w-4 h-4 flex-shrink-0" />
+                            <span>{checkIn} — {checkOut}</span>
+                          </div>
+                          {propData && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <MapPin className="w-4 h-4 flex-shrink-0" />
+                              <span>{String(propData.name || '-')}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${resStatusColors[status] || resStatusColors.pending}`}>
+                            {status.replace('_', ' ')}
+                          </span>
+                          <span className="font-semibold text-sm">
+                            {String(r.payment_currency || 'GBP')} {Number(r.total_amount || r.total_price || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
 
