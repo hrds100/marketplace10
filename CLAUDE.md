@@ -83,6 +83,7 @@ No agent may load `docs/legacy/*` unless the current skill explicitly names that
 11. **Every DB write**: confirm RLS policy covers it first.
 12. **Destructive actions**: STOP and ask Hugo.
 13. **Never use `sed`** to edit .tsx/.ts files — use proper Edit tools.
+14. **Flowchart sync** — Any PR that adds/changes a route, edge function, user flow, or integration MUST update `src/features/flow/data/nodes.ts` and `src/features/flow/data/edges.ts` in the same PR. The `/flow` page is the living map of the business. If it's not updated, the PR is incomplete.
 
 ## DO NOT TOUCH (crash risk)
 
@@ -130,6 +131,64 @@ Before editing ANY code, verify the problem is actually in code:
 3. CHECK CONFIG: Is verify_jwt correct? Is the env var set?
 4. CHECK RUNTIME: Can you reproduce the error?
 5. ONLY IF confirmed in code → proceed to PLAN and code changes
+
+## Audit-First Change Policy (HARD RULE)
+
+**Applies to:** Every bug, error, regression, or unexpected behavior — no exceptions.
+**Default assumption:** Treat every issue as potentially production-impacting until the audit proves otherwise.
+
+### Step 1 — STOP. Do not edit code.
+
+No file may be opened for editing until Step 4 is approved.
+
+### Step 2 — Full dependency audit.
+
+Audit every connected part of the affected flow:
+
+- **Client callers:** Which components/pages invoke this code? What payloads do they send?
+- **Function code:** Read the full function and every internal dependency it imports.
+- **Environment:** Verify all env vars and secrets the function relies on are set and valid.
+- **Auth & permissions:** Check headers, CORS config, JWT settings, RLS policies.
+- **Data layer:** Trace every database query, external API call, and webhook in the flow.
+- **Error paths:** Read logs, returned status codes, try/catch blocks, and fallback behavior.
+- **Recent changes:** Run `git log` and `git diff` on all files in the flow to find what changed.
+
+Do not skip any category. If a category seems irrelevant, note why and move on.
+
+### Step 3 — Root-cause analysis with evidence.
+
+Trace the issue end-to-end and identify the root cause(s). Every claim must cite evidence (a log line, a config value, a code snippet, a git diff). Produce a short report:
+
+1. **Findings** — what you observed, with evidence.
+2. **Connected files/components** — full list of everything in the affected flow.
+3. **Root cause(s)** — ranked by confidence, each with supporting evidence.
+4. **Verification checklist** — how to confirm the fix worked.
+5. **Smallest safe fix plan** — the minimum change that resolves the issue.
+
+### Step 4 — Ask Hugo for approval.
+
+Present the report. Do not proceed until Hugo approves the fix plan.
+
+### Step 5 — Apply the smallest possible fix only.
+
+- Change only what the approved plan specifies.
+- No speculative fixes, no "while I'm here" improvements, no broad refactors.
+- If the fix touches a shared table or edge function, declare blast radius and test accordingly.
+
+### Step 6 — Post-fix verification.
+
+- Run the verification checklist from Step 3.
+- Run affected feature tests + smoke suite.
+- Confirm the original error no longer reproduces.
+- Confirm no new errors were introduced in connected flows.
+
+### Constraints
+
+- No guessing without evidence.
+- No destructive changes.
+- Preserve existing behavior unless a change is proven necessary.
+- If anything is unclear, inspect more before editing.
+- A fix is not done until post-fix verification passes.
 
 ## Feature Map
 
