@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet, NavLink, Navigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Building2, CalendarCheck, Paintbrush, TrendingUp, Users, Settings, Globe, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Building2, CalendarDays, Paintbrush, BarChart3, Settings, Globe, Users, TrendingUp } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import { useUserTier } from '@/hooks/useUserTier';
 import { isPaidTier } from '@/lib/ghl';
@@ -9,16 +9,16 @@ import { useAuth } from '@/hooks/useAuth';
 const operatorTabs = [
   { to: '/dashboard/booking-site/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/dashboard/booking-site/properties', label: 'Properties', icon: Building2 },
-  { to: '/dashboard/booking-site/reservations', label: 'Reservations', icon: CalendarCheck },
+  { to: '/dashboard/booking-site/reservations', label: 'Reservations', icon: CalendarDays },
+  { to: '/dashboard/booking-site/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/dashboard/booking-site/settings', label: 'Settings', icon: Settings },
   { to: '/dashboard/booking-site/branding', label: 'Branding', icon: Paintbrush },
 ];
 
 const adminTabs = [
-  { to: '/dashboard/booking-site/overview', label: 'Platform Overview', icon: BarChart3 },
+  { to: '/dashboard/booking-site/platform', label: 'Platform Overview', icon: TrendingUp },
   { to: '/dashboard/booking-site/operators', label: 'Operators', icon: Globe },
-  { to: '/dashboard/booking-site/users', label: 'Users', icon: Users },
-  { to: '/dashboard/booking-site/analytics', label: 'Analytics', icon: TrendingUp },
-  { to: '/dashboard/booking-site/settings', label: 'Settings', icon: Settings },
+  { to: '/dashboard/booking-site/all-users', label: 'All Users', icon: Users },
 ];
 
 export default function BookingSiteLayout() {
@@ -37,14 +37,13 @@ export default function BookingSiteLayout() {
     );
   }
 
-  // Free tier → preview page (rendered as child route)
   if (!paid) {
     return <Outlet />;
   }
 
-  // Exact match on /dashboard/booking-site → redirect to branding tab
+  // Exact match → redirect to dashboard
   if (location.pathname === '/dashboard/booking-site' || location.pathname === '/dashboard/booking-site/') {
-    return <Navigate to="/dashboard/booking-site/branding" replace />;
+    return <Navigate to="/dashboard/booking-site/dashboard" replace />;
   }
 
   const allTabs = isAdmin ? [...operatorTabs, ...adminTabs] : operatorTabs;
@@ -72,7 +71,7 @@ export default function BookingSiteLayout() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
         <Outlet />
       </div>
     </div>
