@@ -96,22 +96,26 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     const handleMessage = (e: MessageEvent) => {
       if (!e.origin.includes('pay.nfstay.com') && !e.origin.includes('leadconnectorhq.com') && !e.origin.includes('gohighlevel.com')) return;
       const data = e.data;
-      const isSuccess =
-        data?.event === 'order_success' || data?.type === 'order_success' ||
-        data?.event === 'purchase' || data?.page === 'thank-you' ||
+      // Only treat thank-you page as funnel complete.
+      // order_success / purchase fire on the FIRST cart payment — before upsell/downsell.
+      const isFunnelComplete =
+        data?.page === 'thank-you' ||
         (typeof data === 'string' && data.includes('thank'));
-      if (isSuccess) handlePaymentSuccess();
+      if (isFunnelComplete) handlePaymentSuccess();
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [open, handlePaymentSuccess]);
 
+  // Escape key — blocked during payment funnel, only works after payment complete
   useEffect(() => {
     if (!open) return;
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && paymentComplete) handleClose();
+    };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [open, handleClose]);
+  }, [open, handleClose, paymentComplete]);
 
   useEffect(() => {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
@@ -153,9 +157,10 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
 
   const sheet = (
     <>
+      {/* Backdrop — locked during payment funnel, cannot close until thank-you */}
       <div
         className={`fixed inset-0 z-[300] bg-black/40 backdrop-blur-sm transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
-        onClick={handleClose}
+        onClick={paymentComplete ? handleClose : undefined}
         aria-hidden
       />
       <div
@@ -172,9 +177,12 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
               {paymentComplete ? 'Unlocking your inbox...' : 'Get full access to contact landlords directly'}
             </p>
           </div>
-          <button onClick={handleClose} data-feature="PAYMENTS__CLOSE" className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
-            <X className="w-5 h-5" />
-          </button>
+          {/* X button: only visible after payment complete — funnel cannot be escaped */}
+          {paymentComplete && (
+            <button onClick={handleClose} data-feature="PAYMENTS__CLOSE" className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -234,25 +242,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
                   onLoad={handleIframeLoad}
                 />
               </div>
-              {/* Manual check for users who paid but detection missed */}
-              <div className="px-4 py-2 border-t border-border text-center shrink-0">
-                <button
-                  onClick={async () => {
-                    if (!user?.id) return;
-                    const { data } = await supabase.from('profiles').select('tier').eq('id', user.id).single();
-                    if (data?.tier && data.tier !== 'free') {
-                      setPaymentComplete(true);
-                      if (pollRef.current) clearInterval(pollRef.current);
-                      setTimeout(() => { handleClose(); onUnlocked(); }, 500);
-                    } else {
-                      toast.error('Payment not confirmed yet. Please complete checkout or contact support.');
-                    }
-                  }}
-                  className="text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors"
-                >
-                  I've already paid — check status
-                </button>
-              </div>
+              {/* No manual escape — user must complete the funnel */}
             </div>
           )}
         </div>
