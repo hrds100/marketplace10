@@ -22,7 +22,6 @@ export interface ListingShape {
   landlordApproved: boolean;
   landlordWhatsapp?: string | null;
   slug?: string | null;
-  // Investment data (only present on JV/prime cards)
   investTarget?: number;
   investFundedPct?: number;
   investMinContribution?: number;
@@ -40,129 +39,96 @@ interface Props {
   onClose: () => void;
 }
 
+/**
+ * GHL payment funnel state machine.
+ *
+ * cart          → iframe showing, user can close (X / Escape / backdrop)
+ * locked        → user paid on cart, now on upsell/downsell — modal cannot be closed
+ * complete      → thank-you postMessage received — success screen, then redirect
+ * already-paid  → user opened panel after already having a paid tier
+ */
+type FunnelStage = 'cart' | 'locked' | 'complete' | 'already-paid';
+
 export default function InquiryPanel({ open, listing, onClose }: Props) {
   const { user } = useAuth();
-  const { tier, refetch: refreshTier } = useUserTier();
+  const { tier } = useUserTier();
   const [referredBy, setReferredBy] = useState<string | null>(null);
   useEffect(() => {
     if (!user?.id) return;
     (supabase.from('profiles') as any).select('referred_by').eq('id', user.id).single()
       .then(({ data }: { data: { referred_by: string | null } | null }) => { if (data?.referred_by) setReferredBy(data.referred_by); });
   }, [user?.id]);
-  const paid = isPaidTier(tier);
+
   const [visible, setVisible] = useState(false);
-  const [message, setMessage] = useState('');
-  const [paymentComplete, setPaymentComplete] = useState(false);
-  const [funnelLocked, setFunnelLocked] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [funnelStage, setFunnelStage] = useState<FunnelStage>('cart');
   const iframeLoadCount = useRef(0);
 
+  // ── Open: decide initial stage ONCE ──
+  // tier is read here but NOT in deps — we only check at open time.
+  // If the webhook flips tier mid-funnel, we ignore it (the state machine is in control).
   useEffect(() => {
     if (open && listing) {
-      setVisible(true);
       iframeLoadCount.current = 0;
-      setPaymentComplete(false);
-      setFunnelLocked(false);
-      setMessage(
-        `Hi, I am interested in a property on nfstay.\nLink: https://hub.nfstay.com/deals/${listing.slug || listing.id}\nReference no.: ${listing.id.slice(0, 5).toUpperCase()}\nPlease contact me at your earliest convenience.`
-      );
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      setFunnelStage(isPaidTier(tier) ? 'already-paid' : 'cart');
+      setVisible(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, listing?.id]);
 
+  const canClose = funnelStage === 'cart' || funnelStage === 'already-paid';
+
   const handleClose = useCallback(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
     setVisible(false);
     setTimeout(() => onClose(), 300);
   }, [onClose]);
 
-  // Post-payment success handler — polls DB directly for tier change
-  const handlePaymentSuccess = useCallback(() => {
-    if (paymentComplete) return; // prevent double-fire
-    setPaymentComplete(true);
+  // ── Funnel complete: postMessage is the ONLY trigger ──
+  const handleFunnelComplete = useCallback(() => {
+    if (funnelStage === 'complete') return;
+    setFunnelStage('complete');
+    setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
+  }, [funnelStage]);
 
-    let attempts = 0;
-    pollRef.current = setInterval(async () => {
-      attempts++;
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('tier')
-          .eq('id', user!.id)
-          .single();
-
-        if (data?.tier && data.tier !== 'free') {
-          if (pollRef.current) clearInterval(pollRef.current);
-          // Redirect straight to deals — do NOT re-trigger inquiry/WhatsApp
-          setTimeout(() => {
-            window.location.href = '/dashboard/deals';
-          }, 1500);
-          return;
-        }
-      } catch (e) {
-        console.error('Tier poll error:', e);
-      }
-
-      if (attempts >= 45) {
-        if (pollRef.current) clearInterval(pollRef.current);
-        window.location.href = '/dashboard/deals';
-      }
-    }, 1000);
-  }, [handleClose, user, paymentComplete, referredBy]);
-
-  // Listen for postMessage from GHL iframe (payment success signal)
+  // ── postMessage listener — stays active as long as panel is open + funnel is running ──
   useEffect(() => {
-    if (!open || paid) return;
+    if (!open) return;
+    if (funnelStage !== 'cart' && funnelStage !== 'locked') return;
     const handleMessage = (e: MessageEvent) => {
-      // Allow messages from pay.nfstay.com and GHL domains
       if (!e.origin.includes('pay.nfstay.com') && !e.origin.includes('leadconnectorhq.com') && !e.origin.includes('gohighlevel.com')) return;
-      const data = e.data;
-      // Only treat thank-you page as funnel complete.
-      // order_success / purchase fire on the FIRST cart payment — before upsell/downsell.
-      const isFunnelComplete =
-        data?.page === 'thank-you' ||
-        (typeof data === 'string' && data.includes('thank'));
-      if (isFunnelComplete) handlePaymentSuccess();
+      const d = e.data;
+      const isFunnelDone =
+        d?.page === 'thank-you' ||
+        (typeof d === 'string' && d.includes('thank'));
+      if (isFunnelDone) handleFunnelComplete();
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [open, paid, handlePaymentSuccess]);
+  }, [open, funnelStage, handleFunnelComplete]);
 
-  // Escape key — allowed before payment and for paid users, blocked during funnel
+  // ── Escape key — only when closeable ──
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !funnelLocked) handleClose();
+      if (e.key === 'Escape' && canClose) handleClose();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [open, handleClose, funnelLocked]);
-
-  // Cleanup poll on unmount
-  useEffect(() => {
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, []);
+  }, [open, handleClose, canClose]);
 
   if (!open && !visible) return null;
   if (!listing) return null;
 
-  const handleSendWhatsApp = () => {
-    // Inquiry created by receive-tenant-whatsapp edge function when inbound message arrives via GHL
-    window.open(`https://wa.me/447476368123?text=${encodeURIComponent(message)}`, '_blank');
-    handleClose();
-  };
-
-  // Iframe onLoad fallback — detect thank-you page URL
+  // ── Iframe onLoad: lock after 2nd load (1st = cart, 2nd = upsell) ──
   const handleIframeLoad = (e: React.SyntheticEvent<HTMLIFrameElement>) => {
     try {
-      const iframeUrl = (e.target as HTMLIFrameElement).contentWindow?.location?.href || '';
-      if (iframeUrl.includes('thank') || iframeUrl.includes('Thank')) {
-        handlePaymentSuccess();
-      }
+      const url = (e.target as HTMLIFrameElement).contentWindow?.location?.href || '';
+      if (url.includes('thank') || url.includes('Thank')) handleFunnelComplete();
     } catch {
-      // Cross-origin — can't read iframe URL.
-      // Do NOT poll tier. Tier changes after cart payment but funnel isn't done yet.
-      // Lock modal after iframe navigates past cart (2nd load = user paid, now on upsell).
-      if (iframeLoadCount.current >= 1) setFunnelLocked(true);
+      // Cross-origin — can't read URL. Lock after iframe navigates past cart.
+      if (iframeLoadCount.current >= 1 && funnelStage === 'cart') {
+        setFunnelStage('locked');
+      }
     }
     iframeLoadCount.current += 1;
   };
@@ -174,33 +140,39 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
     ref: referredBy || undefined,
   });
 
+  // ── Header text ──
+  const headerTitle =
+    funnelStage === 'complete' ? 'Payment Confirmed' :
+    funnelStage === 'already-paid' ? 'Full Access' :
+    'Get Unlimited Access to All Deals';
+
+  const headerSub =
+    funnelStage === 'complete' ? 'Redirecting to your deals...' :
+    funnelStage === 'already-paid' ? `${listing.name} · ${listing.city}` :
+    "Building your Airbnb portfolio couldn't be easier";
+
   const panel = (
     <>
-      {/* Backdrop — clickable before payment, locked during upsell/downsell funnel */}
+      {/* Backdrop */}
       <div
         className={`fixed inset-0 z-[300] bg-black/40 backdrop-blur-sm transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
-        onClick={funnelLocked ? undefined : handleClose}
+        onClick={canClose ? handleClose : undefined}
         aria-hidden
       />
 
-      {/* Panel */}
+      {/* Panel — 52vw wide on desktop (30% wider than before) */}
       <div
         data-feature="DEALS__INQUIRY_PANEL"
-        className={`fixed inset-y-0 right-0 z-[301] w-full md:w-[40vw] max-w-[640px] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 z-[301] w-full md:w-[52vw] max-w-[832px] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border flex-shrink-0">
           <div>
-            <h3 className="text-lg font-bold text-foreground">
-              {paymentComplete ? 'Payment Confirmed' : paid ? 'Contact Landlord' : 'Get Unlimited Access to All Deals'}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {paymentComplete ? 'Redirecting to your inbox...' : paid ? `${listing.name} · ${listing.city}` : "Building your Airbnb portfolio couldn't be easier"}
-            </p>
+            <h3 className="text-lg font-bold text-foreground">{headerTitle}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{headerSub}</p>
           </div>
-          {/* X button: visible before payment + for paid users, hidden during upsell/downsell */}
-          {!funnelLocked && (
+          {canClose && (
             <button
               data-feature="DEALS__INQUIRY_PANEL_CLOSE"
               onClick={handleClose}
@@ -213,48 +185,42 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
         {/* Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {paymentComplete ? (
-            /* ── SUCCESS SCREEN ── */
+          {funnelStage === 'complete' ? (
             <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
               <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
               <h3 className="text-xl font-bold text-foreground">Welcome to nfstay!</h3>
-              <p className="text-sm text-muted-foreground">Payment confirmed. Taking you to your inbox...</p>
+              <p className="text-sm text-muted-foreground">Payment confirmed. Taking you to your deals...</p>
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mt-2" />
             </div>
-          ) : paid && !funnelLocked ? (
-            /* ── PAID USER (opened panel AFTER paying) → close panel, go to deals ── */
+
+          ) : funnelStage === 'already-paid' ? (
             <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
               <CheckCircle2 className="w-8 h-8 text-green-500" />
               <h3 className="text-lg font-bold text-foreground">You have full access</h3>
               <p className="text-sm text-muted-foreground">Click any deal to contact the landlord directly.</p>
             </div>
+
           ) : !funnelUrl ? (
-            /* ── FREE USER, NO FUNNEL URL → fallback ── */
             <div className="flex flex-col items-center justify-center flex-1 p-8 text-center">
               <p className="text-sm text-muted-foreground">Upgrade to access all deals and contact landlords directly.</p>
               <a href="/dashboard/settings" className="mt-4 h-10 px-6 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center hover:opacity-90 transition-opacity">
                 View Plans
               </a>
             </div>
+
           ) : (
-            /* ── FREE USER → GHL funnel iframe ── */
-            /* GHL payment forms require full DOM access for Stripe fingerprinting.
-               Do NOT add sandbox attribute — it breaks GHL's payment JS.
-               Domain: pay.nfstay.com (GHL custom domain, whitelisted for payments) */
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <iframe
-                  src={funnelUrl}
-                  className="w-full h-full border-0"
-                  style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%', height: '125%' }}
-                  allow="payment *; camera; microphone; geolocation; clipboard-write"
-                  title="Checkout"
-                  onLoad={handleIframeLoad}
-                />
-              </div>
-              {/* Back to Deals: ONLY visible after payment complete — funnel must not be escapable */}
+            /* GHL iframe — visible during cart + locked stages */
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <iframe
+                src={funnelUrl}
+                className="w-full h-full border-0"
+                style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%', height: '125%' }}
+                allow="payment *; camera; microphone; geolocation; clipboard-write"
+                title="Checkout"
+                onLoad={handleIframeLoad}
+              />
             </div>
           )}
         </div>
