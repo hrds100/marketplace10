@@ -718,13 +718,20 @@ function BookingSiteDashboard() {
 
       {/* Properties Tab — nfstay.app design */}
       {topTab === 'properties' && propSubView === 'add' && (
-        <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-6">
           <button onClick={() => setPropSubView('list')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6">
             <ChevronLeft className="w-4 h-4" /> Back to Properties
           </button>
-          <h1 className="text-2xl font-bold tracking-tight mb-1">Add New Property</h1>
-          <p className="text-sm text-muted-foreground mb-6">Fill in the details for your new listing.</p>
-          <NfsPropertyNew />
+          {!operator ? (
+            <div className="text-center py-12">
+              <Building2 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground mb-1">Operator profile required</p>
+              <p className="text-sm text-muted-foreground">Set up your operator profile in Settings before adding properties.</p>
+              <button onClick={() => { setPropSubView('list'); setTopTab('settings'); }} className="mt-4 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg">Go to Settings</button>
+            </div>
+          ) : (
+            <NfsPropertyNew />
+          )}
         </div>
       )}
       {topTab === 'properties' && propSubView === 'list' && (
