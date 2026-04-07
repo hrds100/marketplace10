@@ -1,6 +1,7 @@
 // sms-automation-run — flow execution engine for SMS automations
 // Called fire-and-forget by sms-webhook-incoming when an inbound message arrives
 // Loads active automations, checks triggers, walks the flow graph, executes nodes
+// v2: Smart pathway routing — AI classifies which edge to follow when multiple exist
 // Source of truth: supabase/config.toml (verify_jwt = false)
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -51,8 +52,10 @@ interface FlowEdge {
   id: string;
   source: string;
   target: string;
+  label?: string;
   data?: {
     label?: string;
+    description?: string;
     conditions?: Array<{
       operator: string;
       field: string;
@@ -79,6 +82,11 @@ interface Automation {
     globalPrompt?: string;
   } | null;
   is_active: boolean;
+}
+
+interface ConversationMessage {
+  role: string;
+  content: string;
 }
 
 // ---- Trigger matching ----
@@ -109,6 +117,115 @@ function matchesTrigger(automation: Automation, body: string): boolean {
   }
 }
 
+// ---- Load conversation history ----
+
+async function loadConversationHistory(
+  supabase: ReturnType<typeof createClient>,
+  contactId: string,
+  limit = 10
+): Promise<ConversationMessage[]> {
+  const { data: messages, error } = await supabase
+    .from('sms_messages')
+    .select('direction, body, created_at')
+    .eq('contact_id', contactId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error || !messages?.length) {
+    return [];
+  }
+
+  // Reverse so oldest is first (chronological order for the AI)
+  return messages.reverse().map((msg: { direction: string; body: string }) => ({
+    role: msg.direction === 'inbound' ? 'user' : 'assistant',
+    content: msg.body,
+  }));
+}
+
+// ---- Resolve edge via AI pathway classification ----
+
+async function resolveNextEdge(
+  outgoingEdges: FlowEdge[],
+  context: {
+    supabase: ReturnType<typeof createClient>;
+    contactId: string;
+    body: string;
+    globalPrompt: string;
+    contactName: string;
+    nodePrompt: string;
+    model: string;
+    temperature: number;
+  }
+): Promise<{ edge: FlowEdge; reply: string | null }> {
+  // Single edge — no classification needed
+  if (outgoingEdges.length === 1) {
+    return { edge: outgoingEdges[0], reply: null };
+  }
+
+  // Multiple edges — use AI to classify
+  const pathways = outgoingEdges.map((e) => ({
+    edge_id: e.id,
+    label: e.data?.label || e.label || `Edge to ${e.target}`,
+    description: e.data?.description || undefined,
+  }));
+
+  const systemPrompt = context.globalPrompt
+    ? `${context.globalPrompt}\n\n${context.nodePrompt}`
+    : context.nodePrompt || 'You are a helpful SMS assistant. Keep replies concise (under 160 chars if possible).';
+
+  // Load conversation history for context
+  const conversationHistory = await loadConversationHistory(context.supabase, context.contactId);
+
+  const aiUrl = `${SUPABASE_URL}/functions/v1/sms-ai-respond`;
+  const aiRes = await fetch(aiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    },
+    body: JSON.stringify({
+      system_prompt: systemPrompt,
+      user_message: context.body,
+      contact_name: context.contactName,
+      model: context.model,
+      temperature: context.temperature,
+      conversation_history: conversationHistory,
+      pathways,
+    }),
+  });
+
+  const aiData = await aiRes.json();
+
+  if (!aiRes.ok) {
+    console.error('AI pathway classification failed:', aiData);
+    // Fallback: pick first edge
+    return { edge: outgoingEdges[0], reply: null };
+  }
+
+  const chosenEdgeId = aiData.chosen_pathway;
+  const confidence = aiData.confidence ?? 0;
+  const reply = aiData.reply || null;
+
+  if (confidence < 0.5) {
+    console.warn(
+      `Low confidence pathway classification (${confidence}) for edge "${chosenEdgeId}". Proceeding anyway.`
+    );
+  }
+
+  const chosenEdge = outgoingEdges.find((e) => e.id === chosenEdgeId);
+
+  if (!chosenEdge) {
+    console.warn(`Chosen edge "${chosenEdgeId}" not found in outgoing edges. Falling back to first.`);
+    return { edge: outgoingEdges[0], reply };
+  }
+
+  console.log(
+    `Pathway classified: "${chosenEdge.data?.label || chosenEdge.label || chosenEdge.id}" (confidence=${confidence})`
+  );
+
+  return { edge: chosenEdge, reply };
+}
+
 // ---- Node execution ----
 
 async function executeNode(
@@ -124,6 +241,7 @@ async function executeNode(
     body: string;
     globalPrompt: string;
     contactName: string;
+    precomputedReply?: string | null; // reply already generated during pathway classification
   }
 ): Promise<{ shouldStop: boolean; output: Record<string, unknown> }> {
   const { supabase, runId, contactId, fromNumber, toNumber, body, globalPrompt, contactName } = context;
@@ -134,43 +252,54 @@ async function executeNode(
   switch (nodeType) {
     // ---- DEFAULT: AI response ----
     case 'DEFAULT': {
-      const nodePrompt = node.data.prompt || '';
-      const systemPrompt = globalPrompt
-        ? `${globalPrompt}\n\n${nodePrompt}`
-        : nodePrompt || 'You are a helpful SMS assistant. Keep replies concise (under 160 chars if possible).';
+      let reply: string;
 
-      const model = node.data.modelOptions?.model || 'gpt-4o-mini';
-      const temperature = node.data.modelOptions?.temperature ?? 0.7;
+      // If we already have a reply from pathway classification, use it
+      if (context.precomputedReply) {
+        reply = context.precomputedReply;
+        console.log('Using precomputed reply from pathway classification');
+      } else {
+        // Generate a new reply
+        const nodePrompt = node.data.prompt || '';
+        const systemPrompt = globalPrompt
+          ? `${globalPrompt}\n\n${nodePrompt}`
+          : nodePrompt || 'You are a helpful SMS assistant. Keep replies concise (under 160 chars if possible).';
 
-      // Call sms-ai-respond
-      const aiUrl = `${SUPABASE_URL}/functions/v1/sms-ai-respond`;
-      const aiRes = await fetch(aiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        },
-        body: JSON.stringify({
-          system_prompt: systemPrompt,
-          user_message: body,
-          contact_name: contactName,
-          model,
-          temperature,
-        }),
-      });
+        const model = node.data.modelOptions?.model || 'gpt-4o-mini';
+        const temperature = node.data.modelOptions?.temperature ?? 0.7;
 
-      const aiData = await aiRes.json();
+        // Load conversation history
+        const conversationHistory = await loadConversationHistory(supabase, contactId);
 
-      if (!aiRes.ok) {
-        console.error('AI respond failed:', aiData);
-        return { shouldStop: false, output: { error: aiData.error, status: 'ai_failed' } };
+        const aiUrl = `${SUPABASE_URL}/functions/v1/sms-ai-respond`;
+        const aiRes = await fetch(aiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          },
+          body: JSON.stringify({
+            system_prompt: systemPrompt,
+            user_message: body,
+            contact_name: contactName,
+            model,
+            temperature,
+            conversation_history: conversationHistory,
+          }),
+        });
+
+        const aiData = await aiRes.json();
+
+        if (!aiRes.ok) {
+          console.error('AI respond failed:', aiData);
+          return { shouldStop: false, output: { error: aiData.error, status: 'ai_failed' } };
+        }
+
+        reply = aiData.reply;
       }
-
-      const reply = aiData.reply;
 
       // Send the reply via sms-send (unless delay is set)
       if (node.data.delay && node.data.delay > 0) {
-        // Schedule for later
         await supabase.from('sms_scheduled_tasks').insert({
           type: 'delay_node',
           reference_id: context.conversationId,
@@ -345,29 +474,103 @@ serve(async (req: Request) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    // ---- Step 1: Load active automations ----
-    const { data: automations, error: autoErr } = await supabase
-      .from('sms_automations')
-      .select('id, name, trigger_type, trigger_config, flow_json, is_active')
-      .eq('is_active', true);
+    // ---- Step 1: Check for campaign-linked automation first ----
+    let targetAutomation: Automation | null = null;
 
-    if (autoErr) {
-      console.error('Failed to load automations:', autoErr);
-      return new Response(
-        JSON.stringify({ error: 'Failed to load automations' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const { data: campaignLink } = await supabase
+      .from('sms_campaign_recipients')
+      .select('campaign_id')
+      .eq('contact_id', contact_id)
+      .limit(10);
+
+    if (campaignLink?.length) {
+      const campaignIds = campaignLink.map((r: { campaign_id: string }) => r.campaign_id);
+
+      const { data: linkedCampaign } = await supabase
+        .from('sms_campaigns')
+        .select('automation_id')
+        .in('id', campaignIds)
+        .not('automation_id', 'is', null)
+        .in('status', ['sending', 'complete', 'scheduled'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (linkedCampaign?.automation_id) {
+        const { data: auto } = await supabase
+          .from('sms_automations')
+          .select('id, name, trigger_type, trigger_config, flow_json, is_active')
+          .eq('id', linkedCampaign.automation_id)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (auto) {
+          targetAutomation = auto as Automation;
+          console.log(`Campaign-linked automation found: "${targetAutomation.name}"`);
+        }
+      }
     }
 
-    if (!automations?.length) {
-      console.log('No active automations found');
-      return new Response(
-        JSON.stringify({ status: 'no_automations' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // ---- Step 2: Check for active run with current_node_id (re-entry) ----
+    let resumeRun: { id: string; current_node_id: string; automation_id: string } | null = null;
+
+    const { data: activeRun } = await supabase
+      .from('sms_automation_runs')
+      .select('id, current_node_id, automation_id')
+      .eq('conversation_id', conversation_id)
+      .eq('status', 'waiting_reply')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (activeRun?.current_node_id) {
+      resumeRun = activeRun as { id: string; current_node_id: string; automation_id: string };
+      console.log(`Resuming run ${resumeRun.id} from node ${resumeRun.current_node_id}`);
     }
 
-    console.log(`Found ${automations.length} active automation(s)`);
+    // ---- Step 3: Load automations (if no campaign-linked or resume) ----
+    let automationsToProcess: Automation[] = [];
+
+    if (resumeRun) {
+      // Load the automation for the resume run
+      const { data: auto } = await supabase
+        .from('sms_automations')
+        .select('id, name, trigger_type, trigger_config, flow_json, is_active')
+        .eq('id', resumeRun.automation_id)
+        .maybeSingle();
+
+      if (auto) {
+        automationsToProcess = [auto as Automation];
+      }
+    } else if (targetAutomation) {
+      automationsToProcess = [targetAutomation];
+    } else {
+      // Fallback: load all active automations and match triggers
+      const { data: automations, error: autoErr } = await supabase
+        .from('sms_automations')
+        .select('id, name, trigger_type, trigger_config, flow_json, is_active')
+        .eq('is_active', true);
+
+      if (autoErr) {
+        console.error('Failed to load automations:', autoErr);
+        return new Response(
+          JSON.stringify({ error: 'Failed to load automations' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!automations?.length) {
+        console.log('No active automations found');
+        return new Response(
+          JSON.stringify({ status: 'no_automations' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      automationsToProcess = automations as Automation[];
+    }
+
+    console.log(`Processing ${automationsToProcess.length} automation(s)`);
 
     // ---- Get contact name for personalization ----
     const { data: contactData } = await supabase
@@ -381,14 +584,14 @@ serve(async (req: Request) => {
     const results: Array<{ automation_id: string; status: string; nodes_executed: number }> = [];
 
     // ---- Process each automation ----
-    for (const automation of automations as Automation[]) {
-      // Step 2: Check trigger
-      if (!matchesTrigger(automation, body)) {
+    for (const automation of automationsToProcess) {
+      // Skip trigger matching for resume runs and campaign-linked
+      if (!resumeRun && !targetAutomation && !matchesTrigger(automation, body)) {
         console.log(`Automation "${automation.name}" — trigger not matched, skipping`);
         continue;
       }
 
-      console.log(`Automation "${automation.name}" — trigger matched`);
+      console.log(`Automation "${automation.name}" — processing`);
 
       // Validate flow_json
       if (!automation.flow_json?.nodes?.length || !automation.flow_json?.edges) {
@@ -396,66 +599,89 @@ serve(async (req: Request) => {
         continue;
       }
 
-      // Step 3: Loop guard — check for recent run on same automation + conversation
-      const { data: recentRuns } = await supabase
-        .from('sms_automation_runs')
-        .select('id')
-        .eq('automation_id', automation.id)
-        .eq('conversation_id', conversation_id)
-        .neq('status', 'loop_blocked')
-        .gte('created_at', new Date(Date.now() - 60_000).toISOString());
+      // Loop guard — skip for resume runs (they already have a run)
+      if (!resumeRun) {
+        const { data: recentRuns } = await supabase
+          .from('sms_automation_runs')
+          .select('id')
+          .eq('automation_id', automation.id)
+          .eq('conversation_id', conversation_id)
+          .neq('status', 'loop_blocked')
+          .neq('status', 'waiting_reply')
+          .gte('created_at', new Date(Date.now() - 60_000).toISOString());
 
-      if (recentRuns?.length) {
-        console.log(`Automation "${automation.name}" — loop guard triggered, blocking`);
-        await supabase.from('sms_automation_runs').insert({
-          automation_id: automation.id,
-          conversation_id,
-          message_id,
-          status: 'loop_blocked',
-        });
-        results.push({ automation_id: automation.id, status: 'loop_blocked', nodes_executed: 0 });
-        continue;
+        if (recentRuns?.length) {
+          console.log(`Automation "${automation.name}" — loop guard triggered, blocking`);
+          await supabase.from('sms_automation_runs').insert({
+            automation_id: automation.id,
+            conversation_id,
+            message_id,
+            status: 'loop_blocked',
+          });
+          results.push({ automation_id: automation.id, status: 'loop_blocked', nodes_executed: 0 });
+          continue;
+        }
       }
 
-      // Step 4: Create run record
-      const { data: run, error: runErr } = await supabase
-        .from('sms_automation_runs')
-        .insert({
-          automation_id: automation.id,
-          conversation_id,
-          message_id,
-          status: 'running',
-        })
-        .select('id')
-        .single();
+      // Create or resume run record
+      let runId: string;
 
-      if (runErr || !run) {
-        console.error(`Failed to create run for "${automation.name}":`, runErr);
-        continue;
+      if (resumeRun && resumeRun.automation_id === automation.id) {
+        runId = resumeRun.id;
+        await supabase
+          .from('sms_automation_runs')
+          .update({ status: 'running', message_id })
+          .eq('id', runId);
+      } else {
+        const { data: run, error: runErr } = await supabase
+          .from('sms_automation_runs')
+          .insert({
+            automation_id: automation.id,
+            conversation_id,
+            message_id,
+            status: 'running',
+          })
+          .select('id')
+          .single();
+
+        if (runErr || !run) {
+          console.error(`Failed to create run for "${automation.name}":`, runErr);
+          continue;
+        }
+        runId = run.id;
       }
 
-      const runId = run.id;
       let nodesExecuted = 0;
       let runStatus = 'completed';
       let runError: string | null = null;
 
       try {
-        // Step 5: Walk the flow graph
         const { nodes, edges, globalPrompt } = automation.flow_json;
 
-        // Find start node
-        const startNode = nodes.find((n) => n.data.isStart === true);
-        if (!startNode) {
+        // Find start node — or resume node
+        let currentNode: FlowNode | undefined;
+
+        if (resumeRun && resumeRun.automation_id === automation.id) {
+          currentNode = nodes.find((n) => n.id === resumeRun.current_node_id);
+          if (!currentNode) {
+            console.error(`Resume node ${resumeRun.current_node_id} not found, falling back to start`);
+            currentNode = nodes.find((n) => n.data.isStart === true);
+          }
+        } else {
+          currentNode = nodes.find((n) => n.data.isStart === true);
+        }
+
+        if (!currentNode) {
           console.error(`Automation "${automation.name}" — no start node found`);
           runStatus = 'failed';
           runError = 'No start node found in flow';
           continue;
         }
 
-        let currentNode: FlowNode | undefined = startNode;
-
         // Walk nodes sequentially (max 20 to prevent infinite loops)
         const maxSteps = 20;
+        // Track if the AI reply was already generated during pathway classification
+        let precomputedReply: string | null = null;
 
         while (currentNode && nodesExecuted < maxSteps) {
           nodesExecuted++;
@@ -485,7 +711,11 @@ serve(async (req: Request) => {
             body,
             globalPrompt: globalPrompt || '',
             contactName,
+            precomputedReply,
           });
+
+          // Clear precomputed reply after use
+          precomputedReply = null;
 
           // Log step completion
           if (stepRun) {
@@ -505,7 +735,7 @@ serve(async (req: Request) => {
             break;
           }
 
-          // Find next node via outgoing edges
+          // Find next node via outgoing edges — SMART ROUTING
           const outgoingEdges = edges.filter((e) => e.source === currentNode!.id);
 
           if (!outgoingEdges.length) {
@@ -513,12 +743,59 @@ serve(async (req: Request) => {
             break;
           }
 
-          // v1: follow the first outgoing edge
-          const nextEdge = outgoingEdges[0];
-          currentNode = nodes.find((n) => n.id === nextEdge.target);
+          if (outgoingEdges.length === 1) {
+            // Single edge — follow it directly
+            const nextEdge = outgoingEdges[0];
+            currentNode = nodes.find((n) => n.id === nextEdge.target);
+          } else {
+            // Multiple edges — use AI pathway classification
+            console.log(
+              `Node ${currentNode.id} has ${outgoingEdges.length} outgoing edges — classifying pathway`
+            );
+
+            const model = currentNode.data.modelOptions?.model || 'gpt-4o-mini';
+            const temperature = currentNode.data.modelOptions?.temperature ?? 0.7;
+
+            const { edge: chosenEdge, reply } = await resolveNextEdge(outgoingEdges, {
+              supabase,
+              contactId: contact_id,
+              body,
+              globalPrompt: globalPrompt || '',
+              contactName,
+              nodePrompt: currentNode.data.prompt || '',
+              model,
+              temperature,
+            });
+
+            // If the AI generated a reply during classification, carry it forward
+            // so the next DEFAULT node can use it instead of calling AI again
+            precomputedReply = reply;
+
+            currentNode = nodes.find((n) => n.id === chosenEdge.target);
+
+            if (currentNode) {
+              console.log(
+                `Pathway resolved → node ${currentNode.id} (${currentNode.data.name})`
+              );
+            }
+          }
 
           if (!currentNode) {
-            console.warn(`Target node ${nextEdge.target} not found, flow ends`);
+            console.warn('Target node not found, flow ends');
+            break;
+          }
+
+          // Check if next node is a DEFAULT node that expects a user reply
+          // If so, pause the run and wait for re-entry
+          const nextNodeType = (currentNode.type || 'DEFAULT').toUpperCase();
+          if (nextNodeType === 'DEFAULT' && !precomputedReply) {
+            // The next node needs user input — save position and wait
+            runStatus = 'waiting_reply';
+            await supabase
+              .from('sms_automation_runs')
+              .update({ current_node_id: currentNode.id, status: 'waiting_reply' })
+              .eq('id', runId);
+            console.log(`Pausing at node ${currentNode.id}, waiting for contact reply`);
             break;
           }
         }
@@ -533,17 +810,20 @@ serve(async (req: Request) => {
         runError = String(flowErr);
       }
 
-      // Step 7: Complete run record
-      await supabase
-        .from('sms_automation_runs')
-        .update({
-          status: runStatus,
-          completed_at: new Date().toISOString(),
-          error: runError,
-        })
-        .eq('id', runId);
+      // Complete run record (unless waiting for reply)
+      if (runStatus !== 'waiting_reply') {
+        await supabase
+          .from('sms_automation_runs')
+          .update({
+            status: runStatus,
+            completed_at: new Date().toISOString(),
+            current_node_id: null,
+            error: runError,
+          })
+          .eq('id', runId);
+      }
 
-      // Step 8: Update automation stats (read-then-write for increment)
+      // Update automation stats
       const { data: currentAuto } = await supabase
         .from('sms_automations')
         .select('run_count')

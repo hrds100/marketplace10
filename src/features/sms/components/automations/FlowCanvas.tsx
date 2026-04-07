@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -15,12 +15,13 @@ import {
   Panel,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Brain } from 'lucide-react';
+import { Plus, Brain, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SmsNodeType, type SmsNodeData, type SmsEdgeData } from '../../types';
 import { NodeWrapper } from './NodeWrapper';
 import { CustomEdge } from './CustomEdge';
 import { useFlowContext } from './FlowContext';
+import { AiFlowBuilder } from './AiFlowBuilder';
 
 const nodeTypes: NodeTypes = {
   [SmsNodeType.DEFAULT]: NodeWrapper,
@@ -39,6 +40,7 @@ const edgeTypes: EdgeTypes = {
 export function FlowCanvas() {
   const { nodes, edges, setNodes, setEdges, setShowAddNodePopup, setShowGlobalPrompt } =
     useFlowContext();
+  const [showAiBuilder, setShowAiBuilder] = useState(false);
 
   const onNodesChange: OnNodesChange<SmsNodeData> = useCallback(
     (changes) => {
@@ -119,9 +121,18 @@ export function FlowCanvas() {
               <Brain className="w-3.5 h-3.5" />
               Global Prompt
             </Button>
+            <Button
+              onClick={() => setShowAiBuilder(true)}
+              variant="outline"
+              className="rounded-xl gap-1.5 bg-white border-[#E5E7EB] text-[#1A1A1A] hover:border-[#1E9A80] hover:text-[#1E9A80] shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              AI Flow Builder
+            </Button>
           </div>
         </Panel>
       </ReactFlow>
+      <AiFlowBuilder open={showAiBuilder} onOpenChange={setShowAiBuilder} />
     </div>
   );
 }

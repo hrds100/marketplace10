@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Workflow, Trash2 } from 'lucide-react';
+import { Workflow, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -14,6 +14,7 @@ import type { SmsAutomation } from '../../types';
 
 interface AutomationsListProps {
   automations: SmsAutomation[];
+  leadCountMap: Record<string, number>;
   onToggle: (id: string, isActive: boolean) => void;
   onDelete: (id: string) => void;
   onNew: () => void;
@@ -53,6 +54,7 @@ const TRIGGER_COLOURS: Record<string, string> = {
 
 export default function AutomationsList({
   automations,
+  leadCountMap,
   onToggle,
   onDelete,
   onNew,
@@ -85,6 +87,7 @@ export default function AutomationsList({
             <TableHead className="text-xs font-semibold text-[#6B7280]">Name</TableHead>
             <TableHead className="text-xs font-semibold text-[#6B7280]">Trigger</TableHead>
             <TableHead className="text-xs font-semibold text-[#6B7280]">Status</TableHead>
+            <TableHead className="text-xs font-semibold text-[#6B7280] text-right">Leads</TableHead>
             <TableHead className="text-xs font-semibold text-[#6B7280]">Last Run</TableHead>
             <TableHead className="text-xs font-semibold text-[#6B7280] text-right">Run Count</TableHead>
             <TableHead className="w-10" />
@@ -123,6 +126,14 @@ export default function AutomationsList({
                     checked={auto.isActive}
                     onCheckedChange={(checked) => onToggle(auto.id, checked)}
                   />
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Users className="w-3 h-3 text-[#9CA3AF]" />
+                    <span className="text-xs text-[#6B7280] tabular-nums">
+                      {(leadCountMap[auto.id] ?? 0).toLocaleString()}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell className="text-xs text-[#6B7280]">
                   {formatRelativeTime(auto.lastRunAt)}
