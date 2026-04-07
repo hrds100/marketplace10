@@ -22,6 +22,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   }, [user?.id]);
   const [visible, setVisible] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
+  const [funnelLocked, setFunnelLocked] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeTimedOut, setIframeTimedOut] = useState(false);
   const [pollTimedOut, setPollTimedOut] = useState(false);
@@ -33,6 +34,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     if (open) {
       setVisible(true);
       setPaymentComplete(false);
+      setFunnelLocked(false);
       setIframeLoaded(false);
       setIframeTimedOut(false);
       setPollTimedOut(false);
@@ -107,15 +109,15 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     return () => window.removeEventListener('message', handleMessage);
   }, [open, handlePaymentSuccess]);
 
-  // Escape key — blocked during payment funnel, only works after payment complete
+  // Escape key — allowed before payment, blocked during upsell/downsell funnel
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && paymentComplete) handleClose();
+      if (e.key === 'Escape' && !funnelLocked) handleClose();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [open, handleClose, paymentComplete]);
+  }, [open, handleClose, funnelLocked]);
 
   useEffect(() => {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
@@ -131,19 +133,12 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
       const url = (e.target as HTMLIFrameElement).contentWindow?.location?.href || '';
       if (url.includes('thank') || url.includes('Thank')) handlePaymentSuccess();
     } catch {
-      // Cross-origin: can't read iframe URL directly.
-      // Start a one-time tier check 3s after each iframe navigation.
-      // This catches the thank-you page when postMessage doesn't fire.
-      setTimeout(async () => {
-        if (paymentComplete || !user?.id) return;
-        try {
-          const { data } = await supabase.from('profiles').select('tier').eq('id', user.id).single();
-          if (data?.tier && data.tier !== 'free') {
-            // Double-check: only trigger if iframe has navigated multiple times (past upsell/downsell)
-            if (iframeLoadCount.current >= 3) handlePaymentSuccess();
-          }
-        } catch { /* ignore */ }
-      }, 3000);
+      // Cross-origin — can't read iframe URL.
+      // Do NOT poll tier here. Tier changes after first payment but funnel isn't done.
+      // Lock the modal after the iframe navigates past the cart page (2nd load = paid).
+      if (iframeLoadCount.current >= 1) {
+        setFunnelLocked(true);
+      }
     }
     iframeLoadCount.current += 1;
   };
@@ -157,10 +152,10 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
 
   const sheet = (
     <>
-      {/* Backdrop — locked during payment funnel, cannot close until thank-you */}
+      {/* Backdrop — clickable before payment, locked during upsell/downsell funnel */}
       <div
         className={`fixed inset-0 z-[300] bg-black/40 backdrop-blur-sm transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
-        onClick={paymentComplete ? handleClose : undefined}
+        onClick={funnelLocked ? undefined : handleClose}
         aria-hidden
       />
       <div
@@ -177,8 +172,8 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
               {paymentComplete ? 'Unlocking your inbox...' : 'Get full access to contact landlords directly'}
             </p>
           </div>
-          {/* X button: only visible after payment complete — funnel cannot be escaped */}
-          {paymentComplete && (
+          {/* X button: visible before payment, hidden during upsell/downsell funnel */}
+          {!funnelLocked && (
             <button onClick={handleClose} data-feature="PAYMENTS__CLOSE" className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
               <X className="w-5 h-5" />
             </button>

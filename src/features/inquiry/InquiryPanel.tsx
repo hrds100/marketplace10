@@ -53,6 +53,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState('');
   const [paymentComplete, setPaymentComplete] = useState(false);
+  const [funnelLocked, setFunnelLocked] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const iframeLoadCount = useRef(0);
 
@@ -61,6 +62,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
       setVisible(true);
       iframeLoadCount.current = 0;
       setPaymentComplete(false);
+      setFunnelLocked(false);
       setMessage(
         `Hi, I am interested in a property on nfstay.\nLink: https://hub.nfstay.com/deals/${listing.slug || listing.id}\nReference no.: ${listing.id.slice(0, 5).toUpperCase()}\nPlease contact me at your earliest convenience.`
       );
@@ -125,15 +127,15 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
     return () => window.removeEventListener('message', handleMessage);
   }, [open, paid, handlePaymentSuccess]);
 
-  // Close on Escape key — only allowed for paid users or after payment complete
+  // Escape key — allowed before payment and for paid users, blocked during funnel (upsell/downsell)
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && (paid || paymentComplete)) handleClose();
+      if (e.key === 'Escape' && !funnelLocked) handleClose();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [open, handleClose, paid, paymentComplete]);
+  }, [open, handleClose, funnelLocked]);
 
   // Cleanup poll on unmount
   useEffect(() => {
@@ -157,19 +159,12 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
         handlePaymentSuccess();
       }
     } catch {
-      // Cross-origin: can't read iframe URL directly.
-      // Start a one-time tier check 3s after each iframe navigation.
-      // This catches the thank-you page when postMessage doesn't fire.
-      setTimeout(async () => {
-        if (paymentComplete || !user?.id) return;
-        try {
-          const { data } = await supabase.from('profiles').select('tier').eq('id', user.id).single();
-          if (data?.tier && data.tier !== 'free') {
-            // Only trigger if iframe has navigated multiple times (past upsell/downsell)
-            if (iframeLoadCount.current >= 3) handlePaymentSuccess();
-          }
-        } catch { /* ignore */ }
-      }, 3000);
+      // Cross-origin — can't read iframe URL.
+      // Do NOT poll tier here. Tier changes after first payment but funnel isn't done.
+      // Lock the modal after the iframe navigates past the cart page (2nd load = paid).
+      if (iframeLoadCount.current >= 1) {
+        setFunnelLocked(true);
+      }
     }
     iframeLoadCount.current += 1;
   };
@@ -183,10 +178,10 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
   const panel = (
     <>
-      {/* Backdrop — locked during payment funnel (free user in checkout) */}
+      {/* Backdrop — clickable before payment, locked during upsell/downsell funnel */}
       <div
         className={`fixed inset-0 z-[300] bg-black/40 backdrop-blur-sm transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
-        onClick={paid || paymentComplete ? handleClose : undefined}
+        onClick={funnelLocked ? undefined : handleClose}
         aria-hidden
       />
 
@@ -206,8 +201,8 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
               {paymentComplete ? 'Redirecting to your inbox...' : paid ? `${listing.name} · ${listing.city}` : "Building your Airbnb portfolio couldn't be easier"}
             </p>
           </div>
-          {/* X button: only visible for paid users (WhatsApp view). Hidden during entire payment funnel until paymentComplete. */}
-          {paid && (
+          {/* X button: visible before payment + for paid users. Hidden during upsell/downsell funnel. */}
+          {!funnelLocked && (
             <button
               data-feature="DEALS__INQUIRY_PANEL_CLOSE"
               onClick={handleClose}

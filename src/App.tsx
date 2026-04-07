@@ -1,7 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import '@/core/i18n/i18n'; // i18n initialization — must be before any component renders
+import { parseLocalePath } from '@/core/i18n/useLocale';
+import { LANG_STORAGE_KEY } from '@/core/i18n/constants';
+import i18n from '@/core/i18n/i18n';
 // Auth
 import MagicLoginPage from "@/features/landlord/MagicLoginPage";
 import SignIn from "@/features/auth/SignIn";
@@ -113,21 +117,54 @@ if (import.meta.env.VITE_DEBUG_REPORT_ENABLED === 'true') {
   setupDebugCapture();
 }
 
-// Detect GHL payment redirect: ?payment=success
+// GHL payment redirect: ?payment=success
+// DISABLED — this was bypassing the upsell/downsell funnel.
+// GHL iframe must NOT redirect the parent window. Funnel completion
+// is detected via postMessage from the thank-you page only.
 if (typeof window !== 'undefined') {
   const params = new URLSearchParams(window.location.search);
   if (params.get('payment') === 'success') {
+    // Just clean the URL, don't redirect — let the iframe funnel finish
     sessionStorage.setItem('nfstay_payment_success', '1');
     window.history.replaceState({}, '', window.location.pathname);
-    if (!window.location.pathname.includes('deals')) {
-      window.location.href = '/dashboard/deals';
-    }
   }
 }
 
 import { FavouritesProvider } from '@/hooks/useFavourites';
 import ParticleProvider from './components/ParticleProvider';
 import FeatureInspector from './components/dev/FeatureInspector';
+
+/**
+ * Strips locale prefix from URL so routes match without duplication.
+ * e.g. /pt-br/dashboard/deals → Routes sees /dashboard/deals
+ * Also syncs i18n language and HTML dir/lang attributes.
+ */
+function LocaleAwareRoutes({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const { locale, path } = parseLocalePath(location.pathname);
+
+  // Sync i18n language with URL locale on every navigation
+  if (i18n.language !== locale) {
+    i18n.changeLanguage(locale);
+    localStorage.setItem(LANG_STORAGE_KEY, locale);
+  }
+
+  // Set HTML attributes for RTL and lang
+  document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.lang = locale;
+
+  // Create modified location with locale prefix stripped
+  const strippedLocation = {
+    ...location,
+    pathname: path,
+  };
+
+  return (
+    <Routes location={strippedLocation}>
+      {children}
+    </Routes>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -138,7 +175,7 @@ const App = () => (
       <BrowserRouter>
       <FavouritesProvider>
       <NfsCurrencyProvider>
-        <Routes>
+        <LocaleAwareRoutes>
           {/* "/" is served by the static landing page (public/landing/index.html) */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
@@ -269,7 +306,7 @@ const App = () => (
           <Route path="/auth/bridge" element={<AuthBridgePage />} />
           <Route path="/auth/particle" element={<ParticleAuthCallback />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
+        </LocaleAwareRoutes>
       </NfsCurrencyProvider>
       </FavouritesProvider>
       <DebugReportButton />
