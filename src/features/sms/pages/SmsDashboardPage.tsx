@@ -5,7 +5,7 @@ import MessagesChart from '../components/dashboard/MessagesChart';
 
 export default function SmsDashboardPage() {
   return (
-    <div className="max-w-[1440px] mx-auto p-6 md:p-8">
+    <div className="p-6 md:p-8 overflow-y-auto h-full">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <LayoutDashboard className="h-6 w-6 text-[#1E9A80]" />

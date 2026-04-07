@@ -29,7 +29,7 @@ export default function SmsAutomationsPage() {
   }, [navigate]);
 
   return (
-    <div className="max-w-[1440px] mx-auto p-6 md:p-8">
+    <div className="p-6 md:p-8 overflow-y-auto h-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-[#1A1A1A]">Automations</h1>
