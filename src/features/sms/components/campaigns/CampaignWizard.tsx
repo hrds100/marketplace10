@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Upload,
   Users,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,16 +28,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { mockLabels } from '../../data/mockLabels';
-import { mockStages } from '../../data/mockStages';
-import { mockTemplates } from '../../data/mockTemplates';
-import { mockNumbers } from '../../data/mockNumbers';
+import { useLabels } from '../../hooks/useLabels';
+import { useStages } from '../../hooks/useStages';
+import { useTemplates } from '../../hooks/useTemplates';
+import { useNumbers } from '../../hooks/useNumbers';
+import { useContacts } from '../../hooks/useContacts';
 
 interface CampaignWizardProps {
   open: boolean;
   onClose: () => void;
-  onComplete: (data: WizardData) => void;
+  onComplete: (data: {
+    name: string;
+    message_body: string;
+    number_ids: string[];
+    rotation: boolean;
+    include_opt_out: boolean;
+    scheduled_at: string | null;
+    contact_ids: string[];
+    sendNow: boolean;
+  }) => void;
+  isSubmitting?: boolean;
 }
 
 interface WizardData {
@@ -74,26 +85,49 @@ function getSegmentCount(text: string): number {
   return Math.ceil(len / 153);
 }
 
-export default function CampaignWizard({ open, onClose, onComplete }: CampaignWizardProps) {
+const INITIAL_DATA: WizardData = {
+  name: '',
+  description: '',
+  recipientSource: 'contacts',
+  selectedLabels: [],
+  selectedStages: [],
+  csvFile: null,
+  messageBody: '',
+  selectedNumberIds: [],
+  rotation: false,
+  includeOptOut: false,
+  scheduleType: 'now',
+  scheduledDate: undefined,
+  scheduledTime: '09:00',
+};
+
+export default function CampaignWizard({ open, onClose, onComplete, isSubmitting }: CampaignWizardProps) {
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<WizardData>({
-    name: '',
-    description: '',
-    recipientSource: 'contacts',
-    selectedLabels: [],
-    selectedStages: [],
-    csvFile: null,
-    messageBody: '',
-    selectedNumberIds: [],
-    rotation: false,
-    includeOptOut: false,
-    scheduleType: 'now',
-    scheduledDate: undefined,
-    scheduledTime: '09:00',
-  });
+  const [data, setData] = useState<WizardData>({ ...INITIAL_DATA });
+
+  // Real DB data
+  const { labels } = useLabels();
+  const { stages } = useStages();
+  const { templates } = useTemplates();
+  const { numbers } = useNumbers();
+  const { contacts } = useContacts();
 
   function update(partial: Partial<WizardData>) {
     setData((prev) => ({ ...prev, ...partial }));
+  }
+
+  // Filter contacts matching selected labels/stages
+  function getMatchingContactIds(): string[] {
+    if (data.recipientSource !== 'contacts') return [];
+    return contacts
+      .filter((c) => {
+        const matchesLabel = data.selectedLabels.length === 0 ||
+          c.labels.some((l) => data.selectedLabels.includes(l.id));
+        const matchesStage = data.selectedStages.length === 0 ||
+          (c.pipelineStageId && data.selectedStages.includes(c.pipelineStageId));
+        return matchesLabel || matchesStage;
+      })
+      .map((c) => c.id);
   }
 
   function canAdvance(): boolean {
@@ -110,24 +144,29 @@ export default function CampaignWizard({ open, onClose, onComplete }: CampaignWi
   }
 
   function handleCreate() {
-    onComplete(data);
-    toast.success('Campaign created');
-    setStep(0);
-    setData({
-      name: '',
-      description: '',
-      recipientSource: 'contacts',
-      selectedLabels: [],
-      selectedStages: [],
-      csvFile: null,
-      messageBody: '',
-      selectedNumberIds: [],
-      rotation: false,
-      includeOptOut: false,
-      scheduleType: 'now',
-      scheduledDate: undefined,
-      scheduledTime: '09:00',
+    const contactIds = getMatchingContactIds();
+
+    let scheduledAt: string | null = null;
+    if (data.scheduleType === 'later' && data.scheduledDate) {
+      const d = new Date(data.scheduledDate);
+      const [hours, minutes] = data.scheduledTime.split(':').map(Number);
+      d.setHours(hours, minutes, 0, 0);
+      scheduledAt = d.toISOString();
+    }
+
+    onComplete({
+      name: data.name,
+      message_body: data.messageBody,
+      number_ids: data.selectedNumberIds,
+      rotation: data.rotation,
+      include_opt_out: data.includeOptOut,
+      scheduled_at: scheduledAt,
+      contact_ids: contactIds,
+      sendNow: data.scheduleType === 'now',
     });
+
+    setStep(0);
+    setData({ ...INITIAL_DATA });
   }
 
   function toggleInArray(arr: string[], id: string): string[] {
@@ -139,9 +178,11 @@ export default function CampaignWizard({ open, onClose, onComplete }: CampaignWi
   }
 
   function handleTemplateSelect(templateId: string) {
-    const tpl = mockTemplates.find((t) => t.id === templateId);
+    const tpl = templates.find((t) => t.id === templateId);
     if (tpl) update({ messageBody: tpl.body });
   }
+
+  const matchingCount = getMatchingContactIds().length;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -241,7 +282,7 @@ export default function CampaignWizard({ open, onClose, onComplete }: CampaignWi
                   <div>
                     <p className="text-sm font-medium text-[#1A1A1A] mb-2">Filter by label</p>
                     <div className="flex flex-wrap gap-2">
-                      {mockLabels.map((l) => (
+                      {labels.map((l) => (
                         <label key={l.id} className="flex items-center gap-1.5 cursor-pointer">
                           <Checkbox
                             checked={data.selectedLabels.includes(l.id)}
@@ -255,7 +296,7 @@ export default function CampaignWizard({ open, onClose, onComplete }: CampaignWi
                   <div>
                     <p className="text-sm font-medium text-[#1A1A1A] mb-2">Filter by stage</p>
                     <div className="flex flex-wrap gap-2">
-                      {mockStages.map((s) => (
+                      {stages.map((s) => (
                         <label key={s.id} className="flex items-center gap-1.5 cursor-pointer">
                           <Checkbox
                             checked={data.selectedStages.includes(s.id)}
@@ -268,7 +309,7 @@ export default function CampaignWizard({ open, onClose, onComplete }: CampaignWi
                   </div>
                   <p className="text-xs text-[#6B7280]">
                     {data.selectedLabels.length + data.selectedStages.length > 0
-                      ? `Filters selected: ${data.selectedLabels.length} labels, ${data.selectedStages.length} stages`
+                      ? `${matchingCount} contact${matchingCount !== 1 ? 's' : ''} matching filters`
                       : 'Select at least one label or stage'}
                   </p>
                 </div>
@@ -299,7 +340,7 @@ export default function CampaignWizard({ open, onClose, onComplete }: CampaignWi
                     <SelectValue placeholder="Choose a template..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockTemplates.map((t) => (
+                    {templates.map((t) => (
                       <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -341,7 +382,7 @@ export default function CampaignWizard({ open, onClose, onComplete }: CampaignWi
             <div className="space-y-4">
               <p className="text-sm font-medium text-[#1A1A1A] mb-2">Select sending numbers</p>
               <div className="space-y-2">
-                {mockNumbers.map((n) => (
+                {numbers.map((n) => (
                   <label
                     key={n.id}
                     className="flex items-center gap-3 p-3 rounded-lg border border-[#E5E7EB] cursor-pointer hover:bg-[#F3F3EE]/30 transition-colors"
@@ -444,9 +485,9 @@ export default function CampaignWizard({ open, onClose, onComplete }: CampaignWi
             <div className="space-y-3">
               <div className="rounded-xl border border-[#E5E7EB] bg-[#F3F3EE]/30 p-4 space-y-3">
                 <Row label="Name" value={data.name} />
-                <Row label="Recipients" value={data.recipientSource === 'csv' ? `CSV: ${data.csvFile?.name}` : `${data.selectedLabels.length} labels, ${data.selectedStages.length} stages`} />
+                <Row label="Recipients" value={data.recipientSource === 'csv' ? `CSV: ${data.csvFile?.name}` : `${matchingCount} contact${matchingCount !== 1 ? 's' : ''}`} />
                 <Row label="Message" value={data.messageBody.slice(0, 80) + (data.messageBody.length > 80 ? '...' : '')} />
-                <Row label="Numbers" value={data.selectedNumberIds.map((id) => mockNumbers.find((n) => n.id === id)?.label).filter(Boolean).join(', ')} />
+                <Row label="Numbers" value={data.selectedNumberIds.map((id) => numbers.find((n) => n.id === id)?.label).filter(Boolean).join(', ')} />
                 <Row label="Rotation" value={data.rotation ? 'Yes' : 'No'} />
                 <Row label="Opt-out" value={data.includeOptOut ? 'Appended' : 'No'} />
                 <Row label="Schedule" value={data.scheduleType === 'now' ? 'Send immediately' : `${data.scheduledDate?.toLocaleDateString()} at ${data.scheduledTime}`} />
@@ -462,6 +503,7 @@ export default function CampaignWizard({ open, onClose, onComplete }: CampaignWi
             size="sm"
             onClick={() => step === 0 ? onClose() : setStep(step - 1)}
             className="rounded-lg border-[#E5E7EB]"
+            disabled={isSubmitting}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
             {step === 0 ? 'Cancel' : 'Back'}
@@ -481,9 +523,17 @@ export default function CampaignWizard({ open, onClose, onComplete }: CampaignWi
             <Button
               size="sm"
               onClick={handleCreate}
+              disabled={isSubmitting}
               className="rounded-lg bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white"
             >
-              Create Campaign
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                data.scheduleType === 'now' ? 'Create & Send' : 'Create Campaign'
+              )}
             </Button>
           )}
         </div>
