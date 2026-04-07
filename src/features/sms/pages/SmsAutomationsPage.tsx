@@ -1,32 +1,74 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { mockAutomations } from '../data/mockAutomations';
+import { useAutomations } from '../hooks/useAutomations';
 import AutomationsList from '../components/automations/AutomationsList';
-import type { SmsAutomation } from '../types';
 
 export default function SmsAutomationsPage() {
   const navigate = useNavigate();
-  const [automations, setAutomations] = useState<SmsAutomation[]>(mockAutomations);
+  const {
+    automations,
+    isLoading,
+    toggleActive,
+    deleteAutomation,
+    createAutomation,
+  } = useAutomations();
 
-  const handleToggle = useCallback((id: string, isActive: boolean) => {
-    setAutomations((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, isActive } : a))
-    );
-    toast.success(isActive ? 'Automation activated' : 'Automation paused');
-  }, []);
+  const handleToggle = useCallback(
+    async (id: string, isActive: boolean) => {
+      try {
+        await toggleActive({ id, is_active: isActive });
+        toast.success(isActive ? 'Automation activated' : 'Automation paused');
+      } catch {
+        // toast.error already handled inside hook
+      }
+    },
+    [toggleActive]
+  );
 
-  const handleDelete = useCallback((id: string) => {
-    setAutomations((prev) => prev.filter((a) => a.id !== id));
-    toast.success('Automation deleted');
-  }, []);
+  const handleDelete = useCallback(
+    async (id: string) => {
+      try {
+        await deleteAutomation(id);
+        toast.success('Automation deleted');
+      } catch {
+        // toast.error already handled inside hook
+      }
+    },
+    [deleteAutomation]
+  );
 
-  const handleNew = useCallback(() => {
-    // Navigate to editor with a new flow id
-    navigate('/sms/automations/new');
-  }, [navigate]);
+  const handleNew = useCallback(async () => {
+    try {
+      const newId = await createAutomation({
+        name: 'Untitled Flow',
+        trigger_type: 'new_message',
+        trigger_config: {},
+        flow_json: {
+          nodes: [
+            {
+              id: 'n-1',
+              type: 'DEFAULT',
+              position: { x: 300, y: 0 },
+              data: {
+                name: 'Start',
+                isStart: true,
+                prompt: 'Greet the user and ask how you can help with their property search.',
+                modelOptions: { temperature: 0.7 },
+              },
+            },
+          ],
+          edges: [],
+          globalPrompt: 'You are a helpful property assistant for NFStay. Be professional and concise.',
+        },
+      });
+      navigate(`/sms/automations/${newId}`);
+    } catch {
+      // toast.error already handled inside hook
+    }
+  }, [createAutomation, navigate]);
 
   return (
     <div className="p-6 md:p-8 overflow-y-auto h-full">
@@ -42,13 +84,19 @@ export default function SmsAutomationsPage() {
         </Button>
       </div>
 
-      {/* Table */}
-      <AutomationsList
-        automations={automations}
-        onToggle={handleToggle}
-        onDelete={handleDelete}
-        onNew={handleNew}
-      />
+      {/* Loading state */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 text-[#9CA3AF] animate-spin" />
+        </div>
+      ) : (
+        <AutomationsList
+          automations={automations}
+          onToggle={handleToggle}
+          onDelete={handleDelete}
+          onNew={handleNew}
+        />
+      )}
     </div>
   );
 }
