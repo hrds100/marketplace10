@@ -107,6 +107,9 @@ export default function AdminLayout() {
               <Link to="/admin/nfstay" className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors ${workspace === 'booking' ? 'bg-blue-500/10 text-blue-600' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
                 Booking
               </Link>
+              <Link to="/sms/inbox" className="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary">
+                SMS
+              </Link>
             </div>
 
             <div className="hidden md:flex gap-1 overflow-x-auto flex-1" style={{ scrollbarWidth: 'none' }}>

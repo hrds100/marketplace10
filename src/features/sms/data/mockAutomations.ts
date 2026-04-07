@@ -1,0 +1,67 @@
+import type { SmsAutomation } from '../types';
+
+export const mockAutomations: SmsAutomation[] = [
+  {
+    id: 'aut-1',
+    name: 'Welcome Flow',
+    description: 'Sends a welcome message when a new contact texts in for the first time.',
+    flowJson: null,
+    triggerType: 'new_message',
+    triggerConfig: {
+      numbers: ['num-1'],
+    },
+    isActive: true,
+    lastRunAt: '2026-04-07T07:32:00.000Z',
+    runCount: 234,
+    createdAt: '2026-01-20T08:00:00.000Z',
+    updatedAt: '2026-03-15T10:00:00.000Z',
+  },
+  {
+    id: 'aut-2',
+    name: 'After Hours',
+    description: 'Auto-replies outside business hours (6pm-9am) letting contacts know we will respond the next working day.',
+    flowJson: null,
+    triggerType: 'time_based',
+    triggerConfig: {
+      timeRange: { start: '18:00', end: '09:00' },
+      numbers: ['num-1', 'num-2'],
+    },
+    isActive: true,
+    lastRunAt: '2026-04-06T22:15:00.000Z',
+    runCount: 891,
+    createdAt: '2026-01-25T14:00:00.000Z',
+    updatedAt: '2026-02-28T16:30:00.000Z',
+  },
+  {
+    id: 'aut-3',
+    name: 'Property Inquiry',
+    description: 'Triggers when a message contains property-related keywords and routes to the deals team.',
+    flowJson: null,
+    triggerType: 'keyword',
+    triggerConfig: {
+      keywords: ['rent', 'property', 'viewing'],
+      numbers: ['num-1', 'num-2', 'num-3'],
+    },
+    isActive: false,
+    lastRunAt: '2026-03-20T11:00:00.000Z',
+    runCount: 156,
+    createdAt: '2026-02-10T09:00:00.000Z',
+    updatedAt: '2026-03-20T11:00:00.000Z',
+  },
+  {
+    id: 'aut-4',
+    name: 'Follow Up Sequence',
+    description: 'Sends a follow-up message 48 hours after a contact expresses interest.',
+    flowJson: null,
+    triggerType: 'keyword',
+    triggerConfig: {
+      keywords: ['interested'],
+      numbers: ['num-1'],
+    },
+    isActive: true,
+    lastRunAt: '2026-04-05T14:20:00.000Z',
+    runCount: 67,
+    createdAt: '2026-03-01T10:00:00.000Z',
+    updatedAt: '2026-04-01T08:00:00.000Z',
+  },
+];

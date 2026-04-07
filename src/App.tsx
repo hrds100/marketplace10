@@ -97,6 +97,18 @@ import LeadNDAPage from "@/features/landlord/LeadNDAPage";
 import { NfsCurrencyProvider } from "./contexts/NfsCurrencyContext";
 import DebugReportButton from '@/core/debug/DebugReportButton';
 import { setupDebugCapture } from '@/core/debug/useDebugCapture';
+// SMS Inbox — isolated module
+import SmsLayout from '@/features/sms/layout/SmsLayout';
+import SmsInboxPage from '@/features/sms/pages/SmsInboxPage';
+import SmsPipelinePage from '@/features/sms/pages/SmsPipelinePage';
+import SmsContactsPage from '@/features/sms/pages/SmsContactsPage';
+import SmsAutomationsPage from '@/features/sms/pages/SmsAutomationsPage';
+import SmsFlowEditorPage from '@/features/sms/pages/SmsFlowEditorPage';
+import SmsCampaignsPage from '@/features/sms/pages/SmsCampaignsPage';
+import SmsTemplatesPage from '@/features/sms/pages/SmsTemplatesPage';
+import SmsNumbersPage from '@/features/sms/pages/SmsNumbersPage';
+import SmsSettingsPage from '@/features/sms/pages/SmsSettingsPage';
+import SmsDashboardPage from '@/features/sms/pages/SmsDashboardPage';
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -250,6 +262,20 @@ const App = () => (
             <Route path="create-reservation" element={<NfsCreateReservation />} />
             <Route path="settings" element={<NfsOperatorSettings />} />
             <Route path="analytics" element={<NfsAnalytics />} />
+          </Route>
+          {/* SMS Inbox — isolated module */}
+          <Route path="/sms" element={<SmsLayout />}>
+            <Route index element={<Navigate to="inbox" replace />} />
+            <Route path="inbox" element={<SmsInboxPage />} />
+            <Route path="pipeline" element={<SmsPipelinePage />} />
+            <Route path="contacts" element={<SmsContactsPage />} />
+            <Route path="automations" element={<SmsAutomationsPage />} />
+            <Route path="automations/:id" element={<SmsFlowEditorPage />} />
+            <Route path="campaigns" element={<SmsCampaignsPage />} />
+            <Route path="templates" element={<SmsTemplatesPage />} />
+            <Route path="numbers" element={<SmsNumbersPage />} />
+            <Route path="settings" element={<SmsSettingsPage />} />
+            <Route path="dashboard" element={<SmsDashboardPage />} />
           </Route>
           {/* nfstay traveler-facing routes — standalone (no operator layout) */}
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
