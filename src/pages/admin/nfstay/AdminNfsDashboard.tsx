@@ -207,7 +207,7 @@ export default function AdminNfsDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold">Recent Users</h2>
             <Button variant="ghost" size="sm" asChild className="text-primary gap-1">
-              <Link to="/dashboard/booking-site/users">View all <ArrowUpRight className="w-3 h-3" /></Link>
+              <Link to="/admin/nfstay/users">View all <ArrowUpRight className="w-3 h-3" /></Link>
             </Button>
           </div>
           <div className="space-y-3">
@@ -233,7 +233,7 @@ export default function AdminNfsDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold">Recent Operators</h2>
             <Button variant="ghost" size="sm" asChild className="text-primary gap-1">
-              <Link to="/dashboard/booking-site/operators">View all <ArrowUpRight className="w-3 h-3" /></Link>
+              <Link to="/admin/nfstay/operators">View all <ArrowUpRight className="w-3 h-3" /></Link>
             </Button>
           </div>
           {pendingOps.length === 0 ? (

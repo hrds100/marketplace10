@@ -25,12 +25,7 @@ import LessonPage from "@/features/university/LessonPage";
 import AffiliatesPage from "@/features/affiliates/AffiliatesPage";
 import ListADealPage from "@/features/deal-submit/ListADealPage";
 import SettingsPage from "@/features/settings/SettingsPage";
-// Booking Site — consolidated layout + sub-routes
-import BookingSiteLayout from "./layouts/BookingSiteLayout";
-import BSDashboard from "./pages/booking-site/BSDashboard";
-import BSProperties from "./pages/booking-site/BSProperties";
-import BSReservations from "./pages/booking-site/BSReservations";
-import BSBranding from "./pages/booking-site/BSBranding";
+// Frozen — stays in src/pages/
 import BookingSitePage from "./pages/BookingSitePage";
 // Layouts (stay in src/layouts/ — locked)
 import AdminLayout from "./layouts/AdminLayout";
@@ -178,19 +173,7 @@ const App = () => (
             <Route path="university" element={<UniversityPage />} />
             <Route path="affiliates" element={<AffiliatesPage />} />
             <Route path="list-a-deal" element={<ListADealPage />} />
-            <Route path="booking-site" element={<BookingSiteLayout />}>
-              <Route index element={<BSBranding />} />
-              <Route path="dashboard" element={<BSDashboard />} />
-              <Route path="properties" element={<BSProperties />} />
-              <Route path="reservations" element={<BSReservations />} />
-              <Route path="branding" element={<BSBranding />} />
-              <Route path="overview" element={<AdminNfsDashboard />} />
-              <Route path="operators" element={<AdminNfsOperators />} />
-              <Route path="operators/:operatorId" element={<AdminNfsOperatorDetail />} />
-              <Route path="users" element={<AdminNfsUsers />} />
-              <Route path="analytics" element={<AdminNfsAnalytics />} />
-              <Route path="settings" element={<AdminNfsSettings />} />
-            </Route>
+            <Route path="booking-site" element={<BookingSitePage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="invest/marketplace" element={<InvestMarketplacePage />} />
             <Route path="invest/portfolio" element={<InvestPortfolioPage />} />
@@ -250,16 +233,16 @@ const App = () => (
             <Route path="invest/endpoints" element={<AdminEndpoints />} />
             <Route path="invest/test-console" element={<AdminTestConsole />} />
 
-            {/* Booking Site (nfstay) — redirects to consolidated /dashboard/booking-site */}
-            <Route path="nfstay" element={<Navigate to="/dashboard/booking-site/overview" replace />} />
-            <Route path="nfstay/reservations" element={<Navigate to="/dashboard/booking-site/reservations" replace />} />
-            <Route path="nfstay/properties" element={<Navigate to="/dashboard/booking-site/properties" replace />} />
-            <Route path="nfstay/dashboard" element={<Navigate to="/dashboard/booking-site/overview" replace />} />
-            <Route path="nfstay/users" element={<Navigate to="/dashboard/booking-site/users" replace />} />
-            <Route path="nfstay/operators" element={<Navigate to="/dashboard/booking-site/operators" replace />} />
-            <Route path="nfstay/operators/:operatorId" element={<Navigate to="/dashboard/booking-site/operators" replace />} />
-            <Route path="nfstay/analytics" element={<Navigate to="/dashboard/booking-site/analytics" replace />} />
-            <Route path="nfstay/settings" element={<Navigate to="/dashboard/booking-site/settings" replace />} />
+            {/* Booking Site (nfstay) workspace */}
+            <Route path="nfstay" element={<AdminNfsReservations />} />
+            <Route path="nfstay/reservations" element={<AdminNfsReservations />} />
+            <Route path="nfstay/properties" element={<AdminNfsProperties />} />
+            <Route path="nfstay/dashboard" element={<AdminNfsDashboard />} />
+            <Route path="nfstay/users" element={<AdminNfsUsers />} />
+            <Route path="nfstay/operators" element={<AdminNfsOperators />} />
+            <Route path="nfstay/operators/:operatorId" element={<AdminNfsOperatorDetail />} />
+            <Route path="nfstay/analytics" element={<AdminNfsAnalytics />} />
+            <Route path="nfstay/settings" element={<AdminNfsSettings />} />
 
             {/* Observatory removed — chat system no longer active */}
 
