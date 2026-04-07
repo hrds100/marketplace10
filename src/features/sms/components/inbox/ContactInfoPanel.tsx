@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Pencil, Phone, Plus, Tag, User, X } from 'lucide-react';
+import { Bot, Check, Pencil, Phone, Plus, Tag, User, X } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -30,7 +30,7 @@ import { useUpdateContact } from '../../hooks/useUpdateContact';
 import { useContactLabels } from '../../hooks/useContactLabels';
 import { useLabels } from '../../hooks/useLabels';
 import { useStages } from '../../hooks/useStages';
-import type { SmsContact, SmsInternalNote } from '../../types';
+import type { SmsAutomationState, SmsContact, SmsInternalNote } from '../../types';
 
 interface ContactInfoPanelProps {
   contact: SmsContact | null;
@@ -38,6 +38,11 @@ interface ContactInfoPanelProps {
   onClose: () => void;
   internalNotes: SmsInternalNote[];
   onContactUpdated?: () => void;
+  automationState?: SmsAutomationState | null;
+  automationName?: string | null;
+  onResumeAutomation?: () => void;
+  onPauseAutomation?: () => void;
+  isResuming?: boolean;
 }
 
 export default function ContactInfoPanel({
@@ -46,6 +51,11 @@ export default function ContactInfoPanel({
   onClose,
   internalNotes,
   onContactUpdated,
+  automationState,
+  automationName,
+  onResumeAutomation,
+  onPauseAutomation,
+  isResuming = false,
 }: ContactInfoPanelProps) {
   const { updateContact, isUpdating } = useUpdateContact();
   const { addLabel, removeLabel, isUpdating: labelsUpdating } = useContactLabels();
@@ -383,6 +393,62 @@ export default function ContactInfoPanel({
           </div>
 
           <Separator className="bg-[#E5E7EB]" />
+
+          {/* Automation Status */}
+          {automationName && (
+            <>
+              <div>
+                <p className="text-xs font-medium text-[#6B7280] mb-2">Automation</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <Bot className="h-4 w-4 text-[#1E9A80]" />
+                  <span className="text-sm text-[#1A1A1A]">{automationName}</span>
+                </div>
+                {automationState && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[#6B7280]">Status:</span>
+                      <span className={`text-xs font-medium ${
+                        automationState.status === 'active' ? 'text-[#1E9A80]' :
+                        automationState.status === 'completed' ? 'text-[#6B7280]' :
+                        automationState.status === 'suspended' ? 'text-[#EF4444]' :
+                        'text-[#9CA3AF]'
+                      }`}>
+                        {automationState.status === 'active' ? 'Active' :
+                         automationState.status === 'completed' ? 'Completed' :
+                         automationState.status === 'suspended' ? 'Suspended (manual reply)' :
+                         'Paused'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[#6B7280]">Step:</span>
+                      <span className="text-xs text-[#1A1A1A]">{automationState.stepNumber}</span>
+                    </div>
+                    {(automationState.status === 'paused' || automationState.status === 'suspended') && onResumeAutomation && (
+                      <Button
+                        size="sm"
+                        className="h-7 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white text-xs mt-1"
+                        onClick={onResumeAutomation}
+                        disabled={isResuming}
+                      >
+                        Resume
+                      </Button>
+                    )}
+                    {automationState.status === 'active' && onPauseAutomation && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs mt-1"
+                        onClick={onPauseAutomation}
+                      >
+                        Pause
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <Separator className="bg-[#E5E7EB]" />
+            </>
+          )}
 
           {/* Assigned To */}
           <div>

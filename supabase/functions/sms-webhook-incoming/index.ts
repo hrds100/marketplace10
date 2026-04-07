@@ -235,17 +235,17 @@ serve(async (req: Request) => {
 
     console.log(`Inbound SMS from ${from}: "${body.substring(0, 50)}..." → message ${message.id}`);
 
-    // ---- TRIGGER AUTOMATIONS ----
+    // ---- TRIGGER AUTOMATION (turn-based, with 5s debounce inside sms-automation-run) ----
     try {
       const { data: conv } = await supabase
         .from('sms_conversations')
-        .select('id')
+        .select('id, automation_id, automation_enabled')
         .eq('contact_id', contact.id)
         .eq('number_id', numberId)
         .maybeSingle();
 
-      if (conv && message) {
-        // Fire and forget — don't block webhook response
+      if (conv && message && conv.automation_enabled && conv.automation_id) {
+        // Fire and forget — sms-automation-run handles debounce + turn logic
         const automationUrl = `${SUPABASE_URL}/functions/v1/sms-automation-run`;
         fetch(automationUrl, {
           method: 'POST',

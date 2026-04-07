@@ -13,6 +13,8 @@ interface ConversationRow {
   is_archived: boolean;
   is_locked_by: string | null;
   locked_at: string | null;
+  automation_id: string | null;
+  automation_enabled: boolean;
   created_at: string;
   sms_contacts: {
     id: string;
@@ -34,6 +36,9 @@ interface ConversationRow {
       };
     }[];
   };
+  sms_automations: {
+    name: string;
+  } | null;
 }
 
 function mapRow(row: ConversationRow): SmsConversation {
@@ -65,6 +70,9 @@ function mapRow(row: ConversationRow): SmsConversation {
     isArchived: row.is_archived,
     isLockedBy: row.is_locked_by,
     lockedAt: row.locked_at,
+    automationId: row.automation_id,
+    automationEnabled: row.automation_enabled ?? false,
+    automationName: row.sms_automations?.name ?? null,
     createdAt: row.created_at,
   };
 }
@@ -74,14 +82,16 @@ async function fetchConversations(): Promise<SmsConversation[]> {
     .from('sms_conversations' as never)
     .select(`
       id, contact_id, number_id, last_message_at, last_message_preview,
-      unread_count, is_archived, is_locked_by, locked_at, created_at,
+      unread_count, is_archived, is_locked_by, locked_at,
+      automation_id, automation_enabled, created_at,
       sms_contacts!contact_id (
         id, phone_number, display_name, notes, pipeline_stage_id,
         assigned_to, opted_out, batch_name, created_at, updated_at,
         sms_contact_labels (
           sms_labels!label_id ( id, name, colour, position )
         )
-      )
+      ),
+      sms_automations!automation_id ( name )
     `)
     .order('last_message_at', { ascending: false }) as never);
 

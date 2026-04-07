@@ -57,6 +57,25 @@ export interface SmsConversation {
   isArchived: boolean;
   isLockedBy: string | null;
   lockedAt: string | null;
+  automationId: string | null;
+  automationEnabled: boolean;
+  automationName: string | null;
+  createdAt: string;
+}
+
+export type SmsAutomationStateStatus = 'active' | 'suspended' | 'completed' | 'paused';
+
+export interface SmsAutomationState {
+  id: string;
+  conversationId: string;
+  automationId: string;
+  currentNodeId: string;
+  stepNumber: number;
+  status: SmsAutomationStateStatus;
+  lastMessageAt: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  exitReason: string | null;
   createdAt: string;
 }
 
