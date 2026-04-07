@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [2026-04-07e] - SMS All Pages Wired to Real Data + Editable Contacts
+
+### Added
+- **Contact editing from inbox** — edit name (inline in thread header + info panel), add/remove labels (checkbox popover), change pipeline stage (dropdown), edit notes — all persist to Supabase immediately
+- **10 new hooks**: useUpdateContact, useContactLabels, useLabels, useStages, useContacts, usePipeline, useTemplates, useNumbers, useSettings, useDashboardStats
+- **6 pages wired to real Supabase data**:
+  - Contacts: real CRUD + CSV bulk import to Supabase
+  - Pipeline: drag-and-drop updates pipeline_stage_id in Supabase
+  - Templates: real CRUD (create/edit/delete)
+  - Numbers: real data (shows +447380308316), add/remove/set default
+  - Settings: labels/stages/quick-replies all from DB with full CRUD
+  - Dashboard: real message counts, delivery rate, daily chart from sms_messages
+
+### Still Mock Data
+- Automations: flow save/load (Phase 3 — needs sms_automations wiring)
+- Campaigns: bulk send (Phase 4 — needs sms-bulk-send edge function)
+- Settings > Team tab (mock team members)
+- Settings > Integrations tab (shows "Connected" status, not dynamic)
+
 ## [2026-04-07d] - SMS Phase 2 — Backend Live, Real Messages
 
 ### Added
