@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import { type Node, type Edge } from '@xyflow/react';
 import { SmsNodeType, type SmsNodeData, type SmsEdgeData } from '../../types';
+import type { SaveStatus } from '../../hooks/useAutomationFlow';
 
 interface FlowContextType {
   isEditingEdge: string | null;
@@ -23,6 +24,7 @@ interface FlowContextType {
   addNode: (type: SmsNodeType) => void;
   updateNode: (id: string, data: Partial<SmsNodeData>) => void;
   deleteEdge: (id: string) => void;
+  saveStatus: SaveStatus;
 }
 
 const FlowContext = createContext<FlowContextType | null>(null);
@@ -48,11 +50,13 @@ export function FlowContextProvider({
   initialNodes,
   initialEdges,
   initialGlobalPrompt,
+  onSave,
 }: {
   children: ReactNode;
   initialNodes: Node<SmsNodeData>[];
   initialEdges: Edge<SmsEdgeData>[];
   initialGlobalPrompt?: string;
+  onSave?: (data: { nodes: Node<SmsNodeData>[]; edges: Edge<SmsEdgeData>[]; globalPrompt: string }) => Promise<void>;
 }) {
   const [nodes, setNodes] = useState<Node<SmsNodeData>[]>(initialNodes);
   const [edges, setEdges] = useState<Edge<SmsEdgeData>[]>(initialEdges);
@@ -60,9 +64,39 @@ export function FlowContextProvider({
   const [isEditingNode, setIsEditingNode] = useState<string | null>(null);
   const [showAddNodePopup, setShowAddNodePopup] = useState(false);
   const [showGlobalPrompt, setShowGlobalPrompt] = useState(false);
-  const [globalPrompt, setGlobalPrompt] = useState(
+  const [globalPrompt, setGlobalPromptRaw] = useState(
     initialGlobalPrompt || 'You are a helpful property assistant for NFStay. Be professional and concise.'
   );
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+
+  // Track latest values for debounced save
+  const latestRef = useRef({ nodes, edges, globalPrompt });
+  useEffect(() => {
+    latestRef.current = { nodes, edges, globalPrompt };
+  }, [nodes, edges, globalPrompt]);
+
+  const triggerAutoSave = useCallback(() => {
+    if (!onSaveRef.current) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        setSaveStatus('saving');
+        await onSaveRef.current!(latestRef.current);
+        setSaveStatus('saved');
+      } catch {
+        setSaveStatus('error');
+      }
+    }, 500);
+  }, []);
+
+  // Wrap setGlobalPrompt to trigger auto-save
+  const setGlobalPrompt = useCallback((prompt: string) => {
+    setGlobalPromptRaw(prompt);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   const duplicateNode = useCallback((id: string) => {
     setNodes((prev) => {
@@ -77,24 +111,28 @@ export function FlowContextProvider({
       };
       return [...prev, newNode];
     });
-  }, []);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   const deleteNodes = useCallback((ids: string[]) => {
     setNodes((prev) => prev.filter((n) => !ids.includes(n.id)));
     setEdges((prev) => prev.filter((e) => !ids.includes(e.source) && !ids.includes(e.target)));
     setIsEditingNode(null);
-  }, []);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   const updateEdge = useCallback((id: string, data: Partial<SmsEdgeData>) => {
     setEdges((prev) =>
       prev.map((e) => (e.id === id ? { ...e, data: { ...(e.data || {}), ...data } as SmsEdgeData } : e))
     );
-  }, []);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   const deleteEdge = useCallback((id: string) => {
     setEdges((prev) => prev.filter((e) => e.id !== id));
     setIsEditingEdge(null);
-  }, []);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   const addNode = useCallback((type: SmsNodeType) => {
     const newNode: Node<SmsNodeData> = {
@@ -112,13 +150,15 @@ export function FlowContextProvider({
     };
     setNodes((prev) => [...prev, newNode]);
     setShowAddNodePopup(false);
-  }, []);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   const updateNode = useCallback((id: string, data: Partial<SmsNodeData>) => {
     setNodes((prev) =>
       prev.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...data } } : n))
     );
-  }, []);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   return (
     <FlowContext.Provider
@@ -143,6 +183,7 @@ export function FlowContextProvider({
         addNode,
         updateNode,
         deleteEdge,
+        saveStatus,
       }}
     >
       {children}

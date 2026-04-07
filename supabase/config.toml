@@ -125,6 +125,12 @@ verify_jwt = false
 [functions.sms-send]
 verify_jwt = false
 
+[functions.sms-ai-respond]
+verify_jwt = false
+
+[functions.sms-automation-run]
+verify_jwt = false
+
 # AI edge functions
 [functions.ai-chat]
 verify_jwt = false

@@ -235,6 +235,39 @@ serve(async (req: Request) => {
 
     console.log(`Inbound SMS from ${from}: "${body.substring(0, 50)}..." → message ${message.id}`);
 
+    // ---- TRIGGER AUTOMATIONS ----
+    try {
+      const { data: conv } = await supabase
+        .from('sms_conversations')
+        .select('id')
+        .eq('contact_id', contact.id)
+        .eq('number_id', numberId)
+        .maybeSingle();
+
+      if (conv && message) {
+        // Fire and forget — don't block webhook response
+        const automationUrl = `${SUPABASE_URL}/functions/v1/sms-automation-run`;
+        fetch(automationUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          },
+          body: JSON.stringify({
+            message_id: message.id,
+            conversation_id: conv.id,
+            contact_id: contact.id,
+            from_number: from,
+            to_number: to,
+            body: body,
+          }),
+        }).catch((err) => console.error('Automation trigger error:', err));
+      }
+    } catch (automationErr) {
+      console.error('Failed to trigger automations:', automationErr);
+      // Don't fail the webhook — automation errors are non-fatal
+    }
+
     // Return empty TwiML (no auto-reply — automations handle replies)
     const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`;
     return new Response(twiml, {
