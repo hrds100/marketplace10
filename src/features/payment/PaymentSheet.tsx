@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, CheckCircle2, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+
 import { getFunnelUrl } from '@/lib/ghl';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +26,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeTimedOut, setIframeTimedOut] = useState(false);
   const [pollTimedOut, setPollTimedOut] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // pollRef removed — no longer polling. useUserTier has realtime subscription.
   const iframeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeLoadCount = useRef(0);
 
@@ -48,7 +48,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   }, [open]);
 
   const handleClose = useCallback(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
+    // no-op: polling removed
     setVisible(false);
     setTimeout(() => onOpenChange(false), 300);
   }, [onOpenChange]);
@@ -57,36 +57,9 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     if (paymentComplete) return;
     setPaymentComplete(true);
     setPollTimedOut(false);
-
-    let attempts = 0;
-    pollRef.current = setInterval(async () => {
-      attempts++;
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('tier')
-          .eq('id', user!.id)
-          .single();
-
-        if (data?.tier && data.tier !== 'free') {
-          if (pollRef.current) clearInterval(pollRef.current);
-          // Redirect straight to deals — do NOT re-trigger inquiry/WhatsApp
-          setTimeout(() => {
-            window.location.href = '/dashboard/deals';
-          }, 1500);
-          return;
-        }
-      } catch (e) {
-        console.error('Tier poll error:', e);
-      }
-
-      // After 20 attempts (20s): show error, do NOT auto-unlock
-      if (attempts >= 20) {
-        if (pollRef.current) clearInterval(pollRef.current);
-        setPollTimedOut(true);
-      }
-    }, 1000);
-  }, [handleClose, user, paymentComplete, onUnlocked]);
+    // Redirect after short delay — no polling needed, useUserTier has realtime subscription
+    setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
+  }, [paymentComplete]);
 
   // Fallback poll: DISABLED during funnel flow to avoid interrupting upsell/downsell.
   // Only triggers when iframe navigates to thank-you page (detected via onLoad or postMessage).
