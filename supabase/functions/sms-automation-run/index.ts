@@ -265,7 +265,7 @@ async function executeNode(
           ? `${globalPrompt}\n\n${nodePrompt}`
           : nodePrompt || 'You are a helpful SMS assistant. Keep replies concise (under 160 chars if possible).';
 
-        const model = node.data.modelOptions?.model || 'gpt-4o-mini';
+        const model = node.data.modelOptions?.model || 'gpt-5.4-mini';
         const temperature = node.data.modelOptions?.temperature ?? 0.7;
 
         // Load conversation history
@@ -753,7 +753,7 @@ serve(async (req: Request) => {
               `Node ${currentNode.id} has ${outgoingEdges.length} outgoing edges — classifying pathway`
             );
 
-            const model = currentNode.data.modelOptions?.model || 'gpt-4o-mini';
+            const model = currentNode.data.modelOptions?.model || 'gpt-5.4-mini';
             const temperature = currentNode.data.modelOptions?.temperature ?? 0.7;
 
             const { edge: chosenEdge, reply } = await resolveNextEdge(outgoingEdges, {
