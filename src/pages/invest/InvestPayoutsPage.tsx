@@ -722,14 +722,19 @@ export default function InvestPayoutsPage() {
       {kycStatus === 'pending' && (
         <Card className="border-amber-500/20 bg-amber-500/5">
           <CardContent className="py-4">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <Clock className="h-4 w-4 text-amber-500" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-amber-600">Verification in progress</p>
+                  <p className="text-xs text-muted-foreground">We'll update you shortly, or continue where you left off.</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-amber-600">Verification in progress</p>
-                <p className="text-xs text-muted-foreground">We'll update you shortly. You can check back later.</p>
-              </div>
+              <Button size="sm" variant="outline" onClick={() => setShowKycModal(true)} className="border-amber-500/30 text-amber-600 hover:bg-amber-500/10">
+                Continue Verification
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -747,7 +752,7 @@ export default function InvestPayoutsPage() {
                   <p className="text-xs text-muted-foreground">One-time KYC verification required before claiming rental income.</p>
                 </div>
               </div>
-              <Button size="sm" onClick={() => setShowKycModal(true)}>
+              <Button size="sm" onClick={() => setShowKycModal(true)} className="bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white">
                 Verify Now
               </Button>
             </div>
