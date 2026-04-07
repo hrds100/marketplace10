@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { X, CheckCircle2 } from 'lucide-react';
 import { useUserTier } from '@/hooks/useUserTier';
 import { getFunnelUrl, isPaidTier } from '@/lib/ghl';
 import { useAuth } from '@/hooks/useAuth';
@@ -223,23 +223,12 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
               <p className="text-sm text-muted-foreground">Payment confirmed. Taking you to your inbox...</p>
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mt-2" />
             </div>
-          ) : paid ? (
-            /* ── PAID USER → WhatsApp ── */
-            <div data-feature="DEALS__INQUIRY_PANEL_INFO" className="p-6">
-              <label className="text-xs font-semibold text-foreground block mb-2">Your message</label>
-              <textarea
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                rows={5}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-              />
-              <button
-                data-feature="DEALS__INQUIRY_PANEL_CONTACT"
-                onClick={handleSendWhatsApp}
-                className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold mt-4 hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-              >
-                <MessageCircle className="w-4 h-4" /> Send on WhatsApp
-              </button>
+          ) : paid && !funnelLocked ? (
+            /* ── PAID USER (opened panel AFTER paying) → close panel, go to deals ── */
+            <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
+              <CheckCircle2 className="w-8 h-8 text-green-500" />
+              <h3 className="text-lg font-bold text-foreground">You have full access</h3>
+              <p className="text-sm text-muted-foreground">Click any deal to contact the landlord directly.</p>
             </div>
           ) : !funnelUrl ? (
             /* ── FREE USER, NO FUNNEL URL → fallback ── */
