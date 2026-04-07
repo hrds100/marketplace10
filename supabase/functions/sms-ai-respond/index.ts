@@ -37,14 +37,19 @@ interface AiRespondRequest {
   pathways?: Pathway[];
 }
 
-// Models — includes latest available. Fallback to gpt-4o if requested model not found.
+// Models — April 2026 current. Fallback to gpt-5.4-mini.
 const SUPPORTED_MODELS = [
-  'gpt-4o', 'gpt-4o-mini',
-  'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano',
+  // GPT-5.4 (current flagship, March 2026)
+  'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano',
+  // GPT-5 series
+  'gpt-5', 'gpt-5-mini', 'gpt-5-nano',
+  // Reasoning models
   'o3', 'o3-mini', 'o4-mini',
-  'chatgpt-4o-latest',
+  // Legacy (still in API but deprecated)
+  'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano',
+  'gpt-4o', 'gpt-4o-mini',
 ];
-const FALLBACK_MODEL = 'gpt-4o';
+const FALLBACK_MODEL = 'gpt-5.4-mini';
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {

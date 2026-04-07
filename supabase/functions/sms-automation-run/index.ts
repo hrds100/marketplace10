@@ -216,7 +216,7 @@ async function executeNode(
           ? `${globalPrompt}\n\n${nodePrompt}`
           : nodePrompt || 'You are a helpful SMS assistant. Keep replies concise (under 160 chars if possible).';
 
-        const model = node.data.modelOptions?.model || 'gpt-4o';
+        const model = node.data.modelOptions?.model || 'gpt-5.4-mini';
         const temperature = node.data.modelOptions?.temperature ?? 0.7;
 
         const conversationHistory = await loadConversationHistory(supabase, contactId);
@@ -607,7 +607,7 @@ serve(async (req: Request) => {
     if (outgoingEdges.length === 1) {
       nextEdge = outgoingEdges[0];
     } else {
-      const model = currentNode.data.modelOptions?.model || 'gpt-4o';
+      const model = currentNode.data.modelOptions?.model || 'gpt-5.4-mini';
       const temperature = currentNode.data.modelOptions?.temperature ?? 0.7;
 
       const { edge, reply } = await resolveNextEdge(outgoingEdges, {
