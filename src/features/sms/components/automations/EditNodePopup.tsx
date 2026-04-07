@@ -65,7 +65,7 @@ export function EditNodePopup() {
   const [stageId, setStageId] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
   const [webhookMethod, setWebhookMethod] = useState('POST');
-  const [model, setModel] = useState('gpt-4o');
+  const [model, setModel] = useState('gpt-5.4-mini');
 
   useEffect(() => {
     if (nodeData && node) {
@@ -76,7 +76,7 @@ export function EditNodePopup() {
       setUseAiPrompt(!nodeData.text);
       setDelay(nodeData.delay || 0);
       setTemperature(nodeData.modelOptions?.temperature ?? 0.7);
-      setModel(nodeData.modelOptions?.model || 'gpt-4o');
+      setModel(nodeData.modelOptions?.model || 'gpt-5.4-mini');
       setSteps(nodeData.steps || []);
       setAssignTo(nodeData.assignTo || '');
       setLabelId(nodeData.labelId || '');
@@ -289,13 +289,13 @@ export function EditNodePopup() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="gpt-4o-mini">GPT-4o Mini (fast, cheap)</SelectItem>
-                        <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                        <SelectItem value="gpt-4.1-nano">GPT-4.1 Nano (fastest)</SelectItem>
-                        <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini (fast + smart)</SelectItem>
-                        <SelectItem value="gpt-4.1">GPT-4.1 (recommended)</SelectItem>
+                        <SelectItem value="gpt-5.4-nano">GPT-5.4 Nano (fastest, cheapest)</SelectItem>
+                        <SelectItem value="gpt-5.4-mini">GPT-5.4 Mini (recommended)</SelectItem>
+                        <SelectItem value="gpt-5.4">GPT-5.4 (flagship)</SelectItem>
+                        <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
+                        <SelectItem value="gpt-5">GPT-5</SelectItem>
+                        <SelectItem value="o4-mini">O4 Mini (reasoning)</SelectItem>
                         <SelectItem value="o3-mini">O3 Mini (reasoning)</SelectItem>
-                        <SelectItem value="o4-mini">O4 Mini (latest reasoning)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
