@@ -1,45 +1,57 @@
 import { useState } from 'react';
-import { Plus, Phone } from 'lucide-react';
+import { Plus, Phone, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { mockNumbers as initialNumbers } from '../data/mockNumbers';
+import { useNumbers } from '../hooks/useNumbers';
 import type { SmsPhoneNumber } from '../types';
 import NumbersList from '../components/numbers/NumbersList';
 import NumberForm from '../components/numbers/NumberForm';
 
 export default function SmsNumbersPage() {
-  const [numbers, setNumbers] = useState<SmsPhoneNumber[]>(initialNumbers);
+  const { numbers, isLoading, addNumber, removeNumber, setDefault } = useNumbers();
   const [formOpen, setFormOpen] = useState(false);
 
   function handleEdit(num: SmsPhoneNumber) {
-    // For now, just show a toast — full edit form can be added later
     toast.info(`Edit label for ${num.phoneNumber}`);
   }
 
-  function handleSetDefault(numberId: string) {
-    setNumbers((prev) =>
-      prev.map((n) => ({ ...n, isDefault: n.id === numberId }))
+  async function handleSetDefault(numberId: string) {
+    try {
+      await setDefault(numberId);
+      toast.success('Default number updated');
+    } catch {
+      // Error already handled by hook toast
+    }
+  }
+
+  async function handleRemove(numberId: string) {
+    try {
+      await removeNumber(numberId);
+      toast.success('Number removed');
+    } catch {
+      // Error already handled by hook toast
+    }
+  }
+
+  async function handleSave(data: { phoneNumber: string; twilioSid: string; label: string }) {
+    try {
+      await addNumber({
+        phone_number: data.phoneNumber,
+        twilio_sid: data.twilioSid,
+        label: data.label,
+        is_default: numbers.length === 0,
+      });
+    } catch {
+      // Error already handled by hook toast
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-[#1E9A80]" />
+      </div>
     );
-    toast.success('Default number updated');
-  }
-
-  function handleRemove(numberId: string) {
-    setNumbers((prev) => prev.filter((n) => n.id !== numberId));
-    toast.success('Number removed');
-  }
-
-  function handleSave(data: { phoneNumber: string; twilioSid: string; label: string }) {
-    const newNumber: SmsPhoneNumber = {
-      id: `num-${Date.now()}`,
-      phoneNumber: data.phoneNumber,
-      twilioSid: data.twilioSid,
-      label: data.label,
-      isDefault: numbers.length === 0,
-      webhookUrl: 'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/sms-webhook',
-      messageCount: 0,
-      createdAt: new Date().toISOString(),
-    };
-    setNumbers((prev) => [...prev, newNumber]);
   }
 
   return (

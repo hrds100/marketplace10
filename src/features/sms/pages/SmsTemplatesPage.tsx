@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { mockTemplates as initialTemplates } from '../data/mockTemplates';
+import { useTemplates } from '../hooks/useTemplates';
 import type { SmsTemplate } from '../types';
 import TemplatesList from '../components/templates/TemplatesList';
 import TemplateForm from '../components/templates/TemplateForm';
 
 export default function SmsTemplatesPage() {
-  const [templates, setTemplates] = useState<SmsTemplate[]>(initialTemplates);
+  const { templates, isLoading, createTemplate, updateTemplate, deleteTemplate } = useTemplates();
   const [formOpen, setFormOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<SmsTemplate | null>(null);
 
@@ -22,31 +21,32 @@ export default function SmsTemplatesPage() {
     setFormOpen(true);
   }
 
-  function handleSave(data: { name: string; body: string; category: string | null }) {
-    if (editingTemplate) {
-      setTemplates((prev) =>
-        prev.map((t) =>
-          t.id === editingTemplate.id
-            ? { ...t, name: data.name, body: data.body, category: data.category, updatedAt: new Date().toISOString() }
-            : t
-        )
-      );
-    } else {
-      const newTemplate: SmsTemplate = {
-        id: `tpl-${Date.now()}`,
-        name: data.name,
-        body: data.body,
-        category: data.category,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setTemplates((prev) => [newTemplate, ...prev]);
+  async function handleSave(data: { name: string; body: string; category: string | null }) {
+    try {
+      if (editingTemplate) {
+        await updateTemplate({ id: editingTemplate.id, ...data });
+      } else {
+        await createTemplate(data);
+      }
+    } catch {
+      // Error already handled by hook toast
     }
   }
 
-  function handleDelete(templateId: string) {
-    setTemplates((prev) => prev.filter((t) => t.id !== templateId));
-    toast.success('Template deleted');
+  async function handleDelete(templateId: string) {
+    try {
+      await deleteTemplate(templateId);
+    } catch {
+      // Error already handled by hook toast
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-[#1E9A80]" />
+      </div>
+    );
   }
 
   return (

@@ -1,12 +1,9 @@
 import { useState } from 'react';
-import { Settings } from 'lucide-react';
+import { Settings, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockLabels as initialLabels } from '../data/mockLabels';
-import { mockStages as initialStages } from '../data/mockStages';
-import { mockQuickReplies as initialReplies } from '../data/mockQuickReplies';
-import { mockContacts } from '../data/mockContacts';
+import { useSettings } from '../hooks/useSettings';
+import { useContacts } from '../hooks/useContacts';
 import type { SmsLabel, SmsPipelineStage, SmsQuickReply, SmsTeamMember } from '../types';
 import LabelsSettings from '../components/settings/LabelsSettings';
 import StagesSettings from '../components/settings/StagesSettings';
@@ -21,11 +18,77 @@ const initialMembers: SmsTeamMember[] = [
 ];
 
 export default function SmsSettingsPage() {
-  const [labels, setLabels] = useState<SmsLabel[]>(initialLabels);
-  const [stages, setStages] = useState<SmsPipelineStage[]>(initialStages);
-  const [replies, setReplies] = useState<SmsQuickReply[]>(initialReplies);
+  const {
+    labels, stages, replies, isLoading,
+    addLabel, updateLabel, deleteLabel,
+    addStage, updateStage, deleteStage,
+    addReply, updateReply, deleteReply,
+  } = useSettings();
+  const { contacts } = useContacts();
   const [members, setMembers] = useState<SmsTeamMember[]>(initialMembers);
   const [browserNotifications, setBrowserNotifications] = useState(true);
+
+  async function handleAddLabel(label: SmsLabel) {
+    try {
+      await addLabel({ name: label.name, colour: label.colour, position: label.position });
+    } catch { /* handled by hook */ }
+  }
+
+  async function handleEditLabel(label: SmsLabel) {
+    try {
+      await updateLabel(label);
+    } catch { /* handled by hook */ }
+  }
+
+  async function handleDeleteLabel(id: string) {
+    try {
+      await deleteLabel(id);
+    } catch { /* handled by hook */ }
+  }
+
+  async function handleAddStage(stage: SmsPipelineStage) {
+    try {
+      await addStage({ name: stage.name, colour: stage.colour, position: stage.position });
+    } catch { /* handled by hook */ }
+  }
+
+  async function handleEditStage(stage: SmsPipelineStage) {
+    try {
+      await updateStage(stage);
+    } catch { /* handled by hook */ }
+  }
+
+  async function handleDeleteStage(id: string) {
+    try {
+      await deleteStage(id);
+    } catch { /* handled by hook */ }
+  }
+
+  async function handleAddReply(reply: SmsQuickReply) {
+    try {
+      await addReply({ label: reply.label, body: reply.body, position: reply.position });
+    } catch { /* handled by hook */ }
+  }
+
+  async function handleEditReply(reply: SmsQuickReply) {
+    try {
+      await updateReply(reply);
+    } catch { /* handled by hook */ }
+  }
+
+  async function handleDeleteReply(id: string) {
+    try {
+      await deleteReply(id);
+    } catch { /* handled by hook */ }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-[#1E9A80]" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 md:p-8 overflow-y-auto h-full">
@@ -49,27 +112,27 @@ export default function SmsSettingsPage() {
         <TabsContent value="labels">
           <LabelsSettings
             labels={labels}
-            onAdd={(l) => setLabels((prev) => [...prev, l])}
-            onEdit={(l) => setLabels((prev) => prev.map((x) => x.id === l.id ? l : x))}
-            onDelete={(id) => setLabels((prev) => prev.filter((x) => x.id !== id))}
+            onAdd={handleAddLabel}
+            onEdit={handleEditLabel}
+            onDelete={handleDeleteLabel}
           />
         </TabsContent>
 
         <TabsContent value="stages">
           <StagesSettings
             stages={stages}
-            onAdd={(s) => setStages((prev) => [...prev, s])}
-            onEdit={(s) => setStages((prev) => prev.map((x) => x.id === s.id ? s : x))}
-            onDelete={(id) => setStages((prev) => prev.filter((x) => x.id !== id))}
+            onAdd={handleAddStage}
+            onEdit={handleEditStage}
+            onDelete={handleDeleteStage}
           />
         </TabsContent>
 
         <TabsContent value="quick-replies">
           <QuickRepliesSettings
             replies={replies}
-            onAdd={(r) => setReplies((prev) => [...prev, r])}
-            onEdit={(r) => setReplies((prev) => prev.map((x) => x.id === r.id ? r : x))}
-            onDelete={(id) => setReplies((prev) => prev.filter((x) => x.id !== id))}
+            onAdd={handleAddReply}
+            onEdit={handleEditReply}
+            onDelete={handleDeleteReply}
           />
         </TabsContent>
 
@@ -86,7 +149,7 @@ export default function SmsSettingsPage() {
         </TabsContent>
 
         <TabsContent value="opt-out">
-          <OptOutList contacts={mockContacts} />
+          <OptOutList contacts={contacts} />
         </TabsContent>
 
         <TabsContent value="notifications">
