@@ -11,9 +11,10 @@ interface ComposeBoxProps {
   onSend: (body: string) => void;
   templates: SmsTemplate[];
   quickReplies: SmsQuickReply[];
+  disabled?: boolean;
 }
 
-export default function ComposeBox({ onSend, templates, quickReplies }: ComposeBoxProps) {
+export default function ComposeBox({ onSend, templates, quickReplies, disabled }: ComposeBoxProps) {
   const [body, setBody] = useState('');
   const [templateOpen, setTemplateOpen] = useState(false);
   const [quickReplyOpen, setQuickReplyOpen] = useState(false);
@@ -124,7 +125,7 @@ export default function ComposeBox({ onSend, templates, quickReplies }: ComposeB
         />
         <Button
           onClick={handleSend}
-          disabled={!body.trim()}
+          disabled={!body.trim() || disabled}
           className="h-10 w-10 shrink-0 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white rounded-lg"
           size="icon"
         >

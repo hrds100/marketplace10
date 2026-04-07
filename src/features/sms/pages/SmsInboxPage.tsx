@@ -11,54 +11,39 @@ import ConversationList from '../components/inbox/ConversationList';
 import MessageThread from '../components/inbox/MessageThread';
 import ComposeBox from '../components/inbox/ComposeBox';
 import ContactInfoPanel from '../components/inbox/ContactInfoPanel';
-import type { SmsInternalNote, SmsMessage } from '../types';
-import { mockConversations } from '../data/mockConversations';
-import { mockMessages as initialMockMessages } from '../data/mockMessages';
+import type { SmsInternalNote } from '../types';
+import { useConversations } from '../hooks/useConversations';
+import { useMessages } from '../hooks/useMessages';
+import { useSendMessage } from '../hooks/useSendMessage';
+import { useMarkRead } from '../hooks/useMarkRead';
 import { mockTemplates } from '../data/mockTemplates';
 import { mockQuickReplies } from '../data/mockQuickReplies';
 import { mockLabels } from '../data/mockLabels';
 import { mockStages } from '../data/mockStages';
 
-// Mock internal notes for the contact info panel
-const mockInternalNotes: SmsInternalNote[] = [
-  {
-    id: 'note-1',
-    conversationId: 'conv-1',
-    authorId: 'user-1',
-    authorName: 'Hugo',
-    body: 'Inbound from Google Ads campaign. Responded within 5 mins.',
-    createdAt: '2026-04-06T18:10:00.000Z',
-  },
-  {
-    id: 'note-2',
-    conversationId: 'conv-2',
-    authorId: 'user-1',
-    authorName: 'Hugo',
-    body: 'Very interested after viewing. Follow up with agreement ASAP.',
-    createdAt: '2026-04-05T10:30:00.000Z',
-  },
-];
+// Mock internal notes — not yet in DB for this phase
+const mockInternalNotes: SmsInternalNote[] = [];
 
 export default function SmsInboxPage() {
   const isMobile = useIsMobile();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [contactInfoOpen, setContactInfoOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [messages, setMessages] = useState<SmsMessage[]>(initialMockMessages);
+
+  const { conversations, isLoading: conversationsLoading } = useConversations();
+  const { markRead } = useMarkRead();
+  const { sendMessage, isSending } = useSendMessage();
 
   const selectedConversation = useMemo(
-    () => mockConversations.find((c) => c.id === selectedId) ?? null,
-    [selectedId]
+    () => conversations.find((c) => c.id === selectedId) ?? null,
+    [conversations, selectedId]
   );
 
   const selectedContact = selectedConversation?.contact ?? null;
 
-  const threadMessages = useMemo(() => {
-    if (!selectedContact) return [];
-    return messages
-      .filter((m) => m.contactId === selectedContact.id)
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-  }, [messages, selectedContact]);
+  const { messages: threadMessages, isLoading: messagesLoading } = useMessages(
+    selectedContact?.id ?? null
+  );
 
   const notesForConversation = useMemo(() => {
     if (!selectedId) return [];
@@ -68,32 +53,27 @@ export default function SmsInboxPage() {
   const handleSend = useCallback(
     (body: string) => {
       if (!selectedContact) return;
-      const newMsg: SmsMessage = {
-        id: `msg-new-${Date.now()}`,
-        twilioSid: `SM-local-${Date.now()}`,
-        fromNumber: '+447911234567',
-        toNumber: selectedContact.phoneNumber,
+      sendMessage({
+        to: selectedContact.phoneNumber,
         body,
-        direction: 'outbound',
-        status: 'sent',
-        mediaUrls: [],
-        numberId: 'num-1',
         contactId: selectedContact.id,
-        campaignId: null,
-        errorCode: null,
-        errorMessage: null,
-        scheduledAt: null,
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, newMsg]);
+      });
     },
-    [selectedContact]
+    [selectedContact, sendMessage]
   );
 
-  const handleSelect = useCallback((id: string) => {
-    setSelectedId(id);
-    setContactInfoOpen(false);
-  }, []);
+  const handleSelect = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      setContactInfoOpen(false);
+      // Mark conversation as read when selected
+      const conv = conversations.find((c) => c.id === id);
+      if (conv && conv.unreadCount > 0) {
+        markRead(id);
+      }
+    },
+    [conversations, markRead]
+  );
 
   // Mobile: show either list or thread
   if (isMobile) {
@@ -117,6 +97,7 @@ export default function SmsInboxPage() {
               messages={threadMessages}
               contact={selectedContact}
               onOpenContactInfo={() => setContactInfoOpen(true)}
+              isLoading={messagesLoading}
             />
           </div>
 
@@ -124,6 +105,7 @@ export default function SmsInboxPage() {
             onSend={handleSend}
             templates={mockTemplates}
             quickReplies={mockQuickReplies}
+            disabled={isSending}
           />
 
           <ContactInfoPanel
@@ -140,12 +122,13 @@ export default function SmsInboxPage() {
     return (
       <div className="h-full bg-white">
         <ConversationList
-          conversations={mockConversations}
+          conversations={conversations}
           selectedId={selectedId}
           onSelect={handleSelect}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           labels={mockLabels}
+          isLoading={conversationsLoading}
         />
       </div>
     );
@@ -157,12 +140,13 @@ export default function SmsInboxPage() {
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel defaultSize={30} minSize={20} maxSize={45}>
           <ConversationList
-            conversations={mockConversations}
+            conversations={conversations}
             selectedId={selectedId}
             onSelect={handleSelect}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
             labels={mockLabels}
+            isLoading={conversationsLoading}
           />
         </ResizablePanel>
 
@@ -175,6 +159,7 @@ export default function SmsInboxPage() {
                 messages={threadMessages}
                 contact={selectedContact}
                 onOpenContactInfo={() => setContactInfoOpen(true)}
+                isLoading={messagesLoading}
               />
             </div>
 
@@ -183,6 +168,7 @@ export default function SmsInboxPage() {
                 onSend={handleSend}
                 templates={mockTemplates}
                 quickReplies={mockQuickReplies}
+                disabled={isSending}
               />
             )}
           </div>

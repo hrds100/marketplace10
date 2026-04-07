@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
-import { Info, MessageSquare } from 'lucide-react';
+import { Info, Loader2, MessageSquare } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import PhoneNumber from '../shared/PhoneNumber';
@@ -11,6 +11,7 @@ interface MessageThreadProps {
   messages: SmsMessage[];
   contact: SmsContact | null;
   onOpenContactInfo: () => void;
+  isLoading?: boolean;
 }
 
 function groupByDate(messages: SmsMessage[]): Map<string, SmsMessage[]> {
@@ -32,7 +33,7 @@ function groupByDate(messages: SmsMessage[]): Map<string, SmsMessage[]> {
   return groups;
 }
 
-export default function MessageThread({ messages, contact, onOpenContactInfo }: MessageThreadProps) {
+export default function MessageThread({ messages, contact, onOpenContactInfo, isLoading }: MessageThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,6 +69,11 @@ export default function MessageThread({ messages, contact, onOpenContactInfo }: 
       </div>
 
       {/* Messages */}
+      {isLoading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-[#9CA3AF]" />
+        </div>
+      ) : (
       <ScrollArea className="flex-1 px-4 py-3">
         <div className="space-y-4">
           {Array.from(grouped.entries()).map(([dateLabel, msgs]) => (
@@ -87,6 +93,7 @@ export default function MessageThread({ messages, contact, onOpenContactInfo }: 
         </div>
         <div ref={bottomRef} />
       </ScrollArea>
+      )}
     </div>
   );
 }
