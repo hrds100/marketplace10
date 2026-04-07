@@ -1,12 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
-import { Check, Info, Loader2, MessageSquare, Pencil, X } from 'lucide-react';
+import { Bot, Check, Info, Loader2, MessageSquare, Pencil, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import PhoneNumber from '../shared/PhoneNumber';
 import MessageBubble from './MessageBubble';
-import type { SmsContact, SmsMessage } from '../../types';
+import type { SmsAutomation, SmsContact, SmsMessage } from '../../types';
 
 interface MessageThreadProps {
   messages: SmsMessage[];
@@ -14,6 +28,11 @@ interface MessageThreadProps {
   onOpenContactInfo: () => void;
   isLoading?: boolean;
   onUpdateName?: (contactId: string, newName: string) => Promise<void>;
+  automationEnabled?: boolean;
+  automationName?: string | null;
+  automations?: SmsAutomation[];
+  onToggleAutomation?: (automationId: string | null, enabled: boolean) => void;
+  isTogglingAutomation?: boolean;
 }
 
 function groupByDate(messages: SmsMessage[]): Map<string, SmsMessage[]> {
@@ -35,7 +54,18 @@ function groupByDate(messages: SmsMessage[]): Map<string, SmsMessage[]> {
   return groups;
 }
 
-export default function MessageThread({ messages, contact, onOpenContactInfo, isLoading, onUpdateName }: MessageThreadProps) {
+export default function MessageThread({
+  messages,
+  contact,
+  onOpenContactInfo,
+  isLoading,
+  onUpdateName,
+  automationEnabled = false,
+  automationName,
+  automations = [],
+  onToggleAutomation,
+  isTogglingAutomation = false,
+}: MessageThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -127,6 +157,57 @@ export default function MessageThread({ messages, contact, onOpenContactInfo, is
             <PhoneNumber number={contact.phoneNumber} className="text-xs text-[#9CA3AF]" />
           )}
         </div>
+        {/* Automation toggle */}
+        {onToggleAutomation && (
+          <div className="flex items-center gap-2 mr-2">
+            {automationEnabled && automationName && (
+              <span className="text-xs text-[#1E9A80] font-medium truncate max-w-[140px] hidden sm:inline">
+                {automationName}
+              </span>
+            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5">
+                    <Bot className={`h-4 w-4 ${automationEnabled ? 'text-[#1E9A80]' : 'text-[#9CA3AF]'}`} />
+                    <Switch
+                      checked={automationEnabled}
+                      disabled={isTogglingAutomation}
+                      onCheckedChange={(checked) => {
+                        if (!checked) {
+                          onToggleAutomation(null, false);
+                        } else if (automations.length === 1) {
+                          onToggleAutomation(automations[0].id, true);
+                        }
+                        // If multiple automations and toggling on, show picker (handled by state below)
+                      }}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{automationEnabled ? 'AI automation active' : 'Enable AI automation'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            {!automationEnabled && automations.length > 1 && (
+              <Select
+                onValueChange={(val) => onToggleAutomation(val, true)}
+                disabled={isTogglingAutomation}
+              >
+                <SelectTrigger className="h-7 w-[140px] text-xs">
+                  <SelectValue placeholder="Pick automation" />
+                </SelectTrigger>
+                <SelectContent>
+                  {automations.filter((a) => a.isActive).map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        )}
         <Button variant="ghost" size="icon" onClick={onOpenContactInfo}>
           <Info className="h-4 w-4 text-[#6B7280]" />
         </Button>
