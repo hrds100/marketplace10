@@ -718,10 +718,12 @@ function BookingSiteDashboard() {
 
       {/* Properties Tab — nfstay.app design */}
       {topTab === 'properties' && propSubView === 'add' && (
-        <div className="flex-1 overflow-y-auto p-6">
-          <button onClick={() => setPropSubView('list')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4">
+        <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto">
+          <button onClick={() => setPropSubView('list')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6">
             <ChevronLeft className="w-4 h-4" /> Back to Properties
           </button>
+          <h1 className="text-2xl font-bold tracking-tight mb-1">Add New Property</h1>
+          <p className="text-sm text-muted-foreground mb-6">Fill in the details for your new listing.</p>
           <NfsPropertyNew />
         </div>
       )}
@@ -851,8 +853,8 @@ function BookingSiteDashboard() {
 
       {/* Reservations Tab — nfstay.app design */}
       {topTab === 'reservations' && resSubView === 'create' && (
-        <div className="flex-1 overflow-y-auto p-6">
-          <button onClick={() => setResSubView('list')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4">
+        <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto">
+          <button onClick={() => setResSubView('list')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6">
             <ChevronLeft className="w-4 h-4" /> Back to Reservations
           </button>
           <NfsCreateReservation />
