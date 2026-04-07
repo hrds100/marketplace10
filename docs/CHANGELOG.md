@@ -2,6 +2,38 @@
 
 ## [Unreleased]
 
+## [2026-04-07f] - SMS Phase 3 — AI Automation Engine
+
+### Added
+- **Automations wired to Supabase** — flow editor saves/loads nodes, edges, global prompt to sms_automations.flow_json. Auto-save with 500ms debounce + save status indicator.
+- **sms-ai-respond edge function** — calls OpenAI Chat Completions (gpt-4o-mini, 300 max tokens) with combined global prompt + node prompt. OPENAI_API_KEY set in Supabase secrets.
+- **sms-automation-run edge function** — flow execution engine:
+  - Loads all active automations, checks triggers (new_message / keyword / time_based)
+  - 60-second loop guard per automation + conversation (prevents infinite loops)
+  - Walks the flow graph node by node (max 20 steps safety limit)
+  - Executes: DEFAULT (AI reply via OpenAI + Twilio), STOP_CONVERSATION, FOLLOW_UP (scheduled tasks), TRANSFER, LABEL, MOVE_STAGE, WEBHOOK
+  - Logs every step to sms_automation_runs + sms_automation_step_runs
+  - Updates automation stats (last_run_at, run_count)
+- **sms-webhook-incoming updated** — fires sms-automation-run after storing inbound message (fire-and-forget, non-blocking, non-fatal)
+- **useAutomations hook** — CRUD for sms_automations (create, toggle, delete)
+- **useAutomationFlow hook** — load + save flow_json with debounced auto-save
+
+### How AI Automation Works
+1. Hugo creates a flow with nodes (AI Response, Follow Up, Stop, etc.) and edges (pathways with labels)
+2. Someone texts +447380308316
+3. Webhook receives → stores message → fires automation runner
+4. Runner matches active automation triggers → walks flow graph → executes nodes
+5. DEFAULT node calls OpenAI for AI reply → sends via Twilio → person receives AI response
+
+### Deployed
+- sms-ai-respond, sms-automation-run deployed
+- sms-webhook-incoming redeployed with automation trigger
+- All functions registered in supabase/config.toml
+
+### Not Yet Done
+- Phase 4: Bulk campaigns (sms-bulk-send edge function)
+- Scheduled task processor (sms-process-scheduled for FOLLOW_UP delays)
+
 ## [2026-04-07e] - SMS All Pages Wired to Real Data + Editable Contacts
 
 ### Added
