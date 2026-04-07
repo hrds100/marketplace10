@@ -32,11 +32,14 @@ interface AiRespondRequest {
   contact_name: string;
   model: string;
   temperature: number;
+  max_tokens?: number;
   conversation_history?: ConversationMessage[];
   pathways?: Pathway[];
 }
 
-const SUPPORTED_MODELS = ['gpt-5.4-nano', 'gpt-5.4-mini', 'gpt-5.4', 'gpt-5.4-pro', 'gpt-4o-mini', 'gpt-4o'];
+// Models ordered by preference — try requested, fallback to gpt-4o
+const SUPPORTED_MODELS = ['gpt-4o', 'gpt-4o-mini', 'gpt-5.4-nano', 'gpt-5.4-mini', 'gpt-5.4', 'gpt-5.4-pro'];
+const FALLBACK_MODEL = 'gpt-4o';
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -54,6 +57,7 @@ serve(async (req: Request) => {
       contact_name,
       model = 'gpt-5.4-mini',
       temperature = 0.7,
+      max_tokens: requestedMaxTokens,
       conversation_history = [],
       pathways,
     } = (await req.json()) as AiRespondRequest;
@@ -73,8 +77,8 @@ serve(async (req: Request) => {
       );
     }
 
-    // Validate model
-    const resolvedModel = SUPPORTED_MODELS.includes(model) ? model : 'gpt-5.4-mini';
+    // Validate model — use requested if supported, otherwise fallback
+    const resolvedModel = SUPPORTED_MODELS.includes(model) ? model : FALLBACK_MODEL;
 
     // Personalise system prompt with contact name if available
     let finalSystemPrompt = contact_name
@@ -123,20 +127,23 @@ The "chosen_pathway" MUST be one of the edge_id values listed above. The "confid
     messages.push({ role: 'user', content: user_message });
 
     // Build OpenAI request
+    const defaultMaxTokens = hasPathways ? 500 : 300;
+    const maxTokens = requestedMaxTokens || defaultMaxTokens;
+
     const openaiBody: Record<string, unknown> = {
       model: resolvedModel,
       temperature,
-      max_tokens: 300,
+      max_tokens: maxTokens,
       messages,
     };
 
     // Use structured JSON output for pathway mode
     if (hasPathways) {
       openaiBody.response_format = { type: 'json_object' };
-      openaiBody.max_tokens = 500; // allow room for JSON structure
     }
 
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call OpenAI with fallback on model_not_found
+    let openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
@@ -145,7 +152,22 @@ The "chosen_pathway" MUST be one of the edge_id values listed above. The "confid
       body: JSON.stringify(openaiBody),
     });
 
-    const openaiData = await openaiRes.json();
+    let openaiData = await openaiRes.json();
+
+    // If model not found, retry with fallback model
+    if (!openaiRes.ok && openaiData.error?.code === 'model_not_found' && resolvedModel !== FALLBACK_MODEL) {
+      console.warn(`Model ${resolvedModel} not available, retrying with ${FALLBACK_MODEL}`);
+      openaiBody.model = FALLBACK_MODEL;
+      openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(openaiBody),
+      });
+      openaiData = await openaiRes.json();
+    }
 
     if (!openaiRes.ok) {
       console.error('OpenAI API error:', openaiData);
