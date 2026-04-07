@@ -84,6 +84,7 @@ No agent may load `docs/legacy/*` unless the current skill explicitly names that
 12. **Destructive actions**: STOP and ask Hugo.
 13. **Never use `sed`** to edit .tsx/.ts files — use proper Edit tools.
 14. **Flowchart sync** — Any PR that adds/changes a route, edge function, user flow, or integration MUST update `src/features/flow/data/nodes.ts` and `src/features/flow/data/edges.ts` in the same PR. The `/flow` page is the living map of the business. If it's not updated, the PR is incomplete.
+    - **Agent enforcement**: After merging any PR that affects routes/edge functions/flows, spawn the `docs-keeper` agent: `"PR [number] touched [list routes/edge fns]. Update src/features/flow/data/nodes.ts and edges.ts for any missing, renamed, or changed nodes/edges."` This is not optional.
 
 ## DO NOT TOUCH (crash risk)
 
