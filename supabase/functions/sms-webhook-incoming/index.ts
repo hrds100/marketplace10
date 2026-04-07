@@ -4,7 +4,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { hmac } from 'https://deno.land/x/hmac@v2.0.1/mod.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -18,21 +17,29 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Validate Twilio webhook signature (HMAC-SHA1)
-function validateTwilioSignature(
+// Validate Twilio webhook signature (HMAC-SHA1) using Web Crypto API
+async function validateTwilioSignature(
   authToken: string,
   signature: string,
   url: string,
   params: Record<string, string>
-): boolean {
-  // Build the data string: URL + sorted params concatenated as key+value
+): Promise<boolean> {
   const sortedKeys = Object.keys(params).sort();
   let data = url;
   for (const key of sortedKeys) {
     data += key + params[key];
   }
 
-  const expectedSig = hmac('sha1', authToken, data, 'utf8', 'base64');
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(authToken),
+    { name: 'HMAC', hash: 'SHA-1' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
+  const expectedSig = btoa(String.fromCharCode(...new Uint8Array(sig)));
   return signature === expectedSig;
 }
 
@@ -72,7 +79,7 @@ serve(async (req: Request) => {
     const webhookUrl = `${SUPABASE_URL}/functions/v1/sms-webhook-incoming`;
 
     if (TWILIO_AUTH_TOKEN && twilioSignature) {
-      const isValid = validateTwilioSignature(TWILIO_AUTH_TOKEN, twilioSignature, webhookUrl, params);
+      const isValid = await validateTwilioSignature(TWILIO_AUTH_TOKEN, twilioSignature, webhookUrl, params);
       if (!isValid) {
         console.error('Invalid Twilio signature');
         return new Response(
