@@ -117,11 +117,10 @@ if (import.meta.env.VITE_DEBUG_REPORT_ENABLED === 'true') {
 if (typeof window !== 'undefined') {
   const params = new URLSearchParams(window.location.search);
   if (params.get('payment') === 'success') {
+    // Just clean the URL — do NOT redirect. The iframe funnel (upsell/downsell)
+    // must finish before any redirect happens. Detection is via postMessage only.
     sessionStorage.setItem('nfstay_payment_success', '1');
     window.history.replaceState({}, '', window.location.pathname);
-    if (!window.location.pathname.includes('deals')) {
-      window.location.href = '/dashboard/deals';
-    }
   }
 }
 
