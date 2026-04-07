@@ -31,6 +31,8 @@ export interface FlowNodeData extends Record<string, unknown> {
   debugTrigger?: string;
   isHighlighted?: boolean;
   isFiltered?: boolean;
+  isDimmed?: boolean;
+  isActive?: boolean;
   debugMode?: boolean;
 }
 

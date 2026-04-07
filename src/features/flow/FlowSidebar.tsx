@@ -6,6 +6,7 @@ import { ACTOR_COLORS, ACTOR_LABELS, CONFIDENCE_CONFIG } from './types';
 interface Props {
   node: { id: string; data: FlowNodeData } | null;
   onClose: () => void;
+  onPlayFromHere?: (nodeId: string) => void;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -35,7 +36,7 @@ function Pill({ text, color }: { text: string; color: string }) {
   );
 }
 
-export default function FlowSidebar({ node, onClose }: Props) {
+export default function FlowSidebar({ node, onClose, onPlayFromHere }: Props) {
   // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -93,9 +94,23 @@ export default function FlowSidebar({ node, onClose }: Props) {
                     {conf.label}
                   </span>
                 </div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A1A', margin: 0, lineHeight: 1.3 }}>
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A1A', margin: '0 0 10px', lineHeight: 1.3 }}>
                   {d.label}
                 </h2>
+                {onPlayFromHere && node && (
+                  <button
+                    onClick={() => { onPlayFromHere(node.id); onClose(); }}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                      background: '#1E9A80', color: '#FFFFFF',
+                      fontSize: 12, fontWeight: 600, fontFamily: 'Inter, sans-serif',
+                      boxShadow: '0 2px 8px rgba(30,154,128,0.3)',
+                    }}
+                  >
+                    ▶ Play from here
+                  </button>
+                )}
               </div>
               <button
                 onClick={onClose}
