@@ -119,7 +119,7 @@ export function AiFlowBuilder({ open, onOpenChange }: AiFlowBuilderProps) {
         body: {
           system_prompt: FLOW_BUILDER_SYSTEM_PROMPT,
           user_message: description.trim(),
-          model: 'gpt-5.4',
+          model: 'gpt-4o',
           max_tokens: 2000,
         },
       });
