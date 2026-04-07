@@ -207,28 +207,30 @@ React Flow canvas with these node types:
                         └─────────────────┘
 ```
 
-**Node types:**
+**Node types (agencfront-style, one NodeWrapper renders all):**
 
-| Node | What it does | Config fields |
-|---|---|---|
-| **Trigger** | Starts the flow | Which number(s), keyword filter, time filter |
-| **AI Response** | Sends AI-generated reply | System prompt, model picker (GPT-4o, GPT-4o-mini), temperature |
-| **Condition** | Branches the flow | Field (message content / label / time), operator (contains / equals / regex), value |
-| **Delay** | Waits before next step | Duration (minutes / hours). Uses `sms_scheduled_tasks` table polled by 1-min cron. |
-| **Label** | Auto-tags the conversation | Label picker (from `sms_labels`) |
-| **Transfer** | Stops AI, assigns to human | Team member picker |
-| **Template** | Sends a saved template | Template picker |
-| **Webhook** | Calls external URL | URL, method, headers |
-| **Move Stage** | Moves contact in pipeline | Target stage picker (from `sms_pipeline_stages`) |
+| Node | Icon | Border Color | Config fields |
+|---|---|---|---|
+| **DEFAULT** | MessageSquare | #1E9A80 | AI prompt OR exact text, delay (minutes), model temperature |
+| **STOP_CONVERSATION** | CircleStop | #EF4444 | Final message prompt/text (terminal node, no outgoing edges) |
+| **FOLLOW_UP** | Clock | #F59E0B | Timed steps: each step has name, wait duration, prompt/text |
+| **TRANSFER** | UserPlus | #6B7280 | Assign to team member |
+| **LABEL** | Tag | #1E9A80 | Auto-tag contact with a label from `sms_labels` |
+| **MOVE_STAGE** | ArrowRightLeft | #1E9A80 | Move contact to pipeline stage from `sms_pipeline_stages` |
+| **WEBHOOK** | Globe | #1A1A1A | URL, HTTP method (GET/POST/PUT) |
 
-**Flow editor features:**
-- Drag nodes from sidebar onto canvas
-- Connect nodes by dragging edges between handles
-- Click node to edit its config in a side panel
+**Flow editor architecture (rebuilt from agencfront patterns):**
+- **One universal NodeWrapper** — renders all node types via config map (not 9 separate files)
+- **FlowContext** — React Context holds all state: nodes, edges, editing state, global prompt, CRUD functions
+- **Custom edges with labels** — inline pathway labels on edges, click to edit
+- **Edge editing sidebar** — slide-in panel: pathway label, description, conditions (CONTAIN/EQUALS/etc with AND/OR logic)
+- **Add node panel** — slide-in panel with grid of 7 node types to add
+- **Edit node popup** — Dialog modal on double-click: full node config with type switching
+- **Global prompt** — system-wide AI prompt, applies to all DEFAULT nodes
+- **Auto-save indicator** in top bar
 - Save flow (serialized to JSON → Supabase)
 - Toggle flow on/off
-- Test flow with a sample message
-- Duplicate flow
+- Duplicate node via NodeToolbar
 
 **Infinite loop guard:** `sms_automation_runs` tracks every execution. If same automation + same conversation fires within 60 seconds, the second run is blocked and logged as "loop detected".
 

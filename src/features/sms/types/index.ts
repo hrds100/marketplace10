@@ -158,20 +158,63 @@ export interface SmsDashboardStats {
   statusBreakdown: Array<{ status: string; count: number; colour: string }>;
 }
 
-// React Flow node types for automation builder
-export type SmsFlowNodeType =
-  | 'trigger'
-  | 'ai_response'
-  | 'condition'
-  | 'delay'
-  | 'label'
-  | 'transfer'
-  | 'template'
-  | 'webhook'
-  | 'move_stage';
+// Flow Editor Types (agencfront-style)
+export enum SmsNodeType {
+  DEFAULT = 'DEFAULT',
+  STOP_CONVERSATION = 'STOP_CONVERSATION',
+  FOLLOW_UP = 'FOLLOW_UP',
+  TRANSFER = 'TRANSFER',
+  LABEL = 'LABEL',
+  MOVE_STAGE = 'MOVE_STAGE',
+  WEBHOOK = 'WEBHOOK',
+}
 
-export interface SmsFlowNodeData {
-  type: SmsFlowNodeType;
-  label: string;
-  config: Record<string, unknown>;
+export enum SmsEdgeConditionOperator {
+  CONTAIN = 'CONTAIN',
+  DOES_NOT_CONTAIN = 'DOES_NOT_CONTAIN',
+  EQUALS = 'EQUALS',
+  DOES_NOT_EQUAL = 'DOES_NOT_EQUAL',
+}
+
+export enum SmsEdgeLogicalOperator {
+  AND = 'AND',
+  OR = 'OR',
+}
+
+export interface SmsEdgeCondition {
+  operator: SmsEdgeLogicalOperator;
+  field: string;
+  conditionOperator: SmsEdgeConditionOperator;
+  value: string;
+}
+
+export interface SmsEdgeData {
+  label?: string;
+  description?: string;
+  conditions?: SmsEdgeCondition[];
+  [key: string]: unknown;
+}
+
+export interface SmsFollowUpStep {
+  id: string;
+  name: string;
+  waitMinutes: number;
+  prompt?: string;
+  text?: string;
+}
+
+export interface SmsNodeData {
+  name: string;
+  isStart?: boolean;
+  prompt?: string;
+  text?: string;
+  delay?: number;
+  steps?: SmsFollowUpStep[];
+  assignTo?: string;
+  labelId?: string;
+  stageId?: string;
+  webhookUrl?: string;
+  webhookMethod?: string;
+  modelOptions?: { temperature: number; model?: string };
+  [key: string]: unknown;
 }
