@@ -92,10 +92,6 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     return () => window.removeEventListener('keydown', handleKey);
   }, [open, handleClose, funnelLocked]);
 
-  useEffect(() => {
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, []);
-
   if (!open && !visible) return null;
 
   const handleIframeLoad = (e: React.SyntheticEvent<HTMLIFrameElement>) => {
