@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+## [2026-04-07i] - Turn-Based Automation Engine
+
+### Changed (BREAKING — complete rewrite of automation engine)
+- **Turn-based execution** — one reply per user message, never batches. Bot advances one node per turn, saves position, waits for next message.
+- **5-second debounce** — when user sends multiple messages quickly, bot waits 5s, reads all buffered messages, sends one intelligent reply.
+- **Per-conversation toggle** — automation only runs if explicitly enabled for that conversation. Bot icon + Switch in thread header.
+- **Manual reply detection** — if a human replies manually while automation is active, bot auto-suspends (doesn't fight the human).
+- **Flow completion** — when STOP node reached, status=completed, no more auto-replies even if user keeps messaging.
+- **Silent node passthrough** — LABEL, MOVE_STAGE, WEBHOOK nodes execute without sending messages, then advance to next reply node.
+
+### Added
+- `sms_automation_state` table — tracks current position in flow per conversation (current_node_id, step_number, status, context_data)
+- `sms_conversations.automation_id` + `automation_enabled` columns — per-conversation automation control
+- `useConversationAutomation` hook — toggle, resume, trigger automation per conversation
+- MessageThread header: Bot icon + Switch toggle + automation name display
+- ContactInfoPanel: automation status section (Active/Paused/Suspended/Completed) with Pause/Resume buttons
+
+### How to use
+1. Create an automation flow in /sms/automations
+2. Go to /sms/inbox, open a conversation
+3. Toggle the AI switch ON in the thread header → pick an automation
+4. Next time the contact messages, bot replies following the flow
+5. Toggle OFF to pause. Reply manually to auto-suspend.
+
 ## [2026-04-07h] - Smart Pathways, AI Flow Builder, Lead Tracking
 
 ### Added
