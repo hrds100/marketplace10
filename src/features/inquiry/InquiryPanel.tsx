@@ -43,7 +43,7 @@ interface Props {
  * GHL payment funnel state machine.
  *
  * cart          → iframe showing, user can close (X / Escape / backdrop)
- * locked        → user paid on cart, now on upsell/downsell — modal cannot be closed
+ * locked        → user paid on cart, now on upsell/downsell — X still visible, user can close
  * complete      → thank-you postMessage received — success screen, then redirect
  * already-paid  → user opened panel after already having a paid tier
  */
@@ -62,6 +62,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   const [visible, setVisible] = useState(false);
   const [funnelStage, setFunnelStage] = useState<FunnelStage>('cart');
   const iframeLoadCount = useRef(0);
+  const funnelUrlRef = useRef<string>('');
 
   // ── Open: decide initial stage ONCE ──
   // tier is read here but NOT in deps — we only check at open time.
@@ -69,6 +70,12 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   useEffect(() => {
     if (open && listing) {
       iframeLoadCount.current = 0;
+      funnelUrlRef.current = getFunnelUrl({
+        email: user?.email,
+        name: user?.user_metadata?.name,
+        phone: user?.user_metadata?.whatsapp,
+        ref: referredBy || undefined,
+      });
       // eslint-disable-next-line react-hooks/exhaustive-deps
       setFunnelStage(isPaidTier(tier) ? 'already-paid' : 'cart');
       setVisible(true);
@@ -76,7 +83,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, listing?.id]);
 
-  const canClose = funnelStage === 'cart' || funnelStage === 'already-paid';
+  const canClose = funnelStage !== 'complete';
 
   const handleClose = useCallback(() => {
     setVisible(false);
@@ -87,7 +94,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
   const handleFunnelComplete = useCallback(() => {
     if (funnelStage === 'complete') return;
     setFunnelStage('complete');
-    setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
+    setTimeout(() => { window.location.href = '/dashboard/deals'; }, 5000);
   }, [funnelStage]);
 
   // ── postMessage listener — stays active as long as panel is open + funnel is running ──
@@ -133,12 +140,7 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
     iframeLoadCount.current += 1;
   };
 
-  const funnelUrl = getFunnelUrl({
-    email: user?.email,
-    name: user?.user_metadata?.name,
-    phone: user?.user_metadata?.whatsapp,
-    ref: referredBy || undefined,
-  });
+  const funnelUrl = funnelUrlRef.current;
 
   // ── Header text ──
   const headerTitle =
