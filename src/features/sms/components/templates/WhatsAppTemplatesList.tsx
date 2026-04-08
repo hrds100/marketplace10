@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Trash2, MessageSquare, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Trash2, MessageSquare, Loader2, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -28,13 +28,26 @@ const STATUS_STYLES: Record<string, string> = {
 
 const CATEGORY_STYLES: Record<string, string> = {
   UTILITY: 'bg-[#ECFDF5] text-[#1E9A80]',
-  MARKETING: 'bg-[#F3F3EE] text-[#6B7280]',
+  MARKETING: 'bg-[#FEF3C7] text-[#F59E0B]',
   AUTHENTICATION: 'bg-[#F3F3EE] text-[#525252]',
+};
+
+const CATEGORY_ORDER: string[] = ['UTILITY', 'MARKETING', 'AUTHENTICATION'];
+
+const CATEGORY_LABELS: Record<string, string> = {
+  UTILITY: 'Utility',
+  MARKETING: 'Marketing',
+  AUTHENTICATION: 'Authentication',
 };
 
 function getBodyText(components: WhatsAppTemplate['components']): string {
   const bodyComp = components?.find((c) => c.type === 'BODY');
   return bodyComp?.text || '(No body text)';
+}
+
+function countVariables(text: string): number {
+  const matches = text.match(/\{\{\d+\}\}/g);
+  return matches ? matches.length : 0;
 }
 
 export default function WhatsAppTemplatesList({
@@ -48,6 +61,22 @@ export default function WhatsAppTemplatesList({
   useEffect(() => {
     onFetch();
   }, [onFetch]);
+
+  // Group templates by category
+  const grouped = useMemo(() => {
+    const groups: Record<string, WhatsAppTemplate[]> = {};
+    for (const tpl of templates) {
+      const cat = tpl.category || 'UTILITY';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(tpl);
+    }
+    return groups;
+  }, [templates]);
+
+  // Sort categories in a predictable order
+  const sortedCategories = useMemo(() => {
+    return CATEGORY_ORDER.filter((cat) => grouped[cat]?.length);
+  }, [grouped]);
 
   if (isLoading) {
     return (
@@ -73,60 +102,92 @@ export default function WhatsAppTemplatesList({
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {templates.map((tpl) => {
-          const bodyText = getBodyText(tpl.components);
-          const statusClass =
-            STATUS_STYLES[tpl.status] || 'bg-[#F3F3EE] text-[#6B7280]';
-          const categoryClass =
-            CATEGORY_STYLES[tpl.category] || 'bg-[#F3F3EE] text-[#6B7280]';
+      <div className="space-y-8">
+        {sortedCategories.map((cat) => {
+          const catTemplates = grouped[cat];
+          const catLabel = CATEGORY_LABELS[cat] || cat;
+          const catStyle = CATEGORY_STYLES[cat] || 'bg-[#F3F3EE] text-[#6B7280]';
 
           return (
-            <div
-              key={tpl.id}
-              className="bg-white border border-[#E5E7EB] rounded-xl p-4 flex flex-col justify-between hover:shadow-[rgba(0,0,0,0.08)_0_4px_24px_-2px] transition-shadow duration-200"
-            >
-              <div>
-                {/* Header: name + status */}
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-[#1A1A1A] font-mono">
-                    {tpl.name}
-                  </h3>
-                  <span
-                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusClass}`}
-                  >
-                    {tpl.status}
-                  </span>
-                </div>
-
-                {/* Category + Language badges */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span
-                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${categoryClass}`}
-                  >
-                    {tpl.category}
-                  </span>
-                  <span className="text-xs text-[#9CA3AF]">{tpl.language}</span>
-                </div>
-
-                {/* Body preview */}
-                <p className="text-sm text-[#6B7280] leading-relaxed">
-                  {bodyText.length > 100
-                    ? `${bodyText.slice(0, 100)}...`
-                    : bodyText}
-                </p>
+            <div key={cat}>
+              {/* Section header */}
+              <div className="flex items-center gap-2 mb-4">
+                <span
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${catStyle}`}
+                >
+                  {catLabel}
+                </span>
+                <span className="text-xs text-[#9CA3AF]">
+                  {catTemplates.length} template{catTemplates.length !== 1 ? 's' : ''}
+                </span>
               </div>
 
-              {/* Footer */}
-              <div className="flex items-center justify-end mt-4 pt-3 border-t border-[#E5E7EB]">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDeleteName(tpl.name)}
-                  className="h-8 w-8 p-0 text-[#6B7280] hover:text-[#EF4444]"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+              {/* Template cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {catTemplates.map((tpl) => {
+                  const bodyText = getBodyText(tpl.components);
+                  const vars = countVariables(bodyText);
+                  const statusClass =
+                    STATUS_STYLES[tpl.status] || 'bg-[#F3F3EE] text-[#6B7280]';
+                  const isBuiltIn = tpl.name === 'hello_world';
+
+                  return (
+                    <div
+                      key={tpl.id}
+                      className="bg-white border border-[#E5E7EB] rounded-xl p-4 flex flex-col justify-between hover:shadow-[rgba(0,0,0,0.08)_0_4px_24px_-2px] transition-shadow duration-200"
+                    >
+                      <div>
+                        {/* Header: name + status */}
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-sm font-semibold text-[#1A1A1A] font-mono">
+                            {tpl.name}
+                          </h3>
+                          <span
+                            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusClass}`}
+                          >
+                            {tpl.status}
+                          </span>
+                        </div>
+
+                        {/* Language + variable count */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xs text-[#9CA3AF]">{tpl.language}</span>
+                          {vars > 0 && (
+                            <span className="flex items-center gap-0.5 text-xs text-[#9CA3AF]">
+                              <Hash className="h-3 w-3" />
+                              {vars} variable{vars !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Body preview */}
+                        <p className="text-sm text-[#6B7280] leading-relaxed">
+                          {bodyText.length > 140
+                            ? `${bodyText.slice(0, 140)}...`
+                            : bodyText}
+                        </p>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-end mt-4 pt-3 border-t border-[#E5E7EB]">
+                        {isBuiltIn ? (
+                          <span className="text-[10px] text-[#9CA3AF] font-medium">
+                            Built-in (cannot delete)
+                          </span>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteName(tpl.name)}
+                            className="h-8 w-8 p-0 text-[#6B7280] hover:text-[#EF4444]"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
