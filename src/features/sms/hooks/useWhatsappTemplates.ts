@@ -73,8 +73,8 @@ export function useWhatsappTemplates() {
 
         if (error) throw error;
 
-        if (data?.error) {
-          toast.error(data.meta_error || data.error);
+        if (data?.success === false || data?.error) {
+          toast.error(data.meta_error || data.error || 'Meta rejected the delete request');
           return;
         }
 
