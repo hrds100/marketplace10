@@ -3,6 +3,8 @@ import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
+import { useUserTier } from '@/hooks/useUserTier';
+import { isPaidTier } from '@/lib/ghl';
 
 function useNavItems() {
   const { t } = useTranslation();
@@ -42,6 +44,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
   const navigate = useNavigate();
   const { signOut, isAdmin } = useAuth();
   const { user } = useAuth();
+  const { tier } = useUserTier();
   const [investOpen, setInvestOpen] = useState(() => location.pathname.startsWith('/dashboard/invest'));
   const isInvestActive = location.pathname.startsWith('/dashboard/invest');
 
@@ -65,6 +68,43 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
         <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
           {navItems.map(item => {
             const isActive = location.pathname === item.to || (item.to === '/dashboard/deals' && location.pathname === '/dashboard');
+
+            // Paid users → open operator dashboard in new tab instead of internal route
+            if (item.to === '/dashboard/booking-site' && isPaidTier(tier)) {
+              return (
+                <a
+                  key={item.to}
+                  href="https://nfstay.app/nfstay/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-feature="NAV_LAYOUT__SIDEBAR_BOOKING"
+                  className={`group/nav relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`}
+                >
+                  <div className="relative flex-shrink-0">
+                    <item.icon className="w-[15px] h-[15px]" strokeWidth={1.8} />
+                  </div>
+                  {!collapsed && (
+                    <div className="flex flex-col flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[13px] leading-tight">{item.label}</span>
+                        {item.highlight && (
+                          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full leading-none" style={{ background: 'linear-gradient(135deg, #FDF5D6, #E8D478)', color: '#8B6914' }}>
+                            ✨ HOT
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {collapsed && (
+                    <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">
+                      {item.label}
+                      <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" />
+                    </div>
+                  )}
+                </a>
+              );
+            }
+
             return (
               <NavLink
                 key={item.to}
