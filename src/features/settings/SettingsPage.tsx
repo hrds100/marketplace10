@@ -50,6 +50,9 @@ export default function SettingsPage() {
   const { address: walletAddress, connected: walletConnected, connect: connectWallet, connecting } = useWallet();
   const [copied, setCopied] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const [notifs, setNotifs] = useState<NotifPrefs>(defaultNotifs);
   // Wallet change permission
   const [walletChangeUntil, setWalletChangeUntil] = useState<string | null>(null);
@@ -352,7 +355,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setPaymentOpen(true)}
+                    onClick={() => isPaidTier(tier) ? setCancelOpen(true) : setPaymentOpen(true)}
                     className="px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
                   >
                     {isPaidTier(tier) ? 'Manage Plan' : 'Upgrade Now'}
@@ -619,6 +622,77 @@ export default function SettingsPage() {
         </div>
       </div>
       <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); window.location.reload(); }} />
+
+      {/* ── Cancel subscription modal ── */}
+      {cancelOpen && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => { if (!cancelLoading) { setCancelOpen(false); setCancelError(null); } }}
+          />
+          <div className="relative z-10 bg-card border border-border rounded-2xl shadow-2xl w-full max-w-[440px] p-6">
+            {/* Header */}
+            <h2 className="text-lg font-bold text-foreground mb-1">Cancel your subscription?</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              You're currently on <span className="font-semibold text-foreground">{tierDisplayName(tier as 'free' | 'monthly' | 'yearly' | 'lifetime')}</span>. Cancelling will take effect immediately.
+            </p>
+
+            {/* What you'll lose */}
+            <div className="bg-secondary/50 border border-border rounded-xl p-4 mb-5 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">You will lose access to</p>
+              <div className="flex items-center gap-2 text-sm text-foreground"><span className="text-red-400">✕</span> Unlimited inquiries &amp; chat</div>
+              <div className="flex items-center gap-2 text-sm text-foreground"><span className="text-red-400">✕</span> CRM pipeline</div>
+              <div className="flex items-center gap-2 text-sm text-foreground"><span className="text-red-400">✕</span> University access</div>
+              <div className="flex items-center gap-2 text-sm text-foreground"><span className="text-red-400">✕</span> Direct landlord contacts</div>
+            </div>
+
+            {/* Error */}
+            {cancelError && (
+              <p className="text-sm text-red-500 mb-4">{cancelError}</p>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={async () => {
+                  if (cancelLoading) return;
+                  setCancelLoading(true);
+                  setCancelError(null);
+                  try {
+                    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-subscription`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: user?.email, phone: profile.whatsapp }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Failed to cancel');
+                    toast.success('Subscription cancelled. Your access has been downgraded to free.');
+                    setCancelOpen(false);
+                    setCancelError(null);
+                  } catch (err: unknown) {
+                    setCancelError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+                  } finally {
+                    setCancelLoading(false);
+                  }
+                }}
+                disabled={cancelLoading}
+                className="h-11 w-full rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {cancelLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {cancelLoading ? 'Cancelling...' : 'Cancel Subscription'}
+              </button>
+              <button
+                onClick={() => { setCancelOpen(false); setCancelError(null); }}
+                disabled={cancelLoading}
+                className="h-11 w-full rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-60"
+              >
+                Keep My Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
