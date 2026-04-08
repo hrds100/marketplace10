@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+## [2026-04-08a] - WhatsApp Channel Support
+
+### Added
+- **WhatsApp as a second channel** alongside SMS, using the same Twilio account
+- **Database:** `channel` column ('sms' | 'whatsapp') on sms_numbers, sms_messages, sms_conversations. Defaults to 'sms', zero breaking changes.
+- **sms-webhook-incoming:** detects `whatsapp:` prefix on From/To, strips for clean E.164 storage, filters number lookup by channel
+- **sms-send:** reads channel from number row, applies `whatsapp:` prefix to Twilio API when sending on WhatsApp
+- **sms-bulk-send:** same prefix logic per-number for campaigns
+- **sms-automation-run:** passes number_id through so automated replies use the correct channel
+- **ConversationRow:** green "W" badge on avatar for WhatsApp conversations
+- **MessageThread:** "via WhatsApp" / "via SMS" badge in thread header
+- **NumbersList:** channel badge (green WhatsApp / grey SMS) per number card
+- **NumberForm:** SMS/WhatsApp channel toggle when adding a number
+- **Types + hooks:** channel field on all relevant types, selected in all queries
+
+### How to use WhatsApp
+1. Enable WhatsApp Sandbox in Twilio console (for testing)
+2. Add a WhatsApp number in /sms/numbers (select "WhatsApp" channel)
+3. WhatsApp messages appear with green "W" badge
+4. Replies from inbox automatically use the correct channel
+
+### Hugo action needed
+- Register +447380308316 for WhatsApp in Twilio console (Settings → WhatsApp Senders)
+- For production: complete Meta Business Verification (~5 business days)
+
 ## [2026-04-07i] - Turn-Based Automation Engine
 
 ### Changed (BREAKING — complete rewrite of automation engine)
