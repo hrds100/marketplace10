@@ -15,6 +15,7 @@ import ResetPassword from "@/features/auth/ResetPassword";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import FlowPage from "./pages/FlowPage";
+import MotionPage from "./pages/MotionPage";
 // Layouts (stay in src/layouts/ — locked)
 import DashboardLayout from "./layouts/DashboardLayout";
 // Features
@@ -161,6 +162,7 @@ const App = () => (
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/flow" element={<FlowPage />} />
+          <Route path="/motion" element={<MotionPage />} />
           {/* Magic link entry — GHL WhatsApp button uses hub.nfstay.com/inbox?token=... */}
           <Route path="/inbox" element={<MagicLoginPage />} />
           <Route path="/deals/:id" element={<DealDetail />} />
