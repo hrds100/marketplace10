@@ -380,7 +380,7 @@ function BookingSiteDashboard({ tier, isAdminOverride }: { tier: string | null; 
   const [hexInput, setHexInput] = useState(defaultBranding.accentColor);
   const [seeded, setSeeded] = useState(false);
   const { isAdmin } = useAuth();
-  const paid = isPaidTier(tier) || isAdminOverride || isAdmin;
+  const paid = isPaidTier(tier);
 
   const handleGatedAction = (action: () => void) => {
     if (paid) {
