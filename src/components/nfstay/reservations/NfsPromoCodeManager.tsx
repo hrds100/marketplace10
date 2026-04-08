@@ -4,7 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2, AlertCircle, Tag } from 'lucide-react';
 
-export default function NfsPromoCodeManager() {
+interface NfsPromoCodeManagerProps {
+  onGatedAction?: (action: () => void) => void;
+}
+
+export default function NfsPromoCodeManager({ onGatedAction }: NfsPromoCodeManagerProps = {}) {
   const { promoCodes, loading, error, createPromoCode, updatePromoCode, deletePromoCode, saving } = useNfsPromoCodes();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -22,8 +26,7 @@ export default function NfsPromoCodeManager() {
   const set = (field: string, value: string | boolean) =>
     setForm(prev => ({ ...prev, [field]: value }));
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doCreate = async () => {
     if (!form.code || !form.value) return;
 
     await createPromoCode({
@@ -41,6 +44,15 @@ export default function NfsPromoCodeManager() {
 
     setForm({ name: '', code: '', discount_type: 'percentage', value: '', currency: 'GBP', valid_from: '', valid_to: '', limited_uses: false, max_uses: '' });
     setShowForm(false);
+  };
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onGatedAction) {
+      onGatedAction(doCreate);
+    } else {
+      doCreate();
+    }
   };
 
   const handleToggleStatus = async (id: string, currentStatus: string) => {
@@ -65,7 +77,7 @@ export default function NfsPromoCodeManager() {
     <div data-feature="BOOKING_NFSTAY__RESERVATIONS" className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Promo Codes</h2>
-        <Button size="sm" onClick={() => setShowForm(!showForm)}>
+        <Button size="sm" onClick={() => onGatedAction ? onGatedAction(() => setShowForm(!showForm)) : setShowForm(!showForm)}>
           <Plus className="w-4 h-4 mr-1" /> New Code
         </Button>
       </div>
@@ -161,12 +173,12 @@ export default function NfsPromoCodeManager() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleToggleStatus(pc.id, pc.status)}
+                  onClick={() => onGatedAction ? onGatedAction(() => handleToggleStatus(pc.id, pc.status)) : handleToggleStatus(pc.id, pc.status)}
                   disabled={saving}
                 >
                   {pc.status === 'active' ? 'Deactivate' : 'Activate'}
                 </Button>
-                <Button data-feature="BOOKING_NFSTAY__PROMO_DELETE" variant="ghost" size="sm" onClick={() => handleDelete(pc.id)} disabled={saving}>
+                <Button data-feature="BOOKING_NFSTAY__PROMO_DELETE" variant="ghost" size="sm" onClick={() => onGatedAction ? onGatedAction(() => handleDelete(pc.id)) : handleDelete(pc.id)} disabled={saving}>
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </Button>
               </div>

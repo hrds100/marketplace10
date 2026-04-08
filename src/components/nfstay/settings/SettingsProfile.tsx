@@ -7,6 +7,7 @@ import { useNfsOperatorUpdate } from '@/hooks/nfstay/use-nfs-operator-update';
 
 interface Props {
   operator: NfsOperator;
+  onGatedAction?: (action: () => void) => void;
 }
 
 const PERSONA_OPTIONS = [
@@ -14,7 +15,7 @@ const PERSONA_OPTIONS = [
   { value: 'property_manager', label: 'Property Manager' },
 ] as const;
 
-export default function SettingsProfile({ operator }: Props) {
+export default function SettingsProfile({ operator, onGatedAction }: Props) {
   const { update, saving, error, success, clearStatus } = useNfsOperatorUpdate();
 
   const [firstName, setFirstName] = useState(operator.first_name ?? '');
@@ -33,8 +34,7 @@ export default function SettingsProfile({ operator }: Props) {
     setSubdomain(operator.subdomain ?? '');
   }, [operator]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSave = async () => {
     clearStatus();
     await update({
       first_name: firstName || null,
@@ -44,6 +44,15 @@ export default function SettingsProfile({ operator }: Props) {
       legal_name: legalName || null,
       subdomain: subdomain || null,
     });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onGatedAction) {
+      onGatedAction(doSave);
+    } else {
+      doSave();
+    }
   };
 
   return (

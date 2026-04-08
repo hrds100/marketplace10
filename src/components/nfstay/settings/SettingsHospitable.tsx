@@ -35,7 +35,11 @@ const callbackErrorMessages: Record<string, string> = {
   token_exchange_failed: 'Failed to verify connection with Hospitable.',
 };
 
-export default function SettingsHospitable() {
+interface SettingsHospitableProps {
+  onGatedAction?: (action: () => void) => void;
+}
+
+export default function SettingsHospitable({ onGatedAction }: SettingsHospitableProps = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { connection, loading, error: fetchError, refetch } = useNfsHospitableConnection();
   const {
@@ -143,7 +147,7 @@ export default function SettingsHospitable() {
                 : 'Link your Hospitable account to automatically import your listings and reservations from Airbnb, VRBO, and other platforms.'}
             </p>
           </div>
-          <Button data-feature="BOOKING_NFSTAY__HOSPITABLE_CONNECT" onClick={initiateConnect} disabled={connecting} className="w-full max-w-xs">
+          <Button data-feature="BOOKING_NFSTAY__HOSPITABLE_CONNECT" onClick={() => onGatedAction ? onGatedAction(initiateConnect) : initiateConnect()} disabled={connecting} className="w-full max-w-xs">
             {connecting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wifi className="w-4 h-4 mr-2" />}
             {connecting ? 'Connecting...' : isDisconnected ? 'Reconnect Hospitable' : 'Connect with Hospitable'}
           </Button>
