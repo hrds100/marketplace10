@@ -1,5 +1,6 @@
 import { playCelebrationSound } from '@/lib/celebration';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { sendInvestNotification } from '@/lib/notifications';
@@ -592,7 +593,8 @@ function PropertyImage({ src, alt, className }: { src: string; alt: string; clas
 // ─── Main Page Component ─────────────────────────────────────────────────────────
 
 export default function InvestPayoutsPage() {
-  useEffect(() => { document.title = 'nfstay - Payouts'; }, []);
+  const { t } = useTranslation();
+  useEffect(() => { document.title = 'nfstay - ' + t('invest.payoutsTitle'); }, [t]);
   const { user } = useAuth();
   const { payouts: mergedPayouts, blockchainLoading, refetchRentData } = usePayoutsWithBlockchain();
   const { data: allProperties = [] } = useInvestProperties();
@@ -691,14 +693,14 @@ export default function InvestPayoutsPage() {
     <div data-feature="INVEST__PAYOUTS" className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Payouts</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('invest.payoutsTitle')}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Claim your rental income and view payment history.
+          {t('invest.payoutsSubtitle')}
         </p>
         {blockchainLoading && (
           <div className="flex items-center gap-2 mt-2">
             <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-            <span className="text-xs text-muted-foreground">Loading on-chain rent data...</span>
+            <span className="text-xs text-muted-foreground">{t('invest.loadingOnChainRent')}</span>
           </div>
         )}
       </div>
@@ -712,8 +714,8 @@ export default function InvestPayoutsPage() {
                 <ShieldCheck className="h-4 w-4 text-green-500" />
               </div>
               <div>
-                <p className="text-sm font-medium text-green-600">Identity Verified</p>
-                <p className="text-xs text-muted-foreground">You can claim payouts to any method.</p>
+                <p className="text-sm font-medium text-green-600">{t('invest.identityVerified')}</p>
+                <p className="text-xs text-muted-foreground">{t('invest.canClaimAnyMethod')}</p>
               </div>
             </div>
           </CardContent>
@@ -728,12 +730,12 @@ export default function InvestPayoutsPage() {
                   <Clock className="h-4 w-4 text-amber-500" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-amber-600">Verification in progress</p>
-                  <p className="text-xs text-muted-foreground">We'll update you shortly, or continue where you left off.</p>
+                  <p className="text-sm font-medium text-amber-600">{t('invest.verificationInProgress')}</p>
+                  <p className="text-xs text-muted-foreground">{t('invest.wellUpdateYou')}</p>
                 </div>
               </div>
               <Button size="sm" variant="outline" onClick={() => setShowKycModal(true)} className="border-amber-500/30 text-amber-600 hover:bg-amber-500/10">
-                Continue Verification
+                {t('invest.continueVerification')}
               </Button>
             </div>
           </CardContent>
@@ -748,12 +750,12 @@ export default function InvestPayoutsPage() {
                   <ShieldAlert className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Verify your identity to claim payouts</p>
-                  <p className="text-xs text-muted-foreground">One-time KYC verification required before claiming rental income.</p>
+                  <p className="text-sm font-medium">{t('invest.verifyIdentityToClaim')}</p>
+                  <p className="text-xs text-muted-foreground">{t('invest.oneTimeKyc')}</p>
                 </div>
               </div>
               <Button size="sm" onClick={() => setShowKycModal(true)} className="bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white">
-                Verify Now
+                {t('invest.verifyNow')}
               </Button>
             </div>
           </CardContent>
@@ -775,7 +777,7 @@ export default function InvestPayoutsPage() {
         <Card>
           <CardContent className="py-16 text-center">
             <DollarSign className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground">No payouts yet. Rental income will appear here when available.</p>
+            <p className="text-muted-foreground">{t('invest.noPayoutsYetDesc')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -791,20 +793,20 @@ export default function InvestPayoutsPage() {
                 <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
                   <DollarSign className="h-4 w-4 text-green-500" />
                 </div>
-                Payout Summary
+                {t('invest.payoutSummary')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Available to Claim<BlockchainDot tooltip="Claimable amount from blockchain" /></span>
+                <span className="text-muted-foreground">{t('invest.availableToClaim')}<BlockchainDot tooltip={t('invest.fromBlockchain')} /></span>
                 <span className="font-bold text-green-500">{formatCurrency(totalClaimable)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Earned</span>
+                <span className="text-muted-foreground">{t('invest.totalEarned')}</span>
                 <span className="font-bold">{formatCurrency(payouts.reduce((sum, p) => sum + p.amount, 0))}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Pending Items</span>
+                <span className="text-muted-foreground">{t('invest.pendingItems')}</span>
                 <span className="font-bold">{claimable.length}</span>
               </div>
             </CardContent>
@@ -813,7 +815,7 @@ export default function InvestPayoutsPage() {
           {/* Quick Claim Buttons */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Quick Claim</CardTitle>
+              <CardTitle className="text-sm">{t('invest.quickClaim')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {claimable.map((p) => (
@@ -835,12 +837,12 @@ export default function InvestPayoutsPage() {
         {/* Right main area */}
         <div className="flex-1 space-y-6">
           {/* Claimable Payouts Section */}
-          <h2 className="text-xl font-bold">Claimable Payouts</h2>
+          <h2 className="text-xl font-bold">{t('invest.claimablePayouts')}</h2>
           <div className="space-y-3">
             {claimable.length === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-center text-muted-foreground">
-                  No payouts available to claim right now.
+                  {t('invest.noClaimableNow')}
                 </CardContent>
               </Card>
             ) : (
@@ -869,7 +871,7 @@ export default function InvestPayoutsPage() {
                           {formatCurrency(payout.amount)}<BlockchainDot tooltip="Amount from blockchain" />
                         </p>
                         <Button size="sm" onClick={() => handleClaim(payout)} data-feature="INVEST__PAYOUT_CLAIM">
-                          Claim
+                          {t('invest.claim')}
                         </Button>
                       </div>
                     </div>
@@ -880,16 +882,16 @@ export default function InvestPayoutsPage() {
           </div>
 
           {/* History Table */}
-          <h2 className="text-xl font-bold">History</h2>
+          <h2 className="text-xl font-bold">{t('invest.history')}</h2>
           <Card>
             <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Property</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Method</TableHead>
+                    <TableHead>{t('invest.date')}</TableHead>
+                    <TableHead>{t('invest.property')}</TableHead>
+                    <TableHead className="text-right">{t('invest.amount')}</TableHead>
+                    <TableHead>{t('invest.method')}</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useInvestProperties, useMyAffiliateProfile } from '@/hooks/useInvestData';
 import { useBlockchain } from '@/hooks/useBlockchain';
@@ -205,6 +206,7 @@ function InvestModal({
   onOpenChange: (v: boolean) => void;
   property: InvestModalProperty;
 }) {
+  const { t } = useTranslation();
   const [shares, setShares] = useState(1);
   const [confirmed, setConfirmed] = useState(false);
   const { buyShares, loading: blockchainLoading } = useBlockchain();
@@ -256,22 +258,22 @@ function InvestModal({
           </div>
           {/* Content */}
           <div className="px-8 pb-8 pt-2 flex flex-col items-center text-center gap-3">
-            <h1 className="text-2xl font-bold">Congratulations!</h1>
+            <h1 className="text-2xl font-bold">{t('invest.congratulations')}</h1>
             <p className="text-muted-foreground">
               You secured <strong className="text-foreground">{shares} allocation{shares > 1 ? 's' : ''}</strong> in {property.title}!
             </p>
             <div className="rounded-xl bg-muted/50 p-4 w-full space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total allocated</span>
+                <span className="text-muted-foreground">{t('invest.totalAllocated')}</span>
                 <span className="font-bold">${total.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Est. monthly income</span>
+                <span className="text-muted-foreground">{t('invest.estMonthlyIncome')}</span>
                 <span className="font-bold text-emerald-600">${monthlyIncome}</span>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              We're thrilled to welcome you as our Partner!
+              {t('invest.welcomeAsPartner')}
             </p>
             <Button
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full h-11 font-semibold mt-2"
@@ -280,7 +282,7 @@ function InvestModal({
                 window.location.href = '/dashboard/invest/portfolio';
               }}
             >
-              View Portfolio
+              {t('invest.viewPortfolio')}
             </Button>
           </div>
         </div>
@@ -291,7 +293,7 @@ function InvestModal({
       <DialogContent className="sm:max-w-md" data-feature="INVEST__MARKETPLACE_CHECKOUT">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {'Partner on ' + property.title}
+            {t('invest.partnerOn', { title: property.title })}
           </DialogTitle>
         </DialogHeader>
 
@@ -299,18 +301,18 @@ function InvestModal({
             {blockchainLoading && (
               <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-10">
                 <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
-                <p className="text-sm font-medium text-foreground">Confirming on blockchain...</p>
-                <p className="text-xs text-muted-foreground mt-1">This may take up to 30 seconds. Please don't close this window.</p>
+                <p className="text-sm font-medium text-foreground">{t('invest.confirmingOnBlockchain')}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('invest.dontCloseWindow')}</p>
               </div>
             )}
             <div className="space-y-5 py-2">
               <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3 dark:bg-muted/30">
-                <span className="text-sm text-muted-foreground">Allocation price</span>
+                <span className="text-sm text-muted-foreground">{t('invest.allocationPrice')}</span>
                 <span className="text-lg font-bold">${property.pricePerShare}</span>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium">Number of allocations</label>
+                <label className="mb-2 block text-sm font-medium">{t('invest.numberOfAllocations')}</label>
                 <div className="flex items-center gap-3">
                   <Button
                     size="icon"
@@ -347,19 +349,19 @@ function InvestModal({
 
               <div className="space-y-2 rounded-lg border p-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total cost</span>
+                  <span className="text-muted-foreground">{t('invest.totalCost')}</span>
                   <span className="font-semibold">${total.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Est. monthly income</span>
+                  <span className="text-muted-foreground">{t('invest.estMonthlyIncome')}</span>
                   <span className="font-semibold text-primary">${monthlyIncome}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Est. annual return</span>
+                  <span className="text-muted-foreground">{t('invest.estAnnualReturn')}</span>
                   <span className="font-semibold text-primary">${annualReturn}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Annual yield</span>
+                  <span className="text-muted-foreground">{t('invest.annualYield')}</span>
                   <span className="font-semibold">{property.annualYield.toFixed(1)}%</span>
                 </div>
               </div>
@@ -367,7 +369,7 @@ function InvestModal({
 
             <DialogFooter>
               <Button variant="outline" onClick={() => handleClose(false)}>
-                Cancel
+                {t('invest.cancel')}
               </Button>
               <Button
                 className="gap-2"
@@ -392,7 +394,7 @@ function InvestModal({
                 }}
               >
                 <Shield className="h-4 w-4" />
-                {blockchainLoading ? 'Processing on-chain...' : 'Confirm Allocation'}
+                {blockchainLoading ? t('invest.processingOnChain') : t('invest.confirmAllocation')}
               </Button>
             </DialogFooter>
           </>
@@ -485,6 +487,7 @@ function ImageCarousel({
 }
 
 function PropertyBadges({ property }: { property: PropertyData }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap gap-2">
       <Badge variant="secondary" className="gap-1">
@@ -493,12 +496,12 @@ function PropertyBadges({ property }: { property: PropertyData }) {
       </Badge>
       <Badge variant="secondary" className="gap-1">
         <Bed className="h-3 w-3" />
-        {property.bedrooms} Bed
+        {property.bedrooms} {t('invest.bed')}
       </Badge>
       {property.bathrooms > 0 && (
         <Badge variant="secondary" className="gap-1">
           <Bath className="h-3 w-3" />
-          {property.bathrooms} Bath
+          {property.bathrooms} {t('invest.bath')}
         </Badge>
       )}
       <Badge variant="secondary" className="gap-1">
@@ -508,7 +511,7 @@ function PropertyBadges({ property }: { property: PropertyData }) {
       {property.yearBuilt > 0 && (
         <Badge variant="secondary" className="gap-1">
           <Calendar className="h-3 w-3" />
-          Built {property.yearBuilt}
+          {t('invest.built')} {property.yearBuilt}
         </Badge>
       )}
       <Badge
@@ -519,18 +522,19 @@ function PropertyBadges({ property }: { property: PropertyData }) {
             : 'bg-muted text-muted-foreground'
         )}
       >
-        {property.status === 'open' ? 'Open for Partnership' : 'Fully Funded'}
+        {property.status === 'open' ? t('invest.openForPartnership') : t('invest.fullyFunded')}
       </Badge>
     </div>
   );
 }
 
 function MetricPills({ property }: { property: PropertyData }) {
+  const { t } = useTranslation();
   const metrics = [
-    { icon: TrendingUp, label: 'Yield', value: `${property.annualYield.toFixed(1)}%` },
-    { icon: BarChart3, label: 'Occupancy', value: `${property.occupancyRate}%` },
-    { icon: DollarSign, label: 'Rent Cost', value: `\u00A3${(property as any).rentCost?.toLocaleString() || '3,500'}` },
-    { icon: Star, label: 'Deal Value', value: `$${(property.propertyValue / 1000).toFixed(0)}k` },
+    { icon: TrendingUp, label: t('invest.yield'), value: `${property.annualYield.toFixed(1)}%` },
+    { icon: BarChart3, label: t('invest.occupancy'), value: `${property.occupancyRate}%` },
+    { icon: DollarSign, label: t('invest.rentCost'), value: `\u00A3${(property as any).rentCost?.toLocaleString() || '3,500'}` },
+    { icon: Star, label: t('invest.dealValue'), value: `$${(property.propertyValue / 1000).toFixed(0)}k` },
   ];
 
   return (
@@ -581,6 +585,7 @@ function InvestCardContent({
   totalOwners?: number;
   cardCheckoutBlocked: boolean;
 }) {
+  const { t } = useTranslation();
   const pps = property.pricePerShare;
   const minInvest = Math.max(pps, 1);
   const maxInvest = Math.max(minInvest, sharesRemaining * pps);
@@ -594,7 +599,7 @@ function InvestCardContent({
     <div className="space-y-4">
       {/* Allocation price */}
       <div className="flex items-center justify-between" data-feature="INVEST__MARKETPLACE_TARGET">
-        <span className="text-sm text-muted-foreground">Allocation price</span>
+        <span className="text-sm text-muted-foreground">{t('invest.allocationPrice')}</span>
         <span className="text-xl font-bold">${property.pricePerShare}</span>
       </div>
 
@@ -609,15 +614,15 @@ function InvestCardContent({
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-2 text-center" data-feature="INVEST__MARKETPLACE_SHARES">
         <div className="rounded-lg bg-muted/50 p-2">
-          <p className="text-[10px] text-muted-foreground">Owners<BlockchainDot tooltip="Owner count from blockchain" /></p>
+          <p className="text-[10px] text-muted-foreground">{t('invest.owners')}<BlockchainDot tooltip={t('invest.fromBlockchain')} /></p>
           <p className="text-sm font-bold">{totalOwners}</p>
         </div>
         <div className="rounded-lg bg-muted/50 p-2">
-          <p className="text-[10px] text-muted-foreground">Total Allocations<BlockchainDot tooltip="Deal price at $1/allocation from blockchain" /></p>
+          <p className="text-[10px] text-muted-foreground">{t('invest.totalAllocations')}<BlockchainDot tooltip={t('invest.fromBlockchain')} /></p>
           <p className="text-sm font-bold">{property.totalShares.toLocaleString()}</p>
         </div>
         <div className="rounded-lg bg-muted/50 p-2" data-feature="INVEST__MARKETPLACE_MIN">
-          <p className="text-[10px] text-muted-foreground">Remaining<BlockchainDot tooltip="From marketplace contract" /></p>
+          <p className="text-[10px] text-muted-foreground">{t('invest.remaining')}<BlockchainDot tooltip={t('invest.fromBlockchain')} /></p>
           <p className="text-sm font-bold">{sharesRemaining.toLocaleString()}</p>
         </div>
       </div>
@@ -625,9 +630,9 @@ function InvestCardContent({
       {/* Earnings preview — slider only (card checkout amount is entered once in SamCart) */}
       <div className="rounded-2xl border border-[#1E9A80]/20 bg-[#ECFDF5]/60 p-4 space-y-4">
         <div>
-          <p className="text-sm font-semibold text-foreground">See how much you can earn</p>
+          <p className="text-sm font-semibold text-foreground">{t('invest.seeHowMuchYouCanEarn')}</p>
           <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-            Slide to explore estimated returns. You will enter your allocation amount once in the secure checkout.
+            {t('invest.sliderExploreReturns')}
           </p>
         </div>
         <div
@@ -664,11 +669,11 @@ function InvestCardContent({
         </div>
         <div className="grid grid-cols-2 gap-3" data-feature="INVEST__MARKETPLACE_RETURNS">
           <div className="rounded-xl bg-white/80 border border-[#1E9A80]/10 p-3 shadow-sm">
-            <p className="text-[11px] text-muted-foreground">Est. monthly income</p>
+            <p className="text-[11px] text-muted-foreground">{t('invest.estMonthlyIncome')}</p>
             <p className="text-sm font-bold text-[#1E9A80]">${monthlyIncome}</p>
           </div>
           <div className="rounded-xl bg-white/80 border border-[#1E9A80]/10 p-3 shadow-sm">
-            <p className="text-[11px] text-muted-foreground">Est. annual return</p>
+            <p className="text-[11px] text-muted-foreground">{t('invest.estAnnualReturn')}</p>
             <p className="text-sm font-bold text-[#1E9A80]">${annualReturn}</p>
           </div>
         </div>
@@ -676,7 +681,7 @@ function InvestCardContent({
 
       {/* Payment method */}
       <div data-feature="INVEST__MARKETPLACE_WALLET">
-        <label className="mb-1.5 block text-sm font-medium">Payment method</label>
+        <label className="mb-1.5 block text-sm font-medium">{t('invest.paymentMethod')}</label>
         <div className={cn('grid gap-2', compact ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2')}>
           <button
             onClick={() => setPaymentMethod('card')}
@@ -692,7 +697,7 @@ function InvestCardContent({
               <img src="/images/payment/mc.svg" alt="Mastercard" className="h-5 w-auto" />
             </div>
             <div>
-              <p className="text-sm font-medium">Credit / Debit Card</p>
+              <p className="text-sm font-medium">{t('invest.creditDebitCard')}</p>
             </div>
           </button>
           <button
@@ -709,7 +714,7 @@ function InvestCardContent({
               <img src="/images/payment/bnb.webp" alt="BNB" className="h-5 w-5 rounded-full" />
             </div>
             <div>
-              <p className="text-sm font-medium">Cryptocurrency</p>
+              <p className="text-sm font-medium">{t('invest.cryptocurrency')}</p>
             </div>
           </button>
         </div>
@@ -811,19 +816,20 @@ function InvestCardContent({
         onClick={onInvest}
       >
         <Shield className="h-4 w-4" />
-        Secure Your Allocations
+        {t('invest.secureYourAllocations')}
       </Button>
 
       {/* Trust badge */}
       <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
         <Lock className="h-3 w-3" />
-        Protected by smart contract on BNB Chain
+        {t('invest.protectedBySmartContract')}
       </div>
     </div>
   );
 }
 
 function FinancialBreakdown({ property }: { property: PropertyData }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const hasFinancials = property.financials?.transaction?.length || property.financials?.rental?.length;
   if (!hasFinancials) return null;
@@ -834,14 +840,14 @@ function FinancialBreakdown({ property }: { property: PropertyData }) {
         onClick={() => setOpen(!open)}
         className="flex items-center justify-between w-full py-3 text-left"
       >
-        <span className="text-sm font-semibold">Financial Breakdown</span>
+        <span className="text-sm font-semibold">{t('invest.financialBreakdown')}</span>
         <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform duration-200', open && 'rotate-180')} />
       </button>
       <div className={cn('overflow-hidden transition-all duration-200 ease-out', open ? 'max-h-[800px] opacity-100 pb-4' : 'max-h-0 opacity-0')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {property.financials?.transaction?.length ? (
             <div className="bg-white border rounded-xl p-4">
-              <h4 className="font-semibold mb-3 text-sm">Transaction</h4>
+              <h4 className="font-semibold mb-3 text-sm">{t('invest.transaction')}</h4>
               {property.financials.transaction.map((item, i) => (
                 <div key={i} className="flex justify-between py-1.5 border-b border-gray-50 text-sm last:border-0">
                   <span className="text-muted-foreground">{item.label}</span>
@@ -852,7 +858,7 @@ function FinancialBreakdown({ property }: { property: PropertyData }) {
           ) : null}
           {property.financials?.rental?.length ? (
             <div className="bg-white border rounded-xl p-4">
-              <h4 className="font-semibold mb-3 text-sm">Rental</h4>
+              <h4 className="font-semibold mb-3 text-sm">{t('invest.rental')}</h4>
               {property.financials.rental.map((item, i) => (
                 <div key={i} className="flex justify-between py-1.5 border-b border-gray-50 text-sm last:border-0">
                   <span className="text-muted-foreground">{item.label}</span>
@@ -868,15 +874,16 @@ function FinancialBreakdown({ property }: { property: PropertyData }) {
 }
 
 function DescriptionHighlights({ property }: { property: PropertyData }) {
+  const { t } = useTranslation();
   return (
     <Card className="rounded-2xl">
       <CardHeader>
-        <CardTitle>About This Property</CardTitle>
+        <CardTitle>{t('invest.aboutThisProperty')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         <p className="leading-relaxed text-muted-foreground">{property.description}</p>
         <div>
-          <h4 className="mb-3 text-sm font-semibold">Highlights</h4>
+          <h4 className="mb-3 text-sm font-semibold">{t('invest.highlights')}</h4>
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {property.highlights.map((h) => (
               <li key={h} className="flex items-center gap-2 text-sm">
@@ -1190,6 +1197,7 @@ function ProfitCalculator({
 }
 
 function RecentActivityTable() {
+  const { t } = useTranslation();
   const [activity, setActivity] = useState<Activity[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
 
@@ -1213,7 +1221,7 @@ function RecentActivityTable() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CircleDot className="h-5 w-5 text-primary" />
-          Recent Activity
+          {t('invest.recentActivity')}
           <BlockchainDot tooltip="Live on-chain data" />
         </CardTitle>
       </CardHeader>
@@ -1221,20 +1229,20 @@ function RecentActivityTable() {
         {activityLoading ? (
           <div className="flex items-center justify-center py-8 gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Loading activity...</span>
+            <span className="text-sm text-muted-foreground">{t('invest.loadingActivity')}</span>
           </div>
         ) : activity.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No recent activity found.</p>
+          <p className="text-sm text-muted-foreground text-center py-6">{t('invest.noRecentActivity')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
-                  <th className="pb-2 pr-4 font-medium">Event</th>
-                  <th className="pb-2 pr-4 font-medium">Price</th>
-                  <th className="pb-2 pr-4 font-medium">From</th>
-                  <th className="pb-2 pr-4 font-medium">To</th>
-                  <th className="pb-2 font-medium">Date</th>
+                  <th className="pb-2 pr-4 font-medium">{t('invest.event')}</th>
+                  <th className="pb-2 pr-4 font-medium">{t('invest.price')}</th>
+                  <th className="pb-2 pr-4 font-medium">{t('invest.from')}</th>
+                  <th className="pb-2 pr-4 font-medium">{t('invest.to')}</th>
+                  <th className="pb-2 font-medium">{t('invest.date')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1261,6 +1269,7 @@ function RecentActivityTable() {
 }
 
 function DocumentsSection({ property }: { property: PropertyData }) {
+  const { t } = useTranslation();
   // Prefer new property_docs (has URLs); fall back to legacy documents[] (names only)
   const hasDocs = property.propertyDocs && property.propertyDocs.length > 0;
   const legacyDocs = property.documents || [];
@@ -1270,7 +1279,7 @@ function DocumentsSection({ property }: { property: PropertyData }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
-          Documents
+          {t('invest.documents')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -1304,7 +1313,7 @@ function DocumentsSection({ property }: { property: PropertyData }) {
               ))}
         </div>
         <p className="text-xs text-muted-foreground italic">
-          Full documents available to partners only.
+          {t('invest.fullDocsPartnersOnly')}
         </p>
       </CardContent>
     </Card>
@@ -1312,6 +1321,7 @@ function DocumentsSection({ property }: { property: PropertyData }) {
 }
 
 function AgentReferralLink({ property }: { property: PropertyData }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const { data: affProfile, isLoading: affLoading } = useMyAffiliateProfile();
   const referralUrl = affProfile?.referral_code
@@ -1335,15 +1345,15 @@ function AgentReferralLink({ property }: { property: PropertyData }) {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-3">
               <Users className="h-5 w-5 text-primary" />
             </div>
-            <h3 className="text-lg font-bold mb-1">Work with us</h3>
+            <h3 className="text-lg font-bold mb-1">{t('invest.workWithUs')}</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Share your personal link with friends and earn instant commission on every partnership they join.
+              {t('invest.shareReferralLink')}
             </p>
           </div>
 
           {/* Right — Link + copy */}
           <div className="p-6 bg-muted/30 dark:bg-muted/15 border-t lg:border-t-0 lg:border-l border-border/50 flex flex-col justify-center gap-3">
-            <p className="text-xs font-medium text-muted-foreground">Your referral link</p>
+            <p className="text-xs font-medium text-muted-foreground">{t('invest.yourReferralLink')}</p>
             {affLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1366,12 +1376,12 @@ function AgentReferralLink({ property }: { property: PropertyData }) {
                     {copied ? (
                       <>
                         <Check className="h-3.5 w-3.5" />
-                        Copied!
+                        {t('invest.copied')}
                       </>
                     ) : (
                       <>
                         <Copy className="h-3.5 w-3.5" />
-                        Copy Link
+                        {t('invest.copyLink')}
                       </>
                     )}
                   </Button>
@@ -1823,7 +1833,8 @@ function Version2({
 // ---------------------------------------------------------------------------
 
 export default function InvestMarketplacePage() {
-  useEffect(() => { document.title = 'nfstay - Partnership Marketplace'; }, []);
+  const { t } = useTranslation();
+  useEffect(() => { document.title = 'nfstay - ' + t('invest.marketplace'); }, [t]);
   const { user } = useAuth();
   const { address: walletAddress, connecting: walletConnecting } = useWallet();
   const { requireWallet } = useWalletGate();
@@ -2052,8 +2063,8 @@ export default function InvestMarketplacePage() {
       <div className="min-h-screen bg-background font-sans text-foreground flex items-center justify-center">
         <div className="text-center space-y-3">
           <Home className="h-12 w-12 text-muted-foreground/40 mx-auto" />
-          <p className="text-lg text-muted-foreground">No properties available yet</p>
-          <p className="text-sm text-muted-foreground">Check back soon for new partnership opportunities.</p>
+          <p className="text-lg text-muted-foreground">{t('invest.noPropertiesYet')}</p>
+          <p className="text-sm text-muted-foreground">{t('invest.checkBackSoon')}</p>
         </div>
       </div>
     );
@@ -2063,7 +2074,7 @@ export default function InvestMarketplacePage() {
   if (!property) {
     return (
       <div className="min-h-screen bg-background font-sans text-foreground flex items-center justify-center">
-        <p className="text-muted-foreground">Loading property...</p>
+        <p className="text-muted-foreground">{t('invest.loadingProperty')}</p>
       </div>
     );
   }
@@ -2101,7 +2112,7 @@ export default function InvestMarketplacePage() {
           className="w-full sm:max-w-[42rem] p-0 z-[200] border-l shadow-2xl [&>button]:z-[210]"
         >
           <SheetHeader className="px-4 py-3 border-b">
-            <SheetTitle className="text-base">Complete Payment</SheetTitle>
+            <SheetTitle className="text-base">{t('invest.completePayment')}</SheetTitle>
           </SheetHeader>
           {samcartUrl && (
             <iframe

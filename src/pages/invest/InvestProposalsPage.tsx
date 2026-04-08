@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { playCelebrationSound } from '@/lib/celebration';
 import { useProposals, useCreateProposal, useCastVote } from '@/hooks/useInvestData';
@@ -154,7 +155,8 @@ function typeBadgeColor(type: string): string {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function InvestProposalsPage() {
-  useEffect(() => { document.title = 'nfstay - Proposals'; }, []);
+  const { t } = useTranslation();
+  useEffect(() => { document.title = 'nfstay - ' + t('invest.proposalsTitle'); }, [t]);
   const { user } = useAuth();
   const { data: realProposals = [] } = useProposals();
   const { proposals: graphProposals } = useProposalsFromGraph();
@@ -524,7 +526,7 @@ export default function InvestProposalsPage() {
           onClick={() => openVoteDialog(proposal.id, proposal.title, 'yes')}
         >
           <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />
-          Vote Yes
+          {t('invest.voteYes')}
         </Button>
         <Button
           size="sm"
@@ -533,7 +535,7 @@ export default function InvestProposalsPage() {
           onClick={() => openVoteDialog(proposal.id, proposal.title, 'no')}
         >
           <ThumbsDown className="w-3.5 h-3.5 mr-1.5" />
-          Vote No
+          {t('invest.voteNo')}
         </Button>
       </div>
     );
@@ -592,9 +594,9 @@ export default function InvestProposalsPage() {
     <div data-feature="INVEST__PROPOSALS" className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Governance Proposals</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('invest.proposalsTitle')}</h1>
         <p className="text-sm text-muted-foreground">
-          Vote on property decisions and shape your partnership outcomes.
+          {t('invest.proposalsSubtitle')}
         </p>
       </div>
 
@@ -607,7 +609,7 @@ export default function InvestProposalsPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Gavel className="h-4 w-4 text-primary" />
-                Governance
+                {t('invest.governance')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -631,7 +633,7 @@ export default function InvestProposalsPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Filter className="h-4 w-4" />
-                Filter by Type
+                {t('invest.filterByType')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
@@ -657,7 +659,7 @@ export default function InvestProposalsPage() {
             <CardContent className="pt-5 space-y-3">
               <Button className="w-full gap-2" onClick={openSubmitModal}>
                 <PlusCircle className="h-4 w-4" />
-                Submit a Proposal
+                {t('invest.submitAProposal')}
               </Button>
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Coins className="h-3 w-3" />
@@ -676,7 +678,7 @@ export default function InvestProposalsPage() {
             <Card>
               <CardContent className="py-16 text-center">
                 <Gavel className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground">No proposals yet. Proposals will appear here when shareholders submit them.</p>
+                <p className="text-muted-foreground">{t('invest.noProposalsYet')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -795,7 +797,7 @@ export default function InvestProposalsPage() {
       <Dialog open={voteDialog.open} onOpenChange={(open) => !open && cancelVote()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Your Vote</DialogTitle>
+            <DialogTitle>{t('invest.confirmYourVote')}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground py-2">
             Are you sure you want to vote{' '}
@@ -841,9 +843,9 @@ export default function InvestProposalsPage() {
               <CheckCircle2 className="h-9 w-9 text-emerald-500" />
             </div>
             <div>
-              <h2 className="text-xl font-bold">Thank You</h2>
+              <h2 className="text-xl font-bold">{t('invest.thankYou')}</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Your vote has been casted! 🎉
+                {t('invest.voteHasBeenCast')}
               </p>
             </div>
             <Button className="w-full mt-2" onClick={() => setShowVoteSuccess(false)}>
@@ -858,7 +860,7 @@ export default function InvestProposalsPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {submitStep === 'success' ? 'Proposal Submitted' : 'Submit a Proposal'}
+              {submitStep === 'success' ? t('invest.proposalSubmitted') : t('invest.submitAProposal')}
             </DialogTitle>
             {submitStep === 'form' && (
               <DialogDescription>
@@ -872,7 +874,7 @@ export default function InvestProposalsPage() {
             <div className="space-y-4 py-2">
               {/* Property selector */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Select Property</label>
+                <label className="text-sm font-medium">{t('invest.selectProperty')}</label>
                 <div className="relative">
                   <button
                     type="button"
@@ -899,7 +901,7 @@ export default function InvestProposalsPage() {
                         </div>
                       </>
                     ) : (
-                      <span className="text-muted-foreground">Choose a property...</span>
+                      <span className="text-muted-foreground">{t('invest.chooseAProperty')}</span>
                     )}
                     <ChevronDown className={cn(
                       'h-4 w-4 text-muted-foreground ml-auto transition-transform',
@@ -943,7 +945,7 @@ export default function InvestProposalsPage() {
 
               {/* Description */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Proposal Description</label>
+                <label className="text-sm font-medium">{t('invest.proposalDescription')}</label>
                 <textarea
                   value={submitDescription}
                   onChange={(e) => setSubmitDescription(e.target.value)}
@@ -979,7 +981,7 @@ export default function InvestProposalsPage() {
                   className="gap-2"
                 >
                   <Gavel className="h-4 w-4" />
-                  Submit Proposal
+                  {t('invest.submitProposal')}
                 </Button>
               </DialogFooter>
             </div>
@@ -992,9 +994,9 @@ export default function InvestProposalsPage() {
                 <Loader2 className="h-6 w-6 text-primary animate-spin" />
               </div>
               <div>
-                <p className="font-semibold">Approving STAY tokens (1/2)</p>
+                <p className="font-semibold">{t('invest.approvingStayTokens')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Please confirm the approval in your wallet...
+                  {t('invest.confirmApprovalInWallet')}
                 </p>
               </div>
               <Progress value={33} className="h-1.5 w-48" />
@@ -1008,9 +1010,9 @@ export default function InvestProposalsPage() {
                 <Loader2 className="h-6 w-6 text-primary animate-spin" />
               </div>
               <div>
-                <p className="font-semibold">Submitting proposal (2/2)</p>
+                <p className="font-semibold">{t('invest.submittingProposal')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Creating your proposal on-chain...
+                  {t('invest.creatingProposalOnChain')}
                 </p>
               </div>
               <Progress value={66} className="h-1.5 w-48" />
@@ -1024,7 +1026,7 @@ export default function InvestProposalsPage() {
                 <CheckCircle2 className="h-7 w-7 text-emerald-500" />
               </div>
               <div>
-                <p className="font-semibold text-lg">Proposal submitted!</p>
+                <p className="font-semibold text-lg">{t('invest.proposalSubmittedSuccess')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Your proposal for <span className="font-medium text-foreground">{selectedProperty?.title}</span> is now live.
                   Shareholders have 30 days to vote.

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { usePortfolioWithBlockchain } from '@/hooks/usePortfolioWithBlockchain';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { useProposals, useInvestProperties, useMyOrders } from '@/hooks/useInvestData';
@@ -125,7 +126,8 @@ function getAchievements(totalInvested: number, totalClaimed: number, hasVoted: 
 // ---------------------------------------------------------------------------
 
 export default function InvestPortfolioPage() {
-  useEffect(() => { document.title = 'nfstay - Portfolio'; }, []);
+  const { t } = useTranslation();
+  useEffect(() => { document.title = 'nfstay - ' + t('nav.portfolio'); }, [t]);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { portfolio, isLoading, blockchainLoading } = usePortfolioWithBlockchain();
@@ -431,9 +433,9 @@ export default function InvestPortfolioPage() {
   const roiMarkerPct = (roiTarget / profitTarget) * 100;
 
   const summaryItems = [
-    { label: 'Total Contributed', value: portfolio.totalContributed, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10', blockchain: false },
-    { label: 'Total Earnings', value: totalClaimed > 0 ? totalClaimed : portfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10', blockchain: true },
-    { label: 'Pending Payouts', value: pendingPayoutsTotal > 0 ? pendingPayoutsTotal : portfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10', blockchain: true },
+    { label: t('invest.totalContributed'), value: portfolio.totalContributed, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10', blockchain: false },
+    { label: t('invest.totalEarnings'), value: totalClaimed > 0 ? totalClaimed : portfolio.totalEarnings, icon: PiggyBank, color: 'text-amber-500', bg: 'bg-amber-500/10', blockchain: true },
+    { label: t('invest.pendingPayouts'), value: pendingPayoutsTotal > 0 ? pendingPayoutsTotal : portfolio.pendingPayouts, icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10', blockchain: true },
   ];
 
   const toggleCollapse = (propertyId: number) => {
@@ -453,7 +455,7 @@ export default function InvestPortfolioPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-2">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">Loading portfolio...</p>
+          <p className="text-sm text-muted-foreground">{t('invest.loadingPortfolio')}</p>
         </div>
       </div>
     );
@@ -467,9 +469,9 @@ export default function InvestPortfolioPage() {
         {/* ---------------------------------------------------------------- */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">My Airbnb Portfolio</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t('invest.portfolioTitle')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Build your hosting portfolio. Your status grows with every investment.
+              {t('invest.portfolioSubtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -489,7 +491,7 @@ export default function InvestPortfolioPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Receipt className="h-4 w-4 text-primary" />
-                Your allocation orders
+                {t('invest.yourAllocationOrders')}
               </CardTitle>
               <p className="text-xs text-muted-foreground font-normal">
                 Card and checkout payments appear here. Holdings below use on-chain data once shares are allocated.
@@ -559,7 +561,7 @@ export default function InvestPortfolioPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-primary" />
-                  Portfolio Summary
+                  {t('invest.portfolioSummary')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -577,7 +579,7 @@ export default function InvestPortfolioPage() {
 
                 {/* ROI Progress */}
                 <div className="pt-3 border-t space-y-2">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Returns Progress</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('invest.returnsProgress')}</p>
                   <div>
                     <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                       <div
@@ -605,7 +607,7 @@ export default function InvestPortfolioPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-primary" />
-                  Monthly Earnings
+                  {t('invest.monthlyEarnings')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1.5">
@@ -634,7 +636,7 @@ export default function InvestPortfolioPage() {
                       ))}
                       <div className="pt-3 border-t mt-2">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Net Profit</span>
+                          <span className="text-muted-foreground">{t('invest.netProfit')}</span>
                           <span className="font-bold text-emerald-500">{formatCurrency(netProfit)}</span>
                         </div>
                       </div>
@@ -653,7 +655,7 @@ export default function InvestPortfolioPage() {
           <div className="lg:col-span-4">
             <Card className="h-full rounded-2xl shadow-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Your Journey</CardTitle>
+                <CardTitle className="text-base">{t('invest.yourJourney')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="relative space-y-0">
@@ -727,7 +729,7 @@ export default function InvestPortfolioPage() {
         {/* ---------------------------------------------------------------- */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold">Your Holdings</h3>
+            <h3 className="text-base font-semibold">{t('invest.yourHoldings')}</h3>
             <Badge variant="secondary" className="text-xs">
               {holdingsCount} {holdingsCount === 1 ? 'property' : 'properties'}
             </Badge>
@@ -737,7 +739,7 @@ export default function InvestPortfolioPage() {
             <Card className="rounded-2xl shadow-sm">
               <CardContent className="py-12 text-center">
                 <Home className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground">You don't own any allocations yet. Visit the Marketplace to get started.</p>
+                <p className="text-muted-foreground">{t('invest.noAllocationsYet')}</p>
               </CardContent>
             </Card>
           ) : null}
@@ -806,21 +808,21 @@ export default function InvestPortfolioPage() {
                         <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                             <div>
-                              <p className="text-muted-foreground">Current Value</p>
+                              <p className="text-muted-foreground">{t('invest.currentValue')}</p>
                               <p className="font-semibold">{formatCurrency(h.currentValue)}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Monthly Yield</p>
+                              <p className="text-muted-foreground">{t('invest.monthlyYield')}</p>
                               <p className="font-semibold text-emerald-600">{formatCurrency(h.monthlyYield)}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Gain</p>
+                              <p className="text-muted-foreground">{t('invest.gain')}</p>
                               <p className="font-semibold text-emerald-500">
                                 +{formatCurrency(h.currentValue - h.invested)} ({gain.toFixed(1)}%)
                               </p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Last Payout</p>
+                              <p className="text-muted-foreground">{t('invest.lastPayout')}</p>
                               <p className="font-semibold">
                                 {(() => {
                                   const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
@@ -833,11 +835,11 @@ export default function InvestPortfolioPage() {
                               </p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Contributed</p>
+                              <p className="text-muted-foreground">{t('invest.contributed')}</p>
                               <p className="font-semibold">{formatCurrency(h.invested)}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Total Earned</p>
+                              <p className="text-muted-foreground">{t('invest.totalEarned')}</p>
                               <p className="font-semibold">
                                 {(() => {
                                   const prop = (allProperties as any[]).find((p: any) => p.id === h.propertyId);
@@ -853,20 +855,20 @@ export default function InvestPortfolioPage() {
                           <div className="flex gap-2 flex-wrap items-center">
                             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/invest/marketplace')}>
                               <Eye className="h-3.5 w-3.5" />
-                              View Property
+                              {t('invest.viewProperty')}
                             </Button>
                             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/invest/marketplace')}>
                               <ArrowUpRight className="h-3.5 w-3.5" />
-                              Buy More Allocations
+                              {t('invest.buyMoreAllocations')}
                             </Button>
                             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/invest/proposals')}>
                               <FileText className="h-3.5 w-3.5" />
-                              Submit Proposal
+                              {t('invest.submitProposal')}
                             </Button>
                             {activeProposal && (
                               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/invest/proposals')}>
                                 <Vote className="h-3.5 w-3.5" />
-                                Cast Vote
+                                {t('invest.castVote')}
                               </Button>
                             )}
                           </div>
@@ -981,7 +983,7 @@ export default function InvestPortfolioPage() {
         {/* ---------------------------------------------------------------- */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold">Achievements</h3>
+            <h3 className="text-base font-semibold">{t('invest.achievements')}</h3>
             <Badge variant="secondary" className="text-xs">
               {unlockedCount} of {ACHIEVEMENTS.length} unlocked
             </Badge>
@@ -1040,7 +1042,7 @@ export default function InvestPortfolioPage() {
               to unlock <span className="font-semibold">{nextMilestone.label}</span> status
             </p>
             <Button size="sm" variant="default" onClick={() => navigate('/dashboard/invest/marketplace')}>
-              Browse Properties
+              {t('invest.browseProperties')}
             </Button>
           </div>
         )}
@@ -1064,7 +1066,7 @@ export default function InvestPortfolioPage() {
               </div>
             </div>
             <div className="px-8 pb-8 pt-2 flex flex-col items-center text-center gap-3">
-              <h1 className="text-2xl font-bold">Congratulations!</h1>
+              <h1 className="text-2xl font-bold">{t('invest.boostCongratulations')}</h1>
               <p className="text-muted-foreground max-w-[20rem]">
                 Your returns are now boosted{boostSuccess.apr ? ` by ${boostSuccess.apr}%` : ''} for the next 12 months. Enjoy the ride! 🚀
               </p>
