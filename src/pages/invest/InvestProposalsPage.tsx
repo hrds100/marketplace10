@@ -746,7 +746,7 @@ export default function InvestProposalsPage() {
                           <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
                             {/* Description — formatted with paragraphs */}
                             {p.description && (
-                              <div data-feature="INVEST__PROPOSAL_DESCRIPTION" className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                              <div data-feature="INVEST__PROPOSAL_DESCRIPTION" className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line break-words overflow-hidden">
                                 {p.description}
                               </div>
                             )}
