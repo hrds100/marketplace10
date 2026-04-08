@@ -376,7 +376,8 @@
     "inquiryConfirmationsDesc": "Confirmação ao enviar uma consulta a um imóvel",
     "payoutAddress": "Endereço de Pagamento",
     "noWalletConnected": "Nenhuma carteira conectada",
-    "validUkMobile": "Digite um número UK válido (ex. 07839 925555 ou +447839925555)"
+    "validUkMobile": "Digite um número UK válido (ex. 07839 925555 ou +447839925555)",
+    "confirmSignOut": "Tem certeza de que deseja sair?"
   },
   "page": {
     "notFound": "Página não encontrada",

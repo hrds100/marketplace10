@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User, Shield, CreditCard, Bell, LogOut, Wallet, Copy, Check, Upload, Camera, Loader2 } from 'lucide-react';
 import { useWallet } from '@/hooks/useWallet';
 import BankDetailsForm from '@/components/BankDetailsForm';
@@ -11,13 +12,13 @@ import { isPaidTier, tierDisplayName, getFunnelUrl, getUpgradeUrl } from '@/lib/
 import { normalizeUKPhone } from '@/lib/phoneValidation';
 import PaymentSheet from '@/features/payment/PaymentSheet';
 
-const settingsTabs = [
-  { id: 'profile', label: 'Profile', icon: User },
-  { id: 'security', label: 'Security', icon: Shield },
-  { id: 'membership', label: 'Membership', icon: CreditCard },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'payouts', label: 'Payout Settings', icon: Wallet },
-  { id: 'signout', label: 'Sign out', icon: LogOut },
+const settingsTabDefs = [
+  { id: 'profile', labelKey: 'settings.profile', icon: User },
+  { id: 'security', labelKey: 'settings.security', icon: Shield },
+  { id: 'membership', labelKey: 'settings.membership', icon: CreditCard },
+  { id: 'notifications', labelKey: 'settings.notifications', icon: Bell },
+  { id: 'payouts', labelKey: 'settings.payoutSettings', icon: Wallet },
+  { id: 'signout', labelKey: 'nav.signOut', icon: LogOut },
 ];
 
 interface NotifPrefs {
@@ -35,13 +36,14 @@ const defaultNotifs: NotifPrefs = {
 };
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   useEffect(() => { document.title = 'nfstay - Settings'; }, []);
   const { user, signOut } = useAuth();
   const { tier } = useUserTier();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash.replace('#', '');
-    const valid = settingsTabs.map(t => t.id);
+    const valid = settingsTabDefs.map(td => td.id);
     return valid.includes(hash) ? hash : 'profile';
   });
   const [profile, setProfile] = useState({ name: '', email: '', whatsapp: '' });
@@ -236,13 +238,13 @@ export default function SettingsPage() {
 
       <div className="grid lg:grid-cols-[220px_1fr] gap-6">
         <div className="bg-card border border-border rounded-2xl p-4">
-          {settingsTabs.map(tab => (
+          {settingsTabDefs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`w-full h-9 rounded-lg text-sm font-medium flex items-center gap-2.5 px-3 transition-colors mb-0.5 ${activeTab === tab.id ? 'bg-accent-light text-primary' : 'text-foreground hover:bg-secondary'}`}
             >
-              <tab.icon className="w-4 h-4" /> {tab.label}
+              <tab.icon className="w-4 h-4" /> {t(tab.labelKey)}
             </button>
           ))}
         </div>
@@ -250,7 +252,7 @@ export default function SettingsPage() {
         <div className="bg-card border border-border rounded-2xl p-6">
           {activeTab === 'profile' && (
             <div data-feature="SETTINGS__PROFILE">
-              <h2 className="text-[22px] font-bold text-foreground mb-6">Profile</h2>
+              <h2 className="text-[22px] font-bold text-foreground mb-6">{t('settings.profile')}</h2>
               <div data-feature="SETTINGS__AVATAR" className="flex items-center gap-4 mb-6">
                 <div className="relative group">
                   {avatarUrl ? (
@@ -279,23 +281,23 @@ export default function SettingsPage() {
                     disabled={uploadingAvatar}
                     className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
                   >
-                    {uploadingAvatar ? 'Uploading...' : 'Upload Photo'}
+                    {uploadingAvatar ? t('common.uploading') : t('settings.uploadPhoto')}
                   </button>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Max 5MB, image files only</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{t('settings.maxFileSize')}</p>
                 </div>
               </div>
               <div className="space-y-4 max-w-[400px]">
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">Full name</label>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">{t('settings.fullName')}</label>
                   <input value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))} className="input-nfstay w-full" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">Email</label>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">{t('settings.emailLabel')}</label>
                   <input value={profile.email} disabled className="input-nfstay w-full opacity-60" />
-                  <p className="text-[11px] text-muted-foreground mt-1">Email cannot be changed</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{t('settings.emailCannotChange')}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">WhatsApp</label>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">{t('settings.whatsAppLabel')}</label>
                   <input
                     value={profile.whatsapp}
                     onChange={e => setProfile(p => ({ ...p, whatsapp: e.target.value }))}
@@ -304,11 +306,11 @@ export default function SettingsPage() {
                     placeholder="+44 7911 123456"
                   />
                   {profile.whatsapp && (
-                    <p className="text-[11px] text-muted-foreground mt-1">WhatsApp cannot be changed. Contact support@nfstay.com to update.</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{t('settings.whatsAppCannotChange')}</p>
                   )}
                 </div>
                 <button data-feature="SETTINGS__SAVE" onClick={handleSaveProfile} disabled={saving} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {saving ? 'Saving...' : 'Save changes'}
+                  {saving ? t('common.saving') : t('settings.saveChanges')}
                 </button>
               </div>
             </div>
@@ -316,38 +318,38 @@ export default function SettingsPage() {
 
           {activeTab === 'security' && (
             <div data-feature="SETTINGS__SECURITY">
-              <h2 className="text-[22px] font-bold text-foreground mb-6">Security and privacy</h2>
+              <h2 className="text-[22px] font-bold text-foreground mb-6">{t('settings.securityAndPrivacy')}</h2>
               <div className="rounded-lg p-3 flex items-center gap-2.5 mb-6 bg-accent-light">
                 <Shield className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-sm text-accent-foreground">Your security is our priority.</span>
+                <span className="text-sm text-accent-foreground">{t('settings.securitySubtitle')}</span>
               </div>
               <div className="space-y-4 max-w-[400px]">
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">New password</label>
-                  <input type="password" value={passwords.new_pw} onChange={e => setPasswords(p => ({ ...p, new_pw: e.target.value }))} placeholder="Min 8 characters" className="input-nfstay w-full" />
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">{t('settings.newPassword')}</label>
+                  <input type="password" value={passwords.new_pw} onChange={e => setPasswords(p => ({ ...p, new_pw: e.target.value }))} placeholder={t('settings.minChars')} className="input-nfstay w-full" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">Confirm password</label>
-                  <input type="password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} placeholder="Repeat password" className="input-nfstay w-full" />
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">{t('settings.confirmPassword')}</label>
+                  <input type="password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} placeholder={t('settings.repeatPassword')} className="input-nfstay w-full" />
                 </div>
-                <button data-feature="SETTINGS__SAVE" onClick={handleUpdatePassword} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Update password</button>
+                <button data-feature="SETTINGS__SAVE" onClick={handleUpdatePassword} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm hover:opacity-90 transition-opacity">{t('settings.updatePassword')}</button>
               </div>
             </div>
           )}
 
           {activeTab === 'membership' && (
             <div data-feature="SETTINGS__MEMBERSHIP">
-              <h2 className="text-[22px] font-bold text-foreground mb-6">Subscription</h2>
+              <h2 className="text-[22px] font-bold text-foreground mb-6">{t('settings.subscription')}</h2>
 
               {/* Current tier card */}
               <div className="bg-card border border-border rounded-xl p-5 max-w-[480px]">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <div className="text-xs text-muted-foreground mb-1">Current plan</div>
+                    <div className="text-xs text-muted-foreground mb-1">{t('settings.currentPlan')}</div>
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold text-foreground">{tierDisplayName(tier)}</span>
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isPaidTier(tier) ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
-                        {isPaidTier(tier) ? 'Active' : 'Free'}
+                        {isPaidTier(tier) ? t('settings.active') : t('settings.free')}
                       </span>
                     </div>
                   </div>
@@ -355,35 +357,35 @@ export default function SettingsPage() {
                     onClick={() => setPaymentOpen(true)}
                     className="px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
                   >
-                    {isPaidTier(tier) ? 'Manage Plan' : 'Upgrade Now'}
+                    {isPaidTier(tier) ? t('settings.managePlan') : t('settings.upgradeNow')}
                   </button>
                 </div>
 
                 {/* Tier benefits */}
                 <div className="border-t border-border pt-4">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">What's included</div>
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t('settings.whatsIncluded')}</div>
                   {tier === 'free' && (
                     <ul className="text-sm text-muted-foreground space-y-1.5">
-                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Browse deals</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('settings.browseDeals')}</li>
                     </ul>
                   )}
                   {tier === 'monthly' && (
                     <ul className="text-sm text-foreground space-y-1.5">
-                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Unlimited inquiries, full chat access</li>
-                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> CRM pipeline</li>
-                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> University access</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('settings.unlimitedInquiries')}</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('settings.crmPipeline')}</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('settings.universityAccess')}</li>
                     </ul>
                   )}
                   {tier === 'yearly' && (
                     <ul className="text-sm text-foreground space-y-1.5">
-                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Everything in Monthly</li>
-                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> 2 months free (save £134/yr)</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('settings.everythingInMonthly')}</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('settings.twoMonthsFree')}</li>
                     </ul>
                   )}
                   {tier === 'lifetime' && (
                     <ul className="text-sm text-foreground space-y-1.5">
-                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Everything forever</li>
-                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Priority support</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('settings.everythingForever')}</li>
+                      <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('settings.prioritySupport')}</li>
                     </ul>
                   )}
                 </div>
@@ -400,9 +402,9 @@ export default function SettingsPage() {
                     className="block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors">
                     <div className="flex items-baseline gap-1">
                       <span className="text-lg font-bold text-foreground">£67</span>
-                      <span className="text-sm text-muted-foreground">/ month</span>
+                      <span className="text-sm text-muted-foreground">{t('settings.perMonth')}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Unlimited access to all deals - Cancel any time</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t('settings.unlimitedAccess')}</p>
                   </button>
                 </div>
               )}
@@ -411,25 +413,25 @@ export default function SettingsPage() {
 
           {activeTab === 'notifications' && (
             <div data-feature="SETTINGS__NOTIFICATIONS">
-              <h2 className="text-[22px] font-bold text-foreground mb-2">Notifications</h2>
-              <p className="text-sm text-muted-foreground mb-6">Choose how you want to be notified about activity on your account.</p>
+              <h2 className="text-[22px] font-bold text-foreground mb-2">{t('settings.notifications')}</h2>
+              <p className="text-sm text-muted-foreground mb-6">{t('settings.chooseNotifications')}</p>
 
               <div className="max-w-[600px]">
                 {/* Header row */}
                 <div className="flex items-center gap-4 pb-3 border-b border-border mb-1">
                   <div className="flex-1" />
-                  <div className="w-20 text-center text-xs font-semibold text-muted-foreground">Email</div>
+                  <div className="w-20 text-center text-xs font-semibold text-muted-foreground">{t('settings.emailNotif')}</div>
                   <div className="w-20 text-center">
-                    <div className="text-xs font-semibold text-muted-foreground">WhatsApp</div>
-                    <div className="text-[9px] font-semibold mt-0.5" style={{ color: '#1E9A80' }}>Coming Soon</div>
+                    <div className="text-xs font-semibold text-muted-foreground">{t('settings.whatsAppNotif')}</div>
+                    <div className="text-[9px] font-semibold mt-0.5" style={{ color: '#1E9A80' }}>{t('settings.comingSoon')}</div>
                   </div>
                 </div>
 
                 {/* New deal alerts: Email always ON, WhatsApp toggleable */}
                 <div className="flex items-center gap-4 py-4 border-b border-border">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-foreground">New deal alerts</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Get notified when new deals match your criteria</div>
+                    <div className="text-sm font-medium text-foreground">{t('settings.newDealAlerts')}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{t('settings.newDealAlertsDesc')}</div>
                   </div>
                   <div className="w-20 flex justify-center">
                     <Toggle on={true} disabled />
@@ -442,8 +444,8 @@ export default function SettingsPage() {
                 {/* Daily digest: both toggleable */}
                 <div className="flex items-center gap-4 py-4 border-b border-border">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-foreground">Daily digest</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Summary of new deals and activity each day</div>
+                    <div className="text-sm font-medium text-foreground">{t('settings.dailyDigest')}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{t('settings.dailyDigestDesc')}</div>
                   </div>
                   <div className="w-20 flex justify-center">
                     <Toggle on={notifs.notif_email_daily} onToggle={() => handleToggleNotif('notif_email_daily')} />
@@ -456,8 +458,8 @@ export default function SettingsPage() {
                 {/* Status changes: Email always ON, WhatsApp toggleable */}
                 <div className="flex items-center gap-4 py-4 border-b border-border">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-foreground">Status changes</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Updates when deals you follow change status</div>
+                    <div className="text-sm font-medium text-foreground">{t('settings.statusChanges')}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{t('settings.statusChangesDesc')}</div>
                   </div>
                   <div className="w-20 flex justify-center">
                     <Toggle on={true} disabled />
@@ -470,8 +472,8 @@ export default function SettingsPage() {
                 {/* Affiliate conversions: email ON, WhatsApp disabled */}
                 <div className="flex items-center gap-4 py-4 border-b border-border">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-foreground">Affiliate conversions</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Know when your referrals convert</div>
+                    <div className="text-sm font-medium text-foreground">{t('settings.affiliateConversions')}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{t('settings.affiliateConversionsDesc')}</div>
                   </div>
                   <div className="w-20 flex justify-center">
                     <Toggle on={true} disabled />
@@ -484,8 +486,8 @@ export default function SettingsPage() {
                 {/* Investment / JV updates */}
                 <div className="flex items-center gap-4 py-4 border-t border-border">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-foreground">Investment updates</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">JV partner updates, share allocations, and rent payouts</div>
+                    <div className="text-sm font-medium text-foreground">{t('settings.investmentUpdates')}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{t('settings.investmentUpdatesDesc')}</div>
                   </div>
                   <div className="w-20 flex justify-center">
                     <Toggle on={true} disabled />
@@ -498,8 +500,8 @@ export default function SettingsPage() {
                 {/* Inquiry confirmations */}
                 <div className="flex items-center gap-4 py-4 border-t border-border">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-foreground">Inquiry confirmations</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Confirmation when you send an inquiry to a property</div>
+                    <div className="text-sm font-medium text-foreground">{t('settings.inquiryConfirmations')}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{t('settings.inquiryConfirmationsDesc')}</div>
                   </div>
                   <div className="w-20 flex justify-center">
                     <Toggle on={true} disabled />
@@ -514,16 +516,16 @@ export default function SettingsPage() {
 
           {activeTab === 'payouts' && (
             <div data-feature="SETTINGS__PAYOUT">
-              <h2 className="text-[22px] font-bold text-foreground mb-6">Payout Settings</h2>
+              <h2 className="text-[22px] font-bold text-foreground mb-6">{t('settings.payoutSettings')}</h2>
 
               {/* Payout Address */}
               <div className="max-w-[480px] mb-8">
-                <h3 className="text-sm font-bold text-foreground mb-3">Payout Address</h3>
+                <h3 className="text-sm font-bold text-foreground mb-3">{t('settings.payoutAddress')}</h3>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      value={walletAddress || 'No wallet connected'}
+                      value={walletAddress || t('settings.noWalletConnected')}
                       readOnly
                       disabled
                       className="flex-1 h-11 rounded-[10px] border border-border bg-muted/50 px-3.5 text-sm font-mono text-muted-foreground"
@@ -539,7 +541,7 @@ export default function SettingsPage() {
                         className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors flex-shrink-0"
                       >
                         {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copied ? 'Copied' : 'Copy'}
+                        {copied ? t('common.copied') : t('common.copy')}
                       </button>
                     ) : (
                       <button
@@ -609,10 +611,10 @@ export default function SettingsPage() {
 
           {activeTab === 'signout' && (
             <div className="text-center py-12">
-              <h2 className="text-lg font-medium text-foreground mb-6">Are you sure you want to sign out?</h2>
+              <h2 className="text-lg font-medium text-foreground mb-6">{t('settings.confirmSignOut', 'Are you sure you want to sign out?')}</h2>
               <div className="flex gap-3 justify-center">
-                <button data-feature="SETTINGS__SIGNOUT" onClick={handleSignOut} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center hover:opacity-90 transition-opacity">Sign out</button>
-                <button onClick={() => setActiveTab('profile')} className="h-11 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">Cancel</button>
+                <button data-feature="SETTINGS__SIGNOUT" onClick={handleSignOut} className="h-11 px-6 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center hover:opacity-90 transition-opacity">{t('nav.signOut')}</button>
+                <button onClick={() => setActiveTab('profile')} className="h-11 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors">{t('common.cancel')}</button>
               </div>
             </div>
           )}

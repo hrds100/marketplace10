@@ -376,7 +376,8 @@
     "inquiryConfirmationsDesc": "Confirmation when you send an inquiry to a property",
     "payoutAddress": "Payout Address",
     "noWalletConnected": "No wallet connected",
-    "validUkMobile": "Enter a valid UK mobile number (e.g. 07839 925555 or +447839925555)"
+    "validUkMobile": "Enter a valid UK mobile number (e.g. 07839 925555 or +447839925555)",
+    "confirmSignOut": "Are you sure you want to sign out?"
   },
   "page": {
     "notFound": "Page not found",

@@ -376,7 +376,8 @@
     "inquiryConfirmationsDesc": "تأكيد عند إرسال استفسار إلى عقار",
     "payoutAddress": "عنوان الدفع",
     "noWalletConnected": "لا توجد محفظة متصلة",
-    "validUkMobile": "أدخل رقم UK صالح (مثال 07839 925555 أو +447839925555)"
+    "validUkMobile": "أدخل رقم UK صالح (مثال 07839 925555 أو +447839925555)",
+    "confirmSignOut": "هل أنت متأكد أنك تريد تسجيل الخروج؟"
   },
   "page": {
     "notFound": "الصفحة غير موجودة",

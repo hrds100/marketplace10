@@ -7,6 +7,7 @@ import { sendOtp, verifyOtp } from '@/core/auth/otp';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import CountryCodeSelect from '@/components/CountryCodeSelect';
+import { useTranslation } from 'react-i18next';
 
 
 // Derive a deterministic Supabase password from Particle UUID (must match SignUp.tsx)
@@ -16,6 +17,7 @@ function derivedPassword(uuid: string): string {
 
 export default function VerifyOtp() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [params] = useSearchParams();
   const phone = params.get('phone') || '';
   const name = params.get('name') || '';
@@ -63,14 +65,14 @@ export default function VerifyOtp() {
       const result = await verifyOtp({ phone, code: otp, name, email });
       if (!result.success) {
         verifyingRef.current = false;
-        setError('Invalid code. Please check your WhatsApp and try again.');
+        setError(t('auth.invalidCode'));
         setOtp('');
         setLoading(false);
         return;
       }
     } catch {
       verifyingRef.current = false;
-      setError('Could not verify code. Please try again.');
+      setError(t('auth.couldNotVerify'));
       setOtp('');
       setLoading(false);
       return;
@@ -101,7 +103,7 @@ export default function VerifyOtp() {
     setVerified(true);
     if (!toastFiredRef.current) {
       toastFiredRef.current = true;
-      toast.success('WhatsApp verified! Welcome to nfstay!');
+      toast.success(t('auth.whatsAppVerified'));
     }
 
     // ── Social login: create Supabase account now (wallet already known) ──
@@ -227,19 +229,19 @@ export default function VerifyOtp() {
         <div className="w-full max-w-[400px]">
           <a href="/" className="text-xl font-extrabold text-foreground tracking-tight">nfstay</a>
 
-          <h2 className="text-[22px] font-bold text-foreground mt-8 mb-1">Add your WhatsApp</h2>
-          <p className="text-sm text-muted-foreground mb-6">One last step to verify your account</p>
+          <h2 className="text-[22px] font-bold text-foreground mt-8 mb-1">{t('auth.addYourWhatsApp')}</h2>
+          <p className="text-sm text-muted-foreground mb-6">{t('auth.oneLastStep')}</p>
 
           {name && (
             <p className="text-sm text-muted-foreground mb-4">
-              Signed in as <span className="font-medium text-foreground">{name}</span>
+              {t('auth.signedInAs')} <span className="font-medium text-foreground">{name}</span>
               {email && <span className="text-muted-foreground"> ({email})</span>}
             </p>
           )}
 
           <div className="flex flex-col gap-1 mb-4">
             <label className="text-sm font-medium" style={{ color: '#525252' }}>
-              WhatsApp Number <span className="text-red-500">*</span>
+              {t('auth.whatsAppNumber')} <span className="text-red-500">*</span>
             </label>
             <div className="flex">
               <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
@@ -255,7 +257,7 @@ export default function VerifyOtp() {
                 />
               </div>
             </div>
-            <p className="text-[11px] mt-1" style={{ color: '#737373' }}>We'll send a 4-digit verification code via WhatsApp</p>
+            <p className="text-[11px] mt-1" style={{ color: '#737373' }}>{t('auth.wellSendCode')}</p>
           </div>
 
           <button
@@ -265,7 +267,7 @@ export default function VerifyOtp() {
             style={{ height: 37, backgroundColor: '#1e9a80', fontSize: 16, padding: '8px 16px', border: 'none' }}
           >
             {sendingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            {sendingOtp ? 'Sending code...' : 'Send verification code'}
+            {sendingOtp ? t('auth.sendingCode') : t('auth.sendVerificationCode')}
           </button>
         </div>
       </div>
@@ -285,7 +287,7 @@ export default function VerifyOtp() {
             onClick={() => navigate('/signup')}
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-8 mb-4"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to signup
+            <ArrowLeft className="w-3.5 h-3.5" /> {t('auth.backToSignup')}
           </button>
 
           <AnimatePresence mode="wait">
@@ -303,18 +305,17 @@ export default function VerifyOtp() {
                 >
                   <CheckCircle2 className="w-16 h-16 mx-auto" style={{ color: '#00D084' }} />
                 </motion.div>
-                <h1 className="text-[28px] font-bold text-foreground mt-4">Verified!</h1>
+                <h1 className="text-[28px] font-bold text-foreground mt-4">{t('auth.verified')}</h1>
 
                 <p className="text-sm text-muted-foreground mt-1">
-                  Redirecting to your dashboard...
+                  {t('auth.redirectingToDashboard')}
                 </p>
               </motion.div>
             ) : (
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <h1 className="text-[28px] font-bold text-foreground">Verify your WhatsApp</h1>
+                <h1 className="text-[28px] font-bold text-foreground">{t('auth.verifyYourWhatsApp')}</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  We sent a 4-digit code to{' '}
-                  <span className="font-medium text-foreground">{phone}</span> via WhatsApp.
+                  {t('auth.codeSentTo', { phone })}
                 </p>
 
                 {/* Timer */}
@@ -328,7 +329,7 @@ export default function VerifyOtp() {
                   >
                     {formatTime(timer)}
                   </div>
-                  <span className="text-xs text-muted-foreground">remaining</span>
+                  <span className="text-xs text-muted-foreground">{t('auth.remaining')}</span>
                 </div>
 
                 {/* OTP input */}
@@ -373,7 +374,7 @@ export default function VerifyOtp() {
                   ) : (
                     <CheckCircle2 className="w-4 h-4" />
                   )}
-                  {loading ? 'Verifying...' : 'Verify WhatsApp'}
+                  {loading ? t('auth.verifying') : t('auth.verifyWhatsApp')}
                 </button>
 
                 {/* Resend */}
@@ -384,8 +385,8 @@ export default function VerifyOtp() {
                   className="w-full text-sm text-muted-foreground hover:text-foreground mt-3 disabled:opacity-50 transition-opacity"
                 >
                   {canResend
-                    ? "Didn't receive it? Resend code"
-                    : `Resend available in ${formatTime(timer)}`}
+                    ? t('auth.didntReceive')
+                    : `${t('auth.resendAvailableIn')} ${formatTime(timer)}`}
                 </button>
               </motion.div>
             )}
@@ -400,15 +401,15 @@ export default function VerifyOtp() {
       >
         <div className="absolute inset-0 backdrop-blur-3xl pointer-events-none z-0" />
         <div className="relative z-10 max-w-[400px]">
-          <h2 className="text-[28px] font-bold text-white">Almost there!</h2>
+          <h2 className="text-[28px] font-bold text-white">{t('auth.almostThere')}</h2>
           <p className="text-base mt-4 text-white/70">
-            Verify your WhatsApp to unlock deal alerts, agent support, and your full nfstay dashboard.
+            {t('auth.verifyToUnlock')}
           </p>
           <div className="mt-8 space-y-3">
             {[
-              'Instant deal alerts via WhatsApp',
-              'Direct agent messaging',
-              'Priority support channel',
+              t('auth.instantDealAlerts'),
+              t('auth.directAgentMessaging'),
+              t('auth.prioritySupportChannel'),
             ].map((item) => (
               <div key={item} className="flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-white/80 shrink-0" />
