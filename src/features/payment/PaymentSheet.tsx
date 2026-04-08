@@ -29,6 +29,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   // pollRef removed — no longer polling. useUserTier has realtime subscription.
   const iframeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeLoadCount = useRef(0);
+  const funnelUrlRef = useRef<string>('');
 
   useEffect(() => {
     if (open) {
@@ -39,6 +40,12 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
       setIframeTimedOut(false);
       setPollTimedOut(false);
       iframeLoadCount.current = 0;
+      funnelUrlRef.current = getFunnelUrl({
+        email: user?.email,
+        name: user?.user_metadata?.name,
+        phone: user?.user_metadata?.whatsapp,
+        ref: referredBy || undefined,
+      });
       // 8s iframe load timeout
       iframeTimerRef.current = setTimeout(() => {
         setIframeTimedOut(true);
@@ -86,15 +93,11 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !funnelLocked) handleClose();
+      if (e.key === 'Escape' && (!funnelLocked || paymentComplete)) handleClose();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [open, handleClose, funnelLocked]);
-
-  useEffect(() => {
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, []);
 
   if (!open && !visible) return null;
 
@@ -114,19 +117,14 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     iframeLoadCount.current += 1;
   };
 
-  const funnelUrl = getFunnelUrl({
-    email: user?.email,
-    name: user?.user_metadata?.name,
-    phone: user?.user_metadata?.whatsapp,
-    ref: referredBy || undefined,
-  });
+  const funnelUrl = funnelUrlRef.current;
 
   const sheet = (
     <>
       {/* Backdrop — clickable before payment, locked during upsell/downsell funnel */}
       <div
         className={`fixed inset-0 z-[300] bg-black/40 backdrop-blur-sm transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
-        onClick={funnelLocked ? undefined : handleClose}
+        onClick={(funnelLocked && !paymentComplete) ? undefined : handleClose}
         aria-hidden
       />
       <div
@@ -143,8 +141,8 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
               {paymentComplete ? 'Unlocking your inbox...' : 'Get full access to contact landlords directly'}
             </p>
           </div>
-          {/* X button: visible before payment, hidden during upsell/downsell funnel */}
-          {!funnelLocked && (
+          {/* X button: visible on order page + thank-you, hidden during upsell/downsell */}
+          {(!funnelLocked || paymentComplete) && (
             <button onClick={handleClose} data-feature="PAYMENTS__CLOSE" className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
               <X className="w-5 h-5" />
             </button>
