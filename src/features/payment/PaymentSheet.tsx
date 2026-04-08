@@ -30,6 +30,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   const iframeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeLoadCount = useRef(0);
   const funnelUrlRef = useRef<string>('');
+  const firstLoadTimeRef = useRef<number>(0);
 
   useEffect(() => {
     if (open) {
@@ -40,6 +41,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
       setIframeTimedOut(false);
       setPollTimedOut(false);
       iframeLoadCount.current = 0;
+      firstLoadTimeRef.current = 0;
       funnelUrlRef.current = getFunnelUrl({
         email: user?.email,
         name: user?.user_metadata?.name,
@@ -110,9 +112,18 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
       if (url.includes('thank') || url.includes('Thank')) handlePaymentSuccess();
     } catch {
       // Cross-origin — can't read iframe URL.
-      // Do NOT poll tier. Tier changes after cart payment but funnel isn't done yet.
-      // Lock modal after iframe navigates past cart (2nd load = user paid, now on upsell).
-      if (iframeLoadCount.current >= 1) setFunnelLocked(true);
+      // Track first load time so we can distinguish GHL internal redirects (instant)
+      // from real upsell navigation (happens after payment, several seconds later).
+      if (iframeLoadCount.current === 0) {
+        firstLoadTimeRef.current = Date.now();
+      } else if (iframeLoadCount.current >= 1) {
+        const elapsed = Date.now() - firstLoadTimeRef.current;
+        if (elapsed > 2500) {
+          // 2nd load came >2.5s after 1st — real cart→upsell navigation, lock modal
+          setFunnelLocked(true);
+        }
+        // else: fast reload (<2.5s) = GHL internal redirect on order page — ignore
+      }
     }
     iframeLoadCount.current += 1;
   };
