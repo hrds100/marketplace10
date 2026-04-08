@@ -4,8 +4,10 @@ import { Loader2, Eye, EyeOff, CheckCircle2, ArrowLeft, Lock } from 'lucide-reac
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -17,8 +19,6 @@ export default function ResetPassword() {
   const [sessionReady, setSessionReady] = useState(false);
   const [sessionError, setSessionError] = useState(false);
 
-  // Supabase handles the token exchange via URL hash automatically
-  // We just wait for the auth state to settle
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
@@ -26,12 +26,10 @@ export default function ResetPassword() {
       }
     });
 
-    // Also check if session already exists (page reload after token exchange)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setSessionReady(true);
       } else {
-        // Give Supabase a moment to process the hash fragment
         setTimeout(() => {
           supabase.auth.getSession().then(({ data: { session: s } }) => {
             if (s) {
@@ -52,17 +50,17 @@ export default function ResetPassword() {
     setError('');
 
     if (!password.trim()) {
-      setError('Please enter a new password.');
+      setError(t('auth.pleaseEnterPassword'));
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError(t('auth.passwordMinLength'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError(t('auth.passwordsDoNotMatch'));
       return;
     }
 
@@ -75,7 +73,6 @@ export default function ResetPassword() {
       }
       setSuccess(true);
       toast.success('Password updated successfully!');
-      // Redirect to sign in after 3 seconds
       setTimeout(() => navigate('/signin'), 3000);
     } catch {
       setError('Failed to update password. Please try again.');
@@ -84,7 +81,6 @@ export default function ResetPassword() {
     }
   };
 
-  // Show expired / invalid link state
   if (sessionError && !sessionReady) {
     return (
       <div className="min-h-screen flex">
@@ -93,16 +89,16 @@ export default function ResetPassword() {
             <a href="/" className="text-xl font-extrabold text-foreground tracking-tight">nfstay</a>
             <div className="mt-12">
               <Lock className="w-16 h-16 mx-auto text-muted-foreground/40" />
-              <h1 className="text-[28px] font-bold text-foreground mt-4">Invalid or expired link</h1>
+              <h1 className="text-[28px] font-bold text-foreground mt-4">{t('auth.invalidOrExpiredLink')}</h1>
               <p className="text-sm text-muted-foreground mt-2 max-w-[300px] mx-auto">
-                This password reset link has expired or is invalid. Please request a new one.
+                {t('auth.expiredLinkMessage')}
               </p>
               <Link
                 to="/forgot-password"
                 className="inline-block mt-6 px-6 py-3 rounded-lg font-semibold text-white hover:opacity-90 transition-all"
                 style={{ background: '#00D084' }}
               >
-                Request new link
+                {t('auth.requestNewLink')}
               </Link>
             </div>
           </div>
@@ -114,9 +110,9 @@ export default function ResetPassword() {
         >
           <div className="absolute inset-0 backdrop-blur-3xl" />
           <div className="relative max-w-[400px]">
-            <h2 className="text-[28px] font-bold text-white">Don't worry, it happens!</h2>
+            <h2 className="text-[28px] font-bold text-white">{t('auth.dontWorry')}</h2>
             <p className="text-base mt-4 text-white/70">
-              Reset your password in seconds and get back to finding deals.
+              {t('auth.resetInSeconds')}
             </p>
           </div>
         </div>
@@ -124,13 +120,12 @@ export default function ResetPassword() {
     );
   }
 
-  // Loading state while Supabase processes the token
   if (!sessionReady && !sessionError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">Verifying reset link...</p>
+          <p className="text-sm text-muted-foreground">{t('auth.verifyingResetLink')}</p>
         </div>
       </div>
     );
@@ -146,7 +141,7 @@ export default function ResetPassword() {
             to="/signin"
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-8 mb-4"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to sign in
+            <ArrowLeft className="w-3.5 h-3.5" /> {t('auth.backToSignIn')}
           </Link>
 
           <AnimatePresence mode="wait">
@@ -164,32 +159,32 @@ export default function ResetPassword() {
                 >
                   <CheckCircle2 className="w-16 h-16 mx-auto" style={{ color: '#00D084' }} />
                 </motion.div>
-                <h1 className="text-[28px] font-bold text-foreground mt-4">Password updated!</h1>
+                <h1 className="text-[28px] font-bold text-foreground mt-4">{t('auth.passwordUpdated')}</h1>
                 <p className="text-sm text-muted-foreground mt-2 max-w-[300px] mx-auto">
-                  Your password has been reset successfully. Redirecting you to sign in...
+                  {t('auth.passwordResetSuccess')}
                 </p>
                 <Link
                   to="/signin"
                   className="text-sm text-primary font-semibold mt-6 inline-block hover:underline"
                 >
-                  Go to sign in now
+                  {t('auth.goToSignIn')}
                 </Link>
               </motion.div>
             ) : (
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <h1 className="text-[28px] font-bold text-foreground">Set new password</h1>
+                <h1 className="text-[28px] font-bold text-foreground">{t('auth.setNewPassword')}</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Enter your new password below.
+                  {t('auth.enterNewPasswordBelow')}
                 </p>
 
                 <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
                   <div>
-                    <label className="text-xs font-semibold text-foreground block mb-1.5">New Password</label>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">{t('auth.newPassword')}</label>
                     <div className="relative">
                       <input
                         data-feature="AUTH__RESET_PASSWORD"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Enter new password"
+                        placeholder={t('auth.newPasswordPlaceholder')}
                         value={password}
                         onChange={(e) => { setPassword(e.target.value); setError(''); }}
                         className="input-nfstay w-full pr-10"
@@ -208,12 +203,12 @@ export default function ResetPassword() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-foreground block mb-1.5">Confirm Password</label>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">{t('auth.confirmPassword')}</label>
                     <div className="relative">
                       <input
                         data-feature="AUTH__RESET_CONFIRM"
                         type={showConfirm ? 'text' : 'password'}
-                        placeholder="Confirm new password"
+                        placeholder={t('auth.confirmPasswordPlaceholder')}
                         value={confirmPassword}
                         onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
                         className="input-nfstay w-full pr-10"
@@ -241,7 +236,7 @@ export default function ResetPassword() {
                     style={{ background: '#00D084' }}
                   >
                     {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Update password
+                    {t('auth.updatePassword')}
                   </button>
                 </form>
               </motion.div>
@@ -249,7 +244,7 @@ export default function ResetPassword() {
           </AnimatePresence>
 
           <p className="text-sm text-muted-foreground mt-6 text-center">
-            Remember your password? <Link to="/signin" className="text-primary font-semibold">Sign in</Link>
+            {t('auth.rememberPassword')} <Link to="/signin" className="text-primary font-semibold">{t('auth.signIn')}</Link>
           </p>
         </div>
       </div>
@@ -260,9 +255,9 @@ export default function ResetPassword() {
       >
         <div className="absolute inset-0 backdrop-blur-3xl" />
         <div className="relative max-w-[400px]">
-          <h2 className="text-[28px] font-bold text-white">Almost there!</h2>
+          <h2 className="text-[28px] font-bold text-white">{t('auth.almostThere')}</h2>
           <p className="text-base mt-4 text-white/70">
-            Set your new password and you'll be back to finding deals in no time.
+            {t('auth.setNewPasswordMessage')}
           </p>
         </div>
       </div>

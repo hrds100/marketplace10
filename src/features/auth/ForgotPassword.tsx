@@ -4,8 +4,10 @@ import { Loader2, ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function ForgotPassword() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -46,7 +48,7 @@ export default function ForgotPassword() {
             to="/signin"
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-8 mb-4"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to sign in
+            <ArrowLeft className="w-3.5 h-3.5" /> {t('auth.backToSignIn')}
           </Link>
 
           <AnimatePresence mode="wait">
@@ -64,33 +66,33 @@ export default function ForgotPassword() {
                 >
                   <CheckCircle2 className="w-16 h-16 mx-auto" style={{ color: '#00D084' }} />
                 </motion.div>
-                <h1 className="text-[28px] font-bold text-foreground mt-4">Check your email</h1>
+                <h1 className="text-[28px] font-bold text-foreground mt-4">{t('auth.checkYourEmail')}</h1>
                 <p className="text-sm text-muted-foreground mt-2 max-w-[300px] mx-auto">
-                  We sent a password reset link to <span className="font-medium text-foreground">{email}</span>. Check your inbox and spam folder.
+                  {t('auth.resetLinkSent', { email })}
                 </p>
                 <button
                   onClick={() => { setSent(false); setEmail(''); }}
                   className="text-sm text-primary font-semibold mt-6 hover:underline"
                 >
-                  Try a different email
+                  {t('auth.tryDifferentEmail')}
                 </button>
               </motion.div>
             ) : (
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <h1 className="text-[28px] font-bold text-foreground">Reset your password</h1>
+                <h1 className="text-[28px] font-bold text-foreground">{t('auth.forgotPasswordTitle')}</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Enter the email you used to sign up and we'll send you a reset link.
+                  {t('auth.forgotPasswordSubtitle')}
                 </p>
 
                 <form className="mt-8 space-y-4" onSubmit={handleReset}>
                   <div>
-                    <label className="text-xs font-semibold text-foreground block mb-1.5">Email address</label>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">{t('auth.emailAddress')}</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
                         data-feature="AUTH__FORGOT_EMAIL"
                         type="email"
-                        placeholder="james@example.com"
+                        placeholder={t('auth.emailPlaceholderExample')}
                         value={email}
                         onChange={e => { setEmail(e.target.value); setError(''); }}
                         className="input-nfstay w-full pl-10"
@@ -109,7 +111,7 @@ export default function ForgotPassword() {
                     style={{ background: '#00D084' }}
                   >
                     {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Send reset link
+                    {t('auth.sendResetLink')}
                   </button>
                 </form>
               </motion.div>
@@ -117,7 +119,7 @@ export default function ForgotPassword() {
           </AnimatePresence>
 
           <p className="text-sm text-muted-foreground mt-6 text-center">
-            Remember your password? <Link to="/signin" className="text-primary font-semibold">Sign in</Link>
+            {t('auth.rememberPassword')} <Link to="/signin" className="text-primary font-semibold">{t('auth.signIn')}</Link>
           </p>
         </div>
       </div>
@@ -128,9 +130,9 @@ export default function ForgotPassword() {
       >
         <div className="absolute inset-0 backdrop-blur-3xl" />
         <div className="relative max-w-[400px]">
-          <h2 className="text-[28px] font-bold text-white">Don't worry, it happens!</h2>
+          <h2 className="text-[28px] font-bold text-white">{t('auth.dontWorry')}</h2>
           <p className="text-base mt-4 text-white/70">
-            Reset your password in seconds and get back to finding deals.
+            {t('auth.resetInSeconds')}
           </p>
         </div>
       </div>
