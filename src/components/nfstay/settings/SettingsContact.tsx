@@ -7,9 +7,10 @@ import { useNfsOperatorUpdate } from '@/hooks/nfstay/use-nfs-operator-update';
 
 interface Props {
   operator: NfsOperator;
+  onGatedAction?: (action: () => void) => void;
 }
 
-export default function SettingsContact({ operator }: Props) {
+export default function SettingsContact({ operator, onGatedAction }: Props) {
   const { update, saving, error, success, clearStatus } = useNfsOperatorUpdate();
 
   const [contactEmail, setContactEmail] = useState(operator.contact_email ?? '');
@@ -24,8 +25,7 @@ export default function SettingsContact({ operator }: Props) {
     setContactTelegram(operator.contact_telegram ?? '');
   }, [operator]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSave = async () => {
     clearStatus();
     await update({
       contact_email: contactEmail || null,
@@ -33,6 +33,15 @@ export default function SettingsContact({ operator }: Props) {
       contact_whatsapp: contactWhatsapp || null,
       contact_telegram: contactTelegram || null,
     });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onGatedAction) {
+      onGatedAction(doSave);
+    } else {
+      doSave();
+    }
   };
 
   return (

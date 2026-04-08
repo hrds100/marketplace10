@@ -7,9 +7,10 @@ import { useNfsOperatorUpdate } from '@/hooks/nfstay/use-nfs-operator-update';
 
 interface Props {
   operator: NfsOperator;
+  onGatedAction?: (action: () => void) => void;
 }
 
-export default function SettingsSocial({ operator }: Props) {
+export default function SettingsSocial({ operator, onGatedAction }: Props) {
   const { update, saving, error, success, clearStatus } = useNfsOperatorUpdate();
 
   const [googleBusiness, setGoogleBusiness] = useState(operator.google_business_url ?? '');
@@ -30,8 +31,7 @@ export default function SettingsSocial({ operator }: Props) {
     setYoutube(operator.social_youtube ?? '');
   }, [operator]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSave = async () => {
     clearStatus();
     await update({
       google_business_url: googleBusiness || null,
@@ -42,6 +42,15 @@ export default function SettingsSocial({ operator }: Props) {
       social_tiktok: tiktok || null,
       social_youtube: youtube || null,
     });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onGatedAction) {
+      onGatedAction(doSave);
+    } else {
+      doSave();
+    }
   };
 
   return (

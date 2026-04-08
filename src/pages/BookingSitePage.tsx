@@ -69,7 +69,6 @@ export default function BookingSitePage() {
 
   const { tier, loading: tierLoading } = useUserTier();
   const { isAdmin } = useAuth();
-  const paid = isPaidTier(tier) || isAdmin;
 
   if (tierLoading) {
     return (
@@ -79,9 +78,7 @@ export default function BookingSitePage() {
     );
   }
 
-  if (!paid) return <BookingSitePreviewPage />;
-
-  return <BookingSiteDashboard />;
+  return <BookingSiteDashboard tier={tier} isAdminOverride={isAdmin} />;
 }
 
 /* ─────────────────────────────────────────────
@@ -370,7 +367,7 @@ function BookingSitePreviewPage() {
 /* ─────────────────────────────────────────────
    PAID USER - dashboard with tabs
    ───────────────────────────────────────────── */
-function BookingSiteDashboard() {
+function BookingSiteDashboard({ tier, isAdminOverride }: { tier: string | null; isAdminOverride: boolean }) {
   const { operator, loading: opLoading, error: opError } = useNfsOperator();
   const { update: saveOperator, saving, error: saveError, success: saveSuccess } = useNfsOperatorUpdate();
 
@@ -383,6 +380,15 @@ function BookingSiteDashboard() {
   const [hexInput, setHexInput] = useState(defaultBranding.accentColor);
   const [seeded, setSeeded] = useState(false);
   const { isAdmin } = useAuth();
+  const paid = isPaidTier(tier) || isAdminOverride || isAdmin;
+
+  const handleGatedAction = (action: () => void) => {
+    if (paid) {
+      action();
+    } else {
+      setPaymentOpen(true);
+    }
+  };
   const [topTab, setTopTab] = useState<'branding' | 'dashboard' | 'properties' | 'reservations' | 'analytics' | 'settings'>('branding');
   const [propSearch, setPropSearch] = useState('');
   const [propStatusFilter, setPropStatusFilter] = useState('all');
@@ -743,7 +749,7 @@ function BookingSiteDashboard() {
               <p className="text-sm text-muted-foreground mt-1">Manage your vacation rental listings.</p>
             </div>
             <button
-              onClick={() => setPropSubView('add')}
+              onClick={() => handleGatedAction(() => setPropSubView('add'))}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
             >
               <Plus className="w-4 h-4" /> Add property
@@ -800,7 +806,7 @@ function BookingSiteDashboard() {
                 </p>
                 {properties.length === 0 && (
                   <button
-                    onClick={() => setPropSubView('add')}
+                    onClick={() => handleGatedAction(() => setPropSubView('add'))}
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg"
                   >
                     <Plus className="w-4 h-4" /> Create property
@@ -876,7 +882,7 @@ function BookingSiteDashboard() {
               <p className="text-sm text-muted-foreground mt-1">{reservations.length} total reservations</p>
             </div>
             <button
-              onClick={() => setResSubView('create')}
+              onClick={() => handleGatedAction(() => setResSubView('create'))}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:opacity-95 transition-opacity"
             >
               <Plus className="w-4 h-4" /> Create
@@ -995,7 +1001,7 @@ function BookingSiteDashboard() {
       {/* Settings Tab — real nfstay.app component */}
       {topTab === 'settings' && (
         <div className="flex-1 overflow-y-auto">
-          <NfsOperatorSettings />
+          <NfsOperatorSettings onGatedAction={paid ? undefined : handleGatedAction} />
         </div>
       )}
 
@@ -1012,17 +1018,19 @@ function BookingSiteDashboard() {
             </div>
             <div>
               <h1 className="text-[15px] font-bold text-foreground leading-tight">Booking Site</h1>
-              <p className="text-[11px] text-muted-foreground leading-tight">Your branded booking platform, included for all members</p>
+              <p className="text-[11px] text-muted-foreground leading-tight">{paid ? 'Your branded booking platform' : 'Preview your booking site. Upgrade to go live on nfstay.app.'}</p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              window.open(getBridgeUrl("https://nfstay.app", "/admin/nfstay"), "_blank");
-            }}
-            className="text-xs text-primary hover:underline font-medium"
-          >
-            Open Booking Site Admin
-          </button>
+          {paid && (
+            <button
+              onClick={() => {
+                window.open(getBridgeUrl("https://nfstay.app", "/admin/nfstay"), "_blank");
+              }}
+              className="text-xs text-primary hover:underline font-medium"
+            >
+              Open Booking Site Admin
+            </button>
+          )}
         </div>
 
         {/* URL Bar + Domain toggle */}
@@ -1224,7 +1232,7 @@ function BookingSiteDashboard() {
           )}
           <button
             data-feature="BOOKING_NFSTAY__CUSTOMIZER_SAVE"
-            onClick={handleSave}
+            onClick={() => handleGatedAction(handleSave)}
             disabled={saving}
             className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[13px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all hover:opacity-95 disabled:opacity-60 flex items-center justify-center gap-2"
           >
@@ -1242,7 +1250,6 @@ function BookingSiteDashboard() {
           </p>
         </div>
 
-        <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); }} />
       </div>
 
       {/* Right Panel - Live preview */}
@@ -1281,6 +1288,8 @@ function BookingSiteDashboard() {
       </div>
       </div>
       )}
+
+      <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); window.location.reload(); }} />
     </div>
   );
 }

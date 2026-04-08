@@ -8,9 +8,10 @@ import { useNfsOperatorUpdate } from '@/hooks/nfstay/use-nfs-operator-update';
 
 interface Props {
   operator: NfsOperator;
+  onGatedAction?: (action: () => void) => void;
 }
 
-export default function SettingsAnalytics({ operator }: Props) {
+export default function SettingsAnalytics({ operator, onGatedAction }: Props) {
   const { update, saving, error, success, clearStatus } = useNfsOperatorUpdate();
 
   const [gaId, setGaId] = useState(operator.google_analytics_id ?? '');
@@ -25,8 +26,7 @@ export default function SettingsAnalytics({ operator }: Props) {
     setMetaDescription(operator.meta_description ?? '');
   }, [operator]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSave = async () => {
     clearStatus();
     await update({
       google_analytics_id: gaId || null,
@@ -34,6 +34,15 @@ export default function SettingsAnalytics({ operator }: Props) {
       meta_title: metaTitle || null,
       meta_description: metaDescription || null,
     });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onGatedAction) {
+      onGatedAction(doSave);
+    } else {
+      doSave();
+    }
   };
 
   return (

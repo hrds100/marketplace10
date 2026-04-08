@@ -8,13 +8,14 @@ import { useNfsOperatorUpdate } from '@/hooks/nfstay/use-nfs-operator-update';
 
 interface Props {
   operator: NfsOperator;
+  onGatedAction?: (action: () => void) => void;
 }
 
 const COLOR_PRESETS = [
   '#2563eb', '#7c3aed', '#059669', '#dc2626', '#ea580c', '#0891b2', '#4f46e5', '#be185d',
 ];
 
-export default function SettingsBranding({ operator }: Props) {
+export default function SettingsBranding({ operator, onGatedAction }: Props) {
   const { update, saving, error, success, clearStatus } = useNfsOperatorUpdate();
 
   const [accentColor, setAccentColor] = useState(operator.accent_color ?? '#2563eb');
@@ -33,8 +34,7 @@ export default function SettingsBranding({ operator }: Props) {
     setAboutBio(operator.about_bio ?? '');
   }, [operator]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSave = async () => {
     clearStatus();
     await update({
       accent_color: accentColor || null,
@@ -44,6 +44,15 @@ export default function SettingsBranding({ operator }: Props) {
       hero_subheadline: heroSubheadline || null,
       about_bio: aboutBio || null,
     });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onGatedAction) {
+      onGatedAction(doSave);
+    } else {
+      doSave();
+    }
   };
 
   return (

@@ -10,7 +10,11 @@ import SettingsAnalytics from '@/components/nfstay/settings/SettingsAnalytics';
 import SettingsDomain from '@/components/nfstay/settings/SettingsDomain';
 import NfsPromoCodeManager from '@/components/nfstay/reservations/NfsPromoCodeManager';
 
-export default function NfsOperatorSettings() {
+interface NfsOperatorSettingsProps {
+  onGatedAction?: (action: () => void) => void;
+}
+
+export default function NfsOperatorSettings({ onGatedAction }: NfsOperatorSettingsProps = {}) {
   const { operator, loading, error } = useNfsOperator();
 
   if (loading) {
@@ -58,31 +62,31 @@ export default function NfsOperatorSettings() {
 
         <div className="mt-6">
           <TabsContent value="profile">
-            <SettingsProfile operator={operator} />
+            <SettingsProfile operator={operator} onGatedAction={onGatedAction} />
           </TabsContent>
           <TabsContent value="contact">
-            <SettingsContact operator={operator} />
+            <SettingsContact operator={operator} onGatedAction={onGatedAction} />
           </TabsContent>
           <TabsContent value="branding">
-            <SettingsBranding operator={operator} />
+            <SettingsBranding operator={operator} onGatedAction={onGatedAction} />
           </TabsContent>
           <TabsContent value="social">
-            <SettingsSocial operator={operator} />
+            <SettingsSocial operator={operator} onGatedAction={onGatedAction} />
           </TabsContent>
           <TabsContent value="promo">
-            <NfsPromoCodeManager />
+            <NfsPromoCodeManager onGatedAction={onGatedAction} />
           </TabsContent>
           <TabsContent value="stripe">
-            <SettingsStripe />
+            <SettingsStripe onGatedAction={onGatedAction} />
           </TabsContent>
           <TabsContent value="hospitable">
-            <SettingsHospitable />
+            <SettingsHospitable onGatedAction={onGatedAction} />
           </TabsContent>
           <TabsContent value="domain">
-            <SettingsDomain operator={operator} />
+            <SettingsDomain operator={operator} onGatedAction={onGatedAction} />
           </TabsContent>
           <TabsContent value="analytics">
-            <SettingsAnalytics operator={operator} />
+            <SettingsAnalytics operator={operator} onGatedAction={onGatedAction} />
           </TabsContent>
         </div>
       </Tabs>

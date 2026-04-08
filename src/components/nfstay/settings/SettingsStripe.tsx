@@ -2,7 +2,11 @@ import { useNfsStripeAccount, useNfsStripeConnect } from '@/hooks/nfstay/use-nfs
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle, ExternalLink, Loader2, Unlink } from 'lucide-react';
 
-export default function SettingsStripe() {
+interface SettingsStripeProps {
+  onGatedAction?: (action: () => void) => void;
+}
+
+export default function SettingsStripe({ onGatedAction }: SettingsStripeProps = {}) {
   const { stripeAccount, loading, error: fetchError, refetch } = useNfsStripeAccount();
   const { connecting, disconnecting, error: connectError, initiateConnect, disconnect } = useNfsStripeConnect();
 
@@ -48,7 +52,7 @@ export default function SettingsStripe() {
               Connect your Stripe account to accept payments from guests. Payouts are sent directly to your bank account.
             </p>
           </div>
-          <Button data-feature="BOOKING_NFSTAY__STRIPE_CONNECT" onClick={initiateConnect} disabled={connecting} className="w-full max-w-xs">
+          <Button data-feature="BOOKING_NFSTAY__STRIPE_CONNECT" onClick={() => onGatedAction ? onGatedAction(initiateConnect) : initiateConnect()} disabled={connecting} className="w-full max-w-xs">
             {connecting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             {connecting ? 'Connecting...' : 'Connect with Stripe'}
           </Button>

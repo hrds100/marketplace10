@@ -10,9 +10,10 @@ import { Globe, CheckCircle, AlertCircle, Copy, Check, ExternalLink, Loader2 } f
 
 interface Props {
   operator: NfsOperator;
+  onGatedAction?: (action: () => void) => void;
 }
 
-export default function SettingsDomain({ operator }: Props) {
+export default function SettingsDomain({ operator, onGatedAction }: Props) {
   const { update, saving, error: saveError, success, clearStatus } = useNfsOperatorUpdate();
 
   // Subdomain
@@ -32,12 +33,20 @@ export default function SettingsDomain({ operator }: Props) {
 
   const subdomainUrl = subdomain ? `https://${subdomain}.nfstay.app` : null;
 
-  const handleSaveSubdomain = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSaveSubdomain = async () => {
     clearStatus();
     const clean = subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 63);
     setSubdomain(clean);
     await update({ subdomain: clean || null });
+  };
+
+  const handleSaveSubdomain = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onGatedAction) {
+      onGatedAction(doSaveSubdomain);
+    } else {
+      doSaveSubdomain();
+    }
   };
 
   const handleCopySubdomain = async () => {
@@ -191,12 +200,12 @@ export default function SettingsDomain({ operator }: Props) {
           </div>
 
           <div className="flex gap-2">
-            <Button data-feature="BOOKING_NFSTAY__DOMAIN_VERIFY" size="sm" onClick={handleVerifyDomain} disabled={verifying || !customDomain.trim()}>
+            <Button data-feature="BOOKING_NFSTAY__DOMAIN_VERIFY" size="sm" onClick={() => onGatedAction ? onGatedAction(handleVerifyDomain) : handleVerifyDomain()} disabled={verifying || !customDomain.trim()}>
               {verifying ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
               {verifying ? 'Verifying...' : 'Verify DNS'}
             </Button>
             {operator.custom_domain && (
-              <Button size="sm" variant="outline" onClick={handleRemoveDomain} disabled={verifying}>
+              <Button size="sm" variant="outline" onClick={() => onGatedAction ? onGatedAction(handleRemoveDomain) : handleRemoveDomain()} disabled={verifying}>
                 Remove Domain
               </Button>
             )}
