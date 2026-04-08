@@ -34,11 +34,11 @@ const rankColors: Record<string, string> = {
 };
 
 function getRank(invested: number): string {
-  if (invested >= 1000) return 'Property Titan';
-  if (invested >= 500) return 'Empire Builder';
-  if (invested >= 100) return 'Portfolio Boss';
-  if (invested >= 20) return 'Cashflow Builder';
-  if (invested >= 1) return 'Deal Rookie';
+  if (invested >= 100000) return 'Property Titan';
+  if (invested >= 75000) return 'Empire Builder';
+  if (invested >= 50000) return 'Portfolio Boss';
+  if (invested >= 25000) return 'Cashflow Builder';
+  if (invested >= 5000) return 'Deal Rookie';
   return 'Noobie';
 }
 
