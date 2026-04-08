@@ -87,10 +87,10 @@ export default function MotionPasswordGate({ onUnlock }: Props) {
           </div>
 
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A1A', marginBottom: 8 }}>
-            Motion Studio
+            nfstay studio
           </h1>
           <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 28, lineHeight: 1.6 }}>
-            Enter your PIN to access the motion graphics studio.
+            Enter your PIN to access nfstay studio.
           </p>
 
           <form onSubmit={handleSubmit}>
