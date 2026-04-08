@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import InquiryPanel from '@/components/InquiryPanel';
 import type { ListingShape } from '@/components/InquiryPanel';
 import LeadsTab from '@/components/crm/LeadsTab';
+import { useTranslation } from 'react-i18next';
 
 type ExtendedDeal = CRMDeal & { photo_url?: string | null; property_id?: string | null };
 
@@ -36,6 +37,7 @@ function CRMCardImage({ deal, height }: { deal: ExtendedDeal; height: string }) 
 }
 
 export default function CRMPage() {
+  const { t } = useTranslation();
   useEffect(() => { document.title = 'nfstay - CRM'; }, []);
   const { user } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -93,14 +95,14 @@ export default function CRMPage() {
   const handleArchive = async (dealId: string) => {
     setArchivedIds(prev => [...prev, dealId]);
     if (user) await supabase.from('crm_deals').update({ archived: true }).eq('id', dealId);
-    toast.success('Deal archived');
+    toast.success(t('crm.dealArchived'));
   };
 
   const handleUnarchive = async (dealId: string) => {
     setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: 'New Lead' } : d));
     setArchivedIds(prev => prev.filter(id => id !== dealId));
     if (user) await supabase.from('crm_deals').update({ archived: false, stage: 'New Lead' }).eq('id', dealId);
-    toast.success('Deal restored to pipeline');
+    toast.success(t('crm.dealRestored'));
   };
 
   const stagePotProfit = (stage: string) => stageDeals(stage).reduce((s, d) => s + d.profit, 0);
@@ -116,7 +118,7 @@ export default function CRMPage() {
       // CRM stage move notification removed (Hugo confirmed: not needed)
     }
     setDragId(null);
-    toast.success('Deal moved');
+    toast.success(t('crm.dealMoved'));
   };
 
   const getDealImage = (deal: ExtendedDeal) => {
@@ -196,7 +198,7 @@ export default function CRMPage() {
           }`}
           style={{ color: activeTab === 'deals' ? '#1E9A80' : '#6B7280' }}
         >
-          <Briefcase className="w-4 h-4" /> My Deals
+          <Briefcase className="w-4 h-4" /> {t('crm.deals')}
         </button>
         <button
           onClick={() => setActiveTab('leads')}
@@ -207,7 +209,7 @@ export default function CRMPage() {
           }`}
           style={{ color: activeTab === 'leads' ? '#1E9A80' : '#6B7280' }}
         >
-          <Users className="w-4 h-4" /> My Leads
+          <Users className="w-4 h-4" /> {t('crm.myLeads')}
         </button>
       </div>
 

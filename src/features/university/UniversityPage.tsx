@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { modules } from '@/data/universityData';
 import { useUniversityProgress } from '@/hooks/useUniversityProgress';
 import { ChevronRight, BookOpen, Sparkles } from 'lucide-react';
 
 export default function UniversityPage() {
+  const { t } = useTranslation();
   useEffect(() => { document.title = 'nfstay - Academy'; }, []);
   const navigate = useNavigate();
   const { isModuleComplete, getModuleCompletedLessons } = useUniversityProgress();
@@ -16,12 +18,12 @@ export default function UniversityPage() {
     <div data-feature="UNIVERSITY" className="max-w-[1200px] mx-auto">
       {/* Header */}
       <div className="mb-2">
-        <h1 className="text-[28px] font-bold text-foreground">nfstay Academy</h1>
+        <h1 className="text-[28px] font-bold text-foreground">{t('university.title')}</h1>
         <p className="text-sm mt-1 text-muted-foreground">
-          Build a compliant UK rent-to-rent business from the ground up.
+          {t('university.subtitle')}
         </p>
         <p className="text-xs mt-2 px-3 py-1.5 rounded-lg inline-block font-medium bg-[#ECFDF5] text-[#065F46]">
-          We've dumped everything we know into these lessons — 15+ years of experience. Knowledge you won't find anywhere else.
+          {t('university.description')}
         </p>
       </div>
 
@@ -33,8 +35,8 @@ export default function UniversityPage() {
               <BookOpen className="w-5 h-5 text-[#1E9A80]" />
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground">Your Progress</p>
-              <p className="text-xs text-muted-foreground">{completedLessons} of {totalLessons} lessons completed</p>
+              <p className="text-sm font-bold text-foreground">{t('university.yourProgress')}</p>
+              <p className="text-xs text-muted-foreground">{t('university.lessonsCompleted', { completed: completedLessons, total: totalLessons })}</p>
             </div>
           </div>
           <span className="text-2xl font-bold text-[#1E9A80]">{Math.round((completedLessons / totalLessons) * 100)}%</span>
@@ -49,10 +51,15 @@ export default function UniversityPage() {
 
       {/* Quick stats */}
       <div className="flex flex-wrap gap-2 mt-4">
-        {[`${modules.length} modules`, `${totalLessons} lessons`, 'Beginner to Intermediate', 'AI-assisted learning'].map(s => (
-          <span key={s} className="inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-full bg-secondary text-muted-foreground border border-border">
-            {s === 'AI-assisted learning' && <Sparkles className="w-3 h-3 mr-1" />}
-            {s}
+        {[
+          { key: 'modules', label: t('university.modules', { count: modules.length }) },
+          { key: 'lessons', label: t('university.lessons', { count: totalLessons }) },
+          { key: 'level', label: t('university.level') },
+          { key: 'ai', label: t('university.aiAssisted'), icon: true },
+        ].map(s => (
+          <span key={s.key} className="inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-full bg-secondary text-muted-foreground border border-border">
+            {s.icon && <Sparkles className="w-3 h-3 mr-1" />}
+            {s.label}
           </span>
         ))}
       </div>
@@ -79,8 +86,8 @@ export default function UniversityPage() {
               <h3 className="text-base font-bold text-foreground">{mod.title}</h3>
               <p className="text-sm mt-1 line-clamp-1 text-muted-foreground">{mod.summary}</p>
               <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-                <span>{mod.lessons.length} lessons</span>
-                <span>~{mod.lessons.reduce((a, l) => a + l.duration, 0)} min</span>
+                <span>{t('university.lessons', { count: mod.lessons.length })}</span>
+                <span>{t('university.duration', { minutes: mod.lessons.reduce((a, l) => a + l.duration, 0) })}</span>
               </div>
 
               {/* Progress bar */}
@@ -90,12 +97,12 @@ export default function UniversityPage() {
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-[11px] font-medium text-muted-foreground">
-                    {lessonsCompleted}/{mod.lessons.length} done
+                    {t('university.done', { completed: lessonsCompleted, total: mod.lessons.length })}
                   </span>
                   <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                     completed ? 'bg-[#ECFDF5] text-[#065F46]' : inProgress ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-muted-foreground'
                   }`}>
-                    {completed ? 'Completed' : inProgress ? 'In progress' : 'Not started'}
+                    {completed ? t('university.completed') : inProgress ? t('university.inProgress') : t('university.notStarted')}
                   </span>
                 </div>
               </div>
@@ -105,7 +112,7 @@ export default function UniversityPage() {
                 style={{ background: inProgress ? '#1E9A80' : '#111827' }}
                 onClick={e => { e.stopPropagation(); navigate(`/university/${mod.id}`); }}
               >
-                {inProgress ? <>Continue <ChevronRight className="w-4 h-4" /></> : completed ? 'Review' : <>Open Module <ChevronRight className="w-4 h-4" /></>}
+                {inProgress ? <>{t('university.continue')} <ChevronRight className="w-4 h-4" /></> : completed ? t('university.review') : <>{t('university.openModule')} <ChevronRight className="w-4 h-4" /></>}
               </button>
             </div>
           );
