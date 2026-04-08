@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { X, CheckCircle2 } from 'lucide-react';
 import { useUserTier } from '@/hooks/useUserTier';
 import { getFunnelUrl, isPaidTier } from '@/lib/ghl';
@@ -50,6 +51,7 @@ interface Props {
 type FunnelStage = 'cart' | 'locked' | 'complete' | 'already-paid';
 
 export default function InquiryPanel({ open, listing, onClose }: Props) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { tier } = useUserTier();
   const [referredBy, setReferredBy] = useState<string | null>(null);
@@ -144,14 +146,14 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
 
   // ── Header text ──
   const headerTitle =
-    funnelStage === 'complete' ? 'Payment Confirmed' :
-    funnelStage === 'already-paid' ? 'Full Access' :
-    'Get Unlimited Access to All Deals';
+    funnelStage === 'complete' ? t('inquiry.paymentConfirmed') :
+    funnelStage === 'already-paid' ? t('inquiry.fullAccess') :
+    t('inquiry.getUnlimitedAccess');
 
   const headerSub =
-    funnelStage === 'complete' ? 'Redirecting to your deals...' :
+    funnelStage === 'complete' ? t('inquiry.redirectingToDeals') :
     funnelStage === 'already-paid' ? `${listing.name} · ${listing.city}` :
-    "Building your Airbnb portfolio couldn't be easier";
+    t('inquiry.buildingPortfolio');
 
   const panel = (
     <>
@@ -192,16 +194,16 @@ export default function InquiryPanel({ open, listing, onClose }: Props) {
               <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
-              <h3 className="text-xl font-bold text-foreground">Welcome to nfstay!</h3>
-              <p className="text-sm text-muted-foreground">Payment confirmed. Taking you to your deals...</p>
+              <h3 className="text-xl font-bold text-foreground">{t('inquiry.welcomeToNfstay')}</h3>
+              <p className="text-sm text-muted-foreground">{t('inquiry.paymentConfirmedMessage')}</p>
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mt-2" />
             </div>
 
           ) : funnelStage === 'already-paid' ? (
             <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
               <CheckCircle2 className="w-8 h-8 text-green-500" />
-              <h3 className="text-lg font-bold text-foreground">You have full access</h3>
-              <p className="text-sm text-muted-foreground">Click any deal to contact the landlord directly.</p>
+              <h3 className="text-lg font-bold text-foreground">{t('inquiry.youreAllSet')}</h3>
+              <p className="text-sm text-muted-foreground">{t('inquiry.canContactLandlords')}</p>
             </div>
 
           ) : !funnelUrl ? (

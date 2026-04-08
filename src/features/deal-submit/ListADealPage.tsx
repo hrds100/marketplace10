@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CheckCircle, Sparkles, Loader2, ArrowRight, Minus, Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import PhotoUpload from '@/components/PhotoUpload';
@@ -129,6 +130,7 @@ function AccordionSection({ id, title, description, isOpen, isComplete, onToggle
 }
 
 export default function ListADealPage() {
+  const { t } = useTranslation();
   useEffect(() => { document.title = 'nfstay - List a Deal'; }, []);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -505,7 +507,7 @@ export default function ListADealPage() {
   // ── Phase: Idle (form) ──
   return (
     <div data-feature="DEALS__LIST_A_DEAL">
-      <h1 className="text-[28px] font-bold text-foreground">Submit a Deal</h1>
+      <h1 className="text-[28px] font-bold text-foreground">{t('dealSubmit.submitDeal')}</h1>
       <p className="text-sm text-muted-foreground mt-1 mb-8">List a landlord-approved rent-to-rent opportunity.</p>
 
       <div className="grid lg:grid-cols-[minmax(0,1fr)_440px] gap-6 items-start max-w-6xl">
@@ -565,7 +567,7 @@ export default function ListADealPage() {
             )}
 
             {/* ── Property Details ── */}
-            <AccordionSection id="property-details" title="Property Details" description="Basic information about the property location."
+            <AccordionSection id="property-details" title={t('dealSubmit.propertyDetails')} description="Basic information about the property location."
               isOpen={openSections.has('property-details')} isComplete={sectionComplete['property-details']()} onToggle={() => toggleSection('property-details')}
               summary={summaries['property-details']()}>
               <div className="space-y-4">
@@ -574,29 +576,33 @@ export default function ListADealPage() {
                   <input type="text" value={nextId} disabled className="input-nfstay w-full opacity-60 rounded-xl" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Street name</label><input type="text" placeholder="e.g. Oxford Road" value={form.streetName} onChange={e => set('streetName', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">House number</label><input type="text" placeholder="e.g. 42" value={form.houseNumber} onChange={e => set('houseNumber', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.streetName')}</label><input type="text" placeholder="e.g. Oxford Road" value={form.streetName} onChange={e => set('streetName', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.houseNumber')}</label><input type="text" placeholder="e.g. 42" value={form.houseNumber} onChange={e => set('houseNumber', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">City *</label><input type="text" placeholder="e.g. Manchester" value={form.city} onChange={e => set('city', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Postcode area *</label><input type="text" placeholder="e.g. M14" value={form.postcode} onChange={e => set('postcode', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.city')} *</label><input type="text" placeholder="e.g. Manchester" value={form.city} onChange={e => set('city', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.postcode')} *</label><input type="text" placeholder="e.g. M14" value={form.postcode} onChange={e => set('postcode', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
                 </div>
               </div>
             </AccordionSection>
 
             {/* ── Property Type ── */}
-            <AccordionSection id="property-type" title="Property Type" description="Select the type that best describes this property."
+            <AccordionSection id="property-type" title={t('dealSubmit.propertyType')} description="Select the type that best describes this property."
               isOpen={openSections.has('property-type')} isComplete={sectionComplete['property-type']()} onToggle={() => toggleSection('property-type')}
               summary={summaries['property-type']()}>
               <div className="grid grid-cols-3 gap-3">
-                {CATEGORIES.map(cat => (
+                {CATEGORIES.map(cat => {
+                  const labelMap: Record<string, string> = { flat: t('dealSubmit.flat'), house: t('dealSubmit.house'), hmo: t('dealSubmit.hmo') };
+                  const descMap: Record<string, string> = { flat: t('dealSubmit.flatDescription'), house: t('dealSubmit.houseDescription'), hmo: t('dealSubmit.hmoDescription') };
+                  return (
                   <button key={cat.key} type="button" onClick={() => selectCategory(cat.key)}
                     className={`rounded-2xl border-2 p-5 cursor-pointer text-center transition-all ${form.propertyCategory === cat.key ? 'border-primary bg-accent-light' : 'border-border hover:border-muted-foreground'}`}>
                     <div className="text-2xl mb-2">{cat.icon}</div>
-                    <div className="text-sm font-bold text-foreground">{cat.label}</div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">{cat.desc}</div>
+                    <div className="text-sm font-bold text-foreground">{labelMap[cat.key] || cat.label}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">{descMap[cat.key] || cat.desc}</div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
               {(form.propertyCategory === 'flat' || form.propertyCategory === 'house') && (
                 <div className="mt-5">
@@ -611,14 +617,14 @@ export default function ListADealPage() {
             </AccordionSection>
 
             {/* ── Property Features ── */}
-            <AccordionSection id="property-features" title="Property Features" description="Room counts and amenities."
+            <AccordionSection id="property-features" title={t('dealSubmit.propertyFeatures')} description="Room counts and amenities."
               isOpen={openSections.has('property-features')} isComplete={sectionComplete['property-features']()} onToggle={() => toggleSection('property-features')}
               summary={summaries['property-features']()}>
               <div className="flex flex-wrap gap-8">
-                <Counter label="Bedrooms *" value={form.bedrooms} onChange={v => set('bedrooms', v)} />
-                <Counter label="Bathrooms *" value={form.bathrooms} onChange={v => set('bathrooms', v)} />
+                <Counter label={`${t('dealSubmit.bedrooms')} *`} value={form.bedrooms} onChange={v => set('bedrooms', v)} />
+                <Counter label={`${t('dealSubmit.bathrooms')} *`} value={form.bathrooms} onChange={v => set('bathrooms', v)} />
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-2">Garage?</label>
+                  <label className="text-xs font-semibold text-foreground block mb-2">{t('dealSubmit.garage')}?</label>
                   <div className="flex gap-3 mt-1">
                     {['yes', 'no'].map(o => (
                       <label key={o} className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer capitalize">
@@ -631,47 +637,50 @@ export default function ListADealPage() {
               <div className="mt-6">
                 <label className="text-xs font-semibold text-foreground block mb-3">Furnishing</label>
                 <div className="grid grid-cols-3 gap-3">
-                  {FURNISHED_OPTIONS.map(opt => (
+                  {FURNISHED_OPTIONS.map(opt => {
+                    const furnishedLabelMap: Record<string, string> = { furnished: t('dealSubmit.furnished'), 'part-furnished': t('dealSubmit.partFurnished'), unfurnished: t('dealSubmit.unfurnished') };
+                    return (
                     <button key={opt.key} type="button" onClick={() => set('furnished', opt.key)}
                       className={`rounded-2xl border-2 p-4 cursor-pointer text-center transition-all ${form.furnished === opt.key ? 'border-primary bg-accent-light' : 'border-border hover:border-muted-foreground'}`}>
                       <div className="text-xl mb-1">{opt.icon}</div>
-                      <div className="text-xs font-semibold text-foreground">{opt.label}</div>
+                      <div className="text-xs font-semibold text-foreground">{furnishedLabelMap[opt.key] || opt.label}</div>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </AccordionSection>
 
             {/* ── Financials ── */}
-            <AccordionSection id="financials" title="Financials" description="Rental costs and expected returns."
+            <AccordionSection id="financials" title={t('dealSubmit.financials')} description="Rental costs and expected returns."
               isOpen={openSections.has('financials')} isComplete={sectionComplete['financials']()} onToggle={() => toggleSection('financials')}
               summary={summaries['financials']()}>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">{listingType === 'sale' ? 'Property price (£) *' : 'Monthly rent (£) *'}</label><input type="number" placeholder={listingType === 'sale' ? '250000' : '1200'} value={form.rent} onChange={e => set('rent', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Est. monthly profit (£)</label><p className="text-[10px] text-muted-foreground mb-1">We will cross-check with Airbnb similar listings for accuracy.</p><input type="number" placeholder="600" value={form.profit} onChange={e => set('profit', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">{listingType === 'sale' ? 'Property price (£) *' : `${t('dealSubmit.monthlyRent')} (£) *`}</label><input type="number" placeholder={listingType === 'sale' ? '250000' : '1200'} value={form.rent} onChange={e => set('rent', e.target.value)} className="input-nfstay w-full rounded-xl" required /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.estMonthlyProfit')} (£)</label><p className="text-[10px] text-muted-foreground mb-1">We will cross-check with Airbnb similar listings for accuracy.</p><input type="number" placeholder="600" value={form.profit} onChange={e => set('profit', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Deposit (£)</label><input type="number" placeholder="2400" value={form.deposit} onChange={e => set('deposit', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
-                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">Fee (£)</label><input type="number" placeholder="0" value={form.agentFee} onChange={e => set('agentFee', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.deposit')} (£)</label><input type="number" placeholder="2400" value={form.deposit} onChange={e => set('deposit', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                  <div><label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.agentFee')} (£)</label><input type="number" placeholder="0" value={form.agentFee} onChange={e => set('agentFee', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                 </div>
               </div>
             </AccordionSection>
 
             {/* ── Contact ── */}
-            <AccordionSection id="contact" title="Contact Details" description="Landlord or agent contact information."
+            <AccordionSection id="contact" title={t('dealSubmit.contactInfo')} description="Landlord or agent contact information."
               isOpen={openSections.has('contact')} isComplete={sectionComplete['contact']()} onToggle={() => toggleSection('contact')}
               summary={summaries['contact']()}>
               <div className="space-y-4">
-                <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact name</label><input type="text" placeholder="From your profile" value={form.contactName} onChange={e => set('contactName', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                <div><label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.contactName')}</label><input type="text" placeholder="From your profile" value={form.contactName} onChange={e => set('contactName', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-foreground block mb-1.5">Contact phone</label>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.contactPhone')}</label>
                     <input type="tel" placeholder="07911 123 456" value={form.contactPhone} onChange={e => set('contactPhone', e.target.value)} className="input-nfstay w-full rounded-xl" />
                     <p className="text-[10px] text-muted-foreground mt-0.5">At least one of phone or WhatsApp required</p>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-foreground block mb-1.5">Contact WhatsApp</label>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.whatsApp')}</label>
                     {profileWhatsapp ? (
                       <div className="h-10 rounded-xl border border-border bg-secondary px-3 flex items-center gap-2 cursor-not-allowed">
                         <span className="text-sm text-foreground">{profileWhatsapp}</span>
@@ -685,14 +694,14 @@ export default function ListADealPage() {
                     )}
                   </div>
                 </div>
-                <div><label className="text-xs font-semibold text-foreground block mb-1.5">Contact email</label><input type="email" placeholder="From your profile" value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
+                <div><label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.contactEmail')}</label><input type="email" placeholder="From your profile" value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} className="input-nfstay w-full rounded-xl" /></div>
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1.5">What is your role for this property? *</label>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">{t('dealSubmit.listerType')} *</label>
                   <div className="flex gap-4">
-                    {([['landlord', 'Landlord'], ['agent', 'Letting Agent'], ['deal_sourcer', 'Deal Sourcer']] as const).map(([val, label]) => (
+                    {([['landlord', t('deals.directLandlord')], ['agent', t('deals.lettingAgent')], ['deal_sourcer', t('deals.dealSourcer')]] as [string, string][]).map(([val, label]) => (
                       <label key={val} className="flex items-center gap-1.5 cursor-pointer">
                         <input type="radio" name="lister_type" value={val} checked={form.listerType === val}
-                          onChange={() => set('listerType', val)}
+                          onChange={() => set('listerType', val as DealForm['listerType'])}
                           className="w-4 h-4 accent-[#1E9A80]" />
                         <span className="text-sm">{label}</span>
                       </label>
@@ -706,7 +715,7 @@ export default function ListADealPage() {
             </AccordionSection>
 
             {/* ── Media ── */}
-            <AccordionSection id="media" title="Media & Description" description="Photos and listing text to attract partners."
+            <AccordionSection id="media" title={t('dealSubmit.media')} description="Photos and listing text to attract partners."
               isOpen={openSections.has('media')} isComplete={sectionComplete['media']()} onToggle={() => toggleSection('media')}
               summary={summaries['media']()}>
               <div className="space-y-5">
@@ -741,7 +750,7 @@ export default function ListADealPage() {
             </div>
 
             <button data-feature="DEALS__LIST_SUBMIT" type="submit" disabled={!saConfirmed || loading} className="w-full h-12 rounded-xl bg-nfstay-black text-nfstay-black-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-              {loading ? 'Submitting...' : 'Submit Deal'}
+              {loading ? t('common.submitting') : t('dealSubmit.submitDeal')}
             </button>
             <p className="text-xs text-muted-foreground text-center mt-2">Our team reviews all submissions within 24–48 hours.</p>
           </form>
