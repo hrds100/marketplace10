@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Copy, Check, TrendingUp, Users, MousePointerClick, Wallet, Share2, MessageCircle, Mail, Building2, CreditCard, Globe, Pencil, X, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import BankDetailsForm from '@/components/BankDetailsForm';
 import { useMyAffiliateProfile, useInvestProperties, useMyCommissions, useMyBankAccount } from '@/hooks/useInvestData';
@@ -11,9 +12,9 @@ import { useWalletGate } from '@/components/WalletProvisioner';
 const BASE_URL = 'https://hub.nfstay.com';
 
 const SHARING_MESSAGES = [
-  { platform: 'WhatsApp', icon: MessageCircle, color: '#25D366', template: (link: string) => `Hey! I've been using nfstay to find rent-to-rent deals across the UK. You should check it out 👇\n\n${link}` },
-  { platform: 'Email', icon: Mail, color: '#EA4335', template: (link: string) => `Hi,\n\nI wanted to share nfstay with you — it's a property marketplace for rent-to-rent deals in the UK. I've been using it and finding great opportunities.\n\nSign up here: ${link}\n\nBest regards` },
-  { platform: 'Copy Message', icon: Copy, color: '#6B7280', template: (link: string) => `🏠 Check out nfstay — the UK's rent-to-rent property marketplace. Browse landlord-approved deals and start your portfolio.\n\nSign up free: ${link}` },
+  { platform: 'WhatsApp', platformKey: 'affiliates.whatsApp', icon: MessageCircle, color: '#25D366', template: (link: string) => `Hey! I've been using nfstay to find rent-to-rent deals across the UK. You should check it out 👇\n\n${link}` },
+  { platform: 'Email', platformKey: 'affiliates.emailShare', icon: Mail, color: '#EA4335', template: (link: string) => `Hi,\n\nI wanted to share nfstay with you — it's a property marketplace for rent-to-rent deals in the UK. I've been using it and finding great opportunities.\n\nSign up here: ${link}\n\nBest regards` },
+  { platform: 'Copy Message', platformKey: 'affiliates.copyMessage', icon: Copy, color: '#6B7280', template: (link: string) => `🏠 Check out nfstay — the UK's rent-to-rent property marketplace. Browse landlord-approved deals and start your portfolio.\n\nSign up free: ${link}` },
 ];
 
 function generateCode(name: string): string {
@@ -43,6 +44,7 @@ function getNextTuesday() {
 }
 
 export default function AffiliatesPage() {
+  const { t } = useTranslation();
   useEffect(() => { document.title = 'nfstay - Affiliates'; }, []);
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -84,7 +86,7 @@ export default function AffiliatesPage() {
         .then(({ data }: { data: Array<{ metadata: { user_name?: string } }> | null }) => {
           if (data?.length) {
             data.forEach((e: { metadata: { user_name?: string } }) => {
-              toast.success(`${e.metadata?.user_name || 'Someone'} signed up from your link!`);
+              toast.success(t('affiliates.signedUpFromLink', { name: e.metadata?.user_name || 'Someone' }));
             });
           }
         });
@@ -571,7 +573,7 @@ export default function AffiliatesPage() {
                 <div className="flex gap-2">
                   <input data-feature="AFFILIATES__LINK" readOnly value={referralLink} className="input-nfstay flex-1 bg-secondary text-sm font-mono" />
                   <button data-feature="AFFILIATES__SHARE_BUTTON" onClick={copyLink} className="h-10 px-4 rounded-lg bg-nfstay-black text-nfstay-black-foreground font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copied ? 'Copied' : 'Copy'}
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copied ? t('common.copied') : t('common.copy')}
                   </button>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-2">
@@ -609,7 +611,7 @@ export default function AffiliatesPage() {
                           }}
                           className="h-10 px-4 rounded-lg bg-[#1E9A80] text-white font-semibold text-sm inline-flex items-center gap-2 hover:opacity-90 transition-opacity flex-shrink-0"
                         >
-                          <Copy className="w-4 h-4" /> Copy
+                          <Copy className="w-4 h-4" /> {t('common.copy')}
                         </button>
                       </div>
                     </div>
@@ -803,12 +805,12 @@ export default function AffiliatesPage() {
                         <s.icon className="w-4 h-4" style={{ color: s.color }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-[13px] font-medium text-foreground">{s.platform}</span>
+                        <span className="text-[13px] font-medium text-foreground">{t(s.platformKey)}</span>
                         <p className="text-[11px] text-muted-foreground truncate">{s.template(referralLink).slice(0, 60)}...</p>
                       </div>
                       <button onClick={() => copyMessage(s.template(referralLink), s.platform)}
                         className="text-[12px] font-medium text-primary hover:underline flex-shrink-0">
-                        {copiedMsg === s.platform ? 'Copied ✓' : 'Copy'}
+                        {copiedMsg === s.platform ? `${t('common.copied')} ✓` : t('common.copy')}
                       </button>
                     </div>
                   ))}
@@ -816,7 +818,7 @@ export default function AffiliatesPage() {
                     target="_blank" rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
                     style={{ background: '#25D366' }}>
-                    <MessageCircle className="w-4 h-4" /> Share via WhatsApp
+                    <MessageCircle className="w-4 h-4" /> {t('affiliates.shareYourLink')}
                   </a>
                 </div>
               </div>
