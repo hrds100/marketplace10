@@ -53,18 +53,23 @@
 
 /* Items that fade out when scrolled */
 .nav_fixed .vertical-divider-navbar,
-.nav_fixed .lang-dropdown,
 .nav_fixed .nav_menu_link[data-feature="SHARED__LANDING_NAV_LOGIN"] {
   transition: opacity 0.8s ease, max-width 0.8s ease, padding 0.8s ease, margin 0.8s ease;
   opacity: 1;
   max-width: 200px;
   overflow: hidden;
 }
+.nav_fixed .lang-dropdown {
+  transition: opacity 0.8s ease, max-width 0.8s ease, padding 0.8s ease, margin 0.8s ease;
+  opacity: 1;
+  max-width: 200px;
+  overflow: visible;
+}
 .nav_fixed.scrolled .vertical-divider-navbar {
   opacity: 0; max-width: 0; padding: 0; margin: 0;
 }
 .nav_fixed.scrolled .lang-dropdown {
-  opacity: 0; max-width: 0; padding: 0; margin: 0; pointer-events: none;
+  opacity: 1; overflow: visible;
 }
 .nav_fixed.scrolled .nav_menu_link[data-feature="SHARED__LANDING_NAV_LOGIN"] {
   opacity: 0; max-width: 0; padding: 0; margin: 0;
