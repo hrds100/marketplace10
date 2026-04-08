@@ -103,17 +103,8 @@ export default function SignIn() {
     }
   };
 
-  useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        if (!redirectTo && session.user?.id) {
-          const { data: op } = await supabase.from('nfs_operators').select('id').eq('user_id', session.user.id).limit(1);
-          if (op && op.length > 0) { window.location.href = '/dashboard/booking-site'; return; }
-        }
-        window.location.href = redirectTo ? decodeURIComponent(redirectTo) : '/dashboard/deals';
-      }
-    });
-  }, [redirectTo]);
+  // Auto-redirect removed: always show the sign-in form so users can
+  // sign in with a different account. Browser autofill handles pre-fill.
 
   useEffect(() => { document.title = 'nfstay - Sign In'; }, []);
 
