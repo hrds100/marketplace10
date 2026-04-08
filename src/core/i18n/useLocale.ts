@@ -45,7 +45,7 @@ export function useLocale() {
 
   const currentLocale = (i18n.language || DEFAULT_LOCALE) as SupportedLocale;
 
-  /** Change language — updates i18n, localStorage, URL, and HTML dir */
+  /** Change language — updates i18n, localStorage, and HTML dir */
   const changeLocale = useCallback(
     (newLocale: SupportedLocale) => {
       i18n.changeLanguage(newLocale);
@@ -55,12 +55,11 @@ export function useLocale() {
       document.documentElement.dir = newLocale === 'ar' ? 'rtl' : 'ltr';
       document.documentElement.lang = LOCALE_SLUGS[newLocale];
 
-      // Update URL to reflect new locale
-      const { path } = parseLocalePath(location.pathname);
-      const newPath = localePath(path, newLocale);
-      navigate(newPath + location.search + location.hash, { replace: true });
+      // Stay on the current page — no URL change needed.
+      // Locale-prefixed URLs (/es/..., /fr/...) are not supported yet
+      // because App.tsx routes don't have locale wrappers.
     },
-    [i18n, navigate, location]
+    [i18n]
   );
 
   /** Navigate to a path with the current locale prefix */
