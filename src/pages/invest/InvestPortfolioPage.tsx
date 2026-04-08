@@ -103,12 +103,12 @@ function getReachedMilestones(count: number) {
 
 function getAchievements(totalInvested: number, totalClaimed: number, hasVoted: boolean) {
   return [
-    { id: 'first-investment', name: 'First Investment', description: 'Invested $5k+', icon: Home, unlocked: totalInvested >= 5000 },
+    { id: 'first-investment', name: 'First Investment', description: 'Allocated $5k+', icon: Home, unlocked: totalInvested >= 5000 },
     { id: 'active-partner', name: 'Active Partner', description: 'Participated in the nfstay JV program', icon: Users, unlocked: totalInvested > 0 },
-    { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Invested $25k+', icon: Building2, unlocked: totalInvested >= 25000 },
-    { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Invested $50k+', icon: Award, unlocked: totalInvested >= 50000 },
-    { id: 'empire-builder', name: 'Empire Builder', description: 'Invested $75k+', icon: Sparkles, unlocked: totalInvested >= 75000 },
-    { id: 'property-titan', name: 'Property Titan', description: 'Invested $100k+', icon: Crown, unlocked: totalInvested >= 100000 },
+    { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Allocated $25k+', icon: Building2, unlocked: totalInvested >= 25000 },
+    { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Allocated $50k+', icon: Award, unlocked: totalInvested >= 50000 },
+    { id: 'empire-builder', name: 'Empire Builder', description: 'Allocated $75k+', icon: Sparkles, unlocked: totalInvested >= 75000 },
+    { id: 'property-titan', name: 'Property Titan', description: 'Allocated $100k+', icon: Crown, unlocked: totalInvested >= 100000 },
     { id: 'first-payout', name: 'First Payout', description: 'Received your first rental income', icon: Banknote, unlocked: totalClaimed > 0 },
     { id: 'proposal-voter', name: 'Proposal Voter', description: 'Voted on a governance proposal', icon: Vote, unlocked: hasVoted },
   ];
@@ -710,7 +710,7 @@ export default function InvestPortfolioPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {milestone.min === 0 ? '0 invested' : `$${(milestone.min / 1000).toLocaleString()}k invested`}
+                            {milestone.min === 0 ? '$0 allocated' : `$${(milestone.min / 1000).toLocaleString()}k allocated`}
                           </p>
                         </div>
                       </div>
