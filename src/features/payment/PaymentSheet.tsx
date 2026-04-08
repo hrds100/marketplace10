@@ -29,6 +29,8 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   // pollRef removed — no longer polling. useUserTier has realtime subscription.
   const iframeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeLoadCount = useRef(0);
+  const funnelUrlRef = useRef<string>('');
+  const firstLoadTimeRef = useRef<number>(0);
 
   useEffect(() => {
     if (open) {
@@ -39,6 +41,13 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
       setIframeTimedOut(false);
       setPollTimedOut(false);
       iframeLoadCount.current = 0;
+      firstLoadTimeRef.current = 0;
+      funnelUrlRef.current = getFunnelUrl({
+        email: user?.email,
+        name: user?.user_metadata?.name,
+        phone: user?.user_metadata?.whatsapp,
+        ref: referredBy || undefined,
+      });
       // 8s iframe load timeout
       iframeTimerRef.current = setTimeout(() => {
         setIframeTimedOut(true);
@@ -86,7 +95,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !funnelLocked) handleClose();
+      if (e.key === 'Escape' && (!funnelLocked || paymentComplete)) handleClose();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
@@ -103,26 +112,30 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
       if (url.includes('thank') || url.includes('Thank')) handlePaymentSuccess();
     } catch {
       // Cross-origin — can't read iframe URL.
-      // Do NOT poll tier. Tier changes after cart payment but funnel isn't done yet.
-      // Lock modal after iframe navigates past cart (2nd load = user paid, now on upsell).
-      if (iframeLoadCount.current >= 1) setFunnelLocked(true);
+      // Track first load time so we can distinguish GHL internal redirects (instant)
+      // from real upsell navigation (happens after payment, several seconds later).
+      if (iframeLoadCount.current === 0) {
+        firstLoadTimeRef.current = Date.now();
+      } else if (iframeLoadCount.current >= 1) {
+        const elapsed = Date.now() - firstLoadTimeRef.current;
+        if (elapsed > 2500) {
+          // 2nd load came >2.5s after 1st — real cart→upsell navigation, lock modal
+          setFunnelLocked(true);
+        }
+        // else: fast reload (<2.5s) = GHL internal redirect on order page — ignore
+      }
     }
     iframeLoadCount.current += 1;
   };
 
-  const funnelUrl = getFunnelUrl({
-    email: user?.email,
-    name: user?.user_metadata?.name,
-    phone: user?.user_metadata?.whatsapp,
-    ref: referredBy || undefined,
-  });
+  const funnelUrl = funnelUrlRef.current;
 
   const sheet = (
     <>
       {/* Backdrop — clickable before payment, locked during upsell/downsell funnel */}
       <div
         className={`fixed inset-0 z-[300] bg-black/40 backdrop-blur-sm transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
-        onClick={funnelLocked ? undefined : handleClose}
+        onClick={(funnelLocked && !paymentComplete) ? undefined : handleClose}
         aria-hidden
       />
       <div
@@ -139,8 +152,8 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
               {paymentComplete ? 'Unlocking your inbox...' : 'Get full access to contact landlords directly'}
             </p>
           </div>
-          {/* X button: visible before payment, hidden during upsell/downsell funnel */}
-          {!funnelLocked && (
+          {/* X button: visible on order page + thank-you, hidden during upsell/downsell */}
+          {(!funnelLocked || paymentComplete) && (
             <button onClick={handleClose} data-feature="PAYMENTS__CLOSE" className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
               <X className="w-5 h-5" />
             </button>
