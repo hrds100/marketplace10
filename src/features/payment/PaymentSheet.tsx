@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { X, CheckCircle2, Loader2 } from 'lucide-react';
 
 import { getFunnelUrl } from '@/lib/ghl';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [referredBy, setReferredBy] = useState<string | null>(null);
   useEffect(() => {
@@ -133,10 +135,10 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border flex-shrink-0">
           <div>
             <h3 className="text-lg font-bold text-foreground">
-              {paymentComplete ? 'Payment Confirmed' : 'Unlock Messaging'}
+              {paymentComplete ? t('payment.paymentConfirmed') : t('payment.unlockMessaging')}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {paymentComplete ? 'Unlocking your inbox...' : 'Get full access to contact landlords directly'}
+              {paymentComplete ? t('payment.unlockingInbox') : t('payment.getFullAccess')}
             </p>
           </div>
           {/* X button: visible before payment, hidden during upsell/downsell funnel */}
@@ -152,11 +154,11 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
             <div data-feature="PAYMENTS__SUCCESS" className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
               {pollTimedOut ? (
                 <>
-                  <h3 className="text-lg font-bold text-foreground">Almost there</h3>
-                  <p className="text-sm text-muted-foreground">Your payment is being processed.</p>
-                  <p className="mt-4 text-xs text-red-600">We couldn't confirm your payment yet. Please refresh or contact support.</p>
+                  <h3 className="text-lg font-bold text-foreground">{t('payment.almostThere')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('payment.paymentBeingProcessed')}</p>
+                  <p className="mt-4 text-xs text-red-600">{t('payment.couldNotConfirm')}</p>
                   <button onClick={() => window.location.reload()} className="mt-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90">
-                    Refresh Page
+                    {t('payment.refreshPage')}
                   </button>
                 </>
               ) : (
@@ -164,15 +166,15 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
                   <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
                   </div>
-                  <h3 className="text-xl font-bold text-foreground">You're in!</h3>
-                  <p className="text-sm text-muted-foreground">Messaging unlocked. You can now contact landlords directly.</p>
+                  <h3 className="text-xl font-bold text-foreground">{t('payment.youreIn')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('payment.messagingUnlocked')}</p>
                   <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mt-2" />
                 </>
               )}
             </div>
           ) : !funnelUrl ? (
             <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-3">
-              <p className="text-sm text-muted-foreground">Checkout is not configured.</p>
+              <p className="text-sm text-muted-foreground">{t('payment.checkoutNotConfigured')}</p>
               <p className="text-xs text-muted-foreground">Please set VITE_GHL_FUNNEL_URL in Vercel.</p>
             </div>
           ) : (
@@ -181,13 +183,13 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
                 <div className="absolute inset-0 flex items-center justify-center bg-card z-10">
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-                    <p className="text-sm text-muted-foreground">Preparing secure checkout…</p>
+                    <p className="text-sm text-muted-foreground">{t('payment.preparingCheckout')}</p>
                     {iframeTimedOut && (
                       <button
                         onClick={() => window.open(funnelUrl, '_blank')}
                         className="mt-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
                       >
-                        Open checkout in new tab
+                        {t('payment.openCheckoutNewTab')}
                       </button>
                     )}
                   </div>
