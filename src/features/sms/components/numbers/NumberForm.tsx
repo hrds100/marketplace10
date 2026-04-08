@@ -14,19 +14,21 @@ import { toast } from 'sonner';
 interface NumberFormProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: { phoneNumber: string; twilioSid: string; label: string }) => void;
+  onSave: (data: { phoneNumber: string; twilioSid: string; label: string; channel: 'sms' | 'whatsapp' }) => void;
 }
 
 export default function NumberForm({ open, onClose, onSave }: NumberFormProps) {
   const [phone, setPhone] = useState('');
   const [twilioSid, setTwilioSid] = useState('');
   const [label, setLabel] = useState('');
+  const [channel, setChannel] = useState<'sms' | 'whatsapp'>('sms');
 
   useEffect(() => {
     if (open) {
       setPhone('');
       setTwilioSid('');
       setLabel('');
+      setChannel('sms');
     }
   }, [open]);
 
@@ -44,6 +46,7 @@ export default function NumberForm({ open, onClose, onSave }: NumberFormProps) {
       phoneNumber: phone.trim(),
       twilioSid: twilioSid.trim(),
       label: label.trim() || 'Untitled',
+      channel,
     });
 
     toast.success('Number connected');
@@ -81,6 +84,35 @@ export default function NumberForm({ open, onClose, onSave }: NumberFormProps) {
             <p className="text-xs text-[#9CA3AF]">
               Find this in your Twilio console under Phone Numbers.
             </p>
+          </div>
+
+          {/* Channel */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-[#525252]">Channel</Label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setChannel('sms')}
+                className={`flex-1 py-2 px-3 rounded-[10px] border text-sm font-medium transition-colors ${
+                  channel === 'sms'
+                    ? 'border-[#6B7280] bg-[#6B7280]/10 text-[#1A1A1A]'
+                    : 'border-[#E5E5E5] text-[#6B7280] hover:border-[#9CA3AF]'
+                }`}
+              >
+                SMS
+              </button>
+              <button
+                type="button"
+                onClick={() => setChannel('whatsapp')}
+                className={`flex-1 py-2 px-3 rounded-[10px] border text-sm font-medium transition-colors ${
+                  channel === 'whatsapp'
+                    ? 'border-[#25D366] bg-[#25D366]/10 text-[#25D366]'
+                    : 'border-[#E5E5E5] text-[#6B7280] hover:border-[#9CA3AF]'
+                }`}
+              >
+                WhatsApp
+              </button>
+            </div>
           </div>
 
           {/* Label */}

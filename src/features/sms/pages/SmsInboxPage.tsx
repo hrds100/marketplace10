@@ -166,6 +166,7 @@ export default function SmsInboxPage() {
               automations={automations}
               onToggleAutomation={handleToggleAutomation}
               isTogglingAutomation={isTogglingAutomation}
+              channel={selectedConversation?.channel}
             />
           </div>
 

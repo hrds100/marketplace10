@@ -27,6 +27,7 @@ interface AutomationRunRequest {
   from_number: string;
   to_number: string;
   body: string;
+  number_id?: string;
 }
 
 interface FlowNode {
@@ -196,6 +197,7 @@ async function executeNode(
     globalPrompt: string;
     contactName: string;
     precomputedReply?: string | null;
+    numberId?: string;
   }
 ): Promise<{ shouldStop: boolean; sentMessage: boolean; output: Record<string, unknown> }> {
   const { supabase, contactId, fromNumber, body, globalPrompt, contactName } = context;
@@ -250,17 +252,20 @@ async function executeNode(
 
       // Send immediately (no delay support in turn-based mode — delays handled by follow-up nodes)
       const sendUrl = `${SUPABASE_URL}/functions/v1/sms-send`;
+      const sendPayload: Record<string, string | undefined> = {
+        to: fromNumber,
+        body: reply,
+        contact_id: contactId,
+      };
+      if (context.numberId) sendPayload.from_number_id = context.numberId;
+
       const sendRes = await fetch(sendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
         },
-        body: JSON.stringify({
-          to: fromNumber,
-          body: reply,
-          contact_id: contactId,
-        }),
+        body: JSON.stringify(sendPayload),
       });
 
       const sendData = await sendRes.json();
@@ -277,17 +282,20 @@ async function executeNode(
     case 'STOP_CONVERSATION': {
       if (node.data.text) {
         const sendUrl = `${SUPABASE_URL}/functions/v1/sms-send`;
+        const stopPayload: Record<string, string | undefined> = {
+          to: fromNumber,
+          body: node.data.text,
+          contact_id: contactId,
+        };
+        if (context.numberId) stopPayload.from_number_id = context.numberId;
+
         await fetch(sendUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
           },
-          body: JSON.stringify({
-            to: fromNumber,
-            body: node.data.text,
-            contact_id: contactId,
-          }),
+          body: JSON.stringify(stopPayload),
         });
         console.log(`Stop message sent: "${node.data.text.substring(0, 60)}"`);
       }
@@ -395,6 +403,7 @@ serve(async (req: Request) => {
       from_number,
       to_number,
       body,
+      number_id: requestNumberId,
     } = (await req.json()) as AutomationRunRequest;
 
     if (!message_id || !conversation_id || !contact_id) {
@@ -683,6 +692,7 @@ serve(async (req: Request) => {
         globalPrompt: globalPrompt || '',
         contactName,
         precomputedReply,
+        numberId: requestNumberId,
       });
 
       // Clear precomputed reply after first use

@@ -15,6 +15,7 @@ interface ConversationRow {
   locked_at: string | null;
   automation_id: string | null;
   automation_enabled: boolean;
+  channel: 'sms' | 'whatsapp';
   created_at: string;
   sms_contacts: {
     id: string;
@@ -73,6 +74,7 @@ function mapRow(row: ConversationRow): SmsConversation {
     automationId: row.automation_id,
     automationEnabled: row.automation_enabled ?? false,
     automationName: row.sms_automations?.name ?? null,
+    channel: row.channel ?? 'sms',
     createdAt: row.created_at,
   };
 }
@@ -83,7 +85,7 @@ async function fetchConversations(): Promise<SmsConversation[]> {
     .select(`
       id, contact_id, number_id, last_message_at, last_message_preview,
       unread_count, is_archived, is_locked_by, locked_at,
-      automation_id, automation_enabled, created_at,
+      automation_id, automation_enabled, channel, created_at,
       sms_contacts!contact_id (
         id, phone_number, display_name, notes, pipeline_stage_id,
         assigned_to, opted_out, batch_name, created_at, updated_at,

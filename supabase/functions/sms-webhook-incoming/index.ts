@@ -61,8 +61,12 @@ serve(async (req: Request) => {
       params[key] = value.toString();
     });
 
-    const from = params.From || '';
-    const to = params.To || '';
+    const rawFrom = params.From || '';
+    const rawTo = params.To || '';
+    const isWhatsApp = rawFrom.startsWith('whatsapp:') || rawTo.startsWith('whatsapp:');
+    const channel = isWhatsApp ? 'whatsapp' : 'sms';
+    const from = rawFrom.replace(/^whatsapp:/, '');
+    const to = rawTo.replace(/^whatsapp:/, '');
     const body = params.Body || '';
     const messageSid = params.MessageSid || '';
     const numMedia = parseInt(params.NumMedia || '0', 10);
@@ -162,6 +166,7 @@ serve(async (req: Request) => {
       .from('sms_numbers')
       .select('id')
       .eq('phone_number', to)
+      .eq('channel', channel)
       .maybeSingle();
 
     const numberId = ourNumber?.id || null;
@@ -186,6 +191,7 @@ serve(async (req: Request) => {
         media_urls: mediaUrls,
         number_id: numberId,
         contact_id: contact.id,
+        channel: channel,
       })
       .select('id')
       .single();
@@ -208,6 +214,7 @@ serve(async (req: Request) => {
         .select('id, unread_count')
         .eq('contact_id', contact.id)
         .eq('number_id', numberId)
+        .eq('channel', channel)
         .maybeSingle();
 
       if (existingConv) {
@@ -226,6 +233,7 @@ serve(async (req: Request) => {
           .insert({
             contact_id: contact.id,
             number_id: numberId,
+            channel: channel,
             last_message_at: new Date().toISOString(),
             last_message_preview: preview,
             unread_count: 1,
@@ -260,6 +268,7 @@ serve(async (req: Request) => {
             from_number: from,
             to_number: to,
             body: body,
+            number_id: numberId,
           }),
         }).catch((err) => console.error('Automation trigger error:', err));
       }

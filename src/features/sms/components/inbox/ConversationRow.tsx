@@ -59,6 +59,11 @@ export default function ConversationRow({ conversation, isSelected, onSelect }: 
             {isUnread && (
               <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#EF4444]" />
             )}
+            {conversation.channel === 'whatsapp' && (
+              <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#25D366] flex items-center justify-center text-white text-[8px] font-bold">
+                W
+              </span>
+            )}
           </div>
 
           {/* Content */}

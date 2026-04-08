@@ -62,10 +62,12 @@ serve(async (req: Request) => {
     let fromNumber: string;
     let numberId: string;
 
+    let senderChannel = 'sms';
+
     if (from_number_id) {
       const { data: num } = await supabase
         .from('sms_numbers')
-        .select('id, phone_number')
+        .select('id, phone_number, channel')
         .eq('id', from_number_id)
         .single();
 
@@ -77,11 +79,12 @@ serve(async (req: Request) => {
       }
       fromNumber = num.phone_number;
       numberId = num.id;
+      senderChannel = num.channel || 'sms';
     } else {
       // Use default number
       const { data: defaultNum } = await supabase
         .from('sms_numbers')
-        .select('id, phone_number')
+        .select('id, phone_number, channel')
         .eq('is_default', true)
         .maybeSingle();
 
@@ -93,6 +96,7 @@ serve(async (req: Request) => {
       }
       fromNumber = defaultNum.phone_number;
       numberId = defaultNum.id;
+      senderChannel = defaultNum.channel || 'sms';
     }
 
     // ---- RESOLVE CONTACT ----
@@ -111,9 +115,12 @@ serve(async (req: Request) => {
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
     const statusCallbackUrl = `${SUPABASE_URL}/functions/v1/sms-webhook-status`;
 
+    const twilioTo = senderChannel === 'whatsapp' ? `whatsapp:${to}` : to;
+    const twilioFrom = senderChannel === 'whatsapp' ? `whatsapp:${fromNumber}` : fromNumber;
+
     const twilioParams = new URLSearchParams({
-      To: to,
-      From: fromNumber,
+      To: twilioTo,
+      From: twilioFrom,
       Body: body,
       StatusCallback: statusCallbackUrl,
     });
@@ -154,6 +161,7 @@ serve(async (req: Request) => {
         status: twilioData.status || 'queued',
         number_id: numberId,
         contact_id: resolvedContactId,
+        channel: senderChannel,
       })
       .select('id, twilio_sid, status')
       .single();
@@ -188,6 +196,7 @@ serve(async (req: Request) => {
           .insert({
             contact_id: resolvedContactId,
             number_id: numberId,
+            channel: senderChannel,
             last_message_at: new Date().toISOString(),
             last_message_preview: preview,
             unread_count: 0,

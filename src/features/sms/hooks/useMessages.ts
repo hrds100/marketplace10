@@ -18,6 +18,7 @@ interface MessageRow {
   error_code: string | null;
   error_message: string | null;
   scheduled_at: string | null;
+  channel: 'sms' | 'whatsapp';
   created_at: string;
 }
 
@@ -37,6 +38,7 @@ function mapRow(row: MessageRow): SmsMessage {
     errorCode: row.error_code,
     errorMessage: row.error_message,
     scheduledAt: row.scheduled_at,
+    channel: row.channel ?? 'sms',
     createdAt: row.created_at,
   };
 }
@@ -45,7 +47,7 @@ async function fetchMessages(contactId: string): Promise<SmsMessage[]> {
   const { data, error } = await (supabase
     .from('sms_messages' as never)
     .select(
-      'id, twilio_sid, from_number, to_number, body, direction, status, media_urls, number_id, contact_id, campaign_id, error_code, error_message, scheduled_at, created_at'
+      'id, twilio_sid, from_number, to_number, body, direction, status, media_urls, number_id, contact_id, campaign_id, error_code, error_message, scheduled_at, channel, created_at'
     )
     .eq('contact_id', contactId)
     .order('created_at', { ascending: true }) as never);
