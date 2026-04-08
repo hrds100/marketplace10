@@ -376,7 +376,8 @@
     "inquiryConfirmationsDesc": "Confirmación al enviar una consulta a una propiedad",
     "payoutAddress": "Dirección de Pago",
     "noWalletConnected": "Sin billetera conectada",
-    "validUkMobile": "Introduce un número UK válido (ej. 07839 925555 o +447839925555)"
+    "validUkMobile": "Introduce un número UK válido (ej. 07839 925555 o +447839925555)",
+    "confirmSignOut": "¿Estás seguro de que quieres cerrar sesión?"
   },
   "page": {
     "notFound": "Página no encontrada",

@@ -376,7 +376,8 @@
     "inquiryConfirmationsDesc": "Conferma quando invii una richiesta a una proprietà",
     "payoutAddress": "Indirizzo di Pagamento",
     "noWalletConnected": "Nessun portafoglio connesso",
-    "validUkMobile": "Inserisci un numero UK valido (es. 07839 925555 o +447839925555)"
+    "validUkMobile": "Inserisci un numero UK valido (es. 07839 925555 o +447839925555)",
+    "confirmSignOut": "Sei sicuro di voler uscire?"
   },
   "page": {
     "notFound": "Pagina non trovata",
