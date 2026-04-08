@@ -65,20 +65,20 @@ function BlockchainDot({ tooltip }: { tooltip?: string }) {
 
 const RANK_LADDER: { min: number; label: string }[] = [
   { min: 0, label: 'Noobie' },
-  { min: 1, label: 'Deal Rookie' },
-  { min: 3, label: 'Cashflow Builder' },
-  { min: 5, label: 'Portfolio Boss' },
-  { min: 10, label: 'Empire Builder' },
-  { min: 15, label: 'Property Titan' },
+  { min: 5000, label: 'Deal Rookie' },
+  { min: 25000, label: 'Cashflow Builder' },
+  { min: 50000, label: 'Portfolio Boss' },
+  { min: 75000, label: 'Empire Builder' },
+  { min: 100000, label: 'Property Titan' },
 ];
 
 const MILESTONES = [
   { min: 0, label: 'Noobie', tier: '', tierCount: 0 },
-  { min: 1, label: 'Deal Rookie', tier: '\u25C6', tierCount: 1 },
-  { min: 3, label: 'Cashflow Builder', tier: '\u25C6', tierCount: 2 },
-  { min: 5, label: 'Portfolio Boss', tier: '\u25C6', tierCount: 3 },
-  { min: 10, label: 'Empire Builder', tier: '\u25C6', tierCount: 4 },
-  { min: 15, label: 'Property Titan', tier: '\u2605', tierCount: 5 },
+  { min: 5000, label: 'Deal Rookie', tier: '\u25C6', tierCount: 1 },
+  { min: 25000, label: 'Cashflow Builder', tier: '\u25C6', tierCount: 2 },
+  { min: 50000, label: 'Portfolio Boss', tier: '\u25C6', tierCount: 3 },
+  { min: 75000, label: 'Empire Builder', tier: '\u25C6', tierCount: 4 },
+  { min: 100000, label: 'Property Titan', tier: '\u2605', tierCount: 5 },
 ];
 
 function getCurrentRank(count: number) {
@@ -101,14 +101,14 @@ function getReachedMilestones(count: number) {
 // Achievements
 // ---------------------------------------------------------------------------
 
-function getAchievements(holdingsCount: number, totalClaimed: number, hasVoted: boolean) {
+function getAchievements(totalInvested: number, totalClaimed: number, hasVoted: boolean) {
   return [
-    { id: 'first-property', name: 'First Property', description: 'Contributed in your first property', icon: Home, unlocked: holdingsCount >= 1 },
-    { id: 'active-partner', name: 'Active Partner', description: 'Participated in the nfstay JV program', icon: Users, unlocked: holdingsCount > 0 },
-    { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Contributed in 3+ properties', icon: Building2, unlocked: holdingsCount >= 3 },
-    { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Contributed in 5+ properties', icon: Award, unlocked: holdingsCount >= 5 },
-    { id: 'empire-builder', name: 'Empire Builder', description: 'Contributed in 10+ properties', icon: Sparkles, unlocked: holdingsCount >= 10 },
-    { id: 'property-titan', name: 'Property Titan', description: 'Contributed in 15+ properties', icon: Crown, unlocked: holdingsCount >= 15 },
+    { id: 'first-investment', name: 'First Investment', description: 'Invested $5k+', icon: Home, unlocked: totalInvested >= 5000 },
+    { id: 'active-partner', name: 'Active Partner', description: 'Participated in the nfstay JV program', icon: Users, unlocked: totalInvested > 0 },
+    { id: 'cashflow-builder', name: 'Cashflow Builder', description: 'Invested $25k+', icon: Building2, unlocked: totalInvested >= 25000 },
+    { id: 'portfolio-boss', name: 'Portfolio Boss', description: 'Invested $50k+', icon: Award, unlocked: totalInvested >= 50000 },
+    { id: 'empire-builder', name: 'Empire Builder', description: 'Invested $75k+', icon: Sparkles, unlocked: totalInvested >= 75000 },
+    { id: 'property-titan', name: 'Property Titan', description: 'Invested $100k+', icon: Crown, unlocked: totalInvested >= 100000 },
     { id: 'first-payout', name: 'First Payout', description: 'Received your first rental income', icon: Banknote, unlocked: totalClaimed > 0 },
     { id: 'proposal-voter', name: 'Proposal Voter', description: 'Voted on a governance proposal', icon: Vote, unlocked: hasVoted },
   ];
@@ -408,18 +408,19 @@ export default function InvestPortfolioPage() {
   }, [address, portfolio.holdings.length, allProperties.length]);
 
   const holdingsCount = portfolio.holdings.length;
-  const currentRank = getCurrentRank(holdingsCount);
-  const nextMilestone = getNextMilestone(holdingsCount);
-  const reachedMilestones = getReachedMilestones(holdingsCount);
+  const totalInvested = portfolio.totalContributed;
+  const currentRank = getCurrentRank(totalInvested);
+  const nextMilestone = getNextMilestone(totalInvested);
+  const reachedMilestones = getReachedMilestones(totalInvested);
 
-  const ACHIEVEMENTS = getAchievements(holdingsCount, totalClaimed, hasVoted);
+  const ACHIEVEMENTS = getAchievements(totalInvested, totalClaimed, hasVoted);
   const unlockedCount = ACHIEVEMENTS.filter((a) => a.unlocked).length;
 
   const milestoneProgress = nextMilestone
-    ? (holdingsCount / nextMilestone.min) * 100
+    ? (totalInvested / nextMilestone.min) * 100
     : 100;
-  const propertiesNeeded = nextMilestone
-    ? nextMilestone.min - holdingsCount
+  const amountNeeded = nextMilestone
+    ? nextMilestone.min - totalInvested
     : 0;
 
   // ROI progress
@@ -468,7 +469,7 @@ export default function InvestPortfolioPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">My Airbnb Portfolio</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Build your hosting portfolio. Your status grows with every property.
+              Build your hosting portfolio. Your status grows with every investment.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -477,7 +478,7 @@ export default function InvestPortfolioPage() {
               {currentRank}
             </Badge>
             {nextMilestone && (
-              <span className="text-xs text-muted-foreground">{propertiesNeeded} more to {nextMilestone.label}</span>
+              <span className="text-xs text-muted-foreground">${amountNeeded.toLocaleString()} more to {nextMilestone.label}</span>
             )}
           </div>
         </div>
@@ -709,7 +710,7 @@ export default function InvestPortfolioPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {milestone.min} {milestone.min === 1 ? 'property' : 'properties'}
+                            {milestone.min === 0 ? '0 invested' : `$${(milestone.min / 1000).toLocaleString()}k invested`}
                           </p>
                         </div>
                       </div>
@@ -1032,9 +1033,9 @@ export default function InvestPortfolioPage() {
         {nextMilestone && (
           <div className="bg-primary/5 border-l-4 border-primary rounded-r-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
             <p className="text-sm text-foreground">
-              Partner on{' '}
+              Invest{' '}
               <span className="font-semibold">
-                {propertiesNeeded} more {propertiesNeeded === 1 ? 'property' : 'properties'}
+                ${amountNeeded.toLocaleString()} more
               </span>{' '}
               to unlock <span className="font-semibold">{nextMilestone.label}</span> status
             </p>
