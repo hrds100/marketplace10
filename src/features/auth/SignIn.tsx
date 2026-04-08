@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import AuthSlidePanel from '@/components/AuthSlidePanel';
 import { NfsLogo } from '@/components/nfstay/NfsLogo';
+import { useTranslation } from 'react-i18next';
 
 const REMEMBER_KEY = 'nfstay_remember_email';
 
@@ -58,6 +59,7 @@ function derivedPassword(uuid: string): string {
 }
 
 export default function SignIn() {
+  const { t } = useTranslation();
   const { signIn } = useAuth();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
@@ -161,14 +163,14 @@ export default function SignIn() {
           <div className="flex flex-col items-center justify-center w-full max-w-[480px] flex-1">
             {/* Heading */}
             <div className="text-center w-full" style={{ marginBottom: 'clamp(16px, 2.5vh, 32px)' }}>
-              <h2 className="font-semibold text-[#0a0a0a] leading-tight tracking-tight" style={{ fontSize: 'clamp(20px, 2.7vh, 30px)' }}>Welcome back</h2>
-              <p className="text-base text-[#737373] text-center mt-1.5 leading-relaxed">Sign in to your nfstay account</p>
+              <h2 className="font-semibold text-[#0a0a0a] leading-tight tracking-tight" style={{ fontSize: 'clamp(20px, 2.7vh, 30px)' }}>{t('auth.welcomeBack')}</h2>
+              <p className="text-base text-[#737373] text-center mt-1.5 leading-relaxed">{t('auth.signInSubtitle')}</p>
             </div>
 
             {/* Tab switcher */}
             <div data-feature="AUTH__TAB_BAR" className="grid grid-cols-2 w-full border rounded-xl" style={{ height: 40, gap: 2, backgroundColor: '#f3f3ee', borderColor: '#e8e5df', padding: 2, marginBottom: 'clamp(11px, 2vh, 29px)' }}>
-              <button className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-white text-[#1b1b1b]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)' }}>Sign In</button>
-              <Link to="/signup" className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-transparent text-[#73757c] hover:bg-white/50">Register</Link>
+              <button className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-white text-[#1b1b1b]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)' }}>{t('auth.signInTitle')}</button>
+              <Link to="/signup" className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-transparent text-[#73757c] hover:bg-white/50">{t('auth.register')}</Link>
             </div>
 
             <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
@@ -197,26 +199,26 @@ export default function SignIn() {
               {/* Divider */}
               <div className="flex items-center gap-3 w-full">
                 <div className="h-px flex-1 bg-[#e5e5e5]" />
-                <span className="text-base text-[#737373] whitespace-nowrap">or sign in with email</span>
+                <span className="text-base text-[#737373] whitespace-nowrap">{t('auth.orSignInWithEmail')}</span>
                 <div className="h-px flex-1 bg-[#e5e5e5]" />
               </div>
 
               {/* Email + Password form */}
               <form className="flex flex-col gap-4" onSubmit={handleSignIn}>
                 <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium text-[#525252] tracking-wide">Email</label>
+                  <label className="text-sm font-medium text-[#525252] tracking-wide">{t('auth.email')}</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-                    <input data-feature="AUTH__SIGNIN_EMAIL" type="email" placeholder="Enter your email" value={email} onChange={e => setEmail(e.target.value)} required
+                    <input data-feature="AUTH__SIGNIN_EMAIL" type="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required
                       className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                       style={{ padding: '4px 12px 4px 40px' }} />
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium text-[#525252] tracking-wide">Password</label>
+                  <label className="text-sm font-medium text-[#525252] tracking-wide">{t('auth.password')}</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-                    <input data-feature="AUTH__SIGNIN_PASSWORD" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" value={password} onChange={e => setPassword(e.target.value)} required
+                    <input data-feature="AUTH__SIGNIN_PASSWORD" type={showPassword ? 'text' : 'password'} placeholder={t('auth.passwordPlaceholder')} value={password} onChange={e => setPassword(e.target.value)} required
                       className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                       style={{ padding: '4px 40px 4px 40px' }} />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}
@@ -235,9 +237,9 @@ export default function SignIn() {
                         backgroundImage: rememberMe ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E\")" : 'none',
                         backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundSize: '12px',
                       }} />
-                    <label htmlFor="remember" className="text-sm text-[#1b1b1b] cursor-pointer select-none">Remember me</label>
+                    <label htmlFor="remember" className="text-sm text-[#1b1b1b] cursor-pointer select-none">{t('auth.rememberMe')}</label>
                   </div>
-                  <Link data-feature="AUTH__SIGNIN_FORGOT" to="/forgot-password" className="bg-transparent border-none text-[#1e9a80] text-sm font-medium cursor-pointer p-0 hover:underline">Forgot Password?</Link>
+                  <Link data-feature="AUTH__SIGNIN_FORGOT" to="/forgot-password" className="bg-transparent border-none text-[#1e9a80] text-sm font-medium cursor-pointer p-0 hover:underline">{t('auth.forgotPassword')}</Link>
                 </div>
 
                 {error && <p className="text-sm text-red-500">{error}</p>}
@@ -246,20 +248,20 @@ export default function SignIn() {
                   className="w-full rounded-lg font-medium text-white cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ height: 37, backgroundColor: '#1e9a80', fontSize: 16, padding: '8px 16px', border: 'none', boxShadow: '0 4px 8px -1px rgba(0,0,0,0.05)' }}>
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Sign In
+                  {t('auth.signInTitle')}
                 </button>
               </form>
 
               <p className="text-sm text-[#737373] text-center mt-2">
-                Don't have an account?{' '}
-                <Link data-feature="AUTH__SIGNIN_SIGNUP_LINK" to="/signup" className="text-[#1e9a80] font-semibold">Sign up</Link>
+                {t('auth.noAccount')}{' '}
+                <Link data-feature="AUTH__SIGNIN_SIGNUP_LINK" to="/signup" className="text-[#1e9a80] font-semibold">{t('auth.signUp')}</Link>
               </p>
 
               <p data-feature="AUTH__TERMS_NOTICE" className="text-[11px] text-muted-foreground text-center mt-4">
-                By signing up, you confirm that you accept our{' '}
-                <a href="/terms" className="text-primary underline">Terms and Conditions</a>{' '}
-                and{' '}
-                <a href="/privacy" className="text-primary underline">Privacy Policy</a>.
+                {t('auth.termsNotice')}{' '}
+                <a href="/terms" className="text-primary underline">{t('auth.termsAndConditions')}</a>{' '}
+                {t('common.and')}{' '}
+                <a href="/privacy" className="text-primary underline">{t('auth.privacyPolicy')}</a>.
               </p>
             </div>
           </div>
