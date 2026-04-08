@@ -11,10 +11,9 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { useInvestProperties } from '@/hooks/useInvestData';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 const DealsMap = lazy(() => import('@/components/DealsMap'));
-
-const tabs = ['All', 'Live', 'On Offer', 'Inactive'] as const;
 
 // Normalize property type to: HMO, Flat, House
 function normalizeType(rawType: string | null): string {
@@ -84,6 +83,7 @@ function CardSkeleton() {
 }
 
 export default function DealsPageV2() {
+  const { t } = useTranslation();
   useEffect(() => { document.title = 'nfstay - Deals'; }, []);
   const { user } = useAuth();
   const { toggle, isFav } = useFavourites();
@@ -335,7 +335,7 @@ export default function DealsPageV2() {
       {/* ── HEADER — subtitle only, no "Deals" title ───────────── */}
       <div className="px-6 md:px-8 pt-4 pb-3 flex-shrink-0">
         <p className="text-sm text-muted-foreground">
-          {liveCount} landlord-approved properties across the UK
+          {t('deals.title', { count: liveCount })}
         </p>
       </div>
 
@@ -349,17 +349,22 @@ export default function DealsPageV2() {
             {/* Filter bar */}
             <div data-feature="DEALS__FILTER_BAR" className="flex items-center gap-2 mb-6 flex-wrap">
               <div data-feature="DEALS__STATUS_TABS" className="flex gap-0.5 bg-muted p-1 rounded-lg">
-                {tabs.map(t => (
+                {([
+                  { key: 'All', label: t('deals.all') },
+                  { key: 'Live', label: t('deals.live') },
+                  { key: 'On Offer', label: t('deals.onOffer') },
+                  { key: 'Inactive', label: t('deals.inactive') },
+                ] as const).map(tab => (
                   <button
-                    key={t}
-                    onClick={() => { setActiveTab(t); setPage(1); }}
+                    key={tab.key}
+                    onClick={() => { setActiveTab(tab.key); setPage(1); }}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 whitespace-nowrap ${
-                      activeTab === t
+                      activeTab === tab.key
                         ? 'bg-background text-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    {t}
+                    {tab.label}
                   </button>
                 ))}
               </div>
@@ -369,7 +374,7 @@ export default function DealsPageV2() {
                 onChange={e => { setCity(e.target.value); setPage(1); }}
                 className="input-nfstay h-8 text-xs pr-7 bg-card"
               >
-                <option value="">All cities</option>
+                <option value="">{t('deals.allCities')}</option>
                 {cities.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
               <select
@@ -378,10 +383,10 @@ export default function DealsPageV2() {
                 onChange={e => { setType(e.target.value); setPage(1); }}
                 className="input-nfstay h-8 text-xs pr-7 bg-card"
               >
-                <option value="">All types</option>
-                <option value="HMO">HMO</option>
-                <option value="Flat">Flat</option>
-                <option value="House">House</option>
+                <option value="">{t('deals.allTypes')}</option>
+                <option value="HMO">{t('deals.hmo')}</option>
+                <option value="Flat">{t('deals.flat')}</option>
+                <option value="House">{t('deals.house')}</option>
               </select>
               <select
                 data-feature="DEALS__FILTER_BEDS"
@@ -389,12 +394,12 @@ export default function DealsPageV2() {
                 onChange={e => { setBedsFilter(e.target.value); setPage(1); }}
                 className="input-nfstay h-8 text-xs pr-7 bg-card"
               >
-                <option value="">All beds</option>
-                <option value="1">1 bed</option>
-                <option value="2">2 bed</option>
-                <option value="3">3 bed</option>
-                <option value="4">4 bed</option>
-                <option value="5">5+ bed</option>
+                <option value="">{t('deals.allBeds')}</option>
+                <option value="1">{t('deals.oneBed')}</option>
+                <option value="2">{t('deals.twoBed')}</option>
+                <option value="3">{t('deals.threeBed')}</option>
+                <option value="4">{t('deals.fourBed')}</option>
+                <option value="5">{t('deals.fivePlusBed')}</option>
               </select>
               <select
                 data-feature="DEALS__FILTER_LISTING_TYPE"
@@ -402,9 +407,9 @@ export default function DealsPageV2() {
                 onChange={e => { setListingTypeFilter(e.target.value); setPage(1); }}
                 className="input-nfstay h-8 text-xs pr-7 bg-card"
               >
-                <option value="all">All listings</option>
-                <option value="rental">Rental only</option>
-                <option value="sale">For Sale only</option>
+                <option value="all">{t('deals.allListings')}</option>
+                <option value="rental">{t('deals.rentalOnly')}</option>
+                <option value="sale">{t('deals.forSaleOnly')}</option>
               </select>
               <select
                 data-feature="DEALS__FILTER_LISTER_TYPE"
@@ -412,10 +417,10 @@ export default function DealsPageV2() {
                 onChange={e => { setListerTypeFilter(e.target.value); setPage(1); }}
                 className="input-nfstay h-8 text-xs pr-7 bg-card"
               >
-                <option value="all">All listers</option>
-                <option value="landlord">Direct Landlord</option>
-                <option value="agent">Letting Agent</option>
-                <option value="deal_sourcer">Deal Sourcer</option>
+                <option value="all">{t('deals.allListers')}</option>
+                <option value="landlord">{t('deals.directLandlord')}</option>
+                <option value="agent">{t('deals.lettingAgent')}</option>
+                <option value="deal_sourcer">{t('deals.dealSourcer')}</option>
               </select>
               <select
                 data-feature="DEALS__FILTER_SORT"
@@ -423,12 +428,12 @@ export default function DealsPageV2() {
                 onChange={e => setSort(e.target.value)}
                 className="input-nfstay h-8 text-xs pr-7 bg-card"
               >
-                <option value="newest">Newest</option>
-                <option value="profit">Highest profit</option>
-                <option value="rent">Lowest rent</option>
+                <option value="newest">{t('deals.newest')}</option>
+                <option value="profit">{t('deals.highestProfit')}</option>
+                <option value="rent">{t('deals.lowestRent')}</option>
               </select>
               <span data-feature="DEALS__COUNT" className="text-xs text-muted-foreground">
-                {filtered.length + highlighted.length} deals
+                {filtered.length + highlighted.length} {t('deals.deals')}
               </span>
             </div>
 
@@ -462,9 +467,9 @@ export default function DealsPageV2() {
             ) : (
               <div className="text-center py-20">
                 <p className="text-2xl mb-3">🏠</p>
-                <p className="text-base font-semibold text-foreground mb-1">No deals found</p>
+                <p className="text-base font-semibold text-foreground mb-1">{t('deals.noDealsFound')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Check back soon — new deals are added daily.
+                  {t('deals.checkBackSoon')}
                 </p>
               </div>
             )}
@@ -477,7 +482,7 @@ export default function DealsPageV2() {
                   disabled={page === 1}
                   className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 px-2 py-1"
                 >
-                  Prev
+                  {t('common.prev')}
                 </button>
                 {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
                   <button
@@ -512,7 +517,7 @@ export default function DealsPageV2() {
                   disabled={page === totalPages}
                   className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 px-2 py-1"
                 >
-                  Next
+                  {t('common.next')}
                 </button>
               </div>
             )}
@@ -523,13 +528,13 @@ export default function DealsPageV2() {
         <div className="hidden lg:flex lg:flex-col w-[35%] max-w-[520px] flex-shrink-0 p-3">
           <div className="flex items-center gap-2 px-1 pb-2.5">
             <span className="text-emerald-500 text-lg">📍</span>
-            <span className="text-[14px] font-semibold text-foreground">Deal Locations</span>
+            <span className="text-[14px] font-semibold text-foreground">{t('deals.dealLocations')}</span>
           </div>
           <div className="flex-1 rounded-2xl overflow-hidden border border-border/30 shadow-sm">
             <Suspense
               fallback={
                 <div className="w-full h-full bg-muted/30 animate-pulse flex items-center justify-center rounded-2xl">
-                  <span className="text-sm text-muted-foreground">Loading map…</span>
+                  <span className="text-sm text-muted-foreground">{t('deals.loadingMap')}</span>
                 </div>
               }
             >
