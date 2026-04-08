@@ -2,6 +2,46 @@
 
 ## [Unreleased]
 
+## [2026-04-09a] - WhatsApp Cloud API + Template Management + Documentation
+
+### Added
+- **WhatsApp Cloud API integration** (Meta direct, not Twilio):
+  - `wa-webhook-incoming` edge function: receives WhatsApp messages via Meta webhook. GET verification + POST message/status handling. HMAC-SHA256 signature validation.
+  - `wa-send` edge function: sends WhatsApp text + template messages via Meta Graph API v25.0.
+  - `wa-templates` edge function: CRUD for WhatsApp message templates via Meta API.
+  - Meta App "Agencin" (ID: 1407293420420768) configured with WhatsApp Business Platform.
+  - Webhook subscription registered for messages field.
+  - Secrets set: META_WHATSAPP_TOKEN, META_APP_SECRET, META_VERIFY_TOKEN.
+  - WhatsApp test number (+1 555 163 6030) seeded in sms_numbers.
+
+- **WhatsApp Template Management UI** at `/sms/templates`:
+  - Two tabs: SMS Templates + WhatsApp Templates
+  - 20 built-in starter templates (property-focused): 12 UTILITY, 6 MARKETING, 2 AUTHENTICATION
+  - Starter picker with category filter pills (green/orange/grey)
+  - Template creation form: name, category, language, body with variable insertion, preview, char count
+  - Template list grouped by category with status badges (APPROVED/PENDING/REJECTED)
+  - Delete protection for Meta's built-in `hello_world` template
+
+- **Comprehensive documentation** at `docs/sms/`:
+  - `README.md` — module overview
+  - `ARCHITECTURE.md` — database tables, edge functions, real-time flow, node types
+  - `STATUS.md` — what's done, what's left, credentials, live stats
+  - `AGENT_INSTRUCTIONS.md` — hotkey, rules, agent routing, key files
+
+### Fixed
+- Numbers page empty — `useNumbers` hook was querying non-existent `message_count` column
+- WhatsApp template delete returns 200 with error info instead of crashing
+- OpenAI model list updated to 2026 (GPT-5.4 family with fallback)
+- Vercel trailing slash 404 on `/sms/` routes — added `trailingSlash: false`
+- Flow editor crash — `leadCounts` prop not destructured in FlowContext
+- SMS replies no longer use markdown formatting (explicit plain-text rules in AI prompt)
+
+### Pending
+- Meta App Review approval (submitted, in review)
+- Record 2 videos for App Review (sending message + creating template)
+- Add real phone number for WhatsApp after approval
+- Meta OAuth flow for multi-account "Connect WhatsApp" button
+
 ## [2026-04-08a] - WhatsApp Channel Support
 
 ### Added
