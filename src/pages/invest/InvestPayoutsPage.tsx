@@ -781,9 +781,9 @@ export default function InvestPayoutsPage() {
       ) : (
 
       /* Content */
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Left sticky sidebar */}
-        <div className="w-80 flex-shrink-0 space-y-4 sticky top-6 self-start">
+        <div className="w-full lg:w-80 lg:flex-shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start">
           {/* Payout Summary Card */}
           <Card className="border-green-500/20">
             <CardHeader className="pb-2">
@@ -847,7 +847,7 @@ export default function InvestPayoutsPage() {
               claimable.map((payout) => (
                 <Card key={payout.id} className="border-green-500/20" data-feature="INVEST__PAYOUT_CARD">
                   <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <PropertyImage
                           src={payout.propertyImage}
@@ -861,7 +861,7 @@ export default function InvestPayoutsPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
                         <Badge variant="outline" className="bg-green-500/15 text-green-400 border-green-500/30 shadow-[0_0_8px_rgba(34,197,94,0.2)]" data-feature="INVEST__PAYOUT_STATUS">
                           Claimable
                         </Badge>
@@ -882,7 +882,7 @@ export default function InvestPayoutsPage() {
           {/* History Table */}
           <h2 className="text-xl font-bold">History</h2>
           <Card>
-            <CardContent className="p-0">
+            <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
