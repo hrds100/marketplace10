@@ -99,12 +99,18 @@ serve(async (req: Request) => {
     // ---- DELETE TEMPLATE ----
     if (action === 'delete') {
       const templateName = body.name as string;
+      const templateId = body.id as string;
 
-      if (!templateName) {
-        return json({ error: 'Missing required field: name' }, 400);
+      if (!templateName && !templateId) {
+        return json({ error: 'Missing required field: name or id' }, 400);
       }
 
-      const url = `${GRAPH_URL}/${WABA_ID}/message_templates?name=${encodeURIComponent(templateName)}`;
+      // Meta requires the template name for deletion
+      const deleteParam = templateName
+        ? `name=${encodeURIComponent(templateName)}`
+        : `hsm_id=${encodeURIComponent(templateId)}`;
+
+      const url = `${GRAPH_URL}/${WABA_ID}/message_templates?${deleteParam}`;
       const res = await fetch(url, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${META_TOKEN}` },
@@ -114,13 +120,35 @@ serve(async (req: Request) => {
 
       if (!res.ok) {
         console.error('Meta API delete error:', data);
-        return json(
-          { error: 'Failed to delete template', meta_error: data.error?.message || 'Unknown' },
-          502
-        );
+        const metaMsg = data.error?.message || 'Unknown error';
+        // Return 200 with error info so the client can show a toast (not crash)
+        return json({ error: 'Failed to delete template', meta_error: metaMsg, success: false });
       }
 
       return json({ success: true });
+    }
+
+    // ---- IMPORT META DEFAULT TEMPLATES ----
+    if (action === 'list_available') {
+      // Fetch templates that Meta provides as defaults
+      const url = `${GRAPH_URL}/${WABA_ID}/message_templates?access_token=${META_TOKEN}&limit=100&status=APPROVED`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok) {
+        return json({ error: 'Failed to fetch templates', meta_error: data.error?.message }, 502);
+      }
+
+      const templates = (data.data || []).map((t: Record<string, unknown>) => ({
+        id: t.id,
+        name: t.name,
+        status: t.status,
+        category: t.category,
+        language: t.language,
+        components: t.components,
+      }));
+
+      return json({ templates });
     }
 
     return json({ error: `Unknown action: ${action}` }, 400);
