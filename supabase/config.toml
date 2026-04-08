@@ -145,6 +145,9 @@ verify_jwt = false
 [functions.ai-chat]
 verify_jwt = false
 
+[functions.cancel-subscription]
+verify_jwt = false
+
 [functions.ai-description]
 verify_jwt = false
 
