@@ -9,9 +9,8 @@ interface NumberRow {
   phone_number: string;
   label: string;
   is_default: boolean;
-  webhook_url: string;
-  message_count: number;
-  channel: 'sms' | 'whatsapp';
+  webhook_url: string | null;
+  channel: string;
   created_at: string;
 }
 
@@ -23,8 +22,8 @@ function mapRow(row: NumberRow): SmsPhoneNumber {
     label: row.label,
     isDefault: row.is_default,
     webhookUrl: row.webhook_url ?? '',
-    messageCount: row.message_count ?? 0,
-    channel: row.channel ?? 'sms',
+    messageCount: 0,
+    channel: (row.channel as 'sms' | 'whatsapp') ?? 'sms',
     createdAt: row.created_at,
   };
 }
@@ -32,7 +31,7 @@ function mapRow(row: NumberRow): SmsPhoneNumber {
 async function fetchNumbers(): Promise<SmsPhoneNumber[]> {
   const { data, error } = await (supabase
     .from('sms_numbers' as never)
-    .select('id, twilio_sid, phone_number, label, is_default, webhook_url, message_count, channel, created_at')
+    .select('id, twilio_sid, phone_number, label, is_default, webhook_url, channel, created_at')
     .order('created_at', { ascending: true }) as never);
 
   if (error) throw error;
