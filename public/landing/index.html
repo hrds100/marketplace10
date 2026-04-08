@@ -1525,10 +1525,17 @@
 
   <script>
   // Language switcher engine
+  // Map landing page lang codes to React app i18next codes
+  var langToI18n = { en: 'en', pt: 'pt-BR', es: 'es', fr: 'fr', ar: 'ar', it: 'it' };
+  var i18nToLang = { en: 'en', 'pt-BR': 'pt', es: 'es', fr: 'fr', ar: 'ar', it: 'it' };
+
   window.switchLang = function(lang) {
     if (typeof TRANSLATIONS === 'undefined') return;
     var t = TRANSLATIONS[lang];
     if (!t) return;
+
+    // Save to localStorage so the React dashboard picks up the same language
+    localStorage.setItem('nfstay_lang', langToI18n[lang] || lang);
 
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
       var key = el.getAttribute('data-i18n');
@@ -1562,6 +1569,14 @@
       return false;
     };
   });
+
+  // On page load, restore language from localStorage (shared with React dashboard)
+  (function() {
+    var saved = localStorage.getItem('nfstay_lang');
+    if (saved && i18nToLang[saved]) {
+      window.switchLang(i18nToLang[saved]);
+    }
+  })();
   </script>
 
   <script>
