@@ -160,3 +160,6 @@ verify_jwt = false
 
 [functions.wa-send]
 verify_jwt = false
+
+[functions.wa-templates]
+verify_jwt = false
