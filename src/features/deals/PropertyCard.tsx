@@ -83,7 +83,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
       return;
     }
     let photoUrl = resolvedImage;
-    if (!photoUrl || photoUrl.includes('placehold.co')) {
+    if (!photoUrl || photoUrl.includes('property-placeholder')) {
       const pexels = await fetchPexelsPhotos(listing.city, listing.type, 1);
       if (pexels[0]) photoUrl = pexels[0];
     }
@@ -134,7 +134,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type, 0, isPrime);
   const isPexelsPhoto = resolvedImage?.includes('images.pexels.com') || false;
 
-  const placeholderUrl = `https://placehold.co/800x520/1a1a2e/ffffff`;
+  const placeholderUrl = '/property-placeholder.svg';
   const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
     if (img.src !== placeholderUrl) img.src = placeholderUrl;

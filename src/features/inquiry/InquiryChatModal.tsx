@@ -187,7 +187,7 @@ export default function InquiryChatModal({ open, listing, onClose, onContactSucc
   }
 
   const accentColor = channel === 'whatsapp' ? '#25D366' : '#1E9A80';
-  const propertyImage = listing.image && !listing.image.includes('placehold.co') ? listing.image : null;
+  const propertyImage = listing.image && !listing.image.includes('property-placeholder') ? listing.image : null;
   const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   const modal = (
