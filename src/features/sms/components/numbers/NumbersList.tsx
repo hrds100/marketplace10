@@ -60,6 +60,15 @@ export default function NumbersList({ numbers, onEdit, onSetDefault, onRemove }:
                     Default
                   </span>
                 )}
+                {num.channel === 'whatsapp' ? (
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#25D366]/10 text-[#25D366]">
+                    WhatsApp
+                  </span>
+                ) : (
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#6B7280]/10 text-[#6B7280]">
+                    SMS
+                  </span>
+                )}
                 <StatusBadge status="active" />
               </div>
             </div>

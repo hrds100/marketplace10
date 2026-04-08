@@ -33,13 +33,14 @@ export default function SmsNumbersPage() {
     }
   }
 
-  async function handleSave(data: { phoneNumber: string; twilioSid: string; label: string }) {
+  async function handleSave(data: { phoneNumber: string; twilioSid: string; label: string; channel: 'sms' | 'whatsapp' }) {
     try {
       await addNumber({
         phone_number: data.phoneNumber,
         twilio_sid: data.twilioSid,
         label: data.label,
         is_default: numbers.length === 0,
+        channel: data.channel,
       });
     } catch {
       // Error already handled by hook toast

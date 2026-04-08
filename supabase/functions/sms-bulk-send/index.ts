@@ -89,7 +89,7 @@ serve(async (req: Request) => {
 
     const { data: numbers, error: numErr } = await supabase
       .from('sms_numbers')
-      .select('id, phone_number')
+      .select('id, phone_number, channel')
       .in('id', numberIds);
 
     if (numErr || !numbers || numbers.length === 0) {
@@ -175,9 +175,12 @@ serve(async (req: Request) => {
         }
 
         // ---- SEND VIA TWILIO ----
+        const twilioTo = number.channel === 'whatsapp' ? `whatsapp:${contact.phone_number}` : contact.phone_number;
+        const twilioFrom = number.channel === 'whatsapp' ? `whatsapp:${number.phone_number}` : number.phone_number;
+
         const twilioParams = new URLSearchParams({
-          To: contact.phone_number,
-          From: number.phone_number,
+          To: twilioTo,
+          From: twilioFrom,
           Body: messageBody,
           StatusCallback: statusCallbackUrl,
         });
@@ -220,6 +223,7 @@ serve(async (req: Request) => {
             number_id: number.id,
             contact_id: contact.id,
             campaign_id: campaign_id,
+            channel: number.channel || 'sms',
           })
           .select('id')
           .single();

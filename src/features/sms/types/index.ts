@@ -43,6 +43,7 @@ export interface SmsMessage {
   errorCode: string | null;
   errorMessage: string | null;
   scheduledAt: string | null;
+  channel: 'sms' | 'whatsapp';
   createdAt: string;
 }
 
@@ -60,6 +61,7 @@ export interface SmsConversation {
   automationId: string | null;
   automationEnabled: boolean;
   automationName: string | null;
+  channel: 'sms' | 'whatsapp';
   createdAt: string;
 }
 
@@ -96,6 +98,7 @@ export interface SmsPhoneNumber {
   isDefault: boolean;
   webhookUrl: string;
   messageCount: number;
+  channel: 'sms' | 'whatsapp';
   createdAt: string;
 }
 

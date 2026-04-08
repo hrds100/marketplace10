@@ -33,6 +33,7 @@ interface MessageThreadProps {
   automations?: SmsAutomation[];
   onToggleAutomation?: (automationId: string | null, enabled: boolean) => void;
   isTogglingAutomation?: boolean;
+  channel?: 'sms' | 'whatsapp';
 }
 
 function groupByDate(messages: SmsMessage[]): Map<string, SmsMessage[]> {
@@ -65,6 +66,7 @@ export default function MessageThread({
   automations = [],
   onToggleAutomation,
   isTogglingAutomation = false,
+  channel = 'sms',
 }: MessageThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [editingName, setEditingName] = useState(false);
@@ -153,9 +155,20 @@ export default function MessageThread({
               )}
             </div>
           )}
-          {contact.displayName && !editingName && (
-            <PhoneNumber number={contact.phoneNumber} className="text-xs text-[#9CA3AF]" />
-          )}
+          <div className="flex items-center gap-1.5">
+            {contact.displayName && !editingName && (
+              <PhoneNumber number={contact.phoneNumber} className="text-xs text-[#9CA3AF]" />
+            )}
+            {channel === 'whatsapp' ? (
+              <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#25D366]/10 text-[#25D366]">
+                via WhatsApp
+              </span>
+            ) : (
+              <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#6B7280]/10 text-[#6B7280]">
+                via SMS
+              </span>
+            )}
+          </div>
         </div>
         {/* Automation toggle */}
         {onToggleAutomation && (
