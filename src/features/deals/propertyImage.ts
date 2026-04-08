@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 /** Placeholder — deterministic, never broken */
 function placeholder(city: string, index = 0): string {
-  return `https://placehold.co/800x520/1a1a2e/ffffff`;
+  return '/property-placeholder.svg';
 }
 
 /** Synchronous — returns photo or placeholder. Use for initial render. */

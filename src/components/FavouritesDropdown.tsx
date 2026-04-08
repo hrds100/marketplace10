@@ -130,7 +130,7 @@ export default function FavouritesDropdown() {
               </div>
             ) : (
               properties.map((p, i) => {
-                const photo = p.photos?.[0] || `https://placehold.co/96x96/f3f4f6/9ca3af`;
+                const photo = p.photos?.[0] || '/property-placeholder.svg';
                 return (
                   <div
                     key={p.id}
@@ -142,7 +142,7 @@ export default function FavouritesDropdown() {
                       src={photo}
                       alt={p.name}
                       className="w-11 h-11 rounded-lg object-cover flex-shrink-0"
-                      onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/96x96/f3f4f6/9ca3af`; }}
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/property-placeholder.svg'; }}
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-medium text-foreground truncate">{p.name}</p>

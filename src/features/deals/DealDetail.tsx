@@ -156,9 +156,9 @@ export default function DealDetail() {
 
   const stockImages = pexelsImages.length > 0
     ? pexelsImages
-    : Array.from({ length: 5 }, () => `https://placehold.co/1200x900/1a1a2e/ffffff`);
+    : Array.from({ length: 5 }, () => '/property-placeholder.svg');
   const images = [...userPhotos, ...stockImages.slice(0, 5 - userPhotos.length)].slice(0, 5);
-  const isPexelsImage = (url: string) => url.includes('pexels.com') || url.includes('placehold.co');
+  const isPexelsImage = (url: string) => url.includes('pexels.com') || url.includes('property-placeholder');
 
   // More deals (same city, excluding current)
   const { data: moreDeals = [] } = useQuery({
@@ -184,7 +184,7 @@ export default function DealDetail() {
         featured: !!p.featured,
         prime: !!p.prime,
         daysAgo: Math.max(0, Math.floor((Date.now() - new Date(p.created_at as string).getTime()) / 86400000)),
-        image: ((p.photos as string[] | null)?.[0]) || `https://placehold.co/800x520/1a1a2e/ffffff`,
+        image: ((p.photos as string[] | null)?.[0]) || '/property-placeholder.svg',
         landlordApproved: p.sa_approved === 'yes',
         landlordWhatsapp: (p.landlord_whatsapp as string) || null,
         slug: (p.slug as string) || null,

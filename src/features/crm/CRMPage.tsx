@@ -121,7 +121,7 @@ export default function CRMPage() {
 
   const getDealImage = (deal: ExtendedDeal) => {
     if (deal.photo_url) return deal.photo_url;
-    return `https://placehold.co/400x300/1a1a2e/ffffff`;
+    return '/property-placeholder.svg';
   };
 
   const dealToListingShape = (deal: ExtendedDeal): ListingShape => ({
