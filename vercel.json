@@ -80,6 +80,10 @@
       "destination": "/app.html"
     },
     {
+      "source": "/motion",
+      "destination": "/app.html"
+    },
+    {
       "source": "/sms",
       "destination": "/app.html"
     },
