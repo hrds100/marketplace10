@@ -288,7 +288,7 @@ function InvestModal({
     )}
 
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="relative sm:max-w-md" data-feature="INVEST__MARKETPLACE_CHECKOUT">
+      <DialogContent className="sm:max-w-md" data-feature="INVEST__MARKETPLACE_CHECKOUT">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {'Partner on ' + property.title}

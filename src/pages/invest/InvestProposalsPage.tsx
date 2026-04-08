@@ -599,9 +599,9 @@ export default function InvestProposalsPage() {
       </div>
 
       {/* Content */}
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Left sticky sidebar */}
-        <div className="w-80 flex-shrink-0 space-y-4 sticky top-6 self-start">
+        <div className="w-full lg:w-80 lg:flex-shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start">
           {/* Governance Stats */}
           <Card className="border-primary/20">
             <CardHeader className="pb-2">
