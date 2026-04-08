@@ -132,7 +132,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
   const airdnaUrl = `https://www.airdna.co`;
   const isPrime = listing.prime;
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type, 0, isPrime);
-  const isPexelsPhoto = resolvedImage?.includes('images.pexels.com') || false;
+  const isPexelsPhoto = resolvedImage?.includes('images.pexels.com') || resolvedImage?.includes('property-placeholder') || false;
 
   const placeholderUrl = '/property-placeholder.svg';
   const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
