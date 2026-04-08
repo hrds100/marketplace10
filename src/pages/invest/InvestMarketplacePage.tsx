@@ -677,7 +677,7 @@ function InvestCardContent({
       {/* Payment method */}
       <div data-feature="INVEST__MARKETPLACE_WALLET">
         <label className="mb-1.5 block text-sm font-medium">Payment method</label>
-        <div className={cn('grid gap-2', compact ? 'grid-cols-2' : 'grid-cols-2')}>
+        <div className={cn('grid gap-2', compact ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2')}>
           <button
             onClick={() => setPaymentMethod('card')}
             className={cn(
