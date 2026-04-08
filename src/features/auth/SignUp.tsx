@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Eye, EyeOff, CheckCircle2, ArrowLeft, Mail, Lock, User, Phone } from 'lucide-react';
@@ -77,6 +78,7 @@ function derivedPassword(uuid: string): string {
 // ── Shared shell for all views ──────────────────────────────────────────────
 
 function AuthShell({ children, showTabs, heading, subtitle }: { children: React.ReactNode; showTabs: boolean; heading: string; subtitle: string }) {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen w-full flex items-center justify-center" style={{ backgroundColor: '#f3f3ee' }}>
       <div className="flex w-full h-screen overflow-hidden p-2 gap-2" style={{ backgroundColor: '#f3f3ee' }}>
@@ -93,8 +95,8 @@ function AuthShell({ children, showTabs, heading, subtitle }: { children: React.
 
             {showTabs && (
               <div className="grid grid-cols-2 w-full border rounded-xl" style={{ height: 40, gap: 2, backgroundColor: '#f3f3ee', borderColor: '#e8e5df', padding: 2, marginBottom: 'clamp(11px, 2vh, 29px)' }}>
-                <Link to="/signin" className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-transparent text-[#73757c] hover:bg-white/50">Sign In</Link>
-                <button className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-white text-[#1b1b1b]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)' }}>Register</button>
+                <Link to="/signin" className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-transparent text-[#73757c] hover:bg-white/50">{t('auth.signInTitle')}</Link>
+                <button className="flex items-center justify-center border-none rounded-[10px] text-sm font-medium cursor-pointer h-full bg-white text-[#1b1b1b]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)' }}>{t('auth.register')}</button>
               </div>
             )}
 
@@ -108,6 +110,7 @@ function AuthShell({ children, showTabs, heading, subtitle }: { children: React.
 }
 
 export default function SignUp() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
@@ -277,7 +280,7 @@ export default function SignUp() {
 
   if (view === 'social') {
     return (
-      <AuthShell showTabs heading="Create your account" subtitle="Join thousands of UK property professionals">
+      <AuthShell showTabs heading={t('auth.createYourAccount')} subtitle={t('auth.joinThousands')}>
         <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
 
           {/* Social 2×2 grid */}
@@ -295,7 +298,7 @@ export default function SignUp() {
           {/* Divider */}
           <div className="flex items-center gap-3 w-full">
             <div className="h-px flex-1 bg-[#e5e5e5]" />
-            <span className="text-sm text-[#737373] whitespace-nowrap">or</span>
+            <span className="text-sm text-[#737373] whitespace-nowrap">{t('auth.or')}</span>
             <div className="h-px flex-1 bg-[#e5e5e5]" />
           </div>
 
@@ -303,19 +306,19 @@ export default function SignUp() {
           <button onClick={() => setView('email')}
             className="w-full flex items-center justify-center gap-2 bg-transparent text-[#0a0a0a] border border-[#e5e5e5] rounded-full text-[15px] font-medium cursor-pointer transition-all duration-150 hover:bg-[#f5f5f5] hover:border-[#c8c8c8]"
             style={{ height: 45 }}>
-            <Mail className="w-5 h-5" /> Sign up with Email
+            <Mail className="w-5 h-5" /> {t('auth.signUpWithEmail')}
           </button>
 
           <p className="text-sm text-[#737373] text-center mt-2">
-            Already have an account?{' '}
-            <Link to="/signin" className="text-[#1e9a80] font-semibold">Sign in</Link>
+            {t('auth.hasAccount')}{' '}
+            <Link to="/signin" className="text-[#1e9a80] font-semibold">{t('auth.signIn')}</Link>
           </p>
 
           <p data-feature="AUTH__TERMS_NOTICE" className="text-[11px] text-muted-foreground text-center mt-4">
-            By signing up, you confirm that you accept our{' '}
-            <a href="/terms" className="text-primary underline">Terms and Conditions</a>{' '}
+            {t('auth.termsNotice')}{' '}
+            <a href="/terms" className="text-primary underline">{t('auth.termsAndConditions')}</a>{' '}
             and{' '}
-            <a href="/privacy" className="text-primary underline">Privacy Policy</a>.
+            <a href="/privacy" className="text-primary underline">{t('auth.privacyPolicy')}</a>.
           </p>
         </div>
       </AuthShell>
@@ -326,21 +329,21 @@ export default function SignUp() {
 
   if (view === 'phone') {
     return (
-      <AuthShell showTabs={false} heading="Add your WhatsApp" subtitle="One last step to verify your account">
+      <AuthShell showTabs={false} heading={t('auth.addYourWhatsApp')} subtitle={t('auth.oneLastStep')}>
         <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
           <button onClick={() => setView('social')} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a] mb-2">
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="w-4 h-4" /> {t('auth.back')}
           </button>
 
           <div className="mb-2">
             <p className="text-sm text-[#737373]">
-              Signed in as <span className="font-medium text-[#0a0a0a]">{particleUser?.email || 'you'}</span>
+              {t('auth.signedInAs')} <span className="font-medium text-[#0a0a0a]">{particleUser?.email || 'you'}</span>
             </p>
-            <p className="text-[13px] text-[#737373] mt-1">We'll send deal alerts and your verification code here.</p>
+            <p className="text-[13px] text-[#737373] mt-1">{t('auth.wellSendDealAlerts')}</p>
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-[#525252] tracking-wide">WhatsApp Number <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-[#525252] tracking-wide">{t('auth.whatsAppNumber')} <span className="text-red-500">*</span></label>
             <div className="flex">
               <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
               <div className="relative flex-1">
@@ -350,20 +353,20 @@ export default function SignUp() {
                   style={{ padding: '4px 12px 4px 40px' }} />
               </div>
             </div>
-            <p className="text-[11px] text-[#737373] mt-1">We'll send a 4-digit verification code via WhatsApp</p>
+            <p className="text-[11px] text-[#737373] mt-1">{t('auth.wellSendCode')}</p>
           </div>
 
           <button onClick={handleSendOtp} disabled={phoneLoading || !phone.trim()}
             className="w-full rounded-lg font-medium text-white cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             style={{ height: 37, backgroundColor: '#1e9a80', fontSize: 16, padding: '8px 16px', border: 'none', boxShadow: '0 4px 8px -1px rgba(0,0,0,0.05)' }}>
             {phoneLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            {phoneLoading ? 'Sending code...' : 'Send verification code'}
+            {phoneLoading ? t('auth.sendingCode') : t('auth.sendVerificationCode')}
           </button>
 
           <p className="text-xs text-[#737373] text-center mt-2">
-            By continuing you agree to our{' '}
-            <Link to="/terms" className="text-[#1e9a80] font-semibold underline" target="_blank">Terms</Link> and{' '}
-            <Link to="/privacy" className="text-[#1e9a80] font-semibold underline" target="_blank">Privacy Policy</Link>.
+            {t('auth.termsNotice')}{' '}
+            <Link to="/terms" className="text-[#1e9a80] font-semibold underline" target="_blank">{t('auth.termsAndConditions')}</Link> and{' '}
+            <Link to="/privacy" className="text-[#1e9a80] font-semibold underline" target="_blank">{t('auth.privacyPolicy')}</Link>.
           </p>
         </div>
       </AuthShell>
@@ -373,12 +376,12 @@ export default function SignUp() {
   // ── Email / password view ────────────────────────────────────────────────
 
   return (
-    <AuthShell data-feature="AUTH" showTabs={false} heading="Create your account" subtitle="Create your account with email">
+    <AuthShell data-feature="AUTH" showTabs={false} heading={t('auth.createYourAccount')} subtitle={t('auth.createWithEmail')}>
       <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
         {/* Back */}
         <div className="flex items-center mb-1">
           <button onClick={() => setView('social')} className="flex items-center gap-1.5 text-sm text-[#737373] bg-transparent border-none cursor-pointer p-0 hover:text-[#0a0a0a]">
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="w-4 h-4" /> {t('auth.back')}
           </button>
         </div>
         {/* Social login buttons - 2×2 grid */}
@@ -396,17 +399,17 @@ export default function SignUp() {
         {/* Divider */}
         <div className="flex items-center gap-3 w-full">
           <div className="h-px flex-1 bg-[#e5e5e5]" />
-          <span className="text-base text-[#737373] whitespace-nowrap">Or sign up with email</span>
+          <span className="text-base text-[#737373] whitespace-nowrap">{t('auth.orSignUpWithEmail')}</span>
           <div className="h-px flex-1 bg-[#e5e5e5]" />
         </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           {/* Name */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-[#525252] tracking-wide">Full Name <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-[#525252] tracking-wide">{t('auth.fullName')} <span className="text-red-500">*</span></label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-              <input data-feature="AUTH__SIGNUP_NAME" {...register('name')} type="text" placeholder="Enter full name"
+              <input data-feature="AUTH__SIGNUP_NAME" {...register('name')} type="text" placeholder={t('auth.fullNamePlaceholder')}
                 className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                 style={{ padding: '4px 12px 4px 40px' }} />
             </div>
@@ -415,10 +418,10 @@ export default function SignUp() {
 
           {/* Email */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-[#525252] tracking-wide">Email <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-[#525252] tracking-wide">{t('auth.email')} <span className="text-red-500">*</span></label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-              <input data-feature="AUTH__SIGNUP_EMAIL" {...register('email')} type="email" placeholder="Enter your email"
+              <input data-feature="AUTH__SIGNUP_EMAIL" {...register('email')} type="email" placeholder={t('auth.emailPlaceholder')}
                 className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                 style={{ padding: '4px 12px 4px 40px' }} />
             </div>
@@ -427,10 +430,10 @@ export default function SignUp() {
 
           {/* Password */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-[#525252] tracking-wide">Password <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-[#525252] tracking-wide">{t('auth.password')} <span className="text-red-500">*</span></label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-              <input data-feature="AUTH__SIGNUP_PASSWORD" {...register('password')} type={showPassword ? 'text' : 'password'} placeholder="Min 8 characters"
+              <input data-feature="AUTH__SIGNUP_PASSWORD" {...register('password')} type={showPassword ? 'text' : 'password'} placeholder={t('auth.minEightChars')}
                 className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                 style={{ padding: '4px 40px 4px 40px' }} />
               <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}
@@ -453,10 +456,10 @@ export default function SignUp() {
 
           {/* Confirm password */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-[#525252] tracking-wide">Confirm Password <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-[#525252] tracking-wide">{t('auth.confirmPassword')} <span className="text-red-500">*</span></label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#737373] pointer-events-none" />
-              <input {...register('confirmPassword')} type={showConfirm ? 'text' : 'password'} placeholder="Re-enter password"
+              <input {...register('confirmPassword')} type={showConfirm ? 'text' : 'password'} placeholder={t('auth.repeatPassword')}
                 className="w-full h-[41px] bg-white text-[#0a0a0a] border border-[#e5e5e5] rounded-[10px] text-sm outline-none transition-all duration-150 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.05)] focus:border-[#1e9a80] focus:shadow-[0_0_0_3px_rgba(30,154,128,0.15)]"
                 style={{ padding: '4px 40px 4px 40px' }} />
               <button type="button" onClick={() => setShowConfirm(!showConfirm)} tabIndex={-1}
@@ -469,7 +472,7 @@ export default function SignUp() {
 
           {/* WhatsApp */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-[#525252] tracking-wide">WhatsApp Number <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-[#525252] tracking-wide">{t('auth.whatsAppNumber')} <span className="text-red-500">*</span></label>
             <div className="flex">
               <CountryCodeSelect value={formCountryCode} onChange={(val) => setValue('countryCode', val)} />
               <div className="relative flex-1">
@@ -479,7 +482,7 @@ export default function SignUp() {
                   style={{ padding: '4px 12px 4px 40px' }} />
               </div>
             </div>
-            <p className="text-[11px] text-[#737373] mt-1">We'll send a verification code via WhatsApp</p>
+            <p className="text-[11px] text-[#737373] mt-1">{t('auth.wellSendVerificationWhatsApp')}</p>
             {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
           </div>
 
@@ -488,10 +491,10 @@ export default function SignUp() {
             <input type="checkbox" {...register('terms')}
               className="mt-0.5 appearance-none w-5 h-5 border border-[#e5e5e5] rounded cursor-pointer transition-all duration-150 checked:bg-[#1e9a80] checked:border-[#1e9a80] bg-white shrink-0" />
             <span className="text-xs text-[#737373] leading-relaxed">
-              I agree to the{' '}
-              <Link to="/terms" className="text-[#1e9a80] font-semibold underline" target="_blank">Terms of Service</Link>
+              {t('auth.iAgreeToThe')}{' '}
+              <Link to="/terms" className="text-[#1e9a80] font-semibold underline" target="_blank">{t('auth.termsOfService')}</Link>
               {' '}and{' '}
-              <Link to="/privacy" className="text-[#1e9a80] font-semibold underline" target="_blank">Privacy Policy</Link>
+              <Link to="/privacy" className="text-[#1e9a80] font-semibold underline" target="_blank">{t('auth.privacyPolicy')}</Link>
               {' '}<span className="text-red-500">*</span>
             </span>
           </label>
@@ -504,11 +507,11 @@ export default function SignUp() {
             <AnimatePresence mode="wait">
               {emailLoading ? (
                 <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />Creating account...
+                  <Loader2 className="w-4 h-4 animate-spin" />{t('auth.creatingAccount')}
                 </motion.span>
               ) : (
                 <motion.span key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />Create account
+                  <CheckCircle2 className="w-4 h-4" />{t('auth.createAccount')}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -516,15 +519,15 @@ export default function SignUp() {
         </form>
 
         <p className="text-sm text-[#737373] text-center mt-2">
-          Already have an account?{' '}
-          <Link to="/signin" className="text-[#1e9a80] font-semibold">Sign in</Link>
+          {t('auth.hasAccount')}{' '}
+          <Link to="/signin" className="text-[#1e9a80] font-semibold">{t('auth.signIn')}</Link>
         </p>
 
         <p data-feature="AUTH__TERMS_NOTICE" className="text-[11px] text-muted-foreground text-center mt-4">
-          By signing up, you confirm that you accept our{' '}
-          <a href="/terms" className="text-primary underline">Terms and Conditions</a>{' '}
+          {t('auth.termsNotice')}{' '}
+          <a href="/terms" className="text-primary underline">{t('auth.termsAndConditions')}</a>{' '}
           and{' '}
-          <a href="/privacy" className="text-primary underline">Privacy Policy</a>.
+          <a href="/privacy" className="text-primary underline">{t('auth.privacyPolicy')}</a>.
         </p>
       </div>
     </AuthShell>

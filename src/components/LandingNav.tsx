@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 
@@ -7,6 +8,7 @@ export default function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -23,16 +25,16 @@ export default function LandingNav() {
           <a data-feature="NAV_LAYOUT__LANDING_LOGO" href="/" className={`text-xl font-extrabold tracking-tight ${scrolled ? 'text-foreground' : 'text-white'}`}>nfstay</a>
           
           <div className="hidden md:flex items-center gap-8">
-            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#deals-strip" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Deals</a>
-            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#how-it-works" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>How it Works</a>
-            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#pricing" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Pricing</a>
-            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#university" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>University</a>
+            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#deals-strip" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>{t('nav.deals')}</a>
+            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#how-it-works" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>{t('nav.howItWorks')}</a>
+            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#pricing" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>{t('nav.pricing')}</a>
+            <a data-feature="NAV_LAYOUT__LANDING_LINK" href="#university" className={`text-sm font-medium transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>{t('nav.university')}</a>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Link data-feature="NAV_LAYOUT__LANDING_CTA" to="/signin" className={`text-sm font-medium transition-colors px-3 py-2 ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>Sign In</Link>
+            <Link data-feature="NAV_LAYOUT__LANDING_CTA" to="/signin" className={`text-sm font-medium transition-colors px-3 py-2 ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>{t('nav.signIn')}</Link>
             <Link data-feature="NAV_LAYOUT__LANDING_CTA" to="/signup" className="bg-primary text-primary-foreground text-sm font-semibold h-10 px-5 rounded-lg inline-flex items-center transition-all duration-200 hover:opacity-90 active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">
-              Get Started →
+              {t('nav.getStarted')}
             </Link>
           </div>
 
@@ -54,11 +56,16 @@ export default function LandingNav() {
             <button className="absolute top-5 right-5 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" onClick={() => setMobileOpen(false)}>
               <X className="w-6 h-6" />
             </button>
-            {['Deals', 'How it Works', 'Pricing', 'University'].map(t => (
-              <a key={t} href={`#${t.toLowerCase().replace(/ /g, '-')}`} onClick={() => setMobileOpen(false)} className="text-[22px] font-medium text-foreground">{t}</a>
+            {[
+              { key: 'nav.deals', href: '#deals' },
+              { key: 'nav.howItWorks', href: '#how-it-works' },
+              { key: 'nav.pricing', href: '#pricing' },
+              { key: 'nav.university', href: '#university' },
+            ].map(item => (
+              <a key={item.key} href={item.href} onClick={() => setMobileOpen(false)} className="text-[22px] font-medium text-foreground">{t(item.key)}</a>
             ))}
             <Link to="/signup" className="bg-primary text-primary-foreground text-base font-semibold h-12 px-8 rounded-lg inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]" onClick={() => setMobileOpen(false)}>
-              Get Started →
+              {t('nav.getStarted')}
             </Link>
           </motion.div>
         )}

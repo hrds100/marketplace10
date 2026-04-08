@@ -1,6 +1,7 @@
 import { Heart, CheckCircle, Gem, Zap, Lock, Mail } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ListingShape } from '@/components/InquiryPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -48,13 +49,14 @@ const GOLD = {
 };
 
 
-const LISTER_LABELS: Record<string, string> = {
-  landlord: 'Direct Landlord',
-  agent: 'Letting Agent',
-  deal_sourcer: 'Deal Sourcer',
+const LISTER_LABEL_KEYS: Record<string, string> = {
+  landlord: 'deals.directLandlord',
+  agent: 'deals.lettingAgent',
+  deal_sourcer: 'deals.dealSourcer',
 };
 
 export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, onInquire, onEmailInquire, onWhatsAppInquire, showSavedBadge, forceSignUp, contacted }: Props) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { tier } = useUserTier();
@@ -170,17 +172,17 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           {isPexelsPhoto && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 z-[1]" style={{ background: 'rgba(0,0,0,0.4)' }}>
               <Lock className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.9)' }} />
-              <span className="text-white text-xs font-medium">Photos on request</span>
+              <span className="text-white text-xs font-medium">{t('propertyCard.photosOnRequest')}</span>
             </div>
           )}
           <div className="absolute top-2.5 left-2.5 z-[2]">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold" style={{ background: '#1A1A2E', color: '#F0D55E', border: '1px solid #C9A842' }}>
-              Exclusive JV
+              {t('propertyCard.exclusiveJv')}
             </span>
           </div>
           <div className="absolute bottom-2.5 right-2.5">
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ background: 'rgba(191,149,63,0.9)' }}>
-              {funded}% funded
+              {funded}% {t('propertyCard.funded')}
             </span>
           </div>
         </div>
@@ -192,21 +194,21 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               <div className="h-full rounded-full" style={{ width: `${funded}%`, background: 'linear-gradient(90deg, #BF953F, #F0D55E, #BF953F)' }} />
             </div>
             <div className="flex justify-between mt-1">
-              <span className="text-[10px] text-muted-foreground">{funded}% funded</span>
-              <span className="text-[10px] font-medium" style={{ color: '#A67C00' }}>Target: £{target.toLocaleString()}</span>
+              <span className="text-[10px] text-muted-foreground">{funded}% {t('propertyCard.funded')}</span>
+              <span className="text-[10px] font-medium" style={{ color: '#A67C00' }}>{t('propertyCard.target', { amount: target.toLocaleString() })}</span>
             </div>
           </div>
           <div className="flex-1 space-y-0">
             <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-              <span className="text-xs text-muted-foreground">Min. contribution</span>
+              <span className="text-xs text-muted-foreground">{t('propertyCard.minContribution')}</span>
               <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£{minContribution.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-              <span className="text-xs text-muted-foreground">Est. monthly profit</span>
+              <span className="text-xs text-muted-foreground">{t('propertyCard.estMonthlyProfit')}</span>
               <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£{monthlyProfit.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-[7px]">
-              <span className="text-xs text-muted-foreground">Est. Returns</span>
+              <span className="text-xs text-muted-foreground">{t('propertyCard.estReturns')}</span>
               <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>{estReturns}%</span>
             </div>
           </div>
@@ -215,21 +217,21 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               <button onClick={handleAction}
                 className="w-full h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
                 style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
-                Partner Now <Zap className="w-4 h-4" />
+                {t('propertyCard.partnerNow')} <Zap className="w-4 h-4" />
               </button>
             ) : (
               <Link to="/dashboard/invest/marketplace"
                 className="w-full h-[42px] rounded-lg text-[14px] font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-95"
                 style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #BF953F)', backgroundSize: '200% 100%', animation: 'jv-shimmer 3s ease-in-out infinite', color: '#5C4000' }}>
-                Partner Now <Zap className="w-4 h-4" />
+                {t('propertyCard.partnerNow')} <Zap className="w-4 h-4" />
               </Link>
             )}
           </div>
           <div className="flex justify-between items-center pt-2 mt-2 border-t border-border/50">
-            <span className="text-[11px] text-muted-foreground">Added {listing.daysAgo} days ago</span>
+            <span className="text-[11px] text-muted-foreground">{t('propertyCard.addedDaysAgo', { days: listing.daysAgo })}</span>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#C9A842' }} />
-              <span className="text-[11px] font-medium" style={{ color: '#C9A842' }}>Live</span>
+              <span className="text-[11px] font-medium" style={{ color: '#C9A842' }}>{t('deals.live')}</span>
             </div>
           </div>
         </div>
@@ -248,14 +250,14 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
         {isPexelsPhoto && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 z-[1]" style={{ background: 'rgba(0,0,0,0.4)' }}>
             <Lock className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.9)' }} />
-            <span className="text-white text-xs font-medium">Photos on request</span>
+            <span className="text-white text-xs font-medium">{t('propertyCard.photosOnRequest')}</span>
           </div>
         )}
         <div className="absolute top-2.5 left-2.5 flex gap-1.5 z-[2]">
-          {showSavedBadge && <span className="badge-green text-[11px]">Saved</span>}
-          {listing.featured && <span data-feature="DEALS__PROPERTY_CARD_BADGE" className="badge-green-fill text-[11px]">Featured</span>}
+          {showSavedBadge && <span className="badge-green text-[11px]">{t('propertyCard.saved')}</span>}
+          {listing.featured && <span data-feature="DEALS__PROPERTY_CARD_BADGE" className="badge-green-fill text-[11px]">{t('propertyCard.featured')}</span>}
           <span data-feature="DEALS__PROPERTY_CARD_LISTING_TYPE" className={`text-white text-[9px] font-semibold px-2 py-0.5 rounded-full ${listing.listing_type === 'sale' ? 'bg-emerald-600/90' : 'bg-[#1E9A80]/90'}`}>
-            {listing.listing_type === 'sale' ? 'Sale' : 'Rental'}
+            {listing.listing_type === 'sale' ? t('propertyCard.sale') : t('propertyCard.rental')}
           </span>
         </div>
         <button
@@ -276,33 +278,33 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           {onAddToCRM && (
             <span data-feature="DEALS__PROPERTY_CARD_CRM" onClick={handleAddToCRM}
               className={`text-[10px] font-medium italic cursor-pointer transition-colors ${addedToCRM ? 'text-muted-foreground hover:text-foreground' : 'text-[#1E9A80] hover:text-[#1E9A80]/70'}`}>
-              {addedToCRM ? 'Added to CRM' : '+ Add to CRM'}
+              {addedToCRM ? t('propertyCard.addedToCrm') : t('propertyCard.addToCrm')}
             </span>
           )}
         </div>
 
         <div className="mt-3 space-y-0">
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-            <span className="text-xs text-muted-foreground">{listing.listing_type === 'sale' ? 'Property price' : 'Monthly rent'}</span>
+            <span className="text-xs text-muted-foreground">{listing.listing_type === 'sale' ? t('propertyCard.propertyPrice') : t('propertyCard.monthlyRent')}</span>
             <span data-feature="DEALS__PROPERTY_CARD_RENT" className="text-[13px] font-medium text-foreground">£{(listing.listing_type === 'sale' ? (listing.purchasePrice ?? listing.rent ?? 0) : (listing.rent ?? 0)).toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-            <span className="text-xs text-muted-foreground">Est. monthly profit</span>
+            <span className="text-xs text-muted-foreground">{t('propertyCard.estMonthlyProfit')}</span>
             <div className="text-right">
               <span data-feature="DEALS__PROPERTY_CARD_PROFIT" className="text-[13px] font-bold text-accent-foreground">£{listing.profit}</span>
               <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className="block text-[10px] text-primary font-medium hover:underline -mt-0.5" onClick={e => e.stopPropagation()}>
-                Airdna verified ✓
+                {t('propertyCard.airdnaVerified')}
               </a>
             </div>
           </div>
           <div className="flex justify-between items-center py-[7px]">
-            <span className="text-xs text-muted-foreground">Property type</span>
+            <span className="text-xs text-muted-foreground">{t('propertyCard.propertyType')}</span>
             <span data-feature="DEALS__PROPERTY_CARD_TYPE" className="text-[13px] font-medium text-foreground">{listing.type}</span>
           </div>
         </div>
 
         {/* Lister type badge */}
-        {listing.lister_type && LISTER_LABELS[listing.lister_type] && (
+        {listing.lister_type && LISTER_LABEL_KEYS[listing.lister_type] && (
           <div className="mt-2">
             <span
               className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold"
@@ -311,7 +313,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
                 color: listing.lister_type === 'agent' ? '#374151' : '#1E9A80',
               }}
             >
-              {LISTER_LABELS[listing.lister_type]}
+              {t(LISTER_LABEL_KEYS[listing.lister_type])}
             </span>
           </div>
         )}
@@ -323,7 +325,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
               style={{ backgroundColor: '#F3F4F6', color: '#6B7280' }}
             >
-              <CheckCircle className="w-3 h-3" /> Contacted
+              <CheckCircle className="w-3 h-3" /> {t('propertyCard.contacted')}
             </span>
           </div>
         )}
@@ -335,13 +337,13 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <button data-feature="DEALS__PROPERTY_CARD_VIEW" onClick={handleAction}
               className="flex-1 h-[42px] rounded-xl inline-flex items-center justify-center text-[13px] font-semibold transition-all hover:opacity-90"
               style={{ backgroundColor: '#1E9A80', color: '#fff' }}>
-              Visit Listing
+              {t('propertyCard.visitListing')}
             </button>
           ) : (
             <Link data-feature="DEALS__PROPERTY_CARD_VIEW" to={`/deals/${listing.slug || listing.id}`}
               className="flex-1 h-[42px] rounded-xl inline-flex items-center justify-center text-[13px] font-semibold transition-all hover:opacity-90"
               style={{ backgroundColor: '#1E9A80', color: '#fff' }}>
-              Visit Listing
+              {t('propertyCard.visitListing')}
             </Link>
           )}
           <button data-feature="DEALS__PROPERTY_CARD_EMAIL" onClick={forceSignUp ? handleAction : handleEmail}
@@ -356,10 +358,10 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
           </button>
         </div>
         <div className="flex justify-between items-center pt-2 mt-2 border-t border-border/50">
-          <span className="text-[11px] text-muted-foreground">Added {listing.daysAgo} days ago</span>
+          <span className="text-[11px] text-muted-foreground">{t('propertyCard.addedDaysAgo', { days: listing.daysAgo })}</span>
           <div className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${statusDot()}`} />
-            <span className="text-[11px] text-muted-foreground capitalize">{listing.daysAgo <= 7 ? 'Live' : listing.daysAgo <= 14 ? 'Under offer' : 'Expired'}</span>
+            <span className="text-[11px] text-muted-foreground capitalize">{listing.daysAgo <= 7 ? t('deals.live') : listing.daysAgo <= 14 ? t('propertyCard.underOffer') : t('propertyCard.expired')}</span>
           </div>
         </div>
       </div>

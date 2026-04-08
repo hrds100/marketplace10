@@ -153,3 +153,10 @@ verify_jwt = false
 
 [functions.airbnb-pricing]
 verify_jwt = false
+
+# WhatsApp Cloud API (Meta direct — not Twilio)
+[functions.wa-webhook-incoming]
+verify_jwt = false
+
+[functions.wa-send]
+verify_jwt = false
