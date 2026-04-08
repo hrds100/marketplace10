@@ -7,28 +7,37 @@ import {
 import NotificationBell from '@/components/NotificationBell';
 import BurgerMenu from '@/components/BurgerMenu';
 import FavouritesDropdown from '@/components/FavouritesDropdown';
+import LanguageSwitcher from '@/core/i18n/LanguageSwitcher';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from 'react-i18next';
 
-const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; pro?: boolean }> = [
-  { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
-  // Inbox removed - leads now in CRM > My Leads
-  { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
-  { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
-  { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', pro: true },
-  { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
-  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
-];
+function useNavItems() {
+  const { t } = useTranslation();
+  return [
+    { to: '/dashboard/deals', icon: LayoutGrid, label: t('nav.deals') },
+    { to: '/dashboard/crm', icon: Kanban, label: t('nav.crm') },
+    { to: '/dashboard/list-a-deal', icon: PlusCircle, label: t('nav.listADeal') },
+    { to: '/dashboard/booking-site', icon: Globe, label: t('nav.bookingSite'), pro: true },
+    { to: '/dashboard/affiliates', icon: Users, label: t('nav.becomeAnAgent') },
+    { to: '/dashboard/university', icon: GraduationCap, label: t('nav.university') },
+  ] as Array<{ to: string; icon: typeof LayoutGrid; label: string; pro?: boolean }>;
+}
 
-const jvSubItems = [
-  { to: '/dashboard/invest/marketplace', icon: Store, label: 'Marketplace' },
-  { to: '/dashboard/invest/portfolio', icon: Wallet, label: 'Portfolio' },
-  { to: '/dashboard/invest/proposals', icon: Vote, label: 'Proposals' },
-  { to: '/dashboard/invest/payouts', icon: Receipt, label: 'Payouts' },
-];
+function useJvSubItems() {
+  const { t } = useTranslation();
+  return [
+    { to: '/dashboard/invest/marketplace', icon: Store, label: t('nav.marketplace') },
+    { to: '/dashboard/invest/portfolio', icon: Wallet, label: t('nav.portfolio') },
+    { to: '/dashboard/invest/proposals', icon: Vote, label: t('nav.proposals') },
+    { to: '/dashboard/invest/payouts', icon: Receipt, label: t('nav.payouts') },
+  ];
+}
 
 export default function DashboardTopNav() {
+  const { t } = useTranslation();
+  const navItems = useNavItems();
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, isAdmin, user } = useAuth();
@@ -117,7 +126,7 @@ export default function DashboardTopNav() {
               to="/admin"
               className="text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-secondary"
             >
-              Admin
+              {t('nav.admin')}
             </NavLink>
           )}
           <button
@@ -125,8 +134,9 @@ export default function DashboardTopNav() {
             className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-[7px] rounded-lg text-[13px] font-semibold hover:from-emerald-600 hover:to-teal-700 shadow-md transition-all flex items-center gap-1.5"
           >
             <PlusCircle className="w-[15px] h-[15px]" strokeWidth={1.8} />
-            Submit a Deal
+            {t('nav.submitADeal')}
           </button>
+          <LanguageSwitcher />
           <FavouritesDropdown />
           <NotificationBell />
           <BurgerMenu />
@@ -175,17 +185,17 @@ export default function DashboardTopNav() {
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 w-full shadow-md"
               >
                 <PlusCircle className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                <span>Submit a Deal</span>
+                <span>{t('nav.submitADeal')}</span>
               </button>
               {isAdmin && (
                 <NavLink to="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted">
                   <Settings className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                  <span>Admin View</span>
+                  <span>{t('nav.adminView')}</span>
                 </NavLink>
               )}
               <button onClick={handleLogout} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted w-full">
                 <LogOut className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                <span>Sign Out</span>
+                <span>{t('nav.signOut')}</span>
               </button>
             </div>
           </nav>
@@ -196,6 +206,8 @@ export default function DashboardTopNav() {
 }
 
 function JVPartnersDropdown({ isActive }: { isActive: (path: string) => boolean }) {
+  const { t } = useTranslation();
+  const jvSubItems = useJvSubItems();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const isJVActive = isActive('/dashboard/invest');
@@ -219,7 +231,7 @@ function JVPartnersDropdown({ isActive }: { isActive: (path: string) => boolean 
         }`}
       >
         <TrendingUp className="w-[15px] h-[15px]" strokeWidth={1.8} />
-        <span>JV Partners</span>
+        <span>{t('nav.jvPartners')}</span>
         <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={2} />
       </button>
       {open && (

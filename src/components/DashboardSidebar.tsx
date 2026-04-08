@@ -2,23 +2,29 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, ChevronDown, Globe, TrendingUp, Store, Wallet, Receipt, Vote } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
-const navItems: Array<{ to: string; icon: typeof LayoutGrid; label: string; highlight?: boolean }> = [
-  { to: '/dashboard/deals', icon: LayoutGrid, label: 'Deals' },
-  // Inbox hidden — leads now show in CRM > My Leads tab
-  { to: '/dashboard/crm', icon: Kanban, label: 'CRM' },
-  { to: '/dashboard/list-a-deal', icon: PlusCircle, label: 'List a Deal' },
-  { to: '/dashboard/booking-site', icon: Globe, label: 'Booking Site', highlight: true },
-  { to: '/dashboard/affiliates', icon: Users, label: 'Become An Agent' },
-  { to: '/dashboard/university', icon: GraduationCap, label: 'University' },
-];
+function useNavItems() {
+  const { t } = useTranslation();
+  return [
+    { to: '/dashboard/deals', icon: LayoutGrid, label: t('nav.deals') },
+    { to: '/dashboard/crm', icon: Kanban, label: t('nav.crm') },
+    { to: '/dashboard/list-a-deal', icon: PlusCircle, label: t('nav.listADeal') },
+    { to: '/dashboard/booking-site', icon: Globe, label: t('nav.bookingSite'), highlight: true },
+    { to: '/dashboard/affiliates', icon: Users, label: t('nav.becomeAnAgent') },
+    { to: '/dashboard/university', icon: GraduationCap, label: t('nav.university') },
+  ] as Array<{ to: string; icon: typeof LayoutGrid; label: string; highlight?: boolean }>;
+}
 
-const investSubItems = [
-  { to: '/dashboard/invest/marketplace', icon: Store, label: 'Marketplace' },
-  { to: '/dashboard/invest/portfolio', icon: Wallet, label: 'Portfolio' },
-  { to: '/dashboard/invest/proposals', icon: Vote, label: 'Proposals' },
-  { to: '/dashboard/invest/payouts', icon: Receipt, label: 'Payouts' },
-];
+function useInvestSubItems() {
+  const { t } = useTranslation();
+  return [
+    { to: '/dashboard/invest/marketplace', icon: Store, label: t('nav.marketplace') },
+    { to: '/dashboard/invest/portfolio', icon: Wallet, label: t('nav.portfolio') },
+    { to: '/dashboard/invest/proposals', icon: Vote, label: t('nav.proposals') },
+    { to: '/dashboard/invest/payouts', icon: Receipt, label: t('nav.payouts') },
+  ];
+}
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -26,6 +32,9 @@ interface SidebarProps {
 }
 
 export default function DashboardSidebar({ collapsed: controlledCollapsed, onCollapse }: SidebarProps = {}) {
+  const { t } = useTranslation();
+  const navItems = useNavItems();
+  const investSubItems = useInvestSubItems();
   const [internalCollapsed, setInternalCollapsed] = useState(true);
   const collapsed = controlledCollapsed ?? internalCollapsed;
   const setCollapsed = (v: boolean) => { setInternalCollapsed(v); onCollapse?.(v); };
@@ -86,7 +95,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
                       )}
                     </div>
                     {item.to === '/dashboard/university' && (
-                      <span className="text-[9px] font-medium leading-tight" style={{ color: '#1DB954' }}>AI Powered</span>
+                      <span className="text-[9px] font-medium leading-tight" style={{ color: '#1DB954' }}>{t('nav.aiPowered')}</span>
                     )}
                   </div>
                 )}
@@ -110,7 +119,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
                 className={`group/nav relative flex items-center justify-center h-10 rounded-lg transition-all duration-200 px-2 w-full ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
               >
                 <TrendingUp className="w-[15px] h-[15px]" strokeWidth={1.8} />
-                <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">JV Partners<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" /></div>
+                <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">{t('nav.jvPartners')}<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" /></div>
               </button>
             ) : (
               <>
@@ -120,7 +129,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
                   className={`flex items-center gap-2 h-10 w-full rounded-lg transition-all duration-200 px-3 ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                 >
                   <TrendingUp className="w-[15px] h-[15px] flex-shrink-0" strokeWidth={1.8} />
-                  <span className="text-[13px] leading-tight flex-1 text-left">JV Partners</span>
+                  <span className="text-[13px] leading-tight flex-1 text-left">{t('nav.jvPartners')}</span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${investOpen ? 'rotate-180' : ''}`} strokeWidth={2} />
                 </button>
                 <div className={`overflow-hidden transition-all duration-200 ease-out ${investOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
@@ -150,19 +159,19 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
           {isAdmin && (
             <NavLink to="/admin" className={`group/nav relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`}>
               <Settings className="w-[15px] h-[15px]" strokeWidth={1.8} />
-              {!collapsed && <span className="text-[13px]">Admin View</span>}
-              {collapsed && <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">Admin<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" /></div>}
+              {!collapsed && <span className="text-[13px]">{t('nav.adminView')}</span>}
+              {collapsed && <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">{t('nav.admin')}<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" /></div>}
             </NavLink>
           )}
           <NavLink data-feature="NAV_LAYOUT__SIDEBAR_SETTINGS" to="/dashboard/settings" className={({ isActive }) => `group/nav relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}>
             <Settings className="w-[15px] h-[15px]" strokeWidth={1.8} />
-            {!collapsed && <span className="text-[13px]">Settings</span>}
-            {collapsed && <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">Settings<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" /></div>}
+            {!collapsed && <span className="text-[13px]">{t('nav.settings')}</span>}
+            {collapsed && <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">{t('nav.settings')}<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" /></div>}
           </NavLink>
           <button data-feature="NAV_LAYOUT__SIDEBAR_SIGNOUT" onClick={handleLogout} className={`group/nav relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 w-full ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10`}>
             <LogOut className="w-[15px] h-[15px]" strokeWidth={1.8} />
-            {!collapsed && <span className="text-[13px]">Sign Out</span>}
-            {collapsed && <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">Sign Out<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" /></div>}
+            {!collapsed && <span className="text-[13px]">{t('nav.signOut')}</span>}
+            {collapsed && <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">{t('nav.signOut')}<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" /></div>}
           </button>
         </div>
       </aside>
