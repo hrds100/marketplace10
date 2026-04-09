@@ -210,9 +210,9 @@ export function usePortfolioWithBlockchain() {
 
     const holdings = Array.from(holdingMap.values());
 
-    const holdingsTotal = holdings.reduce((sum, h) => sum + h.invested, 0);
+    const holdingsValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
     return {
-      totalContributed: Math.max(holdingsTotal, ordersTotal),
+      totalContributed: Math.max(holdingsValue, ordersTotal),
       totalValue: holdings.reduce((sum, h) => sum + h.currentValue, 0),
       totalEarnings: holdings.reduce((sum, h) => sum + h.totalEarned, 0),
       pendingPayouts: 0,
