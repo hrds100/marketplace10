@@ -1,225 +1,54 @@
-import { useState } from 'react';
-import { ExternalLink, Lock, Play, Download, Volume2, User } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Lock, Download, X, Search, Eye } from 'lucide-react';
 
-const PASSWORD = 'nfstay2026';
+const PASSWORD = '5891';
 
 interface Ad {
   id: string;
   num: number;
   title: string;
-  hook: string;
-  voiceover: string;
-  voiceType: string;
-  cta: string;
-  duration: string;
-  sfxNotes: string;
-  musicDirection: string;
-  previewUrl: string;
+  angle: string;
+  category: string;
+  filename: string;
 }
 
 const ADS: Ad[] = [
-  {
-    id: 'ad-01-airbnb-income',
-    num: 1,
-    title: 'Airbnb Income Without Owning',
-    hook: 'Want to start Airbnb, but don\'t own a property?',
-    voiceover: 'You do not need to buy a property first. nfstay shows you landlord-approved properties across the UK. You find a deal, message the landlord, and get started faster.',
-    voiceType: 'Female British, warm',
-    cta: 'Find your first Airbnb deal',
-    duration: '22s',
-    sfxNotes: 'Whoosh on hook, pop on card enter, message send on chat',
-    musicDirection: 'Modern, curious, building momentum',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-01-airbnb-income',
-  },
-  {
-    id: 'ad-02-uber-to-operator',
-    num: 2,
-    title: 'Uber to Airbnb Operator',
-    hook: 'Still driving Uber every night?',
-    voiceover: 'You can keep driving. But you can also start building something bigger. nfstay helps you find landlord-approved Airbnb properties in the UK, so you can start operating instead of only working shifts.',
-    voiceType: 'Male British, confident',
-    cta: 'Start building your first property income',
-    duration: '24s',
-    sfxNotes: 'Whoosh on hook, soft impact on "bigger", pop on card',
-    musicDirection: 'Motivational, modern beat',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-02-uber-to-operator',
-  },
-  {
-    id: 'ad-03-learn-from-zero',
-    num: 3,
-    title: 'Learn Airbnb From Zero',
-    hook: 'Want to learn Airbnb from zero?',
-    voiceover: 'Start with the basics. Learn how rent-to-rent works. Then find real deals and message real landlords, all in one place.',
-    voiceType: 'Female British, encouraging',
-    cta: 'Learn and start today',
-    duration: '20s',
-    sfxNotes: 'Whoosh, step pops, tap on app',
-    musicDirection: 'Friendly, warm, educational',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-03-learn-from-zero',
-  },
-  {
-    id: 'ad-04-start-small',
-    num: 4,
-    title: 'Start Small, Start With One',
-    hook: 'You do not need to start big',
-    voiceover: 'You do not need ten properties. You need one good deal. nfstay helps you find landlord-approved properties so you can start small and grow from there.',
-    voiceType: 'Male British, calm',
-    cta: 'Start with one deal',
-    duration: '20s',
-    sfxNotes: 'Whoosh, number slam, pop on card',
-    musicDirection: 'Calm, confident, minimal',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-04-start-small',
-  },
-  {
-    id: 'ad-05-landlords-approved',
-    num: 5,
-    title: 'Landlords Already Approved',
-    hook: 'Landlords already said yes',
-    voiceover: 'No guessing. No wasting time on the wrong properties. nfstay shows you Airbnb properties where the landlord already allows the model.',
-    voiceType: 'Female British, direct',
-    cta: 'See approved deals now',
-    duration: '20s',
-    sfxNotes: 'Checkmark sound, whoosh, pop on pills',
-    musicDirection: 'Direct, modern, trustworthy',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-05-landlords-approved',
-  },
-  {
-    id: 'ad-06-stop-booking',
-    num: 6,
-    title: 'Stop Booking, Start Operating',
-    hook: 'Stop booking Airbnbs. Start operating them.',
-    voiceover: 'If you already love staying in Airbnbs, learn how the business works on the other side. nfstay helps you learn, find deals, and start operating in the UK.',
-    voiceType: 'Male British, energetic',
-    cta: 'Start operating today',
-    duration: '22s',
-    sfxNotes: 'Whoosh, flip sound, step pops',
-    musicDirection: 'Energetic, modern, building',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-06-stop-booking',
-  },
-  {
-    id: 'ad-07-direct-booking',
-    num: 7,
-    title: 'Direct Booking Website',
-    hook: 'Get your own Airbnb website',
-    voiceover: 'Build your own direct booking website. Take bookings through your own brand. Keep more control, and grow beyond the platforms.',
-    voiceType: 'Female British, professional',
-    cta: 'Build your booking site',
-    duration: '20s',
-    sfxNotes: 'Whoosh, tap on app, pill pops',
-    musicDirection: 'Professional, aspirational',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-07-direct-booking',
-  },
-  {
-    id: 'ad-08-one-platform',
-    num: 8,
-    title: 'One Platform, Not Ten Tools',
-    hook: 'Deals, messages, CRM, learning. In one place.',
-    voiceover: 'Stop using ten different tools. nfstay gives you deals, landlord messages, CRM tracking, learning, and direct booking tools in one platform.',
-    voiceType: 'Male British, matter-of-fact',
-    cta: 'Run it all in one place',
-    duration: '22s',
-    sfxNotes: 'Cascade pops for pills, whoosh, tap',
-    musicDirection: 'Clean, efficient, modern',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-08-one-platform',
-  },
-  {
-    id: 'ad-09-uk-cities',
-    num: 9,
-    title: 'UK City-Based Deals',
-    hook: 'Find Airbnb deals in UK cities',
-    voiceover: 'Manchester, Leeds, Birmingham, Liverpool, London. Browse Airbnb-ready opportunities near you, and start where you already know the market.',
-    voiceType: 'Female British, warm',
-    cta: 'See deals in your city',
-    duration: '22s',
-    sfxNotes: 'Map pin sounds for each city, whoosh, pop',
-    musicDirection: 'Warm, local, community-feel',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-09-uk-cities',
-  },
-  {
-    id: 'ad-10-first-deal',
-    num: 10,
-    title: 'From First Message to Signed',
-    hook: 'This is how you get your first deal',
-    voiceover: 'Find a property. Message the landlord. Track the conversation. Book the viewing. Move the deal to signed.',
-    voiceType: 'Male British, confident',
-    cta: 'Start your first deal',
-    duration: '24s',
-    sfxNotes: 'Step pops, message send, checkmark at end',
-    musicDirection: 'Confident, progressive, building',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-10-first-deal',
-  },
-  {
-    id: 'ad-11-beginner-to-operator',
-    num: 11,
-    title: 'Beginner to Operator',
-    hook: 'From beginner to Airbnb operator',
-    voiceover: 'You do not need to know everything on day one. You just need a better starting point. nfstay helps you learn, take action, and grow step by step.',
-    voiceType: 'Female British, encouraging',
-    cta: 'Become an operator',
-    duration: '20s',
-    sfxNotes: 'Whoosh, step pops, soft impact',
-    musicDirection: 'Encouraging, warm, progressive',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-11-beginner-to-operator',
-  },
-  {
-    id: 'ad-12-hospitality',
-    num: 12,
-    title: 'Hospitality Workers',
-    hook: 'Already working in hospitality?',
-    voiceover: 'If you already understand guests, cleaning, bookings, or hosting, you are closer than you think. Use that experience to start operating properties with landlord approval.',
-    voiceType: 'Male British, respectful',
-    cta: 'Turn your experience into a business',
-    duration: '22s',
-    sfxNotes: 'Cascade pill pops, whoosh, card enter',
-    musicDirection: 'Respectful, warm, aspirational',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-12-hospitality',
-  },
-  {
-    id: 'ad-13-jv-partner',
-    num: 13,
-    title: 'JV Partner Angle',
-    hook: 'Do not have everything? Partner up.',
-    voiceover: 'Some people find deals. Some people bring experience. Some people bring support. nfstay helps you find the opportunity, then build from there.',
-    voiceType: 'Female British, collaborative',
-    cta: 'Find your next opportunity',
-    duration: '22s',
-    sfxNotes: 'Whoosh, row slides, tap on app',
-    musicDirection: 'Collaborative, warm, modern',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-13-jv-partner',
-  },
-  {
-    id: 'ad-14-real-platform',
-    num: 14,
-    title: 'Real Platform, Not Hype',
-    hook: 'Not just another Airbnb course',
-    voiceover: 'This is not just videos and promises. nfstay gives you real deals, real landlords, real messages, and real tools to move from idea to action.',
-    voiceType: 'Male British, straight-talking',
-    cta: 'See the real platform',
-    duration: '22s',
-    sfxNotes: 'Whoosh, pill pops, tap on app',
-    musicDirection: 'Straight-talking, honest, modern',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-14-real-platform',
-  },
-  {
-    id: 'ad-15-your-system',
-    num: 15,
-    title: 'Your First UK Airbnb System',
-    hook: 'Your Airbnb system starts here',
-    voiceover: 'Learn the model. Find landlord-approved properties. Message landlords. Track deals. Build your booking site. Grow your portfolio with one clear system.',
-    voiceType: 'Female British, confident',
-    cta: 'Start with nfstay',
-    duration: '26s',
-    sfxNotes: 'Step pops for each row, logo reveal whoosh, shimmer',
-    musicDirection: 'Confident, building, cinematic close',
-    previewUrl: 'https://motion.nfstay.com/code-examples?example=ad-15-your-system',
-  },
+  { id: 'ad-01', num: 1, title: 'No Property Needed', angle: 'Airbnb income without buying property', category: 'Entry', filename: 'ad-01-no-property.png' },
+  { id: 'ad-02', num: 2, title: 'Night Shift Exit', angle: 'From shift work to property income', category: 'Entry', filename: 'ad-02-night-shift.png' },
+  { id: 'ad-03', num: 3, title: 'Learn From Zero', angle: 'Academy + real deals in one place', category: 'Education', filename: 'ad-03-learn-from-zero.png' },
+  { id: 'ad-04', num: 4, title: 'Small Budget Start', angle: 'Start small, scale fast', category: 'Entry', filename: 'ad-04-small-budget.png' },
+  { id: 'ad-05', num: 5, title: 'Your Booking Site', angle: 'Direct bookings, more profit', category: 'Feature', filename: 'ad-05-booking-site.png' },
+  { id: 'ad-06', num: 6, title: 'Landlords Approved', angle: 'No cold calls, pre-approved deals', category: 'Trust', filename: 'ad-06-landlords-approved.png' },
+  { id: 'ad-07', num: 7, title: 'Guest To Operator', angle: 'Switch from booking to running stays', category: 'Entry', filename: 'ad-07-guest-to-operator.png' },
+  { id: 'ad-08', num: 8, title: 'Side Income Boost', angle: 'Add £1k/month with one unit', category: 'Income', filename: 'ad-08-side-income.png' },
+  { id: 'ad-09', num: 9, title: 'Zero Experience OK', angle: 'Clear steps, no background needed', category: 'Entry', filename: 'ad-09-zero-experience.png' },
+  { id: 'ad-10', num: 10, title: 'Easy Process', angle: 'Deal to keys in 4 steps', category: 'Process', filename: 'ad-10-easy-process.png' },
+  { id: 'ad-11', num: 11, title: 'Build Portfolio', angle: 'First deal to full portfolio', category: 'Growth', filename: 'ad-11-build-portfolio.png' },
+  { id: 'ad-12', num: 12, title: 'Action Over Courses', angle: 'Real deals, not just videos', category: 'Trust', filename: 'ad-12-action-over-courses.png' },
+  { id: 'ad-13', num: 13, title: 'Monthly Earnings', angle: 'Work once, paid monthly', category: 'Income', filename: 'ad-13-monthly-earnings.png' },
+  { id: 'ad-14', num: 14, title: 'JV Partners', angle: 'No capital? Partner up.', category: 'Partnership', filename: 'ad-14-jv-partners.png' },
+  { id: 'ad-15', num: 15, title: 'Local Deals', angle: 'Deals in your city', category: 'Location', filename: 'ad-15-local-deals.png' },
 ];
+
+const CATEGORIES = ['All', ...Array.from(new Set(ADS.map((a) => a.category)))];
 
 export default function AdsLibraryPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
+  const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [previewAd, setPreviewAd] = useState<Ad | null>(null);
+
+  const filtered = useMemo(() => {
+    return ADS.filter((ad) => {
+      const matchesCategory = activeCategory === 'All' || ad.category === activeCategory;
+      const matchesSearch = search === '' ||
+        ad.title.toLowerCase().includes(search.toLowerCase()) ||
+        ad.angle.toLowerCase().includes(search.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [search, activeCategory]);
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,39 +56,42 @@ export default function AdsLibraryPage() {
       setUnlocked(true);
       setError('');
     } else {
-      setError('Wrong password');
+      setError('Wrong passcode');
     }
   };
 
+  const handleDownload = (ad: Ad) => {
+    const link = document.createElement('a');
+    link.href = `/ads/${ad.filename}`;
+    link.download = ad.filename;
+    link.click();
+  };
+
+  // ── Password gate ──
   if (!unlocked) {
     return (
-      <div className="min-h-screen bg-[#F3F3EE] flex items-center justify-center p-6">
-        <form onSubmit={handleUnlock} className="w-full max-w-sm">
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl border-2 border-[#0A0A0A] flex items-center justify-center text-sm font-bold" style={{ fontFamily: 'Sora, Inter, sans-serif' }}>
-                nf
-              </div>
-              <span className="text-2xl font-normal tracking-wider text-[#0A0A0A]" style={{ fontFamily: 'Sora, Inter, sans-serif' }}>stay</span>
+      <div style={{ minHeight: '100vh', backgroundColor: '#F3F3EE', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <form onSubmit={handleUnlock} style={{ width: '100%', maxWidth: 380 }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: 20, border: '1px solid #E5E7EB', padding: 36, boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, border: '2.5px solid #0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, fontFamily: 'Sora, Inter, sans-serif', color: '#0A0A0A' }}>nf</div>
+              <span style={{ fontSize: 24, fontWeight: 400, letterSpacing: 3, color: '#0A0A0A', fontFamily: 'Sora, Inter, sans-serif' }}>stay</span>
             </div>
-            <h1 className="text-lg font-semibold text-[#1A1A1A] mb-1">Ads Library</h1>
-            <p className="text-sm text-[#6B7280] mb-6">Enter password to access</p>
-            <div className="relative mb-4">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: '#1A1A1A', margin: '0 0 4px' }}>Ads Library</h1>
+            <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 24px' }}>Enter passcode to access</p>
+            <div style={{ position: 'relative', marginBottom: 16 }}>
+              <Lock style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9CA3AF' }} />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder="Passcode"
                 autoFocus
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#1E9A80] focus:border-transparent"
+                style={{ width: '100%', paddingLeft: 42, paddingRight: 16, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: '1px solid #E5E7EB', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
-            {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-            <button
-              type="submit"
-              className="w-full py-3 rounded-xl bg-[#1E9A80] text-white text-sm font-semibold hover:bg-[#1a8a72] transition-colors"
-            >
+            {error && <p style={{ color: '#ef4444', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
+            <button type="submit" style={{ width: '100%', padding: '14px 0', borderRadius: 12, backgroundColor: '#1E9A80', color: '#FFFFFF', fontSize: 14, fontWeight: 600, fontFamily: 'Inter, sans-serif', border: 'none', cursor: 'pointer' }}>
               Unlock
             </button>
           </div>
@@ -268,129 +100,197 @@ export default function AdsLibraryPage() {
     );
   }
 
+  // ── Main library ──
   return (
-    <div className="min-h-screen bg-[#F3F3EE]">
+    <div style={{ minHeight: '100vh', backgroundColor: '#F3F3EE', fontFamily: 'Inter, system-ui, sans-serif' }}>
+
       {/* Header */}
-      <div className="bg-white border-b border-[#E5E7EB]">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg border-2 border-[#0A0A0A] flex items-center justify-center text-xs font-bold" style={{ fontFamily: 'Sora, Inter, sans-serif' }}>
-                nf
-              </div>
-              <span className="text-lg font-normal tracking-wider text-[#0A0A0A]" style={{ fontFamily: 'Sora, Inter, sans-serif' }}>stay</span>
+      <div style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E5E7EB' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 10, border: '2px solid #0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, fontFamily: 'Sora, Inter, sans-serif', color: '#0A0A0A' }}>nf</div>
+              <span style={{ fontSize: 18, fontWeight: 400, letterSpacing: 3, color: '#0A0A0A', fontFamily: 'Sora, Inter, sans-serif' }}>stay</span>
             </div>
-            <div className="h-6 w-px bg-[#E5E7EB]" />
-            <h1 className="text-sm font-semibold text-[#1A1A1A]">Ads Library</h1>
-            <span className="text-xs font-medium text-[#1E9A80] bg-[rgba(30,154,128,0.08)] px-2.5 py-1 rounded-full">
-              {ADS.length} ads
-            </span>
+            <div style={{ width: 1, height: 24, backgroundColor: '#E5E7EB' }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A' }}>Static Ads Library</span>
           </div>
-          <a
-            href="https://motion.nfstay.com/code-examples"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-[#6B7280] hover:text-[#1A1A1A] flex items-center gap-1.5 transition-colors"
-          >
-            Motion Studio <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#1E9A80', backgroundColor: 'rgba(30,154,128,0.08)', padding: '5px 12px', borderRadius: 20 }}>
+            {filtered.length} of {ADS.length}
+          </span>
         </div>
       </div>
 
-      {/* Ad detail modal */}
-      {selectedAd && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-6" onClick={() => setSelectedAd(null)}>
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-[#E5E7EB]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-[#1E9A80] bg-[rgba(30,154,128,0.08)] w-8 h-8 rounded-lg flex items-center justify-center">
-                    {selectedAd.num}
-                  </span>
-                  <h2 className="text-lg font-semibold text-[#1A1A1A]">{selectedAd.title}</h2>
-                </div>
-                <button onClick={() => setSelectedAd(null)} className="text-[#9CA3AF] hover:text-[#1A1A1A] text-xl">&times;</button>
-              </div>
-            </div>
-            <div className="p-6 space-y-5">
-              <div>
-                <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Hook</label>
-                <p className="text-base font-semibold text-[#1A1A1A] mt-1">{selectedAd.hook}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Voiceover Script</label>
-                <p className="text-sm text-[#6B7280] mt-1 leading-relaxed">{selectedAd.voiceover}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider flex items-center gap-1.5">
-                    <User className="w-3 h-3" /> Voice
-                  </label>
-                  <p className="text-sm text-[#1A1A1A] mt-1">{selectedAd.voiceType}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Duration</label>
-                  <p className="text-sm text-[#1A1A1A] mt-1">{selectedAd.duration}</p>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider flex items-center gap-1.5">
-                  <Volume2 className="w-3 h-3" /> SFX Notes
-                </label>
-                <p className="text-sm text-[#6B7280] mt-1">{selectedAd.sfxNotes}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Music Direction</label>
-                <p className="text-sm text-[#6B7280] mt-1">{selectedAd.musicDirection}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">CTA</label>
-                <p className="text-sm font-semibold text-[#1E9A80] mt-1">{selectedAd.cta}</p>
-              </div>
-              <div className="pt-3 flex gap-3">
-                <a
-                  href={selectedAd.previewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-3 rounded-xl bg-[#1E9A80] text-white text-sm font-semibold text-center hover:bg-[#1a8a72] transition-colors flex items-center justify-center gap-2"
-                >
-                  <Play className="w-4 h-4" /> Preview in Motion Studio
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Title + search + filters */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 0' }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#1A1A1A', margin: '0 0 6px', letterSpacing: -0.5 }}>nfstay Static Ads Library</h1>
+        <p style={{ fontSize: 15, color: '#6B7280', margin: '0 0 24px' }}>Preview and download image creatives</p>
 
-      {/* Grid */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {ADS.map((ad) => (
+        {/* Search */}
+        <div style={{ position: 'relative', marginBottom: 16, maxWidth: 400 }}>
+          <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9CA3AF' }} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search ads..."
+            style={{ width: '100%', paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 12, border: '1px solid #E5E7EB', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}
+          />
+        </div>
+
+        {/* Filter chips */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
+          {CATEGORIES.map((cat) => (
             <button
-              key={ad.id}
-              onClick={() => setSelectedAd(ad)}
-              className="text-left bg-white rounded-xl border border-[#E5E7EB] p-5 hover:shadow-md hover:border-[#1E9A80]/30 transition-all group"
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              style={{
+                padding: '8px 18px',
+                borderRadius: 20,
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: 'Inter, sans-serif',
+                border: activeCategory === cat ? '1.5px solid #1E9A80' : '1px solid #E5E7EB',
+                backgroundColor: activeCategory === cat ? 'rgba(30,154,128,0.08)' : '#FFFFFF',
+                color: activeCategory === cat ? '#1E9A80' : '#6B7280',
+                cursor: 'pointer',
+              }}
             >
-              <div className="flex items-start justify-between mb-3">
-                <span className="text-xs font-bold text-[#1E9A80] bg-[rgba(30,154,128,0.08)] w-7 h-7 rounded-lg flex items-center justify-center">
-                  {ad.num}
-                </span>
-                <span className="text-xs text-[#9CA3AF]">{ad.duration}</span>
-              </div>
-              <h3 className="text-sm font-semibold text-[#1A1A1A] mb-1.5 group-hover:text-[#1E9A80] transition-colors">
-                {ad.title}
-              </h3>
-              <p className="text-xs text-[#6B7280] line-clamp-2 mb-3">{ad.hook}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#9CA3AF]">{ad.voiceType}</span>
-                <div className="flex items-center gap-1 text-xs text-[#1E9A80] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Play className="w-3 h-3" /> Preview
-                </div>
-              </div>
+              {cat}
             </button>
           ))}
         </div>
       </div>
+
+      {/* Card grid */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 48px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+          {filtered.map((ad) => (
+            <div key={ad.id} style={{ backgroundColor: '#FFFFFF', borderRadius: 16, border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.03)', transition: 'box-shadow 0.2s', display: 'flex', flexDirection: 'column' }}>
+
+              {/* Image preview (9:16 ratio) */}
+              <div
+                style={{ position: 'relative', paddingTop: '177.78%', backgroundColor: '#EEEDEA', cursor: 'pointer', overflow: 'hidden' }}
+                onClick={() => setPreviewAd(ad)}
+              >
+                <img
+                  src={`/ads/${ad.filename}`}
+                  alt={ad.title}
+                  loading="lazy"
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent && !parent.querySelector('[data-placeholder]')) {
+                      const ph = document.createElement('div');
+                      ph.setAttribute('data-placeholder', '1');
+                      ph.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#9CA3AF;font-family:Inter,sans-serif;';
+                      ph.innerHTML = `<span style="font-size:36px;font-weight:800;color:#E5E7EB">${String(ad.num).padStart(2, '0')}</span><span style="font-size:12px">Image pending</span>`;
+                      parent.appendChild(ph);
+                    }
+                  }}
+                />
+                {/* Hover overlay */}
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', transition: 'background 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.3)'; (e.currentTarget.querySelector('[data-eye]') as HTMLElement | null)!.style.opacity = '1'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0)'; (e.currentTarget.querySelector('[data-eye]') as HTMLElement | null)!.style.opacity = '0'; }}
+                >
+                  <div data-eye="" style={{ opacity: 0, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', gap: 6, color: '#FFFFFF', fontSize: 14, fontWeight: 600 }}>
+                    <Eye style={{ width: 18, height: 18 }} /> Preview
+                  </div>
+                </div>
+              </div>
+
+              {/* Card info */}
+              <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#1E9A80', backgroundColor: 'rgba(30,154,128,0.08)', padding: '3px 10px', borderRadius: 8 }}>
+                    {String(ad.num).padStart(2, '0')}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF' }}>{ad.category}</span>
+                </div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1A1A1A', margin: '0 0 4px', lineHeight: 1.3 }}>{ad.title}</h3>
+                <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 14px', lineHeight: 1.4, flex: 1 }}>{ad.angle}</p>
+
+                {/* Buttons */}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => setPreviewAd(ad)}
+                    style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF', color: '#1A1A1A', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  >
+                    <Eye style={{ width: 14, height: 14 }} /> Preview
+                  </button>
+                  <button
+                    onClick={() => handleDownload(ad)}
+                    style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', backgroundColor: '#1E9A80', color: '#FFFFFF', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  >
+                    <Download style={{ width: 14, height: 14 }} /> Download
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Empty state */}
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#9CA3AF' }}>
+            <p style={{ fontSize: 16, fontWeight: 600, margin: '0 0 4px' }}>No ads match</p>
+            <p style={{ fontSize: 14 }}>Try a different search or filter</p>
+          </div>
+        )}
+      </div>
+
+      {/* Preview modal */}
+      {previewAd && (
+        <div
+          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={() => setPreviewAd(null)}
+        >
+          <div
+            style={{ position: 'relative', maxWidth: 420, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close */}
+            <button
+              onClick={() => setPreviewAd(null)}
+              style={{ position: 'absolute', top: -44, right: 0, width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+            >
+              <X style={{ width: 20, height: 20 }} />
+            </button>
+
+            {/* Image */}
+            <div style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEEDEA', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+              <img
+                src={`/ads/${previewAd.filename}`}
+                alt={previewAd.title}
+                style={{ width: '100%', display: 'block' }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+            </div>
+
+            {/* Info bar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, gap: 12 }}>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
+                  {String(previewAd.num).padStart(2, '0')}. {previewAd.title}
+                </h3>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: '2px 0 0' }}>{previewAd.angle}</p>
+              </div>
+              <button
+                onClick={() => handleDownload(previewAd)}
+                style={{ padding: '10px 20px', borderRadius: 10, border: 'none', backgroundColor: '#1E9A80', color: '#FFFFFF', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+              >
+                <Download style={{ width: 14, height: 14 }} /> Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
