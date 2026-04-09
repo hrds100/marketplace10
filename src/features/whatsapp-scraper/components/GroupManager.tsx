@@ -9,9 +9,10 @@ interface GroupManagerProps {
   error: string | null;
   onToggleGroup: (id: string, isActive: boolean) => void;
   onRefresh: () => void;
+  onScan: (groupName: string) => void;
 }
 
-export default function GroupManager({ groups, loading, error, onToggleGroup, onRefresh }: GroupManagerProps) {
+export default function GroupManager({ groups, loading, error, onToggleGroup, onRefresh, onScan }: GroupManagerProps) {
   const [search, setSearch] = useState('');
 
   if (loading) {
@@ -107,11 +108,12 @@ export default function GroupManager({ groups, loading, error, onToggleGroup, on
                 <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">Active</th>
                 <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">Deals Found</th>
                 <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">Last Scanned</th>
+                <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">Scan</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map(group => (
-                <GroupRow key={group.id} group={group} onToggle={onToggleGroup} />
+                <GroupRow key={group.id} group={group} onToggle={onToggleGroup} onScan={onScan} />
               ))}
             </tbody>
           </table>
