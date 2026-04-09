@@ -710,6 +710,7 @@ export default function InvestPayoutsPage() {
     setClaimStep('choose');
     setClaimTxHash(null);
     setClaimError(null);
+    checkKyc(); // Re-check KYC (triggers legacy migration if needed)
     setClaimModalOpen(true);
   };
 
