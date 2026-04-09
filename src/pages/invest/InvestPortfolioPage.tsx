@@ -712,7 +712,13 @@ export default function InvestPortfolioPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {milestone.min === 0 ? '$0 allocated' : `$${(milestone.min / 1000).toLocaleString()}k allocated`}
+                            {isReached
+                              ? milestone.min === 0
+                                ? `$${totalInvested.toLocaleString()} invested`
+                                : `$${(milestone.min / 1000).toLocaleString()}k ✓`
+                              : isNext
+                                ? `$${totalInvested.toLocaleString()} / $${(milestone.min / 1000).toLocaleString()}k`
+                                : `$${(milestone.min / 1000).toLocaleString()}k goal`}
                           </p>
                         </div>
                       </div>
