@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/hooks/useWallet';
+import { useAuth } from '@/hooks/useAuth';
 import { useMyHoldings, useInvestProperties } from '@/hooks/useInvestData';
+import { supabase } from '@/integrations/supabase/client';
 import { CONTRACTS } from '@/lib/particle';
 import { RWA_TOKEN_ABI } from '@/lib/contractAbis';
 
@@ -38,9 +40,29 @@ export interface PortfolioData {
  * (legacy investors who purchased before the DB existed).
  */
 export function usePortfolioWithBlockchain() {
+  const { user } = useAuth();
   const { address, connected } = useWallet();
   const { data: supabaseHoldings = [], isLoading: holdingsLoading } = useMyHoldings();
   const { data: allProperties = [], isLoading: propertiesLoading } = useInvestProperties();
+
+  // Fetch total from completed inv_orders as a floor for totalContributed
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      try {
+        const { data } = await (supabase.from('inv_orders') as any)
+          .select('amount_paid')
+          .eq('user_id', user.id)
+          .eq('status', 'completed');
+        if (data) {
+          setOrdersTotal(data.reduce((sum: number, o: { amount_paid: number }) => sum + Number(o.amount_paid || 0), 0));
+        }
+      } catch {
+        // Non-critical fallback
+      }
+    })();
+  }, [user?.id]);
 
   const [blockchainBalances, setBlockchainBalances] = useState<Record<number, number>>({});
   const [blockchainLoading, setBlockchainLoading] = useState(false);
@@ -188,8 +210,9 @@ export function usePortfolioWithBlockchain() {
 
     const holdings = Array.from(holdingMap.values());
 
+    const holdingsTotal = holdings.reduce((sum, h) => sum + h.invested, 0);
     return {
-      totalContributed: holdings.reduce((sum, h) => sum + h.invested, 0),
+      totalContributed: Math.max(holdingsTotal, ordersTotal),
       totalValue: holdings.reduce((sum, h) => sum + h.currentValue, 0),
       totalEarnings: holdings.reduce((sum, h) => sum + h.totalEarned, 0),
       pendingPayouts: 0,

@@ -714,7 +714,7 @@ export default function InvestPortfolioPage() {
                           <p className="text-xs text-muted-foreground">
                             {isReached
                               ? milestone.min === 0
-                                ? `$${totalInvested.toLocaleString()} invested`
+                                ? `$${totalInvested.toLocaleString()} allocated`
                                 : `$${(milestone.min / 1000).toLocaleString()}k ✓`
                               : isNext
                                 ? `$${totalInvested.toLocaleString()} / $${(milestone.min / 1000).toLocaleString()}k`
