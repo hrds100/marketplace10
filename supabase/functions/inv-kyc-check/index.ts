@@ -45,8 +45,88 @@ serve(async (req) => {
       )
     }
 
-    // No row — user hasn't started KYC
+    // No row — check legacy KYC before returning not_started
     if (!session) {
+      try {
+        // Step 1: Get wallet address from profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('wallet_address')
+          .eq('id', user_id)
+          .maybeSingle()
+
+        if (profile?.wallet_address) {
+          console.log('Legacy KYC check for wallet:', profile.wallet_address)
+
+          // Step 2: Check legacy API for existing Veriff session
+          const controller = new AbortController()
+          const timeout = setTimeout(() => controller.abort(), 5000)
+
+          try {
+            const legacyRes = await fetch(
+              `https://be.nfstay.com/api/kyc/check-wallet/${profile.wallet_address}`,
+              { signal: controller.signal }
+            )
+            clearTimeout(timeout)
+
+            if (legacyRes.ok) {
+              const legacyData = await legacyRes.json()
+
+              if (legacyData?.sessionId) {
+                // Step 3: Check Veriff API for this legacy session
+                const veriffApiKey = Deno.env.get('VERIFF_API_KEY')
+                const veriffSecretKey = Deno.env.get('VERIFF_SECRET_KEY')
+
+                if (veriffApiKey && veriffSecretKey) {
+                  const signature = createHmac('sha256', veriffSecretKey)
+                    .update(legacyData.sessionId)
+                    .digest('hex')
+
+                  const veriffResponse = await fetch(
+                    `https://stationapi.veriff.com/v1/sessions/${legacyData.sessionId}/decision/fullauto?version=1.0.0`,
+                    {
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'X-AUTH-CLIENT': veriffApiKey,
+                        'X-HMAC-SIGNATURE': signature,
+                      },
+                    }
+                  )
+
+                  if (veriffResponse.ok) {
+                    const veriffData = await veriffResponse.json()
+                    const decision = veriffData?.decision || 'pending'
+
+                    // Step 4: Only migrate if approved
+                    if (decision === 'approved') {
+                      await supabase
+                        .from('inv_kyc_sessions')
+                        .insert({
+                          user_id,
+                          wallet_address: profile.wallet_address,
+                          session_id: legacyData.sessionId,
+                          status: 'approved',
+                        })
+
+                      return new Response(
+                        JSON.stringify({ status: 'approved', session_id: legacyData.sessionId }),
+                        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                      )
+                    }
+                    // Step 5: Not approved — fall through to not_started
+                  }
+                }
+              }
+            }
+          } catch (legacyFetchErr) {
+            clearTimeout(timeout)
+            console.error('Legacy KYC fetch failed:', legacyFetchErr)
+          }
+        }
+      } catch (legacyErr) {
+        console.error('Legacy KYC lookup error:', legacyErr)
+      }
+
       return new Response(
         JSON.stringify({ status: 'not_started', session_id: null }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
