@@ -40,7 +40,7 @@ const config = createConfig({
   ],
   plugins: [
     wallet({
-      visible: true,
+      visible: false,
       entryPosition: EntryPosition.BR,
     }),
   ],
