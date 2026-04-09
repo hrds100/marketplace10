@@ -238,6 +238,24 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
       <div data-feature="NAV_LAYOUT__SIDEBAR_MOBILE" className="md:hidden fixed bottom-0 left-0 right-0 h-[60px] bg-white/80 dark:bg-card/80 backdrop-blur-xl border-t border-border/30 z-[110] flex justify-around items-center">
         {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[4]].filter(Boolean).map(item => {
           const isActive = location.pathname === item.to;
+
+          // Paid users → SSO link to operator dashboard
+          if (item.to === '/dashboard/booking-site' && isPaidTier(tier)) {
+            return (
+              <a
+                key={item.to}
+                href="https://nfstay.app/nfstay/"
+                onClick={handleBookingSiteClick}
+                className="relative flex flex-col items-center gap-0.5"
+              >
+                <div className="relative">
+                  <item.icon className="w-[22px] h-[22px] text-muted-foreground" strokeWidth={1.75} />
+                </div>
+                <span className="text-[10px] font-medium text-muted-foreground">{item.label}</span>
+              </a>
+            );
+          }
+
           return (
             <NavLink key={item.to} to={item.to} className="relative flex flex-col items-center gap-0.5">
               <div className="relative">
