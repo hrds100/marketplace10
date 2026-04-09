@@ -88,6 +88,10 @@
       "destination": "/app.html"
     },
     {
+      "source": "/ads",
+      "destination": "/app.html"
+    },
+    {
       "source": "/(pt-br|ar|es|it|fr)/:path*",
       "destination": "/app.html"
     }
