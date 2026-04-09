@@ -56,6 +56,7 @@ import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
 import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
 import AdminWorkspaceSelector from "@/features/admin-dashboard/AdminWorkspaceSelector";
 import AdminArchitecture from "@/features/admin-dashboard/AdminArchitecture";
+import WhatsAppScraperPage from "@/features/whatsapp-scraper/WhatsAppScraperPage";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 import BrandPage from "./pages/BrandPage";
@@ -249,6 +250,9 @@ const App = () => (
             <Route path="nfstay/settings" element={<AdminNfsSettings />} />
 
             {/* Observatory removed — chat system no longer active */}
+
+            {/* WhatsApp Deal Scanner */}
+            <Route path="marketplace/whatsapp-scraper" element={<WhatsAppScraperPage />} />
 
             {/* Architecture overview */}
             <Route path="architecture" element={<AdminArchitecture />} />

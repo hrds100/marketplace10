@@ -4,7 +4,7 @@ import {
   ArrowLeft, LayoutDashboard, List, Users, GraduationCap,
   CreditCard, HelpCircle, UserCheck, Settings, Bell,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
-  Plug, Zap, Menu, X,
+  Plug, Zap, Menu, X, MessageSquare,
   BarChart3, Calendar,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +23,7 @@ const marketplaceLinks = [
   { to: '/admin/marketplace/faq', label: 'FAQ', icon: HelpCircle },
   { to: '/admin/marketplace/affiliates', label: 'Affiliates', icon: UserCheck },
   { to: '/admin/marketplace/settings', label: 'Settings', icon: Settings },
+  { to: '/admin/marketplace/whatsapp-scraper', label: 'Deal Scanner', icon: MessageSquare },
 ];
 
 const investLinks = [
