@@ -1964,6 +1964,9 @@ export default function InvestMarketplacePage() {
   const [investOpen, setInvestOpen] = useState(false);
   const [samcartOpen, setSamcartOpen] = useState(false);
   const [samcartUrl, setSamcartUrl] = useState('');
+  const [samcartConfirmed, setSamcartConfirmed] = useState(false);
+  const [samcartPaidAmount, setSamcartPaidAmount] = useState(0);
+  const [samcartProcessing, setSamcartProcessing] = useState(false);
   const checkoutOpenedAt = useRef<string | null>(null);
   const [initialCalcAmount, setInitialCalcAmount] = useState(1000);
 
@@ -2001,24 +2004,30 @@ export default function InvestMarketplacePage() {
   useEffect(() => {
     if (!samcartOpen || !user?.id) return;
     checkoutOpenedAt.current = new Date().toISOString();
+    // Show processing indicator after 10 seconds (user likely submitted payment)
+    const processingTimer = setTimeout(() => setSamcartProcessing(true), 10000);
     const poll = setInterval(async () => {
       try {
         const { data } = await (supabase.from('inv_orders') as any)
-          .select('id, status, amount_paid')
+          .select('id, status, amount_paid, shares_requested')
           .eq('user_id', user.id)
           .gte('created_at', checkoutOpenedAt.current!)
           .limit(1);
         if (data && data.length > 0) {
           clearInterval(poll);
+          clearTimeout(processingTimer);
+          setSamcartProcessing(false);
           setSamcartOpen(false);
           setSamcartUrl('');
-          toast.success(`Payment confirmed — $${data[0].amount_paid} invested!`);
+          setSamcartPaidAmount(Number(data[0].amount_paid || 0));
+          setSamcartConfirmed(true);
+          import('@/lib/celebration').then(m => m.playCelebrationSound());
         }
       } catch {
         // Polling error — keep trying
       }
     }, 3000);
-    return () => clearInterval(poll);
+    return () => { clearInterval(poll); clearTimeout(processingTimer); };
   }, [samcartOpen, user?.id]);
 
   // Auto-rotate carousel
@@ -2131,7 +2140,7 @@ export default function InvestMarketplacePage() {
       <InvestModal open={investOpen} onOpenChange={setInvestOpen} property={property} />
 
       {/* SamCart card-payment iframe (same drawer approach as legacy app.nfstay.com) */}
-      <Sheet open={samcartOpen} onOpenChange={(open) => { setSamcartOpen(open); if (!open) setSamcartUrl(''); }}>
+      <Sheet open={samcartOpen} onOpenChange={(open) => { setSamcartOpen(open); if (!open) { setSamcartUrl(''); setSamcartProcessing(false); } }}>
         <SheetContent
           side="right"
           data-feature="INVEST__MARKETPLACE_CHECKOUT"
@@ -2141,17 +2150,89 @@ export default function InvestMarketplacePage() {
             <SheetTitle className="text-base">{t('invest.completePayment')}</SheetTitle>
           </SheetHeader>
           {samcartUrl && (
-            <iframe
-              key={samcartUrl}
-              src={samcartUrl}
-              className="w-full border-none"
-              style={{ height: 'calc(100vh - 57px)' }}
-              allow="payment"
-              title="SamCart Checkout"
-            />
+            <div className="relative" style={{ height: 'calc(100vh - 57px)' }}>
+              <iframe
+                key={samcartUrl}
+                src={samcartUrl}
+                className="w-full h-full border-none"
+                allow="payment"
+                title="SamCart Checkout"
+              />
+              {/* Processing overlay — appears after user likely submitted payment */}
+              {samcartProcessing && (
+                <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t px-6 py-4 flex items-center gap-3 animate-in slide-in-from-bottom duration-300">
+                  <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Confirming your transaction...</p>
+                    <p className="text-xs text-muted-foreground">This may take a few moments. Please don't close this window.</p>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Card payment congratulations overlay — same design as crypto */}
+      {samcartConfirmed && property && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          {/* Confetti */}
+          <div className="fixed inset-0 pointer-events-none z-[400] overflow-hidden">
+            {Array.from({ length: 40 }).map((_, i) => (
+              <div key={i} className="absolute animate-confetti-particle" style={{
+                left: `${Math.random() * 100}%`, top: '-10px',
+                width: `${6 + Math.random() * 8}px`, height: `${6 + Math.random() * 8}px`,
+                backgroundColor: ['#00D084', '#FFD700', '#FF6B6B', '#4ECDC4', '#A855F7', '#3B82F6'][i % 6],
+                animationDelay: `${Math.random() * 2}s`, animationDuration: `${2 + Math.random() * 2}s`,
+              }} />
+            ))}
+          </div>
+          <div className="w-full max-w-sm mx-4 bg-white rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            {/* Gradient header */}
+            <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 min-h-[130px] overflow-hidden">
+              <div className="absolute w-[300px] h-[300px] opacity-15 -top-[100px] -left-[140px] rounded-full bg-white/30" />
+              <div className="absolute w-[200px] h-[200px] opacity-10 -bottom-[80px] -right-[60px] rounded-full bg-white/30" />
+              <div className="absolute top-5 left-8 text-2xl animate-bounce">🎉</div>
+              <div className="absolute top-4 right-10 text-2xl animate-bounce" style={{ animationDelay: '0.3s' }}>🎊</div>
+              <div className="absolute bottom-5 left-1/3 text-xl animate-bounce" style={{ animationDelay: '0.6s' }}>✨</div>
+              <div className="absolute top-6 left-1/2 text-lg animate-bounce" style={{ animationDelay: '0.9s' }}>🥳</div>
+            </div>
+            {/* Icon circle */}
+            <div className="flex justify-center -mt-12 relative z-10">
+              <div className="w-24 h-24 rounded-full backdrop-blur-lg bg-white/30 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg">
+                  <span className="text-4xl">🏠</span>
+                </div>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="px-8 pb-8 pt-2 flex flex-col items-center text-center gap-3">
+              <h1 className="text-2xl font-bold">{t('invest.congratulations')}</h1>
+              <p className="text-muted-foreground">
+                You secured <strong className="text-foreground">${samcartPaidAmount.toLocaleString()}</strong> in {property.title}!
+              </p>
+              <div className="rounded-xl bg-muted/50 p-4 w-full space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t('invest.totalAllocated')}</span>
+                  <span className="font-bold">${samcartPaidAmount.toLocaleString()}</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('invest.welcomeAsPartner')}
+              </p>
+              <Button
+                className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full h-11 font-semibold mt-2"
+                onClick={() => {
+                  setSamcartConfirmed(false);
+                  window.location.href = '/dashboard/invest/portfolio';
+                }}
+              >
+                {t('invest.viewPortfolio')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
