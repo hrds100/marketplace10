@@ -11,6 +11,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
+type LegalPageType = 'privacy' | 'terms' | 'cookie';
+
+interface DisclaimerBlock {
+  content: string;
+  loading: boolean;
+  saving: boolean;
+}
+
+const DISCLAIMER_LABELS: Record<LegalPageType, string> = {
+  privacy: 'Privacy Policy',
+  terms: 'Terms & Conditions',
+  cookie: 'Cookie Policy',
+};
+
 interface PlatformSettings {
   platform_name: string;
   support_email: string;
@@ -90,6 +104,53 @@ export default function AdminNfsSettings() {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  // --- Disclaimer blocks state ---
+  const [disclaimers, setDisclaimers] = useState<Record<LegalPageType, DisclaimerBlock>>({
+    privacy: { content: '', loading: true, saving: false },
+    terms:   { content: '', loading: true, saving: false },
+    cookie:  { content: '', loading: true, saving: false },
+  });
+
+  useEffect(() => {
+    async function loadDisclaimers() {
+      const { data } = await (supabase.from('nfs_legal_protected_blocks') as any)
+        .select('page_type, content')
+        .in('page_type', ['privacy', 'terms', 'cookie']);
+
+      if (data) {
+        setDisclaimers(prev => {
+          const next = { ...prev };
+          for (const row of data as { page_type: LegalPageType; content: string }[]) {
+            next[row.page_type] = { content: row.content, loading: false, saving: false };
+          }
+          // Mark any missing as loaded (empty)
+          (['privacy', 'terms', 'cookie'] as LegalPageType[]).forEach(t => {
+            if (next[t].loading) next[t] = { ...next[t], loading: false };
+          });
+          return next;
+        });
+      }
+    }
+    void loadDisclaimers();
+  }, []);
+
+  const saveDisclaimer = async (pageType: LegalPageType) => {
+    setDisclaimers(prev => ({ ...prev, [pageType]: { ...prev[pageType], saving: true } }));
+    try {
+      const { error } = await (supabase.from('nfs_legal_protected_blocks') as any)
+        .upsert(
+          { page_type: pageType, content: disclaimers[pageType].content, active: true, updated_at: new Date().toISOString() },
+          { onConflict: 'page_type' }
+        );
+      if (error) throw error;
+      toast({ title: 'Disclaimer saved', description: `${DISCLAIMER_LABELS[pageType]} disclaimer updated.` });
+    } catch (e) {
+      toast({ title: 'Error', description: e instanceof Error ? e.message : 'Could not save.', variant: 'destructive' });
+    } finally {
+      setDisclaimers(prev => ({ ...prev, [pageType]: { ...prev[pageType], saving: false } }));
+    }
+  };
+
   if (loadingSettings) {
     return (
       <div className="flex justify-center py-20">
@@ -111,6 +172,7 @@ export default function AdminNfsSettings() {
           <TabsTrigger value="fees">Fees & Billing</TabsTrigger>
           <TabsTrigger value="emails">Email Templates</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
+          <TabsTrigger value="legal">Legal Pages</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-6 space-y-6">
@@ -206,6 +268,43 @@ export default function AdminNfsSettings() {
               </div>
             )}
           </section>
+        </TabsContent>
+        <TabsContent value="legal" className="mt-6 space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold">Operator Disclaimers</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              These disclaimers are automatically appended to the bottom of legal pages on all operator sites. Operators cannot see or edit them.
+            </p>
+          </div>
+
+          {(['privacy', 'terms', 'cookie'] as LegalPageType[]).map(pageType => (
+            <section key={pageType} className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <h3 className="text-base font-semibold">{DISCLAIMER_LABELS[pageType]} — Disclaimer</h3>
+              {disclaimers[pageType].loading ? (
+                <div className="h-32 bg-muted rounded-lg animate-pulse" />
+              ) : (
+                <Textarea
+                  value={disclaimers[pageType].content}
+                  onChange={e => setDisclaimers(prev => ({
+                    ...prev,
+                    [pageType]: { ...prev[pageType], content: e.target.value },
+                  }))}
+                  rows={6}
+                  className="text-sm"
+                  placeholder={`Enter the disclaimer text for ${DISCLAIMER_LABELS[pageType]}…`}
+                />
+              )}
+              <Button
+                size="sm"
+                onClick={() => saveDisclaimer(pageType)}
+                disabled={disclaimers[pageType].saving || disclaimers[pageType].loading}
+              >
+                {disclaimers[pageType].saving
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
+                  : 'Save Disclaimer'}
+              </Button>
+            </section>
+          ))}
         </TabsContent>
       </Tabs>
 
