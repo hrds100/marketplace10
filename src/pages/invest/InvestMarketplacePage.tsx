@@ -2178,7 +2178,8 @@ export default function InvestMarketplacePage() {
 
       {/* Card payment congratulations overlay — same design as crypto */}
       {samcartConfirmed && property && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
           {/* Confetti */}
           <div className="fixed inset-0 pointer-events-none z-[400] overflow-hidden">
             {Array.from({ length: 40 }).map((_, i) => (
