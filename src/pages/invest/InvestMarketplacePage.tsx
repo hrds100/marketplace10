@@ -1967,7 +1967,6 @@ export default function InvestMarketplacePage() {
   const [samcartConfirmed, setSamcartConfirmed] = useState(false);
   const [samcartPaidAmount, setSamcartPaidAmount] = useState(0);
   const [samcartProcessing, setSamcartProcessing] = useState(false);
-  const samcartLoadCount = useRef(0);
   const checkoutOpenedAt = useRef<string | null>(null);
   const [initialCalcAmount, setInitialCalcAmount] = useState(1000);
 
@@ -2006,7 +2005,6 @@ export default function InvestMarketplacePage() {
     if (!samcartOpen || !user?.id) return;
     checkoutOpenedAt.current = new Date().toISOString();
     setSamcartProcessing(false);
-    samcartLoadCount.current = 0;
     const poll = setInterval(async () => {
       try {
         const { data } = await (supabase.from('inv_orders') as any)
@@ -2016,12 +2014,17 @@ export default function InvestMarketplacePage() {
           .limit(1);
         if (data && data.length > 0) {
           clearInterval(poll);
-          setSamcartProcessing(false);
-          setSamcartOpen(false);
-          setSamcartUrl('');
-          setSamcartPaidAmount(Number(data[0].amount_paid || 0));
-          setSamcartConfirmed(true);
-          import('@/lib/celebration').then(m => m.playCelebrationSound());
+          const paidAmount = Number(data[0].amount_paid || 0);
+          // Show processing banner inside drawer for 3 seconds, then celebrate
+          setSamcartProcessing(true);
+          setTimeout(() => {
+            setSamcartProcessing(false);
+            setSamcartOpen(false);
+            setSamcartUrl('');
+            setSamcartPaidAmount(paidAmount);
+            setSamcartConfirmed(true);
+            import('@/lib/celebration').then(m => m.playCelebrationSound());
+          }, 3000);
         }
       } catch {
         // Polling error — keep trying
@@ -2157,13 +2160,6 @@ export default function InvestMarketplacePage() {
                 className="w-full h-full border-none"
                 allow="payment"
                 title="SamCart Checkout"
-                onLoad={() => {
-                  samcartLoadCount.current += 1;
-                  // First load = checkout page. Second load = after "Place Order Now"
-                  if (samcartLoadCount.current >= 2) {
-                    setSamcartProcessing(true);
-                  }
-                }}
               />
               {/* Processing overlay — appears after user likely submitted payment */}
               {samcartProcessing && (
