@@ -26,7 +26,14 @@ export default function NotificationBell() {
   // Admin sees: own notifications + admin-wide (user_id IS NULL)
   // Regular user sees: own notifications only
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+    // Clear previous user's notifications immediately on user switch
+    setNotifications([]);
+    setUnreadCount(0);
     const fetchNotifications = async () => {
       let query = (supabase.from('notifications') as any)
         .select('*')
