@@ -10,7 +10,7 @@ import ScraperStats from './components/ScraperStats';
 import ScraperSettings from './components/ScraperSettings';
 
 export default function WhatsAppScraperPage() {
-  const { groups, loading: groupsLoading, error: groupsError, toggleGroup, refreshGroups } = useScraperGroups();
+  const { groups, loading: groupsLoading, error: groupsError, toggleGroup, refreshGroups, scanGroup } = useScraperGroups();
   const { deals, loading: dealsLoading, error: dealsError, approveDeal, rejectDeal, submitDeal, bulkApprove, bulkReject } = useScraperDeals();
   const { config, loading: configLoading, error: configError, updateConfig } = useScraperConfig();
   const stats = useScraperStats(deals);
@@ -53,6 +53,7 @@ export default function WhatsAppScraperPage() {
             error={groupsError}
             onToggleGroup={toggleGroup}
             onRefresh={refreshGroups}
+            onScan={scanGroup}
           />
         </TabsContent>
 

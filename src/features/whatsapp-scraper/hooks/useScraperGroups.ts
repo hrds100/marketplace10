@@ -62,5 +62,16 @@ export function useScraperGroups() {
     }
   }, [fetchGroups]);
 
-  return { groups, loading, error, toggleGroup, refreshGroups, refetch: fetchGroups };
+  const scanGroup = useCallback(async (groupName: string) => {
+    try {
+      await (supabase.from('wa_scraper_config') as any).upsert(
+        { key: 'scan_group', value: groupName, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to trigger scan');
+    }
+  }, []);
+
+  return { groups, loading, error, toggleGroup, refreshGroups, scanGroup, refetch: fetchGroups };
 }

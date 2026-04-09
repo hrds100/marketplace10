@@ -4,6 +4,7 @@ import type { ScraperGroup } from '../types';
 interface GroupRowProps {
   group: ScraperGroup;
   onToggle: (id: string, isActive: boolean) => void;
+  onScan: (groupName: string) => void;
 }
 
 function relativeTime(dateStr: string | null): string {
@@ -18,7 +19,7 @@ function relativeTime(dateStr: string | null): string {
   return `${days}d ago`;
 }
 
-export default function GroupRow({ group, onToggle }: GroupRowProps) {
+export default function GroupRow({ group, onToggle, onScan }: GroupRowProps) {
   return (
     <tr className="border-b border-[#E5E7EB] last:border-0 hover:bg-[#F3F3EE] transition-colors">
       <td className="py-3 px-4">
@@ -51,6 +52,14 @@ export default function GroupRow({ group, onToggle }: GroupRowProps) {
       </td>
       <td className="py-3 px-4">
         <span className="text-[13px] text-[#9CA3AF]">{relativeTime(group.last_scanned_at)}</span>
+      </td>
+      <td className="py-3 px-4">
+        <button
+          onClick={() => onScan(group.group_name)}
+          className="h-7 px-3 rounded-lg bg-[#1E9A80] text-white text-[11px] font-medium hover:bg-[#178a72] transition-colors"
+        >
+          Scan
+        </button>
       </td>
     </tr>
   );
