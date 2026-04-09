@@ -157,6 +157,8 @@ function ClaimModal({
   onBuyStayTokens,
   onBuyLpTokens,
   onClaimSuccess,
+  kycStatus,
+  onKycRequired,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -530,13 +532,39 @@ function ClaimModal({
 
         <DialogFooter>
           {claimStep === 'choose' && (
-            <div className="flex w-full gap-2">
-              <Button variant="outline" onClick={handleClose} className="flex-1">
-                Cancel
-              </Button>
-              <Button onClick={handleContinue} disabled={!selectedMethod} className="flex-1">
-                Continue
-              </Button>
+            <div className="w-full space-y-2">
+              {kycStatus === 'pending' && (
+                <p className="text-sm text-center" style={{ color: '#6B7280' }}>
+                  Your identity verification is being reviewed
+                </p>
+              )}
+              {(kycStatus === 'not_started' || kycStatus === 'declined' || kycStatus === 'error') && (
+                <p className="text-sm text-center" style={{ color: '#6B7280' }}>
+                  Please verify your identity before claiming payouts
+                </p>
+              )}
+              <div className="flex w-full gap-2">
+                <Button variant="outline" onClick={handleClose} className="flex-1">
+                  Cancel
+                </Button>
+                {kycStatus === 'pending' ? (
+                  <Button disabled className="flex-1">
+                    Pending Review
+                  </Button>
+                ) : kycStatus === 'loading' ? (
+                  <Button disabled className="flex-1">
+                    Loading…
+                  </Button>
+                ) : (kycStatus === 'not_started' || kycStatus === 'declined' || kycStatus === 'error') ? (
+                  <Button onClick={() => onKycRequired?.()} className="flex-1">
+                    Verify Identity
+                  </Button>
+                ) : (
+                  <Button onClick={handleContinue} disabled={!selectedMethod} className="flex-1">
+                    Continue
+                  </Button>
+                )}
+              </div>
             </div>
           )}
           {claimStep === 'success' && (
