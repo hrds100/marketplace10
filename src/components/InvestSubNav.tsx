@@ -15,7 +15,7 @@ export default function InvestSubNav() {
 
   return (
     <div data-feature="INVEST" className="border-b border-border/30 bg-white/60 backdrop-blur-sm flex-shrink-0">
-      <nav className="flex items-center gap-1 px-6 md:px-8 py-1.5">
+      <nav className="flex items-center gap-1 px-4 md:px-8 py-1.5 overflow-x-auto">
         {tabs.map(tab => {
           const isActive = location.pathname === tab.to;
           return (
