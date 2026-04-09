@@ -1,10 +1,11 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, ChevronDown, Globe, TrendingUp, Store, Wallet, Receipt, Vote } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useUserTier } from '@/hooks/useUserTier';
 import { isPaidTier } from '@/lib/ghl';
+import { supabase } from '@/integrations/supabase/client';
 
 function useNavItems() {
   const { t } = useTranslation();
@@ -45,6 +46,24 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
   const { signOut, isAdmin } = useAuth();
   const { user } = useAuth();
   const { tier } = useUserTier();
+
+  // SSO: open nfstay.app with session tokens so user is auto-logged in
+  const handleBookingSiteClick = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = new URL('https://nfstay.app/nfstay/');
+      if (session?.access_token) {
+        url.searchParams.set('access_token', session.access_token);
+        url.searchParams.set('refresh_token', session.refresh_token);
+      }
+      window.open(url.toString(), '_blank', 'noopener,noreferrer');
+    } catch {
+      // Fallback: open without tokens
+      window.open('https://nfstay.app/nfstay/', '_blank', 'noopener,noreferrer');
+    }
+  }, []);
+
   const [investOpen, setInvestOpen] = useState(() => location.pathname.startsWith('/dashboard/invest'));
   const isInvestActive = location.pathname.startsWith('/dashboard/invest');
 
@@ -69,14 +88,13 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
           {navItems.map(item => {
             const isActive = location.pathname === item.to || (item.to === '/dashboard/deals' && location.pathname === '/dashboard');
 
-            // Paid users → open operator dashboard in new tab instead of internal route
+            // Paid users → open operator dashboard in new tab, auto-logged in via SSO
             if (item.to === '/dashboard/booking-site' && isPaidTier(tier)) {
               return (
                 <a
                   key={item.to}
                   href="https://nfstay.app/nfstay/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={handleBookingSiteClick}
                   data-feature="NAV_LAYOUT__SIDEBAR_BOOKING"
                   className={`group/nav relative flex items-center gap-2 h-10 rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2' : 'px-3'} text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]`}
                 >
