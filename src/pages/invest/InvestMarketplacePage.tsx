@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -6,6 +6,7 @@ import { useInvestProperties, useMyAffiliateProfile } from '@/hooks/useInvestDat
 import { useBlockchain } from '@/hooks/useBlockchain';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useWalletGate } from '@/components/WalletProvisioner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -1963,6 +1964,7 @@ export default function InvestMarketplacePage() {
   const [investOpen, setInvestOpen] = useState(false);
   const [samcartOpen, setSamcartOpen] = useState(false);
   const [samcartUrl, setSamcartUrl] = useState('');
+  const checkoutOpenedAt = useRef<string | null>(null);
   const [initialCalcAmount, setInitialCalcAmount] = useState(1000);
 
   // Keep slider value within one-allocation steps and remaining supply
@@ -1994,6 +1996,30 @@ export default function InvestMarketplacePage() {
       window.dispatchEvent(new CustomEvent('invest-checkout-focus', { detail: { open: false } }));
     };
   }, [samcartOpen]);
+
+  // Poll inv_orders for payment confirmation while SamCart drawer is open
+  useEffect(() => {
+    if (!samcartOpen || !user?.id) return;
+    checkoutOpenedAt.current = new Date().toISOString();
+    const poll = setInterval(async () => {
+      try {
+        const { data } = await (supabase.from('inv_orders') as any)
+          .select('id, status, amount_paid')
+          .eq('user_id', user.id)
+          .gte('created_at', checkoutOpenedAt.current!)
+          .limit(1);
+        if (data && data.length > 0) {
+          clearInterval(poll);
+          setSamcartOpen(false);
+          setSamcartUrl('');
+          toast.success(`Payment confirmed — $${data[0].amount_paid} invested!`);
+        }
+      } catch {
+        // Polling error — keep trying
+      }
+    }, 3000);
+    return () => clearInterval(poll);
+  }, [samcartOpen, user?.id]);
 
   // Auto-rotate carousel
   useEffect(() => {
