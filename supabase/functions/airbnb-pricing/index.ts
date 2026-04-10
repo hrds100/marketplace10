@@ -63,43 +63,60 @@ serve(async (req) => {
 
     const systemPrompt = `You are an Airbnb pricing analyst for UK serviced accommodation properties.
 
-Your job: find REAL Airbnb listing prices for a property in the given area.
+Your job: find REAL short-let pricing data for a ${minBeds}-bedroom, ${minBath}-bathroom ${type || 'house'} in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}.
+
+SEARCH STRATEGY (follow in order):
+1. FIRST try Airbnb directly — search for 7-night stays for entire homes with ${minBeds}+ bedrooms in ${city || 'the area'}.
+2. If Airbnb is blocked, search these sources instead:
+   - airbtics.com — search "${city} Airbnb data" or "${city} short term rental data"
+   - mashvisor.com — search "${city} Airbnb analytics"
+   - Search Google for: "${city} ${minBeds} bedroom Airbnb nightly rate"
+   - Search Google for: "${city} serviced accommodation ${minBeds} bed nightly rate"
+   - Search Google for: "short let ${city} ${minBeds} bedroom price per night"
+   - booking.com, vrbo.co.uk, SpareRoom — search for comparable short-let listings
+3. You MUST find real published prices from at least ONE source. Cite the source.
+
+CHECK THREE TIME WINDOWS for 7-night stays:
+- Window 1: checking in ${checkin30}, checking out ${checkout30}
+- Window 2: checking in ${checkin60}, checking out ${checkout60}
+- Window 3: checking in ${checkin90}, checking out ${checkout90}
+
+Airbnb search URLs (for manual verification):
+- 30-day: ${airbnb_url_30d}
+- 60-day: ${airbnb_url_60d}
+- 90-day: ${airbnb_url_90d}
+
+CALCULATION:
+1. Find total 7-night prices for comparable ${minBeds}+ bed entire homes
+2. Divide by 7 to get nightly rate
+3. Take the MEDIAN across findings
+4. Multiply: nightly_rate × occupancy/100 × 30 = monthly revenue
+
+RULES:
+- Only count ENTIRE HOME listings (not private rooms)
+- Match bedrooms: ${minBeds}+ bedrooms, ${minBath}+ bathrooms
+- Prefer ${type || 'house'} property types
+- Be conservative — under-promise over-deliver
+- Occupancy: 65-75% for London/Greater London, 55-65% for other UK cities
+- A ${minBeds}-bed property commands a premium over area averages — scale accordingly
+
+CONFIDENCE LEVELS:
+- "high" = found real listing prices from Airbnb/Booking/VRBO
+- "medium" = found market data from analytics sites (Airbtics, Mashvisor, AirDNA)
+- "low" = could only find general area averages, had to scale by bedrooms
 
 STEP 0 (MANDATORY):
-If you cannot access real Airbnb listing prices from the URLs below,
-RETURN IMMEDIATELY:
-{ "confidence": "low", "error": "no_real_data", "estimated_nightly_rate": 0, "estimated_occupancy": 0, "estimated_monthly_revenue": 0, "reasoning": "Could not access real Airbnb listing data" }
-DO NOT GUESS. DO NOT ESTIMATE FROM MEMORY. Only use real prices you can verify.
-
-METHOD — you MUST follow these steps:
-1. Search Airbnb for 7-night stays for entire homes with ${minBeds}+ bedrooms and ${minBath}+ bathrooms in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}.
-2. Check prices at THREE booking windows:
-   - Window 1: 7 nights checking in ${checkin30}, checking out ${checkout30}
-   - Window 2: 7 nights checking in ${checkin60}, checking out ${checkout60}
-   - Window 3: 7 nights checking in ${checkin90}, checking out ${checkout90}
-3. For each window, find at least 2-3 comparable listings and note their TOTAL price for 7 nights.
-4. Divide each total by 7 to get nightly rates.
-5. Take the MEDIAN nightly rate across all windows.
-6. Use that as your estimated_nightly_rate.
-
-Here are the exact Airbnb search URLs to check:
-- 30-day window: ${airbnb_url_30d}
-- 60-day window: ${airbnb_url_60d}
-- 90-day window: ${airbnb_url_90d}
-
-IMPORTANT:
-- Only count ENTIRE HOME listings (not private rooms or shared rooms)
-- Match bedrooms: ${minBeds}+ bedrooms, ${minBath}+ bathrooms
-- If the property type is "${type || 'house'}", prefer similar property types
-- Be conservative — landlords prefer under-promise over-deliver
-- Occupancy: use 65-75% for London zones, 55-65% for other UK cities
+If after searching ALL sources above you still cannot find ANY real pricing data,
+RETURN: { "confidence": "low", "error": "no_real_data", "estimated_nightly_rate": 0, "estimated_occupancy": 0, "estimated_monthly_revenue": 0, "reasoning": "Could not find real pricing data from any source" }
+DO NOT GUESS from memory alone. You must cite at least one real source.
 
 Return ONLY valid JSON:
 {
-  "estimated_nightly_rate": number (GBP, whole number — the median from your 3-window search),
+  "estimated_nightly_rate": number (GBP, whole number),
   "estimated_occupancy": number (percentage 0-100, whole number),
   "estimated_monthly_revenue": number (GBP, nightly_rate × occupancy/100 × 30),
-  "reasoning": "brief explanation of what listings you found and how you calculated the median"
+  "confidence": "high" | "medium" | "low",
+  "reasoning": "what sources you found, what prices you saw, how you calculated the median"
 }
 
 Do not include markdown or extra text.`
