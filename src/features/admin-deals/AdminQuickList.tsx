@@ -42,7 +42,7 @@ interface ParsedListing {
 interface AIPricingResult {
   estimated_nightly_rate: number;
   estimated_monthly_revenue: number;
-  estimated_profit: number;
+  estimated_monthly_revenue: number;
   confidence: string;
   notes: string;
   airbnb_url_7d?: string;
@@ -368,14 +368,14 @@ export default function AdminQuickList() {
           await supabase.from('properties').update({
             estimated_nightly_rate: result.estimated_nightly_rate,
             estimated_monthly_revenue: result.estimated_monthly_revenue,
-            estimated_profit: result.estimated_profit,
-            profit_est: result.estimated_profit || 0,
+            estimated_profit: result.estimated_monthly_revenue,
+            profit_est: result.estimated_monthly_revenue || 0,
             estimation_confidence: result.confidence,
             estimation_notes: result.notes,
             airbnb_search_url_7d: result.airbnb_url_7d || null,
             airbnb_search_url_30d: result.airbnb_url_30d || null,
             airbnb_search_url_90d: result.airbnb_url_90d || null,
-            ai_model_used: 'gpt-4o-mini',
+            ai_model_used: 'gpt-4o',
           }).eq('id', lastPropertyId);
         } else {
           setPublishPhase('fallback');
@@ -477,7 +477,7 @@ export default function AdminQuickList() {
               <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Estimated nightly rate</span><span className="text-sm font-semibold text-foreground">{'\u00A3'}{pricingResult.estimated_nightly_rate}/night</span></div>
               <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Est. monthly revenue</span><span className="text-sm font-semibold text-foreground">{'\u00A3'}{pricingResult.estimated_monthly_revenue.toLocaleString()}</span></div>
               {rent > 0 && <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Monthly rent</span><span className="text-sm font-semibold text-foreground">-{'\u00A3'}{rent.toLocaleString()}</span></div>}
-              <div className="flex justify-between items-center pt-3 mt-1"><span className="text-base font-bold text-foreground">Est. monthly profit</span><span className="text-2xl font-bold text-primary">{'\u00A3'}{pricingResult.estimated_profit.toLocaleString()}</span></div>
+              <div className="flex justify-between items-center pt-3 mt-1"><span className="text-base font-bold text-foreground">Est. monthly cash flow</span><span className="text-2xl font-bold text-primary">{'\u00A3'}{pricingResult.estimated_monthly_revenue.toLocaleString()}</span></div>
             </div>
             <div className="mt-4 flex items-center justify-center"><span className={`text-xs font-semibold px-3 py-1 rounded-full ${cc}`}>Confidence: {pricingResult.confidence}</span></div>
             {pricingResult.notes && <p className="text-xs text-muted-foreground mt-3 max-w-[400px] mx-auto">{pricingResult.notes}</p>}

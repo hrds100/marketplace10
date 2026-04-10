@@ -175,7 +175,7 @@ export default function DealsMap({ listings, hoveredId }: Props) {
             `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid #eee">` +
             `<span style="color:#888">Rent</span><span style="font-weight:500">£${listing.rent.toLocaleString()}/mo</span></div>` +
             `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">` +
-            `<span style="color:#888">Profit</span><span style="font-weight:700;color:#059669">£${listing.profit.toLocaleString()}</span></div>` +
+            `<span style="color:#888">Cash Flow</span><span style="font-weight:700;color:#059669">£${listing.profit.toLocaleString()}</span></div>` +
             `</div>`
           );
           infoRef.current.open(map, marker);

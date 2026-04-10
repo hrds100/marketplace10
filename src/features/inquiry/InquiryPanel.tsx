@@ -32,6 +32,7 @@ export interface ListingShape {
   bedrooms?: number | null;
   purchasePrice?: number | null;
   lister_type?: 'landlord' | 'agent' | 'deal_sourcer' | null;
+  airbnbUrl30d?: string | null;
 }
 
 interface Props {

@@ -123,7 +123,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     onEmailInquire?.(listing);
   };
 
-  const airdnaUrl = `https://www.airdna.co`;
+  const airbnbUrl = listing.airbnbUrl30d || `https://www.airbnb.co.uk/s/${encodeURIComponent(listing.city || 'London')}/homes?adults=2&min_bedrooms=1`;
   const isPrime = listing.prime;
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type, 0, isPrime);
   const isPexelsPhoto = resolvedImage?.includes('images.pexels.com') || resolvedImage?.includes('property-placeholder') || false;
@@ -196,7 +196,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
               <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£{minContribution.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-              <span className="text-xs text-muted-foreground">{t('propertyCard.estMonthlyProfit')}</span>
+              <span className="text-xs text-muted-foreground">{t('propertyCard.estMonthlyCashFlow')}</span>
               <span className="text-[13px] font-bold" style={{ color: '#A67C00' }}>£{monthlyProfit.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-[7px]">
@@ -281,11 +281,11 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
             <span data-feature="DEALS__PROPERTY_CARD_RENT" className="text-[13px] font-medium text-foreground">£{(listing.listing_type === 'sale' ? (listing.purchasePrice ?? listing.rent ?? 0) : (listing.rent ?? 0)).toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center py-[7px] border-b border-border/50">
-            <span className="text-xs text-muted-foreground">{t('propertyCard.estMonthlyProfit')}</span>
+            <span className="text-xs text-muted-foreground">{t('propertyCard.estMonthlyCashFlow')}</span>
             <div className="text-right">
               <span data-feature="DEALS__PROPERTY_CARD_PROFIT" className="text-[13px] font-bold text-accent-foreground">£{listing.profit}</span>
-              <a href={airdnaUrl} target="_blank" rel="noopener noreferrer" className="block text-[10px] text-primary font-medium hover:underline -mt-0.5" onClick={e => e.stopPropagation()}>
-                {t('propertyCard.airdnaVerified')}
+              <a href={airbnbUrl} target="_blank" rel="noopener noreferrer" className="block text-[10px] text-primary font-medium hover:underline -mt-0.5" onClick={e => e.stopPropagation()}>
+                {t('propertyCard.airbnbVerified')}
               </a>
             </div>
           </div>
