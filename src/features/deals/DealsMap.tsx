@@ -32,11 +32,92 @@ const cityFallbacks: Record<string, [number, number]> = {
   coventry: [52.4081, -1.5106],
   bradford: [53.795, -1.7594],
   belfast: [54.5973, -5.9301],
+  middlesbrough: [54.5742, -1.235],
+  kent: [51.2787, 0.5217],
+  'south wales': [51.6214, -3.9436],
+  newcastle: [54.9783, -1.6178],
+  sunderland: [54.9069, -1.3838],
+  hull: [53.7676, -0.3274],
+  stoke: [53.0027, -2.1794],
+  'stoke-on-trent': [53.0027, -2.1794],
+  wolverhampton: [52.587, -2.1288],
+  derby: [52.9225, -1.4746],
+  southampton: [50.9097, -1.4044],
+  portsmouth: [50.8198, -1.088],
+  plymouth: [50.3755, -4.1427],
+  swansea: [51.6214, -3.9436],
+  aberdeen: [57.1497, -2.0943],
+  dundee: [56.462, -2.9707],
+  york: [53.9591, -1.0815],
+  bath: [51.3811, -2.359],
+  oxford: [51.752, -1.2577],
+  cambridge: [52.2053, 0.1218],
+  exeter: [50.7184, -3.5339],
+  norwich: [52.6309, 1.2974],
+  brighton: [50.8225, -0.1372],
+  reading: [51.4543, -0.9781],
+  luton: [51.8787, -0.42],
+  northampton: [52.2405, -0.9027],
+  peterborough: [52.5695, -0.2405],
+  ipswich: [52.0567, 1.1482],
+  blackpool: [53.8175, -3.0357],
+  preston: [53.7632, -2.7031],
+  bolton: [53.5785, -2.4299],
+  wigan: [53.545, -2.6325],
+  huddersfield: [53.6458, -1.785],
+  halifax: [53.7248, -1.8658],
+  wakefield: [53.6833, -1.4977],
+  doncaster: [53.5228, -1.1285],
+  barnsley: [53.5529, -1.4793],
+  rotherham: [53.4326, -1.3635],
+  grimsby: [53.5675, -0.0803],
+  scunthorpe: [53.5809, -0.6502],
+  lincoln: [53.2307, -0.5406],
+  worcester: [52.1936, -2.2216],
+  gloucester: [51.8642, -2.2382],
+  cheltenham: [51.8994, -2.0783],
+  hereford: [52.0565, -2.716],
+  warwick: [52.2819, -1.5849],
+  newport: [51.5842, -2.9977],
+  wrexham: [53.0462, -2.9927],
+  inverness: [57.4778, -4.2247],
+  stirling: [56.1166, -3.9369],
+  stockport: [53.4106, -2.1575],
+  oldham: [53.5409, -2.1114],
+  rochdale: [53.6097, -2.1561],
+  burnley: [53.7893, -2.2481],
+  blackburn: [53.75, -2.4847],
+  chester: [53.193, -2.8931],
+  crewe: [53.0989, -2.4403],
+  carlisle: [54.8951, -2.9382],
+  darlington: [54.5234, -1.5527],
+  hartlepool: [54.6863, -1.213],
+  durham: [54.7761, -1.5733],
+  gateshead: [54.9527, -1.6038],
+  'north wales': [53.0685, -3.7322],
+  'west midlands': [52.4862, -1.8904],
+  'east midlands': [52.83, -1.332],
+  'south yorkshire': [53.5, -1.35],
+  'west yorkshire': [53.75, -1.75],
+  'north yorkshire': [54.15, -1.35],
+  essex: [51.7343, 0.4691],
+  surrey: [51.2412, -0.5703],
+  sussex: [50.92, -0.25],
+  suffolk: [52.1872, 0.9708],
+  norfolk: [52.614, 0.8864],
+  cornwall: [50.266, -5.0527],
+  devon: [50.7156, -3.5309],
+  dorset: [50.7488, -2.3445],
+  somerset: [51.1054, -2.9264],
+  wiltshire: [51.3492, -1.9927],
+  hampshire: [51.0577, -1.3081],
 };
 
 async function geocodePostcode(postcode: string, city: string): Promise<[number, number] | null> {
   const clean = postcode.replace(/\s+/g, '').toUpperCase();
   if (geocodeCache.has(clean)) return geocodeCache.get(clean)!;
+
+  // Attempt 1: full postcode lookup
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
@@ -51,10 +132,27 @@ async function geocodePostcode(postcode: string, city: string): Promise<[number,
   } catch {
     // fall through
   }
-  // Match full city string or just the city name (e.g. "Liverpool, United Kingdom" → "liverpool")
+
+  // Attempt 2: outcode (district) lookup — handles SA10, ME2, TS4 etc.
+  const outcode = clean.length > 3 ? clean.slice(0, -3).trim() || clean : clean;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`https://api.postcodes.io/outcodes/${encodeURIComponent(outcode)}`, { signal: controller.signal });
+    clearTimeout(timeout);
+    const data = await res.json();
+    if (data.status === 200 && data.result) {
+      const coords: [number, number] = [data.result.latitude, data.result.longitude];
+      geocodeCache.set(clean, coords);
+      return coords;
+    }
+  } catch {
+    // fall through
+  }
+
+  // Attempt 3: city fallback
   const cityKey = city.toLowerCase().trim();
   if (cityFallbacks[cityKey]) return cityFallbacks[cityKey];
-  // Try first word/segment before comma (handles "Liverpool, United Kingdom")
   const firstPart = cityKey.split(',')[0].trim();
   return cityFallbacks[firstPart] ?? null;
 }
