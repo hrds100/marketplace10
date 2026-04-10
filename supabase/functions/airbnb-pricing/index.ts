@@ -68,23 +68,40 @@ TASK: Find real Airbnb prices for a ${minBeds}-bedroom, ${minBath}-bathroom ${ty
 
 Airbnb is a public website. No login is needed. Anyone can search and see prices.
 
-SEARCH THESE AIRBNB URLS — they are filtered by ${minBeds}+ bedrooms, ${minBath}+ bathrooms, entire home only:
+STEP 1 — SEARCH THE EXACT AREA:
+Search these Airbnb URLs (filtered by ${minBeds}+ bedrooms, ${minBath}+ bathrooms, entire home, ${minBeds} adults):
 - ${airbnb_url_30d}
 - ${airbnb_url_60d}
 - ${airbnb_url_90d}
 
-Also try these searches:
+Also try:
 - Search: "airbnb ${city} ${minBeds} bedroom entire home"
 - Search: "airbnb.co.uk ${city} ${minBeds} bed house"
 - Search: "site:airbnb.co.uk ${city} ${minBeds} bedroom"
 
-If one search fails, try another. Airbnb is public — keep trying.
+STEP 2 — IF TOO FEW RESULTS, WIDEN THE AREA:
+Some areas have very few large properties. If you find fewer than 2 listings in ${city}, you MUST widen the search:
+- Search Airbnb for ${minBeds}+ bedroom entire homes in NEARBY areas (within 5-10 miles)
+- For example if the city is Barking, also search: Dagenham, Ilford, East Ham, Stratford, Romford
+- For example if the city is Croydon, also search: Bromley, Sutton, Thornton Heath, Crystal Palace
+- Use your knowledge of UK geography to pick 3-4 nearby areas
+- Search: "airbnb [nearby area] ${minBeds} bedroom entire home"
+
+STEP 3 — IF STILL TOO FEW, REDUCE FILTERS SLIGHTLY:
+If you still can't find ${minBeds}-bed listings, try:
+- Search for (${minBeds}-1) bedroom listings (e.g. 4-bed if looking for 5-bed) and note these are LOWER than the target
+- Scale the price UP proportionally (e.g. 5-bed is typically 20-30% more than 4-bed)
+- Mark confidence as "medium" when using this approach
+
+You MUST find prices. Airbnb is public. Keep searching until you do.
 
 WHAT TO COLLECT:
-For each URL/search, find real Airbnb listings and note:
+For each listing found, note:
 - The listing name
+- The location (city/area)
 - The total price shown for 7 nights
 - Number of bedrooms
+- Whether it was exact area or nearby area
 
 You need prices from at least 2-3 listings.
 
@@ -96,19 +113,18 @@ CALCULATION:
 RULES:
 - ONLY Airbnb. No Booking.com, no VRBO, no other platform.
 - Only ENTIRE HOME listings (not private rooms or shared rooms)
-- Match: ${minBeds}+ bedrooms, ${minBath}+ bathrooms
 - Prefer ${type || 'house'} types
 - Be conservative — under-promise over-deliver
 - Occupancy: 65-75% for London/Greater London, 55-65% for other UK cities
 - DO NOT guess from your training data. Only use prices you found on Airbnb right now.
 
 CONFIDENCE:
-- "high" = found 3+ real Airbnb listings with prices
-- "medium" = found 1-2 real Airbnb listings with prices
-- "low" = could not find real Airbnb prices (return error below)
+- "high" = found 3+ listings in the exact area with prices
+- "medium" = found listings but had to use nearby areas or reduce bedroom count
+- "low" = truly could not find anything on Airbnb (last resort — see below)
 
-If after trying ALL searches above you truly cannot find any Airbnb prices:
-RETURN: { "confidence": "low", "error": "no_real_data", "estimated_nightly_rate": 0, "estimated_occupancy": 0, "estimated_monthly_revenue": 0, "reasoning": "Could not access Airbnb listings after multiple attempts" }
+Only if after ALL steps above (exact area, nearby areas, reduced filters) you truly cannot find ANY Airbnb prices:
+RETURN: { "confidence": "low", "error": "no_real_data", "estimated_nightly_rate": 0, "estimated_occupancy": 0, "estimated_monthly_revenue": 0, "reasoning": "Searched [list areas searched] — no Airbnb listings found" }
 
 Return ONLY valid JSON:
 {
@@ -116,7 +132,7 @@ Return ONLY valid JSON:
   "estimated_occupancy": number (percentage 0-100, whole number),
   "estimated_monthly_revenue": number (GBP, nightly_rate × occupancy/100 × 30),
   "confidence": "high" | "medium" | "low",
-  "reasoning": "list the Airbnb listings you found, their prices, and how you got the median"
+  "reasoning": "list each Airbnb listing found: name, area, bedrooms, 7-night price, nightly rate. Then state the median."
 }
 
 Do not include markdown or extra text.`
