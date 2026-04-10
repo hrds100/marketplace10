@@ -101,6 +101,7 @@ export default function DealDetail() {
 
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [inquiryTarget, setInquiryTarget] = useState<ListingShape | null>(null);
+  const [pendingMessage, setPendingMessage] = useState<{ listing: ListingShape; message: string; channel: 'email' | 'whatsapp' } | null>(null);
 
   // Check if user has already contacted this property
   const { data: isContacted, refetch: refetchContacted } = useQuery({
@@ -119,6 +120,14 @@ export default function DealDetail() {
     setInquiryOpen(true);
   }, [navigate]);
 
+  const handlePaymentRequired = useCallback((listing: ListingShape, message: string, channel: 'email' | 'whatsapp') => {
+    setPendingMessage({ listing, message, channel });
+    setEmailModalOpen(false);
+    setWhatsappModalOpen(false);
+    setInquiryTarget(listing);
+    setInquiryOpen(true);
+  }, []);
+
   const contactEmail = (listing?.contact_email as string) || null;
   const contactPhone = landlordWhatsapp || (listing?.contact_phone as string) || null;
   const listerType = (listing?.lister_type as string) || null;
@@ -126,14 +135,12 @@ export default function DealDetail() {
   const handleDetailWhatsApp = () => {
     if (!listing || isLoading) return;
     if (!user) { navigate('/signup'); return; }
-    if (!isPaidTier(tier)) { handleInquire(listingShape); return; }
     setWhatsappModalOpen(true);
   };
 
   const handleDetailEmail = () => {
     if (!listing || isLoading) return;
     if (!user) { navigate('/signup'); return; }
-    if (!isPaidTier(tier)) { handleInquire(listingShape); return; }
     setEmailModalOpen(true);
   };
 
@@ -514,10 +521,36 @@ export default function DealDetail() {
       )}
 
       {/* Inquiry modals */}
-      <InquiryChatModal open={emailModalOpen} listing={listingShape} onClose={() => setEmailModalOpen(false)} contacted={!!isContacted} onContactSuccess={() => refetchContacted()} />
-      <InquiryChatModal channel="whatsapp" open={whatsappModalOpen} listing={listingShape} onClose={() => setWhatsappModalOpen(false)} contacted={!!isContacted} onContactSuccess={() => refetchContacted()} />
+      <InquiryChatModal open={emailModalOpen} listing={listingShape} onClose={() => setEmailModalOpen(false)} contacted={!!isContacted} onContactSuccess={() => refetchContacted()} onPaymentRequired={handlePaymentRequired} />
+      <InquiryChatModal channel="whatsapp" open={whatsappModalOpen} listing={listingShape} onClose={() => setWhatsappModalOpen(false)} contacted={!!isContacted} onContactSuccess={() => refetchContacted()} onPaymentRequired={handlePaymentRequired} />
       {/* GHL payment panel (free users) */}
-      <InquiryPanel open={inquiryOpen} listing={inquiryTarget} onClose={() => setInquiryOpen(false)} />
+      <InquiryPanel open={inquiryOpen} listing={inquiryTarget} onClose={async () => {
+        setInquiryOpen(false);
+        if (pendingMessage && isPaidTier(tier)) {
+          try {
+            const { data: { session } } = await supabase.auth.refreshSession();
+            if (session?.access_token) {
+              const pm = pendingMessage;
+              await supabase.functions.invoke('process-inquiry', {
+                body: {
+                  property_id: pm.listing.id,
+                  channel: pm.channel,
+                  message: pm.message,
+                  tenant_name: user?.user_metadata?.name || '',
+                  tenant_email: user?.email || '',
+                  tenant_phone: user?.user_metadata?.whatsapp || '',
+                  property_url: `https://hub.nfstay.com/deals/${pm.listing.slug || pm.listing.id}`,
+                },
+              });
+              refetchContacted();
+              toast.success('Your message has been sent!');
+            }
+          } catch {
+            toast.error('Payment succeeded but message failed to send. Please try again.');
+          }
+          setPendingMessage(null);
+        }
+      }} />
     </div>
   );
 }

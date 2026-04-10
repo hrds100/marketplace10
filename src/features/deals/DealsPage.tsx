@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { useInvestProperties } from '@/hooks/useInvestData';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserTier } from '@/hooks/useUserTier';
+import { isPaidTier } from '@/lib/ghl';
 import { useTranslation } from 'react-i18next';
 
 const DealsMap = lazy(() => import('@/components/DealsMap'));
@@ -86,6 +88,7 @@ export default function DealsPageV2() {
   const { t } = useTranslation();
   useEffect(() => { document.title = 'nfstay - Deals'; }, []);
   const { user } = useAuth();
+  const { tier } = useUserTier();
   const { toggle, isFav } = useFavourites();
   const [activeTab, setActiveTab] = useState<string>('All');
   const [city, setCity] = useState('');
@@ -99,6 +102,7 @@ export default function DealsPageV2() {
   const [whatsappListing, setWhatsappListing] = useState<ListingShape | null>(null);
   const [inquiryListing, setInquiryListing] = useState<ListingShape | null>(null);
   const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<{ listing: ListingShape; message: string; channel: 'email' | 'whatsapp' } | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const perPage = 12;
   const navigate = useNavigate();
@@ -151,6 +155,14 @@ export default function DealsPageV2() {
   const handleContactSuccess = useCallback((propertyId: string) => {
     refetchContacted();
   }, [refetchContacted]);
+
+  const handlePaymentRequired = useCallback((listing: ListingShape, message: string, channel: 'email' | 'whatsapp') => {
+    setPendingMessage({ listing, message, channel });
+    setEmailListing(null);
+    setWhatsappListing(null);
+    setInquiryListing(listing);
+    setInquiryOpen(true);
+  }, []);
 
   const { data: dbProperties, isLoading } = useQuery({
     queryKey: ['properties'],
@@ -551,6 +563,7 @@ export default function DealsPageV2() {
         onClose={() => setEmailListing(null)}
         onContactSuccess={handleContactSuccess}
         contacted={emailListing ? contactedSet.has(emailListing.id) : false}
+        onPaymentRequired={handlePaymentRequired}
       />
 
       {/* WhatsApp inquiry modal */}
@@ -561,10 +574,37 @@ export default function DealsPageV2() {
         onClose={() => setWhatsappListing(null)}
         onContactSuccess={handleContactSuccess}
         contacted={whatsappListing ? contactedSet.has(whatsappListing.id) : false}
+        onPaymentRequired={handlePaymentRequired}
       />
 
       {/* GHL payment panel (for free users) */}
-      <InquiryPanel open={inquiryOpen} listing={inquiryListing} onClose={() => setInquiryOpen(false)} />
+      <InquiryPanel open={inquiryOpen} listing={inquiryListing} onClose={async () => {
+        setInquiryOpen(false);
+        if (pendingMessage && isPaidTier(tier)) {
+          try {
+            const { data: { session } } = await supabase.auth.refreshSession();
+            if (session?.access_token) {
+              const pm = pendingMessage;
+              await supabase.functions.invoke('process-inquiry', {
+                body: {
+                  property_id: pm.listing.id,
+                  channel: pm.channel,
+                  message: pm.message,
+                  tenant_name: user?.user_metadata?.name || '',
+                  tenant_email: user?.email || '',
+                  tenant_phone: user?.user_metadata?.whatsapp || '',
+                  property_url: `https://hub.nfstay.com/deals/${pm.listing.slug || pm.listing.id}`,
+                },
+              });
+              handleContactSuccess(pm.listing.id);
+              toast.success('Your message has been sent!');
+            }
+          } catch {
+            toast.error('Payment succeeded but message failed to send. Please try again.');
+          }
+          setPendingMessage(null);
+        }
+      }} />
     </div>
   );
 }
