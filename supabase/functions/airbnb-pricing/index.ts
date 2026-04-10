@@ -15,12 +15,19 @@ const corsHeaders = {
 
 const DEFAULT_MODEL = 'gpt-4o'
 
-// Build Airbnb search URL — filters by bedrooms, bathrooms, entire home, adults = 1 per bedroom
-function buildAirbnbUrl(city: string, checkin: string, checkout: string, bedrooms: number, bathrooms: number, monthlyStart: string, monthlyEnd: string): string {
+// Short URL for AI web search — only essential params so the AI can actually use it
+function buildAirbnbSearchUrl(city: string, checkin: string, checkout: string, bedrooms: number): string {
+  const query = encodeURIComponent(city || 'London')
+  const adults = bedrooms || 1
+  return `https://www.airbnb.co.uk/s/${query}/homes?checkin=${checkin}&checkout=${checkout}&adults=${adults}&min_bedrooms=${bedrooms || 1}&room_types%5B%5D=Entire%20home%2Fapt`
+}
+
+// Full URL for human verification links — all filters including bathrooms, beds, monthly params
+function buildAirbnbFullUrl(city: string, checkin: string, checkout: string, bedrooms: number, bathrooms: number, monthlyStart: string, monthlyEnd: string): string {
   const query = encodeURIComponent(city || 'London')
   const minBeds = bedrooms || 1
   const minBath = bathrooms || 1
-  const adults = minBeds // 1 person per bedroom
+  const adults = minBeds
   return `https://www.airbnb.co.uk/s/${query}/homes?refinement_paths%5B%5D=%2Fhomes&date_picker_type=calendar&checkin=${checkin}&checkout=${checkout}&search_type=filter_change&query=${query}&flexible_trip_lengths%5B%5D=one_week&monthly_start_date=${monthlyStart}&monthly_length=3&monthly_end_date=${monthlyEnd}&search_mode=regular_search&price_filter_input_type=1&price_filter_num_nights=7&channel=EXPLORE&min_bedrooms=${minBeds}&min_beds=${minBeds}&min_bathrooms=${minBath}&room_types%5B%5D=Entire%20home%2Fapt&adults=${adults}`
 }
 
@@ -58,84 +65,66 @@ serve(async (req) => {
     const monthlyStart = getFirstOfMonth(30)
     const monthlyEnd = getFirstOfMonth(120)
 
-    const airbnb_url_30d = buildAirbnbUrl(city, checkin30, checkout30, minBeds, minBath, monthlyStart, monthlyEnd)
-    const airbnb_url_60d = buildAirbnbUrl(city, checkin60, checkout60, minBeds, minBath, monthlyStart, monthlyEnd)
-    const airbnb_url_90d = buildAirbnbUrl(city, checkin90, checkout90, minBeds, minBath, monthlyStart, monthlyEnd)
+    // Short URLs for AI to search (simpler = more reliable)
+    const ai_url_30d = buildAirbnbSearchUrl(city, checkin30, checkout30, minBeds)
+    const ai_url_60d = buildAirbnbSearchUrl(city, checkin60, checkout60, minBeds)
+    const ai_url_90d = buildAirbnbSearchUrl(city, checkin90, checkout90, minBeds)
 
-    const systemPrompt = `You are an Airbnb pricing analyst. You ONLY use Airbnb data. No other platform.
+    // Full URLs saved to DB for Hugo to verify manually
+    const airbnb_url_30d = buildAirbnbFullUrl(city, checkin30, checkout30, minBeds, minBath, monthlyStart, monthlyEnd)
+    const airbnb_url_60d = buildAirbnbFullUrl(city, checkin60, checkout60, minBeds, minBath, monthlyStart, monthlyEnd)
+    const airbnb_url_90d = buildAirbnbFullUrl(city, checkin90, checkout90, minBeds, minBath, monthlyStart, monthlyEnd)
 
-TASK: Find real Airbnb prices for a ${minBeds}-bedroom, ${minBath}-bathroom ${type || 'house'} in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}.
+    const systemPrompt = `You are an Airbnb pricing analyst. You ONLY use Airbnb. No other platform.
 
-Airbnb is a public website. No login is needed. Anyone can search and see prices.
+Find real Airbnb prices for a ${minBeds}-bedroom ${type || 'house'} in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}.
 
-STEP 1 — SEARCH THE EXACT AREA:
-Search these Airbnb URLs (filtered by ${minBeds}+ bedrooms, ${minBath}+ bathrooms, entire home, ${minBeds} adults):
-- ${airbnb_url_30d}
-- ${airbnb_url_60d}
-- ${airbnb_url_90d}
+Airbnb is public. No login needed.
 
-Also try:
-- Search: "airbnb ${city} ${minBeds} bedroom entire home"
-- Search: "airbnb.co.uk ${city} ${minBeds} bed house"
-- Search: "site:airbnb.co.uk ${city} ${minBeds} bedroom"
+SEARCH AIRBNB — use these URLs:
+${ai_url_30d}
+${ai_url_60d}
+${ai_url_90d}
 
-STEP 2 — IF TOO FEW RESULTS, WIDEN THE AREA:
-Some areas have very few large properties. If you find fewer than 2 listings in ${city}, you MUST widen the search:
-- Search Airbnb for ${minBeds}+ bedroom entire homes in NEARBY areas (within 5-10 miles)
-- For example if the city is Barking, also search: Dagenham, Ilford, East Ham, Stratford, Romford
-- For example if the city is Croydon, also search: Bromley, Sutton, Thornton Heath, Crystal Palace
-- Use your knowledge of UK geography to pick 3-4 nearby areas
-- Search: "airbnb [nearby area] ${minBeds} bedroom entire home"
+If a URL doesn't work, search Google for: airbnb.co.uk ${city} ${minBeds} bedroom entire home
 
-STEP 3 — IF STILL TOO FEW, REDUCE FILTERS SLIGHTLY:
-If you still can't find ${minBeds}-bed listings, try:
-- Search for (${minBeds}-1) bedroom listings (e.g. 4-bed if looking for 5-bed) and note these are LOWER than the target
-- Scale the price UP proportionally (e.g. 5-bed is typically 20-30% more than 4-bed)
-- Mark confidence as "medium" when using this approach
+Airbnb always shows results — the area is large enough. Keep trying until you find listings.
 
-You MUST find prices. Airbnb is public. Keep searching until you do.
-
-WHAT TO COLLECT:
-For each listing found, note:
-- The listing name
-- The location (city/area)
-- The total price shown for 7 nights
+COLLECT from each listing:
+- Listing name
+- Total price for 7 nights
 - Number of bedrooms
-- Whether it was exact area or nearby area
 
-You need prices from at least 2-3 listings.
+Find at least 2-3 listings. Divide each 7-night total by 7 = nightly rate. Take the MEDIAN.
 
-CALCULATION:
-1. Take each 7-night total price, divide by 7 = nightly rate
-2. Take the MEDIAN nightly rate across all listings you found
-3. Monthly revenue = nightly_rate × occupancy% / 100 × 30
+Monthly revenue = median nightly rate × occupancy% / 100 × 30
 
 RULES:
-- ONLY Airbnb. No Booking.com, no VRBO, no other platform.
-- Only ENTIRE HOME listings (not private rooms or shared rooms)
-- Prefer ${type || 'house'} types
-- Be conservative — under-promise over-deliver
-- Occupancy: 65-75% for London/Greater London, 55-65% for other UK cities
-- DO NOT guess from your training data. Only use prices you found on Airbnb right now.
+- Airbnb ONLY
+- Entire home only (no private rooms)
+- ${minBeds}+ bedrooms
+- Be conservative
+- Occupancy: 65-75% London/Greater London, 55-65% other UK
+- Do NOT guess from memory. Use prices you found right now.
 
 CONFIDENCE:
-- "high" = found 3+ listings in the exact area with prices
-- "medium" = found listings but had to use nearby areas or reduce bedroom count
-- "low" = truly could not find anything on Airbnb (last resort — see below)
+- "high" = 3+ real listings found
+- "medium" = 1-2 real listings found
+- "low" = nothing found (return error)
 
-Only if after ALL steps above (exact area, nearby areas, reduced filters) you truly cannot find ANY Airbnb prices:
-RETURN: { "confidence": "low", "error": "no_real_data", "estimated_nightly_rate": 0, "estimated_occupancy": 0, "estimated_monthly_revenue": 0, "reasoning": "Searched [list areas searched] — no Airbnb listings found" }
+If truly nothing found after all attempts:
+{ "confidence": "low", "error": "no_real_data", "estimated_nightly_rate": 0, "estimated_occupancy": 0, "estimated_monthly_revenue": 0, "reasoning": "explain what you searched and why nothing came back" }
 
-Return ONLY valid JSON:
+Return ONLY JSON:
 {
-  "estimated_nightly_rate": number (GBP, whole number — median from real Airbnb listings),
-  "estimated_occupancy": number (percentage 0-100, whole number),
-  "estimated_monthly_revenue": number (GBP, nightly_rate × occupancy/100 × 30),
+  "estimated_nightly_rate": number (GBP, whole number),
+  "estimated_occupancy": number (0-100),
+  "estimated_monthly_revenue": number (GBP),
   "confidence": "high" | "medium" | "low",
-  "reasoning": "list each Airbnb listing found: name, area, bedrooms, 7-night price, nightly rate. Then state the median."
+  "reasoning": "list each listing: name, 7-night price, nightly rate. Then the median."
 }
 
-Do not include markdown or extra text.`
+No markdown. No extra text.`
 
     const details = [
       city ? `City: ${city}` : '',
