@@ -3,6 +3,8 @@ import { X, Send, CheckCircle, LayoutGrid, Plus, Pencil, Trash2 } from 'lucide-r
 import { createPortal } from 'react-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserTier } from '@/hooks/useUserTier';
+import { isPaidTier } from '@/lib/ghl';
 import { toast } from 'sonner';
 import type { ListingShape } from '@/components/InquiryPanel';
 
@@ -13,6 +15,7 @@ interface Props {
   onContactSuccess?: (propertyId: string) => void;
   channel?: 'email' | 'whatsapp';
   contacted?: boolean;
+  onPaymentRequired?: (listing: ListingShape, message: string, channel: 'email' | 'whatsapp') => void;
 }
 
 const PLACEHOLDERS = [
@@ -31,8 +34,9 @@ const DEFAULT_TEMPLATES = [
 
 interface Template { id: string; title: string; body: string; category: string }
 
-export default function InquiryChatModal({ open, listing, onClose, onContactSuccess, channel = 'email', contacted = false }: Props) {
+export default function InquiryChatModal({ open, listing, onClose, onContactSuccess, channel = 'email', contacted = false, onPaymentRequired }: Props) {
   const { user } = useAuth();
+  const { tier } = useUserTier();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
@@ -143,6 +147,11 @@ export default function InquiryChatModal({ open, listing, onClose, onContactSucc
   async function handleSend() {
     if (!inputValue.trim() || sending) return;
     if (!user) { toast.error('Please sign in to inquire'); return; }
+    // Payment gate: if free tier, trigger payment instead of sending
+    if (!isPaidTier(tier) && onPaymentRequired && listing) {
+      onPaymentRequired(listing, inputValue.trim(), channel);
+      return;
+    }
     setSending(true);
     try {
       const { data: { session } } = await supabase.auth.refreshSession();

@@ -112,10 +112,6 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     e.preventDefault();
     e.stopPropagation();
     if (forceSignUp) { navigate('/signup'); return; }
-    if (!isPaidTier(tier)) {
-      onInquire?.(listing);
-      return;
-    }
     if (!user) { navigate('/signup'); return; }
     onWhatsAppInquire?.(listing);
   };
@@ -124,10 +120,6 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     e.preventDefault();
     e.stopPropagation();
     if (forceSignUp) { navigate('/signup'); return; }
-    if (!isPaidTier(tier)) {
-      onInquire?.(listing);
-      return;
-    }
     onEmailInquire?.(listing);
   };
 
