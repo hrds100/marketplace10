@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-04-10 — Map Markers for All Properties
+
+**PR:** #391
+
+### What changed
+- Properties with partial postcodes (SA10, ME2, TS4) now resolve via postcodes.io outcode endpoint
+- City fallback list expanded from 15 to 90+ UK cities and regions
+- Hovering any property card now pans the map to the correct location
+
+### Files changed
+- `src/features/deals/DealsMap.tsx` — outcode fallback + expanded cityFallbacks
+
+---
+
 ## 2026-04-10 — Payment Gate Moved to Send (Inquiry Flow)
 
 **PR:** #389
