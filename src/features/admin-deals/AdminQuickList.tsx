@@ -340,7 +340,7 @@ export default function AdminQuickList() {
         const item = toPublish[0];
         const minDelay = new Promise(r => setTimeout(r, 2500));
         const pricingFetch = (async (): Promise<AIPricingResult | null> => {
-          const c = new AbortController(); const t = setTimeout(() => c.abort(), 25_000);
+          const c = new AbortController(); const t = setTimeout(() => c.abort(), 90_000);
           try {
             const res = await fetch(`${SUPABASE_URL}/functions/v1/airbnb-pricing`, {
               method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
