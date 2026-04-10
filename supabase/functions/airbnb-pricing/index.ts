@@ -1,8 +1,9 @@
 // airbnb-pricing — Estimate Airbnb nightly rate + occupancy via OpenAI web search
-// Uses OpenAI Responses API with web_search tool to check real Airbnb listings
+// Uses OpenAI Responses API with web_search to check REAL Airbnb listings
+// Method: 7-day stays at 3 windows (30, 60, 90 days out) → median nightly rate
 // Input: { city, postcode, bedrooms, bathrooms, type, rent, propertyId }
 // Output: { estimated_nightly_rate, estimated_occupancy, estimated_monthly_revenue,
-//           airbnb_url_7d, airbnb_url_30d, airbnb_url_90d }
+//           airbnb_url_30d, airbnb_url_60d, airbnb_url_90d }
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -14,23 +15,13 @@ const corsHeaders = {
 
 const DEFAULT_MODEL = 'gpt-4o'
 
-const SYSTEM_PROMPT = `You are an Airbnb pricing analyst for UK properties.
-
-Search Airbnb and short-let market data for the given city/postcode area. Find real comparable listings with similar bedrooms and property type.
-
-Based on REAL listings you find, estimate a realistic nightly rate and occupancy for a serviced accommodation (Airbnb) listing in this area.
-
-Be conservative — landlords prefer under-promise over-deliver.
-
-Return ONLY valid JSON with these exact fields:
-{
-  "estimated_nightly_rate": number (GBP, whole number),
-  "estimated_occupancy": number (percentage 0-100, whole number),
-  "estimated_monthly_revenue": number (GBP, nightly_rate × occupancy/100 × 30),
-  "reasoning": "one sentence explaining what you found and how you estimated"
+// Build Airbnb search URL using Hugo's exact template — filters by bedrooms, bathrooms, entire home
+function buildAirbnbUrl(city: string, checkin: string, checkout: string, bedrooms: number, bathrooms: number, monthlyStart: string, monthlyEnd: string): string {
+  const query = encodeURIComponent(city || 'London')
+  const minBeds = bedrooms || 1
+  const minBath = bathrooms || 1
+  return `https://www.airbnb.co.uk/s/${query}/homes?refinement_paths%5B%5D=%2Fhomes&date_picker_type=calendar&checkin=${checkin}&checkout=${checkout}&search_type=filter_change&query=${query}&flexible_trip_lengths%5B%5D=one_week&monthly_start_date=${monthlyStart}&monthly_length=3&monthly_end_date=${monthlyEnd}&search_mode=regular_search&price_filter_input_type=1&price_filter_num_nights=7&channel=EXPLORE&min_bedrooms=${minBeds}&min_beds=${minBeds}&min_bathrooms=${minBath}&room_types%5B%5D=Entire%20home%2Fapt`
 }
-
-Do not include markdown or extra text.`
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -52,6 +43,61 @@ serve(async (req) => {
       // ai_settings table may not exist — use default
     }
 
+    const minBeds = bedrooms || 1
+    const minBath = bathrooms || 1
+
+    // Build 3 Airbnb search URLs: 7-day stays at 30, 60, 90 days out
+    const checkin30 = getFutureDate(30)
+    const checkout30 = getFutureDate(37)
+    const checkin60 = getFutureDate(60)
+    const checkout60 = getFutureDate(67)
+    const checkin90 = getFutureDate(90)
+    const checkout90 = getFutureDate(97)
+
+    const monthlyStart = getFirstOfMonth(30)
+    const monthlyEnd = getFirstOfMonth(120)
+
+    const airbnb_url_30d = buildAirbnbUrl(city, checkin30, checkout30, minBeds, minBath, monthlyStart, monthlyEnd)
+    const airbnb_url_60d = buildAirbnbUrl(city, checkin60, checkout60, minBeds, minBath, monthlyStart, monthlyEnd)
+    const airbnb_url_90d = buildAirbnbUrl(city, checkin90, checkout90, minBeds, minBath, monthlyStart, monthlyEnd)
+
+    const systemPrompt = `You are an Airbnb pricing analyst for UK serviced accommodation properties.
+
+Your job: find REAL Airbnb listing prices for a property in the given area.
+
+METHOD — you MUST follow these steps:
+1. Search Airbnb for 7-night stays for entire homes with ${minBeds}+ bedrooms and ${minBath}+ bathrooms in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}.
+2. Check prices at THREE booking windows:
+   - Window 1: 7 nights checking in ${checkin30}, checking out ${checkout30}
+   - Window 2: 7 nights checking in ${checkin60}, checking out ${checkout60}
+   - Window 3: 7 nights checking in ${checkin90}, checking out ${checkout90}
+3. For each window, find at least 2-3 comparable listings and note their TOTAL price for 7 nights.
+4. Divide each total by 7 to get nightly rates.
+5. Take the MEDIAN nightly rate across all windows.
+6. Use that as your estimated_nightly_rate.
+
+Here are the exact Airbnb search URLs to check:
+- 30-day window: ${airbnb_url_30d}
+- 60-day window: ${airbnb_url_60d}
+- 90-day window: ${airbnb_url_90d}
+
+IMPORTANT:
+- Only count ENTIRE HOME listings (not private rooms or shared rooms)
+- Match bedrooms: ${minBeds}+ bedrooms, ${minBath}+ bathrooms
+- If the property type is "${type || 'house'}", prefer similar property types
+- Be conservative — landlords prefer under-promise over-deliver
+- Occupancy: use 65-75% for London zones, 55-65% for other UK cities
+
+Return ONLY valid JSON:
+{
+  "estimated_nightly_rate": number (GBP, whole number — the median from your 3-window search),
+  "estimated_occupancy": number (percentage 0-100, whole number),
+  "estimated_monthly_revenue": number (GBP, nightly_rate × occupancy/100 × 30),
+  "reasoning": "brief explanation of what listings you found and how you calculated the median"
+}
+
+Do not include markdown or extra text.`
+
     const details = [
       city ? `City: ${city}` : '',
       postcode ? `Postcode: ${postcode}` : '',
@@ -71,7 +117,7 @@ serve(async (req) => {
         model,
         tools: [{ type: 'web_search' }],
         input: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: details },
         ],
       }),
@@ -85,7 +131,7 @@ serve(async (req) => {
 
     const data = await res.json()
 
-    // Extract text from Responses API output — find the message item in the output array
+    // Extract text from Responses API output
     let text = ''
     if (data.output && Array.isArray(data.output)) {
       for (const item of data.output) {
@@ -112,7 +158,6 @@ serve(async (req) => {
     } catch {
       // Try stripping markdown fences
       text = text.replace(/```(?:json)?\s*/gi, '').replace(/```/gi, '').trim()
-      // Try extracting JSON object from text
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         parsed = JSON.parse(jsonMatch[0])
@@ -120,13 +165,6 @@ serve(async (req) => {
         throw new Error('Could not parse JSON from response')
       }
     }
-
-    // Generate Airbnb search URLs for the area (with bedrooms filter)
-    const searchCity = encodeURIComponent(city || 'London')
-    const minBeds = bedrooms || 1
-    const airbnb_url_7d = `https://www.airbnb.co.uk/s/${searchCity}/homes?checkin=${getFutureDate(7)}&checkout=${getFutureDate(14)}&adults=2&min_bedrooms=${minBeds}`
-    const airbnb_url_30d = `https://www.airbnb.co.uk/s/${searchCity}/homes?checkin=${getFutureDate(7)}&checkout=${getFutureDate(37)}&adults=2&min_bedrooms=${minBeds}`
-    const airbnb_url_90d = `https://www.airbnb.co.uk/s/${searchCity}/homes?checkin=${getFutureDate(7)}&checkout=${getFutureDate(97)}&adults=2&min_bedrooms=${minBeds}`
 
     // Save pricing to properties table if propertyId provided
     if (propertyId) {
@@ -139,9 +177,9 @@ serve(async (req) => {
           estimated_monthly_revenue: monthlyRev,
           estimated_profit: monthlyRev,
           profit_est: monthlyRev,
-          airbnb_url_7d,
-          airbnb_url_30d,
-          airbnb_url_90d,
+          airbnb_url_7d: airbnb_url_30d,
+          airbnb_url_30d: airbnb_url_60d,
+          airbnb_url_90d: airbnb_url_90d,
         }).eq('id', propertyId)
       } catch (e) {
         console.error('[airbnb-pricing] Failed to save pricing to DB:', e)
@@ -153,9 +191,9 @@ serve(async (req) => {
       estimated_monthly_revenue: parsed.estimated_monthly_revenue || 0,
       confidence: parsed.confidence || (parsed.estimated_occupancy >= 70 ? 'high' : parsed.estimated_occupancy >= 50 ? 'medium' : 'low'),
       notes: parsed.reasoning || parsed.notes || '',
-      airbnb_url_7d,
-      airbnb_url_30d,
-      airbnb_url_90d,
+      airbnb_url_7d: airbnb_url_30d,
+      airbnb_url_30d: airbnb_url_60d,
+      airbnb_url_90d: airbnb_url_90d,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
@@ -172,4 +210,10 @@ function getFutureDate(daysFromNow: number): string {
   const d = new Date()
   d.setDate(d.getDate() + daysFromNow)
   return d.toISOString().split('T')[0]
+}
+
+function getFirstOfMonth(daysFromNow: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + daysFromNow)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
 }

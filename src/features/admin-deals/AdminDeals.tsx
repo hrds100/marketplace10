@@ -619,14 +619,14 @@ export default function AdminDeals() {
                             'bg-gray-100 text-gray-600'
                           }`}>{(s as Record<string, unknown>).estimation_confidence as string || '-'}</span>
                         } />
-                        {(s as Record<string, unknown>).airbnb_search_url_30d && (
+                        {(s as Record<string, unknown>).airbnb_search_url_7d && (
                           <div className="col-span-full flex gap-3">
-                            {(s as Record<string, unknown>).airbnb_search_url_7d && (
-                              <a href={(s as Record<string, unknown>).airbnb_search_url_7d as string} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"><ExternalLink className="w-3 h-3" /> 7-day comps</a>
+                            <a href={(s as Record<string, unknown>).airbnb_search_url_7d as string} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"><ExternalLink className="w-3 h-3" /> Airbnb 30-day</a>
+                            {(s as Record<string, unknown>).airbnb_search_url_30d && (
+                              <a href={(s as Record<string, unknown>).airbnb_search_url_30d as string} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"><ExternalLink className="w-3 h-3" /> Airbnb 60-day</a>
                             )}
-                            <a href={(s as Record<string, unknown>).airbnb_search_url_30d as string} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"><ExternalLink className="w-3 h-3" /> 30-day comps</a>
                             {(s as Record<string, unknown>).airbnb_search_url_90d && (
-                              <a href={(s as Record<string, unknown>).airbnb_search_url_90d as string} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"><ExternalLink className="w-3 h-3" /> 90-day comps</a>
+                              <a href={(s as Record<string, unknown>).airbnb_search_url_90d as string} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"><ExternalLink className="w-3 h-3" /> Airbnb 90-day</a>
                             )}
                           </div>
                         )}
