@@ -65,6 +65,12 @@ serve(async (req) => {
 
 Your job: find REAL Airbnb listing prices for a property in the given area.
 
+STEP 0 (MANDATORY):
+If you cannot access real Airbnb listing prices from the URLs below,
+RETURN IMMEDIATELY:
+{ "confidence": "low", "error": "no_real_data", "estimated_nightly_rate": 0, "estimated_occupancy": 0, "estimated_monthly_revenue": 0, "reasoning": "Could not access real Airbnb listing data" }
+DO NOT GUESS. DO NOT ESTIMATE FROM MEMORY. Only use real prices you can verify.
+
 METHOD — you MUST follow these steps:
 1. Search Airbnb for 7-night stays for entire homes with ${minBeds}+ bedrooms and ${minBath}+ bathrooms in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}.
 2. Check prices at THREE booking windows:
@@ -115,6 +121,7 @@ Do not include markdown or extra text.`
       },
       body: JSON.stringify({
         model,
+        temperature: 0.2,
         tools: [{ type: 'web_search' }],
         input: [
           { role: 'system', content: systemPrompt },
@@ -164,6 +171,21 @@ Do not include markdown or extra text.`
       } else {
         throw new Error('Could not parse JSON from response')
       }
+    }
+
+    // If AI couldn't access real data, return the error without saving
+    if (parsed.error === 'no_real_data' || parsed.estimated_nightly_rate === 0) {
+      return new Response(JSON.stringify({
+        ...parsed,
+        confidence: 'low',
+        error: 'no_real_data',
+        notes: parsed.reasoning || 'Could not access real Airbnb listing data. Use the links below to check manually.',
+        airbnb_url_7d: airbnb_url_30d,
+        airbnb_url_30d: airbnb_url_60d,
+        airbnb_url_90d: airbnb_url_90d,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Save pricing to properties table if propertyId provided
