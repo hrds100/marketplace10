@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-04-10 — Payment Gate Moved to Send (Inquiry Flow)
+
+**PR:** #389
+
+### What changed
+- Free users now see the message form when clicking Email or WhatsApp on a deal card or listing page.
+- The payment gate only appears when they click **Send**, not on button click.
+- After payment completes, the message auto-sends and a confirmation toast appears.
+- If the user closes the payment panel without paying, nothing sends.
+
+### Files changed
+- `src/features/deals/PropertyCard.tsx` — removed tier gate from button handlers
+- `src/features/deals/DealDetail.tsx` — same + pending message auto-send with tier check
+- `src/features/deals/DealsPage.tsx` — same + pending message auto-send with tier check
+- `src/features/inquiry/InquiryChatModal.tsx` — added tier check in `handleSend`
+
+---
+
 ## 2026-04-07 — Veriff KYC Identity Verification (Investment Module)
 
 **PRs:** #323, #326, #328, #329
