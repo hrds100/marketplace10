@@ -15,12 +15,13 @@ const corsHeaders = {
 
 const DEFAULT_MODEL = 'gpt-4o'
 
-// Build Airbnb search URL using Hugo's exact template — filters by bedrooms, bathrooms, entire home
+// Build Airbnb search URL — filters by bedrooms, bathrooms, entire home, adults = 1 per bedroom
 function buildAirbnbUrl(city: string, checkin: string, checkout: string, bedrooms: number, bathrooms: number, monthlyStart: string, monthlyEnd: string): string {
   const query = encodeURIComponent(city || 'London')
   const minBeds = bedrooms || 1
   const minBath = bathrooms || 1
-  return `https://www.airbnb.co.uk/s/${query}/homes?refinement_paths%5B%5D=%2Fhomes&date_picker_type=calendar&checkin=${checkin}&checkout=${checkout}&search_type=filter_change&query=${query}&flexible_trip_lengths%5B%5D=one_week&monthly_start_date=${monthlyStart}&monthly_length=3&monthly_end_date=${monthlyEnd}&search_mode=regular_search&price_filter_input_type=1&price_filter_num_nights=7&channel=EXPLORE&min_bedrooms=${minBeds}&min_beds=${minBeds}&min_bathrooms=${minBath}&room_types%5B%5D=Entire%20home%2Fapt`
+  const adults = minBeds // 1 person per bedroom
+  return `https://www.airbnb.co.uk/s/${query}/homes?refinement_paths%5B%5D=%2Fhomes&date_picker_type=calendar&checkin=${checkin}&checkout=${checkout}&search_type=filter_change&query=${query}&flexible_trip_lengths%5B%5D=one_week&monthly_start_date=${monthlyStart}&monthly_length=3&monthly_end_date=${monthlyEnd}&search_mode=regular_search&price_filter_input_type=1&price_filter_num_nights=7&channel=EXPLORE&min_bedrooms=${minBeds}&min_beds=${minBeds}&min_bathrooms=${minBath}&room_types%5B%5D=Entire%20home%2Fapt&adults=${adults}`
 }
 
 serve(async (req) => {
