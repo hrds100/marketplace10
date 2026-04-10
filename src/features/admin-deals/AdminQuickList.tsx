@@ -42,7 +42,6 @@ interface ParsedListing {
 interface AIPricingResult {
   estimated_nightly_rate: number;
   estimated_monthly_revenue: number;
-  estimated_monthly_revenue: number;
   confidence: string;
   notes: string;
   airbnb_url_7d?: string;
@@ -171,7 +170,7 @@ export default function AdminQuickList() {
         contact_phone: normalizeUKPhone((l.contact_phone as string) || '') || (l.contact_phone as string) || null,
         contact_name: (l.contact_name as string) || null,
         contact_email: (l.contact_email as string) || null,
-        lister_type: (l.lister_type as string) || null,
+        lister_type: (l.lister_type as string) || 'deal_sourcer',
         deposit: typeof l.deposit === 'number' ? l.deposit : null,
         sourcing_fee: typeof l.sourcing_fee === 'number' ? l.sourcing_fee : null,
         deal_type: (l.deal_type as string) || null,

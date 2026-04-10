@@ -189,6 +189,10 @@ export default function AdminDeals() {
       contact_phone: (p as Record<string, unknown>).contact_phone || '',
       contact_email: (p as Record<string, unknown>).contact_email || '',
       notes: (p as Record<string, unknown>).notes || '',
+      description: p.description || '',
+      lister_type: (p as Record<string, unknown>).lister_type || 'deal_sourcer',
+      sa_approved: (p as Record<string, unknown>).sa_approved || 'yes',
+      listing_type: (p as Record<string, unknown>).listing_type || 'rental',
       status: p.status || 'live',
     });
   };
@@ -210,6 +214,10 @@ export default function AdminDeals() {
       contact_phone: editForm.contact_phone as string,
       contact_email: editForm.contact_email as string,
       notes: editForm.notes as string,
+      description: editForm.description as string,
+      lister_type: editForm.lister_type as string,
+      sa_approved: editForm.sa_approved as string,
+      listing_type: editForm.listing_type as string,
     } as any).eq('id', editingId);
     if (error) { toast.error('Save failed: ' + error.message); return; }
     queryClient.invalidateQueries({ queryKey: ['admin-deals'] });
@@ -585,7 +593,8 @@ export default function AdminDeals() {
                     <Detail label="Est. Cash Flow" value={`£${s.profit_est?.toLocaleString()}`} />
                     <Detail label="Deposit" value={(s as Record<string, unknown>).deposit ? `£${((s as Record<string, unknown>).deposit as number).toLocaleString()}` : '-'} />
                     <Detail label="Agent Fee" value={(s as Record<string, unknown>).agent_fee ? `£${((s as Record<string, unknown>).agent_fee as number).toLocaleString()}` : '-'} />
-                    <Detail label="Created" value={new Date(s.created_at).toLocaleDateString()} />
+                    <Detail label="Lister" value={(s as Record<string, unknown>).lister_type as string || '-'} />
+                    <Detail label="Submitted" value={new Date(s.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} />
                   </div>
 
                   {/* Airbnb Pricing */}
@@ -671,30 +680,84 @@ export default function AdminDeals() {
                     </div>
                   </div>
 
+                  {/* Description */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-foreground mb-1">Description</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{s.description || <span className="italic">No description</span>}</p>
+                  </div>
+
                   {/* Notes */}
-                  {((s as Record<string, unknown>).notes || s.description) && (
+                  {(s as Record<string, unknown>).notes && (
                     <div>
                       <h4 className="text-xs font-semibold text-foreground mb-1">Notes</h4>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(s as Record<string, unknown>).notes as string || s.description}</p>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(s as Record<string, unknown>).notes as string}</p>
                     </div>
                   )}
 
-                  {/* Photos */}
-                  {s.photos && s.photos.length > 0 && (
-                    <div>
-                      <h4 className="text-xs font-semibold text-foreground mb-2">Photos ({s.photos.length})</h4>
+                  {/* Photos — with delete + replace */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="text-xs font-semibold text-foreground">Photos ({s.photos?.length || 0})</h4>
+                      <label className="text-[10px] text-primary font-medium inline-flex items-center gap-1 cursor-pointer hover:opacity-75">
+                        <Upload className="w-3 h-3" /> Add photo
+                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const ext = file.name.split('.').pop();
+                          const path = `properties/${s.id}/${Date.now()}.${ext}`;
+                          const { error: uploadErr } = await supabase.storage.from('property-photos').upload(path, file);
+                          if (uploadErr) { toast.error('Upload failed: ' + uploadErr.message); return; }
+                          const { data: urlData } = supabase.storage.from('property-photos').getPublicUrl(path);
+                          const newPhotos = [...(s.photos || []), urlData.publicUrl];
+                          await supabase.from('properties').update({ photos: newPhotos } as any).eq('id', s.id);
+                          queryClient.invalidateQueries({ queryKey: ['admin-deals'] });
+                          toast.success('Photo added');
+                        }} />
+                      </label>
+                    </div>
+                    {s.photos && s.photos.length > 0 ? (
                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                         {s.photos.map((url, i) => (
-                          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="relative rounded-lg overflow-hidden aspect-square group">
+                          <div key={i} className="relative rounded-lg overflow-hidden aspect-square group">
                             <img src={url} className="w-full h-full object-cover" alt={`Photo ${i + 1}`} />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                              <ExternalLink className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2">
+                              <a href={url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                                <ExternalLink className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </a>
+                              <button onClick={async () => {
+                                const newPhotos = s.photos!.filter((_, idx) => idx !== i);
+                                await supabase.from('properties').update({ photos: newPhotos } as any).eq('id', s.id);
+                                queryClient.invalidateQueries({ queryKey: ['admin-deals'] });
+                                toast.success('Photo removed');
+                              }} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 className="w-4 h-4 text-red-400 hover:text-red-300" />
+                              </button>
                             </div>
-                          </a>
+                            {/* Replace button */}
+                            <label className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-[9px] font-medium px-1.5 py-0.5 rounded cursor-pointer">
+                              Replace
+                              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const ext = file.name.split('.').pop();
+                                const path = `properties/${s.id}/${Date.now()}.${ext}`;
+                                const { error: uploadErr } = await supabase.storage.from('property-photos').upload(path, file);
+                                if (uploadErr) { toast.error('Upload failed: ' + uploadErr.message); return; }
+                                const { data: urlData } = supabase.storage.from('property-photos').getPublicUrl(path);
+                                const newPhotos = [...s.photos!];
+                                newPhotos[i] = urlData.publicUrl;
+                                await supabase.from('properties').update({ photos: newPhotos } as any).eq('id', s.id);
+                                queryClient.invalidateQueries({ queryKey: ['admin-deals'] });
+                                toast.success('Photo replaced');
+                              }} />
+                            </label>
+                          </div>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No photos uploaded.</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -911,7 +974,7 @@ export default function AdminDeals() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Rent (£/mo)" value={String(editForm.rent_monthly)} onChange={v => setEditForm(p => ({ ...p, rent_monthly: v }))} type="number" />
-                <Field label="Est. Profit (£)" value={String(editForm.profit_est)} onChange={v => setEditForm(p => ({ ...p, profit_est: v }))} type="number" />
+                <Field label="Est. Cash Flow (£)" value={String(editForm.profit_est)} onChange={v => setEditForm(p => ({ ...p, profit_est: v }))} type="number" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Deposit (£)" value={String(editForm.deposit)} onChange={v => setEditForm(p => ({ ...p, deposit: v }))} type="number" />
@@ -923,9 +986,39 @@ export default function AdminDeals() {
               </div>
               <Field label="Contact Email" value={editForm.contact_email as string} onChange={v => setEditForm(p => ({ ...p, contact_email: v }))} />
               <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">Description</label>
+                <textarea value={editForm.description as string} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
+                  className="w-full h-24 rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none" />
+              </div>
+              <div>
                 <label className="text-xs font-semibold text-foreground block mb-1">Notes</label>
                 <textarea value={editForm.notes as string} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))}
                   className="w-full h-20 rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none" />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1">Lister Type</label>
+                  <select value={editForm.lister_type as string} onChange={e => setEditForm(p => ({ ...p, lister_type: e.target.value }))} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm">
+                    <option value="deal_sourcer">Deal Sourcer</option>
+                    <option value="landlord">Landlord</option>
+                    <option value="agent">Agent</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1">SA Approved</label>
+                  <select value={editForm.sa_approved as string} onChange={e => setEditForm(p => ({ ...p, sa_approved: e.target.value }))} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm">
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                    <option value="unknown">Unknown</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1">Listing Type</label>
+                  <select value={editForm.listing_type as string} onChange={e => setEditForm(p => ({ ...p, listing_type: e.target.value }))} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm">
+                    <option value="rental">Rental</option>
+                    <option value="sale">Sale</option>
+                  </select>
+                </div>
               </div>
               {tab !== 'pending' && (
                 <div>

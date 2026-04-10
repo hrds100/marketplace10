@@ -69,12 +69,11 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model,
-        tools: [{ type: 'web_search_preview' }],
+        tools: [{ type: 'web_search' }],
         input: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: details },
         ],
-        text: { format: { type: 'json_object' } },
       }),
     })
 
@@ -86,12 +85,26 @@ serve(async (req) => {
 
     const data = await res.json()
 
-    // Extract text from Responses API output
-    const messageItem = data.output?.find((o: Record<string, unknown>) => o.type === 'message')
-    const textContent = (messageItem?.content as Array<Record<string, unknown>>)?.find(
-      (c: Record<string, unknown>) => c.type === 'output_text'
-    )
-    let text = (textContent?.text as string)?.trim() || ''
+    // Extract text from Responses API output — find the message item in the output array
+    let text = ''
+    if (data.output && Array.isArray(data.output)) {
+      for (const item of data.output) {
+        if (item.type === 'message' && Array.isArray(item.content)) {
+          for (const block of item.content) {
+            if (block.type === 'output_text' && block.text) {
+              text = block.text.trim()
+              break
+            }
+          }
+          if (text) break
+        }
+      }
+    }
+
+    if (!text) {
+      console.error('[airbnb-pricing] No text in response:', JSON.stringify(data).slice(0, 500))
+      throw new Error('No text content in OpenAI response')
+    }
 
     let parsed
     try {
@@ -99,7 +112,13 @@ serve(async (req) => {
     } catch {
       // Try stripping markdown fences
       text = text.replace(/```(?:json)?\s*/gi, '').replace(/```/gi, '').trim()
-      parsed = JSON.parse(text)
+      // Try extracting JSON object from text
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[0])
+      } else {
+        throw new Error('Could not parse JSON from response')
+      }
     }
 
     // Generate Airbnb search URLs for the area (with bedrooms filter)
