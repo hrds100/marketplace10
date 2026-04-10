@@ -424,11 +424,11 @@ export default function DealDetail() {
                   {aiNightlyRate > 0 && (
                     aiSearchUrl ? (
                       <a href={aiSearchUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-light text-accent-foreground inline-flex items-center gap-1 hover:opacity-75 transition-opacity">
-                        <Sparkles className="w-3 h-3" /> AirDNA verified
+                        <Sparkles className="w-3 h-3" /> Airbnb verified
                       </a>
                     ) : (
                       <span className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-light text-accent-foreground inline-flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> AirDNA verified
+                        <Sparkles className="w-3 h-3" /> Airbnb verified
                       </span>
                     )
                   )}
@@ -465,7 +465,7 @@ export default function DealDetail() {
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Extra costs</span><span className="font-medium text-foreground">-£{totalExtraCosts}</span></div>
                 )}
                 <div className="flex justify-between text-base border-t border-border pt-3">
-                  <span className="font-semibold text-foreground">Est. monthly profit</span>
+                  <span className="font-semibold text-foreground">Est. monthly cash flow</span>
                   <span className={`font-bold text-lg ${finalProfit > 0 ? 'text-accent-foreground' : 'text-destructive'}`}>£{finalProfit.toLocaleString()}</span>
                 </div>
               </div>

@@ -1,5 +1,5 @@
-// airbnb-pricing — Estimate Airbnb nightly rate + occupancy
-// Estimates Airbnb nightly rate + occupancy via OpenAI
+// airbnb-pricing — Estimate Airbnb nightly rate + occupancy via OpenAI web search
+// Uses OpenAI Responses API with web_search tool to check real Airbnb listings
 // Input: { city, postcode, bedrooms, bathrooms, type, rent, propertyId }
 // Output: { estimated_nightly_rate, estimated_occupancy, estimated_monthly_revenue,
 //           airbnb_url_7d, airbnb_url_30d, airbnb_url_90d }
@@ -12,20 +12,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const DEFAULT_MODEL = 'gpt-4o-mini'
+const DEFAULT_MODEL = 'gpt-4o'
 
 const SYSTEM_PROMPT = `You are an Airbnb pricing analyst for UK properties.
 
-Given property details, estimate realistic nightly rate and occupancy for a serviced accommodation (Airbnb) listing.
+Search Airbnb and short-let market data for the given city/postcode area. Find real comparable listings with similar bedrooms and property type.
 
-Base your estimates on typical UK short-let market rates for the area. Be conservative — landlords prefer under-promise over-deliver.
+Based on REAL listings you find, estimate a realistic nightly rate and occupancy for a serviced accommodation (Airbnb) listing in this area.
+
+Be conservative — landlords prefer under-promise over-deliver.
 
 Return ONLY valid JSON with these exact fields:
 {
   "estimated_nightly_rate": number (GBP, whole number),
   "estimated_occupancy": number (percentage 0-100, whole number),
   "estimated_monthly_revenue": number (GBP, nightly_rate × occupancy/100 × 30),
-  "reasoning": "one sentence explaining the estimate"
+  "reasoning": "one sentence explaining what you found and how you estimated"
 }
 
 Do not include markdown or extra text.`
@@ -59,7 +61,7 @@ serve(async (req) => {
       rent ? `Monthly rent: £${rent}` : '',
     ].filter(Boolean).join('\n')
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
@@ -67,13 +69,12 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model,
-        messages: [
+        tools: [{ type: 'web_search_preview' }],
+        input: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: details },
         ],
-        temperature: 0.3,
-        max_tokens: 200,
-        response_format: { type: 'json_object' },
+        text: { format: { type: 'json_object' } },
       }),
     })
 
@@ -84,7 +85,13 @@ serve(async (req) => {
     }
 
     const data = await res.json()
-    let text = data.choices?.[0]?.message?.content?.trim() || ''
+
+    // Extract text from Responses API output
+    const messageItem = data.output?.find((o: Record<string, unknown>) => o.type === 'message')
+    const textContent = (messageItem?.content as Array<Record<string, unknown>>)?.find(
+      (c: Record<string, unknown>) => c.type === 'output_text'
+    )
+    let text = (textContent?.text as string)?.trim() || ''
 
     let parsed
     try {
@@ -95,23 +102,24 @@ serve(async (req) => {
       parsed = JSON.parse(text)
     }
 
-    // Generate Airbnb search URLs for the area
+    // Generate Airbnb search URLs for the area (with bedrooms filter)
     const searchCity = encodeURIComponent(city || 'London')
-    const airbnb_url_7d = `https://www.airbnb.co.uk/s/${searchCity}/homes?checkin=${getFutureDate(7)}&checkout=${getFutureDate(14)}&adults=2`
-    const airbnb_url_30d = `https://www.airbnb.co.uk/s/${searchCity}/homes?checkin=${getFutureDate(7)}&checkout=${getFutureDate(37)}&adults=2`
-    const airbnb_url_90d = `https://www.airbnb.co.uk/s/${searchCity}/homes?checkin=${getFutureDate(7)}&checkout=${getFutureDate(97)}&adults=2`
+    const minBeds = bedrooms || 1
+    const airbnb_url_7d = `https://www.airbnb.co.uk/s/${searchCity}/homes?checkin=${getFutureDate(7)}&checkout=${getFutureDate(14)}&adults=2&min_bedrooms=${minBeds}`
+    const airbnb_url_30d = `https://www.airbnb.co.uk/s/${searchCity}/homes?checkin=${getFutureDate(7)}&checkout=${getFutureDate(37)}&adults=2&min_bedrooms=${minBeds}`
+    const airbnb_url_90d = `https://www.airbnb.co.uk/s/${searchCity}/homes?checkin=${getFutureDate(7)}&checkout=${getFutureDate(97)}&adults=2&min_bedrooms=${minBeds}`
 
     // Save pricing to properties table if propertyId provided
     if (propertyId) {
       try {
         const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
         const monthlyRev = parsed.estimated_monthly_revenue || 0
-        const rentNum = parseInt(rent) || 0
         await supabase.from('properties').update({
           estimated_nightly_rate: parsed.estimated_nightly_rate,
           estimated_occupancy: parsed.estimated_occupancy,
-          estimated_monthly_revenue: parsed.estimated_monthly_revenue,
-          estimated_profit: monthlyRev - rentNum,
+          estimated_monthly_revenue: monthlyRev,
+          estimated_profit: monthlyRev,
+          profit_est: monthlyRev,
           airbnb_url_7d,
           airbnb_url_30d,
           airbnb_url_90d,
@@ -121,14 +129,9 @@ serve(async (req) => {
       }
     }
 
-    // Compute fields the frontend expects but OpenAI doesn't return
-    const monthlyRevenue = parsed.estimated_monthly_revenue || 0
-    const monthlyRent = parseInt(rent) || 0
-    const estimated_profit = monthlyRevenue - monthlyRent
-
     return new Response(JSON.stringify({
       ...parsed,
-      estimated_profit,
+      estimated_monthly_revenue: parsed.estimated_monthly_revenue || 0,
       confidence: parsed.confidence || (parsed.estimated_occupancy >= 70 ? 'high' : parsed.estimated_occupancy >= 50 ? 'medium' : 'low'),
       notes: parsed.reasoning || parsed.notes || '',
       airbnb_url_7d,

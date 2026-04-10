@@ -57,6 +57,7 @@ function toListingShape(p: Tables<'properties'>): ListingShape {
     bedrooms: p.bedrooms,
     purchasePrice: ((p as Record<string, unknown>).purchase_price as number) || null,
     lister_type: ((p as Record<string, unknown>).lister_type as 'landlord' | 'agent' | 'deal_sourcer') || null,
+    airbnbUrl30d: ((p as Record<string, unknown>).airbnb_search_url_30d as string) || null,
   };
 }
 

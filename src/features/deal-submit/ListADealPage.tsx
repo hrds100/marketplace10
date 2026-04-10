@@ -59,7 +59,7 @@ interface DealForm {
 interface AIPricingResult {
   estimated_nightly_rate: number;
   estimated_monthly_revenue: number;
-  estimated_profit: number;
+  estimated_monthly_revenue: number;
   confidence: string;
   notes: string;
   airbnb_url_7d?: string;
@@ -424,9 +424,9 @@ export default function ListADealPage() {
         setPricingResult(result); setSubmitPhase('reveal');
         if (propertyId) {
           (supabase.from('properties') as any).update({
-            estimated_nightly_rate: result.estimated_nightly_rate, estimated_monthly_revenue: result.estimated_monthly_revenue, estimated_profit: result.estimated_profit,
+            estimated_nightly_rate: result.estimated_nightly_rate, estimated_monthly_revenue: result.estimated_monthly_revenue, estimated_profit: result.estimated_monthly_revenue,
             estimation_confidence: result.confidence, estimation_notes: result.notes,
-            airbnb_search_url_7d: result.airbnb_url_7d || null, airbnb_search_url_30d: result.airbnb_url_30d || null, airbnb_search_url_90d: result.airbnb_url_90d || null, ai_model_used: 'gpt-4o-mini',
+            airbnb_search_url_7d: result.airbnb_url_7d || null, airbnb_search_url_30d: result.airbnb_url_30d || null, airbnb_search_url_90d: result.airbnb_url_90d || null, ai_model_used: 'gpt-4o',
           }).eq('id', propertyId).then(() => {});
         }
       } else { setSubmitPhase('fallback'); }
@@ -471,7 +471,7 @@ export default function ListADealPage() {
             <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Estimated nightly rate</span><span className="text-sm font-semibold text-foreground">£{pricingResult.estimated_nightly_rate}/night</span></div>
             <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Est. monthly revenue</span><span className="text-sm font-semibold text-foreground">£{pricingResult.estimated_monthly_revenue.toLocaleString()}</span></div>
             <div className="flex justify-between items-center py-2 border-b border-border/30"><span className="text-sm text-muted-foreground">Monthly rent</span><span className="text-sm font-semibold text-foreground">-£{rent.toLocaleString()}</span></div>
-            <div className="flex justify-between items-center pt-3 mt-1"><span className="text-base font-bold text-foreground">Est. monthly profit</span><span className="text-2xl font-bold text-primary">£{pricingResult.estimated_profit.toLocaleString()}</span></div>
+            <div className="flex justify-between items-center pt-3 mt-1"><span className="text-base font-bold text-foreground">Est. monthly cash flow</span><span className="text-2xl font-bold text-primary">£{pricingResult.estimated_monthly_revenue.toLocaleString()}</span></div>
             <p className="text-[11px] text-muted-foreground mt-1 italic">Please consider costs such as utilities, cleaning, and platform fees.</p>
           </div>
           <div className="mt-4 flex items-center justify-center"><span className={`text-xs font-semibold px-3 py-1 rounded-full ${cc}`}>Confidence: {pricingResult.confidence}</span></div>

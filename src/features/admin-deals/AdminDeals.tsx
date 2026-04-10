@@ -360,8 +360,8 @@ export default function AdminDeals() {
       await supabase.from('properties').update({
         estimated_nightly_rate: data.estimated_nightly_rate,
         estimated_monthly_revenue: data.estimated_monthly_revenue,
-        estimated_profit: data.estimated_profit,
-        profit_est: data.estimated_profit || 0,
+        estimated_profit: data.estimated_monthly_revenue,
+        profit_est: data.estimated_monthly_revenue || 0,
         estimation_confidence: data.confidence,
         estimation_notes: data.notes,
         airbnb_search_url_7d: data.airbnb_url_7d || null,
@@ -582,7 +582,7 @@ export default function AdminDeals() {
                     <Detail label="Garage" value={(s as Record<string, unknown>).garage ? 'Yes' : 'No'} />
                     <Detail label="SA Approved" value={saLabel(s.sa_approved)} />
                     <Detail label="Rent" value={`£${s.rent_monthly?.toLocaleString()}`} />
-                    <Detail label="Est. Profit" value={`£${s.profit_est?.toLocaleString()}`} />
+                    <Detail label="Est. Cash Flow" value={`£${s.profit_est?.toLocaleString()}`} />
                     <Detail label="Deposit" value={(s as Record<string, unknown>).deposit ? `£${((s as Record<string, unknown>).deposit as number).toLocaleString()}` : '-'} />
                     <Detail label="Agent Fee" value={(s as Record<string, unknown>).agent_fee ? `£${((s as Record<string, unknown>).agent_fee as number).toLocaleString()}` : '-'} />
                     <Detail label="Created" value={new Date(s.created_at).toLocaleDateString()} />
@@ -602,7 +602,7 @@ export default function AdminDeals() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <Detail label="Nightly Rate" value={`£${(s as Record<string, unknown>).estimated_nightly_rate}`} />
                         <Detail label="Monthly Revenue" value={`£${((s as Record<string, unknown>).estimated_monthly_revenue as number)?.toLocaleString()}`} />
-                        <Detail label="Est. Profit" value={`£${((s as Record<string, unknown>).estimated_profit as number)?.toLocaleString()}`} />
+                        <Detail label="Est. Cash Flow" value={`£${((s as Record<string, unknown>).estimated_profit as number)?.toLocaleString()}`} />
                         <Detail label="Confidence" value={
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                             (s as Record<string, unknown>).estimation_confidence === 'High' ? 'bg-emerald-100 text-emerald-700' :
@@ -1149,7 +1149,7 @@ function PropertyCard({ s, expandedId, setExpandedId, statusBadge, sourceTag, sa
             <Detail label="Garage" value={s.garage ? 'Yes' : 'No'} />
             <Detail label="SA Approved" value={saLabel(s.sa_approved)} />
             <Detail label="Rent" value={`£${s.rent_monthly?.toLocaleString()}`} />
-            <Detail label="Est. Profit" value={`£${s.profit_est?.toLocaleString()}`} />
+            <Detail label="Est. Cash Flow" value={`£${s.profit_est?.toLocaleString()}`} />
             <Detail label="Deposit" value={s.deposit ? `£${(s.deposit as number).toLocaleString()}` : '-'} />
             <Detail label="Agent Fee" value={s.agent_fee ? `£${(s.agent_fee as number).toLocaleString()}` : '-'} />
             <Detail label="Created" value={new Date(s.created_at).toLocaleDateString()} />
@@ -1169,7 +1169,7 @@ function PropertyCard({ s, expandedId, setExpandedId, statusBadge, sourceTag, sa
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Detail label="Nightly Rate" value={`£${s.estimated_nightly_rate}`} />
                 <Detail label="Monthly Revenue" value={`£${(s.estimated_monthly_revenue as number)?.toLocaleString()}`} />
-                <Detail label="Est. Profit" value={`£${(s.estimated_profit as number)?.toLocaleString()}`} />
+                <Detail label="Est. Cash Flow" value={`£${(s.estimated_profit as number)?.toLocaleString()}`} />
                 <Detail label="Confidence" value={
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                     s.estimation_confidence === 'High' ? 'bg-emerald-100 text-emerald-700' :
