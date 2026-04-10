@@ -123,7 +123,7 @@ export default function PropertyCard({ listing, isFav, onToggleFav, onAddToCRM, 
     onEmailInquire?.(listing);
   };
 
-  const airbnbUrl = listing.airbnbUrl30d || `https://www.airbnb.co.uk/s/${encodeURIComponent(listing.city || 'London')}/homes?adults=2&min_bedrooms=1`;
+  const airbnbUrl = listing.airbnbUrl30d || `https://www.airbnb.co.uk/s/${encodeURIComponent(listing.city || 'London')}/homes?adults=${listing.bedrooms || 1}&min_bedrooms=${listing.bedrooms || 1}&room_types%5B%5D=Entire%20home%2Fapt`;
   const isPrime = listing.prime;
   const resolvedImage = usePropertyImage(listing.id, listing.image ? [listing.image] : null, listing.city, listing.type, 0, isPrime);
   const isPexelsPhoto = resolvedImage?.includes('images.pexels.com') || resolvedImage?.includes('property-placeholder') || false;
