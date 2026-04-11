@@ -257,7 +257,7 @@ interface LandlordGroup {
 function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoading }: TabProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showAssignForm, setShowAssignForm] = useState<Set<string>>(new Set());
-  const [assignLeadForms, setAssignLeadForms] = useState<Record<string, { name: string; email: string; phone: string; mode: 'direct' | 'nda' | 'nda_and_claim'; workflow: string; message: string }>>({});
+  const [assignLeadForms, setAssignLeadForms] = useState<Record<string, { name: string; email: string; phone: string; mode: 'direct' | 'nda' | 'nda_and_claim'; workflow: string; message: string; selectedPropertyId: string }>>({});
   const [selectedPhones, setSelectedPhones] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkPin, setBulkPin] = useState('');
@@ -339,7 +339,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       } else {
         next.add(phone);
         if (!assignLeadForms[phone]) {
-          setAssignLeadForms(p => ({ ...p, [phone]: { name: '', email: '', phone: '', mode: 'nda_and_claim', workflow: GHL_WORKFLOW_COLD, message: '' } }));
+          setAssignLeadForms(p => ({ ...p, [phone]: { name: '', email: '', phone: '', mode: 'nda_and_claim', workflow: GHL_WORKFLOW_COLD, message: '', selectedPropertyId: '' } }));
         }
       }
       return next;
@@ -501,10 +501,20 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       toast.error('Fill in lead name, email, and phone');
       return;
     }
+    // Require property selection when landlord has multiple properties
+    if (group.properties.length > 1 && !formData.selectedPropertyId) {
+      toast.error('Select which property this lead is for');
+      return;
+    }
 
     const key = `assign-${group.phone}`;
     addLoading(key);
     try {
+      // Resolve which property this lead is for
+      const selectedProp = group.properties.length > 1
+        ? group.properties.find(p => p.id === formData.selectedPropertyId) || group.properties[0]
+        : group.properties[0];
+
       // 1. Create inquiry row (authorized immediately - admin is seeding this lead)
       const token = crypto.randomUUID();
       const { error: inqError } = await supabase.from('inquiries').insert({
@@ -513,6 +523,7 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
         tenant_phone: formData.phone.trim(),
         lister_phone: group.phone,
         lister_name: group.name || null,
+        property_id: selectedProp.id,
         channel: 'email',
         message: formData.message?.trim() || 'Admin-assigned lead via Landlord Activation outreach',
         authorized: true,
@@ -523,10 +534,11 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
       } as any);
       if (inqError) throw inqError;
 
-      // 2. Send outreach via GHL
-      const firstProp = group.properties[0];
+      // 2. Send outreach via GHL — use selected property
+      const cleanName = (selectedProp?.name || '').replace(/^Property\s*#\d+\s*-\s*/, '').trim();
+      const propertyLabel = cleanName || selectedProp?.city || 'Property';
       const outreachResult = await callGhlEnroll(group.phone, formData.workflow, {
-        property_name: firstProp?.name || firstProp?.city || 'Property',
+        property_name: propertyLabel + (selectedProp?.city ? ` — ${selectedProp.city}` : ''),
         tenant_name: formData.name.trim(),
         contactName: group.name || 'Property Owner',
       });
@@ -534,17 +546,16 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
         toast.error('Lead saved but outreach failed: ' + (outreachResult.error || 'Unknown'));
       }
 
-      // 3. Mark properties as outreach_sent
-      const ids = group.properties.map(p => p.id);
+      // 3. Mark ONLY the selected property as outreach_sent
       await supabase.from('properties')
         .update({ outreach_sent: true, outreach_sent_at: new Date().toISOString() })
-        .in('id', ids);
+        .eq('id', selectedProp.id);
 
       if (user) logAdminAction(user.id, {
         action: 'assign_lead_and_outreach',
         target_table: 'inquiries',
         target_id: group.phone,
-        metadata: { tenant_name: formData.name, mode: formData.mode, properties: ids.length },
+        metadata: { tenant_name: formData.name, mode: formData.mode, property_id: selectedProp.id },
       });
 
       toast.success(`Lead assigned (${formData.mode.replace(/_/g, ' + ')}) and outreach sent to ${group.name || group.phone}`);
@@ -791,6 +802,27 @@ function ListingsTab({ user, queryClient, loadingActions, addLoading, removeLoad
                             className="h-7 px-3 rounded-md text-[10px] font-semibold text-white" style={{ backgroundColor: '#1E9A80' }}
                           >Save Lead</button>
                         </div>
+                      </div>
+                    )}
+                    {group.properties.length > 1 && (
+                      <div className="mb-3">
+                        <label className="text-[10px] font-semibold block mb-1" style={{ color: '#525252' }}>Property *</label>
+                        <select
+                          value={assignLeadForms[group.phone].selectedPropertyId}
+                          onChange={e => updateAssignForm(group.phone, 'selectedPropertyId', e.target.value)}
+                          className="w-full h-9 rounded-lg border px-2 text-xs font-medium"
+                          style={{ borderColor: '#E5E5E5', color: '#1A1A1A' }}
+                        >
+                          <option value="">Select a property...</option>
+                          {group.properties.map(p => {
+                            const title = p.name.replace(/^Property\s*#\d+\s*-\s*/, '').trim();
+                            return (
+                              <option key={p.id} value={p.id}>
+                                {title}{p.city ? ` — ${p.city}` : ''}
+                              </option>
+                            );
+                          })}
+                        </select>
                       </div>
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
