@@ -6,7 +6,7 @@ export default function PrivacyPage() {
   return (
     <div data-feature="SHARED" className="min-h-screen bg-background">
       <div className="max-w-[720px] mx-auto px-6 py-16">
-        <a href="/" className="text-lg font-extrabold text-foreground tracking-tight">nfstay</a>
+        <a href="https://nfstay.com" className="text-lg font-extrabold text-foreground tracking-tight">nfstay</a>
         <h1 className="text-[32px] font-bold text-foreground mt-8 mb-6">Privacy Policy</h1>
         <div data-feature="SHARED__PRIVACY_CONTENT" className="prose prose-sm text-muted-foreground space-y-4">
           <p className="text-sm leading-relaxed"><strong className="text-foreground">Last updated:</strong> 13 March 2026</p>
@@ -24,7 +24,6 @@ export default function PrivacyPage() {
           <p className="text-sm leading-relaxed">For privacy inquiries, contact: <a href="mailto:privacy@nfstay.com" className="text-primary font-semibold">privacy@nfstay.com</a></p>
         </div>
         <div className="mt-12 pt-6 border-t border-border">
-          <a href="/" className="text-sm text-primary font-semibold">← Back to nfstay</a>
         </div>
       </div>
     </div>

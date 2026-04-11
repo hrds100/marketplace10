@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+
+// When served from nfstay.com, auth pages must go to hub.nfstay.com
+const hubUrl = (path: string) =>
+  typeof window !== 'undefined' && !window.location.hostname.includes('hub.')
+    ? `https://hub.nfstay.com${path}`
+    : path;
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
@@ -32,10 +38,10 @@ export default function LandingNav() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Link data-feature="NAV_LAYOUT__LANDING_CTA" to="/signin" className={`text-sm font-medium transition-colors px-3 py-2 ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>{t('nav.signIn')}</Link>
-            <Link data-feature="NAV_LAYOUT__LANDING_CTA" to="/signup" className="bg-primary text-primary-foreground text-sm font-semibold h-10 px-5 rounded-lg inline-flex items-center transition-all duration-200 hover:opacity-90 active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">
+            <a data-feature="NAV_LAYOUT__LANDING_CTA" href={hubUrl('/signin')} className={`text-sm font-medium transition-colors px-3 py-2 ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/70 hover:text-white'}`}>{t('nav.signIn')}</a>
+            <a data-feature="NAV_LAYOUT__LANDING_CTA" href={hubUrl('/signup')} className="bg-primary text-primary-foreground text-sm font-semibold h-10 px-5 rounded-lg inline-flex items-center transition-all duration-200 hover:opacity-90 active:scale-[0.97] active:duration-[120ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]">
               {t('nav.getStarted')}
-            </Link>
+            </a>
           </div>
 
           <button data-feature="NAV_LAYOUT__LANDING_BURGER" className="md:hidden p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" onClick={() => setMobileOpen(true)}>
@@ -64,9 +70,9 @@ export default function LandingNav() {
             ].map(item => (
               <a key={item.key} href={item.href} onClick={() => setMobileOpen(false)} className="text-[22px] font-medium text-foreground">{t(item.key)}</a>
             ))}
-            <Link to="/signup" className="bg-primary text-primary-foreground text-base font-semibold h-12 px-8 rounded-lg inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]" onClick={() => setMobileOpen(false)}>
+            <a href={hubUrl('/signup')} className="bg-primary text-primary-foreground text-base font-semibold h-12 px-8 rounded-lg inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[3px]" onClick={() => setMobileOpen(false)}>
               {t('nav.getStarted')}
-            </Link>
+            </a>
           </motion.div>
         )}
       </AnimatePresence>

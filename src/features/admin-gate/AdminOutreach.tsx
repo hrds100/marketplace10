@@ -1333,7 +1333,7 @@ function PendingTab({ user, queryClient, loadingActions, addLoading, removeLoadi
   return (
     <div>
       <p className="text-xs mb-4" style={{ color: '#9CA3AF' }}>
-        Tenants message NFsTay first. You control when the lead is released.
+        Tenants message nfstay first. You control when the lead is released.
       </p>
       <div className="space-y-3">
       {grouped.map(group => {
