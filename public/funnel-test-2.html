@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>nfstay - Find a Profitable Airbnb Property This Week</title>
+  <meta name="description" content="1,800+ landlord-approved rent-to-rent properties. No cold-calling. No door-knocking. Start for just £5." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://hub.nfstay.com/funnel-test-2.html" />
+  <meta property="og:title" content="Find a Profitable Airbnb Property This Week" />
+  <meta property="og:description" content="1,800+ landlord-approved rent-to-rent properties. No cold-calling. No door-knocking. Start for just £5." />
+  <meta property="og:image" content="https://hub.nfstay.com/og-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Find a Profitable Airbnb Property This Week" />
+  <meta name="twitter:description" content="1,800+ landlord-approved rent-to-rent properties. Start for just £5." />
+  <meta name="twitter:image" content="https://hub.nfstay.com/og-preview.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@1,400&family=Sora:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/social-proof.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #1A1A1A;
+      background: #F3F3EE;
+      line-height: 1.65;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== TOP BAR ===== */
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .topbar-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Sora', sans-serif;
+      font-size: 22px;
+      text-decoration: none;
+      color: #0A0A0A;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .logo-box {
+      font-weight: 700;
+      border: 2px solid #0A0A0A;
+      border-radius: 8px;
+      padding: 1px 5px;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+    .logo-text {
+      font-weight: 400;
+      letter-spacing: 2px;
+      margin-left: 3px;
+    }
+    .topbar-signin {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1E9A80;
+      text-decoration: none;
+    }
+    .topbar-signin:hover { text-decoration: underline; }
+
+    /* ===== LAYOUT ===== */
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .container-wide {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ===== SECTIONS ===== */
+    .section-white { background: #FFFFFF; }
+    .section-offwhite { background: #F3F3EE; }
+    .section-dark { background: #1A1A1A; color: #FFFFFF; }
+
+    .section-padding {
+      padding: 80px 0;
+    }
+    .section-padding-lg {
+      padding: 100px 0;
+    }
+
+    /* ===== GREEN CTA ===== */
+    .cta-btn {
+      display: inline-block;
+      background: #1E9A80;
+      color: #FFFFFF;
+      font-family: 'Inter', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      padding: 18px 48px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: rgba(30,154,128,0.35) 0 4px 16px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .cta-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: rgba(30,154,128,0.5) 0 6px 24px;
+    }
+
+    .cta-secondary {
+      font-size: 16px;
+      padding: 16px 40px;
+    }
+
+    .cta-center {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .cta-note {
+      display: block;
+      margin-top: 14px;
+      font-size: 14px;
+      color: #6B7280;
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 140px 0 80px;
+      text-align: center;
+      background: #F3F3EE;
+    }
+    .hero h1 {
+      font-size: 46px;
+      font-weight: 700;
+      letter-spacing: -1.4px;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      color: #1A1A1A;
+    }
+    .hero .subtitle {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 20px;
+      color: #6B7280;
+      line-height: 1.5;
+      max-width: 560px;
+      margin: 0 auto 40px;
+    }
+
+    /* ===== PROBLEM SECTION (DARK) ===== */
+    .problem-section {
+      background: #1A1A1A;
+      color: #FFFFFF;
+      padding: 80px 0;
+    }
+    .problem-section h2 {
+      font-size: 40px;
+      font-weight: 700;
+      margin-bottom: 32px;
+      color: #FFFFFF;
+    }
+    .problem-section p {
+      font-size: 17px;
+      line-height: 1.75;
+      color: rgba(255,255,255,0.82);
+      margin-bottom: 20px;
+    }
+    .problem-section p strong {
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    .problem-callout {
+      font-size: 22px !important;
+      font-weight: 600;
+      color: #FFFFFF !important;
+      margin-top: 32px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,0.12);
+    }
+
+    /* ===== BRIDGE ===== */
+    .bridge {
+      background: #FFFFFF;
+      padding: 80px 0;
+      text-align: center;
+    }
+    .bridge h2 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      line-height: 1.2;
+    }
+    .bridge p {
+      font-size: 18px;
+      color: #6B7280;
+      max-width: 620px;
+      margin: 0 auto 16px;
+      line-height: 1.7;
+    }
+    .bridge .brand-callout {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1E9A80;
+      margin-top: 32px;
+    }
+
+    /* ===== STEPS ===== */
+    .steps {
+      background: #F3F3EE;
+      padding: 80px 0;
+    }
+    .steps h2 {
+      font-size: 36px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .step-card {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .step-number {
+      font-size: 56px;
+      font-weight: 900;
+      color: #1E9A80;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+    .step-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+    .step-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #1A1A1A;
+    }
+    .step-card p {
+      font-size: 15px;
+      color: #6B7280;
+      line-height: 1.6;
+    }
+
+    /* ===== EVERYTHING INCLUDED ===== */
+    .included {
+      background: #FFFFFF;
+      padding: 80px 0;
+    }
+    .included h2 {
+      font-size: 36px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .included-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: start;
+    }
+    .feature-list {
+      list-style: none;
+    }
+    .feature-list li {
+      padding: 12px 0;
+      border-bottom: 1px solid #E5E7EB;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 16px;
+      color: #1A1A1A;
+    }
+    .feature-list li:last-child { border-bottom: none; }
+    .check-icon {
+      color: #1E9A80;
+      font-size: 18px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .mock-card {
+      background: #F3F3EE;
+      border: 1px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 40px 32px;
+      text-align: center;
+    }
+    .mock-badge {
+      display: inline-block;
+      background: #ECFDF5;
+      color: #1E9A80;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 16px;
+    }
+    .mock-number {
+      font-size: 56px;
+      font-weight: 800;
+      color: #1A1A1A;
+      line-height: 1;
+    }
+    .mock-label {
+      font-size: 16px;
+      color: #6B7280;
+      margin-top: 8px;
+    }
+
+    /* ===== TESTIMONIALS ===== */
+    .testimonials {
+      background: #F3F3EE;
+      padding: 80px 0;
+    }
+    .testimonials h2 {
+      font-size: 36px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .testimonial-card {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-left: 4px solid #1E9A80;
+      border-radius: 12px;
+      padding: 28px 24px;
+    }
+    .testimonial-card p {
+      font-size: 15px;
+      color: #1A1A1A;
+      line-height: 1.65;
+      margin-bottom: 16px;
+      font-style: italic;
+    }
+    .testimonial-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1E9A80;
+    }
+
+    /* ===== THE OFFER ===== */
+    .offer {
+      background: #FFFFFF;
+      padding: 80px 0;
+    }
+    .offer h2 {
+      font-size: 40px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .offer .offer-intro {
+      text-align: center;
+      font-size: 18px;
+      color: #6B7280;
+      margin-bottom: 40px;
+    }
+    .value-stack {
+      max-width: 520px;
+      margin: 0 auto;
+      list-style: none;
+    }
+    .value-stack li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid #E5E7EB;
+      font-size: 16px;
+    }
+    .value-stack li:last-child { border-bottom: none; }
+    .value-label { color: #1A1A1A; font-weight: 500; }
+    .value-crossed {
+      color: #9CA3AF;
+      text-decoration: line-through;
+      font-weight: 400;
+    }
+    .value-total {
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .value-total .value-crossed {
+      font-size: 18px;
+    }
+    .your-price {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1A1A1A;
+    }
+    .your-price span {
+      color: #1E9A80;
+    }
+    .discount-banner {
+      background: #ECFDF5;
+      color: #1E9A80;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px 24px;
+      border-radius: 12px;
+      margin: 24px auto 0;
+      max-width: 520px;
+    }
+
+    /* ===== PAYMENT ===== */
+    .payment {
+      background: #F3F3EE;
+      padding: 80px 0;
+    }
+    .payment h2 {
+      font-size: 32px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .payment-frame {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 16px;
+      overflow: hidden;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .payment-frame iframe {
+      width: 100%;
+      min-height: 600px;
+      border: none;
+      display: block;
+    }
+    .trust-row {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+    .trust-item {
+      font-size: 13px;
+      color: #6B7280;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .trust-icon { color: #1E9A80; }
+
+    /* ===== RISK REVERSAL ===== */
+    .risk-reversal {
+      background: #FFFFFF;
+      padding: 80px 0;
+      text-align: center;
+    }
+    .risk-reversal h2 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+    .risk-reversal p {
+      font-size: 17px;
+      color: #6B7280;
+      max-width: 560px;
+      margin: 0 auto 16px;
+      line-height: 1.7;
+    }
+    .risk-reversal p.urgency {
+      color: #1A1A1A;
+      font-weight: 600;
+      font-size: 18px;
+      margin-top: 24px;
+    }
+
+    /* ===== STICKY MOBILE BAR ===== */
+    .sticky-bar {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 99;
+      background: #1E9A80;
+      padding: 12px 24px;
+      text-align: center;
+      box-shadow: rgba(0,0,0,0.15) 0 -2px 12px;
+    }
+    .sticky-bar a {
+      display: block;
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 16px;
+      text-decoration: none;
+      padding: 12px 0;
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      background: #1A1A1A;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+    }
+    .footer a {
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+    }
+    .footer a:hover { color: #FFFFFF; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .hero { padding: 120px 0 60px; }
+      .hero h1 { font-size: 32px; letter-spacing: -0.8px; }
+      .hero .subtitle { font-size: 17px; }
+      .cta-btn { font-size: 16px; padding: 16px 32px; width: 100%; }
+
+      .problem-section h2,
+      .bridge h2,
+      .steps h2,
+      .included h2,
+      .testimonials h2,
+      .offer h2,
+      .risk-reversal h2 { font-size: 28px; }
+
+      .steps-grid { grid-template-columns: 1fr; gap: 16px; }
+      .included-grid { grid-template-columns: 1fr; }
+      .testimonials-grid { grid-template-columns: 1fr; gap: 16px; }
+
+      .section-padding, .section-padding-lg,
+      .problem-section, .bridge, .steps,
+      .included, .testimonials, .offer,
+      .payment, .risk-reversal { padding: 56px 0; }
+
+      .trust-row { gap: 16px; }
+
+      .sticky-bar { display: block; }
+
+      /* extra bottom padding so sticky bar doesn't cover content */
+      .footer { padding-bottom: 80px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 26px; }
+      .step-number { font-size: 42px; }
+      .mock-number { font-size: 42px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== TOP BAR ===== -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="/" class="logo" aria-label="nfstay Home">
+        <span class="logo-box">nf</span><span class="logo-text">stay</span>
+      </a>
+      <a href="/signin" class="topbar-signin">Already a member? Sign In</a>
+    </div>
+  </header>
+
+  <!-- ===== 1. HERO ===== -->
+  <section class="hero">
+    <div class="container">
+      <h1>What If You Could Find a Profitable Airbnb Property This Week?</h1>
+      <p class="subtitle">Without cold-calling. Without door-knocking. Without spending thousands on a mentor.</p>
+      <a href="#payment" class="cta-btn">Show Me How &mdash; &pound;5 to Start</a>
+      <span class="cta-note">3-day trial. Then &pound;67/month. Cancel anytime.</span>
+    </div>
+  </section>
+
+  <!-- ===== 2. THE PROBLEM (DARK) ===== -->
+  <section class="problem-section">
+    <div class="container">
+      <h2>Let's be honest...</h2>
+      <p>You've been researching rent-to-rent for months. You've watched the YouTube videos. You've joined the Facebook groups. Maybe you even paid for a course.</p>
+      <p><strong>But you still don't have a single deal.</strong></p>
+      <p>Because here's what nobody tells you: finding landlords who say yes to rent-to-rent is the hardest part. Not the Airbnb setup. Not the cleaning. Not the pricing. It's finding the deal.</p>
+      <p>You're spending hours on Rightmove. Cold-calling agents who hang up. Knocking on doors. Getting nowhere.</p>
+      <p class="problem-callout">Sound familiar?</p>
+    </div>
+  </section>
+
+  <!-- ===== 3. THE BRIDGE ===== -->
+  <section class="bridge">
+    <div class="container">
+      <h2>What if someone had already found the landlords for you?</h2>
+      <p>Imagine logging in and seeing <strong>1,800+ verified properties</strong> where the landlord has already said yes to rent-to-rent.</p>
+      <p>No cold-calling. No rejection. Just deals &mdash; ready to negotiate.</p>
+      <p class="brand-callout">That's exactly what nfstay is.</p>
+    </div>
+  </section>
+
+  <!-- ===== 4. THE SOLUTION — STEPS ===== -->
+  <section class="steps">
+    <div class="container-wide">
+      <h2>How it works</h2>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-number">01</div>
+          <div class="step-icon">&#128269;</div>
+          <h3>Browse 1,800+ verified deals</h3>
+          <p>Every property is landlord-approved. Filter by city, profit margin, and property type.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">02</div>
+          <div class="step-icon">&#128222;</div>
+          <h3>Contact the landlord directly</h3>
+          <p>No agents in the way. Get the landlord's details instantly and start your conversation.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">03</div>
+          <div class="step-icon">&#128176;</div>
+          <h3>Close your deal and start earning</h3>
+          <p>Use our CRM to track everything. Our Academy teaches you the rest.</p>
+        </div>
+      </div>
+      <div class="cta-center">
+        <a href="#payment" class="cta-btn cta-secondary">Get Access to All 1,800+ Deals</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 5. EVERYTHING INCLUDED ===== -->
+  <section class="included">
+    <div class="container-wide">
+      <h2>Everything you need, in one place</h2>
+      <div class="included-grid">
+        <ul class="feature-list">
+          <li><span class="check-icon">&#10003;</span> 1,800+ landlord-approved deals</li>
+          <li><span class="check-icon">&#10003;</span> Direct landlord contact details</li>
+          <li><span class="check-icon">&#10003;</span> CRM pipeline to track your deals</li>
+          <li><span class="check-icon">&#10003;</span> Earnings estimator per property</li>
+          <li><span class="check-icon">&#10003;</span> Rent-to-rent Academy (video lessons)</li>
+          <li><span class="check-icon">&#10003;</span> AI property descriptions</li>
+          <li><span class="check-icon">&#10003;</span> WhatsApp enquiry notifications</li>
+          <li><span class="check-icon">&#10003;</span> Airbnb pricing tool</li>
+          <li><span class="check-icon">&#10003;</span> New deals added every week</li>
+        </ul>
+        <div class="mock-card">
+          <div class="mock-badge">LIVE NOW</div>
+          <div class="mock-number">1,800+</div>
+          <div class="mock-label">Verified Deals Across the UK</div>
+        </div>
+      </div>
+      <div class="cta-center">
+        <a href="#payment" class="cta-btn cta-secondary">Start Your Trial &mdash; Only &pound;5</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 6. TESTIMONIALS ===== -->
+  <section class="testimonials">
+    <div class="container-wide">
+      <h2>What our members say</h2>
+      <div class="testimonials-grid">
+        <div class="testimonial-card">
+          <p>"I was sceptical, but I found a 2-bed in Manchester on day one. Signed the agreement within a week."</p>
+          <div class="testimonial-name">James T., Manchester</div>
+        </div>
+        <div class="testimonial-card">
+          <p>"The CRM is brilliant. I went from sticky notes to closing 3 deals in a month."</p>
+          <div class="testimonial-name">Sarah M., Birmingham</div>
+        </div>
+        <div class="testimonial-card">
+          <p>"As a complete beginner, the Academy gave me everything I needed. Now I run 4 properties."</p>
+          <div class="testimonial-name">David R., Leeds</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 7. THE OFFER ===== -->
+  <section class="offer">
+    <div class="container">
+      <h2>Here's the deal.</h2>
+      <p class="offer-intro">For less than the price of a coffee per day, you get access to everything:</p>
+      <ul class="value-stack">
+        <li><span class="value-label">Deal Marketplace</span><span class="value-crossed">&pound;297/mo</span></li>
+        <li><span class="value-label">CRM Pipeline</span><span class="value-crossed">&pound;97/mo</span></li>
+        <li><span class="value-label">Academy</span><span class="value-crossed">&pound;497</span></li>
+        <li><span class="value-label">Landlord Contacts</span><span class="value-crossed">&pound;197/mo</span></li>
+        <li><span class="value-label">Earnings Estimator</span><span class="value-crossed">&pound;47/mo</span></li>
+        <li class="value-total"><span class="value-label">Total value</span><span class="value-crossed">&pound;1,135</span></li>
+      </ul>
+      <div class="your-price">Your price: <span>&pound;5 for 3 days</span>, then &pound;67/month</div>
+      <div class="discount-banner">That's 94% off the individual value.</div>
+      <div class="cta-center">
+        <a href="#payment" class="cta-btn">Get Started for &pound;5</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 8. PAYMENT ===== -->
+  <section class="payment" id="payment">
+    <div class="container">
+      <h2>Ready? Start your trial now.</h2>
+      <div class="payment-frame">
+        <iframe src="https://pay.nfstay.com/order" allow="payment" loading="lazy" title="nfstay payment"></iframe>
+      </div>
+      <div class="trust-row">
+        <span class="trust-item"><span class="trust-icon">&#128274;</span> Secure checkout</span>
+        <span class="trust-item"><span class="trust-icon">&#10003;</span> Cancel anytime</span>
+        <span class="trust-item"><span class="trust-icon">&#9889;</span> Instant access</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 9. RISK REVERSAL ===== -->
+  <section class="risk-reversal">
+    <div class="container">
+      <h2>Still not sure?</h2>
+      <p>You can cancel online anytime. No phone calls. No emails. No hassle.</p>
+      <p class="urgency">But the deals you're missing out on while you wait? Those don't come back.</p>
+      <div class="cta-center">
+        <a href="#payment" class="cta-btn cta-secondary">Start Your &pound;5 Trial Now</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STICKY MOBILE BAR ===== -->
+  <div class="sticky-bar" id="stickyBar">
+    <a href="#payment">Get Access &mdash; &pound;5 Trial</a>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <p>&copy; 2026 nfstay. <a href="/terms">Terms</a> &nbsp;|&nbsp; <a href="/privacy">Privacy</a></p>
+  </footer>
+
+  <!-- Social proof + AB testing -->
+  <script src="/landing/js/social-proof.js"></script>
+  <script src="/landing/js/ab-testing.js"></script>
+
+  <script>
+    // Hide sticky bar when user is near the payment section
+    (function() {
+      var stickyBar = document.getElementById('stickyBar');
+      var paymentSection = document.getElementById('payment');
+      if (!stickyBar || !paymentSection) return;
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          stickyBar.style.display = entry.isIntersecting ? 'none' : '';
+        });
+      }, { threshold: 0.1 });
+
+      observer.observe(paymentSection);
+    })();
+  </script>
+</body>
+</html>

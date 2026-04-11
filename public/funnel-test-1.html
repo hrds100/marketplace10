@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Instant Access to 1,800+ Landlord-Approved Airbnb Deals | nfstay</title>
+  <meta name="description" content="The UK's #1 rent-to-rent deal marketplace. Find your first profitable property in minutes, not months.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sora:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/social-proof.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #F3F3EE;
+      color: #1A1A1A;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .topbar-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+    }
+    .logo-box {
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: #0A0A0A;
+      border: 2px solid #0A0A0A;
+      border-radius: 6px;
+      padding: 1px 5px;
+      line-height: 1.2;
+    }
+    .logo-text {
+      font-family: 'Sora', sans-serif;
+      font-weight: 400;
+      font-size: 18px;
+      color: #0A0A0A;
+      letter-spacing: 2px;
+    }
+    .signin-link {
+      font-size: 14px;
+      font-weight: 500;
+      color: #6B7280;
+      text-decoration: none;
+    }
+    .signin-link:hover { color: #1E9A80; }
+    .signin-link span { color: #1E9A80; font-weight: 600; }
+
+    /* ── Shared ── */
+    .section { padding: 80px 24px; }
+    .section-inner { max-width: 800px; margin: 0 auto; }
+    .section-white { background: #FFFFFF; border-top: 1px solid rgba(0,0,0,0.06); border-bottom: 1px solid rgba(0,0,0,0.06); }
+
+    .cta-btn {
+      display: inline-block;
+      background: #1E9A80;
+      color: #FFFFFF;
+      font-family: 'Inter', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      padding: 18px 48px;
+      border-radius: 16px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: rgba(30,154,128,0.35) 0 4px 16px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-align: center;
+    }
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: rgba(30,154,128,0.45) 0 8px 24px;
+    }
+    .cta-sub {
+      display: block;
+      text-align: center;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #6B7280;
+    }
+
+    .section-badge {
+      display: inline-block;
+      background: #ECFDF5;
+      color: #1E9A80;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-title {
+      font-size: 36px;
+      font-weight: 700;
+      color: #1A1A1A;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .section-subtitle {
+      font-size: 16px;
+      color: #6B7280;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 140px 24px 80px;
+      text-align: center;
+    }
+    .hero-inner { max-width: 800px; margin: 0 auto; }
+    .hero h1 {
+      font-size: 46px;
+      font-weight: 800;
+      color: #1A1A1A;
+      line-height: 1.1;
+      letter-spacing: -1.4px;
+      margin-bottom: 20px;
+    }
+    .hero h1 em {
+      color: #1E9A80;
+      font-style: normal;
+    }
+    .hero-sub {
+      font-size: 18px;
+      color: #6B7280;
+      max-width: 600px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+    .hero-stat {
+      text-align: center;
+    }
+    .hero-stat-number {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1A1A1A;
+    }
+    .hero-stat-label {
+      font-size: 13px;
+      color: #6B7280;
+    }
+    .trust-row {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #9CA3AF;
+    }
+    .trust-icon {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: #9CA3AF;
+      stroke-width: 2;
+    }
+
+    /* ── Problem ── */
+    .problem-card {
+      background: #FFFFFF;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    .pain-point {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 0;
+    }
+    .pain-point + .pain-point { border-top: 1px solid #E5E7EB; }
+    .pain-x {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      background: #FEE2E2;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #DC2626;
+    }
+    .pain-text {
+      font-size: 16px;
+      color: #1A1A1A;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+    .transition-text {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1E9A80;
+      margin-top: 40px;
+    }
+
+    /* ── Features grid ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .feature-item {
+      background: #FFFFFF;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .feature-check {
+      width: 32px;
+      height: 32px;
+      background: #ECFDF5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .feature-check svg {
+      width: 16px;
+      height: 16px;
+      stroke: #1E9A80;
+      fill: none;
+      stroke-width: 2.5;
+    }
+    .feature-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1A1A1A;
+      line-height: 1.4;
+    }
+
+    /* ── Testimonials ── */
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .testimonial-card {
+      background: #FFFFFF;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 16px;
+      padding: 28px;
+      position: relative;
+    }
+    .testimonial-card::before {
+      content: '\201C';
+      font-size: 48px;
+      font-weight: 700;
+      color: #1E9A80;
+      opacity: 0.3;
+      position: absolute;
+      top: 12px;
+      left: 20px;
+      line-height: 1;
+    }
+    .testimonial-text {
+      font-size: 15px;
+      color: #1A1A1A;
+      font-weight: 500;
+      line-height: 1.6;
+      margin-bottom: 16px;
+      padding-top: 8px;
+    }
+    .testimonial-author {
+      font-size: 13px;
+      color: #6B7280;
+      font-weight: 600;
+    }
+    .testimonial-stars {
+      color: #F59E0B;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    /* ── Value stack ── */
+    .value-stack {
+      background: #FFFFFF;
+      border: 2px solid #1E9A80;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 560px;
+      margin: 0 auto 40px;
+    }
+    .value-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+    }
+    .value-item + .value-item { border-top: 1px solid #E5E7EB; }
+    .value-label {
+      font-size: 15px;
+      font-weight: 500;
+      color: #1A1A1A;
+    }
+    .value-price {
+      font-size: 15px;
+      font-weight: 600;
+      color: #9CA3AF;
+      text-decoration: line-through;
+    }
+    .value-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 0 8px;
+      border-top: 2px solid #E5E7EB;
+      margin-top: 8px;
+    }
+    .value-total-label {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1A1A1A;
+    }
+    .value-total-price {
+      font-size: 18px;
+      font-weight: 800;
+      color: #9CA3AF;
+      text-decoration: line-through;
+    }
+    .your-price {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 2px dashed #E5E7EB;
+    }
+    .your-price-label {
+      font-size: 14px;
+      color: #6B7280;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .your-price-amount {
+      font-size: 36px;
+      font-weight: 800;
+      color: #1E9A80;
+    }
+    .your-price-detail {
+      font-size: 14px;
+      color: #6B7280;
+      margin-top: 4px;
+    }
+
+    /* ── FAQ ── */
+    .faq-item {
+      background: #FFFFFF;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+    .faq-question {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1A1A1A;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .faq-toggle {
+      font-size: 20px;
+      font-weight: 400;
+      color: #9CA3AF;
+      transition: transform 0.2s;
+    }
+    .faq-item.open .faq-toggle { transform: rotate(45deg); }
+    .faq-answer {
+      font-size: 15px;
+      color: #6B7280;
+      line-height: 1.6;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease-out, margin 0.2s;
+    }
+    .faq-item.open .faq-answer {
+      max-height: 200px;
+      margin-top: 12px;
+    }
+
+    /* ── Payment ── */
+    .payment-section {
+      background: #FFFFFF;
+      border-top: 4px solid #1E9A80;
+    }
+    .payment-frame {
+      width: 100%;
+      min-height: 600px;
+      border: none;
+      border-radius: 16px;
+      background: #F3F3EE;
+    }
+    .payment-trust {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Urgency ── */
+    .urgency-section { text-align: center; }
+    .urgency-text {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1A1A1A;
+      margin-bottom: 24px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      padding: 40px 24px;
+      text-align: center;
+      font-size: 13px;
+      color: #9CA3AF;
+    }
+    .footer a {
+      color: #9CA3AF;
+      text-decoration: none;
+    }
+    .footer a:hover { color: #6B7280; }
+    .footer-sep { margin: 0 8px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .hero { padding: 110px 20px 60px; }
+      .hero h1 { font-size: 32px; letter-spacing: -0.8px; }
+      .hero-sub { font-size: 16px; }
+      .hero-stats { gap: 20px; }
+      .hero-stat-number { font-size: 22px; }
+      .section { padding: 60px 20px; }
+      .section-title { font-size: 28px; }
+      .features-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .testimonials-grid { grid-template-columns: 1fr; gap: 16px; }
+      .value-stack { padding: 28px 20px; }
+      .cta-btn { font-size: 16px; padding: 16px 32px; width: 100%; }
+      .trust-row { gap: 16px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 28px; }
+      .hero-stats { flex-direction: column; gap: 12px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .topbar-inner { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Top Bar ── -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="/" class="logo">
+        <span class="logo-box">nf</span>
+        <span class="logo-text">stay</span>
+      </a>
+      <a href="/signin" class="signin-link">Already a member? <span>Sign In</span></a>
+    </div>
+  </header>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-inner">
+      <h1>Get Instant Access to <em>1,800+</em> Landlord-Approved Airbnb Deals</h1>
+      <p class="hero-sub">The UK's #1 rent-to-rent deal marketplace. Find your first profitable property in minutes, not months.</p>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-number">1,800+</div>
+          <div class="hero-stat-label">Verified Deals</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-number">300+</div>
+          <div class="hero-stat-label">Active Operators</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-number">£1.2M+</div>
+          <div class="hero-stat-label">Monthly Revenue Generated</div>
+        </div>
+      </div>
+
+      <a href="#payment" class="cta-btn">Get Full Access — £5 Trial</a>
+      <span class="cta-sub">Then £67/month. Cancel anytime.</span>
+
+      <div class="trust-row">
+        <div class="trust-item">
+          <svg class="trust-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          SSL Secure
+        </div>
+        <div class="trust-item">
+          <svg class="trust-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Cancel Anytime
+        </div>
+        <div class="trust-item">
+          <svg class="trust-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+          Instant Access
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Problem Section ── -->
+  <section class="section">
+    <div class="section-inner">
+      <div style="text-align:center;">
+        <span class="section-badge">The Old Way</span>
+        <h2 class="section-title">Still cold-calling landlords?<br>Still scrolling Rightmove for hours?</h2>
+      </div>
+      <div class="problem-card">
+        <div class="pain-point">
+          <div class="pain-x">&times;</div>
+          <div class="pain-text">Wasting weekends door-knocking and getting nowhere</div>
+        </div>
+        <div class="pain-point">
+          <div class="pain-x">&times;</div>
+          <div class="pain-text">Getting rejected by letting agents who don't understand rent-to-rent</div>
+        </div>
+        <div class="pain-point">
+          <div class="pain-x">&times;</div>
+          <div class="pain-text">Paying £2,000+ for mentorship programmes that give you nothing actionable</div>
+        </div>
+      </div>
+      <p class="transition-text">There's a faster way.</p>
+    </div>
+  </section>
+
+  <!-- ── Features Grid ── -->
+  <section class="section section-white">
+    <div class="section-inner" style="text-align:center;">
+      <span class="section-badge">What You Get</span>
+      <h2 class="section-title">Everything you need to land your first deal</h2>
+      <p class="section-subtitle">One platform. No upsells. No hidden costs.</p>
+
+      <div class="features-grid">
+        <div class="feature-item">
+          <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="feature-name">1,800+ verified rent-to-rent deals</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="feature-name">Direct landlord contact details</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="feature-name">CRM pipeline to track your deals</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="feature-name">Earnings estimator per property</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="feature-name">nfstay Academy (full training)</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="feature-name">Priority deal alerts</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="feature-name">Unified inbox (WhatsApp + email)</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="feature-name">Affiliate Agent programme</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="feature-name">White-label booking site</div>
+        </div>
+      </div>
+
+      <a href="#payment" class="cta-btn">Start Your £5 Trial Now</a>
+      <span class="cta-sub">Full access. Cancel anytime.</span>
+    </div>
+  </section>
+
+  <!-- ── Social Proof ── -->
+  <section class="section">
+    <div class="section-inner" style="text-align:center;">
+      <span class="section-badge">Social Proof</span>
+      <h2 class="section-title">Trusted by 300+ UK rent-to-rent operators</h2>
+      <p class="section-subtitle">Real results from real members.</p>
+
+      <div class="testimonials-grid">
+        <div class="testimonial-card">
+          <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p class="testimonial-text">I found my first deal within 48 hours of signing up. The marketplace is a game-changer.</p>
+          <p class="testimonial-author">James T., Manchester</p>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p class="testimonial-text">The CRM alone saved me 10 hours a week. I can actually focus on closing deals now.</p>
+          <p class="testimonial-author">Sarah M., Birmingham</p>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p class="testimonial-text">I went from 0 to 3 properties in my first month. The landlord contact info is worth it alone.</p>
+          <p class="testimonial-author">David R., Leeds</p>
+        </div>
+      </div>
+
+      <a href="#payment" class="cta-btn">Join Them — Get Access Now</a>
+    </div>
+  </section>
+
+  <!-- ── Value Stack ── -->
+  <section class="section section-white">
+    <div class="section-inner" style="text-align:center;">
+      <span class="section-badge">Limited Offer</span>
+      <h2 class="section-title">Here's everything you get today</h2>
+      <p class="section-subtitle">Total value over £1,100/month — yours for a fraction of the cost.</p>
+
+      <div class="value-stack">
+        <div class="value-item">
+          <span class="value-label">Deal Marketplace</span>
+          <span class="value-price">£297/mo</span>
+        </div>
+        <div class="value-item">
+          <span class="value-label">CRM Pipeline</span>
+          <span class="value-price">£97/mo</span>
+        </div>
+        <div class="value-item">
+          <span class="value-label">Academy Training</span>
+          <span class="value-price">£497</span>
+        </div>
+        <div class="value-item">
+          <span class="value-label">Landlord Contact Info</span>
+          <span class="value-price">£197/mo</span>
+        </div>
+        <div class="value-item">
+          <span class="value-label">Earnings Estimator</span>
+          <span class="value-price">£47/mo</span>
+        </div>
+        <div class="value-total">
+          <span class="value-total-label">Total Value</span>
+          <span class="value-total-price">£1,135</span>
+        </div>
+        <div class="your-price">
+          <div class="your-price-label">Your price today</div>
+          <div class="your-price-amount">£5</div>
+          <div class="your-price-detail">for 3 days, then £67/month</div>
+        </div>
+      </div>
+
+      <a href="#payment" class="cta-btn">Get Everything for £5</a>
+      <span class="cta-sub">Then £67/month. Cancel online anytime.</span>
+    </div>
+  </section>
+
+  <!-- ── FAQ ── -->
+  <section class="section">
+    <div class="section-inner" style="text-align:center;">
+      <span class="section-badge">FAQ</span>
+      <h2 class="section-title">Got questions?</h2>
+      <p class="section-subtitle" style="margin-bottom:40px;">We've got answers.</p>
+
+      <div style="text-align:left;">
+        <div class="faq-item open">
+          <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            Is this a subscription?
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">Yes. You start with a 3-day trial for £5, then it's £67/month. You can cancel anytime online — no contracts, no hassle, no phone calls required.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            How quickly can I find a deal?
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">Most members find their first deal within the first week. With 1,800+ verified listings updated daily, you'll have plenty to choose from right away.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            Do I need experience?
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">No. The nfstay Academy covers everything from scratch — finding deals, negotiating with landlords, setting up your Airbnb, and scaling your portfolio.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            What if I want to cancel?
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">Cancel online anytime from your dashboard. No contracts, no cancellation fees, no awkward phone calls. You stay active until the end of your billing period.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Payment Section ── -->
+  <section id="payment" class="section payment-section">
+    <div class="section-inner" style="text-align:center;">
+      <h2 class="section-title">Start Your 3-Day Trial for £5</h2>
+      <p class="section-subtitle">Full access to everything. Cancel anytime.</p>
+      <iframe
+        src="https://pay.nfstay.com/order"
+        class="payment-frame"
+        allow="payment"
+        title="nfstay payment"
+        loading="lazy"
+      ></iframe>
+      <div class="payment-trust">
+        <div class="trust-item">
+          <svg class="trust-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Secure payment
+        </div>
+        <div class="trust-item">
+          <svg class="trust-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          SSL encrypted
+        </div>
+        <div class="trust-item">
+          <svg class="trust-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Cancel anytime
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final Urgency ── -->
+  <section class="section urgency-section">
+    <div class="section-inner" style="text-align:center;">
+      <span class="section-badge">Don't Wait</span>
+      <p class="urgency-text">New deals are added daily. The best ones go fast.</p>
+      <a href="#payment" class="cta-btn">Get Access Now — £5 Trial</a>
+      <span class="cta-sub">Secure your spot before the next batch drops.</span>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="footer">
+    <p>&copy; 2026 nfstay. All rights reserved.</p>
+    <p style="margin-top:8px;">
+      <a href="https://docs.nfstay.com/legal/terms">Terms</a>
+      <span class="footer-sep">|</span>
+      <a href="https://docs.nfstay.com/legal/privacy">Privacy</a>
+    </p>
+  </footer>
+
+  <!-- ── Smooth scroll for CTA buttons ── -->
+  <script>
+    document.querySelectorAll('a[href="#payment"]').forEach(function(a) {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('payment').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  </script>
+
+  <!-- ── External scripts ── -->
+  <script src="/landing/js/social-proof.js"></script>
+  <script src="/landing/js/ab-testing.js"></script>
+</body>
+</html>
