@@ -39,13 +39,21 @@ export default async function handler(req: any, res: any) {
   let ogImage = DEFAULT_OG_IMAGE;
 
   try {
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-    // Prefer service role key (bypasses RLS) — fall back to anon key
+    // VITE_* env vars are baked into the browser bundle at build time — they are NOT
+    // available in Vercel serverless function runtime via process.env.
+    // Use the known project URL directly (it's public) and rely on the server-side
+    // env var names for the key.
+    const supabaseUrl = 'https://asazddtvjvmckouxcmmo.supabase.co';
+    // Prefer service role key (bypasses RLS entirely) — fall back to anon key
     const supabaseKey =
       process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.VITE_SUPABASE_ANON_KEY ||
       process.env.SUPABASE_ANON_KEY ||
+      process.env.VITE_SUPABASE_ANON_KEY ||
       '';
+
+    // Masked diagnostic logging — helps verify env vars are set in Vercel
+    console.log('[og-deals] url:', supabaseUrl);
+    console.log('[og-deals] key present:', supabaseKey.length > 0, '| first8:', supabaseKey.slice(0, 8));
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -57,7 +65,10 @@ export default async function handler(req: any, res: any) {
       ? supabase.from('properties').select('id, name, city, photos, slug').eq('id', slug)
       : supabase.from('properties').select('id, name, city, photos, slug').eq('slug', slug);
 
+    console.log('[og-deals] querying slug:', slug, '| isUuid:', isUuid);
     const { data: listing, error } = await query.maybeSingle();
+
+    console.log('[og-deals] result — listing:', listing ? listing.name : null, '| error:', error?.message ?? null);
 
     if (error) {
       console.error('[og-deals] Supabase error:', error.message);
