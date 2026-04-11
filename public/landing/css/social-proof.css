@@ -1,0 +1,101 @@
+/* Social Proof Toast Notifications */
+
+#nfs-social-proof {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  font-family: Inter, -apple-system, sans-serif;
+}
+
+.nfs-sp-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: rgba(0, 0, 0, 0.08) 0 4px 24px -2px;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateX(-20px) scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  max-width: 320px;
+  min-width: 240px;
+}
+
+.nfs-sp-toast.nfs-sp-enter {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.nfs-sp-toast.nfs-sp-exit {
+  opacity: 0;
+  transform: translateX(-20px) scale(0.95);
+}
+
+.nfs-sp-dot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+  background: #1E9A80;
+  animation: nfs-sp-pulse 2s ease-in-out infinite;
+}
+
+@keyframes nfs-sp-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.nfs-sp-content {
+  font-size: 13px;
+  color: #1A1A1A;
+  line-height: 1.4;
+}
+
+.nfs-sp-content strong {
+  font-weight: 600;
+}
+
+.nfs-sp-action {
+  display: block;
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 1px;
+}
+
+.nfs-sp-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 0 0 0 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.nfs-sp-close:hover {
+  color: #1A1A1A;
+}
+
+/* Mobile: smaller, bottom-left with less padding */
+@media (max-width: 640px) {
+  #nfs-social-proof {
+    bottom: 16px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .nfs-sp-toast {
+    max-width: 100%;
+    min-width: auto;
+    padding: 10px 14px;
+  }
+}

@@ -268,6 +268,18 @@ export default function SignUp() {
       supabase.functions.invoke('send-email', { body: { type: 'new-signup-admin', data: { email: cleanEmail, name: cleanName, phone: fullPhone } } }).catch(() => {});
       (supabase.from('notifications') as any).insert({ type: 'new_signup', title: 'New user signed up', body: `${cleanName} (${cleanEmail}) just created an account.` }).then(() => {}).catch(() => {});
 
+      // A/B test — track signup completion (fire-and-forget)
+      try {
+        const abVariant = document.cookie.match(/(?:^|; )nfs_ab=([^;]*)/)?.[1];
+        const abVisitor = localStorage.getItem('nfs_visitor_id');
+        if (abVariant && abVisitor) {
+          navigator.sendBeacon?.(
+            'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/ab-track',
+            JSON.stringify({ visitor_id: abVisitor, variant: abVariant, event_type: 'signup_complete', page_url: '/signup', metadata: {}, timestamp: new Date().toISOString() })
+          );
+        }
+      } catch {}
+
       try { await sendOtp(fullPhone); toast.success('Account created! Check WhatsApp for your code.'); }
       catch { toast.success('Account created! Sending verification code...'); }
 
