@@ -1,9 +1,7 @@
-// airbnb-pricing — Estimate Airbnb nightly rate + occupancy via OpenAI web search
-// Uses OpenAI Responses API with web_search to check REAL Airbnb listings
-// Method: 7-day stays at 3 windows (30, 60, 90 days out) → median nightly rate
+// airbnb-pricing — Estimate Airbnb nightly rate + occupancy
+// Uses OpenAI Responses API with web_search to find real market data
 // Input: { city, postcode, bedrooms, bathrooms, type, rent, propertyId }
-// Output: { estimated_nightly_rate, estimated_occupancy, estimated_monthly_revenue,
-//           airbnb_url_30d, airbnb_url_60d, airbnb_url_90d }
+// Output: { estimated_nightly_rate, estimated_occupancy, estimated_monthly_revenue, ... }
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -15,18 +13,8 @@ const corsHeaders = {
 
 const DEFAULT_MODEL = 'gpt-4o'
 
-// Short URL for AI web search — bedrooms, beds, guests always set; bathrooms when available
-function buildAirbnbSearchUrl(city: string, checkin: string, checkout: string, bedrooms: number, bathrooms: number): string {
-  const query = encodeURIComponent(city || 'London')
-  const minBeds = bedrooms || 1
-  const adults = minBeds // 1 guest per bedroom — mandatory
-  let url = `https://www.airbnb.co.uk/s/${query}/homes?checkin=${checkin}&checkout=${checkout}&adults=${adults}&min_bedrooms=${minBeds}&min_beds=${minBeds}&room_types%5B%5D=Entire%20home%2Fapt`
-  if (bathrooms && bathrooms > 0) url += `&min_bathrooms=${bathrooms}`
-  return url
-}
-
-// Full URL for human verification — all filters; bathrooms only when available
-function buildAirbnbFullUrl(city: string, checkin: string, checkout: string, bedrooms: number, bathrooms: number, monthlyStart: string, monthlyEnd: string): string {
+// Full Airbnb URL for human verification — bedrooms, beds, guests, bathrooms when available
+function buildAirbnbUrl(city: string, checkin: string, checkout: string, bedrooms: number, bathrooms: number, monthlyStart: string, monthlyEnd: string): string {
   const query = encodeURIComponent(city || 'London')
   const minBeds = bedrooms || 1
   const adults = minBeds
@@ -45,20 +33,16 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not set')
 
-    // Check ai_settings for custom model
     let model = DEFAULT_MODEL
     try {
       const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
       const { data } = await supabase.from('ai_settings').select('model').eq('task', 'pricing').single()
       if (data?.model) model = data.model
-    } catch {
-      // ai_settings table may not exist — use default
-    }
+    } catch { /* ai_settings may not exist */ }
 
     const minBeds = bedrooms || 1
-    const minBath = bathrooms || 1
+    const minBath = bathrooms || 0
 
-    // Build 3 Airbnb search URLs: 7-day stays at 30, 60, 90 days out
     const checkin30 = getFutureDate(30)
     const checkout30 = getFutureDate(37)
     const checkin60 = getFutureDate(60)
@@ -69,67 +53,49 @@ serve(async (req) => {
     const monthlyStart = getFirstOfMonth(30)
     const monthlyEnd = getFirstOfMonth(120)
 
-    // Short URLs for AI to search (simpler = more reliable)
-    const ai_url_30d = buildAirbnbSearchUrl(city, checkin30, checkout30, minBeds, minBath)
-    const ai_url_60d = buildAirbnbSearchUrl(city, checkin60, checkout60, minBeds, minBath)
-    const ai_url_90d = buildAirbnbSearchUrl(city, checkin90, checkout90, minBeds, minBath)
+    const airbnb_url_30d = buildAirbnbUrl(city, checkin30, checkout30, minBeds, minBath, monthlyStart, monthlyEnd)
+    const airbnb_url_60d = buildAirbnbUrl(city, checkin60, checkout60, minBeds, minBath, monthlyStart, monthlyEnd)
+    const airbnb_url_90d = buildAirbnbUrl(city, checkin90, checkout90, minBeds, minBath, monthlyStart, monthlyEnd)
 
-    // Full URLs saved to DB for Hugo to verify manually
-    const airbnb_url_30d = buildAirbnbFullUrl(city, checkin30, checkout30, minBeds, minBath, monthlyStart, monthlyEnd)
-    const airbnb_url_60d = buildAirbnbFullUrl(city, checkin60, checkout60, minBeds, minBath, monthlyStart, monthlyEnd)
-    const airbnb_url_90d = buildAirbnbFullUrl(city, checkin90, checkout90, minBeds, minBath, monthlyStart, monthlyEnd)
+    const systemPrompt = `You are an Airbnb pricing analyst for UK serviced accommodation.
 
-    const systemPrompt = `You are an Airbnb pricing analyst. You ONLY use Airbnb. No other platform.
+Estimate the Airbnb nightly rate for:
+- Property: ${minBeds}-bedroom${minBath > 0 ? `, ${minBath}-bathroom` : ''} ${type || 'house'} in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}
+- Guests: ${minBeds} (1 per bedroom)
 
-Find real Airbnb prices for:
-- Property: ${type || 'house'} in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}
-- Bedrooms: ${minBeds} (MANDATORY)
-- Beds: ${minBeds} (MANDATORY — 1 bed per room)
-- Guests: ${minBeds} (MANDATORY — 1 guest per bedroom)${bathrooms && bathrooms > 0 ? `\n- Bathrooms: ${bathrooms} (MANDATORY)` : ''}
+Use web search to find current Airbnb market data for this area. Search for:
+- "Airbnb ${city} ${minBeds} bedroom nightly rate"
+- "Airbnb average rate ${city} ${minBeds} bed"
+- "${city} short let ${minBeds} bedroom price per night"
+- "${city} serviced accommodation rates"
 
-Airbnb is public. No login needed.
+Use whatever real data you can find — Airbnb listings, market reports, Airbtics, property articles — to make an informed estimate.
 
-SEARCH AIRBNB — use these URLs (filtered by ${minBeds} bedrooms, ${minBeds} beds, ${minBeds} guests${bathrooms && bathrooms > 0 ? `, ${bathrooms} bathrooms` : ''}, entire home):
-${ai_url_30d}
-${ai_url_60d}
-${ai_url_90d}
+Compare prices for 7-night stays across three windows:
+- Window 1: ${checkin30} to ${checkout30}
+- Window 2: ${checkin60} to ${checkout60}
+- Window 3: ${checkin90} to ${checkout90}
 
-If a URL doesn't work, search Google for: airbnb.co.uk ${city} ${minBeds} bedroom ${minBath} bathroom entire home
+PRICING RULES:
+- A ${minBeds}-bedroom property earns more per night than a 1-2 bed. Scale accordingly.
+${minBath > 0 ? `- ${minBath} bathrooms adds value — properties with more bathrooms command higher rates.\n` : ''}- Be conservative — landlords prefer under-promise over-deliver.
+- Occupancy: 65-75% for London/Greater London, 55-65% for other UK cities.
 
-Airbnb always shows results — the area is large enough. Keep trying until you find listings.
-
-COLLECT from each listing:
-- Listing name
-- Total price for 7 nights
-- Number of bedrooms and bathrooms
-
-Find at least 2-3 listings. Divide each 7-night total by 7 = nightly rate. Take the MEDIAN.
-
-Monthly revenue = median nightly rate × occupancy% / 100 × 30
-
-RULES:
-- Airbnb ONLY
-- Entire home only (no private rooms)
-- MANDATORY filters: ${minBeds}+ bedrooms, ${minBeds}+ beds, ${minBeds}+ guests${bathrooms && bathrooms > 0 ? `, ${bathrooms}+ bathrooms` : ''}
-- Be conservative
-- Occupancy: 65-75% London/Greater London, 55-65% other UK
-- Do NOT guess from memory. Use prices you found right now.
+CALCULATION:
+estimated_monthly_revenue = estimated_nightly_rate × estimated_occupancy / 100 × 30
 
 CONFIDENCE:
-- "high" = 3+ real listings found
-- "medium" = 1-2 real listings found
-- "low" = nothing found (return error)
+- "high" = based on real listing data or market reports you found via search
+- "medium" = based on area averages scaled by bedroom count
+- "low" = very limited data available
 
-If truly nothing found after all attempts:
-{ "confidence": "low", "error": "no_real_data", "estimated_nightly_rate": 0, "estimated_occupancy": 0, "estimated_monthly_revenue": 0, "reasoning": "explain what you searched and why nothing came back" }
-
-Return ONLY JSON:
+Return ONLY valid JSON:
 {
   "estimated_nightly_rate": number (GBP, whole number),
-  "estimated_occupancy": number (0-100),
-  "estimated_monthly_revenue": number (GBP),
+  "estimated_occupancy": number (0-100, whole number),
+  "estimated_monthly_revenue": number (GBP, whole number),
   "confidence": "high" | "medium" | "low",
-  "reasoning": "list each listing: name, 7-night price, nightly rate. Then the median."
+  "reasoning": "explain what data you found and how you estimated"
 }
 
 No markdown. No extra text.`
@@ -168,7 +134,6 @@ No markdown. No extra text.`
 
     const data = await res.json()
 
-    // Extract text from Responses API output
     let text = ''
     if (data.output && Array.isArray(data.output)) {
       for (const item of data.output) {
@@ -193,7 +158,6 @@ No markdown. No extra text.`
     try {
       parsed = JSON.parse(text)
     } catch {
-      // Try stripping markdown fences
       text = text.replace(/```(?:json)?\s*/gi, '').replace(/```/gi, '').trim()
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
@@ -203,22 +167,7 @@ No markdown. No extra text.`
       }
     }
 
-    // If AI couldn't access real data, return the error without saving
-    if (parsed.error === 'no_real_data' || parsed.estimated_nightly_rate === 0) {
-      return new Response(JSON.stringify({
-        ...parsed,
-        confidence: 'low',
-        error: 'no_real_data',
-        notes: parsed.reasoning || 'Could not access real Airbnb listing data. Use the links below to check manually.',
-        airbnb_url_7d: airbnb_url_30d,
-        airbnb_url_30d: airbnb_url_60d,
-        airbnb_url_90d: airbnb_url_90d,
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Save pricing to properties table if propertyId provided
+    // Save to DB
     if (propertyId) {
       try {
         const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
@@ -229,9 +178,12 @@ No markdown. No extra text.`
           estimated_monthly_revenue: monthlyRev,
           estimated_profit: monthlyRev,
           profit_est: monthlyRev,
+          estimation_confidence: parsed.confidence || null,
+          estimation_notes: parsed.reasoning || null,
           airbnb_url_7d: airbnb_url_30d,
           airbnb_url_30d: airbnb_url_60d,
           airbnb_url_90d: airbnb_url_90d,
+          ai_model_used: model,
         }).eq('id', propertyId)
       } catch (e) {
         console.error('[airbnb-pricing] Failed to save pricing to DB:', e)
@@ -241,8 +193,8 @@ No markdown. No extra text.`
     return new Response(JSON.stringify({
       ...parsed,
       estimated_monthly_revenue: parsed.estimated_monthly_revenue || 0,
-      confidence: parsed.confidence || (parsed.estimated_occupancy >= 70 ? 'high' : parsed.estimated_occupancy >= 50 ? 'medium' : 'low'),
-      notes: parsed.reasoning || parsed.notes || '',
+      confidence: parsed.confidence || 'medium',
+      notes: parsed.reasoning || '',
       airbnb_url_7d: airbnb_url_30d,
       airbnb_url_30d: airbnb_url_60d,
       airbnb_url_90d: airbnb_url_90d,

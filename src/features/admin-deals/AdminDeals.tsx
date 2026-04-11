@@ -364,21 +364,6 @@ export default function AdminDeals() {
       clearTimeout(t);
       if (!res.ok) { toast.error('Pricing fetch failed'); setPricingLoading(null); return; }
       const data = await res.json() as AIPricingResult & { error?: string };
-      if (data.error === 'no_real_data') {
-        // Save the Airbnb URLs even if no pricing data
-        await supabase.from('properties').update({
-          estimation_confidence: 'low',
-          estimation_notes: data.notes || 'Could not access real Airbnb data — check links manually',
-          airbnb_search_url_7d: data.airbnb_url_7d || null,
-          airbnb_search_url_30d: data.airbnb_url_30d || null,
-          airbnb_search_url_90d: data.airbnb_url_90d || null,
-          ai_model_used: 'gpt-4o',
-        } as any).eq('id', p.id);
-        queryClient.invalidateQueries({ queryKey: ['admin-deals'] });
-        toast.error('AI could not access real Airbnb data — use the Airbnb links to check manually');
-        setPricingLoading(null);
-        return;
-      }
       if (!data.estimated_nightly_rate) { toast.error('No pricing data returned'); setPricingLoading(null); return; }
       await supabase.from('properties').update({
         estimated_nightly_rate: data.estimated_nightly_rate,
