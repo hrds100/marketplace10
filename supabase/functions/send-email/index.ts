@@ -149,6 +149,46 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
         `),
       };
 
+    case 'new-inquiry-admin':
+      return {
+        to: ADMIN_EMAILS,
+        subject: `New Inquiry - ${data.tenant_name || 'A tenant'} → ${data.property_name || 'a property'}`,
+        html: layout('New tenant inquiry received', `
+          ${row('Tenant', String(data.tenant_name || '-'))}
+          ${row('Email', String(data.tenant_email || '-'))}
+          ${row('Phone', String(data.tenant_phone || '-'))}
+          ${row('Property', String(data.property_name || '-'))}
+          ${row('Landlord', String(data.lister_name || '-'))}
+          ${row('Channel', String(data.channel || '-'))}
+          ${btn('View in Gate →', `${BASE_URL}/admin/marketplace/outreach`)}
+        `),
+      };
+
+    case 'nda-signed-admin':
+      return {
+        to: ADMIN_EMAILS,
+        subject: `NDA Signed - ${data.landlord_name || data.landlord_phone || 'A landlord'}`,
+        html: layout('Landlord signed NDA', `
+          ${row('Landlord', String(data.landlord_name || '-'))}
+          ${row('Phone', String(data.landlord_phone || '-'))}
+          ${row('Lead', String(data.tenant_name || '-'))}
+          ${row('Property', String(data.property_name || '-'))}
+          ${btn('View in Gate →', `${BASE_URL}/admin/marketplace/outreach`)}
+        `),
+      };
+
+    case 'account-claimed-admin':
+      return {
+        to: ADMIN_EMAILS,
+        subject: `Account Claimed - ${data.name || data.email}`,
+        html: layout('Landlord claimed their account', `
+          ${row('Name', String(data.name || '-'))}
+          ${row('Email', String(data.email || '-'))}
+          ${row('Phone', String(data.phone || '-'))}
+          ${btn('View in Gate →', `${BASE_URL}/admin/marketplace/outreach`)}
+        `),
+      };
+
     // ─── MEMBER EMAILS ─────────────────────────────────────
     case 'deal-approved-member':
       return {

@@ -167,6 +167,20 @@ export default function LeadsTab() {
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, nda_signed: true } : l));
     setSigningNda(false);
     toast.success('Agreement accepted');
+
+    // Notify admins that NDA was signed (non-blocking)
+    const lead = leads.find(l => l.id === leadId);
+    supabase.functions.invoke('send-email', {
+      body: {
+        type: 'nda-signed-admin',
+        data: {
+          landlord_name: user?.user_metadata?.name || user?.email || '-',
+          landlord_phone: user?.user_metadata?.phone || user?.user_metadata?.whatsapp || '-',
+          tenant_name: lead?.tenant_name || '-',
+          property_name: lead?.property_name || '-',
+        },
+      },
+    }).catch(() => {});
   }
 
   async function handleRenameStage(oldName: string) {

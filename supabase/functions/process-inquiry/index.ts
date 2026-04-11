@@ -228,6 +228,25 @@ serve(async (req) => {
       }
     }
 
+    // 6b. Send admin notification email
+    try {
+      await supabaseAdmin.functions.invoke('send-email', {
+        body: {
+          type: 'new-inquiry-admin',
+          data: {
+            tenant_name: tenant_name || 'Unknown',
+            tenant_email: tenant_email || '-',
+            tenant_phone: resolvedTenantPhone || '-',
+            property_name: propertyName,
+            lister_name: listerName || '-',
+            channel: channel || '-',
+          },
+        },
+      })
+    } catch (adminEmailErr) {
+      console.error('Failed to send admin inquiry notification:', adminEmailErr)
+    }
+
     // 7. WhatsApp confirmation — enroll tenant in GHL workflow for approved template message
     // Fires for BOTH channels — tenant always gets WhatsApp + email confirmation
     if (resolvedTenantPhone && GHL_TOKEN) {
