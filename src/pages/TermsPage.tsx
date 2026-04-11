@@ -28,7 +28,6 @@ export default function TermsPage() {
           <p className="text-sm leading-relaxed">For questions: <a href="mailto:legal@nfstay.com" className="text-primary font-semibold">legal@nfstay.com</a></p>
         </div>
         <div className="mt-12 pt-6 border-t border-border">
-          <a href="/" className="text-sm text-primary font-semibold">← Back to nfstay</a>
         </div>
       </div>
     </div>

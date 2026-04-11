@@ -24,7 +24,6 @@ export default function PrivacyPage() {
           <p className="text-sm leading-relaxed">For privacy inquiries, contact: <a href="mailto:privacy@nfstay.com" className="text-primary font-semibold">privacy@nfstay.com</a></p>
         </div>
         <div className="mt-12 pt-6 border-t border-border">
-          <a href="/" className="text-sm text-primary font-semibold">← Back to nfstay</a>
         </div>
       </div>
     </div>
