@@ -1,5 +1,49 @@
 # Changelog
 
+## 2026-04-11 — Airbnb Pricing Overhaul
+
+**PRs:** #390, #392, #393, #394, #395, #396, #397, #398, #399, #400, #401, #402, #403
+
+### What changed
+- **Edge function `airbnb-pricing` rewritten** — switched from OpenAI Chat Completions (gpt-4o-mini, no web access) to Responses API (gpt-4o, web search enabled)
+- **AI now searches the web** for real Airbnb market data (Airbtics, property articles, Expedia) to inform pricing estimates — not guessing from memory alone
+- **Airbnb search URLs** generated with full filters: bedrooms, beds (1 per room), bathrooms (when available), guests (1 per bedroom), entire home only
+- **3 time windows**: 7-night stays at 30, 60, 90 days out for seasonal comparison
+- **"AirDNA verified"** renamed to **"Airbnb verified"** across all 6 languages
+- **"Est. monthly profit"** renamed to **"Est. monthly cash flow"** — now shows full revenue, no rent subtracted
+- **Temperature set to 0.2** for consistent results
+- **Confidence levels**: high (real market data found), medium (area averages scaled), low (limited data)
+- **Reasoning field** cites actual sources with links
+- **Frontend timeouts** increased from 15-25s to 90s (web search needs time)
+- **Admin deals page**: added submission date+time, description section, photo delete/replace/upload, full edit modal (description, lister type, SA approved, listing type)
+- **Admin quick-list**: lister type defaults to "Deal Sourcer"
+
+### Key finding (TDD)
+OpenAI web_search cannot browse Airbnb directly (blocked). The AI uses web search to find market data from accessible sources (Airbtics, property analytics sites, Expedia) and combines it with its training data.
+
+### Proven by Playwright tests
+| Property | Nightly | Occupancy | Monthly Revenue | Confidence |
+|----------|---------|-----------|----------------|------------|
+| 2-bed London | £250 | 74% | £5,550 | high |
+| 5-bed Barking | £600 | 70% | £12,600 | medium |
+| 3-bed Manchester | £150 | 60% | £2,700 | high |
+
+### Files changed
+- `supabase/functions/airbnb-pricing/index.ts` — full rewrite
+- `src/features/deals/PropertyCard.tsx` — Airbnb verified link + cash flow label
+- `src/features/deals/DealDetail.tsx` — Airbnb verified + cash flow labels
+- `src/features/deals/DealsPage.tsx` — pass airbnbUrl30d to cards
+- `src/features/deals/DealsMap.tsx` — "Cash Flow" in map popup
+- `src/features/admin-deals/AdminQuickList.tsx` — deal sourcer default, 90s timeout, cash flow label
+- `src/features/admin-deals/AdminDeals.tsx` — edit modal expanded, photo management, 90s timeout, cash flow labels
+- `src/features/deal-submit/ListADealPage.tsx` — cash flow label, 90s timeout
+- `src/features/inquiry/InquiryPanel.tsx` — airbnbUrl30d on ListingShape
+- `src/core/i18n/locales/{en,es,fr,pt-BR,ar,it}/common.json` — Airbnb verified + cash flow translations
+- `e2e/airbnb-pricing-api.spec.ts` — 3 live API tests
+- `e2e/airbnb-pricing-labels.spec.ts` — label verification tests
+
+---
+
 ## 2026-04-10 — Map Markers for All Properties
 
 **PR:** #391
