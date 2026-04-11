@@ -7,7 +7,7 @@ export function NfsLogo({ className = '', size = 'default' }: NfsLogoProps) {
   const isSmall = size === 'sm';
 
   return (
-    <a href="/" className={`flex items-center ${className}`} style={{ gap: isSmall ? 3 : 3 }}>
+    <a href="https://nfstay.com" className={`flex items-center ${className}`} style={{ gap: isSmall ? 3 : 3 }}>
       <div
         style={{
           width: isSmall ? 28 : 36,
