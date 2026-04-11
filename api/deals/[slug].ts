@@ -52,11 +52,12 @@ export default async function handler(req: any, res: any) {
     const isUuid =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
 
-    const { data: listing, error } = await supabase
-      .from('properties')
-      .select('id, name, city, photos, slug')
-      .or(`slug.eq.${slug}${isUuid ? `,id.eq.${slug}` : ''}`)
-      .maybeSingle();
+    // Use eq('id') for UUIDs, eq('slug') for human slugs — avoids .or() issues
+    const query = isUuid
+      ? supabase.from('properties').select('id, name, city, photos, slug').eq('id', slug)
+      : supabase.from('properties').select('id, name, city, photos, slug').eq('slug', slug);
+
+    const { data: listing, error } = await query.maybeSingle();
 
     if (error) {
       console.error('[og-deals] Supabase error:', error.message);
