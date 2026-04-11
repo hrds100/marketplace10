@@ -69,6 +69,10 @@ interface ListerMetric {
   totalLeads: number;
   ndaSigned: number;
   claimed: boolean;
+  clicks: number;
+  clickDates: string[];
+  ndaDates: string[];
+  claimedAt: string | null;
 }
 
 type TabKey = 'listings' | 'pending' | 'metrics';
@@ -1555,7 +1559,7 @@ function MetricsTab() {
       let inquiries: any[] = [];
       if (propIds.length > 0) {
         const { data } = await (supabase.from('inquiries') as any)
-          .select('id, property_id, lister_phone, nda_signed, created_at')
+          .select('id, property_id, lister_phone, nda_signed, nda_signed_at, created_at')
           .in('property_id', propIds);
         inquiries = data || [];
       }
@@ -1580,7 +1584,7 @@ function MetricsTab() {
       }
 
       // 5. Aggregate by phone
-      const phoneMap = new Map<string, ListerMetric & { clicks: number }>();
+      const phoneMap = new Map<string, ListerMetric>();
 
       for (const prop of (properties || [])) {
         const phone = prop.landlord_whatsapp || prop.contact_phone || '';
@@ -1597,18 +1601,24 @@ function MetricsTab() {
             ndaSigned: 0,
             claimed: false,
             clicks: 0,
+            clickDates: [],
+            ndaDates: [],
+            claimedAt: null,
           });
         }
         phoneMap.get(phone)!.properties++;
       }
 
-      // Clicks
+      // Clicks + click dates
       for (const inv of invites) {
         const s = phoneMap.get(inv.phone);
-        if (s && inv.used) s.clicks++;
+        if (s && inv.used) {
+          s.clicks++;
+          if (inv.used_at) s.clickDates.push(inv.used_at);
+        }
       }
 
-      // Leads + NDA
+      // Leads + NDA + NDA dates
       for (const inq of inquiries) {
         const prop = (properties || []).find((p: any) => p.id === inq.property_id);
         if (!prop) continue;
@@ -1616,7 +1626,10 @@ function MetricsTab() {
         const s = phoneMap.get(phone);
         if (!s) continue;
         s.totalLeads++;
-        if (inq.nda_signed) s.ndaSigned++;
+        if (inq.nda_signed) {
+          s.ndaSigned++;
+          if (inq.nda_signed_at) s.ndaDates.push(inq.nda_signed_at);
+        }
       }
 
       // Claimed - only if real email (not @nfstay.internal placeholder)
@@ -1626,12 +1639,15 @@ function MetricsTab() {
         if (isReallyClaimed(profile)) {
           s.claimed = true;
           if (profile.name) s.name = profile.name;
+          if (profile.created_at) s.claimedAt = profile.created_at;
         }
       }
 
       return Array.from(phoneMap.values()).sort((a, b) => b.totalLeads - a.totalLeads);
     },
   });
+
+  const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
 
   if (isLoading) return <LoadingSkeleton />;
 
@@ -1649,7 +1665,7 @@ function MetricsTab() {
   const totalLeads = filtered.reduce((s, m) => s + m.totalLeads, 0);
   const totalNda = filtered.reduce((s, m) => s + m.ndaSigned, 0);
   const totalClaimed = filtered.filter(m => m.claimed).length;
-  const totalClicks = filtered.reduce((s, m) => s + (m as any).clicks, 0);
+  const totalClicks = filtered.reduce((s, m) => s + m.clicks, 0);
 
   const typeLabel = (t: string) => {
     if (t === 'deal_sourcer') return 'Deal Sourcer';
@@ -1720,37 +1736,88 @@ function MetricsTab() {
                 <th className="text-center px-3 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>Leads</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>NDAs</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>Claimed</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold" style={{ color: '#6B7280' }}>WhatsApp</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((m: ListerMetric & { clicks: number }) => (
-                <tr key={m.phone} style={{ borderBottom: '1px solid #F3F4F6' }} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-medium" style={{ color: '#1A1A1A' }}>{m.name || m.phone}</p>
-                    <p className="text-xs" style={{ color: '#9CA3AF' }}>{m.phone}</p>
-                  </td>
-                  <td className="text-center px-3 py-3">
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
-                      {typeLabel(m.listerType)}
-                    </span>
-                  </td>
-                  <td className="text-center px-3 py-3 font-medium" style={{ color: '#1A1A1A' }}>{m.properties}</td>
-                  <td className="text-center px-3 py-3 font-medium" style={{ color: '#1A1A1A' }}>{m.clicks}</td>
-                  <td className="text-center px-3 py-3 font-medium" style={{ color: '#1A1A1A' }}>{m.totalLeads}</td>
-                  <td className="text-center px-3 py-3">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
-                      style={{ backgroundColor: m.ndaSigned > 0 ? '#ECFDF5' : '#F3F4F6', color: m.ndaSigned > 0 ? '#1E9A80' : '#9CA3AF' }}>
-                      {m.ndaSigned}
-                    </span>
-                  </td>
-                  <td className="text-center px-3 py-3">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
-                      style={{ backgroundColor: m.claimed ? '#ECFDF5' : '#FEE2E2', color: m.claimed ? '#1E9A80' : '#DC2626' }}>
-                      {m.claimed ? 'Yes' : 'No'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map((m: ListerMetric) => {
+                const isExpanded = expandedMetric === m.phone;
+                const fmtDate = (d: string) => {
+                  const dt = new Date(d);
+                  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' ' + dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                };
+                const hasTimeline = m.clickDates.length > 0 || m.ndaDates.length > 0 || m.claimedAt;
+                return (
+                  <tr key={m.phone} style={{ borderBottom: '1px solid #F3F4F6' }} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div
+                        className={hasTimeline ? 'cursor-pointer' : ''}
+                        onClick={() => hasTimeline && setExpandedMetric(isExpanded ? null : m.phone)}
+                      >
+                        <p className="text-sm font-medium" style={{ color: '#1A1A1A' }}>
+                          {m.name || m.phone}
+                          {hasTimeline && <ChevronDown className={`w-3 h-3 inline ml-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`} style={{ color: '#9CA3AF' }} />}
+                        </p>
+                        <p className="text-xs" style={{ color: '#9CA3AF' }}>{m.phone}</p>
+                      </div>
+                      {isExpanded && (
+                        <div className="mt-2 space-y-1 text-[11px]" style={{ color: '#6B7280' }}>
+                          {m.clickDates.sort().map((d, i) => (
+                            <div key={`click-${i}`} className="flex items-center gap-1.5">
+                              <Send className="w-2.5 h-2.5" style={{ color: '#1E9A80' }} />
+                              <span>Link clicked: {fmtDate(d)}</span>
+                            </div>
+                          ))}
+                          {m.ndaDates.sort().map((d, i) => (
+                            <div key={`nda-${i}`} className="flex items-center gap-1.5">
+                              <FileCheck className="w-2.5 h-2.5" style={{ color: '#1E9A80' }} />
+                              <span>NDA signed: {fmtDate(d)}</span>
+                            </div>
+                          ))}
+                          {m.claimedAt && (
+                            <div className="flex items-center gap-1.5">
+                              <UserCheck className="w-2.5 h-2.5" style={{ color: '#1E9A80' }} />
+                              <span>Account claimed: {fmtDate(m.claimedAt)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="text-center px-3 py-3">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#F3F3EE', color: '#6B7280' }}>
+                        {typeLabel(m.listerType)}
+                      </span>
+                    </td>
+                    <td className="text-center px-3 py-3 font-medium" style={{ color: '#1A1A1A' }}>{m.properties}</td>
+                    <td className="text-center px-3 py-3 font-medium" style={{ color: '#1A1A1A' }}>{m.clicks}</td>
+                    <td className="text-center px-3 py-3 font-medium" style={{ color: '#1A1A1A' }}>{m.totalLeads}</td>
+                    <td className="text-center px-3 py-3">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+                        style={{ backgroundColor: m.ndaSigned > 0 ? '#ECFDF5' : '#F3F4F6', color: m.ndaSigned > 0 ? '#1E9A80' : '#9CA3AF' }}>
+                        {m.ndaSigned}
+                      </span>
+                    </td>
+                    <td className="text-center px-3 py-3">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+                        style={{ backgroundColor: m.claimed ? '#ECFDF5' : '#FEE2E2', color: m.claimed ? '#1E9A80' : '#DC2626' }}>
+                        {m.claimed ? 'Yes' : 'No'}
+                      </span>
+                    </td>
+                    <td className="text-center px-3 py-3">
+                      <a
+                        href={`https://wa.me/${m.phone.replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg transition-opacity hover:opacity-80"
+                        style={{ backgroundColor: '#ECFDF5' }}
+                        title={`WhatsApp ${m.name || m.phone}`}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" style={{ color: '#1E9A80' }} />
+                      </a>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

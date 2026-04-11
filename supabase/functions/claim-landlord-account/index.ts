@@ -116,6 +116,18 @@ serve(async (req) => {
         .eq('lister_phone', phone)
     }
 
+    // 5. Notify admins that a landlord claimed their account
+    try {
+      await supabaseAdmin.functions.invoke('send-email', {
+        body: {
+          type: 'account-claimed-admin',
+          data: { name, email, phone },
+        },
+      })
+    } catch (notifyErr) {
+      console.error('Failed to send admin claim notification:', notifyErr)
+    }
+
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
