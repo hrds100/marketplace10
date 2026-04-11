@@ -124,7 +124,17 @@ export default function SignUp() {
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+44');
 
+  const isFunnelSignup = searchParams.get('from') === 'funnel';
+  const funnelEmail = searchParams.get('email') || '';
+
   useEffect(() => { document.title = 'nfstay - Sign Up'; }, []);
+
+  // Pre-fill email from funnel redirect (?from=funnel&email=X)
+  useEffect(() => {
+    if (funnelEmail) {
+      setValue('email', funnelEmail);
+    }
+  }, [funnelEmail, setValue]);
 
   // Capture referral code from URL (?ref=CODE)
   useEffect(() => {
@@ -257,6 +267,33 @@ export default function SignUp() {
         }
       }
 
+      // Funnel flow — check for pending payment and apply tier
+      if (userId) {
+        try {
+          const { data: pending } = await (supabase.from('pending_payments') as any)
+            .select('id, tier')
+            .eq('email', cleanEmail)
+            .eq('claimed', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (pending) {
+            // Apply the paid tier to the profile
+            await (supabase.from('profiles') as any)
+              .update({ tier: pending.tier } as any)
+              .eq('id', userId);
+            // Mark pending payment as claimed
+            await (supabase.from('pending_payments') as any)
+              .update({ claimed: true, claimed_at: new Date().toISOString(), claimed_by: userId } as any)
+              .eq('id', pending.id);
+            console.log(`[SignUp] Funnel payment claimed: tier=${pending.tier} for ${cleanEmail}`);
+          }
+        } catch (err) {
+          console.error('[SignUp] Pending payment check failed:', err);
+        }
+      }
+
       const refCode = localStorage.getItem('nfstay_ref');
       if (refCode && userId) {
         (supabase.from('profiles') as any).update({ referred_by: refCode } as any).eq('id', userId).then(() => {}).catch(() => {});
@@ -292,8 +329,19 @@ export default function SignUp() {
 
   if (view === 'social') {
     return (
-      <AuthShell showTabs heading={t('auth.createYourAccount')} subtitle={t('auth.joinThousands')}>
+      <AuthShell showTabs heading={isFunnelSignup ? 'Payment Confirmed!' : t('auth.createYourAccount')} subtitle={isFunnelSignup ? 'Create your account to access your dashboard.' : t('auth.joinThousands')}>
         <div className="w-full flex flex-col" style={{ gap: 'clamp(9px, 1.8vh, 22px)' }}>
+
+          {/* Funnel payment confirmation banner */}
+          {isFunnelSignup && (
+            <div className="w-full rounded-xl border border-[#1E9A80] bg-[#ECFDF5] px-4 py-3 flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-[#1E9A80] mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-[#1A1A1A]">Your payment is confirmed.</p>
+                <p className="text-xs text-[#6B7280] mt-0.5">Sign up below to unlock full access to your dashboard.</p>
+              </div>
+            </div>
+          )}
 
           {/* Social 2×2 grid */}
           <div className="grid grid-cols-2 gap-2 w-full">
@@ -396,6 +444,17 @@ export default function SignUp() {
             <ArrowLeft className="w-4 h-4" /> {t('auth.back')}
           </button>
         </div>
+        {/* Funnel payment confirmation banner */}
+        {isFunnelSignup && (
+          <div className="w-full rounded-xl border border-[#1E9A80] bg-[#ECFDF5] px-4 py-3 flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-[#1E9A80] mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-[#1A1A1A]">Payment confirmed!</p>
+              <p className="text-xs text-[#6B7280] mt-0.5">Create your account below to access your dashboard.</p>
+            </div>
+          </div>
+        )}
+
         {/* Social login buttons - 2×2 grid */}
         <div className="grid grid-cols-2 gap-2 w-full">
           {PROVIDERS.map(({ id, label, icon }) => (

@@ -103,8 +103,26 @@ serve(async (req) => {
       const { data: authData } = await supabase.auth.admin.listUsers()
       const matchedUser = authData?.users?.find(u => u.email?.toLowerCase() === email)
       if (!matchedUser) {
-        console.error(`[ghl-payment-webhook] No user found for ${email}`)
-        return new Response(JSON.stringify({ error: 'User not found', email }), {
+        // No user exists yet — store as pending payment (funnel-first flow)
+        // When they sign up later, the app will check this table and apply the tier
+        if (action !== 'cancel') {
+          const pendingTier = PRODUCT_ID_TO_TIER[productId] || AMOUNT_TO_TIER[amount] || 'monthly'
+          await supabase.from('pending_payments').insert({
+            email,
+            tier: pendingTier,
+            product_id: productId || null,
+            amount: amount || 0,
+            contact_id: contactId || null,
+            first_name: firstName || null,
+            phone: phone || null,
+          })
+          console.log(`[ghl-payment-webhook] PENDING: ${email} stored as pending_payment tier=${pendingTier}`)
+          return new Response(JSON.stringify({ success: true, pending: true, email, tier: pendingTier }), {
+            status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+        console.error(`[ghl-payment-webhook] No user found for cancel action: ${email}`)
+        return new Response(JSON.stringify({ error: 'User not found for cancel', email }), {
           status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
