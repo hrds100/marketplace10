@@ -1155,15 +1155,21 @@
     }
     .payment-frame-wrapper {
       width: 100%;
-      overflow: hidden;
       border-radius: 16px;
       background: #F3F3EE;
+      overflow: hidden;
     }
     .payment-frame {
       width: 100%;
-      height: 530px;
+      height: 1000px;
       border: none;
       display: block;
+    }
+    @media (max-width: 768px) {
+      .payment-frame { height: 1100px; }
+    }
+    @media (max-width: 480px) {
+      .payment-frame { height: 1200px; }
     }
     .payment-trust {
       display: flex;
@@ -2352,45 +2358,13 @@
           id="ghl-payment-frame"
           src="https://pay.nfstay.com/order"
           class="payment-frame"
-          scrolling="no"
           allow="payment"
           title="nfstay payment"
           loading="lazy"
         ></iframe>
       </div>
 
-      <script>
-        // Scale the GHL iframe so full cart is visible without scrolling on any screen
-        (function() {
-          var wrapper = document.getElementById('payment-wrapper');
-          var frame = document.getElementById('ghl-payment-frame');
-          if (!wrapper || !frame) return;
-
-          function scaleFrame() {
-            var wrapperWidth = wrapper.offsetWidth;
-            // GHL cart is designed for ~600px wide. If screen is narrower, scale it down.
-            var iframeNativeWidth = 600;
-            var iframeNativeHeight = 530;
-
-            if (wrapperWidth < iframeNativeWidth) {
-              var scale = wrapperWidth / iframeNativeWidth;
-              frame.style.width = iframeNativeWidth + 'px';
-              frame.style.height = iframeNativeHeight + 'px';
-              frame.style.transform = 'scale(' + scale + ')';
-              frame.style.transformOrigin = 'top left';
-              wrapper.style.height = (iframeNativeHeight * scale) + 'px';
-            } else {
-              frame.style.width = '100%';
-              frame.style.height = iframeNativeHeight + 'px';
-              frame.style.transform = 'none';
-              wrapper.style.height = iframeNativeHeight + 'px';
-            }
-          }
-
-          scaleFrame();
-          window.addEventListener('resize', scaleFrame);
-        })();
-      </script>
+      <!-- iframe is full-width, tall enough for GHL cart on all screens -->
 
       <!-- GHL payment completion listener -->
       <script>
