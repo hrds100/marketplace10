@@ -15,11 +15,13 @@ const corsHeaders = {
 
 const DEFAULT_MODEL = 'gpt-4o'
 
-// Short URL for AI web search — only essential params so the AI can actually use it
-function buildAirbnbSearchUrl(city: string, checkin: string, checkout: string, bedrooms: number): string {
+// Short URL for AI web search — essential filters: bedrooms, beds, bathrooms, guests, entire home
+function buildAirbnbSearchUrl(city: string, checkin: string, checkout: string, bedrooms: number, bathrooms: number): string {
   const query = encodeURIComponent(city || 'London')
-  const adults = bedrooms || 1
-  return `https://www.airbnb.co.uk/s/${query}/homes?checkin=${checkin}&checkout=${checkout}&adults=${adults}&min_bedrooms=${bedrooms || 1}&room_types%5B%5D=Entire%20home%2Fapt`
+  const minBeds = bedrooms || 1
+  const minBath = bathrooms || 1
+  const adults = minBeds // 1 guest per bedroom
+  return `https://www.airbnb.co.uk/s/${query}/homes?checkin=${checkin}&checkout=${checkout}&adults=${adults}&min_bedrooms=${minBeds}&min_beds=${minBeds}&min_bathrooms=${minBath}&room_types%5B%5D=Entire%20home%2Fapt`
 }
 
 // Full URL for human verification links — all filters including bathrooms, beds, monthly params
@@ -66,9 +68,9 @@ serve(async (req) => {
     const monthlyEnd = getFirstOfMonth(120)
 
     // Short URLs for AI to search (simpler = more reliable)
-    const ai_url_30d = buildAirbnbSearchUrl(city, checkin30, checkout30, minBeds)
-    const ai_url_60d = buildAirbnbSearchUrl(city, checkin60, checkout60, minBeds)
-    const ai_url_90d = buildAirbnbSearchUrl(city, checkin90, checkout90, minBeds)
+    const ai_url_30d = buildAirbnbSearchUrl(city, checkin30, checkout30, minBeds, minBath)
+    const ai_url_60d = buildAirbnbSearchUrl(city, checkin60, checkout60, minBeds, minBath)
+    const ai_url_90d = buildAirbnbSearchUrl(city, checkin90, checkout90, minBeds, minBath)
 
     // Full URLs saved to DB for Hugo to verify manually
     const airbnb_url_30d = buildAirbnbFullUrl(city, checkin30, checkout30, minBeds, minBath, monthlyStart, monthlyEnd)
@@ -77,23 +79,28 @@ serve(async (req) => {
 
     const systemPrompt = `You are an Airbnb pricing analyst. You ONLY use Airbnb. No other platform.
 
-Find real Airbnb prices for a ${minBeds}-bedroom ${type || 'house'} in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}.
+Find real Airbnb prices for:
+- Property: ${type || 'house'} in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}
+- Bedrooms: ${minBeds}
+- Beds: ${minBeds}
+- Bathrooms: ${minBath}
+- Guests: ${minBeds} (1 per bedroom)
 
 Airbnb is public. No login needed.
 
-SEARCH AIRBNB — use these URLs:
+SEARCH AIRBNB — use these URLs (filtered by ${minBeds} bedrooms, ${minBeds} beds, ${minBath} bathrooms, ${minBeds} guests, entire home):
 ${ai_url_30d}
 ${ai_url_60d}
 ${ai_url_90d}
 
-If a URL doesn't work, search Google for: airbnb.co.uk ${city} ${minBeds} bedroom entire home
+If a URL doesn't work, search Google for: airbnb.co.uk ${city} ${minBeds} bedroom ${minBath} bathroom entire home
 
 Airbnb always shows results — the area is large enough. Keep trying until you find listings.
 
 COLLECT from each listing:
 - Listing name
 - Total price for 7 nights
-- Number of bedrooms
+- Number of bedrooms and bathrooms
 
 Find at least 2-3 listings. Divide each 7-night total by 7 = nightly rate. Take the MEDIAN.
 
@@ -102,7 +109,7 @@ Monthly revenue = median nightly rate × occupancy% / 100 × 30
 RULES:
 - Airbnb ONLY
 - Entire home only (no private rooms)
-- ${minBeds}+ bedrooms
+- ${minBeds}+ bedrooms, ${minBeds}+ beds, ${minBath}+ bathrooms, ${minBeds}+ guests
 - Be conservative
 - Occupancy: 65-75% London/Greater London, 55-65% other UK
 - Do NOT guess from memory. Use prices you found right now.
