@@ -44,25 +44,30 @@
     .logo {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
       text-decoration: none;
     }
     .logo-box {
-      font-family: 'Sora', sans-serif;
-      font-weight: 700;
-      font-size: 18px;
-      color: #0A0A0A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
       border: 2px solid #0A0A0A;
-      border-radius: 6px;
-      padding: 1px 5px;
-      line-height: 1.2;
+      border-radius: 8px;
+      font-family: 'Sora', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0A0A0A;
+      line-height: 1;
     }
     .logo-text {
       font-family: 'Sora', sans-serif;
       font-weight: 400;
-      font-size: 18px;
+      font-size: 24px;
       color: #0A0A0A;
       letter-spacing: 2px;
+      line-height: 1;
     }
     .signin-link {
       font-size: 14px;
@@ -803,30 +808,53 @@
 
     /* ── Responsive ── */
     @media (max-width: 768px) {
-      .hero { padding: 110px 20px 60px; }
-      .hero h1 { font-size: 40px; letter-spacing: -1px; }
-      .hero-sub { font-size: 16px; }
-      .hero-stats { gap: 24px; }
-      .hero-stat-number { font-size: 22px; }
-      .section { padding: 60px 20px; }
-      .section-title { font-size: 28px; }
+      .hero { padding: 100px 20px 50px; }
+      .hero h1 { font-size: 36px; letter-spacing: -1px; }
+      .hero-sub { font-size: 15px; }
+      .hero-stats { gap: 20px; flex-wrap: wrap; justify-content: center; }
+      .hero-stat-number { font-size: 20px; }
+      .hero-stat-label { font-size: 11px; }
+      .section { padding: 50px 16px; }
+      .section-title { font-size: 26px; }
+      .section-subtitle { font-size: 14px; }
+      .section-narrow { padding: 0 8px; }
+      .section-wide { padding: 0 8px; }
       .features-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
       .deal-cards-grid { grid-template-columns: 1fr; gap: 16px; }
       .testimonials-grid { grid-template-columns: 1fr; gap: 16px; }
       .modules-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-      .value-stack { padding: 28px 20px; }
-      .cta-btn { font-size: 16px; padding: 16px 32px; width: 100%; }
-      .trust-row { gap: 16px; }
-      .academy-stats { gap: 20px; }
-      .pipeline-col { min-width: 200px; }
+      .value-stack { padding: 24px 16px; }
+      .cta-btn { font-size: 15px; padding: 14px 24px; width: 100%; box-sizing: border-box; }
+      .trust-row { gap: 12px; flex-wrap: wrap; justify-content: center; }
+      .academy-stats { gap: 16px; }
+      .pipeline-col { min-width: 180px; }
+      .pipeline-grid { gap: 12px; }
+      .booking-demo-layout { flex-direction: column !important; }
+      .booking-demo-controls { width: 100% !important; }
+      .booking-demo-preview { width: 100% !important; }
+      .payment-frame { min-height: 700px; }
+      .pain-grid { grid-template-columns: 1fr; }
+      .faq-question { font-size: 15px; padding: 16px; }
+      .faq-answer { font-size: 14px; padding: 0 16px 16px; }
     }
 
     @media (max-width: 480px) {
-      .hero h1 { font-size: 32px; letter-spacing: -0.8px; }
-      .hero-stats { flex-direction: column; gap: 12px; }
+      .hero { padding: 90px 16px 40px; }
+      .hero h1 { font-size: 28px; letter-spacing: -0.5px; line-height: 1.15; }
+      .hero-sub { font-size: 14px; }
+      .hero-stats { flex-direction: column; gap: 10px; }
+      .section { padding: 40px 12px; }
+      .section-title { font-size: 22px; }
       .features-grid { grid-template-columns: 1fr; }
       .modules-grid { grid-template-columns: 1fr; }
       .topbar-inner { padding: 12px 16px; }
+      .logo-box { width: 30px; height: 30px; font-size: 14px; }
+      .logo-text { font-size: 20px; }
+      .signin-link { font-size: 13px; }
+      .signin-link span { display: inline; }
+      .deal-card-img { height: 160px; }
+      .payment-frame { min-height: 600px; }
+      .value-item { font-size: 14px; padding: 10px 0; }
     }
 
     /* Academy V2 Accordion (cloned from main) */
