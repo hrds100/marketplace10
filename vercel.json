@@ -3,6 +3,26 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/:path+",
+      "has": [{ "type": "host", "value": "www.nfstay.com" }],
+      "destination": "https://hub.nfstay.com/:path",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "www.nfstay.com" }],
+      "destination": "https://nfstay.com",
+      "permanent": true
+    },
+    {
+      "source": "/:path+",
+      "has": [{ "type": "host", "value": "nfstay.com" }],
+      "destination": "https://hub.nfstay.com/:path",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
