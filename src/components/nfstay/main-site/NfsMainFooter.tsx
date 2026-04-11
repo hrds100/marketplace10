@@ -43,9 +43,9 @@ export function NfsMainFooter() {
           <div data-feature="BOOKING_NFSTAY__FOOTER_LEGAL">
             <h4 className="text-sm font-semibold text-foreground mb-3">Legal</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy policy</a></li>
-              <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms of service</a></li>
-              <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Cookie policy</a></li>
+              <li><a href="https://docs.nfstay.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy policy</a></li>
+              <li><a href="https://docs.nfstay.com/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms of service</a></li>
+              <li><a href="https://docs.nfstay.com/legal/cookies-policy" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Cookie policy</a></li>
             </ul>
           </div>
         </div>
