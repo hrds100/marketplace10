@@ -78,6 +78,11 @@ export default function AdminNotifications() {
   const [broadcastHistory, setBroadcastHistory] = useState<BroadcastRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [expandedBroadcast, setExpandedBroadcast] = useState<number | null>(null);
+  const [userFilter, setUserFilter] = useState<'all' | 'jv'>('all');
+  const [jvInvestorIds, setJvInvestorIds] = useState<Set<string>>(new Set());
+  const [jvProperties, setJvProperties] = useState<Array<{ id: number; title: string }>>([]);
+  const [jvPropertyFilter, setJvPropertyFilter] = useState<string>('all');
+  const [jvOrdersByProperty, setJvOrdersByProperty] = useState<Map<number, Set<string>>>(new Map());
 
   // ── Fetch notifications (inbox) ──
   const fetchNotifications = useCallback(async () => {
@@ -106,6 +111,27 @@ export default function AdminNotifications() {
       .not('email', 'is', null)
       .order('name', { ascending: true });
     if (data) setAllUsers(data.filter((u: UserProfile) => u.email && !u.email.endsWith('@nfstay.internal')));
+
+    // Fetch JV investor data
+    const { data: orders } = await (supabase.from('inv_orders') as any)
+      .select('user_id, property_id');
+    if (orders) {
+      const investorIds = new Set<string>();
+      const byProperty = new Map<number, Set<string>>();
+      for (const o of orders as Array<{ user_id: string; property_id: number }>) {
+        investorIds.add(o.user_id);
+        if (!byProperty.has(o.property_id)) byProperty.set(o.property_id, new Set());
+        byProperty.get(o.property_id)!.add(o.user_id);
+      }
+      setJvInvestorIds(investorIds);
+      setJvOrdersByProperty(byProperty);
+    }
+
+    const { data: props } = await (supabase.from('inv_properties') as any)
+      .select('id, title')
+      .order('title', { ascending: true });
+    if (props) setJvProperties(props as Array<{ id: number; title: string }>);
+
     setUsersLoading(false);
   }, [allUsers.length]);
 
@@ -140,15 +166,32 @@ export default function AdminNotifications() {
     }
   }, [activeTab, fetchUsers, fetchHistory]);
 
-  // ── Filtered users by search ──
+  // ── Filtered users by search + JV filter ──
   const filteredUsers = useMemo(() => {
-    if (!userSearch.trim()) return allUsers;
-    const q = userSearch.toLowerCase();
-    return allUsers.filter(u =>
-      (u.name || '').toLowerCase().includes(q) ||
-      (u.email || '').toLowerCase().includes(q)
-    );
-  }, [allUsers, userSearch]);
+    let list = allUsers;
+
+    // Apply JV filter
+    if (userFilter === 'jv') {
+      if (jvPropertyFilter === 'all') {
+        list = list.filter(u => jvInvestorIds.has(u.id));
+      } else {
+        const propId = Number(jvPropertyFilter);
+        const propInvestors = jvOrdersByProperty.get(propId) || new Set();
+        list = list.filter(u => propInvestors.has(u.id));
+      }
+    }
+
+    // Apply search
+    if (userSearch.trim()) {
+      const q = userSearch.toLowerCase();
+      list = list.filter(u =>
+        (u.name || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [allUsers, userSearch, userFilter, jvPropertyFilter, jvInvestorIds, jvOrdersByProperty]);
 
   // ── Inbox actions ──
   const markRead = async (id: string) => {
@@ -203,19 +246,15 @@ export default function AdminNotifications() {
     if (selectedUserIds.size === 0) { toast.error('Select at least one user'); return; }
     setSending(true);
     try {
-      // Build body with optional button
-      let fullBody = sendForm.body.trim() || null;
-      if (showButton && sendForm.buttonLabel.trim() && sendForm.buttonUrl.trim()) {
-        const buttonText = `\n\n[${sendForm.buttonLabel.trim()}](${sendForm.buttonUrl.trim()})`;
-        fullBody = (fullBody || '') + buttonText;
-      }
+      // Bell notification body = message only (no button markup)
+      const bellBody = sendForm.body.trim() || null;
 
       // Insert one notification per selected user
       const rows = Array.from(selectedUserIds).map(uid => ({
         user_id: uid,
         type: 'admin_broadcast',
         title: sendForm.title.trim(),
-        body: fullBody,
+        body: bellBody,
       }));
 
       // Insert in batches of 50
@@ -225,13 +264,18 @@ export default function AdminNotifications() {
         if (error) throw error;
       }
 
-      // Optionally send email
+      // Optionally send email — pass custom button label + URL
       if (sendForm.sendEmail) {
+        const emailData: Record<string, string> = {
+          title: sendForm.title.trim(),
+          body: sendForm.body.trim(),
+        };
+        if (showButton && sendForm.buttonLabel.trim() && sendForm.buttonUrl.trim()) {
+          emailData.buttonLabel = sendForm.buttonLabel.trim();
+          emailData.buttonUrl = sendForm.buttonUrl.trim();
+        }
         await supabase.functions.invoke('send-email', {
-          body: {
-            type: 'admin-broadcast',
-            data: { title: sendForm.title.trim(), body: sendForm.body.trim() },
-          },
+          body: { type: 'admin-broadcast', data: emailData },
         }).catch(() => {});
       }
 
@@ -265,10 +309,22 @@ export default function AdminNotifications() {
   };
 
   const selectAllUsers = () => {
-    if (selectedUserIds.size === allUsers.length) {
-      setSelectedUserIds(new Set());
+    const visibleIds = filteredUsers.map(u => u.id);
+    const allSelected = visibleIds.every(id => selectedUserIds.has(id));
+    if (allSelected) {
+      // Deselect visible
+      setSelectedUserIds(prev => {
+        const next = new Set(prev);
+        for (const id of visibleIds) next.delete(id);
+        return next;
+      });
     } else {
-      setSelectedUserIds(new Set(allUsers.map(u => u.id)));
+      // Select visible
+      setSelectedUserIds(prev => {
+        const next = new Set(prev);
+        for (const id of visibleIds) next.add(id);
+        return next;
+      });
     }
   };
 
@@ -452,18 +508,57 @@ export default function AdminNotifications() {
                 <label className="text-xs font-semibold" style={{ color: '#525252' }}>Recipients *</label>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium" style={{ color: '#1E9A80' }}>
-                    {selectedUserIds.size} of {allUsers.length} selected
+                    {selectedUserIds.size} selected
                   </span>
                   <button
                     onClick={selectAllUsers}
                     className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-all"
-                    style={selectedUserIds.size === allUsers.length
+                    style={filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.has(u.id))
                       ? { backgroundColor: '#1E9A80', color: '#FFFFFF' }
                       : { backgroundColor: '#ECFDF5', color: '#1E9A80' }}
                   >
-                    {selectedUserIds.size === allUsers.length ? 'Deselect All' : 'Select All'}
+                    {filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.has(u.id)) ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
+              </div>
+
+              {/* Filter: All Users / JV Investors */}
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex gap-1 p-0.5 rounded-lg" style={{ backgroundColor: '#F3F3EE' }}>
+                  <button
+                    onClick={() => { setUserFilter('all'); setJvPropertyFilter('all'); }}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+                    style={userFilter === 'all'
+                      ? { backgroundColor: '#FFFFFF', color: '#1A1A1A', boxShadow: 'rgba(0,0,0,0.06) 0 1px 2px' }
+                      : { color: '#6B7280' }}
+                  >
+                    All Users ({allUsers.length})
+                  </button>
+                  <button
+                    onClick={() => setUserFilter('jv')}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+                    style={userFilter === 'jv'
+                      ? { backgroundColor: '#FFFFFF', color: '#1A1A1A', boxShadow: 'rgba(0,0,0,0.06) 0 1px 2px' }
+                      : { color: '#6B7280' }}
+                  >
+                    JV Investors ({jvInvestorIds.size})
+                  </button>
+                </div>
+                {userFilter === 'jv' && jvProperties.length > 0 && (
+                  <select
+                    value={jvPropertyFilter}
+                    onChange={e => setJvPropertyFilter(e.target.value)}
+                    className="h-8 rounded-lg border px-2 text-xs font-medium"
+                    style={{ borderColor: '#E5E5E5', color: '#1A1A1A' }}
+                  >
+                    <option value="all">All JV Properties</option>
+                    {jvProperties.map(p => (
+                      <option key={p.id} value={String(p.id)}>
+                        {p.title} ({jvOrdersByProperty.get(p.id)?.size || 0})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Search */}

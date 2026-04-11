@@ -99,6 +99,7 @@ function layout(title: string, body: string): string {
     </div>
     <div style="text-align:center;padding:24px 0;font-size:12px;color:#9ca3af;">
       nfstay &middot; <a href="${BASE_URL}" style="color:${BRAND.color};text-decoration:none;">hub.nfstay.com</a>
+      <br/><a href="${BASE_URL}/dashboard/settings" style="color:#9ca3af;text-decoration:underline;font-size:11px;">Unsubscribe</a>
     </div>
   </div>
 </body>
@@ -504,11 +505,13 @@ serve(async (req) => {
         .filter((e: string | null): e is string => !!e && e.includes('@'));
 
       const subject = String(data.title || 'nfstay update');
+      const customLabel = data.buttonLabel ? String(data.buttonLabel) : 'Go to Dashboard →';
+      const customUrl = data.buttonUrl ? String(data.buttonUrl) : `${BASE_URL}/dashboard/deals`;
       const html = layout(subject, `
         <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
           ${String(data.body || 'You have a new notification from nfstay.')}
         </p>
-        ${btn('Go to Dashboard →', `${BASE_URL}/dashboard/deals`)}
+        ${btn(customLabel, customUrl)}
       `);
 
       // Send in batches of 45 via BCC (Resend limit is 50 per call)
