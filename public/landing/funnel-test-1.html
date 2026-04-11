@@ -19,6 +19,8 @@
       color: #1A1A1A;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      width: 100%;
     }
 
     /* ── Top bar ── */
@@ -806,55 +808,131 @@
       margin: 0 auto;
     }
 
-    /* ── Responsive ── */
-    @media (max-width: 768px) {
-      .hero { padding: 100px 20px 50px; }
-      .hero h1 { font-size: 36px; letter-spacing: -1px; }
-      .hero-sub { font-size: 15px; }
-      .hero-stats { gap: 20px; flex-wrap: wrap; justify-content: center; }
-      .hero-stat-number { font-size: 20px; }
-      .hero-stat-label { font-size: 11px; }
-      .section { padding: 50px 16px; }
-      .section-title { font-size: 26px; }
-      .section-subtitle { font-size: 14px; }
-      .section-narrow { padding: 0 8px; }
-      .section-wide { padding: 0 8px; }
-      .features-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-      .deal-cards-grid { grid-template-columns: 1fr; gap: 16px; }
-      .testimonials-grid { grid-template-columns: 1fr; gap: 16px; }
-      .modules-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-      .value-stack { padding: 24px 16px; }
-      .cta-btn { font-size: 15px; padding: 14px 24px; width: 100%; box-sizing: border-box; }
-      .trust-row { gap: 12px; flex-wrap: wrap; justify-content: center; }
-      .academy-stats { gap: 16px; }
-      .pipeline-col { min-width: 180px; }
-      .pipeline-grid { gap: 12px; }
-      .booking-demo-layout { flex-direction: column !important; }
-      .booking-demo-controls { width: 100% !important; }
-      .booking-demo-preview { width: 100% !important; }
-      .payment-frame { min-height: 700px; }
-      .pain-grid { grid-template-columns: 1fr; }
-      .faq-question { font-size: 15px; padding: 16px; }
-      .faq-answer { font-size: 14px; padding: 0 16px 16px; }
+    /* ── Responsive: Tablet (max 991px) ── */
+    @media (max-width: 991px) {
+      .deal-cards-grid { grid-template-columns: repeat(2, 1fr); }
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
+    /* ── Responsive: Mobile (max 768px) ── */
+    @media (max-width: 768px) {
+      /* Hero */
+      .hero { padding: 100px 16px 48px; }
+      .hero h1 { font-size: 32px; letter-spacing: -0.8px; line-height: 1.12; }
+      .hero-inner { padding: 0; }
+      .hero-sub { font-size: 15px; margin-bottom: 28px; }
+      .hero-stats { gap: 16px; flex-wrap: wrap; justify-content: center; }
+      .hero-stat-number { font-size: 20px; }
+      .hero-stat-label { font-size: 11px; }
+
+      /* Sections */
+      .section { padding: 48px 16px; }
+      .section-narrow { max-width: 100%; padding: 0; }
+      .section-wide { max-width: 100%; padding: 0; }
+      .section-title { font-size: 24px; line-height: 1.2; }
+      .section-subtitle { font-size: 14px; margin-bottom: 24px; }
+
+      /* CTA buttons */
+      .cta-btn { font-size: 15px; padding: 14px 24px; width: 100%; box-sizing: border-box; display: block; }
+      .cta-sub { font-size: 12px; }
+
+      /* Problem */
+      .problem-card { padding: 20px; }
+      .pain-text { font-size: 14px; }
+      .transition-text { font-size: 20px; }
+
+      /* Deal cards */
+      .deal-cards-grid { grid-template-columns: 1fr; gap: 16px; }
+      .deal-card-img { height: 180px; }
+      .deal-card-body { padding: 16px; }
+      .deal-card-stats { gap: 16px; }
+
+      /* Pipeline */
+      .pipeline-scroll { gap: 12px; padding-bottom: 12px; }
+      .pipeline-col { min-width: 200px; flex-shrink: 0; }
+
+      /* Features */
+      .features-grid { grid-template-columns: 1fr; gap: 12px; }
+      .feature-item { padding: 16px; }
+
+      /* Academy modules */
+      .modules-grid { grid-template-columns: 1fr; gap: 12px; }
+      .module-card { padding: 18px; }
+
+      /* Booking demo — inline styles need !important */
+      .booking-demo-layout { flex-direction: column !important; gap: 24px !important; }
+      .booking-demo-controls { width: 100% !important; flex: none !important; }
+      .booking-demo-preview { width: 100% !important; flex: none !important; }
+
+      /* Testimonials */
+      .testimonials-grid { grid-template-columns: 1fr; gap: 14px; }
+      .testimonial-card { padding: 20px; }
+
+      /* Value stack */
+      .value-stack { padding: 24px 16px; max-width: 100%; }
+      .value-label { font-size: 13px; }
+      .value-price { font-size: 13px; }
+      .your-price-amount { font-size: 28px; }
+
+      /* FAQ */
+      .faq-item { padding: 16px; }
+      .faq-question { font-size: 14px; }
+      .faq-answer { font-size: 13px; }
+
+      /* Payment */
+      .payment-frame { min-height: 700px; border-radius: 12px; }
+      .payment-trust { gap: 12px; }
+
+      /* Trust */
+      .trust-row { gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+      /* Academy stats */
+      .academy-stats { gap: 12px; flex-wrap: wrap; }
+      .academy-stat-number { font-size: 22px; }
+
+      /* Urgency */
+      .urgency-text { font-size: 17px; }
+
+      /* Footer */
+      .footer { padding: 32px 16px 24px; }
+      .footer-disclaimer { font-size: 10px; }
+    }
+
+    /* ── Responsive: Small phone (max 480px) ── */
     @media (max-width: 480px) {
-      .hero { padding: 90px 16px 40px; }
-      .hero h1 { font-size: 28px; letter-spacing: -0.5px; line-height: 1.15; }
+      .hero { padding: 84px 14px 36px; }
+      .hero h1 { font-size: 26px; letter-spacing: -0.3px; }
       .hero-sub { font-size: 14px; }
-      .hero-stats { flex-direction: column; gap: 10px; }
-      .section { padding: 40px 12px; }
-      .section-title { font-size: 22px; }
-      .features-grid { grid-template-columns: 1fr; }
-      .modules-grid { grid-template-columns: 1fr; }
-      .topbar-inner { padding: 12px 16px; }
-      .logo-box { width: 30px; height: 30px; font-size: 14px; }
-      .logo-text { font-size: 20px; }
-      .signin-link { font-size: 13px; }
-      .signin-link span { display: inline; }
+      .hero-stats { flex-direction: column; gap: 8px; align-items: center; }
+
+      .section { padding: 36px 12px; }
+      .section-title { font-size: 20px; }
+
+      .topbar-inner { padding: 10px 14px; }
+      .logo-box { width: 28px; height: 28px; font-size: 13px; border-radius: 6px; }
+      .logo-text { font-size: 18px; letter-spacing: 1.5px; }
+      .signin-link { font-size: 12px; }
+
       .deal-card-img { height: 160px; }
-      .payment-frame { min-height: 600px; }
-      .value-item { font-size: 14px; padding: 10px 0; }
+      .deal-card-name { font-size: 15px; }
+
+      .pipeline-col { min-width: 170px; }
+
+      .cta-btn { font-size: 14px; padding: 13px 20px; }
+
+      .payment-frame { min-height: 550px; }
+
+      .value-item { padding: 10px 0; }
+      .value-label { font-size: 12px; }
+      .value-price { font-size: 12px; }
+      .your-price-amount { font-size: 24px; }
+
+      .problem-card { padding: 16px; }
+
+      .booking-mockup { max-width: 100%; }
+
+      .transition-text { font-size: 18px; }
     }
 
     /* Academy V2 Accordion (cloned from main) */
@@ -921,8 +999,9 @@
       .accv2-item.active { width: 260px; }
     }
     @media (max-width: 480px) {
-      .accv2-item { height: 340px; }
-      .accv2-item.active { width: 220px; }
+      .accv2-item { height: 300px; }
+      .accv2-item.active { width: 200px; }
+      #accV2 { gap: 6px !important; overflow-x: auto; justify-content: flex-start !important; }
     }
 
     /* Booking Site Builder Demo (cloned from main) */
@@ -930,7 +1009,7 @@
     .booking-demo-wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
     .booking-demo-layout { display: flex; gap: 28px; align-items: flex-start; }
     .booking-demo-controls { width: 300px; flex-shrink: 0; }
-    .booking-demo-preview { flex: 1; }
+    .booking-demo-preview { flex: 1; min-width: 0; }
     .booking-controls-card {
       background: #fff; border: 1px solid rgba(0,0,0,0.06);
       border-radius: 20px; padding: 28px; box-shadow: 0 4px 24px rgba(0,0,0,0.04);
@@ -982,6 +1061,14 @@
     @media (max-width: 991px) {
       .booking-demo-layout { flex-direction: column; }
       .booking-demo-controls { width: 100%; }
+    }
+    @media (max-width: 768px) {
+      .booking-demo-section { padding: 48px 0; }
+      .booking-demo-wrap { padding: 0 16px; }
+    }
+    @media (max-width: 480px) {
+      .booking-demo-section { padding: 36px 0; }
+      .booking-demo-wrap { padding: 0 12px; }
     }
   </style>
 </head>
