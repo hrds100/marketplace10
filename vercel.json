@@ -71,6 +71,10 @@
       "destination": "/app.html"
     },
     {
+      "source": "/deals/:slug",
+      "destination": "/api/deals/:slug"
+    },
+    {
       "source": "/deals/:path*",
       "destination": "/app.html"
     },
