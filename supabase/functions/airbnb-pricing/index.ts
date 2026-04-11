@@ -15,22 +15,24 @@ const corsHeaders = {
 
 const DEFAULT_MODEL = 'gpt-4o'
 
-// Short URL for AI web search — essential filters: bedrooms, beds, bathrooms, guests, entire home
+// Short URL for AI web search — bedrooms, beds, guests always set; bathrooms when available
 function buildAirbnbSearchUrl(city: string, checkin: string, checkout: string, bedrooms: number, bathrooms: number): string {
   const query = encodeURIComponent(city || 'London')
   const minBeds = bedrooms || 1
-  const minBath = bathrooms || 1
-  const adults = minBeds // 1 guest per bedroom
-  return `https://www.airbnb.co.uk/s/${query}/homes?checkin=${checkin}&checkout=${checkout}&adults=${adults}&min_bedrooms=${minBeds}&min_beds=${minBeds}&min_bathrooms=${minBath}&room_types%5B%5D=Entire%20home%2Fapt`
+  const adults = minBeds // 1 guest per bedroom — mandatory
+  let url = `https://www.airbnb.co.uk/s/${query}/homes?checkin=${checkin}&checkout=${checkout}&adults=${adults}&min_bedrooms=${minBeds}&min_beds=${minBeds}&room_types%5B%5D=Entire%20home%2Fapt`
+  if (bathrooms && bathrooms > 0) url += `&min_bathrooms=${bathrooms}`
+  return url
 }
 
-// Full URL for human verification links — all filters including bathrooms, beds, monthly params
+// Full URL for human verification — all filters; bathrooms only when available
 function buildAirbnbFullUrl(city: string, checkin: string, checkout: string, bedrooms: number, bathrooms: number, monthlyStart: string, monthlyEnd: string): string {
   const query = encodeURIComponent(city || 'London')
   const minBeds = bedrooms || 1
-  const minBath = bathrooms || 1
   const adults = minBeds
-  return `https://www.airbnb.co.uk/s/${query}/homes?refinement_paths%5B%5D=%2Fhomes&date_picker_type=calendar&checkin=${checkin}&checkout=${checkout}&search_type=filter_change&query=${query}&flexible_trip_lengths%5B%5D=one_week&monthly_start_date=${monthlyStart}&monthly_length=3&monthly_end_date=${monthlyEnd}&search_mode=regular_search&price_filter_input_type=1&price_filter_num_nights=7&channel=EXPLORE&min_bedrooms=${minBeds}&min_beds=${minBeds}&min_bathrooms=${minBath}&room_types%5B%5D=Entire%20home%2Fapt&adults=${adults}`
+  let url = `https://www.airbnb.co.uk/s/${query}/homes?refinement_paths%5B%5D=%2Fhomes&date_picker_type=calendar&checkin=${checkin}&checkout=${checkout}&search_type=filter_change&query=${query}&flexible_trip_lengths%5B%5D=one_week&monthly_start_date=${monthlyStart}&monthly_length=3&monthly_end_date=${monthlyEnd}&search_mode=regular_search&price_filter_input_type=1&price_filter_num_nights=7&channel=EXPLORE&min_bedrooms=${minBeds}&min_beds=${minBeds}&room_types%5B%5D=Entire%20home%2Fapt&adults=${adults}`
+  if (bathrooms && bathrooms > 0) url += `&min_bathrooms=${bathrooms}`
+  return url
 }
 
 serve(async (req) => {
@@ -81,14 +83,13 @@ serve(async (req) => {
 
 Find real Airbnb prices for:
 - Property: ${type || 'house'} in ${city || 'the given area'}${postcode ? ` (${postcode})` : ''}
-- Bedrooms: ${minBeds}
-- Beds: ${minBeds}
-- Bathrooms: ${minBath}
-- Guests: ${minBeds} (1 per bedroom)
+- Bedrooms: ${minBeds} (MANDATORY)
+- Beds: ${minBeds} (MANDATORY — 1 bed per room)
+- Guests: ${minBeds} (MANDATORY — 1 guest per bedroom)${bathrooms && bathrooms > 0 ? `\n- Bathrooms: ${bathrooms} (MANDATORY)` : ''}
 
 Airbnb is public. No login needed.
 
-SEARCH AIRBNB — use these URLs (filtered by ${minBeds} bedrooms, ${minBeds} beds, ${minBath} bathrooms, ${minBeds} guests, entire home):
+SEARCH AIRBNB — use these URLs (filtered by ${minBeds} bedrooms, ${minBeds} beds, ${minBeds} guests${bathrooms && bathrooms > 0 ? `, ${bathrooms} bathrooms` : ''}, entire home):
 ${ai_url_30d}
 ${ai_url_60d}
 ${ai_url_90d}
@@ -109,7 +110,7 @@ Monthly revenue = median nightly rate × occupancy% / 100 × 30
 RULES:
 - Airbnb ONLY
 - Entire home only (no private rooms)
-- ${minBeds}+ bedrooms, ${minBeds}+ beds, ${minBath}+ bathrooms, ${minBeds}+ guests
+- MANDATORY filters: ${minBeds}+ bedrooms, ${minBeds}+ beds, ${minBeds}+ guests${bathrooms && bathrooms > 0 ? `, ${bathrooms}+ bathrooms` : ''}
 - Be conservative
 - Occupancy: 65-75% London/Greater London, 55-65% other UK
 - Do NOT guess from memory. Use prices you found right now.
