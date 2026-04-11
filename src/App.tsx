@@ -43,6 +43,7 @@ import AdminDeals from "@/features/admin-deals/AdminDeals";
 import AdminOutreach from "@/features/admin-gate/AdminOutreach";
 import AdminSettings from "@/features/admin-settings/AdminSettings";
 import AdminNotifications from "@/features/admin-notifications/AdminNotifications";
+import AdminGrowth from "@/features/admin-growth/AdminGrowth";
 import AdminUniversity from "@/features/admin-university/AdminUniversity";
 import AdminInvestDashboard from "./pages/admin/invest/AdminInvestDashboard";
 import AdminInvestProperties from "./pages/admin/invest/AdminInvestProperties";
@@ -210,6 +211,7 @@ const App = () => (
             <Route path="marketplace/deal-sourcers" element={<Navigate to="/admin/marketplace/deals" replace />} />
             <Route path="marketplace/settings" element={<AdminSettings />} />
             <Route path="marketplace/notifications" element={<AdminNotifications />} />
+            <Route path="marketplace/growth" element={<AdminGrowth />} />
 
             {/* Legacy routes (without /marketplace/) -- keep working */}
             <Route path="dashboard" element={<AdminDashboard />} />
@@ -225,6 +227,7 @@ const App = () => (
             <Route path="affiliates" element={<AdminAffiliates />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="notifications" element={<AdminNotifications />} />
+            <Route path="growth" element={<AdminGrowth />} />
 
             {/* JV Partners workspace */}
             <Route path="invest" element={<AdminInvestDashboard />} />

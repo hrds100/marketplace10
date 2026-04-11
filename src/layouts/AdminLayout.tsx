@@ -24,6 +24,7 @@ const marketplaceLinks = [
   { to: '/admin/marketplace/affiliates', label: 'Affiliates', icon: UserCheck },
   { to: '/admin/marketplace/settings', label: 'Settings', icon: Settings },
   { to: '/admin/marketplace/whatsapp-scraper', label: 'Deal Scanner', icon: MessageSquare },
+  { to: '/admin/marketplace/growth', label: 'Growth', icon: BarChart3 },
 ];
 
 const investLinks = [
