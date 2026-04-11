@@ -222,7 +222,7 @@ export default function NfsCheckoutPage() {
                 />
                 <span className="text-sm text-muted-foreground">
                   I agree to the{' '}
-                  <a href="/terms" target="_blank" className="underline text-foreground">Terms & Conditions</a>
+                  <a href="https://docs.nfstay.com/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="underline text-foreground">Terms & Conditions</a>
                   {' '}and confirm I have read the house rules.
                 </span>
               </label>

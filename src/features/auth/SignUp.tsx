@@ -316,9 +316,9 @@ export default function SignUp() {
 
           <p data-feature="AUTH__TERMS_NOTICE" className="text-[11px] text-muted-foreground text-center mt-4">
             {t('auth.termsNotice')}{' '}
-            <a href="/terms" className="text-primary underline">{t('auth.termsAndConditions')}</a>{' '}
+            <a href="https://docs.nfstay.com/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="text-primary underline">{t('auth.termsAndConditions')}</a>{' '}
             and{' '}
-            <a href="/privacy" className="text-primary underline">{t('auth.privacyPolicy')}</a>.
+            <a href="https://docs.nfstay.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline">{t('auth.privacyPolicy')}</a>.
           </p>
         </div>
       </AuthShell>
@@ -365,8 +365,8 @@ export default function SignUp() {
 
           <p className="text-xs text-[#737373] text-center mt-2">
             {t('auth.termsNotice')}{' '}
-            <Link to="/terms" className="text-[#1e9a80] font-semibold underline" target="_blank">{t('auth.termsAndConditions')}</Link> and{' '}
-            <Link to="/privacy" className="text-[#1e9a80] font-semibold underline" target="_blank">{t('auth.privacyPolicy')}</Link>.
+            <a href="https://docs.nfstay.com/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="text-[#1e9a80] font-semibold underline">{t('auth.termsAndConditions')}</a> and{' '}
+            <a href="https://docs.nfstay.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#1e9a80] font-semibold underline">{t('auth.privacyPolicy')}</a>.
           </p>
         </div>
       </AuthShell>
@@ -492,9 +492,9 @@ export default function SignUp() {
               className="mt-0.5 appearance-none w-5 h-5 border border-[#e5e5e5] rounded cursor-pointer transition-all duration-150 checked:bg-[#1e9a80] checked:border-[#1e9a80] bg-white shrink-0" />
             <span className="text-xs text-[#737373] leading-relaxed">
               {t('auth.iAgreeToThe')}{' '}
-              <Link to="/terms" className="text-[#1e9a80] font-semibold underline" target="_blank">{t('auth.termsOfService')}</Link>
+              <a href="https://docs.nfstay.com/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="text-[#1e9a80] font-semibold underline">{t('auth.termsOfService')}</a>
               {' '}and{' '}
-              <Link to="/privacy" className="text-[#1e9a80] font-semibold underline" target="_blank">{t('auth.privacyPolicy')}</Link>
+              <a href="https://docs.nfstay.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#1e9a80] font-semibold underline">{t('auth.privacyPolicy')}</a>
               {' '}<span className="text-red-500">*</span>
             </span>
           </label>
@@ -525,9 +525,9 @@ export default function SignUp() {
 
         <p data-feature="AUTH__TERMS_NOTICE" className="text-[11px] text-muted-foreground text-center mt-4">
           {t('auth.termsNotice')}{' '}
-          <a href="/terms" className="text-primary underline">{t('auth.termsAndConditions')}</a>{' '}
+          <a href="https://docs.nfstay.com/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="text-primary underline">{t('auth.termsAndConditions')}</a>{' '}
           and{' '}
-          <a href="/privacy" className="text-primary underline">{t('auth.privacyPolicy')}</a>.
+          <a href="https://docs.nfstay.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline">{t('auth.privacyPolicy')}</a>.
         </p>
       </div>
     </AuthShell>

@@ -259,9 +259,9 @@ export default function SignIn() {
 
               <p data-feature="AUTH__TERMS_NOTICE" className="text-[11px] text-muted-foreground text-center mt-4">
                 {t('auth.termsNotice')}{' '}
-                <a href="/terms" className="text-primary underline">{t('auth.termsAndConditions')}</a>{' '}
+                <a href="https://docs.nfstay.com/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="text-primary underline">{t('auth.termsAndConditions')}</a>{' '}
                 {t('common.and')}{' '}
-                <a href="/privacy" className="text-primary underline">{t('auth.privacyPolicy')}</a>.
+                <a href="https://docs.nfstay.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline">{t('auth.privacyPolicy')}</a>.
               </p>
             </div>
           </div>
