@@ -85,6 +85,7 @@
     .section-narrow { max-width: 800px; margin: 0 auto; }
     .section-wide { max-width: 1100px; margin: 0 auto; }
     .section-white { background: #FFFFFF; border-top: 1px solid rgba(0,0,0,0.06); border-bottom: 1px solid rgba(0,0,0,0.06); }
+    .text-center { text-align: center; }
 
     .cta-btn {
       display: inline-block;
@@ -459,6 +460,14 @@
     }
 
     /* ── Academy ── */
+    .academy-section-bg {
+      background: #F3F3EE;
+    }
+    .academy-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
     .academy-stats {
       display: flex;
       justify-content: center;
@@ -532,6 +541,106 @@
     .module-bg-5 { background: linear-gradient(135deg, #EF4444, #F87171); }
     .module-bg-6 { background: linear-gradient(135deg, #0EA5E9, #38BDF8); }
 
+    /* ── Academy V2 layout (left text + right accordion) ── */
+    .accv2-layout {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 48px;
+    }
+    .accv2-left {
+      flex: 1;
+      min-width: 0;
+    }
+    .accv2-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(30,154,128,0.06);
+      padding: 8px 20px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+    .accv2-badge-emoji {
+      font-size: 20px;
+    }
+    .accv2-badge-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e9a80;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .accv2-heading {
+      text-align: left;
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1.15;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+    }
+    .accv2-desc {
+      font-size: 16px;
+      color: #6b7280;
+      line-height: 1.6;
+      max-width: 440px;
+      margin-bottom: 24px;
+    }
+    .accv2-stats-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .accv2-stat-card {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 10px;
+      padding: 8px 14px;
+    }
+    .accv2-stat-emoji {
+      font-size: 16px;
+    }
+    .accv2-stat-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+    .accv2-stat-sub {
+      font-size: 10px;
+      color: #6b7280;
+    }
+    .accv2-cta {
+      display: inline-block;
+      background: #1e9a80;
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 13px 32px;
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(30,154,128,0.35);
+      transition: background 200ms;
+      text-decoration: none;
+    }
+    .accv2-right {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 0;
+    }
+    .accv2-footer-note {
+      text-align: center;
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 32px;
+    }
+
     /* ── Booking Site ── */
     .booking-mockup {
       background: #FFFFFF;
@@ -589,6 +698,304 @@
       font-size: 14px;
       font-weight: 600;
       text-decoration: none;
+    }
+
+    /* ── Booking Demo Preview (browser chrome) ── */
+    .demo-browser-frame {
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.08);
+      background: #fff;
+    }
+    .demo-browser-chrome {
+      background: linear-gradient(180deg,#f8f9fa,#f3f4f6);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .demo-chrome-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .demo-chrome-dot-red { background: #ff5f57; }
+    .demo-chrome-dot-yellow { background: #ffbd2e; }
+    .demo-chrome-dot-green { background: #28c840; }
+    .demo-url-bar {
+      flex: 1;
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: #6b7280;
+      margin-left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .demo-site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .demo-site-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .demo-site-logo-img {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      object-fit: cover;
+      display: none;
+    }
+    .demo-site-logo-text {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .demo-site-nav {
+      display: flex;
+      gap: 20px;
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 500;
+    }
+    .demo-site-hero {
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+    }
+    .demo-site-hero-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .demo-site-hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top,rgba(0,0,0,0.7),rgba(0,0,0,0.15),transparent);
+    }
+    .demo-site-hero-content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 24px;
+    }
+    .demo-site-hero-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .demo-site-hero-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+    }
+    .demo-search-wrapper {
+      padding: 0 24px;
+      margin-top: -18px;
+      position: relative;
+      z-index: 1;
+    }
+    .demo-search-bar {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border: 1px solid #f3f4f6;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .demo-search-field {
+      flex: 1;
+    }
+    .demo-search-field-narrow {
+      flex: 0.6;
+    }
+    .demo-search-field-label {
+      font-size: 9px;
+      color: #6b7280;
+      font-weight: 500;
+      display: block;
+    }
+    .demo-search-field-value {
+      font-size: 12px;
+      color: #1a1a1a;
+    }
+    .demo-search-divider {
+      width: 1px;
+      height: 28px;
+      background: #e5e7eb;
+    }
+    .demo-search-btn {
+      padding: 8px 18px;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      background: #10b981;
+    }
+    .demo-properties-section {
+      padding: 20px 24px;
+    }
+    .demo-properties-heading {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a1a;
+      display: block;
+      margin-bottom: 12px;
+    }
+    .demo-properties-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .demo-property-card {
+      border: 1px solid #f3f4f6;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+    }
+    .demo-property-card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    .demo-property-img {
+      width: 100%;
+      height: 90px;
+      object-fit: cover;
+    }
+    .demo-property-body {
+      padding: 10px;
+    }
+    .demo-property-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1a1a1a;
+      display: block;
+    }
+    .demo-property-location {
+      font-size: 10px;
+      color: #6b7280;
+    }
+    .demo-price {
+      font-size: 12px;
+      font-weight: 700;
+      color: #10b981;
+      display: block;
+      margin-top: 4px;
+    }
+    .demo-price-per {
+      font-size: 10px;
+      font-weight: 400;
+      color: #6b7280;
+    }
+    .demo-site-footer {
+      padding: 12px 24px;
+      background: #fafafa;
+      border-top: 1px solid #f3f4f6;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .demo-site-footer-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .demo-site-footer-logo {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      object-fit: cover;
+      display: none;
+    }
+    .demo-site-footer-name {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .demo-site-footer-powered {
+      font-size: 10px;
+      color: #6b7280;
+    }
+
+    /* ── Testimonials / Social Proof Section ── */
+    .social-proof-section {
+      overflow: hidden;
+      background: #F3F3EE;
+    }
+    .social-proof-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+    .testimonials-badge-wrap {
+      display: inline-flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .testimonials-badge {
+      border: 1px solid rgba(0,0,0,0.08);
+      padding: 4px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #1a1a1a;
+    }
+    .testimonials-columns {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      max-height: 740px;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom,transparent,black 20%,black 80%,transparent);
+      mask-image: linear-gradient(to bottom,transparent,black 20%,black 80%,transparent);
+      margin-top: 32px;
+    }
+    .tvc-stars {
+      color: #1e9a80;
+      font-size: 13px;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .social-proof-cta {
+      margin-top: 32px;
+    }
+
+    /* Booking demo header badge */
+    .section-badge-flex {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .booking-demo-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    /* ── CRM CTA wrapper ── */
+    .pipeline-cta {
+      text-align: center;
+      margin-top: 32px;
+    }
+
+    /* ── FAQ section ── */
+    .faq-list {
+      text-align: left;
+    }
+    .faq-subtitle-spacer {
+      margin-bottom: 40px;
     }
 
     /* ── Testimonials ── */
@@ -808,14 +1215,70 @@
       margin: 0 auto;
     }
 
-    /* ── Responsive: Tablet (max 991px) ── */
+    /* ── Section title with top margin ── */
+    .section-title-mt { margin-top: 8px; }
+
+    /* ── Hidden file input ── */
+    .hidden-input { display: none; }
+
+    /* ── Demo color swatch (inline bg kept since dynamic) ── */
+    /* ── Demo subdomain input ── */
+    .demo-subdomain-input {
+      flex: 1;
+      height: 38px;
+      border: none;
+      padding: 0 12px;
+      font-size: 13px;
+      color: #1a1a1a;
+      outline: none;
+    }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE: Tablet (max 991px)
+       ═══════════════════════════════════════════ */
     @media (max-width: 991px) {
       .deal-cards-grid { grid-template-columns: repeat(2, 1fr); }
       .features-grid { grid-template-columns: repeat(2, 1fr); }
       .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+      .modules-grid { grid-template-columns: repeat(2, 1fr); }
+
+      /* Academy V2 layout stacks */
+      .accv2-layout {
+        flex-direction: column;
+        gap: 32px;
+      }
+      .accv2-left {
+        text-align: center;
+      }
+      .accv2-heading {
+        text-align: center;
+      }
+      .accv2-desc {
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .accv2-stats-row {
+        justify-content: center;
+      }
+      .accv2-right {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Booking demo layout stacks */
+      .booking-demo-layout { flex-direction: column; }
+      .booking-demo-controls { width: 100%; }
+
+      /* Testimonials columns */
+      .testimonials-columns { gap: 16px; }
+
+      /* Demo properties grid */
+      .demo-properties-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
-    /* ── Responsive: Mobile (max 768px) ── */
+    /* ═══════════════════════════════════════════
+       RESPONSIVE: Mobile (max 768px)
+       ═══════════════════════════════════════════ */
     @media (max-width: 768px) {
       /* Hero */
       .hero { padding: 100px 16px 48px; }
@@ -860,14 +1323,30 @@
       .modules-grid { grid-template-columns: 1fr; gap: 12px; }
       .module-card { padding: 18px; }
 
-      /* Booking demo — inline styles need !important */
-      .booking-demo-layout { flex-direction: column !important; gap: 24px !important; }
-      .booking-demo-controls { width: 100% !important; flex: none !important; }
-      .booking-demo-preview { width: 100% !important; flex: none !important; }
+      /* Academy V2 */
+      .accv2-heading { font-size: 26px; }
+      .accv2-desc { font-size: 14px; max-width: 100%; }
+      .accv2-right { overflow-x: auto; justify-content: flex-start; }
+      .accv2-cta { width: 100%; display: block; text-align: center; }
+
+      /* Booking demo */
+      .booking-demo-section { padding: 48px 0; }
+      .booking-demo-wrap { padding: 0 16px; }
+
+      /* Booking preview */
+      .demo-site-hero { height: 160px; }
+      .demo-site-hero-title { font-size: 18px; }
+      .demo-site-header { padding: 10px 16px; }
+      .demo-site-nav { gap: 12px; font-size: 11px; }
+      .demo-search-wrapper { padding: 0 16px; }
+      .demo-properties-section { padding: 16px; }
+      .demo-properties-grid { grid-template-columns: 1fr; }
+      .demo-site-footer { padding: 10px 16px; }
 
       /* Testimonials */
       .testimonials-grid { grid-template-columns: 1fr; gap: 14px; }
       .testimonial-card { padding: 20px; }
+      .testimonials-columns { gap: 12px; }
 
       /* Value stack */
       .value-stack { padding: 24px 16px; max-width: 100%; }
@@ -897,9 +1376,17 @@
       /* Footer */
       .footer { padding: 32px 16px 24px; }
       .footer-disclaimer { font-size: 10px; }
+
+      /* Social proof CTA */
+      .social-proof-cta { display: block; }
+
+      /* Academy container */
+      .academy-container { padding: 0 16px; }
     }
 
-    /* ── Responsive: Small phone (max 480px) ── */
+    /* ═══════════════════════════════════════════
+       RESPONSIVE: Small phone (max 480px)
+       ═══════════════════════════════════════════ */
     @media (max-width: 480px) {
       .hero { padding: 84px 14px 36px; }
       .hero h1 { font-size: 26px; letter-spacing: -0.3px; }
@@ -933,6 +1420,26 @@
       .booking-mockup { max-width: 100%; }
 
       .transition-text { font-size: 18px; }
+
+      /* Academy V2 */
+      .accv2-heading { font-size: 22px; }
+      .accv2-desc { font-size: 13px; }
+      .accv2-right { gap: 6px; overflow-x: auto; justify-content: flex-start; }
+      .accv2-stat-card { padding: 6px 10px; }
+
+      /* Booking demo */
+      .booking-demo-section { padding: 36px 0; }
+      .booking-demo-wrap { padding: 0 12px; }
+      .demo-browser-chrome { padding: 8px 12px; }
+      .demo-url-bar { font-size: 10px; padding: 4px 10px; margin-left: 8px; }
+      .demo-site-hero { height: 140px; }
+      .demo-site-hero-title { font-size: 16px; }
+      .demo-site-hero-sub { font-size: 11px; }
+      .demo-search-bar { padding: 8px 12px; gap: 6px; flex-wrap: wrap; }
+      .demo-search-btn { padding: 6px 12px; font-size: 11px; }
+
+      /* Academy container */
+      .academy-container { padding: 0 12px; }
     }
 
     /* Academy V2 Accordion (cloned from main) */
@@ -987,13 +1494,7 @@
     .accv2-detail-bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.2); overflow: hidden; margin-bottom: 6px; }
     .accv2-detail-fill { height: 100%; border-radius: 2px; background: #34d399; transition: width 600ms cubic-bezier(0.22,1,0.36,1); }
     .accv2-detail-status { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75); }
-    @media (max-width: 991px) {
-      #accV2Layout { flex-direction: column !important; gap: 32px !important; }
-      #accV2Layout > div:first-child { text-align: center; }
-      #accV2Layout > div:first-child h2 { text-align: center !important; }
-      #accV2Layout > div:first-child p { margin-left: auto; margin-right: auto; }
-      #accV2 { width: 100%; justify-content: center; }
-    }
+
     @media (max-width: 768px) {
       .accv2-item { height: 380px; }
       .accv2-item.active { width: 260px; }
@@ -1001,7 +1502,6 @@
     @media (max-width: 480px) {
       .accv2-item { height: 300px; }
       .accv2-item.active { width: 200px; }
-      #accV2 { gap: 6px !important; overflow-x: auto; justify-content: flex-start !important; }
     }
 
     /* Booking Site Builder Demo (cloned from main) */
@@ -1058,18 +1558,6 @@
     }
     .booking-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(30,154,128,0.3); }
     .booking-cta-sub { text-align: center; font-size: 11px; color: #6b7280; margin-top: 8px; }
-    @media (max-width: 991px) {
-      .booking-demo-layout { flex-direction: column; }
-      .booking-demo-controls { width: 100%; }
-    }
-    @media (max-width: 768px) {
-      .booking-demo-section { padding: 48px 0; }
-      .booking-demo-wrap { padding: 0 16px; }
-    }
-    @media (max-width: 480px) {
-      .booking-demo-section { padding: 36px 0; }
-      .booking-demo-wrap { padding: 0 12px; }
-    }
   </style>
 </head>
 <body>
@@ -1129,7 +1617,7 @@
   <!-- ── 3. Problem Section ── -->
   <section class="section">
     <div class="section-narrow">
-      <div style="text-align:center;">
+      <div class="text-center">
         <span class="section-badge">The Old Way</span>
         <h2 class="section-title">Still cold-calling landlords?<br>Still scrolling Rightmove for hours?</h2>
       </div>
@@ -1153,7 +1641,7 @@
 
   <!-- ── 4. Deal Cards (Browse Deals) ── -->
   <section class="section section-white">
-    <div class="section-wide" style="text-align:center;">
+    <div class="section-wide text-center">
       <span class="section-badge">Deal Marketplace</span>
       <h2 class="section-title">Browse landlord-approved deals</h2>
       <p class="section-subtitle">Every listing is verified, compliance-checked and ready to operate.</p>
@@ -1237,7 +1725,7 @@
 
   <!-- ── 5. CRM Pipeline ── -->
   <section class="section pipeline-section">
-    <div class="section-wide" style="text-align:center;">
+    <div class="section-wide text-center">
       <span class="section-badge">CRM Pipeline</span>
       <h2 class="section-title">Close faster. Miss nothing.</h2>
       <p class="section-subtitle">Track every deal from first message to signed contract.</p>
@@ -1333,7 +1821,7 @@
         </div>
       </div>
 
-      <div style="text-align:center;margin-top:32px;">
+      <div class="pipeline-cta">
         <a href="#payment" class="cta-btn">Get Your CRM £5 Trial</a>
         <span class="cta-sub">Track deals like a pro from day one.</span>
       </div>
@@ -1342,7 +1830,7 @@
 
   <!-- ── 6. Features Grid (What You Get) ── -->
   <section class="section section-white">
-    <div class="section-narrow" style="text-align:center;">
+    <div class="section-narrow text-center">
       <span class="section-badge">What You Get</span>
       <h2 class="section-title">Everything you need to land your first deal</h2>
       <p class="section-subtitle">One platform. No upsells. No hidden costs.</p>
@@ -1392,35 +1880,35 @@
   </section>
 
   <!-- ── 7. University / Academy (cloned from main page) ── -->
-  <section class="section" style="background:#F3F3EE;">
-    <div style="max-width:1200px;margin:0 auto;padding:0 24px;">
-      <div style="display:flex;flex-direction:row;align-items:center;gap:48px;" id="accV2Layout">
+  <section class="section academy-section-bg">
+    <div class="academy-container">
+      <div class="accv2-layout" id="accV2Layout">
         <!-- Left: Text Content -->
-        <div style="flex:1;min-width:0;">
-          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(30,154,128,0.06);padding:8px 20px;border-radius:10px;margin-bottom:16px;">
-            <span style="font-size:20px;">&#127891;</span>
-            <span style="font-size:13px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">nfstay Academy</span>
+        <div class="accv2-left">
+          <div class="accv2-badge">
+            <span class="accv2-badge-emoji">&#127891;</span>
+            <span class="accv2-badge-text">nfstay Academy</span>
           </div>
-          <h2 style="text-align:left;font-size:34px;font-weight:700;line-height:1.15;color:#1a1a1a;margin-bottom:16px;">Learn Rent to Serviced Accommodation.<br>Then do it.<br>In the same place.</h2>
-          <p style="font-size:16px;color:#6b7280;line-height:1.6;max-width:440px;margin-bottom:24px;">15 years of operator knowledge, structured into step-by-step modules with progress tracking.</p>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;">
-            <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:8px 14px;">
-              <span style="font-size:16px;">&#128218;</span>
-              <div><div style="font-size:12px;font-weight:700;color:#1a1a1a;">44 lessons</div><div style="font-size:10px;color:#6b7280;">6 modules</div></div>
+          <h2 class="accv2-heading">Learn Rent to Serviced Accommodation.<br>Then do it.<br>In the same place.</h2>
+          <p class="accv2-desc">15 years of operator knowledge, structured into step-by-step modules with progress tracking.</p>
+          <div class="accv2-stats-row">
+            <div class="accv2-stat-card">
+              <span class="accv2-stat-emoji">&#128218;</span>
+              <div><div class="accv2-stat-title">44 lessons</div><div class="accv2-stat-sub">6 modules</div></div>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:8px 14px;">
-              <span style="font-size:16px;">&#127891;</span>
-              <div><div style="font-size:12px;font-weight:700;color:#1a1a1a;">Beginner to Pro</div><div style="font-size:10px;color:#6b7280;">Step-by-step</div></div>
+            <div class="accv2-stat-card">
+              <span class="accv2-stat-emoji">&#127891;</span>
+              <div><div class="accv2-stat-title">Beginner to Pro</div><div class="accv2-stat-sub">Step-by-step</div></div>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:8px 14px;">
-              <span style="font-size:16px;">&#9989;</span>
-              <div><div style="font-size:12px;font-weight:700;color:#1a1a1a;">Track progress</div><div style="font-size:10px;color:#6b7280;">Resume anytime</div></div>
+            <div class="accv2-stat-card">
+              <span class="accv2-stat-emoji">&#9989;</span>
+              <div><div class="accv2-stat-title">Track progress</div><div class="accv2-stat-sub">Resume anytime</div></div>
             </div>
           </div>
-          <a href="#payment" style="display:inline-block;background:#1e9a80;color:#fff;font-weight:600;font-size:14px;padding:13px 32px;border-radius:14px;box-shadow:0 4px 16px rgba(30,154,128,0.35);transition:background 200ms;text-decoration:none;">Start Learning £5 Trial</a>
+          <a href="#payment" class="accv2-cta">Start Learning £5 Trial</a>
         </div>
         <!-- Right: Image Accordion -->
-        <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0;" id="accV2">
+        <div class="accv2-right" id="accV2">
           <div class="accv2-item active" data-idx="0">
             <div class="accv2-bg" style="background:linear-gradient(135deg,#0f766e 0%,#1e9a80 40%,#34d399 100%);"></div>
             <div class="accv2-pattern"></div>
@@ -1507,15 +1995,15 @@
           </div>
         </div>
       </div>
-      <p style="text-align:center;font-size:13px;color:#6b7280;margin-top:32px;">All modules included in your membership</p>
+      <p class="accv2-footer-note">All modules included in your membership</p>
     </div>
   </section>
 
   <!-- ── 8. Booking Site Builder Demo (cloned from main page) ── -->
   <section class="section section-white booking-demo-section">
     <div class="booking-demo-wrap">
-      <div style="text-align:center;margin-bottom:40px;">
-        <div class="section-badge" style="display:inline-flex;align-items:center;gap:6px;">
+      <div class="booking-demo-header">
+        <div class="section-badge section-badge-flex">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           White-Label Booking Site
         </div>
@@ -1544,7 +2032,7 @@
               <label id="logoUploadZone" class="booking-upload-zone booking-upload-logo">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span id="logoLabel">Upload your logo</span>
-                <input type="file" id="logoInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
+                <input type="file" id="logoInput" accept="image/*" class="hidden-input" onchange="handleLogoUpload(this)">
               </label>
             </div>
 
@@ -1554,7 +2042,7 @@
               <label class="booking-upload-zone">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <span id="bgLabel">Change background</span>
-                <input type="file" id="bgInput" accept="image/*" style="display:none;" onchange="handleBgUpload(this)">
+                <input type="file" id="bgInput" accept="image/*" class="hidden-input" onchange="handleBgUpload(this)">
               </label>
             </div>
 
@@ -1575,7 +2063,7 @@
             <div class="booking-form-group">
               <label class="booking-form-label">Site URL</label>
               <div class="booking-url-group">
-                <input type="text" id="demoSubdomain" value="luxestays" style="flex:1;height:38px;border:none;padding:0 12px;font-size:13px;color:#1a1a1a;outline:none;" readonly>
+                <input type="text" id="demoSubdomain" value="luxestays" class="demo-subdomain-input" readonly>
                 <span class="booking-url-suffix">.nfstay.app</span>
               </div>
             </div>
@@ -1587,77 +2075,77 @@
 
         <!-- Live Preview -->
         <div class="booking-demo-preview">
-          <div style="border:1px solid rgba(0,0,0,0.06);border-radius:16px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,0.08);background:#fff;">
+          <div class="demo-browser-frame">
             <!-- Browser chrome -->
-            <div style="background:linear-gradient(180deg,#f8f9fa,#f3f4f6);border-bottom:1px solid rgba(0,0,0,0.06);padding:12px 16px;display:flex;align-items:center;gap:8px;">
-              <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></span>
-              <span style="width:10px;height:10px;border-radius:50%;background:#ffbd2e;"></span>
-              <span style="width:10px;height:10px;border-radius:50%;background:#28c840;"></span>
-              <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:8px;padding:6px 14px;font-size:12px;color:#6b7280;margin-left:12px;display:flex;align-items:center;gap:4px;">
+            <div class="demo-browser-chrome">
+              <span class="demo-chrome-dot demo-chrome-dot-red"></span>
+              <span class="demo-chrome-dot demo-chrome-dot-yellow"></span>
+              <span class="demo-chrome-dot demo-chrome-dot-green"></span>
+              <div class="demo-url-bar">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 <span id="demoUrlBar">luxestays.nfstay.app</span>
               </div>
             </div>
 
             <!-- Header -->
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid #f3f4f6;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <img id="demoLogoImg" src="" style="width:28px;height:28px;border-radius:6px;object-fit:cover;display:none;" alt="">
-                <span style="font-size:16px;font-weight:700;" id="demoLogo">Luxe Stays</span>
+            <div class="demo-site-header">
+              <div class="demo-site-header-left">
+                <img id="demoLogoImg" src="" class="demo-site-logo-img" alt="">
+                <span class="demo-site-logo-text" id="demoLogo">Luxe Stays</span>
               </div>
-              <div style="display:flex;gap:20px;font-size:12px;color:#6b7280;font-weight:500;">
+              <div class="demo-site-nav">
                 <span>Properties</span><span>About</span><span>Contact</span>
               </div>
             </div>
 
             <!-- Hero -->
-            <div style="position:relative;height:220px;overflow:hidden;">
-              <img id="demoHeroImg" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" width="800" height="400" loading="lazy" style="width:100%;height:100%;object-fit:cover;" alt="">
-              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7),rgba(0,0,0,0.15),transparent);"></div>
-              <div style="position:absolute;bottom:0;left:0;right:0;padding:24px;">
-                <h3 style="font-size:22px;font-weight:700;color:#fff;margin-bottom:6px;">Find Your Perfect Stay</h3>
-                <p style="font-size:13px;color:rgba(255,255,255,0.8);">Book directly for the best rates and personal experience</p>
+            <div class="demo-site-hero">
+              <img id="demoHeroImg" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" width="800" height="400" loading="lazy" class="demo-site-hero-img" alt="">
+              <div class="demo-site-hero-overlay"></div>
+              <div class="demo-site-hero-content">
+                <h3 class="demo-site-hero-title">Find Your Perfect Stay</h3>
+                <p class="demo-site-hero-sub">Book directly for the best rates and personal experience</p>
               </div>
             </div>
 
             <!-- Search bar -->
-            <div style="padding:0 24px;margin-top:-18px;position:relative;z-index:1;">
-              <div style="background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08);border:1px solid #f3f4f6;padding:12px 16px;display:flex;align-items:center;gap:10px;">
-                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Location</span><span style="font-size:12px;color:#1a1a1a;">Where are you going?</span></div>
-                <div style="width:1px;height:28px;background:#e5e7eb;"></div>
-                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Check in - Check out</span><span style="font-size:12px;color:#1a1a1a;">Add dates</span></div>
-                <div style="width:1px;height:28px;background:#e5e7eb;"></div>
-                <div style="flex:0.6;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Guests</span><span style="font-size:12px;color:#1a1a1a;">2</span></div>
-                <button id="demoSearchBtn" style="padding:8px 18px;border-radius:10px;color:#fff;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#10b981;">Search</button>
+            <div class="demo-search-wrapper">
+              <div class="demo-search-bar">
+                <div class="demo-search-field"><span class="demo-search-field-label">Location</span><span class="demo-search-field-value">Where are you going?</span></div>
+                <div class="demo-search-divider"></div>
+                <div class="demo-search-field"><span class="demo-search-field-label">Check in - Check out</span><span class="demo-search-field-value">Add dates</span></div>
+                <div class="demo-search-divider"></div>
+                <div class="demo-search-field demo-search-field-narrow"><span class="demo-search-field-label">Guests</span><span class="demo-search-field-value">2</span></div>
+                <button id="demoSearchBtn" class="demo-search-btn">Search</button>
               </div>
             </div>
 
             <!-- Properties -->
-            <div style="padding:20px 24px;">
-              <span style="font-size:13px;font-weight:600;color:#1a1a1a;display:block;margin-bottom:12px;">Featured Properties</span>
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
-                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
-                  <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
-                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Modern City Apartment</span><span style="font-size:10px;color:#6b7280;">London, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;120 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
+            <div class="demo-properties-section">
+              <span class="demo-properties-heading">Featured Properties</span>
+              <div class="demo-properties-grid">
+                <div class="demo-property-card">
+                  <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=300&q=80" width="300" height="90" loading="lazy" class="demo-property-img" alt="">
+                  <div class="demo-property-body"><span class="demo-property-name">Modern City Apartment</span><span class="demo-property-location">London, UK</span><span class="demo-price">&pound;120 <span class="demo-price-per">/ night</span></span></div>
                 </div>
-                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
-                  <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
-                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Luxury Penthouse Suite</span><span style="font-size:10px;color:#6b7280;">Manchester, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;185 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
+                <div class="demo-property-card">
+                  <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=300&q=80" width="300" height="90" loading="lazy" class="demo-property-img" alt="">
+                  <div class="demo-property-body"><span class="demo-property-name">Luxury Penthouse Suite</span><span class="demo-property-location">Manchester, UK</span><span class="demo-price">&pound;185 <span class="demo-price-per">/ night</span></span></div>
                 </div>
-                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
-                  <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
-                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Cosy Studio Retreat</span><span style="font-size:10px;color:#6b7280;">Birmingham, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;85 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
+                <div class="demo-property-card">
+                  <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=300&q=80" width="300" height="90" loading="lazy" class="demo-property-img" alt="">
+                  <div class="demo-property-body"><span class="demo-property-name">Cosy Studio Retreat</span><span class="demo-property-location">Birmingham, UK</span><span class="demo-price">&pound;85 <span class="demo-price-per">/ night</span></span></div>
                 </div>
               </div>
             </div>
 
             <!-- Footer -->
-            <div style="padding:12px 24px;background:#fafafa;border-top:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <img id="demoFooterLogo" src="" style="width:20px;height:20px;border-radius:4px;object-fit:cover;display:none;" alt="">
-                <span style="font-size:12px;font-weight:600;" id="demoFooterName">Luxe Stays</span>
+            <div class="demo-site-footer">
+              <div class="demo-site-footer-left">
+                <img id="demoFooterLogo" src="" class="demo-site-footer-logo" alt="">
+                <span class="demo-site-footer-name" id="demoFooterName">Luxe Stays</span>
               </div>
-              <span style="font-size:10px;color:#6b7280;">Powered by nfstay</span>
+              <span class="demo-site-footer-powered">Powered by nfstay</span>
             </div>
           </div>
         </div>
@@ -1666,60 +2154,60 @@
   </section>
 
   <!-- ── 9. Social Proof (cloned from main page) ── -->
-  <section class="section" style="overflow:hidden;background:#F3F3EE;">
-    <div style="max-width:1440px;margin:0 auto;padding:0 24px;text-align:center;">
-      <div style="display:inline-flex;justify-content:center;margin-bottom:16px;">
-        <div style="border:1px solid rgba(0,0,0,0.08);padding:4px 16px;border-radius:10px;font-size:13px;font-weight:500;color:#1a1a1a;">Testimonials</div>
+  <section class="section social-proof-section">
+    <div class="social-proof-container">
+      <div class="testimonials-badge-wrap">
+        <div class="testimonials-badge">Testimonials</div>
       </div>
-      <h2 class="section-title" style="margin-top:8px;">What our operators say</h2>
+      <h2 class="section-title section-title-mt">What our operators say</h2>
       <p class="section-subtitle">Real feedback from UK Rent to Serviced Accommodation operators using nfstay every day.</p>
 
-      <div style="display:flex;justify-content:center;gap:24px;max-height:740px;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,transparent,black 20%,black 80%,transparent);mask-image:linear-gradient(to bottom,transparent,black 20%,black 80%,transparent);margin-top:32px;">
+      <div class="testimonials-columns">
 
         <!-- Column 1 -->
         <div class="tvc-col" style="--tvc-duration:26s;">
           <div class="tvc-track">
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">nfstay helped me close my first three deals in under a month. The CRM is the reason I stay organised.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=12" loading="lazy" alt=""><div><div class="tvc-name">Sarah K.</div><div class="tvc-role">Operator &middot; Manchester</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The Academy alone paid for itself. I went from zero to signing my first property in six weeks.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=15" loading="lazy" alt=""><div><div class="tvc-name">Tom P.</div><div class="tvc-role">Operator &middot; London</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Every deal is approved. The earnings estimator is accurate. I use it before every viewing.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=5" loading="lazy" alt=""><div><div class="tvc-name">Priya S.</div><div class="tvc-role">Operator &middot; Birmingham</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The inbox saved me hours of back-and-forth emails. Everything in one place.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=33" loading="lazy" alt=""><div><div class="tvc-name">James H.</div><div class="tvc-role">Operator &middot; Liverpool</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">I closed two deals in my first month. The pipeline keeps me on track.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=9" loading="lazy" alt=""><div><div class="tvc-name">Rachel L.</div><div class="tvc-role">Operator &middot; Bristol</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">nfstay helped me close my first three deals in under a month. The CRM is the reason I stay organised.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=12" loading="lazy" alt=""><div><div class="tvc-name">Sarah K.</div><div class="tvc-role">Operator &middot; Manchester</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The Academy alone paid for itself. I went from zero to signing my first property in six weeks.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=15" loading="lazy" alt=""><div><div class="tvc-name">Tom P.</div><div class="tvc-role">Operator &middot; London</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Every deal is approved. The earnings estimator is accurate. I use it before every viewing.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=5" loading="lazy" alt=""><div><div class="tvc-name">Priya S.</div><div class="tvc-role">Operator &middot; Birmingham</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The inbox saved me hours of back-and-forth emails. Everything in one place.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=33" loading="lazy" alt=""><div><div class="tvc-name">James H.</div><div class="tvc-role">Operator &middot; Liverpool</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">I closed two deals in my first month. The pipeline keeps me on track.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=9" loading="lazy" alt=""><div><div class="tvc-name">Rachel L.</div><div class="tvc-role">Operator &middot; Bristol</div></div></div></div>
           </div>
         </div>
 
         <!-- Column 2 (hidden on mobile) -->
         <div class="tvc-col tvc-col-md" style="--tvc-duration:32s;">
           <div class="tvc-track">
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Best investment I have made. The university content is world-class.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=25" loading="lazy" alt=""><div><div class="tvc-name">David W.</div><div class="tvc-role">Operator &middot; Leeds</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The direct booking site builder paid for the subscription in week one.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=44" loading="lazy" alt=""><div><div class="tvc-name">Amara O.</div><div class="tvc-role">Operator &middot; Nottingham</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">From zero properties to five in eight months. nfstay made it possible.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=11" loading="lazy" alt=""><div><div class="tvc-name">Callum M.</div><div class="tvc-role">Operator &middot; Sheffield</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The earnings estimator is scary accurate. I trust it more than my spreadsheets.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=23" loading="lazy" alt=""><div><div class="tvc-name">Fatima R.</div><div class="tvc-role">Operator &middot; Cardiff</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">I love that every deal is landlord-approved. No wasted viewings.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=8" loading="lazy" alt=""><div><div class="tvc-name">Michael T.</div><div class="tvc-role">Operator &middot; Newcastle</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Best investment I have made. The university content is world-class.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=25" loading="lazy" alt=""><div><div class="tvc-name">David W.</div><div class="tvc-role">Operator &middot; Leeds</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The direct booking site builder paid for the subscription in week one.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=44" loading="lazy" alt=""><div><div class="tvc-name">Amara O.</div><div class="tvc-role">Operator &middot; Nottingham</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">From zero properties to five in eight months. nfstay made it possible.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=11" loading="lazy" alt=""><div><div class="tvc-name">Callum M.</div><div class="tvc-role">Operator &middot; Sheffield</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The earnings estimator is scary accurate. I trust it more than my spreadsheets.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=23" loading="lazy" alt=""><div><div class="tvc-name">Fatima R.</div><div class="tvc-role">Operator &middot; Cardiff</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">I love that every deal is landlord-approved. No wasted viewings.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=8" loading="lazy" alt=""><div><div class="tvc-name">Michael T.</div><div class="tvc-role">Operator &middot; Newcastle</div></div></div></div>
           </div>
         </div>
 
         <!-- Column 3 (hidden on mobile+tablet) -->
         <div class="tvc-col tvc-col-lg" style="--tvc-duration:28s;">
           <div class="tvc-track">
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The CRM pipeline is exactly what I needed. Visual, simple, effective.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=36" loading="lazy" alt=""><div><div class="tvc-name">Sophie B.</div><div class="tvc-role">Operator &middot; Edinburgh</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">nfstay University took me from knowing nothing to running two properties.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=17" loading="lazy" alt=""><div><div class="tvc-name">Daniel F.</div><div class="tvc-role">Operator &middot; Glasgow</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The agent programme earns me passive income just by sharing my link.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=41" loading="lazy" alt=""><div><div class="tvc-name">Hannah G.</div><div class="tvc-role">Affiliate &middot; Manchester</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Finally a platform built specifically for UK Rent to Serviced Accommodation operators.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=7" loading="lazy" alt=""><div><div class="tvc-name">Oliver P.</div><div class="tvc-role">Operator &middot; London</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The CRM pipeline is exactly what I needed. Visual, simple, effective.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=36" loading="lazy" alt=""><div><div class="tvc-name">Sophie B.</div><div class="tvc-role">Operator &middot; Edinburgh</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">nfstay University took me from knowing nothing to running two properties.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=17" loading="lazy" alt=""><div><div class="tvc-name">Daniel F.</div><div class="tvc-role">Operator &middot; Glasgow</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The agent programme earns me passive income just by sharing my link.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=41" loading="lazy" alt=""><div><div class="tvc-name">Hannah G.</div><div class="tvc-role">Affiliate &middot; Manchester</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Finally a platform built specifically for UK Rent to Serviced Accommodation operators.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=7" loading="lazy" alt=""><div><div class="tvc-name">Oliver P.</div><div class="tvc-role">Operator &middot; London</div></div></div></div>
           </div>
         </div>
 
         <!-- Column 4 (hidden below xl) -->
         <div class="tvc-col tvc-col-xl" style="--tvc-duration:30s;">
           <div class="tvc-track">
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The unified inbox is a game-changer. No more lost messages.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=29" loading="lazy" alt=""><div><div class="tvc-name">Emma C.</div><div class="tvc-role">Operator &middot; Birmingham</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">I have referred eight people. The commissions are genuinely good.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=13" loading="lazy" alt=""><div><div class="tvc-name">Jack S.</div><div class="tvc-role">Affiliate &middot; Leeds</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Compliance-checked deals save me so much due diligence time.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=38" loading="lazy" alt=""><div><div class="tvc-name">Lucy W.</div><div class="tvc-role">Operator &middot; Bristol</div></div></div></div>
-            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The booking site builder is incredibly easy. Live in under an hour.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=19" loading="lazy" alt=""><div><div class="tvc-name">Nathan D.</div><div class="tvc-role">Operator &middot; Liverpool</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The unified inbox is a game-changer. No more lost messages.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=29" loading="lazy" alt=""><div><div class="tvc-name">Emma C.</div><div class="tvc-role">Operator &middot; Birmingham</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">I have referred eight people. The commissions are genuinely good.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=13" loading="lazy" alt=""><div><div class="tvc-name">Jack S.</div><div class="tvc-role">Affiliate &middot; Leeds</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Compliance-checked deals save me so much due diligence time.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=38" loading="lazy" alt=""><div><div class="tvc-name">Lucy W.</div><div class="tvc-role">Operator &middot; Bristol</div></div></div></div>
+            <div class="tvc-card"><div class="tvc-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The booking site builder is incredibly easy. Live in under an hour.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=19" loading="lazy" alt=""><div><div class="tvc-name">Nathan D.</div><div class="tvc-role">Operator &middot; Liverpool</div></div></div></div>
           </div>
         </div>
       </div>
 
-      <a href="#payment" class="cta-btn" style="margin-top:32px;">Join Them Get Access Now</a>
+      <a href="#payment" class="cta-btn social-proof-cta">Join Them Get Access Now</a>
     </div>
   </section>
 
@@ -1767,7 +2255,7 @@
 
   <!-- ── 10. Value Stack ── -->
   <section class="section section-white">
-    <div class="section-narrow" style="text-align:center;">
+    <div class="section-narrow text-center">
       <span class="section-badge">Limited Offer</span>
       <h2 class="section-title">Here's everything you get today</h2>
       <p class="section-subtitle">Total value over £1,100/month yours for a fraction of the cost.</p>
@@ -1811,12 +2299,12 @@
 
   <!-- ── 11. FAQ ── -->
   <section class="section">
-    <div class="section-narrow" style="text-align:center;">
+    <div class="section-narrow text-center">
       <span class="section-badge">FAQ</span>
       <h2 class="section-title">Got questions?</h2>
-      <p class="section-subtitle" style="margin-bottom:40px;">We've got answers.</p>
+      <p class="section-subtitle faq-subtitle-spacer">We've got answers.</p>
 
-      <div style="text-align:left;">
+      <div class="faq-list">
         <div class="faq-item open">
           <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
             Is this a subscription?
@@ -1851,7 +2339,7 @@
 
   <!-- ── 12. Payment Section ── -->
   <section id="payment" class="section payment-section">
-    <div class="section-narrow" style="text-align:center;">
+    <div class="section-narrow text-center">
       <h2 class="section-title">Start Your 3-Day Trial for £5</h2>
       <p class="section-subtitle">Full access to everything. Cancel anytime.</p>
       <iframe
@@ -1911,7 +2399,7 @@
 
   <!-- ── 13. Final Urgency ── -->
   <section class="section urgency-section">
-    <div class="section-narrow" style="text-align:center;">
+    <div class="section-narrow text-center">
       <span class="section-badge">Don't Wait</span>
       <p class="urgency-text">New deals are added daily. The best ones go fast.</p>
       <a href="#payment" class="cta-btn">Get Access Now £5 Trial</a>
