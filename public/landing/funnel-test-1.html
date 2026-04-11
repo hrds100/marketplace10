@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Get Instant Access to Hundreds of Weekly Verified Deals | nfstay</title>
-  <meta name="description" content="The UK's #1 rent-to-rent deal marketplace. Find your first profitable property in minutes, not months.">
+  <title>Get Instant Access to Hundreds+ of Weekly Approved Deals | nfstay</title>
+  <meta name="description" content="The UK's #1 Rent to Serviced Accommodation deal marketplace. Find your first profitable property in minutes, not months.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -828,6 +828,133 @@
       .modules-grid { grid-template-columns: 1fr; }
       .topbar-inner { padding: 12px 16px; }
     }
+
+    /* Academy V2 Accordion (cloned from main) */
+    .accv2-item {
+      position: relative; height: 450px; border-radius: 16px; overflow: hidden;
+      cursor: pointer; flex-shrink: 0; width: 56px;
+      transition: width 700ms cubic-bezier(0.22,1,0.36,1);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    }
+    .accv2-item.active { width: 300px; }
+    .accv2-bg { position: absolute; inset: 0; }
+    .accv2-pattern {
+      position: absolute; inset: 0; opacity: 0.07;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .accv2-emoji-bg {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: 120px; opacity: 0.12; pointer-events: none; transition: opacity 400ms;
+    }
+    .accv2-item.active .accv2-emoji-bg { opacity: 0.08; font-size: 160px; }
+    .accv2-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 40%, transparent 70%);
+    }
+    .accv2-caption {
+      position: absolute; color: #fff; font-size: 15px; font-weight: 600;
+      white-space: nowrap; transition: all 500ms cubic-bezier(0.22,1,0.36,1);
+      bottom: 50%; left: 50%;
+      transform: translateX(-50%) translateY(50%) rotate(90deg);
+      transform-origin: center center;
+    }
+    .accv2-item.active .accv2-caption {
+      bottom: auto; top: 20px; left: 20px;
+      transform: translateX(0) translateY(0) rotate(0deg); font-size: 18px;
+    }
+    .accv2-emoji { margin-right: 6px; }
+    .accv2-detail {
+      position: absolute; bottom: 16px; left: 16px; right: 16px;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 400ms 100ms, transform 400ms 100ms;
+    }
+    .accv2-item.active .accv2-detail { opacity: 1; transform: translateY(0); }
+    .accv2-detail-badge {
+      display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; padding: 3px 10px; border-radius: 100px;
+      background: rgba(30,154,128,0.25); color: #a7f3d0; margin-bottom: 8px;
+    }
+    .accv2-badge-inter { background: rgba(245,158,11,0.25); color: #fde68a; }
+    .accv2-detail-lessons { font-size: 12px; color: rgba(255,255,255,0.8); margin-bottom: 6px; font-weight: 500; }
+    .accv2-detail-desc { font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5; margin-bottom: 12px; }
+    .accv2-detail-bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.2); overflow: hidden; margin-bottom: 6px; }
+    .accv2-detail-fill { height: 100%; border-radius: 2px; background: #34d399; transition: width 600ms cubic-bezier(0.22,1,0.36,1); }
+    .accv2-detail-status { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75); }
+    @media (max-width: 991px) {
+      #accV2Layout { flex-direction: column !important; gap: 32px !important; }
+      #accV2Layout > div:first-child { text-align: center; }
+      #accV2Layout > div:first-child h2 { text-align: center !important; }
+      #accV2Layout > div:first-child p { margin-left: auto; margin-right: auto; }
+      #accV2 { width: 100%; justify-content: center; }
+    }
+    @media (max-width: 768px) {
+      .accv2-item { height: 380px; }
+      .accv2-item.active { width: 260px; }
+    }
+    @media (max-width: 480px) {
+      .accv2-item { height: 340px; }
+      .accv2-item.active { width: 220px; }
+    }
+
+    /* Booking Site Builder Demo (cloned from main) */
+    .booking-demo-section { padding: 80px 0; overflow: hidden; }
+    .booking-demo-wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .booking-demo-layout { display: flex; gap: 28px; align-items: flex-start; }
+    .booking-demo-controls { width: 300px; flex-shrink: 0; }
+    .booking-demo-preview { flex: 1; }
+    .booking-controls-card {
+      background: #fff; border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 20px; padding: 28px; box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+    }
+    .booking-controls-heading {
+      font-size: 13px; font-weight: 700; color: #1a1a1a;
+      margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+    }
+    .booking-form-group { margin-bottom: 16px; }
+    .booking-form-label {
+      font-size: 10px; font-weight: 600; color: #6b7280;
+      text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px;
+    }
+    .booking-form-input {
+      width: 100%; height: 44px; border: 1px solid #e8e5df; border-radius: 10px;
+      padding: 0 14px; font-size: 16px; color: #1a1a1a; outline: none; transition: all 0.2s;
+    }
+    .booking-form-input:focus { border-color: #1e9a80; box-shadow: 0 0 0 3px rgba(30,154,128,0.08); }
+    .booking-upload-zone {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      height: 48px; border: 2px dashed #e8e5df; border-radius: 10px;
+      cursor: pointer; transition: all 0.2s; background: #fafafa; font-size: 12px; color: #6b7280;
+    }
+    .booking-upload-zone:hover { border-color: #1e9a80; background: rgba(30,154,128,0.02); }
+    .booking-upload-logo { height: 64px; }
+    .booking-color-row { display: flex; gap: 8px; }
+    .demo-color {
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 2.5px solid transparent; cursor: pointer; transition: all 0.15s;
+    }
+    .demo-color.active { border-color: inherit; }
+    .booking-url-group {
+      display: flex; align-items: center; border: 1px solid #e8e5df;
+      border-radius: 10px; overflow: hidden;
+    }
+    .booking-url-suffix {
+      font-size: 11px; color: #6b7280; padding: 0 12px;
+      white-space: nowrap; border-left: 1px solid #e8e5df; background: #fafafa;
+    }
+    .booking-cta-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, #1e9a80, #10b981);
+      color: #fff; font-size: 14px; font-weight: 600; text-decoration: none;
+      transition: all 0.2s; box-shadow: 0 4px 12px rgba(30,154,128,0.2);
+    }
+    .booking-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(30,154,128,0.3); }
+    .booking-cta-sub { text-align: center; font-size: 11px; color: #6b7280; margin-top: 8px; }
+    @media (max-width: 991px) {
+      .booking-demo-layout { flex-direction: column; }
+      .booking-demo-controls { width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -846,12 +973,12 @@
   <!-- ── 2. HERO ── -->
   <section class="hero">
     <div class="hero-inner">
-      <h1>Get Instant Access to <em>Hundreds</em> of Weekly Verified Deals</h1>
-      <p class="hero-sub">The UK's #1 rent-to-rent deal marketplace. Find your first profitable property in minutes, not months.</p>
+      <h1>Get Instant Access to <em>Hundreds+</em> of Weekly Approved Deals</h1>
+      <p class="hero-sub">The UK's #1 Rent to Serviced Accommodation deal marketplace. Find your first profitable property in minutes, not months.</p>
 
       <div class="hero-stats">
         <div class="hero-stat">
-          <div class="hero-stat-number">Hundreds</div>
+          <div class="hero-stat-number">Hundreds+</div>
           <div class="hero-stat-label">Weekly</div>
         </div>
         <div class="hero-stat">
@@ -898,7 +1025,7 @@
         </div>
         <div class="pain-point">
           <div class="pain-x">&times;</div>
-          <div class="pain-text">Getting rejected by letting agents who don't understand rent-to-rent</div>
+          <div class="pain-text">Getting rejected by letting agents who don't understand Rent to Serviced Accommodation</div>
         </div>
         <div class="pain-point">
           <div class="pain-x">&times;</div>
@@ -989,7 +1116,7 @@
       </div>
 
       <a href="#payment" class="cta-btn">Unlock All Deals — £5 Trial</a>
-      <span class="cta-sub">Hundreds of weekly verified deals waiting for you.</span>
+      <span class="cta-sub">Hundreds+ of weekly approved deals waiting for you.</span>
     </div>
   </section>
 
@@ -1108,7 +1235,7 @@
       <div class="features-grid">
         <div class="feature-item">
           <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="feature-name">Hundreds of weekly verified rent-to-rent deals</div>
+          <div class="feature-name">Hundreds+ of weekly verified Rent to Serviced Accommodation deals</div>
         </div>
         <div class="feature-item">
           <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -1149,135 +1276,379 @@
     </div>
   </section>
 
-  <!-- ── 7. University / Academy ── -->
-  <section class="section">
-    <div class="section-wide" style="text-align:center;">
-      <span class="section-badge">nfstay Academy</span>
-      <h2 class="section-title">Learn rent-to-rent. Then do it. In the same place.</h2>
-      <p class="section-subtitle">15 years of operator knowledge, structured into step-by-step modules.</p>
-
-      <div class="academy-stats">
-        <div class="academy-stat">
-          <div class="academy-stat-number">44</div>
-          <div class="academy-stat-label">Lessons</div>
+  <!-- ── 7. University / Academy (cloned from main page) ── -->
+  <section class="section" style="background:#F3F3EE;">
+    <div style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <div style="display:flex;flex-direction:row;align-items:center;gap:48px;" id="accV2Layout">
+        <!-- Left: Text Content -->
+        <div style="flex:1;min-width:0;">
+          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(30,154,128,0.06);padding:8px 20px;border-radius:10px;margin-bottom:16px;">
+            <span style="font-size:20px;">&#127891;</span>
+            <span style="font-size:13px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">nfstay Academy</span>
+          </div>
+          <h2 style="text-align:left;font-size:34px;font-weight:700;line-height:1.15;color:#1a1a1a;margin-bottom:16px;">Learn Rent to Serviced Accommodation.<br>Then do it.<br>In the same place.</h2>
+          <p style="font-size:16px;color:#6b7280;line-height:1.6;max-width:440px;margin-bottom:24px;">15 years of operator knowledge, structured into step-by-step modules with progress tracking.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;">
+            <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:8px 14px;">
+              <span style="font-size:16px;">&#128218;</span>
+              <div><div style="font-size:12px;font-weight:700;color:#1a1a1a;">44 lessons</div><div style="font-size:10px;color:#6b7280;">6 modules</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:8px 14px;">
+              <span style="font-size:16px;">&#127891;</span>
+              <div><div style="font-size:12px;font-weight:700;color:#1a1a1a;">Beginner to Pro</div><div style="font-size:10px;color:#6b7280;">Step-by-step</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:8px 14px;">
+              <span style="font-size:16px;">&#9989;</span>
+              <div><div style="font-size:12px;font-weight:700;color:#1a1a1a;">Track progress</div><div style="font-size:10px;color:#6b7280;">Resume anytime</div></div>
+            </div>
+          </div>
+          <a href="#payment" style="display:inline-block;background:#1e9a80;color:#fff;font-weight:600;font-size:14px;padding:13px 32px;border-radius:14px;box-shadow:0 4px 16px rgba(30,154,128,0.35);transition:background 200ms;text-decoration:none;">Start Learning — £5 Trial</a>
         </div>
-        <div class="academy-stat">
-          <div class="academy-stat-number">6</div>
-          <div class="academy-stat-label">Modules</div>
-        </div>
-        <div class="academy-stat">
-          <div class="academy-stat-number">Beginner</div>
-          <div class="academy-stat-label">to Pro</div>
-        </div>
-        <div class="academy-stat">
-          <div class="academy-stat-number">Track</div>
-          <div class="academy-stat-label">Progress</div>
+        <!-- Right: Image Accordion -->
+        <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0;" id="accV2">
+          <div class="accv2-item active" data-idx="0">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#0f766e 0%,#1e9a80 40%,#34d399 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#128218;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#128218;</span> Getting Started</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge">Beginner</div>
+              <div class="accv2-detail-lessons">6 lessons &middot; ~25 min</div>
+              <div class="accv2-detail-desc">The fundamentals of Rent to Serviced Accommodation. Set up your business from scratch.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:100%;"></div></div>
+              <div class="accv2-detail-status">&#9989; Complete</div>
+            </div>
+          </div>
+          <div class="accv2-item" data-idx="1">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#065f46 0%,#1e9a80 50%,#6ee7b7 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#128269;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#128269;</span> Property Hunting</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge">Beginner</div>
+              <div class="accv2-detail-lessons">8 lessons &middot; ~35 min</div>
+              <div class="accv2-detail-desc">Where to find deals and evaluate areas across the UK.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:75%;"></div></div>
+              <div class="accv2-detail-status">75% done</div>
+            </div>
+          </div>
+          <div class="accv2-item" data-idx="2">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#1a1a1a 0%,#374151 50%,#6b7280 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#128172;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#128172;</span> Landlord Pitching</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge accv2-badge-inter">Intermediate</div>
+              <div class="accv2-detail-lessons">6 lessons &middot; ~20 min</div>
+              <div class="accv2-detail-desc">Scripts, objection handling, and closing techniques.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:40%;background:#f59e0b;"></div></div>
+              <div class="accv2-detail-status">40% done</div>
+            </div>
+          </div>
+          <div class="accv2-item" data-idx="3">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#111827 0%,#1f2937 40%,#4b5563 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#128176;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#128176;</span> Numbers &amp; Profit</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge accv2-badge-inter">Intermediate</div>
+              <div class="accv2-detail-lessons">8 lessons &middot; ~30 min</div>
+              <div class="accv2-detail-desc">Model returns and know your margins before you sign.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:0%;"></div></div>
+              <div class="accv2-detail-status">Not started</div>
+            </div>
+          </div>
+          <div class="accv2-item" data-idx="4">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#0c4a6e 0%,#0284c7 50%,#38bdf8 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#128200;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#128200;</span> Scaling Up</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge accv2-badge-inter">Intermediate</div>
+              <div class="accv2-detail-lessons">10 lessons &middot; ~40 min</div>
+              <div class="accv2-detail-desc">Systems, automation, and team building to grow your portfolio.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:0%;"></div></div>
+              <div class="accv2-detail-status">Not started</div>
+            </div>
+          </div>
+          <div class="accv2-item" data-idx="5">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#1e9a80 0%,#10b981 50%,#a7f3d0 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#127968;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#127968;</span> Direct Bookings</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge">Beginner</div>
+              <div class="accv2-detail-lessons">6 lessons &middot; ~25 min</div>
+              <div class="accv2-detail-desc">Build your own booking site and stop relying on Airbnb.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:0%;"></div></div>
+              <div class="accv2-detail-status">Not started</div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div class="modules-grid">
-        <div class="module-card module-bg-1">
-          <div class="module-card-emoji">&#127919;</div>
-          <div class="module-card-title">Getting Started</div>
-          <div class="module-card-lessons">8 LESSONS</div>
-          <div class="module-card-desc">Understand the R2R model, legal basics and your first steps.</div>
-          <div class="module-progress-bar"><div class="module-progress-fill" style="width:0%"></div></div>
-        </div>
-        <div class="module-card module-bg-2">
-          <div class="module-card-emoji">&#128269;</div>
-          <div class="module-card-title">Property Hunting</div>
-          <div class="module-card-lessons">9 LESSONS</div>
-          <div class="module-card-desc">Find high-yield properties using proven sourcing methods.</div>
-          <div class="module-progress-bar"><div class="module-progress-fill" style="width:0%"></div></div>
-        </div>
-        <div class="module-card module-bg-3">
-          <div class="module-card-emoji">&#129309;</div>
-          <div class="module-card-title">Landlord Pitching</div>
-          <div class="module-card-lessons">7 LESSONS</div>
-          <div class="module-card-desc">Scripts, objection handling and how to close landlords.</div>
-          <div class="module-progress-bar"><div class="module-progress-fill" style="width:0%"></div></div>
-        </div>
-        <div class="module-card module-bg-4">
-          <div class="module-card-emoji">&#128202;</div>
-          <div class="module-card-title">Numbers &amp; Profit</div>
-          <div class="module-card-lessons">7 LESSONS</div>
-          <div class="module-card-desc">Run the numbers properly — cashflow, ROI and deal analysis.</div>
-          <div class="module-progress-bar"><div class="module-progress-fill" style="width:0%"></div></div>
-        </div>
-        <div class="module-card module-bg-5">
-          <div class="module-card-emoji">&#128640;</div>
-          <div class="module-card-title">Scaling Up</div>
-          <div class="module-card-lessons">7 LESSONS</div>
-          <div class="module-card-desc">Go from 1 property to a portfolio with systems and teams.</div>
-          <div class="module-progress-bar"><div class="module-progress-fill" style="width:0%"></div></div>
-        </div>
-        <div class="module-card module-bg-6">
-          <div class="module-card-emoji">&#127760;</div>
-          <div class="module-card-title">Direct Bookings</div>
-          <div class="module-card-lessons">6 LESSONS</div>
-          <div class="module-card-desc">Build your own booking channel and stop paying OTA commissions.</div>
-          <div class="module-progress-bar"><div class="module-progress-fill" style="width:0%"></div></div>
-        </div>
-      </div>
-
-      <a href="#payment" class="cta-btn">Start Learning — £5 Trial</a>
-      <span class="cta-sub">Full academy access included with every plan.</span>
+      <p style="text-align:center;font-size:13px;color:#6b7280;margin-top:32px;">All modules included in your membership</p>
     </div>
   </section>
 
-  <!-- ── 8. Booking Site ── -->
-  <section class="section section-white">
-    <div class="section-narrow" style="text-align:center;">
-      <span class="section-badge">White-Label Booking Site</span>
-      <h2 class="section-title">Build your direct booking channel</h2>
-      <p class="section-subtitle">Stop paying 15-20% OTA commissions. Launch your branded booking site in minutes.</p>
-
-      <div class="booking-mockup">
-        <div class="booking-mockup-header">
-          <span class="booking-mockup-dot"></span>
-          <span class="booking-mockup-brand">Luxe Stays</span>
+  <!-- ── 8. Booking Site Builder Demo (cloned from main page) ── -->
+  <section class="section section-white booking-demo-section">
+    <div class="booking-demo-wrap">
+      <div style="text-align:center;margin-bottom:40px;">
+        <div class="section-badge" style="display:inline-flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          White-Label Booking Site
         </div>
-        <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&h=400&fit=crop" alt="Booking site mockup" class="booking-mockup-img" loading="lazy">
-        <div class="booking-mockup-body">
-          <div class="booking-mockup-title">Modern City Apartment</div>
-          <div class="booking-mockup-sub">Manchester, M1 — from £89/night</div>
-          <span class="booking-mockup-btn">Book Direct</span>
-        </div>
+        <h2 class="section-title">Build your direct booking channel</h2>
+        <p class="section-subtitle">Stop paying 15-20% OTA commissions. Launch your branded booking site in minutes.</p>
       </div>
 
-      <a href="#payment" class="cta-btn">Get Your Booking Site — £5 Trial</a>
-      <span class="cta-sub">Your brand. Your guests. Your revenue.</span>
+      <div class="booking-demo-layout">
+        <!-- Controls -->
+        <div class="booking-demo-controls">
+          <div class="booking-controls-card">
+            <div class="booking-controls-heading">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M12 2L2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              Customise Your Site
+            </div>
+
+            <!-- Brand Name -->
+            <div class="booking-form-group">
+              <label class="booking-form-label">Brand Name</label>
+              <input type="text" id="demoName" value="Luxe Stays" class="booking-form-input">
+            </div>
+
+            <!-- Logo Upload -->
+            <div class="booking-form-group">
+              <label class="booking-form-label">Logo</label>
+              <label id="logoUploadZone" class="booking-upload-zone booking-upload-logo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span id="logoLabel">Upload your logo</span>
+                <input type="file" id="logoInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
+              </label>
+            </div>
+
+            <!-- Hero Background -->
+            <div class="booking-form-group">
+              <label class="booking-form-label">Hero Background</label>
+              <label class="booking-upload-zone">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span id="bgLabel">Change background</span>
+                <input type="file" id="bgInput" accept="image/*" style="display:none;" onchange="handleBgUpload(this)">
+              </label>
+            </div>
+
+            <!-- Accent Colour -->
+            <div class="booking-form-group">
+              <label class="booking-form-label">Accent Colour</label>
+              <div class="booking-color-row">
+                <button class="demo-color active" data-color="#10b981" style="background:#10b981;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#3b82f6" style="background:#3b82f6;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#8b5cf6" style="background:#8b5cf6;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#f59e0b" style="background:#f59e0b;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#ef4444" style="background:#ef4444;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#1a1a1a" style="background:#1a1a1a;" onclick="pickColor(this)"></button>
+              </div>
+            </div>
+
+            <!-- URL -->
+            <div class="booking-form-group">
+              <label class="booking-form-label">Site URL</label>
+              <div class="booking-url-group">
+                <input type="text" id="demoSubdomain" value="luxestays" style="flex:1;height:38px;border:none;padding:0 12px;font-size:13px;color:#1a1a1a;outline:none;" readonly>
+                <span class="booking-url-suffix">.nfstay.app</span>
+              </div>
+            </div>
+
+            <a href="#payment" class="booking-cta-btn">Get Your Booking Site — £5 Trial</a>
+            <p class="booking-cta-sub">Included with every plan.</p>
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="booking-demo-preview">
+          <div style="border:1px solid rgba(0,0,0,0.06);border-radius:16px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,0.08);background:#fff;">
+            <!-- Browser chrome -->
+            <div style="background:linear-gradient(180deg,#f8f9fa,#f3f4f6);border-bottom:1px solid rgba(0,0,0,0.06);padding:12px 16px;display:flex;align-items:center;gap:8px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#ffbd2e;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#28c840;"></span>
+              <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:8px;padding:6px 14px;font-size:12px;color:#6b7280;margin-left:12px;display:flex;align-items:center;gap:4px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span id="demoUrlBar">luxestays.nfstay.app</span>
+              </div>
+            </div>
+
+            <!-- Header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid #f3f4f6;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <img id="demoLogoImg" src="" style="width:28px;height:28px;border-radius:6px;object-fit:cover;display:none;" alt="">
+                <span style="font-size:16px;font-weight:700;" id="demoLogo">Luxe Stays</span>
+              </div>
+              <div style="display:flex;gap:20px;font-size:12px;color:#6b7280;font-weight:500;">
+                <span>Properties</span><span>About</span><span>Contact</span>
+              </div>
+            </div>
+
+            <!-- Hero -->
+            <div style="position:relative;height:220px;overflow:hidden;">
+              <img id="demoHeroImg" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" width="800" height="400" loading="lazy" style="width:100%;height:100%;object-fit:cover;" alt="">
+              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7),rgba(0,0,0,0.15),transparent);"></div>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:24px;">
+                <h3 style="font-size:22px;font-weight:700;color:#fff;margin-bottom:6px;">Find Your Perfect Stay</h3>
+                <p style="font-size:13px;color:rgba(255,255,255,0.8);">Book directly for the best rates and personal experience</p>
+              </div>
+            </div>
+
+            <!-- Search bar -->
+            <div style="padding:0 24px;margin-top:-18px;position:relative;z-index:1;">
+              <div style="background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08);border:1px solid #f3f4f6;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Location</span><span style="font-size:12px;color:#1a1a1a;">Where are you going?</span></div>
+                <div style="width:1px;height:28px;background:#e5e7eb;"></div>
+                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Check in - Check out</span><span style="font-size:12px;color:#1a1a1a;">Add dates</span></div>
+                <div style="width:1px;height:28px;background:#e5e7eb;"></div>
+                <div style="flex:0.6;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Guests</span><span style="font-size:12px;color:#1a1a1a;">2</span></div>
+                <button id="demoSearchBtn" style="padding:8px 18px;border-radius:10px;color:#fff;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#10b981;">Search</button>
+              </div>
+            </div>
+
+            <!-- Properties -->
+            <div style="padding:20px 24px;">
+              <span style="font-size:13px;font-weight:600;color:#1a1a1a;display:block;margin-bottom:12px;">Featured Properties</span>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+                  <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Modern City Apartment</span><span style="font-size:10px;color:#6b7280;">London, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;120 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
+                </div>
+                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+                  <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Luxury Penthouse Suite</span><span style="font-size:10px;color:#6b7280;">Manchester, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;185 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
+                </div>
+                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+                  <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Cosy Studio Retreat</span><span style="font-size:10px;color:#6b7280;">Birmingham, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;85 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:12px 24px;background:#fafafa;border-top:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <img id="demoFooterLogo" src="" style="width:20px;height:20px;border-radius:4px;object-fit:cover;display:none;" alt="">
+                <span style="font-size:12px;font-weight:600;" id="demoFooterName">Luxe Stays</span>
+              </div>
+              <span style="font-size:10px;color:#6b7280;">Powered by nfstay</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- ── 9. Social Proof ── -->
-  <section class="section">
-    <div class="section-wide" style="text-align:center;">
-      <span class="section-badge">Social Proof</span>
-      <h2 class="section-title">Trusted by 300+ UK rent-to-rent operators</h2>
-      <p class="section-subtitle">Real results from real members.</p>
+  <!-- ── 9. Social Proof (cloned from main page) ── -->
+  <section class="section" style="overflow:hidden;background:#F3F3EE;">
+    <div style="max-width:1440px;margin:0 auto;padding:0 24px;text-align:center;">
+      <div style="display:inline-flex;justify-content:center;margin-bottom:16px;">
+        <div style="border:1px solid rgba(0,0,0,0.08);padding:4px 16px;border-radius:10px;font-size:13px;font-weight:500;color:#1a1a1a;">Testimonials</div>
+      </div>
+      <h2 class="section-title" style="margin-top:8px;">What our operators say</h2>
+      <p class="section-subtitle">Real feedback from UK Rent to Serviced Accommodation operators using nfstay every day.</p>
 
-      <div class="testimonials-grid">
-        <div class="testimonial-card">
-          <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p class="testimonial-text">I found my first deal within 48 hours of signing up. The marketplace is a game-changer.</p>
-          <p class="testimonial-author">James T., Manchester</p>
+      <div style="display:flex;justify-content:center;gap:24px;max-height:740px;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,transparent,black 20%,black 80%,transparent);mask-image:linear-gradient(to bottom,transparent,black 20%,black 80%,transparent);margin-top:32px;">
+
+        <!-- Column 1 -->
+        <div class="tvc-col" style="--tvc-duration:26s;">
+          <div class="tvc-track">
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">nfstay helped me close my first three deals in under a month. The CRM is the reason I stay organised.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=12" loading="lazy" alt=""><div><div class="tvc-name">Sarah K.</div><div class="tvc-role">Operator &middot; Manchester</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The Academy alone paid for itself. I went from zero to signing my first property in six weeks.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=15" loading="lazy" alt=""><div><div class="tvc-name">Tom P.</div><div class="tvc-role">Operator &middot; London</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Every deal is approved. The earnings estimator is accurate. I use it before every viewing.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=5" loading="lazy" alt=""><div><div class="tvc-name">Priya S.</div><div class="tvc-role">Operator &middot; Birmingham</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The inbox saved me hours of back-and-forth emails. Everything in one place.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=33" loading="lazy" alt=""><div><div class="tvc-name">James H.</div><div class="tvc-role">Operator &middot; Liverpool</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">I closed two deals in my first month. The pipeline keeps me on track.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=9" loading="lazy" alt=""><div><div class="tvc-name">Rachel L.</div><div class="tvc-role">Operator &middot; Bristol</div></div></div></div>
+          </div>
         </div>
-        <div class="testimonial-card">
-          <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p class="testimonial-text">The CRM alone saved me 10 hours a week. I can actually focus on closing deals now.</p>
-          <p class="testimonial-author">Sarah M., Birmingham</p>
+
+        <!-- Column 2 (hidden on mobile) -->
+        <div class="tvc-col tvc-col-md" style="--tvc-duration:32s;">
+          <div class="tvc-track">
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Best investment I have made. The university content is world-class.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=25" loading="lazy" alt=""><div><div class="tvc-name">David W.</div><div class="tvc-role">Operator &middot; Leeds</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The direct booking site builder paid for the subscription in week one.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=44" loading="lazy" alt=""><div><div class="tvc-name">Amara O.</div><div class="tvc-role">Operator &middot; Nottingham</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">From zero properties to five in eight months. nfstay made it possible.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=11" loading="lazy" alt=""><div><div class="tvc-name">Callum M.</div><div class="tvc-role">Operator &middot; Sheffield</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The earnings estimator is scary accurate. I trust it more than my spreadsheets.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=23" loading="lazy" alt=""><div><div class="tvc-name">Fatima R.</div><div class="tvc-role">Operator &middot; Cardiff</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">I love that every deal is landlord-approved. No wasted viewings.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=8" loading="lazy" alt=""><div><div class="tvc-name">Michael T.</div><div class="tvc-role">Operator &middot; Newcastle</div></div></div></div>
+          </div>
         </div>
-        <div class="testimonial-card">
-          <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <p class="testimonial-text">I went from 0 to 3 properties in my first month. The landlord contact info is worth it alone.</p>
-          <p class="testimonial-author">David R., Leeds</p>
+
+        <!-- Column 3 (hidden on mobile+tablet) -->
+        <div class="tvc-col tvc-col-lg" style="--tvc-duration:28s;">
+          <div class="tvc-track">
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The CRM pipeline is exactly what I needed. Visual, simple, effective.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=36" loading="lazy" alt=""><div><div class="tvc-name">Sophie B.</div><div class="tvc-role">Operator &middot; Edinburgh</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">nfstay University took me from knowing nothing to running two properties.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=17" loading="lazy" alt=""><div><div class="tvc-name">Daniel F.</div><div class="tvc-role">Operator &middot; Glasgow</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The agent programme earns me passive income just by sharing my link.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=41" loading="lazy" alt=""><div><div class="tvc-name">Hannah G.</div><div class="tvc-role">Affiliate &middot; Manchester</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Finally a platform built specifically for UK Rent to Serviced Accommodation operators.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=7" loading="lazy" alt=""><div><div class="tvc-name">Oliver P.</div><div class="tvc-role">Operator &middot; London</div></div></div></div>
+          </div>
+        </div>
+
+        <!-- Column 4 (hidden below xl) -->
+        <div class="tvc-col tvc-col-xl" style="--tvc-duration:30s;">
+          <div class="tvc-track">
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The unified inbox is a game-changer. No more lost messages.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=29" loading="lazy" alt=""><div><div class="tvc-name">Emma C.</div><div class="tvc-role">Operator &middot; Birmingham</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">I have referred eight people. The commissions are genuinely good.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=13" loading="lazy" alt=""><div><div class="tvc-name">Jack S.</div><div class="tvc-role">Affiliate &middot; Leeds</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">Compliance-checked deals save me so much due diligence time.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=38" loading="lazy" alt=""><div><div class="tvc-name">Lucy W.</div><div class="tvc-role">Operator &middot; Bristol</div></div></div></div>
+            <div class="tvc-card"><div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tvc-text">The booking site builder is incredibly easy. Live in under an hour.</p><div class="tvc-author"><img src="https://i.pravatar.cc/40?img=19" loading="lazy" alt=""><div><div class="tvc-name">Nathan D.</div><div class="tvc-role">Operator &middot; Liverpool</div></div></div></div>
+          </div>
         </div>
       </div>
 
-      <a href="#payment" class="cta-btn">Join Them — Get Access Now</a>
+      <a href="#payment" class="cta-btn" style="margin-top:32px;">Join Them — Get Access Now</a>
     </div>
   </section>
+
+  <style>
+    /* Testimonials Vertical Columns (cloned from main) */
+    .tvc-col { width: 320px; overflow: hidden; }
+    .tvc-col-md { display: none; }
+    .tvc-col-lg { display: none; }
+    .tvc-col-xl { display: none; }
+    @media (min-width: 768px) { .tvc-col-md { display: block; } }
+    @media (min-width: 1024px) { .tvc-col-lg { display: block; } }
+    @media (min-width: 1280px) { .tvc-col-xl { display: block; } }
+    .tvc-track {
+      display: flex; flex-direction: column; gap: 24px; padding-bottom: 24px;
+      animation: tvcScroll var(--tvc-duration, 28s) linear infinite;
+    }
+    @keyframes tvcScroll {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-50%); }
+    }
+    .tvc-card {
+      background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 20px;
+      padding: 28px; box-shadow: 0 2px 12px rgba(30,154,128,0.04);
+      width: 100%; max-width: 320px;
+    }
+    .tvc-text { font-size: 14px; color: #1a1a1a; line-height: 1.65; margin: 0; }
+    .tvc-author {
+      display: flex; align-items: center; gap: 10px; margin-top: 16px;
+      padding-top: 14px; border-top: 1px solid #f3f4f6;
+    }
+    .tvc-author img { width: 40px; height: 40px; border-radius: 50%; }
+    .tvc-name { font-size: 13px; font-weight: 600; color: #1a1a1a; line-height: 1.3; }
+    .tvc-role { font-size: 11px; color: #6b7280; line-height: 1.3; }
+    .tvc-col:hover .tvc-track { animation-play-state: paused; }
+    @media (prefers-reduced-motion: reduce) { .tvc-track { animation: none !important; } }
+  </style>
+
+  <script>
+    // Duplicate testimonial cards for seamless infinite scroll
+    document.querySelectorAll('.tvc-track').forEach(function(track) {
+      var cards = track.innerHTML;
+      track.innerHTML = cards + cards;
+    });
+  </script>
 
   <!-- ── 10. Value Stack ── -->
   <section class="section section-white">
@@ -1288,7 +1659,7 @@
 
       <div class="value-stack">
         <div class="value-item">
-          <span class="value-label">Deal Marketplace (hundreds weekly)</span>
+          <span class="value-label">Deal Marketplace (hundreds+ weekly)</span>
           <span class="value-price">£297/mo</span>
         </div>
         <div class="value-item">
@@ -1343,7 +1714,7 @@
             How quickly can I find a deal?
             <span class="faq-toggle">+</span>
           </div>
-          <div class="faq-answer">Most members find their first deal within the first week. With hundreds of weekly verified listings updated daily, you'll have plenty to choose from right away.</div>
+          <div class="faq-answer">Most members find their first deal within the first week. With hundreds+ of weekly approved listings updated daily, you'll have plenty to choose from right away.</div>
         </div>
         <div class="faq-item">
           <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
@@ -1415,6 +1786,80 @@
     <p class="footer-copyright">&copy; 2026 nfstay. All rights reserved.</p>
     <p class="footer-disclaimer">This site is not a part of the Facebook website or Facebook Inc. Additionally, this site is NOT endorsed by Facebook in any way. FACEBOOK is a trademark of FACEBOOK, Inc. Results mentioned are not typical. Your results may vary based on your effort, experience, and market conditions.</p>
   </footer>
+
+  <!-- ── Academy accordion ── -->
+  <script>
+  document.querySelectorAll('.accv2-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.accv2-item').forEach(function(i) { i.classList.remove('active'); });
+      item.classList.add('active');
+    });
+  });
+  </script>
+
+  <!-- ── Booking demo interactivity ── -->
+  <script>
+  (function() {
+    var demoNameInput = document.getElementById('demoName');
+    var demoSubInput = document.getElementById('demoSubdomain');
+    var demoLogo = document.getElementById('demoLogo');
+    var demoLogoImg = document.getElementById('demoLogoImg');
+    var demoFooterLogo = document.getElementById('demoFooterLogo');
+    var demoFooter = document.getElementById('demoFooterName');
+    var demoUrl = document.getElementById('demoUrlBar');
+    var demoSearch = document.getElementById('demoSearchBtn');
+    var demoHeroImg = document.getElementById('demoHeroImg');
+    var currentColor = '#10b981';
+
+    if (demoNameInput) {
+      demoNameInput.addEventListener('input', function() {
+        var v = this.value || 'Your Brand';
+        demoLogo.textContent = v;
+        demoFooter.textContent = v;
+        demoLogo.style.color = currentColor;
+        demoFooter.style.color = currentColor;
+        var sub = v.toLowerCase().replace(/[^a-z0-9]/g, '') || 'yourbrand';
+        demoSubInput.value = sub;
+        demoUrl.textContent = sub + '.nfstay.app';
+      });
+    }
+
+    window.pickColor = function(btn) {
+      currentColor = btn.dataset.color;
+      document.querySelectorAll('.demo-color').forEach(function(b) { b.style.borderColor = 'transparent'; });
+      btn.style.borderColor = currentColor;
+      if (demoSearch) demoSearch.style.backgroundColor = currentColor;
+      if (demoLogo) demoLogo.style.color = currentColor;
+      if (demoFooter) demoFooter.style.color = currentColor;
+      document.querySelectorAll('.demo-price').forEach(function(p) { p.style.color = currentColor; });
+    };
+
+    window.handleLogoUpload = function(input) {
+      if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          demoLogoImg.src = e.target.result;
+          demoLogoImg.style.display = 'block';
+          demoFooterLogo.src = e.target.result;
+          demoFooterLogo.style.display = 'block';
+          document.getElementById('logoLabel').textContent = 'Logo uploaded';
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    };
+
+    window.handleBgUpload = function(input) {
+      if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          demoHeroImg.src = e.target.result;
+          document.getElementById('bgLabel').textContent = 'Background changed';
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    };
+  })();
+  </script>
 
   <!-- ── Smooth scroll for CTA buttons ── -->
   <script>
