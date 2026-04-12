@@ -129,13 +129,6 @@ export default function SignUp() {
 
   useEffect(() => { document.title = 'nfstay - Sign Up'; }, []);
 
-  // Pre-fill email from funnel redirect (?from=funnel&email=X)
-  useEffect(() => {
-    if (funnelEmail) {
-      setValue('email', funnelEmail);
-    }
-  }, [funnelEmail, setValue]);
-
   // Capture referral code from URL (?ref=CODE)
   useEffect(() => {
     const ref = searchParams.get('ref');
@@ -157,6 +150,13 @@ export default function SignUp() {
     resolver: zodResolver(signupSchema),
     defaultValues: { countryCode: '+44', terms: false as unknown as true },
   });
+
+  // Pre-fill email from funnel redirect (?from=funnel&email=X)
+  useEffect(() => {
+    if (funnelEmail) {
+      setValue('email', funnelEmail);
+    }
+  }, [funnelEmail, setValue]);
 
   const pw = watch('password') || '';
   const strength = passwordStrength(pw);
