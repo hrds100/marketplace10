@@ -1111,6 +1111,170 @@
       margin-top: 4px;
     }
 
+    /* ── Pricing Grid (Two Cards) ── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      max-width: 720px;
+      margin: 40px auto 0;
+    }
+    .pricing-card {
+      position: relative;
+      background: #FFFFFF;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: left;
+    }
+    .pricing-card--standard {
+      border-color: #1E9A80;
+      box-shadow: 0 0 0 1px #1E9A80, 0 12px 40px rgba(30,154,128,0.08);
+    }
+    .pricing-popular-tag {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1E9A80;
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 14px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .pricing-for {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9CA3AF;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .pricing-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1A1A1A;
+      margin-bottom: 12px;
+    }
+    .pricing-price {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+      margin-bottom: 4px;
+    }
+    .pricing-currency {
+      font-size: 1.4rem;
+      font-weight: 400;
+      color: #1A1A1A;
+      position: relative;
+      top: -0.6em;
+      font-size: 1rem;
+    }
+    .pricing-amount {
+      font-size: 2.4rem;
+      font-weight: 400;
+      color: #1A1A1A;
+      line-height: 1;
+    }
+    .pricing-period {
+      font-size: 14px;
+      color: #9CA3AF;
+      font-weight: 400;
+      margin-left: 2px;
+    }
+    .pricing-trial {
+      font-size: 13px;
+      color: #6B7280;
+      margin-bottom: 16px;
+    }
+    .pricing-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+    .pricing-badge--teal {
+      background: rgba(30, 154, 128, 0.1);
+      color: #1E9A80;
+    }
+    .pricing-badge--gold {
+      background: rgba(245, 158, 11, 0.1);
+      color: #B45309;
+    }
+    .pricing-features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .pricing-features li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #525252;
+    }
+    .pricing-features li::before {
+      content: '';
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%231e9a80' stroke-width='3'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+    }
+    .pricing-cta {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      box-sizing: border-box;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .pricing-cta--primary {
+      background: #1E9A80;
+      color: #FFFFFF;
+    }
+    .pricing-cta--primary:hover {
+      background: #178F72;
+      transform: translateY(-1px);
+    }
+    .pricing-cta--lifetime {
+      background: #111111;
+      color: #FFFFFF;
+    }
+    .pricing-cta--lifetime:hover {
+      background: #0A0A0A;
+      transform: translateY(-1px);
+    }
+    .pricing-note {
+      font-size: 12px;
+      color: #9CA3AF;
+      text-align: center;
+      margin-top: 10px;
+    }
+    @media (max-width: 768px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+      }
+    }
+
     /* ── FAQ ── */
     .faq-item {
       background: #FFFFFF;
@@ -1588,7 +1752,7 @@
   <section class="hero">
     <div class="hero-inner">
       <h1>Get Instant Access to <em>100+</em> Weekly Airbnb Approved Deals</h1>
-      <p class="hero-sub">The UK's #1 Rent to Serviced Accommodation deal marketplace. Find your first profitable property in minutes, not months.</p>
+      <p class="hero-sub">Browse 100+ landlord-approved deals added every week &mdash; verified, compliance-checked and ready to operate. Find, track and close deals from one platform. Standard membership: unlock 100 deal contacts per month.</p>
 
       <div class="hero-stats">
         <div class="hero-stat">
@@ -2264,47 +2428,86 @@
     });
   </script>
 
-  <!-- ── 10. Value Stack ── -->
+  <!-- ── 10. Value Stack + Pricing ── -->
   <section class="section section-white">
     <div class="section-narrow text-center">
       <span class="section-badge">Limited Offer</span>
       <h2 class="section-title">Here's everything you get today</h2>
-      <p class="section-subtitle">Total value over £1,100/month yours for a fraction of the cost.</p>
+      <p class="section-subtitle">Total value over &pound;1,100/month, yours for a fraction of the cost.</p>
 
       <div class="value-stack">
         <div class="value-item">
           <span class="value-label">Deal Marketplace (100+ weekly)</span>
-          <span class="value-price">£297/mo</span>
+          <span class="value-price">&pound;297/mo</span>
         </div>
         <div class="value-item">
           <span class="value-label">CRM Pipeline</span>
-          <span class="value-price">£97/mo</span>
+          <span class="value-price">&pound;97/mo</span>
         </div>
         <div class="value-item">
           <span class="value-label">Academy Training</span>
-          <span class="value-price">£497</span>
+          <span class="value-price">&pound;497</span>
         </div>
         <div class="value-item">
-          <span class="value-label">Landlord Contact Info</span>
-          <span class="value-price">£197/mo</span>
+          <span class="value-label">Deal Contact Info</span>
+          <span class="value-price">&pound;197/mo</span>
         </div>
         <div class="value-item">
           <span class="value-label">Earnings Estimator</span>
-          <span class="value-price">£47/mo</span>
+          <span class="value-price">&pound;47/mo</span>
         </div>
         <div class="value-total">
           <span class="value-total-label">Total Value</span>
-          <span class="value-total-price">£1,135</span>
-        </div>
-        <div class="your-price">
-          <div class="your-price-label">Your price today</div>
-          <div class="your-price-amount">£5</div>
-          <div class="your-price-detail">for 3 days, then £67/month</div>
+          <span class="value-total-price">&pound;1,135+</span>
         </div>
       </div>
 
-      <a href="#payment" class="cta-btn">Get Everything for £5</a>
-      <span class="cta-sub">Then £67/month. Cancel online anytime.</span>
+      <h3 style="font-size:20px;font-weight:700;color:#1A1A1A;margin:40px 0 8px;">Your options today</h3>
+
+      <div class="pricing-grid">
+        <!-- Standard Card -->
+        <div class="pricing-card pricing-card--standard">
+          <div class="pricing-popular-tag">Most popular</div>
+          <div class="pricing-for">New &amp; growing operators</div>
+          <div class="pricing-name">Full Access Membership</div>
+          <div class="pricing-price">
+            <span class="pricing-currency">&pound;</span><span class="pricing-amount">67</span><span class="pricing-period">/month</span>
+          </div>
+          <div class="pricing-trial">Start with a 3-day trial for &pound;5</div>
+          <div class="pricing-badge pricing-badge--teal">Unlock 100 deal contacts per month</div>
+          <ul class="pricing-features">
+            <li>CRM pipeline to track every deal</li>
+            <li>Earnings estimator per property</li>
+            <li>nfstay Academy (44 lessons, 6 modules)</li>
+            <li>Direct deal contact details</li>
+            <li>Priority deal alerts</li>
+            <li>Affiliate Agent programme</li>
+            <li>White-label booking site</li>
+          </ul>
+          <a href="#payment" class="pricing-cta pricing-cta--primary">Start &pound;5 Trial</a>
+        </div>
+
+        <!-- Lifetime Card -->
+        <div class="pricing-card pricing-card--lifetime">
+          <div class="pricing-for">Scaling operators &mdash; 5+ units</div>
+          <div class="pricing-name">Lifetime Access</div>
+          <div class="pricing-price">
+            <span class="pricing-currency">&pound;</span><span class="pricing-amount">1,997</span><span class="pricing-period">one-time</span>
+          </div>
+          <div class="pricing-trial">Full platform access, forever</div>
+          <div class="pricing-badge pricing-badge--gold">Unlimited deal contacts from 100+ weekly deals</div>
+          <ul class="pricing-features">
+            <li>Everything in Full Access</li>
+            <li>Unlimited deal contacts &mdash; no cap, ever</li>
+            <li>100+ new verified deals added every week</li>
+            <li>All future features included</li>
+            <li>Price locked forever &mdash; one payment</li>
+            <li>Priority support</li>
+          </ul>
+          <a href="#payment" class="pricing-cta pricing-cta--lifetime">Get Lifetime Access &mdash; &pound;1,997</a>
+          <div class="pricing-note">Or start with the &pound;5 trial and upgrade inside your account</div>
+        </div>
+      </div>
     </div>
   </section>
 

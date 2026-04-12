@@ -132,10 +132,12 @@
         <!-- Hero heading -->
         <div class="hero-text-block">
           <h1 class="hero-heading" data-feature="SHARED__LANDING_HERO_HEADING"><span data-i18n="hero_h1a">Landlord-Approved Airbnb Properties</span><br><span class="italic-accent" data-i18n="hero_h1b">Find, negotiate and grow your portfolio</span></h1>
+          <p class="hero-subhead" style="font-size:16px;color:#6B7280;max-width:640px;margin:16px auto 8px;line-height:1.6;text-align:center;">Browse 100+ verified rent-to-SA deals added every week across the UK. One platform: deal marketplace, CRM pipeline, earnings estimator, and full Academy training. Standard membership unlocks 100 deal contacts per month &mdash; more than enough to land your first 1&ndash;3 properties.</p>
           <div class="hero-buttons" data-feature="SHARED__LANDING_HERO_BUTTONS">
             <a href="/signup" class="hero-cta" data-feature="SHARED__LANDING_HERO_CTA" data-i18n="hero_cta">Get Started</a>
             <a href="/signin" class="hero-login" data-feature="SHARED__LANDING_HERO_LOGIN" data-i18n="hero_login">Login</a>
           </div>
+          <div style="margin-top:8px;"><a href="#pricing" style="font-size:13px;color:#1E9A80;text-decoration:none;font-weight:500;">Scaling to 5+ units? See Lifetime Access &darr;</a></div>
         </div>
 
         <!-- Demo Component -->
@@ -1409,20 +1411,54 @@
       </div>
     </div>
   </div>
-  <!-- PRICING (£67 crossed out, £5 big) -->
-  <div class="s bg-white sr" data-feature="SHARED__LANDING_PRICING" id="pricing"><div class="wrap narrow"><div class="sh"><h2 data-i18n="price_h">Simple pricing for serious operators</h2><p>One plan. Everything included. Cancel any time.</p></div>
-    <div class="price-card" data-feature="SHARED__LANDING_PRICING_CARD">
-      <div class="price-title">Full Access</div>
-      <div style="display:flex;align-items:baseline;justify-content:center;gap:12px;margin:8px 0;">
-        <div style="font-size:42px;font-weight:800;color:#d1d5db;text-decoration:line-through;line-height:1;">&pound;67</div>
-        <div style="font-size:52px;font-weight:800;color:#1e9a80;line-height:1;">&pound;5</div>
+  <!-- PRICING -->
+  <div class="s bg-white sr" data-feature="SHARED__LANDING_PRICING" id="pricing"><div class="wrap narrow"><div class="sh"><h2 data-i18n="price_h">Simple pricing for serious operators</h2><p>Choose the way you want to grow with nfstay.</p></div>
+
+    <div class="pricing-grid">
+      <!-- Standard Card -->
+      <div class="pricing-card pricing-card--standard">
+        <div class="pricing-popular-tag">Most popular</div>
+        <div class="pricing-for">New &amp; growing operators</div>
+        <div class="pricing-name">Full Access Membership</div>
+        <div class="pricing-price">
+          <span class="pricing-currency">&pound;</span><span class="pricing-amount">67</span><span class="pricing-period">/month</span>
+        </div>
+        <div class="pricing-trial">Start with a 3-day trial for &pound;5</div>
+        <div class="pricing-badge pricing-badge--teal">Unlock 100 deal contacts per month</div>
+        <ul class="pricing-features">
+          <li>CRM pipeline to track every deal</li>
+          <li>Earnings estimator per property</li>
+          <li>nfstay Academy (44 lessons, 6 modules)</li>
+          <li>Direct deal contact details</li>
+          <li>Priority deal alerts</li>
+          <li>Affiliate Agent programme</li>
+          <li>White-label booking site</li>
+        </ul>
+        <a href="/signup" class="pricing-cta pricing-cta--primary" data-feature="SHARED__LANDING_PRICING_CTA">Start &pound;5 Trial</a>
       </div>
-      <div style="font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:4px;">3-day trial for &pound;5, then &pound;67/month</div>
-      <div class="price-cancel">Cancel online at any time. No contracts.</div>
-      <ul class="price-list"><li>100+ weekly approved deals</li><li>CRM pipeline</li><li>Unified inbox</li><li>Earnings estimator</li><li>nfstay Academy</li><li>Direct landlord contact</li><li>Priority deal alerts</li><li>Affiliate Agent programme</li><li>White-label booking site</li></ul>
-      <a href="/signup" class="btn btn-green btn-full" data-feature="SHARED__LANDING_PRICING_CTA" data-i18n="price_cta">Free Access . No Credit Card Needed</a>
-      <div class="price-micro">Cancel online at any time. No contracts.</div>
+
+      <!-- Lifetime Card -->
+      <div class="pricing-card pricing-card--lifetime">
+        <div class="pricing-for">Scaling operators &mdash; 5+ units</div>
+        <div class="pricing-name">Lifetime Access</div>
+        <div class="pricing-price">
+          <span class="pricing-currency">&pound;</span><span class="pricing-amount">1,997</span><span class="pricing-period">one-time</span>
+        </div>
+        <div class="pricing-trial">Full platform access, forever</div>
+        <div class="pricing-badge pricing-badge--gold">Unlimited deal contacts from 100+ weekly deals</div>
+        <ul class="pricing-features">
+          <li>Everything in Full Access</li>
+          <li>Unlimited deal contacts &mdash; no cap, ever</li>
+          <li>100+ new verified deals added every week</li>
+          <li>All future features included</li>
+          <li>Price locked forever &mdash; one payment</li>
+          <li>Priority support</li>
+        </ul>
+        <a href="/signup" class="pricing-cta pricing-cta--lifetime">Get Lifetime Access &mdash; &pound;1,997</a>
+        <div class="pricing-note">Or start with the &pound;5 trial and upgrade inside your account</div>
+      </div>
     </div>
+
   </div></div>
 
   <!-- CTA BAND -->
