@@ -8,7 +8,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sora:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@400;500;600;700;800;900&family=Sora:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/landing/css/social-proof.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1569,6 +1569,27 @@
     }
     .booking-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(30,154,128,0.3); }
     .booking-cta-sub { text-align: center; font-size: 11px; color: #6b7280; margin-top: 8px; }
+
+    /* ── Design override: warm beige + Instrument Serif ── */
+    body { background-color: #f7f6f2 !important; }
+    .hero {
+      background: linear-gradient(160deg, #f0ede8 0%, #f7f6f2 60%) !important;
+    }
+    .hero h1 {
+      font-family: 'Instrument Serif', Georgia, serif !important;
+      font-weight: 400 !important;
+    }
+    .hero h1 em {
+      font-style: italic !important;
+      color: #1E9A80 !important;
+    }
+    h2, .section-title {
+      font-family: 'Instrument Serif', Georgia, serif !important;
+      font-weight: 400 !important;
+    }
+    .section-white { background-color: #faf9f6 !important; }
+    .section { background-color: #f7f6f2 !important; }
+    .academy-section-bg { background-color: #f0ede8 !important; }
   </style>
 </head>
 <body>
@@ -1844,16 +1865,16 @@
     <div class="section-narrow text-center">
       <span class="section-badge">What You Get</span>
       <h2 class="section-title">Everything you need to land your first deal</h2>
-      <p class="section-subtitle">One platform. No upsells. No hidden costs.</p>
+      <p class="section-subtitle">One platform. No hidden costs. Lifetime upgrade available for scaling operators.</p>
 
       <div class="features-grid">
         <div class="feature-item">
           <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="feature-name">100+ weekly approved Rent to Serviced Accommodation deals</div>
+          <div class="feature-name">100+ weekly verified rent-to-SA deals across the UK</div>
         </div>
         <div class="feature-item">
           <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="feature-name">Direct landlord contact details</div>
+          <div class="feature-name">Direct deal contact details</div>
         </div>
         <div class="feature-item">
           <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
