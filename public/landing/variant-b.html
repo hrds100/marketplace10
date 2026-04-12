@@ -1569,6 +1569,14 @@
     }
     .booking-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(30,154,128,0.3); }
     .booking-cta-sub { text-align: center; font-size: 11px; color: #6b7280; margin-top: 8px; }
+
+    /* ── Layout override ── */
+    @media (max-width: 768px) {
+      .section-narrow div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+        max-width: 400px !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1587,8 +1595,8 @@
   <!-- ── 2. HERO ── -->
   <section class="hero">
     <div class="hero-inner">
-      <h1>Get Instant Access to <em>100+</em> Weekly Airbnb Approved Deals</h1>
-      <p class="hero-sub">The UK's #1 Rent to Serviced Accommodation deal marketplace. Find your first profitable property in minutes, not months.</p>
+      <h1>Get Instant Access to <em>100+</em> Weekly<br>Airbnb Approved Deals</h1>
+      <p class="hero-sub">Browse 100+ landlord-approved deals added every week - verified, compliance-checked and ready to operate. Find, track and close deals from one platform. Standard membership: unlock 100 deal contacts per month.</p>
 
       <div class="hero-stats">
         <div class="hero-stat">
@@ -1844,16 +1852,16 @@
     <div class="section-narrow text-center">
       <span class="section-badge">What You Get</span>
       <h2 class="section-title">Everything you need to land your first deal</h2>
-      <p class="section-subtitle">One platform. No upsells. No hidden costs.</p>
+      <p class="section-subtitle">One platform. No hidden costs. Lifetime upgrade available for scaling operators.</p>
 
       <div class="features-grid">
         <div class="feature-item">
           <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="feature-name">100+ weekly approved Rent to Serviced Accommodation deals</div>
+          <div class="feature-name">100+ weekly verified rent-to-SA deals across the UK</div>
         </div>
         <div class="feature-item">
           <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="feature-name">Direct landlord contact details</div>
+          <div class="feature-name">Direct deal contact details</div>
         </div>
         <div class="feature-item">
           <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -1870,10 +1878,6 @@
         <div class="feature-item">
           <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
           <div class="feature-name">Priority deal alerts</div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="feature-name">Unified inbox (WhatsApp + email)</div>
         </div>
         <div class="feature-item">
           <div class="feature-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -2264,47 +2268,55 @@
     });
   </script>
 
-  <!-- ── 10. Value Stack ── -->
+  <!-- ── Pricing Cards ── -->
   <section class="section section-white">
-    <div class="section-narrow text-center">
-      <span class="section-badge">Limited Offer</span>
-      <h2 class="section-title">Here's everything you get today</h2>
-      <p class="section-subtitle">Total value over £1,100/month yours for a fraction of the cost.</p>
+    <div class="section-narrow">
+      <h3 style="font-size:20px;font-weight:700;color:#1A1A1A;margin:0 0 8px;text-align:center;">Your options today</h3>
 
-      <div class="value-stack">
-        <div class="value-item">
-          <span class="value-label">Deal Marketplace (100+ weekly)</span>
-          <span class="value-price">£297/mo</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:880px;margin:24px auto 0;">
+        <!-- Standard Card -->
+        <div style="position:relative;background:#fff;border:2px solid #1E9A80;border-radius:16px;padding:28px 24px;box-shadow:0 0 0 1px #1E9A80,0 12px 40px rgba(30,154,128,0.08);">
+          <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#1E9A80;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:4px 14px;border-radius:6px;white-space:nowrap;">Most popular</div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#9CA3AF;font-weight:600;margin-bottom:4px;">New &amp; growing operators</div>
+          <div style="font-size:17px;font-weight:700;color:#1A1A1A;margin-bottom:12px;">Full Access Membership</div>
+          <div style="display:flex;align-items:baseline;gap:2px;margin-bottom:4px;">
+            <span style="font-size:1rem;color:#1A1A1A;position:relative;top:-0.6em;">&pound;</span><span style="font-size:2.4rem;font-weight:400;color:#1A1A1A;line-height:1;">67</span><span style="font-size:14px;color:#9CA3AF;margin-left:2px;">/month</span>
+          </div>
+          <div style="font-size:13px;color:#6B7280;margin-bottom:16px;">Start with a 3-day trial for &pound;5</div>
+          <div style="display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;background:rgba(30,154,128,0.1);color:#1E9A80;margin-bottom:16px;">Unlock 100 deal contacts per month</div>
+          <div style="text-align:left;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> CRM pipeline to track every deal</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Earnings estimator per property</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> nfstay Academy (44 lessons, 6 modules)</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Direct deal contact details</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Priority deal alerts</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Affiliate Agent programme</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> White-label booking site</div>
+          </div>
+          <a href="#payment" class="cta-btn" style="display:block;width:100%;text-align:center;padding:13px 20px;border-radius:14px;font-size:14px;font-weight:600;">Start &pound;5 Trial</a>
         </div>
-        <div class="value-item">
-          <span class="value-label">CRM Pipeline</span>
-          <span class="value-price">£97/mo</span>
-        </div>
-        <div class="value-item">
-          <span class="value-label">Academy Training</span>
-          <span class="value-price">£497</span>
-        </div>
-        <div class="value-item">
-          <span class="value-label">Landlord Contact Info</span>
-          <span class="value-price">£197/mo</span>
-        </div>
-        <div class="value-item">
-          <span class="value-label">Earnings Estimator</span>
-          <span class="value-price">£47/mo</span>
-        </div>
-        <div class="value-total">
-          <span class="value-total-label">Total Value</span>
-          <span class="value-total-price">£1,135</span>
-        </div>
-        <div class="your-price">
-          <div class="your-price-label">Your price today</div>
-          <div class="your-price-amount">£5</div>
-          <div class="your-price-detail">for 3 days, then £67/month</div>
+
+        <!-- Lifetime Card -->
+        <div style="position:relative;background:#fff;border:1.5px solid #E5E7EB;border-radius:16px;padding:28px 24px;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#9CA3AF;font-weight:600;margin-bottom:4px;">Scaling operators - 5+ units</div>
+          <div style="font-size:17px;font-weight:700;color:#1A1A1A;margin-bottom:12px;">Lifetime Access</div>
+          <div style="display:flex;align-items:baseline;gap:2px;margin-bottom:4px;">
+            <span style="font-size:1rem;color:#1A1A1A;position:relative;top:-0.6em;">&pound;</span><span style="font-size:2.4rem;font-weight:400;color:#1A1A1A;line-height:1;">1,997</span><span style="font-size:14px;color:#9CA3AF;margin-left:2px;">one-time</span>
+          </div>
+          <div style="font-size:13px;color:#6B7280;margin-bottom:16px;">Full platform access, forever</div>
+          <div style="display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;background:rgba(245,158,11,0.1);color:#B45309;margin-bottom:16px;">Unlimited deal contacts from 100+ weekly deals</div>
+          <div style="text-align:left;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Everything in Full Access</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Unlimited deal contacts - no cap, ever</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> 100+ new verified deals added every week</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> All future features included</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Price locked forever - one payment</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#525252;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Priority support</div>
+          </div>
+          <a href="#payment" style="display:block;width:100%;text-align:center;padding:13px 20px;border-radius:14px;font-size:14px;font-weight:600;text-decoration:none;background:#111111;color:#fff;box-sizing:border-box;transition:background 0.2s;">Get Lifetime Access - &pound;1,997</a>
+          <div style="font-size:12px;color:#9CA3AF;text-align:center;margin-top:10px;">Or start with the &pound;5 trial and upgrade inside your account</div>
         </div>
       </div>
-
-      <a href="#payment" class="cta-btn">Get Everything for £5</a>
-      <span class="cta-sub">Then £67/month. Cancel online anytime.</span>
     </div>
   </section>
 
