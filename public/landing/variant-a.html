@@ -30,6 +30,14 @@
   <link rel="stylesheet" href="/landing/css/social-proof.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <!-- ScrollTrigger removed -journey section uses IntersectionObserver -->
+  <style>
+    @media (max-width: 768px) {
+      #pricing .wrap.narrow > div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+        max-width: 400px !important;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -1409,20 +1417,40 @@
       </div>
     </div>
   </div>
-  <!-- PRICING (£67 crossed out, £5 big) -->
-  <div class="s bg-white sr" data-feature="SHARED__LANDING_PRICING" id="pricing"><div class="wrap narrow"><div class="sh"><h2 data-i18n="price_h">Simple pricing for serious operators</h2><p>One plan. Everything included. Cancel any time.</p></div>
-    <div class="price-card" data-feature="SHARED__LANDING_PRICING_CARD">
-      <div class="price-title">Full Access</div>
-      <div style="display:flex;align-items:baseline;justify-content:center;gap:12px;margin:8px 0;">
-        <div style="font-size:42px;font-weight:800;color:#d1d5db;text-decoration:line-through;line-height:1;">&pound;67</div>
-        <div style="font-size:52px;font-weight:800;color:#1e9a80;line-height:1;">&pound;5</div>
+  <!-- PRICING -->
+  <div class="s bg-white sr" data-feature="SHARED__LANDING_PRICING" id="pricing"><div class="wrap narrow">
+    <h2 style="font-size:32px;font-weight:700;color:#1a1a1a;text-align:center;margin-bottom:40px;">Your options today</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:880px;margin:0 auto;">
+      <!-- Standard Card -->
+      <div style="position:relative;background:#fff;border:2px solid #1E9A80;border-radius:16px;padding:32px 28px;box-shadow:0 0 0 1px #1E9A80,0 8px 32px rgba(30,154,128,0.10);">
+        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#1E9A80;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:5px 16px;border-radius:6px;white-space:nowrap;">Most popular</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#9CA3AF;font-weight:600;margin-bottom:6px;">New &amp; growing operators</div>
+        <div style="font-size:20px;font-weight:700;color:#1A1A1A;margin-bottom:16px;">Full Access Membership</div>
+        <div style="display:flex;align-items:baseline;gap:2px;margin-bottom:6px;">
+          <span style="font-size:16px;color:#1A1A1A;position:relative;top:-0.5em;">&pound;</span><span style="font-size:3rem;font-weight:400;color:#1A1A1A;line-height:1;">67</span><span style="font-size:15px;color:#9CA3AF;margin-left:4px;">/month</span>
+        </div>
+        <div style="font-size:14px;color:#6B7280;margin-bottom:20px;">Start with a 3-day trial for &pound;5</div>
+        <div style="display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px;background:rgba(30,154,128,0.1);color:#1E9A80;margin-bottom:20px;">Unlock 100 deal contacts per month</div>
+        <ul class="price-list"><li>CRM pipeline to track every deal</li><li>Earnings estimator per property</li><li>nfstay Academy (44 lessons, 6 modules)</li><li>Direct deal contact details</li><li>Priority deal alerts</li><li>Affiliate Agent programme</li><li>White-label booking site</li></ul>
+        <a href="/signup" class="btn btn-green btn-full" data-feature="SHARED__LANDING_PRICING_CTA" style="padding:14px 20px;font-size:15px;border-radius:12px;">Start &pound;5 Trial</a>
       </div>
-      <div style="font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:4px;">3-day trial for &pound;5, then &pound;67/month</div>
-      <div class="price-cancel">Cancel online at any time. No contracts.</div>
-      <ul class="price-list"><li>100+ weekly approved deals</li><li>CRM pipeline</li><li>Unified inbox</li><li>Earnings estimator</li><li>nfstay Academy</li><li>Direct landlord contact</li><li>Priority deal alerts</li><li>Affiliate Agent programme</li><li>White-label booking site</li></ul>
-      <a href="/signup" class="btn btn-green btn-full" data-feature="SHARED__LANDING_PRICING_CTA" data-i18n="price_cta">Free Access . No Credit Card Needed</a>
-      <div class="price-micro">Cancel online at any time. No contracts.</div>
+
+      <!-- Lifetime Card -->
+      <div style="position:relative;background:#fff;border:1.5px solid #E5E7EB;border-radius:16px;padding:32px 28px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#9CA3AF;font-weight:600;margin-bottom:6px;">Scaling operators - 5+ units</div>
+        <div style="font-size:20px;font-weight:700;color:#1A1A1A;margin-bottom:16px;">Lifetime Access</div>
+        <div style="display:flex;align-items:baseline;gap:2px;margin-bottom:6px;">
+          <span style="font-size:16px;color:#1A1A1A;position:relative;top:-0.5em;">&pound;</span><span style="font-size:3rem;font-weight:400;color:#1A1A1A;line-height:1;">1,997</span><span style="font-size:15px;color:#9CA3AF;margin-left:4px;">one-time</span>
+        </div>
+        <div style="font-size:14px;color:#6B7280;margin-bottom:20px;">Full platform access, forever</div>
+        <div style="display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px;background:rgba(245,158,11,0.1);color:#B45309;margin-bottom:20px;">Unlimited deal contacts from 100+ weekly deals</div>
+        <ul class="price-list"><li>Everything in Full Access</li><li>Unlimited deal contacts - no cap, ever</li><li>100+ new verified deals added every week</li><li>All future features included</li><li>Price locked forever - one payment</li><li>Priority support</li></ul>
+        <a href="/signup" style="display:block;width:100%;text-align:center;padding:14px 20px;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;background:#111111;color:#fff;box-sizing:border-box;transition:background 0.2s;">Get Lifetime Access - &pound;1,997</a>
+        <div style="font-size:12px;color:#9CA3AF;text-align:center;margin-top:10px;">Or start with the &pound;5 trial and upgrade inside your account</div>
+      </div>
     </div>
+
   </div></div>
 
   <!-- CTA BAND -->
