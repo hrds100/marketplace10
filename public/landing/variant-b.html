@@ -8,7 +8,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@400;500;600;700;800;900&family=Sora:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sora:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/landing/css/social-proof.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1570,27 +1570,7 @@
     .booking-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(30,154,128,0.3); }
     .booking-cta-sub { text-align: center; font-size: 11px; color: #6b7280; margin-top: 8px; }
 
-    /* ── Design override: warm beige + Instrument Serif ── */
-    body { background-color: #f7f6f2 !important; }
-    .hero {
-      background: linear-gradient(160deg, #f0ede8 0%, #f7f6f2 60%) !important;
-    }
-    .hero h1 {
-      font-family: 'Instrument Serif', Georgia, serif !important;
-      font-weight: 400 !important;
-      font-size: 68px !important;
-    }
-    .hero h1 em {
-      font-style: italic !important;
-      color: #1E9A80 !important;
-    }
-    h2, .section-title {
-      font-family: 'Instrument Serif', Georgia, serif !important;
-      font-weight: 400 !important;
-    }
-    .section-white { background-color: #faf9f6 !important; }
-    .section { background-color: #f7f6f2 !important; }
-    .academy-section-bg { background-color: #f0ede8 !important; }
+    /* ── Layout override ── */
     @media (max-width: 768px) {
       .section-narrow div[style*="grid-template-columns: 1fr 1fr"] {
         grid-template-columns: 1fr !important;
@@ -2288,52 +2268,8 @@
     });
   </script>
 
-  <!-- ── 10. Value Stack ── -->
-  <section class="section section-white">
-    <div class="section-narrow text-center">
-      <span class="section-badge">Limited Offer</span>
-      <h2 class="section-title">Here's everything you get today</h2>
-      <p class="section-subtitle">Total value over &pound;1,100/month, yours for a fraction of the cost.</p>
-
-      <div class="value-stack">
-        <div class="value-item">
-          <span class="value-label">Deal Marketplace (100+ weekly)</span>
-          <span class="value-price">&pound;297/mo</span>
-        </div>
-        <div class="value-item">
-          <span class="value-label">CRM Pipeline</span>
-          <span class="value-price">&pound;97/mo</span>
-        </div>
-        <div class="value-item">
-          <span class="value-label">Academy Training</span>
-          <span class="value-price">&pound;497</span>
-        </div>
-        <div class="value-item">
-          <span class="value-label">Deal Contact Info</span>
-          <span class="value-price">&pound;197/mo</span>
-        </div>
-        <div class="value-item">
-          <span class="value-label">Earnings Estimator</span>
-          <span class="value-price">&pound;47/mo</span>
-        </div>
-        <div class="value-total">
-          <span class="value-total-label">Total Value</span>
-          <span class="value-total-price">&pound;1,135+</span>
-        </div>
-        <div class="your-price">
-          <div class="your-price-label">Your price today</div>
-          <div class="your-price-amount">&pound;5</div>
-          <div class="your-price-detail">for 3 days, then &pound;67/month</div>
-        </div>
-      </div>
-
-      <a href="#payment" class="cta-btn">Get Everything for &pound;5</a>
-      <span class="cta-sub">Then &pound;67/month. Cancel online anytime.</span>
-    </div>
-  </section>
-
   <!-- ── Pricing Cards ── -->
-  <section class="section" style="padding-top:0;">
+  <section class="section section-white">
     <div class="section-narrow">
       <h3 style="font-size:20px;font-weight:700;color:#1A1A1A;margin:0 0 8px;text-align:center;">Your options today</h3>
 
