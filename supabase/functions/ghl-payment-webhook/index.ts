@@ -26,6 +26,11 @@ const PRODUCT_ID_TO_TIER: Record<string, string> = {
   'nfstay-monthly-access': 'monthly',
   'nfstay-lifetime-access': 'lifetime',
   'nfstay-annual-access': 'yearly',
+  // GHL workflow product name strings (exact match from GHL order payload)
+  'nfstay Lifetime Access - £1,997': 'lifetime',
+  'nfstay Lifetime Access - £997': 'lifetime',
+  'nfstay Monthly Access - £67': 'monthly',
+  'nfstay Annual Access - £397': 'yearly',
   // Legacy IDs
   '69b5b769081db66d1afbf145': 'monthly',
   '69b5b777711f98f382f110ff': 'lifetime',

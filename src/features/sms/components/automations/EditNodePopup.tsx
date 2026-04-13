@@ -86,7 +86,7 @@ export function EditNodePopup() {
   const [stageId, setStageId] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
   const [webhookMethod, setWebhookMethod] = useState('POST');
-  const [model, setModel] = useState('gpt-5.4-mini');
+  const [model, setModel] = useState('gpt-4o-mini');
 
   useEffect(() => {
     if (nodeData && node) {
@@ -98,7 +98,7 @@ export function EditNodePopup() {
       setUseGlobalSettings(nodeData.useGlobalSettings !== false);
       setDelay(nodeData.delay || 0);
       setTemperature(nodeData.modelOptions?.temperature ?? 0.7);
-      setModel(nodeData.modelOptions?.model || 'gpt-5.4-mini');
+      setModel(nodeData.modelOptions?.model || 'gpt-4o-mini');
       setSteps(nodeData.steps || []);
       setAssignTo(nodeData.assignTo || '');
       setLabelId(nodeData.labelId || '');
@@ -380,9 +380,9 @@ export function EditNodePopup() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="gpt-5.4-nano">GPT-5.4 Nano (fastest, cheapest)</SelectItem>
-                            <SelectItem value="gpt-5.4-mini">GPT-5.4 Mini (recommended)</SelectItem>
-                            <SelectItem value="gpt-5.4">GPT-5.4 (flagship)</SelectItem>
+                            <SelectItem value="gpt-4o-mini">GPT-5.4 Nano (fastest, cheapest)</SelectItem>
+                            <SelectItem value="gpt-4o-mini">GPT-5.4 Mini (recommended)</SelectItem>
+                            <SelectItem value="gpt-4o">GPT-5.4 (flagship)</SelectItem>
                             <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
                             <SelectItem value="gpt-5">GPT-5</SelectItem>
                             <SelectItem value="o4-mini">O4 Mini (reasoning)</SelectItem>

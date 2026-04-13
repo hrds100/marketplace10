@@ -49,7 +49,7 @@ async function fetchFlow(id: string): Promise<FlowData> {
     nodes: flowJson.nodes ?? [],
     edges: flowJson.edges ?? [],
     globalPrompt: flowJson.globalPrompt ?? 'You are a helpful property assistant for NFStay. Be professional and concise.',
-    globalModel: flowJson.globalModel ?? 'gpt-5.4-mini',
+    globalModel: flowJson.globalModel ?? 'gpt-4o-mini',
     globalTemperature: flowJson.globalTemperature ?? 0.7,
     maxRepliesPerLead: flowJson.maxRepliesPerLead ?? 10,
     isActive: row.is_active,
@@ -96,7 +96,7 @@ export function useAutomationFlow(id: string | undefined) {
           nodes: nodes ?? currentFlow?.nodes ?? [],
           edges: edges ?? currentFlow?.edges ?? [],
           globalPrompt: globalPrompt ?? currentFlow?.globalPrompt ?? '',
-          globalModel: globalModel ?? currentFlow?.globalModel ?? 'gpt-5.4-mini',
+          globalModel: globalModel ?? currentFlow?.globalModel ?? 'gpt-4o-mini',
           globalTemperature: globalTemperature ?? currentFlow?.globalTemperature ?? 0.7,
           maxRepliesPerLead: maxRepliesPerLead ?? currentFlow?.maxRepliesPerLead ?? 10,
         };
