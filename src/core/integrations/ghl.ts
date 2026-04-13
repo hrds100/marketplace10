@@ -86,6 +86,19 @@ export function getUpgradeUrl(targetTier: string, contactInfo?: { email?: string
   return `${base}?${params.toString()}`;
 }
 
+/**
+ * Lifetime purchase URL — opens in a new tab (not in the iframe funnel).
+ * Set VITE_GHL_LIFETIME_URL to override. Falls back to pay.nfstay.com/lifetime.
+ */
+export function getLifetimeUrl(contactInfo?: { email?: string; name?: string }): string {
+  const base = import.meta.env.VITE_GHL_LIFETIME_URL || 'https://pay.nfstay.com/lifetime';
+  const params = new URLSearchParams();
+  if (contactInfo?.email) params.set('email', contactInfo.email);
+  if (contactInfo?.name) params.set('name', contactInfo.name);
+  params.set('_t', String(Date.now()));
+  return `${base}?${params.toString()}`;
+}
+
 // ── Tier helpers ──
 
 export type TierName = 'free' | 'monthly' | 'yearly' | 'lifetime';
