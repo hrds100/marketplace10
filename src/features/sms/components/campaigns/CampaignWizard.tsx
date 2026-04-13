@@ -253,6 +253,20 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
     }
   }
 
+  // Normalise parsed CSV rows — map any phone-like column to `phone`, name-like to `name`
+  function normaliseCsvRows(raw: CsvParsedRow[]): CsvParsedRow[] {
+    if (raw.length === 0) return raw;
+    const keys = Object.keys(raw[0]);
+    const phoneKey = keys.find((k) =>
+      /^(phone[\s_]?number?|mobile|tel(ephone)?|contact[\s_]?number?)$/i.test(k.trim())
+    ) || keys.find((k) => /phone|mobile|tel/i.test(k));
+    const nameKey = keys.find((k) =>
+      /^(full[\s_]?name|contact[\s_]?name|display[\s_]?name|first[\s_]?name|name)$/i.test(k.trim())
+    ) || keys.find((k) => /name/i.test(k));
+    if (!phoneKey) return raw;
+    return raw.map((r) => ({ ...r, phone: r[phoneKey]?.trim() || undefined, name: nameKey ? (r[nameKey]?.trim() || undefined) : r.name }));
+  }
+
   // CSV parsing
   function handleCsvFile(file: File) {
     updateCsv({ file });
@@ -260,7 +274,7 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
       header: true,
       skipEmptyLines: true,
       complete: (result) => {
-        const rows = result.data.filter((r) => r.phone && r.phone.trim().length > 0);
+        const rows = normaliseCsvRows(result.data).filter((r) => r.phone && r.phone.trim().length > 0);
         const existingPhones = new Set(contacts.map((c) => c.phoneNumber));
         const uniqueRows = rows.filter((r) => !existingPhones.has(r.phone!));
         const duplicatesRemoved = rows.length - uniqueRows.length;
