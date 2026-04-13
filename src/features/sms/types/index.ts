@@ -124,17 +124,21 @@ export interface SmsCampaign {
   id: string;
   name: string;
   batchName: string | null;
+  templates: string[];
   messageBody: string;
   numberIds: string[];
   rotation: boolean;
+  templateRotation: boolean;
   includeOptOut: boolean;
-  status: 'draft' | 'scheduled' | 'sending' | 'complete' | 'cancelled';
+  status: 'draft' | 'scheduled' | 'sending' | 'paused' | 'complete' | 'cancelled';
   scheduledAt: string | null;
   totalRecipients: number;
   sentCount: number;
   deliveredCount: number;
   failedCount: number;
   skippedCount: number;
+  sendSpeed: { min: number; max: number } | null;
+  batchSize: number | null;
   createdAt: string;
 }
 

@@ -18,6 +18,7 @@ const STATUS_COLOURS: Record<string, string> = {
   cancelled: '#EF4444',
   undelivered: '#F59E0B',
   skipped_opt_out: '#F59E0B',
+  paused: '#F59E0B',
   draft: '#6B7280',
 };
 
