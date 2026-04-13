@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserTier } from '@/hooks/useUserTier';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { isPaidTier, tierDisplayName, getFunnelUrl, getUpgradeUrl } from '@/lib/ghl';
+import { isPaidTier, tierDisplayName, getFunnelUrl, getUpgradeUrl, getLifetimeUrl } from '@/lib/ghl';
 import { normalizeUKPhone } from '@/lib/phoneValidation';
 import PaymentSheet from '@/features/payment/PaymentSheet';
 
@@ -398,17 +398,43 @@ export default function SettingsPage() {
                 )}
               </div>
 
-              {/* Upgrade option for free users only - upsell/downsell hidden (secret in funnel) */}
+              {/* Upgrade options for free users — monthly (funnel) + lifetime (direct link) */}
               {!isPaidTier(tier) && (
-                <div className="mt-6 max-w-[480px]">
-                  <button onClick={() => setPaymentOpen(true)}
-                    className="block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-foreground">£67</span>
-                      <span className="text-sm text-muted-foreground">{t('settings.perMonth')}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">{t('settings.unlimitedAccess')}</p>
-                  </button>
+                <div className="mt-6 max-w-[680px] space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Choose your plan</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Monthly card */}
+                    <button
+                      data-feature="SETTINGS__UPGRADE_MONTHLY"
+                      onClick={() => setPaymentOpen(true)}
+                      className="relative block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors"
+                    >
+                      <span className="absolute -top-2.5 left-4 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Most popular</span>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="text-xs text-muted-foreground line-through">£67</span>
+                        <span className="text-xl font-bold text-foreground">£5</span>
+                        <span className="text-sm text-muted-foreground">trial · then £67/mo</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">100 deal contacts per month · Cancel any time</p>
+                    </button>
+
+                    {/* Lifetime card */}
+                    <button
+                      data-feature="SETTINGS__UPGRADE_LIFETIME"
+                      onClick={() => {
+                        const url = getLifetimeUrl({ email: profile?.email ?? undefined, name: profile?.name ?? undefined });
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }}
+                      className="block w-full text-left rounded-xl border-2 border-border p-4 hover:border-primary hover:bg-secondary/50 transition-colors"
+                    >
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-foreground">£1,997</span>
+                        <span className="text-sm text-muted-foreground">one-time</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Unlimited deal contacts · No cap, ever · Pay once</p>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">The £1,997 plan is the same price you see after upgrading — buying here saves you the trial step.</p>
                 </div>
               )}
             </div>
