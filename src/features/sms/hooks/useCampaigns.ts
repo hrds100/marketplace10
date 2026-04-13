@@ -7,9 +7,11 @@ interface CampaignRow {
   id: string;
   name: string;
   batch_name: string | null;
+  templates: string[] | null;
   message_body: string;
   number_ids: string[];
   rotation: boolean;
+  template_rotation: boolean;
   include_opt_out: boolean;
   status: string;
   scheduled_at: string | null;
@@ -18,6 +20,8 @@ interface CampaignRow {
   delivered_count: number;
   failed_count: number;
   skipped_count: number;
+  send_speed: { min: number; max: number } | null;
+  batch_size: number | null;
   created_at: string;
 }
 
@@ -26,9 +30,11 @@ function mapRow(row: CampaignRow): SmsCampaign {
     id: row.id,
     name: row.name,
     batchName: row.batch_name,
+    templates: row.templates ?? [],
     messageBody: row.message_body,
     numberIds: row.number_ids ?? [],
     rotation: row.rotation,
+    templateRotation: row.template_rotation ?? false,
     includeOptOut: row.include_opt_out,
     status: row.status as SmsCampaign['status'],
     scheduledAt: row.scheduled_at,
@@ -37,6 +43,8 @@ function mapRow(row: CampaignRow): SmsCampaign {
     deliveredCount: row.delivered_count,
     failedCount: row.failed_count,
     skippedCount: row.skipped_count,
+    sendSpeed: row.send_speed ?? null,
+    batchSize: row.batch_size ?? null,
     createdAt: row.created_at,
   };
 }
@@ -45,7 +53,7 @@ async function fetchCampaigns(): Promise<SmsCampaign[]> {
   const { data, error } = await (supabase
     .from('sms_campaigns' as never)
     .select(
-      'id, name, batch_name, message_body, number_ids, rotation, include_opt_out, status, scheduled_at, total_recipients, sent_count, delivered_count, failed_count, skipped_count, created_at'
+      'id, name, batch_name, templates, message_body, number_ids, rotation, template_rotation, include_opt_out, status, scheduled_at, total_recipients, sent_count, delivered_count, failed_count, skipped_count, send_speed, batch_size, created_at'
     )
     .order('created_at', { ascending: false }) as never);
 
@@ -56,13 +64,17 @@ async function fetchCampaigns(): Promise<SmsCampaign[]> {
 interface CreateCampaignPayload {
   name: string;
   batch_name?: string | null;
+  templates?: string[];
   message_body: string;
   number_ids: string[];
   rotation: boolean;
+  template_rotation?: boolean;
   include_opt_out: boolean;
   scheduled_at?: string | null;
   status?: string;
   contact_ids: string[];
+  send_speed?: { min: number; max: number } | null;
+  batch_size?: number | null;
 }
 
 export function useCampaigns() {
@@ -133,6 +145,74 @@ export function useCampaigns() {
     },
   });
 
+  const sendNextBatchMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      // Resume the campaign by setting status back to draft so sms-bulk-send picks it up
+      const { error: updateErr } = await (supabase
+        .from('sms_campaigns' as never)
+        .update({ status: 'draft' } as never)
+        .eq('id', campaignId) as never);
+
+      if (updateErr) throw updateErr;
+
+      const { data, error } = await supabase.functions.invoke('sms-bulk-send', {
+        body: { campaign_id: campaignId },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sms-campaigns'] });
+      toast.success('Next batch started');
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to send next batch');
+    },
+  });
+
+  const pauseMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      const { error } = await (supabase
+        .from('sms_campaigns' as never)
+        .update({ status: 'paused' } as never)
+        .eq('id', campaignId) as never);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sms-campaigns'] });
+      toast.success('Campaign paused');
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to pause campaign');
+    },
+  });
+
+  const resumeMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      const { error: updateErr } = await (supabase
+        .from('sms_campaigns' as never)
+        .update({ status: 'draft' } as never)
+        .eq('id', campaignId) as never);
+
+      if (updateErr) throw updateErr;
+
+      const { data, error } = await supabase.functions.invoke('sms-bulk-send', {
+        body: { campaign_id: campaignId },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sms-campaigns'] });
+      toast.success('Campaign resumed');
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to resume campaign');
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (campaignId: string) => {
       const { error } = await (supabase
@@ -156,8 +236,14 @@ export function useCampaigns() {
     error: query.error,
     createCampaign: createMutation.mutateAsync,
     launchCampaign: launchMutation.mutateAsync,
+    sendNextBatch: sendNextBatchMutation.mutateAsync,
+    pauseCampaign: pauseMutation.mutateAsync,
+    resumeCampaign: resumeMutation.mutateAsync,
     deleteCampaign: deleteMutation.mutateAsync,
     isCreating: createMutation.isPending,
     isLaunching: launchMutation.isPending,
+    isSendingBatch: sendNextBatchMutation.isPending,
+    isPausing: pauseMutation.isPending,
+    isResuming: resumeMutation.isPending,
   };
 }

@@ -1,5 +1,5 @@
 // sms-bulk-send — processes a campaign: sends messages to all recipients
-// with rate limiting and number rotation
+// with rate limiting, number rotation, template rotation, batch size, and send speed
 // Source of truth: supabase/config.toml (verify_jwt = false)
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -27,6 +27,10 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function randomBetween(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -48,7 +52,7 @@ serve(async (req: Request) => {
     // ---- LOAD CAMPAIGN ----
     const { data: campaign, error: campErr } = await supabase
       .from('sms_campaigns')
-      .select('id, name, message_body, number_ids, rotation, include_opt_out, status')
+      .select('id, name, message_body, templates, template_rotation, number_ids, rotation, include_opt_out, status, send_speed, batch_size')
       .eq('id', campaign_id)
       .single();
 
@@ -80,6 +84,28 @@ serve(async (req: Request) => {
     }
 
     console.log(`Found ${recipients.length} pending recipients`);
+
+    // ---- RESOLVE TEMPLATES ----
+    const templatePool: string[] = (campaign.templates && campaign.templates.length > 0)
+      ? campaign.templates
+      : [campaign.message_body];
+    const useTemplateRotation = campaign.template_rotation && templatePool.length > 1;
+
+    console.log(`Using ${templatePool.length} template(s), rotation=${useTemplateRotation}`);
+
+    // ---- RESOLVE SEND SPEED ----
+    const sendSpeed: { min: number; max: number } = campaign.send_speed ?? { min: 1, max: 1 };
+    // Convert seconds to milliseconds
+    const delayMinMs = sendSpeed.min * 1000;
+    const delayMaxMs = sendSpeed.max * 1000;
+
+    console.log(`Send speed: ${sendSpeed.min}-${sendSpeed.max}s between messages`);
+
+    // ---- RESOLVE BATCH SIZE ----
+    const batchSize: number | null = campaign.batch_size ?? null;
+    const maxToSend = batchSize ?? recipients.length;
+
+    console.log(`Batch size: ${batchSize ?? 'all'} (will send up to ${maxToSend} messages)`);
 
     // ---- LOAD SENDING NUMBERS ----
     const numberIds: string[] = campaign.number_ids ?? [];
@@ -121,9 +147,38 @@ serve(async (req: Request) => {
     let failedCount = 0;
     let skippedCount = 0;
     let numberIndex = 0;
+    let templateIndex = 0;
+    let batchSentCount = 0;
 
-    for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i];
+    // Load existing counts to add to
+    const { data: existingCounts } = await supabase
+      .from('sms_campaigns')
+      .select('sent_count, failed_count, skipped_count')
+      .eq('id', campaign_id)
+      .single();
+
+    const baseSentCount = existingCounts?.sent_count ?? 0;
+    const baseFailedCount = existingCounts?.failed_count ?? 0;
+    const baseSkippedCount = existingCounts?.skipped_count ?? 0;
+
+    const recipientsToProcess = recipients.slice(0, maxToSend);
+
+    for (let i = 0; i < recipientsToProcess.length; i++) {
+      const recipient = recipientsToProcess[i];
+
+      // Check if campaign was paused (status changed externally)
+      if (i > 0 && i % 10 === 0) {
+        const { data: statusCheck } = await supabase
+          .from('sms_campaigns')
+          .select('status')
+          .eq('id', campaign_id)
+          .single();
+
+        if (statusCheck?.status === 'paused') {
+          console.log(`Campaign paused after ${batchSentCount} messages`);
+          break;
+        }
+      }
 
       try {
         // ---- LOAD CONTACT ----
@@ -153,7 +208,7 @@ serve(async (req: Request) => {
           skippedCount++;
           await supabase
             .from('sms_campaigns')
-            .update({ skipped_count: skippedCount })
+            .update({ skipped_count: baseSkippedCount + skippedCount })
             .eq('id', campaign_id);
           continue;
         }
@@ -164,8 +219,14 @@ serve(async (req: Request) => {
           : numbers[0];
         numberIndex++;
 
+        // ---- SELECT TEMPLATE (round-robin or first) ----
+        const selectedTemplate = useTemplateRotation
+          ? templatePool[templateIndex % templatePool.length]
+          : templatePool[0];
+        templateIndex++;
+
         // ---- RESOLVE MESSAGE ----
-        let messageBody = campaign.message_body;
+        let messageBody = selectedTemplate;
         messageBody = messageBody.replace(/\{name\}/g, contact.display_name ?? 'there');
         messageBody = messageBody.replace(/\{phone\}/g, contact.phone_number);
 
@@ -205,7 +266,7 @@ serve(async (req: Request) => {
           failedCount++;
           await supabase
             .from('sms_campaigns')
-            .update({ failed_count: failedCount })
+            .update({ failed_count: baseFailedCount + failedCount })
             .eq('id', campaign_id);
           continue;
         }
@@ -239,18 +300,20 @@ serve(async (req: Request) => {
           .eq('id', recipient.id);
 
         sentCount++;
+        batchSentCount++;
 
         // ---- UPDATE CAMPAIGN COUNTS ----
         await supabase
           .from('sms_campaigns')
-          .update({ sent_count: sentCount })
+          .update({ sent_count: baseSentCount + sentCount })
           .eq('id', campaign_id);
 
-        console.log(`[${i + 1}/${recipients.length}] Sent to ${contact.phone_number} via ${number.phone_number}`);
+        console.log(`[${i + 1}/${recipientsToProcess.length}] Sent to ${contact.phone_number} via ${number.phone_number}`);
 
-        // ---- RATE LIMIT: 1 msg/sec per number ----
-        if (i < recipients.length - 1) {
-          await sleep(1000);
+        // ---- RATE LIMIT: configurable delay ----
+        if (i < recipientsToProcess.length - 1) {
+          const delayMs = randomBetween(delayMinMs, delayMaxMs);
+          await sleep(delayMs);
         }
       } catch (err) {
         console.error(`Error processing recipient ${recipient.id}:`, err);
@@ -261,30 +324,56 @@ serve(async (req: Request) => {
         failedCount++;
         await supabase
           .from('sms_campaigns')
-          .update({ failed_count: failedCount })
+          .update({ failed_count: baseFailedCount + failedCount })
           .eq('id', campaign_id);
       }
     }
 
-    // ---- MARK CAMPAIGN COMPLETE ----
+    // ---- DETERMINE FINAL STATUS ----
+    // Check if there are still pending recipients (batch mode)
+    const { data: remainingRecips } = await supabase
+      .from('sms_campaign_recipients')
+      .select('id')
+      .eq('campaign_id', campaign_id)
+      .eq('status', 'pending')
+      .limit(1);
+
+    const hasRemaining = remainingRecips && remainingRecips.length > 0;
+
+    // If paused externally, keep paused. If batch mode with remaining, set to paused. Otherwise complete.
+    const { data: currentStatus } = await supabase
+      .from('sms_campaigns')
+      .select('status')
+      .eq('id', campaign_id)
+      .single();
+
+    let finalStatus = 'complete';
+    if (currentStatus?.status === 'paused') {
+      finalStatus = 'paused';
+    } else if (hasRemaining && batchSize !== null) {
+      finalStatus = 'paused';
+    }
+
     await supabase
       .from('sms_campaigns')
       .update({
-        status: 'complete',
-        sent_count: sentCount,
-        failed_count: failedCount,
-        skipped_count: skippedCount,
+        status: finalStatus,
+        sent_count: baseSentCount + sentCount,
+        failed_count: baseFailedCount + failedCount,
+        skipped_count: baseSkippedCount + skippedCount,
       })
       .eq('id', campaign_id);
 
-    console.log(`Campaign "${campaign.name}" complete: ${sentCount} sent, ${failedCount} failed, ${skippedCount} skipped`);
+    console.log(`Campaign "${campaign.name}" ${finalStatus}: ${sentCount} sent, ${failedCount} failed, ${skippedCount} skipped`);
 
     return jsonResponse({
-      status: 'complete',
+      status: finalStatus,
       campaign_id,
       sent_count: sentCount,
       failed_count: failedCount,
       skipped_count: skippedCount,
+      batch_sent: batchSentCount,
+      has_remaining: hasRemaining,
     });
   } catch (err) {
     console.error('sms-bulk-send error:', err);

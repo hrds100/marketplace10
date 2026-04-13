@@ -6,29 +6,51 @@ import CampaignWizard from '../components/campaigns/CampaignWizard';
 import { useState } from 'react';
 
 export default function SmsCampaignsPage() {
-  const { campaigns, isLoading, createCampaign, launchCampaign, isCreating } = useCampaigns();
+  const {
+    campaigns,
+    isLoading,
+    createCampaign,
+    launchCampaign,
+    sendNextBatch,
+    pauseCampaign,
+    resumeCampaign,
+    isCreating,
+    isSendingBatch,
+    isPausing,
+    isResuming,
+  } = useCampaigns();
   const [wizardOpen, setWizardOpen] = useState(false);
 
   async function handleComplete(data: {
     name: string;
     message_body: string;
+    templates: string[];
+    template_rotation: boolean;
     number_ids: string[];
     rotation: boolean;
     include_opt_out: boolean;
     scheduled_at: string | null;
     contact_ids: string[];
     sendNow: boolean;
+    send_speed: { min: number; max: number } | null;
+    batch_size: number | null;
+    batch_name: string | null;
   }) {
     try {
       const campaignId = await createCampaign({
         name: data.name,
         message_body: data.message_body,
+        templates: data.templates,
+        template_rotation: data.template_rotation,
         number_ids: data.number_ids,
         rotation: data.rotation,
         include_opt_out: data.include_opt_out,
         scheduled_at: data.scheduled_at,
         status: data.sendNow ? 'draft' : (data.scheduled_at ? 'scheduled' : 'draft'),
         contact_ids: data.contact_ids,
+        send_speed: data.send_speed,
+        batch_size: data.batch_size,
+        batch_name: data.batch_name,
       });
 
       if (data.sendNow) {
@@ -66,7 +88,16 @@ export default function SmsCampaignsPage() {
           <Loader2 className="h-6 w-6 animate-spin text-[#9CA3AF]" />
         </div>
       ) : (
-        <CampaignsList campaigns={campaigns} onNew={() => setWizardOpen(true)} />
+        <CampaignsList
+          campaigns={campaigns}
+          onNew={() => setWizardOpen(true)}
+          onSendNextBatch={sendNextBatch}
+          onPause={pauseCampaign}
+          onResume={resumeCampaign}
+          isSendingBatch={isSendingBatch}
+          isPausing={isPausing}
+          isResuming={isResuming}
+        />
       )}
 
       <CampaignWizard
