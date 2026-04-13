@@ -140,6 +140,12 @@ export interface SmsCampaign {
   skippedCount: number;
   sendSpeed: { min: number; max: number } | null;
   batchSize: number | null;
+  followUp: {
+    enabled: boolean;
+    waitDays: number;
+    message: string;
+    maxFollowUps: number;
+  } | null;
   createdAt: string;
 }
 

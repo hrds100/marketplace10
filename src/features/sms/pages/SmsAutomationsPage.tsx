@@ -55,7 +55,7 @@ export default function SmsAutomationsPage() {
               type: 'DEFAULT',
               position: { x: 300, y: 0 },
               data: {
-                name: 'Start',
+                name: 'AI Response',
                 isStart: true,
                 prompt: 'Greet the user and ask how you can help with their property search.',
                 modelOptions: { temperature: 0.7 },

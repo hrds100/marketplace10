@@ -31,7 +31,6 @@ const TEAM_MEMBERS = [
 ];
 
 const NODE_TYPE_OPTIONS: { value: SmsNodeType; label: string }[] = [
-  { value: SmsNodeType.DEFAULT, label: 'AI Response' },
   { value: SmsNodeType.STOP_CONVERSATION, label: 'Stop Conversation' },
   { value: SmsNodeType.FOLLOW_UP, label: 'Follow Up' },
   { value: SmsNodeType.TRANSFER, label: 'Transfer' },
