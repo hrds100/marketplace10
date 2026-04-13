@@ -80,30 +80,7 @@
   }
 
   function buildDealCardB(p, index) {
-    var photo = getPhoto(p, index);
-    var typeLabel = p.listing_type === 'sale' ? 'For Sale' : 'Rent-to-Rent';
-    var title = safe(getTitle(p), 'Property');
-    var location = safe(getLocation(p));
-    var rent = formatCurrency(p.rent_monthly);
-    var profit = formatCurrency(p.profit_est);
-    var listingUrl = '/deals/' + safe(p.id);
-
-    return '<div class="deal-card" data-feature="SHARED__LANDING_DEAL_CARD">' +
-      '<img src="' + photo + '" alt="' + title + '" class="deal-card-img" loading="lazy">' +
-      '<div class="deal-card-body">' +
-        '<span class="deal-card-type">' + typeLabel + '</span>' +
-        '<div class="deal-card-name">' + title + '</div>' +
-        '<div class="deal-card-location">' + location + '</div>' +
-        '<div class="deal-card-stats">' +
-          '<div><div class="deal-card-stat-label">Monthly Rent</div><div class="deal-card-stat-value">' + rent + '</div></div>' +
-          '<div><div class="deal-card-stat-label">Est. Profit</div><div class="deal-card-stat-value profit">+' + profit + '</div></div>' +
-        '</div>' +
-        '<div class="deal-card-actions">' +
-          '<a href="' + listingUrl + '" class="deal-btn deal-btn-outline">Visit listing</a>' +
-          '<a href="/signup" class="deal-btn deal-btn-green">Inquire now</a>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
+    return buildDealCardA(p, index);
   }
 
   function loadDeals() {
