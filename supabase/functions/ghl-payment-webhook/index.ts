@@ -36,7 +36,8 @@ const PRODUCT_ID_TO_TIER: Record<string, string> = {
 const AMOUNT_TO_TIER: Record<number, string> = {
   67: 'monthly',
   397: 'yearly',
-  997: 'lifetime',
+  997: 'lifetime',  // legacy price
+  1997: 'lifetime', // current lifetime price
   5: 'monthly', // trial price
 }
 

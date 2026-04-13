@@ -111,7 +111,7 @@ export function tierDisplayName(tier: TierName): string {
   switch (tier) {
     case 'monthly': return 'Monthly (£67/mo)';
     case 'yearly': return 'Annual (£397/yr)';
-    case 'lifetime': return 'Lifetime (£997)';
+    case 'lifetime': return 'Lifetime Access';
     default: return 'Free';
   }
 }
