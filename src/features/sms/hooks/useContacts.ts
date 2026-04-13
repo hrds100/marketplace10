@@ -162,7 +162,7 @@ export function useContacts() {
   });
 
   const bulkCreateMutation = useMutation({
-    mutationFn: async (rows: { phone_number: string; display_name?: string }[]) => {
+    mutationFn: async (rows: { phone_number: string; display_name?: string; batch_name?: string }[]) => {
       const { error } = await (supabase
         .from('sms_contacts' as never)
         .insert(rows as never) as never);
@@ -170,9 +170,30 @@ export function useContacts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sms-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['sms-batch-groups'] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : 'Failed to import contacts');
+    },
+  });
+
+  const batchGroupsQuery = useQuery({
+    queryKey: ['sms-batch-groups'],
+    queryFn: async (): Promise<{ batchName: string; count: number }[]> => {
+      const { data, error } = await (supabase
+        .from('sms_contacts' as never)
+        .select('batch_name')
+        .not('batch_name', 'is', null) as never);
+
+      if (error) throw error;
+
+      const counts = new Map<string, number>();
+      for (const row of (data as { batch_name: string }[]) ?? []) {
+        if (row.batch_name) {
+          counts.set(row.batch_name, (counts.get(row.batch_name) || 0) + 1);
+        }
+      }
+      return Array.from(counts.entries()).map(([batchName, count]) => ({ batchName, count }));
     },
   });
 
@@ -187,5 +208,7 @@ export function useContacts() {
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    batchGroups: batchGroupsQuery.data ?? [],
+    isBatchGroupsLoading: batchGroupsQuery.isLoading,
   };
 }

@@ -22,6 +22,7 @@ interface CampaignRow {
   skipped_count: number;
   send_speed: { min: number; max: number } | null;
   batch_size: number | null;
+  automation_id: string | null;
   created_at: string;
 }
 
@@ -45,6 +46,7 @@ function mapRow(row: CampaignRow): SmsCampaign {
     skippedCount: row.skipped_count,
     sendSpeed: row.send_speed ?? null,
     batchSize: row.batch_size ?? null,
+    automationId: row.automation_id ?? null,
     createdAt: row.created_at,
   };
 }
@@ -53,7 +55,7 @@ async function fetchCampaigns(): Promise<SmsCampaign[]> {
   const { data, error } = await (supabase
     .from('sms_campaigns' as never)
     .select(
-      'id, name, batch_name, templates, message_body, number_ids, rotation, template_rotation, include_opt_out, status, scheduled_at, total_recipients, sent_count, delivered_count, failed_count, skipped_count, send_speed, batch_size, created_at'
+      'id, name, batch_name, templates, message_body, number_ids, rotation, template_rotation, include_opt_out, status, scheduled_at, total_recipients, sent_count, delivered_count, failed_count, skipped_count, send_speed, batch_size, automation_id, created_at'
     )
     .order('created_at', { ascending: false }) as never);
 
@@ -75,6 +77,7 @@ interface CreateCampaignPayload {
   contact_ids: string[];
   send_speed?: { min: number; max: number } | null;
   batch_size?: number | null;
+  automation_id?: string | null;
 }
 
 export function useCampaigns() {

@@ -147,6 +147,7 @@ export interface SmsCampaign {
     message: string;
     maxFollowUps: number;
   } | null;
+  automationId: string | null;
   createdAt: string;
 }
 

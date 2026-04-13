@@ -16,6 +16,8 @@ import {
   TableCell,
   TableHead,
 } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Upload, CheckCircle, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SmsContact } from '../../types';
@@ -24,7 +26,7 @@ interface CsvImportDialogProps {
   open: boolean;
   onClose: () => void;
   existingContacts: SmsContact[];
-  onImport?: (rows: { phone_number: string; display_name?: string }[]) => Promise<void>;
+  onImport?: (rows: { phone_number: string; display_name?: string; batch_name?: string }[]) => Promise<void>;
 }
 
 interface ParsedRow {
@@ -41,12 +43,14 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
   const [duplicateCount, setDuplicateCount] = useState(0);
   const [importedCount, setImportedCount] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [groupName, setGroupName] = useState('');
 
   function reset() {
     setStep('upload');
     setRows([]);
     setDuplicateCount(0);
     setImportedCount(0);
+    setGroupName('');
   }
 
   function handleClose() {
@@ -112,11 +116,13 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
       : rows.filter((r) => r.phone);
 
     if (onImport && toImport.length > 0) {
+      const batchName = groupName.trim() || undefined;
       try {
         await onImport(
           toImport.map((r) => ({
             phone_number: r.phone!,
             display_name: r.name || undefined,
+            batch_name: batchName,
           }))
         );
       } catch {
@@ -183,6 +189,16 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
               Found <span className="font-semibold text-[#1A1A1A]">{rows.length}</span> rows.
               Preview (first 5):
             </p>
+            <div>
+              <Label className="text-sm font-medium text-[#1A1A1A]">Group name (optional)</Label>
+              <Input
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="e.g. April leads, London landlords"
+                className="mt-1.5 rounded-lg border-[#E5E7EB]"
+              />
+              <p className="text-xs text-[#9CA3AF] mt-1">Tag these contacts so you can re-use the group in future campaigns</p>
+            </div>
             <div className="border border-[#E5E7EB] rounded-xl overflow-hidden">
               <Table>
                 <TableHeader>

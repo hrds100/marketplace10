@@ -35,6 +35,7 @@ export default function SmsCampaignsPage() {
     send_speed: { min: number; max: number } | null;
     batch_size: number | null;
     batch_name: string | null;
+    automation_id: string | null;
   }) {
     try {
       const campaignId = await createCampaign({
@@ -51,6 +52,7 @@ export default function SmsCampaignsPage() {
         send_speed: data.send_speed,
         batch_size: data.batch_size,
         batch_name: data.batch_name,
+        automation_id: data.automation_id,
       });
 
       if (data.sendNow) {
