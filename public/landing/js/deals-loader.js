@@ -52,6 +52,9 @@
 
   function buildDealCardA(p, index) {
     var photo = getPhoto(p, index);
+    var listingBadge = p.listing_type === 'sale'
+      ? '<span style="background:rgba(5,150,105,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px">Sale</span>'
+      : '<span style="background:rgba(30,154,128,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px">Rental</span>';
     var title = safe(getTitle(p), 'Property');
     var location = safe(getLocation(p));
     var rent = formatCurrency(p.rent_monthly);
@@ -60,7 +63,7 @@
     var listingUrl = '/deals/' + safe(p.id);
 
     return '<div class="deal-card sr-child" data-feature="SHARED__LANDING_DEAL_CARD">' +
-      '<div class="deal-img" style="background-image:url(\'' + photo + '\')"></div>' +
+      '<div class="deal-img" style="background-image:url(\'' + photo + '\')">' + listingBadge + '</div>' +
       '<div class="deal-body">' +
         '<h4>' + title + '</h4>' +
         '<div class="deal-meta">' + location + '</div>' +
