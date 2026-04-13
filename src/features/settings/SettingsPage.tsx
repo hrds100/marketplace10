@@ -415,7 +415,7 @@ export default function SettingsPage() {
                         <span className="text-xl font-bold text-foreground">£5</span>
                         <span className="text-sm text-muted-foreground">trial · then £67/mo</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">Unlimited deal contacts · Cancel any time</p>
+                      <p className="text-xs text-muted-foreground mt-1">100 deal contacts per month · Cancel any time</p>
                     </button>
 
                     {/* Lifetime card */}
