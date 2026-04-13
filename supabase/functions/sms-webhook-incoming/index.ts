@@ -204,6 +204,12 @@ serve(async (req: Request) => {
       );
     }
 
+    // ---- MARK CONTACT AS RESPONDED ----
+    await supabase
+      .from('sms_contacts')
+      .update({ response_status: 'responded', updated_at: new Date().toISOString() })
+      .eq('id', contact.id);
+
     // ---- UPSERT CONVERSATION ----
     const preview = body.length > 100 ? body.substring(0, 100) + '...' : body;
 
