@@ -367,7 +367,10 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
     try {
       const { data: aiData, error } = await supabase.functions.invoke('sms-ai-respond', {
         body: {
-          prompt: `Generate ${data.aiVariantCount} natural variations of this SMS message. Keep the same meaning, tone, and language. Include emojis where the original has them. Return as a JSON array of strings only, no other text.\n\nOriginal message: "${baseMessage}"`,
+          system_prompt: `Generate ${data.aiVariantCount} natural variations of the user's SMS message. Keep the same meaning, tone, and language. Include emojis where the original has them. Return as a JSON array of strings only, no other text.`,
+          user_message: baseMessage,
+          model: 'gpt-5.4-mini',
+          temperature: 0.8,
         },
       });
 
