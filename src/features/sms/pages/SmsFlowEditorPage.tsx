@@ -169,13 +169,23 @@ export default function SmsFlowEditorPage() {
   const { leadCounts } = useFlowLeadCounts(id === 'new' ? undefined : id);
 
   const handleFlowSave = useCallback(
-    async (data: { nodes: Node<SmsNodeData>[]; edges: Edge<SmsEdgeData>[]; globalPrompt: string }) => {
+    async (data: {
+      nodes: Node<SmsNodeData>[];
+      edges: Edge<SmsEdgeData>[];
+      globalPrompt: string;
+      globalModel: string;
+      globalTemperature: number;
+      maxRepliesPerLead: number;
+    }) => {
       if (!flow) return;
       await saveFlow({
         id: flow.id,
         nodes: data.nodes,
         edges: data.edges,
         globalPrompt: data.globalPrompt,
+        globalModel: data.globalModel,
+        globalTemperature: data.globalTemperature,
+        maxRepliesPerLead: data.maxRepliesPerLead,
       });
     },
     [flow, saveFlow]
@@ -199,6 +209,9 @@ export default function SmsFlowEditorPage() {
         initialNodes={initialNodes}
         initialEdges={initialEdges}
         initialGlobalPrompt={flow.globalPrompt}
+        initialGlobalModel={flow.globalModel}
+        initialGlobalTemperature={flow.globalTemperature}
+        initialMaxRepliesPerLead={flow.maxRepliesPerLead}
         onSave={handleFlowSave}
         leadCounts={leadCounts}
       >
