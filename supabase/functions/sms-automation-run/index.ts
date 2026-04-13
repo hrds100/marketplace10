@@ -74,6 +74,9 @@ interface FlowJson {
   nodes: FlowNode[];
   edges: FlowEdge[];
   globalPrompt?: string;
+  globalModel?: string;
+  globalTemperature?: number;
+  maxRepliesPerLead?: number;
 }
 
 interface AutomationState {
@@ -519,7 +522,26 @@ serve(async (req: Request) => {
       );
     }
 
-    const { nodes, edges, globalPrompt } = flowJson;
+    const { nodes, edges, globalPrompt, globalModel, globalTemperature, maxRepliesPerLead } = flowJson;
+    const effectiveMaxReplies = maxRepliesPerLead ?? 50;
+
+    // ---- STEP 5b: Reply limit check ----
+    if (state && state.step_number >= effectiveMaxReplies) {
+      console.log(`Reply limit reached (${state.step_number}/${effectiveMaxReplies}) — completing automation`);
+      await supabase
+        .from('sms_automation_state')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          exit_reason: 'reply_limit_reached',
+        })
+        .eq('id', state.id);
+
+      return new Response(
+        JSON.stringify({ status: 'reply_limit_reached', step_number: state.step_number, max_replies: effectiveMaxReplies }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // ---- STEP 6: Find current node ----
     let currentNodeId: string;
@@ -591,34 +613,53 @@ serve(async (req: Request) => {
     const outgoingEdges = edges.filter((e) => e.source === currentNodeId);
 
     if (!outgoingEdges.length) {
-      // No outgoing edges — flow is done
-      console.log('No outgoing edges from current node — flow complete');
-      if (state) {
-        await supabase
-          .from('sms_automation_state')
-          .update({
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            exit_reason: 'no_edges',
-          })
-          .eq('id', state.id);
+      // Check if this is the start node with no edges yet — just respond with AI
+      // or if this is an action node, try to loop back to start
+      const currentNodeType = (currentNode.type || 'DEFAULT').toUpperCase();
+      const startNode = nodes.find((n) => n.data.isStart === true);
+
+      if (currentNodeType === 'DEFAULT' && currentNode.data.isStart && startNode) {
+        // Start node with no outgoing edges: just respond with AI and stay at start
+        console.log('Start node with no edges — responding with AI and staying at start');
+        // Fall through to execute the start node directly (handled below)
+      } else {
+        // No outgoing edges — flow is done
+        console.log('No outgoing edges from current node — flow complete');
+        if (state) {
+          await supabase
+            .from('sms_automation_state')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              exit_reason: 'no_edges',
+            })
+            .eq('id', state.id);
+        }
+        return new Response(
+          JSON.stringify({ status: 'flow_complete' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-      return new Response(
-        JSON.stringify({ status: 'flow_complete' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
     // Resolve which edge to follow (single = direct, multiple = AI classification)
     let precomputedReply: string | null = null;
-    let nextEdge: FlowEdge;
+    let targetNode: FlowNode | null = null;
 
-    if (outgoingEdges.length === 1) {
-      nextEdge = outgoingEdges[0];
+    // Use global model/temperature as defaults, allow node-level overrides
+    const effectiveModel = (currentNode.data.useGlobalSettings !== false && globalModel)
+      ? globalModel
+      : (currentNode.data.modelOptions?.model || globalModel || 'gpt-5.4-mini');
+    const effectiveTemperature = (currentNode.data.useGlobalSettings !== false && globalTemperature !== undefined)
+      ? globalTemperature
+      : (currentNode.data.modelOptions?.temperature ?? globalTemperature ?? 0.7);
+
+    if (outgoingEdges.length === 0) {
+      // No edges — execute current node directly (start node loop-back case)
+      targetNode = currentNode;
+    } else if (outgoingEdges.length === 1) {
+      targetNode = nodes.find((n) => n.id === outgoingEdges[0].target) || null;
     } else {
-      const model = currentNode.data.modelOptions?.model || 'gpt-5.4-mini';
-      const temperature = currentNode.data.modelOptions?.temperature ?? 0.7;
-
       const { edge, reply } = await resolveNextEdge(outgoingEdges, {
         supabase,
         contactId: contact_id,
@@ -626,18 +667,17 @@ serve(async (req: Request) => {
         globalPrompt: globalPrompt || '',
         contactName,
         nodePrompt: currentNode.data.prompt || '',
-        model,
-        temperature,
+        model: effectiveModel,
+        temperature: effectiveTemperature,
       });
 
-      nextEdge = edge;
+      targetNode = nodes.find((n) => n.id === edge.target) || null;
       precomputedReply = reply;
     }
 
     // ---- STEP 10: Advance to target node and execute ----
-    let targetNode = nodes.find((n) => n.id === nextEdge.target);
     if (!targetNode) {
-      console.error(`Target node ${nextEdge.target} not found`);
+      console.error('Target node not found');
       return new Response(
         JSON.stringify({ status: 'target_not_found' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -728,6 +768,18 @@ serve(async (req: Request) => {
       const nextEdges = edges.filter((e) => e.source === targetNode!.id);
 
       if (!nextEdges.length) {
+        // Loop-back logic: action nodes without outgoing edges return to start node
+        const currentNodeType = (targetNode!.type || 'DEFAULT').toUpperCase();
+        const loopBackTypes = ['LABEL', 'MOVE_STAGE', 'FOLLOW_UP', 'WEBHOOK'];
+        const startNode = nodes.find((n) => n.data.isStart === true);
+
+        if (loopBackTypes.includes(currentNodeType) && startNode) {
+          console.log(`No outgoing edges from ${currentNodeType} node — looping back to start node ${startNode.id}`);
+          finalNodeId = startNode.id;
+          // Don't complete — just park at the start node and wait for next message
+          break;
+        }
+
         flowCompleted = true;
         exitReason = 'no_edges';
         break;

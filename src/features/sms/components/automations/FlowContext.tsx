@@ -19,6 +19,12 @@ interface FlowContextType {
   setEdges: React.Dispatch<React.SetStateAction<Edge<SmsEdgeData>[]>>;
   globalPrompt: string;
   setGlobalPrompt: (prompt: string) => void;
+  globalModel: string;
+  setGlobalModel: (model: string) => void;
+  globalTemperature: number;
+  setGlobalTemperature: (temp: number) => void;
+  maxRepliesPerLead: number;
+  setMaxRepliesPerLead: (max: number) => void;
   duplicateNode: (id: string) => void;
   deleteNodes: (ids: string[]) => void;
   updateEdge: (id: string, data: Partial<SmsEdgeData>) => void;
@@ -47,11 +53,21 @@ const DEFAULT_NAMES: Record<SmsNodeType, string> = {
   [SmsNodeType.WEBHOOK]: 'Webhook',
 };
 
+// Node types that loop back to the start node after executing
+const LOOP_BACK_TYPES = new Set([
+  SmsNodeType.LABEL,
+  SmsNodeType.MOVE_STAGE,
+  SmsNodeType.FOLLOW_UP,
+]);
+
 export function FlowContextProvider({
   children,
   initialNodes,
   initialEdges,
   initialGlobalPrompt,
+  initialGlobalModel,
+  initialGlobalTemperature,
+  initialMaxRepliesPerLead,
   onSave,
   leadCounts,
 }: {
@@ -59,7 +75,17 @@ export function FlowContextProvider({
   initialNodes: Node<SmsNodeData>[];
   initialEdges: Edge<SmsEdgeData>[];
   initialGlobalPrompt?: string;
-  onSave?: (data: { nodes: Node<SmsNodeData>[]; edges: Edge<SmsEdgeData>[]; globalPrompt: string }) => Promise<void>;
+  initialGlobalModel?: string;
+  initialGlobalTemperature?: number;
+  initialMaxRepliesPerLead?: number;
+  onSave?: (data: {
+    nodes: Node<SmsNodeData>[];
+    edges: Edge<SmsEdgeData>[];
+    globalPrompt: string;
+    globalModel: string;
+    globalTemperature: number;
+    maxRepliesPerLead: number;
+  }) => Promise<void>;
   leadCounts?: FlowLeadCounts;
 }) {
   const [nodes, setNodes] = useState<Node<SmsNodeData>[]>(initialNodes);
@@ -71,16 +97,19 @@ export function FlowContextProvider({
   const [globalPrompt, setGlobalPromptRaw] = useState(
     initialGlobalPrompt || 'You are a helpful property assistant for NFStay. Be professional and concise.'
   );
+  const [globalModel, setGlobalModelRaw] = useState(initialGlobalModel || 'gpt-5.4-mini');
+  const [globalTemperature, setGlobalTemperatureRaw] = useState(initialGlobalTemperature ?? 0.7);
+  const [maxRepliesPerLead, setMaxRepliesPerLeadRaw] = useState(initialMaxRepliesPerLead ?? 10);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
 
   // Track latest values for debounced save
-  const latestRef = useRef({ nodes, edges, globalPrompt });
+  const latestRef = useRef({ nodes, edges, globalPrompt, globalModel, globalTemperature, maxRepliesPerLead });
   useEffect(() => {
-    latestRef.current = { nodes, edges, globalPrompt };
-  }, [nodes, edges, globalPrompt]);
+    latestRef.current = { nodes, edges, globalPrompt, globalModel, globalTemperature, maxRepliesPerLead };
+  }, [nodes, edges, globalPrompt, globalModel, globalTemperature, maxRepliesPerLead]);
 
   const triggerAutoSave = useCallback(() => {
     if (!onSaveRef.current) return;
@@ -96,9 +125,24 @@ export function FlowContextProvider({
     }, 500);
   }, []);
 
-  // Wrap setGlobalPrompt to trigger auto-save
+  // Wrap setters to trigger auto-save
   const setGlobalPrompt = useCallback((prompt: string) => {
     setGlobalPromptRaw(prompt);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
+
+  const setGlobalModel = useCallback((model: string) => {
+    setGlobalModelRaw(model);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
+
+  const setGlobalTemperature = useCallback((temp: number) => {
+    setGlobalTemperatureRaw(temp);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
+
+  const setMaxRepliesPerLead = useCallback((max: number) => {
+    setMaxRepliesPerLeadRaw(max);
     triggerAutoSave();
   }, [triggerAutoSave]);
 
@@ -139,13 +183,15 @@ export function FlowContextProvider({
   }, [triggerAutoSave]);
 
   const addNode = useCallback((type: SmsNodeType) => {
+    const newNodeId = generateNodeId();
     const newNode: Node<SmsNodeData> = {
-      id: generateNodeId(),
+      id: newNodeId,
       type,
       position: { x: 300, y: 300 },
       data: {
         name: DEFAULT_NAMES[type],
         prompt: type === SmsNodeType.DEFAULT ? '' : undefined,
+        useGlobalSettings: type === SmsNodeType.DEFAULT ? true : undefined,
         steps: type === SmsNodeType.FOLLOW_UP ? [] : undefined,
         webhookMethod: type === SmsNodeType.WEBHOOK ? 'POST' : undefined,
         webhookUrl: type === SmsNodeType.WEBHOOK ? '' : undefined,
@@ -153,6 +199,29 @@ export function FlowContextProvider({
       },
     };
     setNodes((prev) => [...prev, newNode]);
+
+    // Auto-create loop-back edge for action nodes that should return to start
+    if (LOOP_BACK_TYPES.has(type)) {
+      setNodes((prev) => {
+        const startNode = prev.find((n) => n.data.isStart === true);
+        if (startNode) {
+          setEdges((prevEdges) => [
+            ...prevEdges,
+            {
+              id: `loop-${newNodeId}-${startNode.id}`,
+              source: newNodeId,
+              target: startNode.id,
+              type: 'custom',
+              animated: true,
+              style: { strokeDasharray: '5 5', opacity: 0.5 },
+              data: { label: 'Loop back' } as SmsEdgeData,
+            },
+          ]);
+        }
+        return prev;
+      });
+    }
+
     setShowAddNodePopup(false);
     triggerAutoSave();
   }, [triggerAutoSave]);
@@ -181,6 +250,12 @@ export function FlowContextProvider({
         setEdges,
         globalPrompt,
         setGlobalPrompt,
+        globalModel,
+        setGlobalModel,
+        globalTemperature,
+        setGlobalTemperature,
+        maxRepliesPerLead,
+        setMaxRepliesPerLead,
         duplicateNode,
         deleteNodes,
         updateEdge,

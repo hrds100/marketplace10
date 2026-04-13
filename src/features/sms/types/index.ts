@@ -116,6 +116,7 @@ export interface SmsAutomation {
   isActive: boolean;
   lastRunAt: string | null;
   runCount: number;
+  maxRepliesPerLead?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -238,5 +239,6 @@ export interface SmsNodeData {
   webhookUrl?: string;
   webhookMethod?: string;
   modelOptions?: { temperature: number; model?: string };
+  useGlobalSettings?: boolean;
   [key: string]: unknown;
 }

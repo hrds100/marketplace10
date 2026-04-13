@@ -10,6 +10,9 @@ interface FlowRow {
     nodes?: Node<SmsNodeData>[];
     edges?: Edge<SmsEdgeData>[];
     globalPrompt?: string;
+    globalModel?: string;
+    globalTemperature?: number;
+    maxRepliesPerLead?: number;
   } | null;
   is_active: boolean;
   trigger_type: 'new_message' | 'keyword' | 'time_based';
@@ -22,6 +25,9 @@ export interface FlowData {
   nodes: Node<SmsNodeData>[];
   edges: Edge<SmsEdgeData>[];
   globalPrompt: string;
+  globalModel: string;
+  globalTemperature: number;
+  maxRepliesPerLead: number;
   isActive: boolean;
   triggerType: 'new_message' | 'keyword' | 'time_based';
   triggerConfig: Record<string, unknown>;
@@ -43,6 +49,9 @@ async function fetchFlow(id: string): Promise<FlowData> {
     nodes: flowJson.nodes ?? [],
     edges: flowJson.edges ?? [],
     globalPrompt: flowJson.globalPrompt ?? 'You are a helpful property assistant for NFStay. Be professional and concise.',
+    globalModel: flowJson.globalModel ?? 'gpt-5.4-mini',
+    globalTemperature: flowJson.globalTemperature ?? 0.7,
+    maxRepliesPerLead: flowJson.maxRepliesPerLead ?? 10,
     isActive: row.is_active,
     triggerType: row.trigger_type,
     triggerConfig: row.trigger_config ?? {},
@@ -67,9 +76,12 @@ export function useAutomationFlow(id: string | undefined) {
       nodes?: Node<SmsNodeData>[];
       edges?: Edge<SmsEdgeData>[];
       globalPrompt?: string;
+      globalModel?: string;
+      globalTemperature?: number;
+      maxRepliesPerLead?: number;
       is_active?: boolean;
     }) => {
-      const { id: automationId, name, nodes, edges, globalPrompt, is_active } = payload;
+      const { id: automationId, name, nodes, edges, globalPrompt, globalModel, globalTemperature, maxRepliesPerLead, is_active } = payload;
 
       const updates: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
@@ -78,12 +90,15 @@ export function useAutomationFlow(id: string | undefined) {
       if (name !== undefined) updates.name = name;
       if (is_active !== undefined) updates.is_active = is_active;
 
-      if (nodes !== undefined || edges !== undefined || globalPrompt !== undefined) {
+      if (nodes !== undefined || edges !== undefined || globalPrompt !== undefined || globalModel !== undefined || globalTemperature !== undefined || maxRepliesPerLead !== undefined) {
         const currentFlow = query.data;
         updates.flow_json = {
           nodes: nodes ?? currentFlow?.nodes ?? [],
           edges: edges ?? currentFlow?.edges ?? [],
           globalPrompt: globalPrompt ?? currentFlow?.globalPrompt ?? '',
+          globalModel: globalModel ?? currentFlow?.globalModel ?? 'gpt-5.4-mini',
+          globalTemperature: globalTemperature ?? currentFlow?.globalTemperature ?? 0.7,
+          maxRepliesPerLead: maxRepliesPerLead ?? currentFlow?.maxRepliesPerLead ?? 10,
         };
       }
 

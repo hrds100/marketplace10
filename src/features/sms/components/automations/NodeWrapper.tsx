@@ -13,6 +13,7 @@ import {
   Trash2,
   Copy,
   Users,
+  CornerDownLeft,
 } from 'lucide-react';
 import {
   Popover,
@@ -83,6 +84,7 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
   const Icon = config.icon;
   const isStart = nodeData.isStart === true;
   const isTerminal = nodeType === SmsNodeType.STOP_CONVERSATION;
+  const isLoopBack = [SmsNodeType.LABEL, SmsNodeType.MOVE_STAGE, SmsNodeType.FOLLOW_UP].includes(nodeType);
 
   return (
     <>
@@ -154,8 +156,16 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
         {/* Body */}
         <div className="px-3 py-2">
           <p className="text-xs text-[#6B7280] leading-relaxed">
-            {getNodeSummary(nodeType, nodeData)}
+            {isStart ? 'Uses Global Prompt' : getNodeSummary(nodeType, nodeData)}
           </p>
+          {isLoopBack && (
+            <div className="flex items-center gap-1 mt-1.5">
+              <CornerDownLeft className="w-3 h-3 text-[#1E9A80]" />
+              <span className="text-[10px] text-[#1E9A80] font-medium">
+                Returns to Global Prompt
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Lead count badge */}
