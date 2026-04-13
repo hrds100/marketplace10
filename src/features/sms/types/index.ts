@@ -24,6 +24,7 @@ export interface SmsContact {
   assignedTo: string | null;
   optedOut: boolean;
   batchName: string | null;
+  responseStatus: 'sent' | 'responded' | null;
   createdAt: string;
   updatedAt: string;
 }

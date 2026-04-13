@@ -46,6 +46,7 @@ export default function ContactsTable({
   const [labelFilter, setLabelFilter] = useState('all');
   const [stageFilter, setStageFilter] = useState('all');
   const [groupFilter, setGroupFilter] = useState('all');
+  const [responseFilter, setResponseFilter] = useState('all');
   const [page, setPage] = useState(0);
 
   const batchGroups = useMemo(() => {
@@ -78,14 +79,22 @@ export default function ContactsTable({
       result = result.filter((c) => c.batchName === groupFilter);
     }
 
+    if (responseFilter !== 'all') {
+      if (responseFilter === 'none') {
+        result = result.filter((c) => !c.responseStatus);
+      } else {
+        result = result.filter((c) => c.responseStatus === responseFilter);
+      }
+    }
+
     return result;
-  }, [contacts, search, labelFilter, stageFilter, groupFilter]);
+  }, [contacts, search, labelFilter, stageFilter, groupFilter, responseFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   // Reset page when filters change
-  useMemo(() => setPage(0), [search, labelFilter, stageFilter, groupFilter]);
+  useMemo(() => setPage(0), [search, labelFilter, stageFilter, groupFilter, responseFilter]);
 
   if (contacts.length === 0) {
     return (
@@ -154,6 +163,18 @@ export default function ContactsTable({
             </SelectContent>
           </Select>
         )}
+
+        <Select value={responseFilter} onValueChange={setResponseFilter}>
+          <SelectTrigger className="w-full sm:w-44 rounded-[10px] border-[#E5E5E5]">
+            <SelectValue placeholder="All Responses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Responses</SelectItem>
+            <SelectItem value="responded">Responded</SelectItem>
+            <SelectItem value="sent">No Reply</SelectItem>
+            <SelectItem value="none">Not Contacted</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -166,6 +187,7 @@ export default function ContactsTable({
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Group</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Labels</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Stage</TableHead>
+              <TableHead className="text-[#1A1A1A] font-semibold text-xs">Response</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Last Message</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Assigned To</TableHead>
             </TableRow>
@@ -173,7 +195,7 @@ export default function ContactsTable({
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-[#6B7280]">
+                <TableCell colSpan={8} className="text-center py-10 text-[#6B7280]">
                   No contacts match your filters.
                 </TableCell>
               </TableRow>
@@ -216,6 +238,19 @@ export default function ContactsTable({
                             style={{ backgroundColor: stage.colour }}
                           />
                           {stage.name}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-[#9CA3AF]">--</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {contact.responseStatus === 'responded' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#ECFDF5] text-[#1E9A80]">
+                          Responded
+                        </span>
+                      ) : contact.responseStatus === 'sent' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-[#6B7280]">
+                          No Reply
                         </span>
                       ) : (
                         <span className="text-sm text-[#9CA3AF]">--</span>

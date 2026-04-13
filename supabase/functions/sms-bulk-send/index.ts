@@ -299,6 +299,13 @@ serve(async (req: Request) => {
           })
           .eq('id', recipient.id);
 
+        // ---- MARK CONTACT AS SENT (only if not already responded) ----
+        await supabase
+          .from('sms_contacts')
+          .update({ response_status: 'sent', updated_at: new Date().toISOString() })
+          .eq('id', contact.id)
+          .is('response_status', null);
+
         // ---- UPSERT CONVERSATION with automation_id ----
         const preview = messageBody.length > 100 ? messageBody.substring(0, 100) + '...' : messageBody;
         const senderChannel = number.channel || 'sms';
