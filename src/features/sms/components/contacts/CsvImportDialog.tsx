@@ -54,12 +54,33 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
     onClose();
   }
 
+  function normaliseRows(raw: ParsedRow[]): ParsedRow[] {
+    if (raw.length === 0) return raw;
+    const firstKeys = Object.keys(raw[0]);
+    // Find phone column — matches: phone, phone number, phone_number, mobile, tel, telephone, contact
+    const phoneKey = firstKeys.find((k) =>
+      /^(phone[\s_]?number?|mobile|tel(ephone)?|contact[\s_]?number?)$/i.test(k.trim())
+    ) || firstKeys.find((k) => /phone|mobile|tel/i.test(k));
+    // Find name column — matches: name, full name, contact name, first name, display name
+    const nameKey = firstKeys.find((k) =>
+      /^(full[\s_]?name|contact[\s_]?name|display[\s_]?name|first[\s_]?name|name)$/i.test(k.trim())
+    ) || firstKeys.find((k) => /name/i.test(k));
+
+    if (!phoneKey) return raw; // can't map, return as-is
+
+    return raw.map((row) => ({
+      ...row,
+      phone: row[phoneKey]?.trim() || undefined,
+      name: nameKey ? (row[nameKey]?.trim() || undefined) : undefined,
+    }));
+  }
+
   function parseFile(file: File) {
     Papa.parse<ParsedRow>(file, {
       header: true,
       skipEmptyLines: true,
       complete: (result) => {
-        setRows(result.data);
+        setRows(normaliseRows(result.data));
         setStep('preview');
       },
     });
