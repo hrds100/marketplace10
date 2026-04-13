@@ -58,6 +58,12 @@ interface CampaignWizardProps {
     send_speed: { min: number; max: number } | null;
     batch_size: number | null;
     batch_name: string | null;
+    followUp: {
+      enabled: boolean;
+      waitDays: number;
+      message: string;
+      maxFollowUps: number;
+    } | null;
   }) => void;
   isSubmitting?: boolean;
 }
@@ -105,6 +111,11 @@ interface WizardData {
   // Batch
   batchSendAll: boolean;
   batchSize: number;
+  // Follow-up
+  followUpEnabled: boolean;
+  followUpWaitDays: number;
+  followUpMessage: string;
+  followUpMax: number;
   // Schedule
   scheduleType: 'now' | 'later';
   scheduledDate: Date | undefined;
@@ -118,6 +129,7 @@ const STEPS = [
   'Number',
   'Send Speed',
   'Batch',
+  'Follow-up',
   'Opt-out',
   'Schedule',
   'Review',
@@ -162,6 +174,10 @@ const INITIAL_DATA: WizardData = {
   sendSpeedMax: 10,
   batchSendAll: true,
   batchSize: 100,
+  followUpEnabled: false,
+  followUpWaitDays: 3,
+  followUpMessage: '',
+  followUpMax: 1,
   scheduleType: 'now',
   scheduledDate: undefined,
   scheduledTime: '09:00',
@@ -227,8 +243,9 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
       case 4: return data.sendSpeedPreset !== 'custom' || (data.sendSpeedMin > 0 && data.sendSpeedMax >= data.sendSpeedMin);
       case 5: return true;
       case 6: return true;
-      case 7: return data.scheduleType === 'now' || (data.scheduledDate !== undefined && data.scheduledTime.length > 0);
-      case 8: return true;
+      case 7: return true;
+      case 8: return data.scheduleType === 'now' || (data.scheduledDate !== undefined && data.scheduledTime.length > 0);
+      case 9: return true;
       default: return false;
     }
   }
@@ -388,6 +405,14 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
       send_speed: speedRange,
       batch_size: data.batchSendAll ? null : data.batchSize,
       batch_name: data.csv.listName.trim() || null,
+      followUp: data.followUpEnabled
+        ? {
+            enabled: true,
+            waitDays: data.followUpWaitDays,
+            message: data.followUpMessage,
+            maxFollowUps: data.followUpMax,
+          }
+        : null,
     });
 
     setStep(0);
@@ -888,8 +913,77 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
             </div>
           )}
 
-          {/* Step 7: Opt-out */}
+          {/* Step 7: Follow-up */}
           {step === 6 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={data.followUpEnabled}
+                  onCheckedChange={(v) => update({ followUpEnabled: v })}
+                />
+                <Label className="text-sm text-[#1A1A1A]">Auto follow-up if no reply</Label>
+              </div>
+              {data.followUpEnabled && (
+                <div className="space-y-4 pl-1">
+                  <div>
+                    <Label className="text-sm font-medium text-[#1A1A1A]">Wait days before follow-up</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={data.followUpWaitDays}
+                      onChange={(e) => update({ followUpWaitDays: Math.min(30, Math.max(1, parseInt(e.target.value) || 3)) })}
+                      className="mt-1.5 rounded-lg border-[#E5E7EB] w-32"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[#1A1A1A]">Follow-up message</Label>
+                    {templates.length > 0 && (
+                      <Select
+                        onValueChange={(id) => {
+                          const tpl = templates.find((t) => t.id === id);
+                          if (tpl) update({ followUpMessage: tpl.body });
+                        }}
+                      >
+                        <SelectTrigger className="mt-1.5 rounded-lg border-[#E5E7EB]">
+                          <SelectValue placeholder="Pick from template (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {templates.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Textarea
+                      value={data.followUpMessage}
+                      onChange={(e) => update({ followUpMessage: e.target.value })}
+                      placeholder="Type follow-up message..."
+                      className="mt-1.5 rounded-lg border-[#E5E7EB] resize-none text-sm"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[#1A1A1A]">Max follow-ups</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={5}
+                      value={data.followUpMax}
+                      onChange={(e) => update({ followUpMax: Math.min(5, Math.max(1, parseInt(e.target.value) || 1)) })}
+                      className="mt-1.5 rounded-lg border-[#E5E7EB] w-32"
+                    />
+                  </div>
+                  <p className="text-xs text-[#6B7280]">
+                    A follow-up message will be sent if the contact hasn&apos;t replied after the wait period
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 8: Opt-out */}
+          {step === 7 && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Switch
@@ -908,8 +1002,8 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
             </div>
           )}
 
-          {/* Step 8: Schedule */}
-          {step === 7 && (
+          {/* Step 9: Schedule */}
+          {step === 8 && (
             <div className="space-y-4">
               <div className="flex gap-3">
                 <Button
@@ -957,8 +1051,8 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
             </div>
           )}
 
-          {/* Step 9: Review */}
-          {step === 8 && (
+          {/* Step 10: Review */}
+          {step === 9 && (
             <div className="space-y-3">
               <div className="rounded-xl border border-[#E5E7EB] bg-[#F3F3EE]/30 p-4 space-y-3">
                 <Row label="Name" value={data.name} />
@@ -996,6 +1090,14 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
                   }
                 />
                 <Row label="Batch" value={data.batchSendAll ? 'Send all' : `${data.batchSize} per batch`} />
+                <Row
+                  label="Follow-up"
+                  value={
+                    data.followUpEnabled
+                      ? `${data.followUpMax}x after ${data.followUpWaitDays} day${data.followUpWaitDays !== 1 ? 's' : ''}`
+                      : 'Off'
+                  }
+                />
                 <Row label="Opt-out" value={data.includeOptOut ? 'Appended' : 'No'} />
                 <Row label="Schedule" value={data.scheduleType === 'now' ? 'Send immediately' : `${data.scheduledDate?.toLocaleDateString()} at ${data.scheduledTime}`} />
               </div>

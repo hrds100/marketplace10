@@ -1,4 +1,4 @@
-import { X, MessageSquare, CircleStop, Clock, UserPlus, Tag, ArrowRightLeft, Globe } from 'lucide-react';
+import { X, CircleStop, Clock, UserPlus, Tag, ArrowRightLeft, Globe } from 'lucide-react';
 import { SmsNodeType } from '../../types';
 import { useFlowContext } from './FlowContext';
 
@@ -11,13 +11,6 @@ interface NodeOption {
 }
 
 const NODE_OPTIONS: NodeOption[] = [
-  {
-    type: SmsNodeType.DEFAULT,
-    name: 'AI Response',
-    description: 'Send an AI-generated or exact text reply',
-    icon: MessageSquare,
-    borderColor: '#1E9A80',
-  },
   {
     type: SmsNodeType.STOP_CONVERSATION,
     name: 'Stop Conversation',

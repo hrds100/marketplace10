@@ -28,7 +28,7 @@ Output a valid JSON object with this EXACT structure:
       "type": "DEFAULT",
       "position": {"x": 300, "y": 0},
       "data": {
-        "name": "Start",
+        "name": "AI Response",
         "isStart": true,
         "prompt": "The AI instructions for this node...",
         "modelOptions": {"temperature": 0.7}

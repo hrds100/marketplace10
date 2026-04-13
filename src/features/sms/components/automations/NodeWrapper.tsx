@@ -143,14 +143,18 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-[#1A1A1A] truncate">{nodeData.name}</p>
+            <p className="text-sm font-medium text-[#1A1A1A] truncate">
+              {isStart ? 'AI Response' : nodeData.name}
+            </p>
           </div>
-          <span
-            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0"
-            style={{ color: config.borderColor, background: `${config.borderColor}15` }}
-          >
-            {config.label}
-          </span>
+          {!isStart && (
+            <span
+              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0"
+              style={{ color: config.borderColor, background: `${config.borderColor}15` }}
+            >
+              {config.label}
+            </span>
+          )}
         </div>
 
         {/* Body */}
