@@ -45,7 +45,14 @@ export default function ContactsTable({
   const [search, setSearch] = useState('');
   const [labelFilter, setLabelFilter] = useState('all');
   const [stageFilter, setStageFilter] = useState('all');
+  const [groupFilter, setGroupFilter] = useState('all');
   const [page, setPage] = useState(0);
+
+  const batchGroups = useMemo(() => {
+    const groups = new Set<string>();
+    contacts.forEach((c) => { if (c.batchName) groups.add(c.batchName); });
+    return Array.from(groups).sort();
+  }, [contacts]);
 
   const filtered = useMemo(() => {
     let result = contacts;
@@ -67,14 +74,18 @@ export default function ContactsTable({
       result = result.filter((c) => c.pipelineStageId === stageFilter);
     }
 
+    if (groupFilter !== 'all') {
+      result = result.filter((c) => c.batchName === groupFilter);
+    }
+
     return result;
-  }, [contacts, search, labelFilter, stageFilter]);
+  }, [contacts, search, labelFilter, stageFilter, groupFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   // Reset page when filters change
-  useMemo(() => setPage(0), [search, labelFilter, stageFilter]);
+  useMemo(() => setPage(0), [search, labelFilter, stageFilter, groupFilter]);
 
   if (contacts.length === 0) {
     return (
@@ -127,6 +138,22 @@ export default function ContactsTable({
             ))}
           </SelectContent>
         </Select>
+
+        {batchGroups.length > 0 && (
+          <Select value={groupFilter} onValueChange={setGroupFilter}>
+            <SelectTrigger className="w-full sm:w-44 rounded-[10px] border-[#E5E5E5]">
+              <SelectValue placeholder="All Groups" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Groups</SelectItem>
+              {batchGroups.map((g) => (
+                <SelectItem key={g} value={g}>
+                  {g}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Table */}
@@ -136,6 +163,7 @@ export default function ContactsTable({
             <TableRow className="bg-[#F3F3EE]">
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Name</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Phone</TableHead>
+              <TableHead className="text-[#1A1A1A] font-semibold text-xs">Group</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Labels</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Stage</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Last Message</TableHead>
@@ -145,7 +173,7 @@ export default function ContactsTable({
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-[#6B7280]">
+                <TableCell colSpan={7} className="text-center py-10 text-[#6B7280]">
                   No contacts match your filters.
                 </TableCell>
               </TableRow>
@@ -163,6 +191,15 @@ export default function ContactsTable({
                     </TableCell>
                     <TableCell>
                       <PhoneNumber number={contact.phoneNumber} className="text-sm text-[#6B7280]" />
+                    </TableCell>
+                    <TableCell>
+                      {contact.batchName ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#ECFDF5] text-[#1E9A80]">
+                          {contact.batchName}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-[#9CA3AF]">--</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

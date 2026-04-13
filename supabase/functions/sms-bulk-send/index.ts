@@ -52,7 +52,7 @@ serve(async (req: Request) => {
     // ---- LOAD CAMPAIGN ----
     const { data: campaign, error: campErr } = await supabase
       .from('sms_campaigns')
-      .select('id, name, message_body, templates, template_rotation, number_ids, rotation, include_opt_out, status, send_speed, batch_size')
+      .select('id, name, message_body, templates, template_rotation, number_ids, rotation, include_opt_out, status, send_speed, batch_size, automation_id')
       .eq('id', campaign_id)
       .single();
 
@@ -298,6 +298,46 @@ serve(async (req: Request) => {
             sent_at: new Date().toISOString(),
           })
           .eq('id', recipient.id);
+
+        // ---- UPSERT CONVERSATION with automation_id ----
+        const preview = messageBody.length > 100 ? messageBody.substring(0, 100) + '...' : messageBody;
+        const senderChannel = number.channel || 'sms';
+
+        const { data: existingConv } = await supabase
+          .from('sms_conversations')
+          .select('id')
+          .eq('contact_id', contact.id)
+          .eq('number_id', number.id)
+          .eq('channel', senderChannel)
+          .maybeSingle();
+
+        if (existingConv) {
+          const convUpdate: Record<string, unknown> = {
+            last_message_at: new Date().toISOString(),
+            last_message_preview: preview,
+          };
+          if (campaign.automation_id) {
+            convUpdate.automation_id = campaign.automation_id;
+            convUpdate.automation_enabled = true;
+          }
+          await supabase
+            .from('sms_conversations')
+            .update(convUpdate)
+            .eq('id', existingConv.id);
+        } else {
+          await supabase
+            .from('sms_conversations')
+            .insert({
+              contact_id: contact.id,
+              number_id: number.id,
+              channel: senderChannel,
+              last_message_at: new Date().toISOString(),
+              last_message_preview: preview,
+              unread_count: 0,
+              automation_id: campaign.automation_id || null,
+              automation_enabled: !!campaign.automation_id,
+            });
+        }
 
         sentCount++;
         batchSentCount++;

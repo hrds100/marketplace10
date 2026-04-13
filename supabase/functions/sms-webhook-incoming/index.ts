@@ -211,7 +211,7 @@ serve(async (req: Request) => {
       // Try to update existing conversation
       const { data: existingConv } = await supabase
         .from('sms_conversations')
-        .select('id, unread_count')
+        .select('id, unread_count, automation_id, automation_enabled')
         .eq('contact_id', contact.id)
         .eq('number_id', numberId)
         .eq('channel', channel)
@@ -227,7 +227,38 @@ serve(async (req: Request) => {
             is_archived: false, // un-archive if they message again
           })
           .eq('id', existingConv.id);
+
+        // Auto-assign automation if conversation doesn't have one yet
+        if (!existingConv.automation_id) {
+          const { data: activeAuto } = await supabase
+            .from('sms_automations')
+            .select('id')
+            .eq('is_active', true)
+            .eq('trigger_type', 'new_message')
+            .limit(1)
+            .maybeSingle();
+
+          if (activeAuto) {
+            await supabase
+              .from('sms_conversations')
+              .update({ automation_id: activeAuto.id, automation_enabled: true })
+              .eq('id', existingConv.id);
+            console.log(`Auto-assigned automation ${activeAuto.id} to existing conversation ${existingConv.id}`);
+          }
+        }
       } else {
+        // New conversation — check for an active automation to auto-assign
+        let autoAssignId: string | null = null;
+        const { data: activeAuto } = await supabase
+          .from('sms_automations')
+          .select('id')
+          .eq('is_active', true)
+          .eq('trigger_type', 'new_message')
+          .limit(1)
+          .maybeSingle();
+
+        if (activeAuto) autoAssignId = activeAuto.id;
+
         await supabase
           .from('sms_conversations')
           .insert({
@@ -237,11 +268,17 @@ serve(async (req: Request) => {
             last_message_at: new Date().toISOString(),
             last_message_preview: preview,
             unread_count: 1,
+            automation_id: autoAssignId,
+            automation_enabled: !!autoAssignId,
           });
+
+        if (autoAssignId) {
+          console.log(`Auto-assigned automation ${autoAssignId} to new conversation for ${from}`);
+        }
       }
     }
 
-    console.log(`Inbound SMS from ${from}: "${body.substring(0, 50)}..." → message ${message.id}`);
+    console.log(`Inbound ${channel.toUpperCase()} from ${from}: "${body.substring(0, 50)}..." → message ${message.id}`);
 
     // ---- TRIGGER AUTOMATION (turn-based, with 5s debounce inside sms-automation-run) ----
     try {

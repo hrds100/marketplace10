@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import Papa from 'papaparse';
 import {
+  Bot,
   Check,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  FolderOpen,
   Loader2,
   Plus,
   Sparkles,
@@ -38,6 +40,7 @@ import { useStages } from '../../hooks/useStages';
 import { useTemplates } from '../../hooks/useTemplates';
 import { useNumbers } from '../../hooks/useNumbers';
 import { useContacts } from '../../hooks/useContacts';
+import { useAutomations } from '../../hooks/useAutomations';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -58,6 +61,7 @@ interface CampaignWizardProps {
     send_speed: { min: number; max: number } | null;
     batch_size: number | null;
     batch_name: string | null;
+    automation_id: string | null;
     followUp: {
       enabled: boolean;
       waitValue: number;
@@ -90,10 +94,12 @@ type SendSpeedPreset = 'fast' | 'normal' | 'slow' | 'custom';
 interface WizardData {
   name: string;
   description: string;
-  recipientSource: 'contacts' | 'csv';
+  recipientSource: 'contacts' | 'csv' | 'group';
   selectedLabels: string[];
   selectedStages: string[];
+  selectedBatchName: string | null;
   csv: CsvUploadState;
+  automationId: string | null;
   // Compose step — multi-template
   messageTemplates: string[];
   customDraft: string;
@@ -132,6 +138,7 @@ const STEPS = [
   'Send Speed',
   'Batch',
   'Follow-up',
+  'Automation',
   'Opt-out',
   'Schedule',
   'Review',
@@ -162,7 +169,9 @@ const INITIAL_DATA: WizardData = {
   recipientSource: 'contacts',
   selectedLabels: [],
   selectedStages: [],
+  selectedBatchName: null,
   csv: { ...INITIAL_CSV },
+  automationId: null,
   messageTemplates: [],
   customDraft: '',
   templateRotation: false,
@@ -203,7 +212,8 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
   const { stages } = useStages();
   const { templates } = useTemplates();
   const { numbers } = useNumbers();
-  const { contacts, bulkCreateContacts } = useContacts();
+  const { contacts, bulkCreateContacts, batchGroups } = useContacts();
+  const { automations } = useAutomations();
 
   function update(partial: Partial<WizardData>) {
     setData((prev) => ({ ...prev, ...partial }));
@@ -229,6 +239,9 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
 
   function getRecipientContactIds(): string[] {
     if (data.recipientSource === 'csv') return data.csv.uniqueContactIds;
+    if (data.recipientSource === 'group') {
+      return contacts.filter((c) => c.batchName === data.selectedBatchName).map((c) => c.id);
+    }
     return getMatchingContactIds();
   }
 
@@ -239,16 +252,20 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
         if (data.recipientSource === 'csv') {
           return data.csv.importComplete && data.csv.uniqueContactIds.length > 0;
         }
+        if (data.recipientSource === 'group') {
+          return data.selectedBatchName !== null && contacts.some((c) => c.batchName === data.selectedBatchName);
+        }
         return data.selectedLabels.length > 0 || data.selectedStages.length > 0;
       }
       case 2: return data.messageTemplates.length > 0;
       case 3: return data.selectedNumberIds.length > 0;
       case 4: return data.sendSpeedPreset !== 'custom' || (data.sendSpeedMin > 0 && data.sendSpeedMax >= data.sendSpeedMin);
-      case 5: return true;
-      case 6: return true;
-      case 7: return true;
-      case 8: return data.scheduleType === 'now' || (data.scheduledDate !== undefined && data.scheduledTime.length > 0);
-      case 9: return true;
+      case 5: return true; // Batch
+      case 6: return true; // Follow-up
+      case 7: return data.automationId !== null; // Automation (required)
+      case 8: return true; // Opt-out
+      case 9: return data.scheduleType === 'now' || (data.scheduledDate !== undefined && data.scheduledTime.length > 0);
+      case 10: return true; // Review
       default: return false;
     }
   }
@@ -421,7 +438,8 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
       sendNow: data.scheduleType === 'now',
       send_speed: speedRange,
       batch_size: data.batchSendAll ? null : data.batchSize,
-      batch_name: data.csv.listName.trim() || null,
+      batch_name: data.recipientSource === 'csv' ? (data.csv.listName.trim() || null) : (data.recipientSource === 'group' ? data.selectedBatchName : null),
+      automation_id: data.automationId,
       followUp: data.followUpEnabled
         ? {
             enabled: true,
@@ -441,7 +459,11 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
     return arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
   }
 
-  const matchingCount = data.recipientSource === 'contacts' ? getMatchingContactIds().length : data.csv.uniqueContactIds.length;
+  const matchingCount = data.recipientSource === 'contacts'
+    ? getMatchingContactIds().length
+    : data.recipientSource === 'group'
+    ? contacts.filter((c) => c.batchName === data.selectedBatchName).length
+    : data.csv.uniqueContactIds.length;
   const recipientCount = getRecipientContactIds().length;
 
   return (
@@ -535,9 +557,49 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
                   <Upload className="h-4 w-4 mr-1.5" />
                   Upload CSV
                 </Button>
+                {batchGroups.length > 0 && (
+                  <Button
+                    variant={data.recipientSource === 'group' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => update({ recipientSource: 'group' })}
+                    className={cn(
+                      'rounded-lg',
+                      data.recipientSource === 'group' && 'bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white',
+                    )}
+                  >
+                    <FolderOpen className="h-4 w-4 mr-1.5" />
+                    Contact Group
+                  </Button>
+                )}
               </div>
 
-              {data.recipientSource === 'contacts' ? (
+              {data.recipientSource === 'group' ? (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-[#1A1A1A] mb-2">Select a contact group</p>
+                    <Select
+                      value={data.selectedBatchName ?? ''}
+                      onValueChange={(v) => update({ selectedBatchName: v })}
+                    >
+                      <SelectTrigger className="rounded-lg border-[#E5E7EB]">
+                        <SelectValue placeholder="Choose a group..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {batchGroups.map((g) => (
+                          <SelectItem key={g.batchName} value={g.batchName}>
+                            {g.batchName} ({g.count} contact{g.count !== 1 ? 's' : ''})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {data.selectedBatchName && (
+                    <p className="text-xs text-[#6B7280]">
+                      {contacts.filter((c) => c.batchName === data.selectedBatchName).length} contact{contacts.filter((c) => c.batchName === data.selectedBatchName).length !== 1 ? 's' : ''} in this group
+                    </p>
+                  )}
+                </div>
+              ) : data.recipientSource === 'contacts' ? (
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-medium text-[#1A1A1A] mb-2">Filter by label</p>
@@ -1015,8 +1077,44 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
             </div>
           )}
 
-          {/* Step 8: Opt-out */}
+          {/* Step 8: Automation */}
           {step === 7 && (
+            <div className="space-y-4">
+              <p className="text-sm font-medium text-[#1A1A1A]">Reply automation</p>
+              <p className="text-xs text-[#6B7280]">
+                Select an automation to handle inbound replies from this campaign. This is required to launch the campaign.
+              </p>
+              <Select
+                value={data.automationId ?? 'none'}
+                onValueChange={(v) => update({ automationId: v === 'none' ? null : v })}
+              >
+                <SelectTrigger className="rounded-lg border-[#E5E7EB]">
+                  <SelectValue placeholder="No automation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No automation</SelectItem>
+                  {automations.filter((a) => a.isActive).map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      <span className="flex items-center gap-1.5">
+                        <Bot className="h-3.5 w-3.5 text-[#1E9A80]" />
+                        {a.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {data.automationId && (
+                <div className="rounded-lg border border-[#1E9A80]/30 bg-[#ECFDF5] p-3">
+                  <p className="text-sm text-[#1A1A1A]">
+                    Replies will be routed to: <span className="font-medium">{automations.find((a) => a.id === data.automationId)?.name}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 9: Opt-out */}
+          {step === 8 && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Switch
@@ -1035,8 +1133,8 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
             </div>
           )}
 
-          {/* Step 9: Schedule */}
-          {step === 8 && (
+          {/* Step 10: Schedule */}
+          {step === 9 && (
             <div className="space-y-4">
               <div className="flex gap-3">
                 <Button
@@ -1084,8 +1182,8 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
             </div>
           )}
 
-          {/* Step 10: Review */}
-          {step === 9 && (
+          {/* Step 11: Review */}
+          {step === 10 && (
             <div className="space-y-3">
               <div className="rounded-xl border border-[#E5E7EB] bg-[#F3F3EE]/30 p-4 space-y-3">
                 <Row label="Name" value={data.name} />
@@ -1094,6 +1192,8 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
                   value={
                     data.recipientSource === 'csv'
                       ? `CSV: ${data.csv.file?.name} (${data.csv.uniqueContactIds.length} contacts)`
+                      : data.recipientSource === 'group'
+                      ? `Group: ${data.selectedBatchName} (${matchingCount} contacts)`
                       : `${matchingCount} contact${matchingCount !== 1 ? 's' : ''}`
                   }
                 />
@@ -1131,6 +1231,7 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
                       : 'Off'
                   }
                 />
+                <Row label="Automation" value={data.automationId ? (automations.find((a) => a.id === data.automationId)?.name ?? 'Selected') : 'None'} />
                 <Row label="Opt-out" value={data.includeOptOut ? 'Appended' : 'No'} />
                 <Row label="Schedule" value={data.scheduleType === 'now' ? 'Send immediately' : `${data.scheduledDate?.toLocaleDateString()} at ${data.scheduledTime}`} />
               </div>

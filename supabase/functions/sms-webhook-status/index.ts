@@ -74,6 +74,39 @@ serve(async (req: Request) => {
       console.warn(`No message found for twilio_sid ${messageSid}`);
     } else {
       console.log(`Status update: ${messageSid} → ${messageStatus}`);
+
+      // ---- SYNC CAMPAIGN RECIPIENT STATUS ----
+      // If this message is tied to a campaign, update sms_campaign_recipients too
+      const { data: recipient } = await supabase
+        .from('sms_campaign_recipients')
+        .select('id, campaign_id')
+        .eq('message_id', updated.id)
+        .maybeSingle();
+
+      if (recipient) {
+        await supabase
+          .from('sms_campaign_recipients')
+          .update({ status: messageStatus })
+          .eq('id', recipient.id);
+
+        // Update campaign aggregate counts
+        const { data: counts } = await supabase
+          .from('sms_campaign_recipients')
+          .select('status')
+          .eq('campaign_id', recipient.campaign_id);
+
+        if (counts) {
+          const delivered = counts.filter((r: { status: string }) => r.status === 'delivered').length;
+          const failed = counts.filter((r: { status: string }) => ['failed', 'undelivered'].includes(r.status)).length;
+
+          await supabase
+            .from('sms_campaigns')
+            .update({ delivered_count: delivered, failed_count: failed })
+            .eq('id', recipient.campaign_id);
+        }
+
+        console.log(`Campaign recipient ${recipient.id} updated to ${messageStatus}`);
+      }
     }
 
     return new Response(
