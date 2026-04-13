@@ -415,7 +415,7 @@ export default function SettingsPage() {
                         <span className="text-xl font-bold text-foreground">£5</span>
                         <span className="text-sm text-muted-foreground">trial · then £67/mo</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">100 deal contacts per month · Cancel any time</p>
+                      <p className="text-xs text-muted-foreground mt-1">Unlimited deal contacts · Cancel any time</p>
                     </button>
 
                     {/* Lifetime card */}
@@ -431,7 +431,7 @@ export default function SettingsPage() {
                         <span className="text-xl font-bold text-foreground">£1,997</span>
                         <span className="text-sm text-muted-foreground">one-time</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">100 deal contacts per month · Pay once · No renewal</p>
+                      <p className="text-xs text-muted-foreground mt-1">Unlimited deal contacts · Pay once · No renewal</p>
                     </button>
                   </div>
                   <p className="text-[11px] text-muted-foreground">The £1,997 plan is the same price you see after upgrading — buying here saves you the trial step.</p>
