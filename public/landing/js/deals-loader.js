@@ -50,7 +50,7 @@
     return String(val);
   }
 
-  function buildDealCard(p, index) {
+  function buildDealCardA(p, index) {
     var photo = getPhoto(p, index);
     var listingBadge = p.listing_type === 'sale'
       ? '<span style="background:rgba(5,150,105,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px">Sale</span>'
@@ -79,9 +79,37 @@
     '</div>';
   }
 
+  function buildDealCardB(p, index) {
+    var photo = getPhoto(p, index);
+    var typeLabel = p.listing_type === 'sale' ? 'For Sale' : 'Rent-to-Rent';
+    var title = safe(getTitle(p), 'Property');
+    var location = safe(getLocation(p));
+    var rent = formatCurrency(p.rent_monthly);
+    var profit = formatCurrency(p.profit_est);
+    var listingUrl = '/deals/' + safe(p.id);
+
+    return '<div class="deal-card" data-feature="SHARED__LANDING_DEAL_CARD">' +
+      '<img src="' + photo + '" alt="' + title + '" class="deal-card-img" loading="lazy">' +
+      '<div class="deal-card-body">' +
+        '<span class="deal-card-type">' + typeLabel + '</span>' +
+        '<div class="deal-card-name">' + title + '</div>' +
+        '<div class="deal-card-location">' + location + '</div>' +
+        '<div class="deal-card-stats">' +
+          '<div><div class="deal-card-stat-label">Monthly Rent</div><div class="deal-card-stat-value">' + rent + '</div></div>' +
+          '<div><div class="deal-card-stat-label">Est. Profit</div><div class="deal-card-stat-value profit">+' + profit + '</div></div>' +
+        '</div>' +
+        '<div class="deal-card-actions">' +
+          '<a href="' + listingUrl + '" class="deal-btn deal-btn-outline">Visit listing</a>' +
+          '<a href="/signup" class="deal-btn deal-btn-green">Inquire now</a>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
   function loadDeals() {
     var grid = document.querySelector('.deal-grid');
     if (!grid) return;
+    var isVariantB = grid.classList.contains('deal-cards-grid');
 
     fetch(ENDPOINT, {
       headers: {
@@ -98,7 +126,7 @@
       if (!Array.isArray(data) || data.length === 0) return; // keep hardcoded fallback
       var html = '';
       data.forEach(function (p, i) {
-        html += buildDealCard(p, i);
+        html += isVariantB ? buildDealCardB(p, i) : buildDealCardA(p, i);
       });
       grid.innerHTML = html;
     })
