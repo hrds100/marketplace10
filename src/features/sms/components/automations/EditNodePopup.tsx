@@ -450,9 +450,22 @@ export function EditNodePopup() {
                       }
                       placeholder="60"
                       min={1}
-                      className="h-7 rounded-md border-[#E5E7EB] text-xs w-[80px]"
+                      className="h-7 rounded-md border-[#E5E7EB] text-xs w-[70px]"
                     />
-                    <span className="text-[10px] text-[#9CA3AF]">min</span>
+                    <Select
+                      value={step.waitUnit || 'minutes'}
+                      onValueChange={(v) => updateStep(step.id, { waitUnit: v as 'seconds' | 'minutes' | 'hours' | 'days' })}
+                    >
+                      <SelectTrigger className="h-7 rounded-md border-[#E5E7EB] text-xs w-[100px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="seconds">Seconds</SelectItem>
+                        <SelectItem value="minutes">Minutes</SelectItem>
+                        <SelectItem value="hours">Hours</SelectItem>
+                        <SelectItem value="days">Days</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <Textarea
                     value={step.prompt || step.text || ''}

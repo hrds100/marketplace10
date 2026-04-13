@@ -142,7 +142,8 @@ export interface SmsCampaign {
   batchSize: number | null;
   followUp: {
     enabled: boolean;
-    waitDays: number;
+    waitValue: number;
+    waitUnit: 'seconds' | 'minutes' | 'hours' | 'days';
     message: string;
     maxFollowUps: number;
   } | null;
@@ -228,10 +229,13 @@ export interface SmsEdgeData {
   [key: string]: unknown;
 }
 
+export type TimeUnit = 'seconds' | 'minutes' | 'hours' | 'days';
+
 export interface SmsFollowUpStep {
   id: string;
   name: string;
   waitMinutes: number;
+  waitUnit?: TimeUnit;
   prompt?: string;
   text?: string;
 }
