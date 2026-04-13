@@ -60,7 +60,8 @@ interface CampaignWizardProps {
     batch_name: string | null;
     followUp: {
       enabled: boolean;
-      waitDays: number;
+      waitValue: number;
+      waitUnit: 'seconds' | 'minutes' | 'hours' | 'days';
       message: string;
       maxFollowUps: number;
     } | null;
@@ -113,7 +114,8 @@ interface WizardData {
   batchSize: number;
   // Follow-up
   followUpEnabled: boolean;
-  followUpWaitDays: number;
+  followUpWaitValue: number;
+  followUpWaitUnit: 'seconds' | 'minutes' | 'hours' | 'days';
   followUpMessage: string;
   followUpMax: number;
   // Schedule
@@ -175,7 +177,8 @@ const INITIAL_DATA: WizardData = {
   batchSendAll: true,
   batchSize: 100,
   followUpEnabled: false,
-  followUpWaitDays: 3,
+  followUpWaitValue: 3,
+  followUpWaitUnit: 'days',
   followUpMessage: '',
   followUpMax: 1,
   scheduleType: 'now',
@@ -408,7 +411,8 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
       followUp: data.followUpEnabled
         ? {
             enabled: true,
-            waitDays: data.followUpWaitDays,
+            waitValue: data.followUpWaitValue,
+            waitUnit: data.followUpWaitUnit,
             message: data.followUpMessage,
             maxFollowUps: data.followUpMax,
           }
@@ -926,15 +930,30 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
               {data.followUpEnabled && (
                 <div className="space-y-4 pl-1">
                   <div>
-                    <Label className="text-sm font-medium text-[#1A1A1A]">Wait days before follow-up</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={30}
-                      value={data.followUpWaitDays}
-                      onChange={(e) => update({ followUpWaitDays: Math.min(30, Math.max(1, parseInt(e.target.value) || 3)) })}
-                      className="mt-1.5 rounded-lg border-[#E5E7EB] w-32"
-                    />
+                    <Label className="text-sm font-medium text-[#1A1A1A]">Wait before follow-up</Label>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <Input
+                        type="number"
+                        min={1}
+                        value={data.followUpWaitValue}
+                        onChange={(e) => update({ followUpWaitValue: Math.max(1, parseInt(e.target.value) || 1) })}
+                        className="rounded-lg border-[#E5E7EB] w-24"
+                      />
+                      <Select
+                        value={data.followUpWaitUnit}
+                        onValueChange={(v) => update({ followUpWaitUnit: v as WizardData['followUpWaitUnit'] })}
+                      >
+                        <SelectTrigger className="rounded-lg border-[#E5E7EB] w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="seconds">Seconds</SelectItem>
+                          <SelectItem value="minutes">Minutes</SelectItem>
+                          <SelectItem value="hours">Hours</SelectItem>
+                          <SelectItem value="days">Days</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-[#1A1A1A]">Follow-up message</Label>
@@ -1094,7 +1113,7 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
                   label="Follow-up"
                   value={
                     data.followUpEnabled
-                      ? `${data.followUpMax}x after ${data.followUpWaitDays} day${data.followUpWaitDays !== 1 ? 's' : ''}`
+                      ? `${data.followUpMax}x after ${data.followUpWaitValue} ${data.followUpWaitUnit}`
                       : 'Off'
                   }
                 />
