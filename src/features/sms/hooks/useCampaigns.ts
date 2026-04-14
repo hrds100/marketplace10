@@ -216,6 +216,29 @@ export function useCampaigns() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      campaignId,
+      updates,
+    }: {
+      campaignId: string;
+      updates: Partial<Omit<CreateCampaignPayload, 'contact_ids'>>;
+    }) => {
+      const { error } = await (supabase
+        .from('sms_campaigns' as never)
+        .update(updates as never)
+        .eq('id', campaignId) as never);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sms-campaigns'] });
+      toast.success('Campaign updated');
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to update campaign');
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (campaignId: string) => {
       const { error } = await (supabase
@@ -238,12 +261,14 @@ export function useCampaigns() {
     isLoading: query.isLoading,
     error: query.error,
     createCampaign: createMutation.mutateAsync,
+    updateCampaign: updateMutation.mutateAsync,
     launchCampaign: launchMutation.mutateAsync,
     sendNextBatch: sendNextBatchMutation.mutateAsync,
     pauseCampaign: pauseMutation.mutateAsync,
     resumeCampaign: resumeMutation.mutateAsync,
     deleteCampaign: deleteMutation.mutateAsync,
     isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
     isLaunching: launchMutation.isPending,
     isSendingBatch: sendNextBatchMutation.isPending,
     isPausing: pauseMutation.isPending,
