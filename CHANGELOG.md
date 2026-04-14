@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-04-14 — Booking site free-user demo restored
+
+**PR:** #468 (commit 7023a58)
+
+### What changed
+- Restored the interactive free-user demo on `/dashboard/booking-site`.
+- One-line fix in `src/pages/BookingSitePage.tsx`: re-added the `if (!isAdmin && !isPaidTier(tier)) return <BookingSitePreviewPage />` branch that PR #337 (b6d057b, 2026-04-08) deleted.
+- Paid users still get `BookingSiteDashboard` + magic-login to nfstay.app — unchanged.
+- Admins bypass the gate and still see the full dashboard for testing.
+
+### Regression detail
+PR #337 ("convert booking-site dashboard to mockup with payment gates") intentionally unified all users onto the dashboard with payment-gated buttons, but the side effect was that free users saw the "Complete your booking site setup" empty state instead of the playable preview they had before. `BookingSitePreviewPage` stayed in the file (lines 87–370) orphaned but intact, so restoring it was a one-line edit.
+
+### Proven by Playwright (red-then-green TDD)
+`e2e/booking-site-free-demo.spec.ts`
+- **RED on prod** before merge — free user landed in "Start Setup" empty state, no Brand/Content/Contact tabs. Regression confirmed.
+- **GREEN locally** with the fix — preview tabs visible, dashboard tabs absent.
+- Test creates a fresh free-tier user via Supabase Admin API, verifies `profiles.tier = 'free'`, injects session via localStorage. Reusable for future free-tier regression tests.
+
+### Human verified
+Hugo confirmed live on hub.nfstay.com 2026-04-14.
+
+---
+
 ## 2026-04-11 — Airbnb Pricing Overhaul
 
 **PRs:** #390, #392, #393, #394, #395, #396, #397, #398, #399, #400, #401, #402, #403
