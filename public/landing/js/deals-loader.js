@@ -50,12 +50,11 @@
     return String(val);
   }
 
-  function buildDealCard(p, index) {
+  function buildDealCardA(p, index) {
     var photo = getPhoto(p, index);
     var listingBadge = p.listing_type === 'sale'
       ? '<span style="background:rgba(5,150,105,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px">Sale</span>'
       : '<span style="background:rgba(30,154,128,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px">Rental</span>';
-    var badge = (p.featured ? '<div class="deal-badge">Featured</div>' : '<div class="deal-badge">Live</div>') + listingBadge;
     var title = safe(getTitle(p), 'Property');
     var location = safe(getLocation(p));
     var rent = formatCurrency(p.rent_monthly);
@@ -64,7 +63,7 @@
     var listingUrl = '/deals/' + safe(p.id);
 
     return '<div class="deal-card sr-child" data-feature="SHARED__LANDING_DEAL_CARD">' +
-      '<div class="deal-img" style="background-image:url(\'' + photo + '\')">' + badge + '</div>' +
+      '<div class="deal-img" style="background-image:url(\'' + photo + '\')">' + listingBadge + '</div>' +
       '<div class="deal-body">' +
         '<h4>' + title + '</h4>' +
         '<div class="deal-meta">' + location + '</div>' +
@@ -79,9 +78,14 @@
     '</div>';
   }
 
+  function buildDealCardB(p, index) {
+    return buildDealCardA(p, index);
+  }
+
   function loadDeals() {
     var grid = document.querySelector('.deal-grid');
     if (!grid) return;
+    var isVariantB = grid.classList.contains('deal-cards-grid');
 
     fetch(ENDPOINT, {
       headers: {
@@ -98,7 +102,7 @@
       if (!Array.isArray(data) || data.length === 0) return; // keep hardcoded fallback
       var html = '';
       data.forEach(function (p, i) {
-        html += buildDealCard(p, i);
+        html += isVariantB ? buildDealCardB(p, i) : buildDealCardA(p, i);
       });
       grid.innerHTML = html;
     })

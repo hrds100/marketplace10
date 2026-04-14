@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sora:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/base.css">
+  <link rel="stylesheet" href="/landing/css/sections.css">
   <link rel="stylesheet" href="/landing/css/social-proof.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -264,6 +266,7 @@
       border-radius: 16px;
       overflow: hidden;
       transition: transform 0.2s, box-shadow 0.2s;
+      text-align: left;
     }
     .deal-card:hover {
       transform: translateY(-2px);
@@ -1667,7 +1670,7 @@
       <h2 class="section-title">Browse landlord-approved deals</h2>
       <p class="section-subtitle">Every listing is verified, compliance-checked and ready to operate.</p>
 
-      <div class="deal-cards-grid">
+      <div class="deal-cards-grid deal-grid">
         <!-- Card 1 -->
         <div class="deal-card">
           <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&h=400&fit=crop" alt="2-Bed Flat, Ancoats" class="deal-card-img" loading="lazy">
@@ -2542,5 +2545,6 @@
   <!-- ── External scripts ── -->
   <script src="/landing/js/social-proof.js"></script>
   <script src="/landing/js/ab-testing.js"></script>
+  <script src="/landing/js/deals-loader.js"></script>
 </body>
 </html>

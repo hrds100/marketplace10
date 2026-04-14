@@ -138,16 +138,23 @@ serve(async (req: Request) => {
     }
 
     // ---- FIND OR CREATE CONTACT ----
+    // Normalise: try E.164 (+44...), raw digits (44...), and with spaces stripped
+    const fromDigits = from.replace(/[^0-9]/g, ''); // e.g. 447886076294
+    const fromE164 = from.startsWith('+') ? from : `+${fromDigits}`; // e.g. +447886076294
+    const phoneCandidates = [...new Set([from, fromE164, fromDigits])];
+
     let { data: contact } = await supabase
       .from('sms_contacts')
       .select('id, phone_number, display_name, opted_out')
-      .eq('phone_number', from)
+      .in('phone_number', phoneCandidates)
+      .limit(1)
       .maybeSingle();
 
     if (!contact) {
+      // Store in E.164 format for consistency
       const { data: newContact, error: contactErr } = await supabase
         .from('sms_contacts')
-        .insert({ phone_number: from })
+        .insert({ phone_number: fromE164 })
         .select('id, phone_number, display_name, opted_out')
         .single();
 
@@ -203,6 +210,12 @@ serve(async (req: Request) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // ---- MARK CONTACT AS RESPONDED ----
+    await supabase
+      .from('sms_contacts')
+      .update({ response_status: 'responded', updated_at: new Date().toISOString() })
+      .eq('id', contact.id);
 
     // ---- UPSERT CONVERSATION ----
     const preview = body.length > 100 ? body.substring(0, 100) + '...' : body;

@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Read(//mnt/c/Users/HP/Documents/**)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(where gh:*)",
+      "Bash(winget list:*)",
+      "WebFetch(domain:highlevel.stoplight.io)",
+      "WebSearch",
+      "WebFetch(domain:help.gohighlevel.com)",
+      "WebFetch(domain:marketplace.gohighlevel.com)",
+      "mcp__b4857eca-8d4f-498f-97e1-fac875b203ef__deploy_edge_function",
+      "Bash(node_modules.bintsc --noEmit)",
+      "Bash(find /c/Users/HP/Documents/marketplace10/public/landing -name *.html)",
+      "mcp__b4857eca-8d4f-498f-97e1-fac875b203ef__get_project",
+      "mcp__b4857eca-8d4f-498f-97e1-fac875b203ef__execute_sql",
+      "WebFetch(domain:hub.nfstay.com)",
+      "Bash(gh pr:*)",
+      "Bash(npm install:*)",
+      "Bash(echo $GH_TOKEN)",
+      "Bash(git fetch:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)",
+      "mcp__b4857eca-8d4f-498f-97e1-fac875b203ef__get_logs",
+      "Bash(bash scripts/deploy-function.sh ghl-payment-webhook)",
+      "Bash(grep -E \"\\\\.tsx?$\")",
+      "Bash(while read:*)",
+      "Bash(do echo:*)",
+      "Bash(done)"
+    ]
+  }
+}
