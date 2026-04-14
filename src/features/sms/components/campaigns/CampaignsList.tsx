@@ -1,4 +1,4 @@
-import { Loader2, Megaphone, Pause, Play, Send } from 'lucide-react';
+import { Loader2, Megaphone, Pause, Pencil, Play, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -15,6 +15,7 @@ import StatusBadge from '../shared/StatusBadge';
 interface CampaignsListProps {
   campaigns: SmsCampaign[];
   onNew: () => void;
+  onEdit?: (campaign: SmsCampaign) => void;
   onSendNextBatch?: (campaignId: string) => void;
   onPause?: (campaignId: string) => void;
   onResume?: (campaignId: string) => void;
@@ -30,6 +31,7 @@ function getRemainingCount(c: SmsCampaign): number {
 export default function CampaignsList({
   campaigns,
   onNew,
+  onEdit,
   onSendNextBatch,
   onPause,
   onResume,
@@ -76,6 +78,7 @@ export default function CampaignsList({
           {campaigns.map((c) => {
             const remaining = getRemainingCount(c);
             const hasPendingRecipients = remaining > 0;
+            const canEdit = (c.status === 'draft' || c.status === 'paused') && onEdit;
             const canSendBatch = (c.status === 'paused' || (c.status === 'complete' && hasPendingRecipients)) && onSendNextBatch;
             const canPause = c.status === 'sending' && onPause;
             const canResume = c.status === 'paused' && onResume;
@@ -133,6 +136,17 @@ export default function CampaignsList({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1.5">
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onEdit(c)}
+                        className="rounded-lg border-[#E5E7EB] h-7 text-xs px-2"
+                      >
+                        <Pencil className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                    )}
                     {canSendBatch && (
                       <Button
                         size="sm"
