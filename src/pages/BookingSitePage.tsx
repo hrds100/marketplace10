@@ -78,6 +78,7 @@ export default function BookingSitePage() {
     );
   }
 
+  if (!isAdmin && !isPaidTier(tier)) return <BookingSitePreviewPage />;
   return <BookingSiteDashboard tier={tier} isAdminOverride={isAdmin} />;
 }
 
