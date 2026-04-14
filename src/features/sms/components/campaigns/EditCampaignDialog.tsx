@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,8 @@ export default function EditCampaignDialog({
 }: EditCampaignDialogProps) {
   const [name, setName] = useState('');
   const [messageBody, setMessageBody] = useState('');
+  const [templates, setTemplates] = useState<string[]>([]);
+  const [templateRotation, setTemplateRotation] = useState(false);
   const [includeOptOut, setIncludeOptOut] = useState(false);
   const [speedMin, setSpeedMin] = useState(1);
   const [speedMax, setSpeedMax] = useState(1);
@@ -43,6 +45,8 @@ export default function EditCampaignDialog({
     setLastCampaignId(campaign.id);
     setName(campaign.name);
     setMessageBody(campaign.messageBody);
+    setTemplates(campaign.templates.length > 0 ? [...campaign.templates] : []);
+    setTemplateRotation(campaign.templateRotation);
     setIncludeOptOut(campaign.includeOptOut);
     setSpeedMin(campaign.sendSpeed?.min ?? 1);
     setSpeedMax(campaign.sendSpeed?.max ?? 1);
@@ -50,11 +54,25 @@ export default function EditCampaignDialog({
     setBatchSize(campaign.batchSize ?? 100);
   }
 
+  function updateTemplate(index: number, value: string) {
+    setTemplates((prev) => prev.map((t, i) => (i === index ? value : t)));
+  }
+
+  function addTemplate() {
+    setTemplates((prev) => [...prev, '']);
+  }
+
+  function removeTemplate(index: number) {
+    setTemplates((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSave() {
     if (!campaign) return;
     await onSave(campaign.id, {
       name,
       message_body: messageBody,
+      templates: templates.filter((t) => t.trim() !== ''),
+      template_rotation: templateRotation && templates.filter((t) => t.trim() !== '').length > 1,
       include_opt_out: includeOptOut,
       send_speed: { min: speedMin, max: speedMax },
       batch_size: batchSendAll ? null : batchSize,
@@ -68,7 +86,7 @@ export default function EditCampaignDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[#1A1A1A]">Edit Campaign</DialogTitle>
         </DialogHeader>
@@ -89,16 +107,73 @@ export default function EditCampaignDialog({
               />
             </div>
 
-            {/* Message */}
+            {/* Primary Message */}
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-[#525252]">Message Body</Label>
+              <Label className="text-sm font-medium text-[#525252]">Primary Message</Label>
               <Textarea
                 value={messageBody}
                 onChange={(e) => setMessageBody(e.target.value)}
-                rows={5}
+                rows={4}
                 className="rounded-[10px] border-[#E5E5E5] focus-visible:ring-[#1E9A80] resize-none"
                 placeholder="Use {name} and {phone} as variables"
               />
+            </div>
+
+            {/* Message Variants */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-[#525252]">
+                  Message Variants {templates.length > 0 && <span className="text-[#9CA3AF] font-normal">({templates.length})</span>}
+                </Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={addTemplate}
+                  className="rounded-lg border-[#E5E7EB] h-7 text-xs px-2"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Variant
+                </Button>
+              </div>
+
+              {templates.length > 0 ? (
+                <div className="space-y-2">
+                  {templates.map((tpl, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <Textarea
+                        value={tpl}
+                        onChange={(e) => updateTemplate(idx, e.target.value)}
+                        rows={3}
+                        className="flex-1 rounded-[10px] border-[#E5E5E5] focus-visible:ring-[#1E9A80] resize-none text-sm"
+                        placeholder={`Variant ${idx + 1} — use {name} and {phone}`}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeTemplate(idx)}
+                        className="h-8 w-8 p-0 text-[#9CA3AF] hover:text-[#EF4444] shrink-0 mt-1"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+
+                  {templates.filter((t) => t.trim() !== '').length > 1 && (
+                    <div className="flex items-center justify-between pt-1">
+                      <Label className="text-xs text-[#6B7280]">Rotate variants (round-robin)</Label>
+                      <Switch
+                        checked={templateRotation}
+                        onCheckedChange={setTemplateRotation}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-[#9CA3AF]">No variants — primary message will be used for all contacts.</p>
+              )}
+
               <p className="text-xs text-[#9CA3AF]">
                 Variables: {'{name}'}, {'{phone}'}. Changes apply to remaining unsent contacts only.
               </p>
