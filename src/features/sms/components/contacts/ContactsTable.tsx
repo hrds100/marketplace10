@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Users, Pencil, Trash2 } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -30,6 +31,8 @@ interface ContactsTableProps {
   stages: SmsPipelineStage[];
   onEdit: (contact: SmsContact) => void;
   onDelete: (contactId: string) => void;
+  selectedIds: Set<string>;
+  onSelectionChange: (ids: Set<string>) => void;
 }
 
 const PAGE_SIZE = 10;
@@ -40,12 +43,15 @@ export default function ContactsTable({
   stages,
   onEdit,
   onDelete,
+  selectedIds,
+  onSelectionChange,
 }: ContactsTableProps) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [labelFilter, setLabelFilter] = useState('all');
   const [stageFilter, setStageFilter] = useState('all');
   const [groupFilter, setGroupFilter] = useState('all');
+  const [responseFilter, setResponseFilter] = useState('all');
   const [page, setPage] = useState(0);
 
   const batchGroups = useMemo(() => {
@@ -78,14 +84,52 @@ export default function ContactsTable({
       result = result.filter((c) => c.batchName === groupFilter);
     }
 
+    if (responseFilter !== 'all') {
+      if (responseFilter === 'none') {
+        result = result.filter((c) => !c.responseStatus);
+      } else {
+        result = result.filter((c) => c.responseStatus === responseFilter);
+      }
+    }
+
     return result;
-  }, [contacts, search, labelFilter, stageFilter, groupFilter]);
+  }, [contacts, search, labelFilter, stageFilter, groupFilter, responseFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   // Reset page when filters change
-  useMemo(() => setPage(0), [search, labelFilter, stageFilter, groupFilter]);
+  useMemo(() => setPage(0), [search, labelFilter, stageFilter, groupFilter, responseFilter]);
+
+  // Select all on current page
+  const allPageSelected = paginated.length > 0 && paginated.every((c) => selectedIds.has(c.id));
+  const somePageSelected = paginated.some((c) => selectedIds.has(c.id));
+
+  function toggleSelectAll() {
+    const next = new Set(selectedIds);
+    if (allPageSelected) {
+      paginated.forEach((c) => next.delete(c.id));
+    } else {
+      paginated.forEach((c) => next.add(c.id));
+    }
+    onSelectionChange(next);
+  }
+
+  function toggleSelectOne(id: string) {
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    onSelectionChange(next);
+  }
+
+  function selectAllFiltered() {
+    const next = new Set(selectedIds);
+    filtered.forEach((c) => next.add(c.id));
+    onSelectionChange(next);
+  }
 
   if (contacts.length === 0) {
     return (
@@ -154,38 +198,79 @@ export default function ContactsTable({
             </SelectContent>
           </Select>
         )}
+
+        <Select value={responseFilter} onValueChange={setResponseFilter}>
+          <SelectTrigger className="w-full sm:w-44 rounded-[10px] border-[#E5E5E5]">
+            <SelectValue placeholder="All Responses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Responses</SelectItem>
+            <SelectItem value="responded">Responded</SelectItem>
+            <SelectItem value="sent">No Reply</SelectItem>
+            <SelectItem value="none">Not Contacted</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Select-all-filtered banner */}
+      {selectedIds.size > 0 && selectedIds.size < filtered.length && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#ECFDF5] text-sm text-[#1E9A80]">
+          <span>{selectedIds.size} selected.</span>
+          <button
+            onClick={selectAllFiltered}
+            className="font-semibold underline hover:no-underline"
+          >
+            Select all {filtered.length} matching contacts
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="border border-[#E5E7EB] rounded-xl overflow-hidden bg-white">
         <Table>
           <TableHeader>
             <TableRow className="bg-[#F3F3EE]">
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allPageSelected}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Name</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Phone</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Group</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Labels</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Stage</TableHead>
+              <TableHead className="text-[#1A1A1A] font-semibold text-xs">Response</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Last Message</TableHead>
-              <TableHead className="text-[#1A1A1A] font-semibold text-xs">Assigned To</TableHead>
+              <TableHead className="text-[#1A1A1A] font-semibold text-xs text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-[#6B7280]">
+                <TableCell colSpan={9} className="text-center py-10 text-[#6B7280]">
                   No contacts match your filters.
                 </TableCell>
               </TableRow>
             ) : (
               paginated.map((contact) => {
                 const stage = stages.find((s) => s.id === contact.pipelineStageId);
+                const isSelected = selectedIds.has(contact.id);
                 return (
                   <TableRow
                     key={contact.id}
-                    className="cursor-pointer hover:bg-[#F3F3EE]/50 transition-colors"
-                    onClick={() => navigate('/sms/inbox')}
+                    className={cn(
+                      'hover:bg-[#F3F3EE]/50 transition-colors',
+                      isSelected && 'bg-[#ECFDF5]/50'
+                    )}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelectOne(contact.id)}
+                      />
+                    </TableCell>
                     <TableCell className="text-sm font-medium text-[#1A1A1A]">
                       {contact.displayName || 'Unknown'}
                     </TableCell>
@@ -221,11 +306,41 @@ export default function ContactsTable({
                         <span className="text-sm text-[#9CA3AF]">--</span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {contact.responseStatus === 'responded' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#ECFDF5] text-[#1E9A80]">
+                          Responded
+                        </span>
+                      ) : contact.responseStatus === 'sent' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-[#6B7280]">
+                          No Reply
+                        </span>
+                      ) : (
+                        <span className="text-sm text-[#9CA3AF]">--</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm text-[#6B7280]">
                       {formatDistanceToNow(new Date(contact.updatedAt), { addSuffix: true })}
                     </TableCell>
-                    <TableCell className="text-sm text-[#6B7280]">
-                      {contact.assignedTo || '--'}
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onEdit(contact)}
+                          className="h-7 w-7 p-0 text-[#6B7280] hover:text-[#1A1A1A]"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onDelete(contact.id)}
+                          className="h-7 w-7 p-0 text-[#6B7280] hover:text-[#EF4444]"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

@@ -177,6 +177,108 @@ export function useContacts() {
     },
   });
 
+  const bulkUpdateStageMutation = useMutation({
+    mutationFn: async ({ contactIds, stageId }: { contactIds: string[]; stageId: string | null }) => {
+      const { error } = await (supabase
+        .from('sms_contacts' as never)
+        .update({ pipeline_stage_id: stageId } as never)
+        .in('id', contactIds) as never);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sms-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['sms-pipeline-contacts'] });
+      toast.success('Stage updated');
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to update stage');
+    },
+  });
+
+  const bulkAddLabelMutation = useMutation({
+    mutationFn: async ({ contactIds, labelId }: { contactIds: string[]; labelId: string }) => {
+      // Insert label for each contact (ignore duplicates)
+      const rows = contactIds.map((contactId) => ({ contact_id: contactId, label_id: labelId }));
+      const { error } = await (supabase
+        .from('sms_contact_labels' as never)
+        .upsert(rows as never, { onConflict: 'contact_id,label_id', ignoreDuplicates: true }) as never);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sms-contacts'] });
+      toast.success('Label added');
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to add label');
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (contactIds: string[]) => {
+      const { error } = await (supabase
+        .from('sms_contacts' as never)
+        .delete()
+        .in('id', contactIds) as never);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sms-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['sms-conversations'] });
+      toast.success('Contacts deleted');
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete contacts');
+    },
+  });
+
+  const pushToCampaignMutation = useMutation({
+    mutationFn: async ({ contactIds, campaignId }: { contactIds: string[]; campaignId: string }) => {
+      // Get existing recipients to avoid duplicates
+      const { data: existing } = await (supabase
+        .from('sms_campaign_recipients' as never)
+        .select('contact_id')
+        .eq('campaign_id', campaignId) as never);
+
+      const existingSet = new Set(((existing as { contact_id: string }[]) ?? []).map((r) => r.contact_id));
+      const newContactIds = contactIds.filter((id) => !existingSet.has(id));
+
+      if (newContactIds.length === 0) {
+        toast.info('All selected contacts are already in this campaign');
+        return;
+      }
+
+      const rows = newContactIds.map((contactId) => ({
+        campaign_id: campaignId,
+        contact_id: contactId,
+        status: 'pending',
+      }));
+
+      const { error } = await (supabase
+        .from('sms_campaign_recipients' as never)
+        .insert(rows as never) as never);
+      if (error) throw error;
+
+      // Update total_recipients count
+      const { data: countData } = await (supabase
+        .from('sms_campaign_recipients' as never)
+        .select('id')
+        .eq('campaign_id', campaignId) as never);
+
+      await (supabase
+        .from('sms_campaigns' as never)
+        .update({ total_recipients: (countData as unknown[])?.length ?? 0 } as never)
+        .eq('id', campaignId) as never);
+
+      toast.success(`${newContactIds.length} contact${newContactIds.length !== 1 ? 's' : ''} added to campaign`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sms-campaigns'] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to push to campaign');
+    },
+  });
+
   const batchGroupsQuery = useQuery({
     queryKey: ['sms-batch-groups'],
     queryFn: async (): Promise<{ batchName: string; count: number }[]> => {
@@ -208,6 +310,10 @@ export function useContacts() {
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    bulkUpdateStage: bulkUpdateStageMutation.mutateAsync,
+    bulkAddLabel: bulkAddLabelMutation.mutateAsync,
+    bulkDelete: bulkDeleteMutation.mutateAsync,
+    pushToCampaign: pushToCampaignMutation.mutateAsync,
     batchGroups: batchGroupsQuery.data ?? [],
     isBatchGroupsLoading: batchGroupsQuery.isLoading,
   };
