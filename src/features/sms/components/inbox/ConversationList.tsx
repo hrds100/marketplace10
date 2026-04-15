@@ -10,7 +10,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import ConversationRow from './ConversationRow';
-import type { SmsConversation, SmsLabel } from '../../types';
+import type { SmsConversation, SmsLabel, SmsPipelineStage } from '../../types';
 import { useMemo, useState } from 'react';
 
 interface ConversationListProps {
@@ -20,6 +20,7 @@ interface ConversationListProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
   labels: SmsLabel[];
+  stages: SmsPipelineStage[];
   isLoading?: boolean;
 }
 
@@ -30,9 +31,11 @@ export default function ConversationList({
   searchTerm,
   onSearchChange,
   labels,
+  stages,
   isLoading,
 }: ConversationListProps) {
   const [labelFilter, setLabelFilter] = useState<string>('all');
+  const [stageFilter, setStageFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('inbox');
 
   const filtered = useMemo(() => {
@@ -50,6 +53,15 @@ export default function ConversationList({
       result = result.filter((c) =>
         c.contact.labels.some((l) => l.id === labelFilter)
       );
+    }
+
+    // Stage filter
+    if (stageFilter !== 'all') {
+      if (stageFilter === 'none') {
+        result = result.filter((c) => !c.contact.pipelineStageId);
+      } else {
+        result = result.filter((c) => c.contact.pipelineStageId === stageFilter);
+      }
     }
 
     // Search filter
@@ -70,7 +82,7 @@ export default function ConversationList({
     });
 
     return result;
-  }, [conversations, statusFilter, labelFilter, searchTerm]);
+  }, [conversations, statusFilter, labelFilter, stageFilter, searchTerm]);
 
   return (
     <div className="flex flex-col h-full border-r border-[#E5E7EB]">
@@ -114,6 +126,27 @@ export default function ConversationList({
                     style={{ backgroundColor: l.colour }}
                   />
                   {l.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={stageFilter} onValueChange={setStageFilter}>
+          <SelectTrigger className="h-7 text-xs flex-1 border-[#E5E7EB]">
+            <SelectValue placeholder="Stage" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Stages</SelectItem>
+            <SelectItem value="none">No Stage</SelectItem>
+            {stages.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ backgroundColor: s.colour }}
+                  />
+                  {s.name}
                 </span>
               </SelectItem>
             ))}
