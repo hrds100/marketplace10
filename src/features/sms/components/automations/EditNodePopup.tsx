@@ -21,8 +21,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { SmsNodeType, type SmsNodeData, type SmsFollowUpStep } from '../../types';
-import { mockLabels } from '../../data/mockLabels';
-import { mockStages } from '../../data/mockStages';
+import { useLabels } from '../../hooks/useLabels';
+import { useStages } from '../../hooks/useStages';
 import { useFlowContext } from './FlowContext';
 
 const TEAM_MEMBERS = [
@@ -67,6 +67,9 @@ export function EditNodePopup() {
     globalModel,
     globalTemperature,
   } = useFlowContext();
+
+  const { labels: dbLabels } = useLabels();
+  const { stages: dbStages } = useStages();
 
   const node = nodes.find((n) => n.id === isEditingNode);
   const nodeType = (node?.type as SmsNodeType) || SmsNodeType.DEFAULT;
@@ -507,7 +510,7 @@ export function EditNodePopup() {
                   <SelectValue placeholder="Select a label" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockLabels.map((lbl) => (
+                  {dbLabels.map((lbl) => (
                     <SelectItem key={lbl.id} value={lbl.id}>
                       <div className="flex items-center gap-2">
                         <span
@@ -532,7 +535,7 @@ export function EditNodePopup() {
                   <SelectValue placeholder="Select a stage" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockStages.map((stage) => (
+                  {dbStages.map((stage) => (
                     <SelectItem key={stage.id} value={stage.id}>
                       <div className="flex items-center gap-2">
                         <span

@@ -22,7 +22,8 @@ import { useAutomations } from '../hooks/useAutomations';
 import { useConversationAutomation } from '../hooks/useConversationAutomation';
 import { mockTemplates } from '../data/mockTemplates';
 import { mockQuickReplies } from '../data/mockQuickReplies';
-import { mockLabels } from '../data/mockLabels';
+import { useLabels } from '../hooks/useLabels';
+import { useStages } from '../hooks/useStages';
 
 // Mock internal notes — not yet in DB for this phase
 const mockInternalNotes: SmsInternalNote[] = [];
@@ -34,6 +35,8 @@ export default function SmsInboxPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const { conversations, isLoading: conversationsLoading } = useConversations();
+  const { labels } = useLabels();
+  const { stages } = useStages();
   const { markRead } = useMarkRead();
   const { sendMessage, isSending } = useSendMessage();
   const { updateContact } = useUpdateContact();
@@ -200,7 +203,8 @@ export default function SmsInboxPage() {
           onSelect={handleSelect}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          labels={mockLabels}
+          labels={labels}
+          stages={stages}
           isLoading={conversationsLoading}
         />
       </div>
@@ -218,7 +222,8 @@ export default function SmsInboxPage() {
             onSelect={handleSelect}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
-            labels={mockLabels}
+            labels={labels}
+            stages={stages}
             isLoading={conversationsLoading}
           />
         </ResizablePanel>

@@ -21,9 +21,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { SmsNodeType, type SmsNodeData } from '../../types';
-import { mockLabels } from '../../data/mockLabels';
-import { mockStages } from '../../data/mockStages';
+import { SmsNodeType, type SmsNodeData, type SmsLabel, type SmsPipelineStage } from '../../types';
+import { useLabels } from '../../hooks/useLabels';
+import { useStages } from '../../hooks/useStages';
 import { useFlowContext } from './FlowContext';
 
 const NODE_CONFIG: Record<
@@ -39,7 +39,7 @@ const NODE_CONFIG: Record<
   [SmsNodeType.WEBHOOK]: { icon: Globe, borderColor: '#1A1A1A', label: 'Webhook' },
 };
 
-function getNodeSummary(type: SmsNodeType, data: SmsNodeData): string {
+function getNodeSummary(type: SmsNodeType, data: SmsNodeData, allLabels: SmsLabel[], allStages: SmsPipelineStage[]): string {
   switch (type) {
     case SmsNodeType.DEFAULT: {
       const content = data.prompt || data.text || '';
@@ -52,11 +52,11 @@ function getNodeSummary(type: SmsNodeType, data: SmsNodeData): string {
     case SmsNodeType.TRANSFER:
       return data.assignTo ? `Transfer to ${data.assignTo}` : 'Not assigned';
     case SmsNodeType.LABEL: {
-      const label = mockLabels.find((l) => l.id === data.labelId);
+      const label = allLabels.find((l) => l.id === data.labelId);
       return label ? label.name : 'No label selected';
     }
     case SmsNodeType.MOVE_STAGE: {
-      const stage = mockStages.find((s) => s.id === data.stageId);
+      const stage = allStages.find((s) => s.id === data.stageId);
       return stage ? stage.name : 'No stage selected';
     }
     case SmsNodeType.WEBHOOK: {
@@ -76,6 +76,8 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
   const nodeData = data as SmsNodeData;
   const config = NODE_CONFIG[nodeType];
   const { setIsEditingNode, duplicateNode, deleteNodes, leadCounts } = useFlowContext();
+  const { labels: allLabels } = useLabels();
+  const { stages: allStages } = useStages();
   const [showLeads, setShowLeads] = useState(false);
   const leadInfo = leadCounts[id];
 
@@ -160,7 +162,7 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
         {/* Body */}
         <div className="px-3 py-2">
           <p className="text-xs text-[#6B7280] leading-relaxed">
-            {isStart ? 'Uses Global Prompt' : getNodeSummary(nodeType, nodeData)}
+            {isStart ? 'Uses Global Prompt' : getNodeSummary(nodeType, nodeData, allLabels, allStages)}
           </p>
           {isLoopBack && (
             <div className="flex items-center gap-1 mt-1.5">
