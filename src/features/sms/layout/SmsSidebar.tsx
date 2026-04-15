@@ -9,6 +9,7 @@ import {
   Phone,
   Settings,
   BarChart3,
+  Webhook,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { label: 'Numbers', path: '/sms/numbers', icon: Phone },
   { label: 'Settings', path: '/sms/settings', icon: Settings },
   { label: 'Dashboard', path: '/sms/dashboard', icon: BarChart3 },
+  { label: 'Webhooks', path: '/sms/webhooks', icon: Webhook },
 ] as const;
 
 const MOBILE_TAB_ITEMS = NAV_ITEMS.filter(({ label }) =>
