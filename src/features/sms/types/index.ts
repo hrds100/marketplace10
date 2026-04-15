@@ -258,3 +258,55 @@ export interface SmsNodeData {
   useGlobalSettings?: boolean;
   [key: string]: unknown;
 }
+
+// ============================================================
+// Webhook automation (WAtoolbox dispatcher)
+// ============================================================
+export interface SmsWebhookEndpoint {
+  id: string;
+  name: string;
+  url: string;
+  status: 'active' | 'inactive';
+  sendWindowStart: string; // "HH:MM:SS" UK time
+  sendWindowEnd: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SmsWebhookSettings {
+  id: string;
+  enabled: boolean;
+  numbersPerHour: number;
+  delaySeconds: number;
+  workflowName: string;
+  triggerStages: string[]; // stage ids
+  moveToStageId: string | null;
+  updatedAt: string;
+}
+
+export interface SmsWebhookQueueRow {
+  id: string;
+  contactId: string | null;
+  phone: string;
+  stageId: string | null;
+  endpointId: string | null;
+  status: 'pending' | 'sending' | 'sent' | 'failed';
+  attempts: number;
+  lastError: string | null;
+  scheduledFor: string;
+  sentAt: string | null;
+  createdAt: string;
+}
+
+export interface SmsWebhookLog {
+  id: string;
+  queueId: string | null;
+  endpointId: string | null;
+  phone: string;
+  status: 'success' | 'failed';
+  httpStatus: number | null;
+  responseBody: string | null;
+  error: string | null;
+  attempt: number;
+  createdAt: string;
+}

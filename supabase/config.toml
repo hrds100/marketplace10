@@ -168,3 +168,8 @@ verify_jwt = false
 
 [functions.wa-templates]
 verify_jwt = false
+
+# SMS webhook automation dispatcher — invoked by pg_cron every minute
+# Public because it's called internally via service_role bearer token
+[functions.sms-webhook-dispatch]
+verify_jwt = false

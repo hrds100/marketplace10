@@ -114,6 +114,7 @@ import SmsTemplatesPage from '@/features/sms/pages/SmsTemplatesPage';
 import SmsNumbersPage from '@/features/sms/pages/SmsNumbersPage';
 import SmsSettingsPage from '@/features/sms/pages/SmsSettingsPage';
 import SmsDashboardPage from '@/features/sms/pages/SmsDashboardPage';
+import SmsWebhooksPage from '@/features/sms/pages/SmsWebhooksPage';
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -287,6 +288,7 @@ const App = () => (
             <Route path="numbers" element={<SmsNumbersPage />} />
             <Route path="settings" element={<SmsSettingsPage />} />
             <Route path="dashboard" element={<SmsDashboardPage />} />
+            <Route path="webhooks" element={<SmsWebhooksPage />} />
           </Route>
           {/* nfstay traveler-facing routes — standalone (no operator layout) */}
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
