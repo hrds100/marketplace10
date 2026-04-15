@@ -1,28 +1,90 @@
 /**
  * Social Proof Notifications — "X just signed up" toasts
  *
- * Config via localStorage key 'nfs_social_proof_config':
- * {
- *   enabled: true,
- *   intervalSeconds: 30,  // 15, 30, 60, 120, 180
- * }
+ * Config source priority:
+ *   1. growth-config edge function (https://<proj>.supabase.co/functions/v1/growth-config)
+ *   2. localStorage cache ('nfs_social_proof_config')
+ *   3. Hardcoded defaults
+ *
+ * Admin controls (a) on/off and (b) intervalSeconds only.
+ * Names, cities and toast content remain synthetic and unchanged.
  */
 (function () {
   'use strict';
 
   var CONFIG_KEY = 'nfs_social_proof_config';
+  var CONFIG_URL = 'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/growth-config';
+  var FETCH_TIMEOUT_MS = 2500;
   var defaults = { enabled: true, intervalSeconds: 30 };
 
-  function getConfig() {
+  function getCachedConfig() {
     try {
       var raw = localStorage.getItem(CONFIG_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.enabled === 'boolean' && typeof parsed.intervalSeconds === 'number') {
+          return parsed;
+        }
+      }
     } catch (e) {}
-    return defaults;
+    return null;
   }
 
-  var config = getConfig();
-  if (!config.enabled) return;
+  function cacheConfig(cfg) {
+    try { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); } catch (e) {}
+  }
+
+  function fetchConfigWithTimeout() {
+    return new Promise(function (resolve) {
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        resolve(null);
+      }, FETCH_TIMEOUT_MS);
+
+      try {
+        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var opts = ctrl ? { signal: ctrl.signal } : {};
+        if (ctrl) {
+          setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, FETCH_TIMEOUT_MS);
+        }
+        fetch(CONFIG_URL, opts)
+          .then(function (res) {
+            if (!res.ok) throw new Error('bad status');
+            return res.json();
+          })
+          .then(function (data) {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            if (
+              data &&
+              typeof data.social_proof_enabled === 'boolean' &&
+              typeof data.social_proof_interval_seconds === 'number'
+            ) {
+              resolve({
+                enabled: data.social_proof_enabled,
+                intervalSeconds: data.social_proof_interval_seconds
+              });
+            } else {
+              resolve(null);
+            }
+          })
+          .catch(function () {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve(null);
+          });
+      } catch (e) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(null);
+      }
+    });
+  }
 
   // ── 300 UK first names (150 male + 150 female) ──────────────────────
   var FIRST_NAMES = [
@@ -256,20 +318,38 @@
   }
 
   // ── Init ───────────────────────────────────────────────────────────
-  detectCity();
+  var activeConfig = null;
 
-  // Wait a few seconds before first toast so the page loads first
-  var firstDelay = 5000;
-  var intervalMs = (config.intervalSeconds || 30) * 1000;
+  function start(config) {
+    activeConfig = config;
+    if (!config.enabled) return;
 
-  setTimeout(function () {
-    showToast();
-    setInterval(showToast, intervalMs);
-  }, firstDelay);
+    detectCity();
 
-  // Expose for admin preview
+    // Wait a few seconds before first toast so the page loads first
+    var firstDelay = 5000;
+    var intervalMs = (config.intervalSeconds || 30) * 1000;
+
+    setTimeout(function () {
+      showToast();
+      setInterval(showToast, intervalMs);
+    }, firstDelay);
+  }
+
+  // Expose for admin preview (available before config resolves)
   window.__nfsSocialProof = {
     showToast: showToast,
-    getConfig: getConfig
+    getConfig: function () { return activeConfig; }
   };
+
+  fetchConfigWithTimeout().then(function (remote) {
+    var config;
+    if (remote) {
+      config = remote;
+      cacheConfig(remote);
+    } else {
+      config = getCachedConfig() || defaults;
+    }
+    start(config);
+  });
 })();

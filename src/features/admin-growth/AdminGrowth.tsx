@@ -64,6 +64,59 @@ interface SocialProofConfig {
   intervalSeconds: number;
 }
 
+// ── Growth config edge function ──────────────────────────────────────
+
+const GROWTH_CONFIG_URL = 'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/growth-config';
+
+interface GrowthConfigRow {
+  id: number;
+  ab_enabled: boolean;
+  ab_weights: number[];
+  social_proof_enabled: boolean;
+  social_proof_interval_seconds: number;
+  updated_at: string;
+  updated_by: string | null;
+}
+
+async function fetchGrowthConfig(): Promise<GrowthConfigRow | null> {
+  try {
+    const res = await fetch(GROWTH_CONFIG_URL, { method: 'GET' });
+    if (!res.ok) return null;
+    const data = (await res.json()) as GrowthConfigRow;
+    if (typeof data?.ab_enabled !== 'boolean') return null;
+    return data;
+  } catch (err) {
+    console.error('growth-config GET failed:', err);
+    return null;
+  }
+}
+
+async function postGrowthConfig(
+  patch: Partial<Pick<GrowthConfigRow, 'ab_enabled' | 'ab_weights' | 'social_proof_enabled' | 'social_proof_interval_seconds'>>
+): Promise<GrowthConfigRow> {
+  const { data: session } = await supabase.auth.getSession();
+  const token = session?.session?.access_token;
+  if (!token) throw new Error('Not signed in');
+
+  const res = await fetch(GROWTH_CONFIG_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body?.error) msg = body.error;
+    } catch {}
+    throw new Error(msg);
+  }
+  return (await res.json()) as GrowthConfigRow;
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function fmt(n: number): string {
@@ -152,12 +205,33 @@ function ABTestsTab() {
   });
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'all'>('7d');
 
-  // Load config
+  // Load config — try remote, fall back to localStorage, then defaults
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('nfs_ab_config');
-      if (raw) setConfig(JSON.parse(raw));
-    } catch {}
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await fetchGrowthConfig();
+        if (cancelled) return;
+        if (remote) {
+          const next: ABConfig = {
+            enabled: remote.ab_enabled,
+            variants: ['a', 'b'],
+            weights: remote.ab_weights,
+          };
+          setConfig(next);
+          try { localStorage.setItem('nfs_ab_config', JSON.stringify(next)); } catch {}
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to load AB config from edge function:', err);
+      }
+      // Fallback: localStorage → defaults
+      try {
+        const raw = localStorage.getItem('nfs_ab_config');
+        if (raw && !cancelled) setConfig(JSON.parse(raw));
+      } catch {}
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // Fetch events
@@ -339,10 +413,21 @@ function ABTestsTab() {
 
   // ── Config controls ────────────────────────────────────────────────
 
-  function saveConfig(updated: ABConfig) {
+  async function saveConfig(updated: ABConfig) {
+    // Optimistic local update + cache
     setConfig(updated);
-    localStorage.setItem('nfs_ab_config', JSON.stringify(updated));
-    toast.success('Config saved — takes effect on next visitor');
+    try { localStorage.setItem('nfs_ab_config', JSON.stringify(updated)); } catch {}
+    try {
+      await postGrowthConfig({
+        ab_enabled: updated.enabled,
+        ab_weights: updated.weights,
+      });
+      toast.success('Saved — live for all visitors within 30s.');
+    } catch (err) {
+      console.error('Failed to save AB config:', err);
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Save failed: ${msg}`);
+    }
   }
 
   function updateWeight(index: number, value: number) {
@@ -1008,16 +1093,45 @@ function SocialProofTab() {
   const [previewVisible, setPreviewVisible] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('nfs_social_proof_config');
-      if (raw) setConfig(JSON.parse(raw));
-    } catch {}
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await fetchGrowthConfig();
+        if (cancelled) return;
+        if (remote) {
+          const next: SocialProofConfig = {
+            enabled: remote.social_proof_enabled,
+            intervalSeconds: remote.social_proof_interval_seconds,
+          };
+          setConfig(next);
+          try { localStorage.setItem('nfs_social_proof_config', JSON.stringify(next)); } catch {}
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to load social proof config from edge function:', err);
+      }
+      try {
+        const raw = localStorage.getItem('nfs_social_proof_config');
+        if (raw && !cancelled) setConfig(JSON.parse(raw));
+      } catch {}
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  function saveConfig(updated: SocialProofConfig) {
+  async function saveConfig(updated: SocialProofConfig) {
     setConfig(updated);
-    localStorage.setItem('nfs_social_proof_config', JSON.stringify(updated));
-    toast.success('Social proof config saved — takes effect on next page load');
+    try { localStorage.setItem('nfs_social_proof_config', JSON.stringify(updated)); } catch {}
+    try {
+      await postGrowthConfig({
+        social_proof_enabled: updated.enabled,
+        social_proof_interval_seconds: updated.intervalSeconds,
+      });
+      toast.success('Saved — live for all visitors within 30s.');
+    } catch (err) {
+      console.error('Failed to save social proof config:', err);
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Save failed: ${msg}`);
+    }
   }
 
   return (
