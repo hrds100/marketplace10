@@ -6,18 +6,27 @@ import Papa from 'papaparse';
 import { useContacts } from '../hooks/useContacts';
 import { useLabels } from '../hooks/useLabels';
 import { useStages } from '../hooks/useStages';
+import { useCampaigns } from '../hooks/useCampaigns';
 import type { SmsContact, SmsLabel } from '../types';
 import ContactsTable from '../components/contacts/ContactsTable';
 import ContactForm from '../components/contacts/ContactForm';
 import CsvImportDialog from '../components/contacts/CsvImportDialog';
+import BulkActionsBar from '../components/contacts/BulkActionsBar';
+import PushToCampaignDialog from '../components/contacts/PushToCampaignDialog';
 
 export default function SmsContactsPage() {
-  const { contacts, isLoading, createContact, updateContact, deleteContact, bulkCreateContacts } = useContacts();
+  const {
+    contacts, isLoading, createContact, updateContact, deleteContact,
+    bulkCreateContacts, bulkUpdateStage, bulkAddLabel, bulkDelete, pushToCampaign,
+  } = useContacts();
   const { labels } = useLabels();
   const { stages } = useStages();
+  const { campaigns } = useCampaigns();
   const [formOpen, setFormOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<SmsContact | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pushDialogOpen, setPushDialogOpen] = useState(false);
 
   function handleAddContact() {
     setEditingContact(null);
@@ -87,6 +96,28 @@ export default function SmsContactsPage() {
     toast.success('Contacts exported');
   }
 
+  const selectedArray = Array.from(selectedIds);
+
+  async function handleBulkAssignStage(stageId: string | null) {
+    await bulkUpdateStage({ contactIds: selectedArray, stageId });
+    setSelectedIds(new Set());
+  }
+
+  async function handleBulkAddLabel(labelId: string) {
+    await bulkAddLabel({ contactIds: selectedArray, labelId });
+    setSelectedIds(new Set());
+  }
+
+  async function handleBulkDelete() {
+    await bulkDelete(selectedArray);
+    setSelectedIds(new Set());
+  }
+
+  async function handlePushToCampaign(campaignId: string) {
+    await pushToCampaign({ contactIds: selectedArray, campaignId });
+    setSelectedIds(new Set());
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -135,14 +166,30 @@ export default function SmsContactsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <ContactsTable
-        contacts={contacts}
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedCount={selectedIds.size}
         labels={labels}
         stages={stages}
-        onEdit={handleEditContact}
-        onDelete={handleDeleteContact}
+        onAssignStage={handleBulkAssignStage}
+        onAssignLabel={handleBulkAddLabel}
+        onPushToCampaign={() => setPushDialogOpen(true)}
+        onDelete={handleBulkDelete}
+        onClear={() => setSelectedIds(new Set())}
       />
+
+      {/* Table */}
+      <div className={selectedIds.size > 0 ? 'mt-4' : ''}>
+        <ContactsTable
+          contacts={contacts}
+          labels={labels}
+          stages={stages}
+          onEdit={handleEditContact}
+          onDelete={handleDeleteContact}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+        />
+      </div>
 
       {/* Dialogs */}
       <ContactForm
@@ -159,6 +206,14 @@ export default function SmsContactsPage() {
         onClose={() => setCsvOpen(false)}
         existingContacts={contacts}
         onImport={bulkCreateContacts}
+      />
+
+      <PushToCampaignDialog
+        open={pushDialogOpen}
+        contactCount={selectedIds.size}
+        campaigns={campaigns}
+        onClose={() => setPushDialogOpen(false)}
+        onPush={handlePushToCampaign}
       />
     </div>
   );
