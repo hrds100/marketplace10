@@ -369,7 +369,7 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
         body: {
           system_prompt: `Generate ${data.aiVariantCount} natural variations of the user's SMS message. Keep the same meaning, tone, and language. Include emojis where the original has them. Return as a JSON array of strings only, no other text.`,
           user_message: baseMessage,
-          model: 'gpt-5.4-mini',
+          model: 'gpt-4o-mini',
           temperature: 0.8,
         },
       });

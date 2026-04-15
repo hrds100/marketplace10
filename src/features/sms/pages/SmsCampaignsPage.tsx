@@ -3,23 +3,28 @@ import { Button } from '@/components/ui/button';
 import { useCampaigns } from '../hooks/useCampaigns';
 import CampaignsList from '../components/campaigns/CampaignsList';
 import CampaignWizard from '../components/campaigns/CampaignWizard';
+import EditCampaignDialog from '../components/campaigns/EditCampaignDialog';
 import { useState } from 'react';
+import type { SmsCampaign } from '../types';
 
 export default function SmsCampaignsPage() {
   const {
     campaigns,
     isLoading,
     createCampaign,
+    updateCampaign,
     launchCampaign,
     sendNextBatch,
     pauseCampaign,
     resumeCampaign,
     isCreating,
+    isUpdating,
     isSendingBatch,
     isPausing,
     isResuming,
   } = useCampaigns();
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<SmsCampaign | null>(null);
 
   async function handleComplete(data: {
     name: string;
@@ -93,6 +98,7 @@ export default function SmsCampaignsPage() {
         <CampaignsList
           campaigns={campaigns}
           onNew={() => setWizardOpen(true)}
+          onEdit={setEditingCampaign}
           onSendNextBatch={sendNextBatch}
           onPause={pauseCampaign}
           onResume={resumeCampaign}
@@ -107,6 +113,16 @@ export default function SmsCampaignsPage() {
         onClose={() => setWizardOpen(false)}
         onComplete={handleComplete}
         isSubmitting={isCreating}
+      />
+
+      <EditCampaignDialog
+        campaign={editingCampaign}
+        open={!!editingCampaign}
+        onClose={() => setEditingCampaign(null)}
+        onSave={async (campaignId, updates) => {
+          await updateCampaign({ campaignId, updates });
+        }}
+        isSaving={isUpdating}
       />
     </div>
   );

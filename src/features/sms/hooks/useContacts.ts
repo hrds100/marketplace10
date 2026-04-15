@@ -12,6 +12,7 @@ interface ContactRow {
   assigned_to: string | null;
   opted_out: boolean;
   batch_name: string | null;
+  response_status: string | null;
   created_at: string;
   updated_at: string;
   sms_contact_labels: {
@@ -36,6 +37,7 @@ function mapRow(row: ContactRow): SmsContact {
     assignedTo: row.assigned_to,
     optedOut: row.opted_out,
     batchName: row.batch_name,
+    responseStatus: (row.response_status as SmsContact['responseStatus']) ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -46,7 +48,7 @@ async function fetchContacts(): Promise<SmsContact[]> {
     .from('sms_contacts' as never)
     .select(`
       id, phone_number, display_name, notes, pipeline_stage_id,
-      assigned_to, opted_out, batch_name, created_at, updated_at,
+      assigned_to, opted_out, batch_name, response_status, created_at, updated_at,
       sms_contact_labels (
         sms_labels!label_id ( id, name, colour, position )
       )

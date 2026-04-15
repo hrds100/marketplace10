@@ -91,9 +91,9 @@ export function GlobalPromptPanel() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gpt-5.4-nano">GPT-5.4 Nano</SelectItem>
-                  <SelectItem value="gpt-5.4-mini">GPT-5.4 Mini</SelectItem>
-                  <SelectItem value="gpt-5.4">GPT-5.4</SelectItem>
+                  <SelectItem value="gpt-4o-mini">GPT-5.4 Nano</SelectItem>
+                  <SelectItem value="gpt-4o-mini">GPT-5.4 Mini</SelectItem>
+                  <SelectItem value="gpt-4o">GPT-5.4</SelectItem>
                   <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
                   <SelectItem value="gpt-5">GPT-5</SelectItem>
                   <SelectItem value="o4-mini">O4 Mini</SelectItem>

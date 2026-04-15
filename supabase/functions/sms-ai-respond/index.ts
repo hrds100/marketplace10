@@ -49,7 +49,7 @@ const SUPPORTED_MODELS = [
   'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano',
   'gpt-4o', 'gpt-4o-mini',
 ];
-const FALLBACK_MODEL = 'gpt-5.4-mini';
+const FALLBACK_MODEL = 'gpt-4o-mini';
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {

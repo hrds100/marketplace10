@@ -97,7 +97,7 @@ export function FlowContextProvider({
   const [globalPrompt, setGlobalPromptRaw] = useState(
     initialGlobalPrompt || 'You are a helpful property assistant for NFStay. Be professional and concise.'
   );
-  const [globalModel, setGlobalModelRaw] = useState(initialGlobalModel || 'gpt-5.4-mini');
+  const [globalModel, setGlobalModelRaw] = useState(initialGlobalModel || 'gpt-4o-mini');
   const [globalTemperature, setGlobalTemperatureRaw] = useState(initialGlobalTemperature ?? 0.7);
   const [maxRepliesPerLead, setMaxRepliesPerLeadRaw] = useState(initialMaxRepliesPerLead ?? 10);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
