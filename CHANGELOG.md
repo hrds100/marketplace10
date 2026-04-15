@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-04-15 — Growth config backend (A/B + social proof)
+
+Admin Growth page (/admin/marketplace/growth) now persists A/B weights and social-proof settings to a new `growth_config` Supabase table via a new `growth-config` edge function. The landing router (public/landing/index.html) and social-proof toast script (public/landing/js/social-proof.js) read from the edge function on load (2.5s timeout, localStorage cache fallback, hardcoded defaults as last resort), so admin changes finally reach real visitors within ~30s instead of dying in the admin's own browser.
+
 ## 2026-04-14 — Booking site free-user demo restored
 
 **PR:** #468 (commit 7023a58)

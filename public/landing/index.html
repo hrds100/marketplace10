@@ -32,26 +32,97 @@
   <script>
     (function () {
       // --- A/B Router ---
-      // Reads config from localStorage (set by admin panel) or uses defaults.
+      // Fetches config from Supabase edge function with 1s timeout.
+      // Falls back to localStorage (safety net), then hardcoded defaults.
       // Assigns visitor to a variant via cookie, then loads the variant HTML.
 
       var COOKIE_NAME = 'nfs_ab';
       var COOKIE_DAYS = 30;
       var CONFIG_KEY = 'nfs_ab_config';
+      var CONFIG_URL = 'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/growth-config';
+      var FETCH_TIMEOUT_MS = 2500;
 
-      // Default config — admin panel overrides this via localStorage
+      // Hardcoded defaults — last resort
       var defaults = {
         enabled: true,
         variants: ['a', 'b'],
-        weights: [50, 50] // percentage split
+        weights: [50, 50]
       };
 
-      function getConfig() {
+      function getCachedConfig() {
         try {
           var raw = localStorage.getItem(CONFIG_KEY);
-          if (raw) return JSON.parse(raw);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && typeof parsed.enabled === 'boolean' && Array.isArray(parsed.weights)) {
+              return {
+                enabled: parsed.enabled,
+                variants: parsed.variants || ['a', 'b'],
+                weights: parsed.weights
+              };
+            }
+          }
         } catch (e) {}
-        return defaults;
+        return null;
+      }
+
+      function cacheConfig(cfg) {
+        try { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); } catch (e) {}
+      }
+
+      function fetchConfigWithTimeout() {
+        return new Promise(function (resolve) {
+          var settled = false;
+          var timer = setTimeout(function () {
+            if (settled) return;
+            settled = true;
+            resolve(null);
+          }, FETCH_TIMEOUT_MS);
+
+          try {
+            var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var opts = ctrl ? { signal: ctrl.signal } : {};
+            // Arm abort via the same timer
+            if (ctrl) {
+              setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, FETCH_TIMEOUT_MS);
+            }
+            fetch(CONFIG_URL, opts)
+              .then(function (res) {
+                if (!res.ok) throw new Error('bad status');
+                return res.json();
+              })
+              .then(function (data) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                if (
+                  data &&
+                  typeof data.ab_enabled === 'boolean' &&
+                  Array.isArray(data.ab_weights) &&
+                  data.ab_weights.length === 2
+                ) {
+                  resolve({
+                    enabled: data.ab_enabled,
+                    variants: ['a', 'b'],
+                    weights: data.ab_weights
+                  });
+                } else {
+                  resolve(null);
+                }
+              })
+              .catch(function () {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                resolve(null);
+              });
+          } catch (e) {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve(null);
+          }
+        });
       }
 
       function getCookie(name) {
@@ -85,38 +156,52 @@
         return config.variants[0];
       }
 
-      var config = getConfig();
+      function loadVariant(config) {
+        // Store visitor ID for tracking (side effect)
+        getVisitorId();
 
-      // If A/B testing disabled, always serve variant A
-      if (!config.enabled) {
-        window.location.replace('/landing/variant-a.html');
-        return;
-      }
-
-      // Get or assign variant
-      var variant = getCookie(COOKIE_NAME);
-      if (!variant || config.variants.indexOf(variant) === -1) {
-        variant = pickVariant(config);
-        setCookie(COOKIE_NAME, variant, COOKIE_DAYS);
-      }
-
-      // Store visitor ID for tracking
-      var visitorId = getVisitorId();
-
-      // Load the variant page via fetch + document.write for seamless experience
-      var variantUrl = '/landing/variant-' + variant + '.html';
-
-      fetch(variantUrl)
-        .then(function (res) { return res.text(); })
-        .then(function (html) {
-          document.open();
-          document.write(html);
-          document.close();
-        })
-        .catch(function () {
-          // Fallback: redirect to variant A
+        // If A/B testing disabled, always serve variant A
+        if (!config.enabled) {
           window.location.replace('/landing/variant-a.html');
-        });
+          return;
+        }
+
+        // Force assignment every load when weights are locked at 0/100 or 100/0
+        var forcedA = config.weights[0] >= 100;
+        var forcedB = config.weights[1] >= 100;
+
+        var variant = getCookie(COOKIE_NAME);
+        if (forcedA) variant = 'a';
+        else if (forcedB) variant = 'b';
+        else if (!variant || config.variants.indexOf(variant) === -1) {
+          variant = pickVariant(config);
+        }
+        setCookie(COOKIE_NAME, variant, COOKIE_DAYS);
+
+        var variantUrl = '/landing/variant-' + variant + '.html';
+        fetch(variantUrl)
+          .then(function (res) { return res.text(); })
+          .then(function (html) {
+            document.open();
+            document.write(html);
+            document.close();
+          })
+          .catch(function () {
+            window.location.replace('/landing/variant-a.html');
+          });
+      }
+
+      // Try remote config, fall back through cache → defaults
+      fetchConfigWithTimeout().then(function (remote) {
+        var config;
+        if (remote) {
+          config = remote;
+          cacheConfig(remote);
+        } else {
+          config = getCachedConfig() || defaults;
+        }
+        loadVariant(config);
+      });
     })();
   </script>
 </body>

@@ -154,6 +154,11 @@ verify_jwt = false
 [functions.airbnb-pricing]
 verify_jwt = false
 
+# Growth config (landing A/B router + social proof settings)
+# GET is public; POST does its own admin check via supabase.auth.getUser.
+[functions.growth-config]
+verify_jwt = false
+
 # WhatsApp Cloud API (Meta direct — not Twilio)
 [functions.wa-webhook-incoming]
 verify_jwt = false
