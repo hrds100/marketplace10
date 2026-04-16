@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserTier } from '@/hooks/useUserTier';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { isPaidTier, tierDisplayName, getFunnelUrl, getUpgradeUrl, getLifetimeUrl } from '@/lib/ghl';
+import { isPaidTier, tierDisplayName, getFunnelUrl, getUpgradeUrl } from '@/lib/ghl';
 import { normalizeUKPhone } from '@/lib/phoneValidation';
 import PaymentSheet from '@/features/payment/PaymentSheet';
 
@@ -52,7 +52,6 @@ export default function SettingsPage() {
   const { address: walletAddress, connected: walletConnected, connect: connectWallet, connecting } = useWallet();
   const [copied, setCopied] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState<string | undefined>(undefined);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -358,7 +357,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => isPaidTier(tier) ? setCancelOpen(true) : (() => { setPaymentUrl(undefined); setPaymentOpen(true); })()}
+                    onClick={() => isPaidTier(tier) ? setCancelOpen(true) : setPaymentOpen(true)}
                     className="px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
                   >
                     {isPaidTier(tier) ? t('settings.managePlan') : t('settings.upgradeNow')}
@@ -407,7 +406,7 @@ export default function SettingsPage() {
                     {/* Monthly card */}
                     <button
                       data-feature="SETTINGS__UPGRADE_MONTHLY"
-                      onClick={() => { setPaymentUrl(undefined); setPaymentOpen(true); }}
+                      onClick={() => setPaymentOpen(true)}
                       className="relative block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors"
                     >
                       <span className="absolute -top-2.5 left-4 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Most popular</span>
@@ -422,11 +421,7 @@ export default function SettingsPage() {
                     {/* Lifetime card */}
                     <button
                       data-feature="SETTINGS__UPGRADE_LIFETIME"
-                      onClick={() => {
-                        const url = getLifetimeUrl({ email: profile?.email ?? undefined, name: profile?.name ?? undefined });
-                        setPaymentUrl(url);
-                        setPaymentOpen(true);
-                      }}
+                      onClick={() => setPaymentOpen(true)}
                       className="block w-full text-left rounded-xl border-2 border-border p-4 hover:border-primary hover:bg-secondary/50 transition-colors"
                     >
                       <div className="flex items-baseline gap-1">
@@ -651,7 +646,7 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
-      <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); window.location.reload(); }} initialUrl={paymentUrl} />
+      <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); window.location.reload(); }} />
 
       {/* ── Cancel subscription modal ── */}
       {cancelOpen && (
