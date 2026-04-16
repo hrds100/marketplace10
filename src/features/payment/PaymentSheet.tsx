@@ -11,9 +11,11 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onUnlocked: () => void;
+  /** Override the iframe URL (e.g. lifetime checkout). Falls back to monthly funnel. */
+  initialUrl?: string;
 }
 
-export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) {
+export default function PaymentSheet({ open, onOpenChange, onUnlocked, initialUrl }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [referredBy, setReferredBy] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
       setPollTimedOut(false);
       iframeLoadCount.current = 0;
       firstLoadTimeRef.current = 0;
-      funnelUrlRef.current = getFunnelUrl({
+      funnelUrlRef.current = initialUrl || getFunnelUrl({
         email: user?.email,
         name: user?.user_metadata?.name,
         phone: user?.user_metadata?.whatsapp,
