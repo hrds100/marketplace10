@@ -56,7 +56,7 @@ export function useAuth() {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    window.location.href = '/';
+    window.location.href = '/signin';
   }, []);
 
   const setSession = useCallback(async (accessToken: string, refreshToken: string) => {

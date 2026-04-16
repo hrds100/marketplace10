@@ -52,6 +52,7 @@ export default function SettingsPage() {
   const { address: walletAddress, connected: walletConnected, connect: connectWallet, connecting } = useWallet();
   const [copied, setCopied] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | undefined>(undefined);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -357,7 +358,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => isPaidTier(tier) ? setCancelOpen(true) : setPaymentOpen(true)}
+                    onClick={() => isPaidTier(tier) ? setCancelOpen(true) : (() => { setPaymentUrl(undefined); setPaymentOpen(true); })()}
                     className="px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
                   >
                     {isPaidTier(tier) ? t('settings.managePlan') : t('settings.upgradeNow')}
@@ -406,7 +407,7 @@ export default function SettingsPage() {
                     {/* Monthly card */}
                     <button
                       data-feature="SETTINGS__UPGRADE_MONTHLY"
-                      onClick={() => setPaymentOpen(true)}
+                      onClick={() => { setPaymentUrl(undefined); setPaymentOpen(true); }}
                       className="relative block w-full text-left rounded-xl border-2 border-primary p-4 hover:bg-secondary/50 transition-colors"
                     >
                       <span className="absolute -top-2.5 left-4 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Most popular</span>
@@ -423,7 +424,8 @@ export default function SettingsPage() {
                       data-feature="SETTINGS__UPGRADE_LIFETIME"
                       onClick={() => {
                         const url = getLifetimeUrl({ email: profile?.email ?? undefined, name: profile?.name ?? undefined });
-                        window.open(url, '_blank', 'noopener,noreferrer');
+                        setPaymentUrl(url);
+                        setPaymentOpen(true);
                       }}
                       className="block w-full text-left rounded-xl border-2 border-border p-4 hover:border-primary hover:bg-secondary/50 transition-colors"
                     >
@@ -649,7 +651,7 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
-      <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); window.location.reload(); }} />
+      <PaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} onUnlocked={() => { setPaymentOpen(false); window.location.reload(); }} initialUrl={paymentUrl} />
 
       {/* ── Cancel subscription modal ── */}
       {cancelOpen && (
