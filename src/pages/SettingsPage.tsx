@@ -7,7 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserTier } from '@/hooks/useUserTier';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { isPaidTier, tierDisplayName, getFunnelUrl, getUpgradeUrl } from '@/lib/ghl';
+import { isPaidTier, tierDisplayName, getFunnelUrl, getUpgradeUrl, getUpsellUrl } from '@/lib/ghl';
+import PaymentSheet from '@/components/PaymentSheet';
 
 const settingsTabs = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -43,6 +44,8 @@ export default function SettingsPage() {
   const { address: walletAddress, connected: walletConnected, connect: connectWallet, connecting } = useWallet();
   const [copied, setCopied] = useState(false);
   const [notifs, setNotifs] = useState<NotifPrefs>(defaultNotifs);
+  const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
+  const [paymentSheetUrl, setPaymentSheetUrl] = useState<string | undefined>(undefined);
 
   // Load profile + notification prefs
   useEffect(() => {
@@ -114,7 +117,7 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate('/signin');
   };
 
   const initials = profile.name ? profile.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : 'U';
@@ -285,7 +288,7 @@ export default function SettingsPage() {
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">Everything + 2 months free</p>
                   </button>
-                  <button onClick={() => { const url = getUpgradeUrl('lifetime', { email: user?.email }); if (url) window.open(url, '_blank'); }}
+                  <button onClick={() => { const url = getUpsellUrl({ email: user?.email }); setPaymentSheetUrl(url || undefined); setPaymentSheetOpen(true); }}
                     className="block w-full text-left rounded-xl border border-border p-4 hover:bg-secondary/50 transition-colors">
                     <div className="flex items-baseline gap-1">
                       <span className="text-lg font-bold text-foreground">£997</span>
@@ -432,6 +435,13 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      <PaymentSheet
+        open={paymentSheetOpen}
+        onOpenChange={(v) => { setPaymentSheetOpen(v); if (!v) setPaymentSheetUrl(undefined); }}
+        onUnlocked={() => { setPaymentSheetOpen(false); setPaymentSheetUrl(undefined); }}
+        overrideUrl={paymentSheetUrl}
+      />
     </div>
   );
 }

@@ -79,6 +79,21 @@ export function getUpgradeUrl(targetTier: string, contactInfo?: { email?: string
   return `${base}?${params.toString()}`;
 }
 
+/**
+ * Direct URL to the GHL upsell page (£997 lifetime).
+ * Derived from the base funnel URL by replacing the last path segment with /upsell.
+ * e.g. https://pay.nfstay.com/order → https://pay.nfstay.com/upsell
+ */
+export function getUpsellUrl(contactInfo?: { email?: string }): string {
+  const base = import.meta.env.VITE_GHL_FUNNEL_URL || '';
+  if (!base) return '';
+  const upsellBase = base.replace(/\/[^/?#]*$/, '/upsell');
+  const params = new URLSearchParams();
+  if (contactInfo?.email) params.set('email', contactInfo.email);
+  const qs = params.toString();
+  return qs ? `${upsellBase}?${qs}` : upsellBase;
+}
+
 // ── Tier helpers ──
 
 export type TierName = 'free' | 'monthly' | 'yearly' | 'lifetime';

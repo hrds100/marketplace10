@@ -10,9 +10,11 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onUnlocked: () => void;
+  /** Override the iframe URL — use for plan-specific pages (upsell, downsell). */
+  overrideUrl?: string;
 }
 
-export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) {
+export default function PaymentSheet({ open, onOpenChange, onUnlocked, overrideUrl }: Props) {
   const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
@@ -137,11 +139,12 @@ export default function PaymentSheet({ open, onOpenChange, onUnlocked }: Props) 
     } catch { /* cross-origin */ }
   };
 
-  const funnelUrl = getFunnelUrl({
+  const defaultFunnelUrl = getFunnelUrl({
     email: user?.email,
     name: user?.user_metadata?.name,
     phone: user?.user_metadata?.whatsapp,
   });
+  const funnelUrl = overrideUrl || defaultFunnelUrl;
 
   const sheet = (
     <>
