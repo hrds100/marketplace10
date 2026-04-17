@@ -120,6 +120,10 @@
       "destination": "/app.html"
     },
     {
+      "source": "/wimbledon",
+      "destination": "/app.html"
+    },
+    {
       "source": "/(pt-br|ar|es|it|fr)/:path*",
       "destination": "/app.html"
     }
