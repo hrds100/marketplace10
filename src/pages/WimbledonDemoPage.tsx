@@ -62,7 +62,7 @@ const PROPERTY = {
   sliderStep: 100,
   tags: ['Serviced Accommodation', '13 Units', '360 m²', 'Open for Partnership'],
   images: [
-    '/wimbledon/hero.jpg',
+    '/wimbledon/hero.png',
     '/wimbledon/interior-1.jpg',
     '/wimbledon/interior-2.jpg',
     '/wimbledon/interior-3.jpg',
