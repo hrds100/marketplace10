@@ -652,7 +652,7 @@
     "active": true,
     "files": [
       "src/pages/WimbledonDemoPage.tsx",
-      "public/wimbledon/hero.png",
+      "public/wimbledon/hero.jpg",
       "public/wimbledon/interior-1.jpg",
       "public/wimbledon/interior-2.jpg",
       "public/wimbledon/interior-3.jpg",

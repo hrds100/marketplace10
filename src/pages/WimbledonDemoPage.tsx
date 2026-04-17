@@ -62,7 +62,7 @@ const PROPERTY = {
   sliderStep: 100,
   tags: ['Serviced Accommodation', '13 Units', '360 m²', 'Open for Partnership'],
   images: [
-    '/wimbledon/hero.png',
+    '/wimbledon/hero.jpg',
     '/wimbledon/interior-1.jpg',
     '/wimbledon/interior-2.jpg',
     '/wimbledon/interior-3.jpg',
@@ -214,7 +214,7 @@ export default function WimbledonDemoPage() {
                     alt={`${PROPERTY.title} — photo ${i + 1}`}
                     data-testid={`wimbledon-image-${i}`}
                     className={cn(
-                      'absolute inset-0 h-full w-full object-cover transition-opacity duration-500',
+                      'absolute inset-0 h-full w-full object-contain transition-opacity duration-500',
                       currentImage === i ? 'opacity-100' : 'opacity-0',
                     )}
                   />
