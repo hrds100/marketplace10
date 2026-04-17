@@ -645,5 +645,19 @@
       "src/components/nickel/HeroSection.tsx",
       "src/components/nickel/Navbar.tsx"
     ]
+  },
+  "DEMO": {
+    "description": "Standalone investor-demo pages (self-contained, no blockchain/auth/Supabase)",
+    "session": "DEMO",
+    "active": true,
+    "files": [
+      "src/pages/WimbledonDemoPage.tsx",
+      "public/wimbledon/hero.jpg",
+      "public/wimbledon/interior-1.jpg",
+      "public/wimbledon/interior-2.jpg",
+      "public/wimbledon/interior-3.jpg",
+      "public/wimbledon/interior-4.jpg",
+      "e2e/wimbledon-demo.spec.ts"
+    ]
   }
 }
