@@ -226,13 +226,16 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
   // Filter contacts matching selected labels/stages
   function getMatchingContactIds(): string[] {
     if (data.recipientSource !== 'contacts') return [];
+    const hasLabels = data.selectedLabels.length > 0;
+    const hasStages = data.selectedStages.length > 0;
+    if (!hasLabels && !hasStages) return [];
     return contacts
       .filter((c) => {
-        const matchesLabel = data.selectedLabels.length === 0 ||
+        const matchesLabel = !hasLabels ||
           c.labels.some((l) => data.selectedLabels.includes(l.id));
-        const matchesStage = data.selectedStages.length === 0 ||
+        const matchesStage = !hasStages ||
           (c.pipelineStageId && data.selectedStages.includes(c.pipelineStageId));
-        return matchesLabel || matchesStage;
+        return matchesLabel && matchesStage;
       })
       .map((c) => c.id);
   }
