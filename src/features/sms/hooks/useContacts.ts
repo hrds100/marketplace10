@@ -53,7 +53,8 @@ async function fetchContacts(): Promise<SmsContact[]> {
         sms_labels!label_id ( id, name, colour, position )
       )
     `)
-    .order('created_at', { ascending: false }) as never);
+    .order('created_at', { ascending: false })
+    .limit(5000) as never);
 
   if (error) throw error;
   return ((data as ContactRow[]) ?? []).map(mapRow);
