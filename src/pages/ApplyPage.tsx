@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 const WHATSAPP_URL =
   'https://wa.me/447414163669?text=Hi%20I%20want%20to%20apply%20for%20the%20Sales%20Closer%20role';
 
-const pills = ['$1,000/month', 'Commission', 'South Africa', '10am–7pm'];
+const pills = ['$1,000/month', 'Commission', 'Remote', '10am–7pm UK'];
 
 export default function ApplyPage() {
   useEffect(() => {
