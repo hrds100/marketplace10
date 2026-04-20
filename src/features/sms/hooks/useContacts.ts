@@ -285,19 +285,32 @@ export function useContacts() {
   const batchGroupsQuery = useQuery({
     queryKey: ['sms-batch-groups'],
     queryFn: async (): Promise<{ batchName: string; count: number }[]> => {
-      const { data, error } = await (supabase
-        .from('sms_contacts' as never)
-        .select('batch_name')
-        .not('batch_name', 'is', null) as never);
-
-      if (error) throw error;
-
+      // Paginate in 1000-row chunks to bypass Supabase's default cap.
       const counts = new Map<string, number>();
-      for (const row of (data as { batch_name: string }[]) ?? []) {
-        if (row.batch_name) {
-          counts.set(row.batch_name, (counts.get(row.batch_name) || 0) + 1);
+      const PAGE_SIZE = 1000;
+      let from = 0;
+      // Hard cap of 50k rows to prevent runaway loops.
+      const MAX_ROWS = 50_000;
+
+      while (from < MAX_ROWS) {
+        const to = from + PAGE_SIZE - 1;
+        const { data, error } = await (supabase
+          .from('sms_contacts' as never)
+          .select('batch_name')
+          .not('batch_name', 'is', null)
+          .range(from, to) as never);
+
+        if (error) throw error;
+        const rows = (data as { batch_name: string }[]) ?? [];
+        for (const row of rows) {
+          if (row.batch_name) {
+            counts.set(row.batch_name, (counts.get(row.batch_name) || 0) + 1);
+          }
         }
+        if (rows.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
       }
+
       return Array.from(counts.entries()).map(([batchName, count]) => ({ batchName, count }));
     },
   });

@@ -95,7 +95,8 @@ async function fetchConversations(): Promise<SmsConversation[]> {
       ),
       sms_automations!automation_id ( name )
     `)
-    .order('last_message_at', { ascending: false }) as never);
+    .order('last_message_at', { ascending: false })
+    .limit(5000) as never);
 
   if (error) throw error;
   return ((data as ConversationRow[]) ?? []).map(mapRow);
