@@ -43,7 +43,10 @@ export const flowEdges: Edge[] = [
   E('su-social', 'signup', 'social-login', 'Social'),
   E('social-pc', 'social-login', 'particle-callback'),
   E('pc-otp', 'particle-callback', 'otp-verify'),
-  animated('otp-fd', 'otp-verify', 'free-dashboard', 'Verified ✓'),
+  animated('otp-wc', 'otp-verify', 'signup-wallet-create', 'Create wallet'),
+  animated('wc-gs', 'signup-wallet-create', 'signup-ghl-sync', 'Then sync'),
+  animated('pc-gs', 'particle-callback', 'signup-ghl-sync', 'Social path'),
+  animated('gs-fd', 'signup-ghl-sync', 'free-dashboard', 'Ready'),
   E('ml-l-lcrm', 'magic-link-landlord', 'landlord-magic-login-fn'),
   E('ml-lead-lcrm', 'magic-link-lead', 'landlord-magic-login-fn'),
 

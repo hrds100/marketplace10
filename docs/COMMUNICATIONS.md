@@ -648,6 +648,15 @@ USER ACTION
 | Property Reference | Z0thvOTyoO2KxTMt5sP8 | contact.property_reference | WhatsApp template variable |
 | Magic Link URL | gWb4evAKLWCK0y8RHp32 | contact.magic_link_url | Stores ?token=XXX for template button |
 | First Contact Sent | QIc7FR6U3OGNEhdk7LoY | contact.first_contact_sent | Tracks first message delivery |
+| Wallet Address | VTlstZfxHCFaDlEYSgDv | contact.wallet_address | Particle MPC wallet set at signup by `ghl-signup-sync` |
+
+## SIGNUP → GHL SYNC (v1)
+
+- Trigger: user finishes WhatsApp OTP verification on `/verify-otp` (both email and social signup paths) and, on the social path, the moment `ParticleAuthCallback` saves the wallet to `profiles.wallet_address`.
+- Edge function: `ghl-signup-sync`. Called fire-and-forget — never blocks navigation.
+- Behaviour: creates or updates a GHL contact (searched by phone, fallback email), sets the Wallet Address custom field, applies tag `nfstay-signup`.
+- No workflow enrollment in v1. `ghl-signup-sync` accepts an optional `workflowId` param so Hugo can wire a signup workflow later without another code change.
+- Wallet creation: for the email path, VerifyOtp now creates the Particle wallet immediately after OTP verify (3 attempts with backoff) and saves it to `profiles.wallet_address` BEFORE redirecting to the dashboard. If all attempts fail, WalletProvisioner on the dashboard continues to retry silently.
 
 ## WHAT'S LIVE vs PLANNED
 
