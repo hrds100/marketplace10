@@ -6,6 +6,7 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  ChevronsUpDown,
   FolderOpen,
   Loader2,
   Plus,
@@ -35,6 +36,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useLabels } from '../../hooks/useLabels';
 import { useStages } from '../../hooks/useStages';
 import { useTemplates } from '../../hooks/useTemplates';
@@ -207,6 +221,7 @@ function speedPresetToRange(preset: SendSpeedPreset): { min: number; max: number
 export default function CampaignWizard({ open, onClose, onComplete, isSubmitting }: CampaignWizardProps) {
   const [step, setStep] = useState(0);
   const [data, setData] = useState<WizardData>({ ...INITIAL_DATA });
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
 
   const { labels } = useLabels();
   const { stages } = useStages();
@@ -582,26 +597,72 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
               {data.recipientSource === 'group' ? (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm font-medium text-[#1A1A1A] mb-2">Select a contact group</p>
-                    <Select
-                      value={data.selectedBatchName ?? ''}
-                      onValueChange={(v) => update({ selectedBatchName: v })}
-                    >
-                      <SelectTrigger className="rounded-lg border-[#E5E7EB]">
-                        <SelectValue placeholder="Choose a group..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {batchGroups.map((g) => (
-                          <SelectItem key={g.batchName} value={g.batchName}>
-                            {g.batchName} ({g.count} contact{g.count !== 1 ? 's' : ''})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <p className="text-sm font-medium text-[#1A1A1A] mb-2">
+                      Select a contact group{' '}
+                      <span className="text-xs font-normal text-[#9CA3AF]">
+                        ({batchGroups.length} available)
+                      </span>
+                    </p>
+                    <Popover open={groupPickerOpen} onOpenChange={setGroupPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={groupPickerOpen}
+                          className="w-full justify-between rounded-lg border-[#E5E7EB] text-[#1A1A1A] font-normal"
+                        >
+                          {data.selectedBatchName
+                            ? (() => {
+                                const g = batchGroups.find(
+                                  (x) => x.batchName === data.selectedBatchName
+                                );
+                                return g
+                                  ? `${g.batchName} (${g.count} contact${g.count !== 1 ? 's' : ''})`
+                                  : data.selectedBatchName;
+                              })()
+                            : 'Choose a group...'}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search groups..." />
+                          <CommandList>
+                            <CommandEmpty>No groups found</CommandEmpty>
+                            <CommandGroup>
+                              {batchGroups.map((g) => (
+                                <CommandItem
+                                  key={g.batchName}
+                                  value={g.batchName}
+                                  onSelect={(v) => {
+                                    update({ selectedBatchName: v });
+                                    setGroupPickerOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      data.selectedBatchName === g.batchName
+                                        ? 'opacity-100 text-[#1E9A80]'
+                                        : 'opacity-0'
+                                    )}
+                                  />
+                                  <span className="flex-1">{g.batchName}</span>
+                                  <span className="text-xs text-[#9CA3AF]">
+                                    {g.count} contact{g.count !== 1 ? 's' : ''}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   {data.selectedBatchName && (
                     <p className="text-xs text-[#6B7280]">
-                      {contacts.filter((c) => c.batchName === data.selectedBatchName).length} contact{contacts.filter((c) => c.batchName === data.selectedBatchName).length !== 1 ? 's' : ''} in this group
+                      {(batchGroups.find((g) => g.batchName === data.selectedBatchName)?.count ?? 0).toLocaleString()}{' '}
+                      contacts in this group
                     </p>
                   )}
                 </div>
