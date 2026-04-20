@@ -1,7 +1,11 @@
 // WalletProvisioner — Lives in DashboardLayout.
-// Does NOT auto-show on page load. Instead, exposes a trigger that pages can call
-// when a user without a wallet tries to do something that requires one
-// (copy affiliate link, invest in a property).
+// Behaviour on dashboard mount:
+//   - If the user has a wallet: silently restore the Particle session.
+//   - If the user has NO wallet: auto-show the interactive Particle modal so the
+//     user can create one immediately (primarily for email signups; social users
+//     arrive with a wallet already attached from the OAuth callback).
+// Also exposes requireWallet(message) so pages can trigger the modal on demand
+// (e.g. "Copy referral link" button, "Become a Partner" on invest marketplace).
 
 import { useEffect, useRef, useState, createContext, useContext, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
