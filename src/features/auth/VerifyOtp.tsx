@@ -162,62 +162,27 @@ export default function VerifyOtp() {
       return;
     }
 
-    // ── Email signup: create wallet BEFORE dashboard (was deferred before) ──
-    let emailWalletAddress: string | null = null;
+    // ── Email signup: push the new contact to GHL immediately.
+    //    Wallet creation happens on the dashboard via WalletProvisioner's auto-shown modal
+    //    (the JWT silent path was unreliable for email users — removed). When the user
+    //    completes the wallet modal, WalletProvisioner fires ghl-signup-sync again with
+    //    the real wallet_address, updating the Wallet Address custom field. ───────────
     try {
       const { data: authData } = await supabase.auth.getUser();
       const emailUserId = authData?.user?.id;
       if (emailUserId) {
-        // If a wallet already exists (e.g. social-signin user passing through OTP), use it
         const { data: existingProfile } = await (supabase.from('profiles') as any)
           .select('wallet_address')
           .eq('id', emailUserId)
           .single();
-        emailWalletAddress = existingProfile?.wallet_address || null;
+        const existingWallet = existingProfile?.wallet_address || null;
 
-        if (!emailWalletAddress) {
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
-          const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
-
-          // Retry up to 3 times with backoff — Particle can be slow/flaky
-          for (let attempt = 0; attempt < 3 && !emailWalletAddress; attempt++) {
-            try {
-              if (attempt > 0) await new Promise((r) => setTimeout(r, 800));
-              const jwtRes = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
-                body: JSON.stringify({ user_id: emailUserId }),
-              });
-              const jwtData = await jwtRes.json();
-              if (!jwtData?.jwt) continue;
-
-              const { createParticleWallet, destroyIframe } = await import('@/lib/particleIframe');
-              const address = await createParticleWallet(jwtData.jwt);
-              destroyIframe();
-              if (address) {
-                emailWalletAddress = address;
-                await (supabase.from('profiles') as any)
-                  .update({ wallet_address: address, wallet_auth_method: 'jwt' })
-                  .eq('id', emailUserId);
-              }
-            } catch (err) {
-              console.log(`[VerifyOtp] Wallet attempt ${attempt + 1} failed:`, (err as any)?.message || err);
-            }
-          }
-
-          if (!emailWalletAddress) {
-            // Fallback: WalletProvisioner on the dashboard will retry silently
-            toast('Wallet setup will continue in the background.');
-          }
-        }
-
-        // Sync new signup to GoHighLevel (fire-and-forget, never blocks)
         supabase.functions.invoke('ghl-signup-sync', {
-          body: { user_id: emailUserId, name, email, phone, wallet_address: emailWalletAddress },
+          body: { user_id: emailUserId, name, email, phone, wallet_address: existingWallet },
         }).catch((err) => console.error('[VerifyOtp] ghl-signup-sync failed (non-blocking):', err));
       }
     } catch (err) {
-      console.error('[VerifyOtp] Email wallet / GHL sync error (non-blocking):', err);
+      console.error('[VerifyOtp] GHL sync error (non-blocking):', err);
     }
 
     // ── Fallback referral tracking for email signups ────────────────────

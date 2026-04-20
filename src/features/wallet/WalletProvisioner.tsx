@@ -1,13 +1,16 @@
 // WalletProvisioner — Lives in DashboardLayout.
-// Does NOT auto-show on page load. Instead, exposes a trigger that pages can call
-// when a user without a wallet tries to do something that requires one
-// (copy affiliate link, invest in a property).
+// Behaviour on dashboard mount:
+//   - If the user has a wallet: silently restore the Particle session.
+//   - If the user has NO wallet: auto-show the interactive Particle modal so the
+//     user can create one immediately (primarily for email signups; social users
+//     arrive with a wallet already attached from the OAuth callback).
+// Also exposes requireWallet(message) so pages can trigger the modal on demand
+// (e.g. "Copy referral link" button, "Become a Partner" on invest marketplace).
 
 import { useEffect, useRef, useState, createContext, useContext, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import { supabase } from '@/integrations/supabase/client';
-import { createParticleWallet, destroyIframe } from '@/lib/particleIframe';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -27,8 +30,6 @@ export function useWalletGate() {
   return useContext(WalletGateContext);
 }
 
-let silentAttempted = false;
-
 // ── Provider + Modal ──
 export default function WalletProvisioner({ children }: { children?: React.ReactNode }) {
   const { user } = useAuth();
@@ -39,8 +40,9 @@ export default function WalletProvisioner({ children }: { children?: React.React
   const [modalMessage, setModalMessage] = useState('');
   const resolveRef = useRef<((ok: boolean) => void) | null>(null);
 
-  // Restore Particle session silently on mount (no modal)
-  // Skip on settings page — wallet restore popup is disruptive there
+  // On mount: restore session for existing wallets, OR auto-show modal for new users.
+  // The interactive modal uses the same working path as the "Copy referral link" button —
+  // the silent JWT path was unreliable for email-signup users and has been removed.
   useEffect(() => {
     if (!user?.id || checkedRef.current) return;
     if (window.location.pathname.includes('/settings')) return;
@@ -53,24 +55,49 @@ export default function WalletProvisioner({ children }: { children?: React.React
       .then(({ data }: { data: any }) => {
         if (data?.wallet_address) {
           restoreSession(user.id, data.wallet_auth_method || 'jwt');
-        } else if (!silentAttempted) {
-          silentAttempted = true;
-          setTimeout(() => silentCreateWallet(user.id), 5000);
+        } else {
+          // No wallet yet (new email-signup user). Auto-show the modal so the user
+          // completes the Particle interactive flow. Delay slightly so the dashboard
+          // can paint before the modal overlays it.
+          setTimeout(() => {
+            setModalMessage("Let's finish setting up your account so you can use all nfstay features.");
+            setShowModal(true);
+          }, 1500);
         }
       });
   }, [user?.id]);
 
-  // Close modal when wallet appears, then hard refresh so the whole app picks it up
+  // Close modal when wallet appears, sync the wallet to GHL, then hard refresh.
   useEffect(() => {
     if (walletAddress && showModal) {
       setWalletDone(true);
       if (resolveRef.current) resolveRef.current(true);
       resolveRef.current = null;
+
+      // Push the freshly created wallet to GHL so the Wallet Address custom field is filled.
+      if (user?.id) {
+        (supabase.from('profiles') as any)
+          .select('name, email, whatsapp')
+          .eq('id', user.id)
+          .single()
+          .then(({ data }: { data: any }) => {
+            supabase.functions.invoke('ghl-signup-sync', {
+              body: {
+                user_id: user.id,
+                name: data?.name || '',
+                email: data?.email || '',
+                phone: data?.whatsapp || '',
+                wallet_address: walletAddress,
+              },
+            }).catch((err) => console.error('[WalletProvisioner] ghl-signup-sync failed:', err));
+          });
+      }
+
       setTimeout(() => {
         window.location.reload();
       }, 1200);
     }
-  }, [walletAddress, showModal]);
+  }, [walletAddress, showModal, user?.id]);
 
   // The trigger: returns a promise that resolves true if wallet connected, false if user closed
   const requireWallet = useCallback(async (message: string): Promise<boolean> => {
@@ -234,37 +261,3 @@ async function restoreParticleSession(userId: string) {
   }
 }
 
-async function silentCreateWallet(userId: string) {
-  try {
-    // Skip on settings page (same guard as restoreSession)
-    if (window.location.pathname.includes('/settings')) return;
-
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
-    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
-
-    // 1. Get JWT from edge function
-    const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
-      body: JSON.stringify({ user_id: userId }),
-    });
-    const jwtData = await res.json();
-    if (!jwtData?.jwt) return;
-
-    // 2. Create wallet via Particle SDK (same path as manual creation)
-    const address = await createParticleWallet(jwtData.jwt);
-    destroyIframe(); // Clean up any Particle UI artifacts
-
-    if (!address) return;
-
-    // 3. Save to profile
-    await (supabase.from('profiles') as any)
-      .update({ wallet_address: address, wallet_auth_method: 'jwt' })
-      .eq('id', userId);
-
-    console.log('[WalletProvisioner] Silent wallet created:', address.slice(0, 10) + '...');
-  } catch (err) {
-    // Silent — never block the user, never show an error
-    console.log('[WalletProvisioner] Silent wallet creation deferred:', (err as any)?.message || err);
-  }
-}
