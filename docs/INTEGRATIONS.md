@@ -123,6 +123,7 @@ See `docs/N8N_WHATSAPP_WORKFLOW.md` for full workflow details.
 | `Z0thvOTyoO2KxTMt5sP8` | property_reference | Property name in WhatsApp template. Set by `ghl-enroll` contactData.property_name |
 | `gWb4evAKLWCK0y8RHp32` | magic_link_url | `?token=XXX` (GHL template prepends base URL). Set by `ghl-enroll` contactData.magic_link |
 | `QIc7FR6U3OGNEhdk7LoY` | first_contact_sent | Tracks if landlord was contacted before |
+| `VTlstZfxHCFaDlEYSgDv` | wallet_address | Particle MPC wallet address saved at signup. Set by `ghl-signup-sync` after OTP verify. |
 
 **CRITICAL:** `ghl-enroll` must set fields by **field ID**, not key name. Using `key: 'property_name'` does NOT work. Use `id: 'Z0thvOTyoO2KxTMt5sP8'`.
 
@@ -148,6 +149,10 @@ Then polls Supabase every 1s for tier update (up to 10s) → shows success scree
 |-------|-----|-----|
 | Property Reference | `contact.property_reference` | `Z0thvOTyoO2KxTMt5sP8` |
 | Magic Link URL | `contact.magic_link_url` | `gWb4evAKLWCK0y8RHp32` |
+| Wallet Address | `contact.wallet_address` | `VTlstZfxHCFaDlEYSgDv` |
+
+### Signup → GHL Sync (v1)
+`ghl-signup-sync` edge function is called from `VerifyOtp.tsx` (email + social paths) and `ParticleAuthCallback.tsx` immediately after the Particle wallet is saved. It creates or updates the GHL contact by phone (fallback email), sets the Wallet Address custom field, and applies the `nfstay-signup` tag. **No workflow enrollment in v1** — the function accepts an optional `workflowId` param so Hugo can wire a signup workflow later without another code change.
 
 ### WhatsApp Number
 - Phone: `07676 368123` | Name: nfstay | Quality: Green

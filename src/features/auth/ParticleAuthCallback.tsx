@@ -179,6 +179,21 @@ export default function ParticleAuthCallback() {
           fetch(`${supabaseUrl}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${userId}&userName=${encodeURIComponent(name)}&userEmail=${encodeURIComponent(email)}`, { method: 'POST' }).catch(() => {});
           localStorage.removeItem('nfstay_ref');
         }
+
+        // Sync to GoHighLevel — idempotent upsert by phone/email (fire-and-forget)
+        const { data: profileForSync } = await (supabase.from('profiles') as any)
+          .select('whatsapp, name, email')
+          .eq('id', userId)
+          .single();
+        supabase.functions.invoke('ghl-signup-sync', {
+          body: {
+            user_id: userId,
+            name: profileForSync?.name || name,
+            email: profileForSync?.email || email,
+            phone: profileForSync?.whatsapp || '',
+            wallet_address: walletAddress,
+          },
+        }).catch((err) => console.error('[ParticleAuthCallback] ghl-signup-sync failed (non-blocking):', err));
       }
 
       // Admin notification: new signup (social login)
