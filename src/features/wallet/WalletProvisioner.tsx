@@ -74,17 +74,14 @@ export default function WalletProvisioner({ children }: { children?: React.React
       if (resolveRef.current) resolveRef.current(true);
       resolveRef.current = null;
 
-      // Push wallet to GHL BEFORE reloading. Previously the reload fired in parallel,
-      // which cancelled the in-flight fetch for fast Particle sessions and left the
-      // Wallet Address custom field empty in GHL (confirmed via contact audit).
-      (async () => {
-        if (user?.id) {
-          try {
-            const { data } = await (supabase.from('profiles') as any)
-              .select('name, email, whatsapp')
-              .eq('id', user.id)
-              .single();
-            await supabase.functions.invoke('ghl-signup-sync', {
+      // Push the freshly created wallet to GHL so the Wallet Address custom field is filled.
+      if (user?.id) {
+        (supabase.from('profiles') as any)
+          .select('name, email, whatsapp')
+          .eq('id', user.id)
+          .single()
+          .then(({ data }: { data: any }) => {
+            supabase.functions.invoke('ghl-signup-sync', {
               body: {
                 user_id: user.id,
                 name: data?.name || '',
@@ -92,14 +89,13 @@ export default function WalletProvisioner({ children }: { children?: React.React
                 phone: data?.whatsapp || '',
                 wallet_address: walletAddress,
               },
-            });
-          } catch (err) {
-            console.error('[WalletProvisioner] ghl-signup-sync failed:', err);
-          }
-        }
-        // Tiny delay so the user sees the "Account verified" success state.
-        setTimeout(() => window.location.reload(), 600);
-      })();
+            }).catch((err) => console.error('[WalletProvisioner] ghl-signup-sync failed:', err));
+          });
+      }
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
     }
   }, [walletAddress, showModal, user?.id]);
 
