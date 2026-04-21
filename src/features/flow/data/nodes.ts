@@ -78,7 +78,7 @@ export const flowNodes: Node<FlowNodeData>[] = [
   }, GX.auth - 160, 380),
 
   n('otp-verify', 'WhatsApp OTP Verification', {
-    description: 'User enters phone number (+44 default). send-otp enrolls GHL contact in OTP workflow. 4-digit code sent via WhatsApp. verify-otp marks profiles.whatsapp_verified=true. On success, triggers signup-wallet-create then signup-ghl-sync before dashboard redirect.',
+    description: 'User enters phone number (+44 default). send-otp enrolls GHL contact in OTP workflow. 4-digit code sent via WhatsApp. verify-otp marks profiles.whatsapp_verified=true.',
     actor: 'tenant',
     route: '/verify-otp',
     files: ['src/features/auth/VerifyOtp.tsx'],
@@ -89,28 +89,6 @@ export const flowNodes: Node<FlowNodeData>[] = [
     debugTrigger: 'User submits phone → GHL workflow',
     risks: ['verify-otp accepts ANY 4-digit code — intentionally loose gate'],
   }, GX.auth, 360),
-
-  n('signup-wallet-create', 'Create Particle Wallet (Signup)', {
-    description: 'After OTP verify, VerifyOtp calls particle-generate-jwt then createParticleWallet(jwt). Up to 3 attempts with backoff. Saves profiles.wallet_address + wallet_auth_method=jwt. Social path already has wallet from ParticleAuthCallback — skipped. Non-blocking: if Particle fails, user proceeds and WalletProvisioner on dashboard retries silently.',
-    actor: 'system',
-    files: ['src/features/auth/VerifyOtp.tsx', 'src/lib/particleIframe.ts'],
-    tables: ['profiles'],
-    edgeFunctions: ['particle-generate-jwt'],
-    integrations: ['Particle Network'],
-    confidence: 'confirmed',
-    debugTrigger: 'OTP verify success (email path)',
-  }, GX.auth, 440),
-
-  n('signup-ghl-sync', 'GHL Signup Sync', {
-    description: 'After wallet creation, VerifyOtp + ParticleAuthCallback call ghl-signup-sync. Creates or updates GHL contact by phone/email with name, tag nfstay-signup, and custom field Wallet Address (ID VTlstZfxHCFaDlEYSgDv). Fire-and-forget — never blocks navigation.',
-    actor: 'system',
-    files: ['src/features/auth/VerifyOtp.tsx', 'src/features/auth/ParticleAuthCallback.tsx'],
-    tables: [],
-    edgeFunctions: ['ghl-signup-sync'],
-    integrations: ['GHL'],
-    confidence: 'confirmed',
-    debugTrigger: 'Fired after wallet save (signup completion)',
-  }, GX.auth, 520),
 
   n('free-dashboard', 'Free Dashboard', {
     description: 'Authenticated user lands on /dashboard/deals with tier=free. Can browse all listings but cannot send inquiries. Sees upgrade prompts.',

@@ -41,9 +41,6 @@ verify_jwt = false
 [functions.ghl-enroll]
 verify_jwt = false
 
-[functions.ghl-signup-sync]
-verify_jwt = false
-
 [functions.track-referral]
 verify_jwt = false
 

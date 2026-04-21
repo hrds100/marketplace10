@@ -108,7 +108,6 @@ export default function VerifyOtp() {
 
     // ── Social login: create Supabase account now (wallet already known) ──
     if (authMethod && wallet) {
-      let socialUserId: string | undefined;
       try {
         const uuid = (() => { try { return sessionStorage.getItem('particle_uuid') || ''; } catch { return ''; } })();
         if (uuid) {
@@ -119,19 +118,19 @@ export default function VerifyOtp() {
             password: pw,
             options: { data: { name } },
           });
-          socialUserId = signUpData?.user?.id;
+          let userId: string | undefined = signUpData?.user?.id;
 
-          if (signUpErr || !socialUserId) {
+          if (signUpErr || !userId) {
             // Already registered — sign in instead
             const { data: signInData } = await supabase.auth.signInWithPassword({ email, password: pw });
-            socialUserId = signInData?.user?.id;
+            userId = signInData?.user?.id;
           }
 
-          if (socialUserId) {
+          if (userId) {
             const refCode = localStorage.getItem('nfstay_ref');
             await (supabase.from('profiles') as any)
               .upsert({
-                id: socialUserId,
+                id: userId,
                 name: name || email.split('@')[0],
                 whatsapp: phone,
                 whatsapp_verified: true,
@@ -143,7 +142,7 @@ export default function VerifyOtp() {
             // Track referral signup
             if (refCode) {
               const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
-              fetch(`${supabaseUrl}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${socialUserId}&userName=${encodeURIComponent(name)}&userEmail=${encodeURIComponent(email)}`, { method: 'POST' }).catch(() => {});
+              fetch(`${supabaseUrl}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${userId}&userName=${encodeURIComponent(name)}&userEmail=${encodeURIComponent(email)}`, { method: 'POST' }).catch(() => {});
               localStorage.removeItem('nfstay_ref');
             }
           }
@@ -152,72 +151,9 @@ export default function VerifyOtp() {
         console.error('[VerifyOtp] Social account creation failed (non-blocking):', err);
       }
 
-      // Sync new signup to GoHighLevel (fire-and-forget, never blocks)
-      supabase.functions.invoke('ghl-signup-sync', {
-        body: { user_id: socialUserId, name, email, phone, wallet_address: wallet },
-      }).catch((err) => console.error('[VerifyOtp] ghl-signup-sync failed (non-blocking):', err));
-
       setTimeout(() => { window.location.href = '/dashboard/deals'; }, 1500);
       setLoading(false);
       return;
-    }
-
-    // ── Email signup: create wallet BEFORE dashboard (was deferred before) ──
-    let emailWalletAddress: string | null = null;
-    try {
-      const { data: authData } = await supabase.auth.getUser();
-      const emailUserId = authData?.user?.id;
-      if (emailUserId) {
-        // If a wallet already exists (e.g. social-signin user passing through OTP), use it
-        const { data: existingProfile } = await (supabase.from('profiles') as any)
-          .select('wallet_address')
-          .eq('id', emailUserId)
-          .single();
-        emailWalletAddress = existingProfile?.wallet_address || null;
-
-        if (!emailWalletAddress) {
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
-          const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
-
-          // Retry up to 3 times with backoff — Particle can be slow/flaky
-          for (let attempt = 0; attempt < 3 && !emailWalletAddress; attempt++) {
-            try {
-              if (attempt > 0) await new Promise((r) => setTimeout(r, 800));
-              const jwtRes = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
-                body: JSON.stringify({ user_id: emailUserId }),
-              });
-              const jwtData = await jwtRes.json();
-              if (!jwtData?.jwt) continue;
-
-              const { createParticleWallet, destroyIframe } = await import('@/lib/particleIframe');
-              const address = await createParticleWallet(jwtData.jwt);
-              destroyIframe();
-              if (address) {
-                emailWalletAddress = address;
-                await (supabase.from('profiles') as any)
-                  .update({ wallet_address: address, wallet_auth_method: 'jwt' })
-                  .eq('id', emailUserId);
-              }
-            } catch (err) {
-              console.log(`[VerifyOtp] Wallet attempt ${attempt + 1} failed:`, (err as any)?.message || err);
-            }
-          }
-
-          if (!emailWalletAddress) {
-            // Fallback: WalletProvisioner on the dashboard will retry silently
-            toast('Wallet setup will continue in the background.');
-          }
-        }
-
-        // Sync new signup to GoHighLevel (fire-and-forget, never blocks)
-        supabase.functions.invoke('ghl-signup-sync', {
-          body: { user_id: emailUserId, name, email, phone, wallet_address: emailWalletAddress },
-        }).catch((err) => console.error('[VerifyOtp] ghl-signup-sync failed (non-blocking):', err));
-      }
-    } catch (err) {
-      console.error('[VerifyOtp] Email wallet / GHL sync error (non-blocking):', err);
     }
 
     // ── Fallback referral tracking for email signups ────────────────────
