@@ -2,18 +2,6 @@
 
 ## [Unreleased]
 
-## [2026-04-20] - Signup creates wallet + syncs to GoHighLevel
-
-### Added
-- **`ghl-signup-sync` edge function** (`supabase/functions/ghl-signup-sync/index.ts`): creates or updates a GHL contact at signup, applies tag `nfstay-signup`, sets the new Wallet Address custom field (ID `VTlstZfxHCFaDlEYSgDv`). Optional `workflowId` param for future workflow enrollment. Registered in `supabase/config.toml` with `verify_jwt = false`.
-- **Email-signup wallet creation moved to OTP verify** (`src/features/auth/VerifyOtp.tsx`): Particle wallet is now created immediately after WhatsApp OTP verification with 3 retries and backoff, saving `profiles.wallet_address` BEFORE the dashboard redirect. Was previously a silent best-effort 5-second timer on the dashboard that often failed.
-- **GHL sync call added** to both `VerifyOtp.tsx` and `ParticleAuthCallback.tsx`. Fire-and-forget — never blocks navigation.
-- Flow nodes `signup-wallet-create` and `signup-ghl-sync` + edges in `src/features/flow/data/`.
-- `docs/INTEGRATIONS.md` + `docs/COMMUNICATIONS.md` updated with the new field ID and signup flow.
-
-### Notes
-- GHL workflow for signups is **not** created in v1 — GHL public API does not support workflow creation; Hugo can build one in the UI later and pass the `workflowId` to `ghl-signup-sync` without a code change.
-
 ## [2026-04-09a] - WhatsApp Cloud API + Template Management + Documentation
 
 ### Added
