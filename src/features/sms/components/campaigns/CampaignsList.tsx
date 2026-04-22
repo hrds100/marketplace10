@@ -1,4 +1,4 @@
-import { Loader2, Megaphone, Pause, Pencil, Play, Send } from 'lucide-react';
+import { Loader2, Megaphone, Pause, Pencil, Play, Rocket, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -16,9 +16,11 @@ interface CampaignsListProps {
   campaigns: SmsCampaign[];
   onNew: () => void;
   onEdit?: (campaign: SmsCampaign) => void;
+  onStart?: (campaignId: string) => void;
   onSendNextBatch?: (campaignId: string) => void;
   onPause?: (campaignId: string) => void;
   onResume?: (campaignId: string) => void;
+  isStarting?: boolean;
   isSendingBatch?: boolean;
   isPausing?: boolean;
   isResuming?: boolean;
@@ -32,9 +34,11 @@ export default function CampaignsList({
   campaigns,
   onNew,
   onEdit,
+  onStart,
   onSendNextBatch,
   onPause,
   onResume,
+  isStarting,
   isSendingBatch,
   isPausing,
   isResuming,
@@ -79,6 +83,7 @@ export default function CampaignsList({
             const remaining = getRemainingCount(c);
             const hasPendingRecipients = remaining > 0;
             const canEdit = (c.status === 'draft' || c.status === 'paused') && onEdit;
+            const canStart = (c.status === 'draft' || c.status === 'scheduled') && onStart && c.totalRecipients > 0;
             const canSendBatch = (c.status === 'paused' || (c.status === 'complete' && hasPendingRecipients)) && onSendNextBatch;
             const canPause = c.status === 'sending' && onPause;
             const canResume = c.status === 'paused' && onResume;
@@ -145,6 +150,23 @@ export default function CampaignsList({
                       >
                         <Pencil className="h-3 w-3 mr-1" />
                         Edit
+                      </Button>
+                    )}
+                    {canStart && (
+                      <Button
+                        size="sm"
+                        onClick={() => onStart(c.id)}
+                        disabled={isStarting}
+                        className="rounded-lg bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white h-7 text-xs px-2"
+                      >
+                        {isStarting ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Rocket className="h-3 w-3 mr-1" />
+                            Start Now
+                          </>
+                        )}
                       </Button>
                     )}
                     {canSendBatch && (
