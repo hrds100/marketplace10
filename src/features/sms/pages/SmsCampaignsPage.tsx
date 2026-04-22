@@ -19,6 +19,7 @@ export default function SmsCampaignsPage() {
     resumeCampaign,
     isCreating,
     isUpdating,
+    isLaunching,
     isSendingBatch,
     isPausing,
     isResuming,
@@ -99,9 +100,11 @@ export default function SmsCampaignsPage() {
           campaigns={campaigns}
           onNew={() => setWizardOpen(true)}
           onEdit={setEditingCampaign}
+          onStart={launchCampaign}
           onSendNextBatch={sendNextBatch}
           onPause={pauseCampaign}
           onResume={resumeCampaign}
+          isStarting={isLaunching}
           isSendingBatch={isSendingBatch}
           isPausing={isPausing}
           isResuming={isResuming}
