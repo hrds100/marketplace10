@@ -194,10 +194,15 @@ export default function SignUp() {
 
         });
       } catch { /* already initialized */ }
-      localStorage.setItem('particle_intent', JSON.stringify({ type: 'signup', provider }));
+      const intentPayload = { type: 'signup', provider };
+      localStorage.setItem('particle_intent', JSON.stringify(intentPayload));
+      // Also encode intent into the return URL so a lost localStorage
+      // (origin mismatch, Safari ITP, incognito) doesn't dead-end the user.
+      const intentB64 = btoa(JSON.stringify(intentPayload));
+      const returnUrl = `${window.location.origin}/auth/particle?intent=${encodeURIComponent(intentB64)}`;
       await thirdpartyAuth({
         authType: provider as any,
-        redirectUrl: window.location.origin + '/auth/particle',
+        redirectUrl: returnUrl,
       });
     } catch (err: any) {
       localStorage.removeItem('particle_intent');
