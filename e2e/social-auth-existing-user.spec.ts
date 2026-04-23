@@ -81,8 +81,49 @@ test.describe("Social auth — existing user redirect", () => {
     const hasContent =
       body?.includes("Completing sign in") ||
       body?.includes("Sign in failed") ||
-      body?.includes("Session expired");
+      body?.includes("Auth handoff incomplete");
     expect(hasContent).toBe(true);
+  });
+
+  test("no-intent callback shows new diagnostic error (not 'Session expired')", async ({
+    page,
+  }) => {
+    // Clear any stale intent from previous tests
+    await page.goto(`${BASE}/signin`);
+    await page.evaluate(() => localStorage.removeItem("particle_intent"));
+
+    await page.goto(`${BASE}/auth/particle`);
+    await page.waitForSelector("text=Sign in failed", { timeout: 15000 });
+
+    const body = await page.textContent("body");
+    // New diagnostic message must be visible
+    expect(body).toContain("Auth handoff incomplete");
+    // Old useless text must be gone
+    expect(body).not.toContain("Session expired. Please try again.");
+  });
+
+  test("URL-encoded intent survives missing localStorage (fallback works)", async ({
+    page,
+  }) => {
+    // Simulate the fix: intent arrives via URL, localStorage empty
+    await page.goto(`${BASE}/signin`);
+    await page.evaluate(() => localStorage.removeItem("particle_intent"));
+
+    const intentPayload = { type: "signin", provider: "google", redirectTo: "" };
+    const intentB64 = Buffer.from(JSON.stringify(intentPayload)).toString("base64");
+
+    await page.goto(
+      `${BASE}/auth/particle?intent=${encodeURIComponent(intentB64)}`
+    );
+
+    // Should proceed PAST the intent check (no "Auth handoff incomplete").
+    // It will still fail later at Particle connect() because there are no real OAuth params —
+    // but that's a different, specific error, not the generic dead-end.
+    await page.waitForSelector("text=Sign in failed", { timeout: 20000 });
+
+    const body = await page.textContent("body");
+    expect(body).not.toContain("Auth handoff incomplete");
+    expect(body).not.toContain("Session expired. Please try again.");
   });
 
   test("error page offers navigation escape routes (sign-in and sign-up)", async ({

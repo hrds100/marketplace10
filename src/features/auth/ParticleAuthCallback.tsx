@@ -26,13 +26,43 @@ export default function ParticleAuthCallback() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleCallback() {
+    let intentSource: 'url' | 'storage' | 'none' = 'none';
     try {
-      const rawIntent = localStorage.getItem('particle_intent');
+      // Resolve intent: URL query first (survives localStorage loss),
+      // then fall back to localStorage (same-origin, same-tab happy path).
+      let rawIntent: string | null = null;
+      const urlIntentParam = new URLSearchParams(window.location.search).get('intent');
+      if (urlIntentParam) {
+        try {
+          rawIntent = atob(decodeURIComponent(urlIntentParam));
+          intentSource = 'url';
+        } catch {
+          rawIntent = null;
+        }
+      }
       if (!rawIntent) {
-        setErrMsg('Session expired. Please try again.');
+        rawIntent = localStorage.getItem('particle_intent');
+        if (rawIntent) intentSource = 'storage';
+      }
+
+      if (!rawIntent) {
+        const diag = {
+          origin: window.location.origin,
+          href: window.location.href,
+          hasIntentParam: !!urlIntentParam,
+          hasLocalStorageIntent: !!localStorage.getItem('particle_intent'),
+          searchKeys: Array.from(new URLSearchParams(window.location.search).keys()),
+        };
+        console.error('[ParticleAuthCallback] Missing intent', diag);
+        setErrMsg(
+          `Auth handoff incomplete. Origin ${window.location.origin} received no signin intent. ` +
+          `URL param: ${diag.hasIntentParam ? 'yes' : 'no'}; localStorage: ${diag.hasLocalStorageIntent ? 'yes' : 'no'}. ` +
+          `If you're on a preview URL, please sign in on hub.nfstay.com.`
+        );
         setStatus('error');
         return;
       }
+      console.info('[ParticleAuthCallback] intent source:', intentSource);
       const intent: { type: 'signup' | 'signin'; provider: string; redirectTo?: string } =
         JSON.parse(rawIntent);
       localStorage.removeItem('particle_intent');
@@ -206,8 +236,13 @@ export default function ParticleAuthCallback() {
       const dest = intent.redirectTo ? decodeURIComponent(intent.redirectTo) : '/dashboard/deals';
       window.location.href = dest;
     } catch (err: any) {
-      console.error('[ParticleAuthCallback] Error:', err);
-      setErrMsg(err?.message || 'Authentication failed. Please try again.');
+      console.error('[ParticleAuthCallback] Error:', {
+        message: err?.message,
+        stack: err?.stack,
+        name: err?.name,
+        intentSource,
+      });
+      setErrMsg(err?.message || err?.name || 'Authentication failed during Particle handoff.');
       setStatus('error');
     }
   }
