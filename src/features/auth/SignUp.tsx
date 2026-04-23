@@ -71,6 +71,8 @@ interface ParticleUserInfo {
 
 type ViewState = 'social' | 'phone' | 'email';
 
+const SOCIAL_PENDING_KEY = 'nfstay_social_pending';
+
 // Derive a deterministic Supabase password from Particle UUID
 function derivedPassword(uuid: string): string {
   return uuid.slice(0, 10) + '_NFsTay2!' + uuid.slice(-6);
@@ -115,7 +117,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
-  const { connect } = useConnect();
+  const { connect, connected } = useConnect();
   const [view, setView] = useState<ViewState>('social');
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
@@ -178,31 +180,46 @@ export default function SignUp() {
     }
   }, []);
 
-  // ── Social login — legacy hook-based (no redirect, no popup of ours) ─────
+  // ── Social sign-up — legacy redirect flow (Particle takes over full page) ─
 
-  const handleSocialLogin = async (provider: SocialProvider) => {
+  // On return from Particle's OAuth redirect, complete the social sign-up
+  // by reading the user info the SDK has already persisted.
+  useEffect(() => {
+    if (!connected) return;
+    const raw = localStorage.getItem(SOCIAL_PENDING_KEY);
+    if (!raw) return;
+    let pending: { provider: SocialProvider; view?: 'signin' | 'signup' };
+    try { pending = JSON.parse(raw); } catch { localStorage.removeItem(SOCIAL_PENDING_KEY); return; }
+    if (pending.view !== 'signup') return; // not ours — /signin handles its own
+    localStorage.removeItem(SOCIAL_PENDING_KEY);
+    void completeSocialSignUp(pending.provider);
+  }, [connected]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const completeSocialSignUp = async (provider: SocialProvider) => {
     setSocialLoading(provider);
     try {
-      const userInfo = await connect({ socialType: provider });
+      const { particleAuth } = await import('@particle-network/auth-core');
+      const userInfo: any = (particleAuth as any).getUserInfo?.();
       if (!userInfo) {
+        toast.error('Could not retrieve your account details. Please try again.');
         setSocialLoading(null);
         return;
       }
 
-      const wallets = (userInfo as any).wallets || [];
+      const wallets = userInfo.wallets || [];
       const evmWallet = wallets.find((w: any) => w.chain_name === 'evm_chain');
       const walletAddress: string = evmWallet?.public_address || '';
       const email: string =
-        (userInfo as any)[`${provider}_email`] ||
-        (userInfo as any).thirdparty_user_info?.user_info?.email ||
-        (userInfo as any).email ||
+        userInfo[`${provider}_email`] ||
+        userInfo.thirdparty_user_info?.user_info?.email ||
+        userInfo.email ||
         '';
       const displayName: string =
-        (userInfo as any).thirdparty_user_info?.user_info?.name ||
-        (userInfo as any).name ||
+        userInfo.thirdparty_user_info?.user_info?.name ||
+        userInfo.name ||
         email.split('@')[0] ||
         provider;
-      const uuid: string = (userInfo as any).uuid || '';
+      const uuid: string = userInfo.uuid || '';
 
       if (!uuid || !email) {
         toast.error('Could not retrieve your account details. Please try again.');
@@ -215,11 +232,28 @@ export default function SignUp() {
         sessionStorage.setItem('particle_auth_method', provider);
       } catch { /* skip */ }
 
-      // Hand off to WhatsApp step — collect phone before creating Supabase account
       setParticleUser({ email, name: displayName, wallet: walletAddress, uuid, authMethod: provider });
       setView('phone');
       setSocialLoading(null);
     } catch (err: any) {
+      console.error('[SignUp] Social completion error:', err);
+      toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
+      setSocialLoading(null);
+    }
+  };
+
+  const handleSocialLogin = async (provider: SocialProvider) => {
+    setSocialLoading(provider);
+    try {
+      localStorage.setItem(
+        SOCIAL_PENDING_KEY,
+        JSON.stringify({ provider, view: 'signup' }),
+      );
+      await connect({ socialType: provider });
+      // If we are still on this page after the await resolves (no redirect), complete in-place.
+      void completeSocialSignUp(provider);
+    } catch (err: any) {
+      localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignUp] Social login error:', err);
       toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);

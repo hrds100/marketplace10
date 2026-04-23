@@ -59,10 +59,12 @@ function derivedPassword(uuid: string): string {
   return uuid.slice(0, 10) + '_NFsTay2!' + uuid.slice(-6);
 }
 
+const SOCIAL_PENDING_KEY = 'nfstay_social_pending';
+
 export default function SignIn() {
   const { t } = useTranslation();
   const { signIn } = useAuth();
-  const { connect } = useConnect();
+  const { connect, connected } = useConnect();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
   const prefillEmail = searchParams.get('email');
@@ -74,30 +76,44 @@ export default function SignIn() {
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [error, setError] = useState('');
 
-  const handleSocialSignIn = async (provider: SocialProvider) => {
+  // After Particle's OAuth redirect brings the user back, finish the Supabase side.
+  useEffect(() => {
+    if (!connected) return;
+    const raw = localStorage.getItem(SOCIAL_PENDING_KEY);
+    if (!raw) return;
+    let pending: { provider: SocialProvider; redirectTo?: string; view?: 'signin' | 'signup' };
+    try { pending = JSON.parse(raw); } catch { localStorage.removeItem(SOCIAL_PENDING_KEY); return; }
+    if (pending.view && pending.view !== 'signin') return; // the /signup page will handle its own pending
+    localStorage.removeItem(SOCIAL_PENDING_KEY);
+    void completeSocialSignIn(pending.provider, pending.redirectTo || '');
+  }, [connected]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const completeSocialSignIn = async (provider: SocialProvider, redirectAfter: string) => {
     setSocialLoading(provider);
     setError('');
     try {
-      const userInfo = await connect({ socialType: provider });
+      const { particleAuth } = await import('@particle-network/auth-core');
+      const userInfo: any = (particleAuth as any).getUserInfo?.();
       if (!userInfo) {
+        setError('Could not retrieve your account details. Please try again.');
         setSocialLoading(null);
         return;
       }
 
-      const wallets = (userInfo as any).wallets || [];
+      const wallets = userInfo.wallets || [];
       const evmWallet = wallets.find((w: any) => w.chain_name === 'evm_chain');
       const walletAddress: string = evmWallet?.public_address || '';
       const particleEmail: string =
-        (userInfo as any)[`${provider}_email`] ||
-        (userInfo as any).thirdparty_user_info?.user_info?.email ||
-        (userInfo as any).email ||
+        userInfo[`${provider}_email`] ||
+        userInfo.thirdparty_user_info?.user_info?.email ||
+        userInfo.email ||
         '';
       const displayName: string =
-        (userInfo as any).thirdparty_user_info?.user_info?.name ||
-        (userInfo as any).name ||
+        userInfo.thirdparty_user_info?.user_info?.name ||
+        userInfo.name ||
         particleEmail.split('@')[0] ||
         provider;
-      const uuid: string = (userInfo as any).uuid || '';
+      const uuid: string = userInfo.uuid || '';
 
       if (!uuid || !particleEmail) {
         setError('Could not retrieve your account details. Please try again.');
@@ -112,7 +128,6 @@ export default function SignIn() {
 
       const pw = derivedPassword(uuid);
 
-      // Try signIn first; if no account, create one
       const { error: signInErr } = await supabase.auth.signInWithPassword({
         email: particleEmail,
         password: pw,
@@ -158,7 +173,6 @@ export default function SignIn() {
         }
       }
 
-      // Update profile with wallet info
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (userId) {
         const refCode = localStorage.getItem('nfstay_ref');
@@ -183,7 +197,6 @@ export default function SignIn() {
         body: `${displayName} (${particleEmail}) signed up via social login.`,
       }).then(() => {}).catch(() => {});
 
-      // WhatsApp gate
       const signedInUserId = (await supabase.auth.getUser()).data.user?.id;
       if (signedInUserId) {
         const { data: profileCheck } = await (supabase.from('profiles') as any)
@@ -198,9 +211,31 @@ export default function SignIn() {
         }
       }
 
-      const dest = redirectTo ? decodeURIComponent(redirectTo) : '/dashboard/deals';
+      const dest = redirectAfter ? decodeURIComponent(redirectAfter) : '/dashboard/deals';
       window.location.href = dest;
     } catch (err: any) {
+      console.error('[SignIn] Social completion error:', err);
+      setError(`Social login failed: ${err?.message || 'Unknown error'}`);
+      setSocialLoading(null);
+    }
+  };
+
+  const handleSocialSignIn = async (provider: SocialProvider) => {
+    setSocialLoading(provider);
+    setError('');
+    // Persist intent — Particle will redirect the whole page to Google/Apple/etc
+    // and return here. The useEffect above completes the Supabase side on return.
+    try {
+      localStorage.setItem(
+        SOCIAL_PENDING_KEY,
+        JSON.stringify({ provider, redirectTo: redirectTo || '', view: 'signin' }),
+      );
+      await connect({ socialType: provider });
+      // If we're still here after await (no redirect happened for any reason),
+      // treat it as success-in-place and run completion directly.
+      void completeSocialSignIn(provider, redirectTo || '');
+    } catch (err: any) {
+      localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignIn] Social login error:', err);
       setError(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);
