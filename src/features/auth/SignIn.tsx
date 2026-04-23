@@ -76,31 +76,105 @@ export default function SignIn() {
     setSocialLoading(provider);
     setError('');
     try {
-      const { particleAuth, thirdpartyAuth } = await import('@particle-network/auth-core');
-      const { bsc } = await import('@particle-network/authkit/chains');
-      const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
-      const pa = particleAuth as any;
-      try {
-        pa.init({
-          projectId: PARTICLE_LEGACY_CONFIG.projectId,
-          clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
-          appId: PARTICLE_LEGACY_CONFIG.appId,
-          chains: [bsc],
+      const { particlePopupSocialLogin } = await import('@/lib/particlePopupLogin');
+      const particleUser = await particlePopupSocialLogin(provider);
+      const { email, name, walletAddress, uuid, provider: confirmedProvider } = particleUser;
 
+      try {
+        sessionStorage.setItem('particle_uuid', uuid);
+        sessionStorage.setItem('particle_auth_method', confirmedProvider);
+      } catch { /* skip */ }
+
+      const pw = derivedPassword(uuid);
+
+      // Try Supabase signin first
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password: pw });
+
+      if (signInErr) {
+        // No account yet — create one automatically
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email,
+          password: pw,
+          options: { data: { name } },
         });
-      } catch { /* already initialized */ }
-      const intentPayload = { type: 'signin', provider, redirectTo: redirectTo || '' };
-      localStorage.setItem('particle_intent', JSON.stringify(intentPayload));
-      // Also encode intent into the return URL so a lost localStorage
-      // (origin mismatch, Safari ITP, incognito) doesn't dead-end the user.
-      const intentB64 = btoa(JSON.stringify(intentPayload));
-      const returnUrl = `${window.location.origin}/auth/particle?intent=${encodeURIComponent(intentB64)}`;
-      await thirdpartyAuth({
-        authType: provider as any,
-        redirectUrl: returnUrl,
-      });
+
+        if (signUpErr) {
+          const isAlreadyRegistered =
+            signUpErr.message?.toLowerCase().includes('already registered') ||
+            signUpErr.message?.toLowerCase().includes('already been registered');
+          if (isAlreadyRegistered) {
+            toast.error('You already have an nfstay account with this email. Please sign in with your password.');
+            window.location.href = `/signin?email=${encodeURIComponent(email)}`;
+            return;
+          }
+          setError(`Could not create account: ${signUpErr.message}`);
+          setSocialLoading(null);
+          return;
+        }
+
+        // Supabase may return a user with no identities when the email
+        // already exists but hasn't been confirmed — treat as existing account
+        if (signUpData?.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
+          toast.error('You already have an nfstay account with this email. Please sign in with your password.');
+          window.location.href = `/signin?email=${encodeURIComponent(email)}`;
+          return;
+        }
+
+        if (!signUpData?.session) {
+          const { error: reSignInErr } = await supabase.auth.signInWithPassword({ email, password: pw });
+          if (reSignInErr) {
+            setError(`Sign in after signup failed: ${reSignInErr.message}`);
+            setSocialLoading(null);
+            return;
+          }
+        }
+      }
+
+      // Update profile with wallet + auth method
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (userId) {
+        const refCode = localStorage.getItem('nfstay_ref');
+        const updatePayload: Record<string, string> = {
+          wallet_auth_method: confirmedProvider,
+        };
+        if (walletAddress) updatePayload.wallet_address = walletAddress;
+        if (refCode) updatePayload.referred_by = refCode;
+        await (supabase.from('profiles') as any)
+          .update(updatePayload)
+          .eq('id', userId);
+
+        if (refCode) {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+          fetch(`${supabaseUrl}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${userId}&userName=${encodeURIComponent(name)}&userEmail=${encodeURIComponent(email)}`, { method: 'POST' }).catch(() => {});
+          localStorage.removeItem('nfstay_ref');
+        }
+      }
+
+      // Admin notification
+      (supabase.from('notifications') as any).insert({
+        type: 'new_signup',
+        title: 'New user signed up',
+        body: `${name} (${email}) signed up via social login.`,
+      }).then(() => {}).catch(() => {});
+
+      // WhatsApp check
+      const signedInUserId = (await supabase.auth.getUser()).data.user?.id;
+      if (signedInUserId) {
+        const { data: profileCheck } = await (supabase.from('profiles') as any)
+          .select('whatsapp_verified')
+          .eq('id', signedInUserId)
+          .single();
+
+        if (!profileCheck?.whatsapp_verified) {
+          const verifyUrl = `/verify-otp?phone=&name=${encodeURIComponent(name || '')}&email=${encodeURIComponent(email || '')}`;
+          window.location.href = verifyUrl;
+          return;
+        }
+      }
+
+      const dest = redirectTo ? decodeURIComponent(redirectTo) : '/dashboard/deals';
+      window.location.href = dest;
     } catch (err: any) {
-      localStorage.removeItem('particle_intent');
       console.error('[SignIn] Social login error:', err);
       setError(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);

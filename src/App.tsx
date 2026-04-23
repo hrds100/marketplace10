@@ -98,6 +98,7 @@ import NfsOAuthCallbackPage from "./pages/NfsOAuthCallbackPage";
 import NfsVerifyEmailPage from "./pages/NfsVerifyEmailPage";
 import NfsAuthCallbackPage from "./pages/NfsAuthCallbackPage";
 import ParticleAuthCallback from "@/features/auth/ParticleAuthCallback";
+import ParticleAuthPopup from "@/features/auth/ParticleAuthPopup";
 import AuthBridgePage from "@/features/auth/AuthBridgePage";
 import LeadDetailsPage from "@/features/landlord/LeadDetailsPage";
 import LeadNDAPage from "@/features/landlord/LeadNDAPage";
@@ -310,6 +311,7 @@ const App = () => (
           <Route path="/auth/callback" element={<NfsAuthCallbackPage />} />
           <Route path="/auth/bridge" element={<AuthBridgePage />} />
           <Route path="/auth/particle" element={<ParticleAuthCallback />} />
+          <Route path="/auth/particle-popup" element={<ParticleAuthPopup />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </NfsCurrencyProvider>
