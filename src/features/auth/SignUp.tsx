@@ -181,31 +181,30 @@ export default function SignUp() {
   const handleSocialLogin = async (provider: SocialProvider) => {
     setSocialLoading(provider);
     try {
-      const { particleAuth, thirdpartyAuth } = await import('@particle-network/auth-core');
-      const { bsc } = await import('@particle-network/authkit/chains');
-      const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
-      const pa = particleAuth as any;
-      try {
-        pa.init({
-          projectId: PARTICLE_LEGACY_CONFIG.projectId,
-          clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
-          appId: PARTICLE_LEGACY_CONFIG.appId,
-          chains: [bsc],
+      const { particlePopupSocialLogin } = await import('@/lib/particlePopupLogin');
+      const {
+        email,
+        name,
+        walletAddress,
+        uuid,
+        provider: confirmedProvider,
+      } = await particlePopupSocialLogin(provider);
 
-        });
-      } catch { /* already initialized */ }
-      const intentPayload = { type: 'signup', provider };
-      localStorage.setItem('particle_intent', JSON.stringify(intentPayload));
-      // Also encode intent into the return URL so a lost localStorage
-      // (origin mismatch, Safari ITP, incognito) doesn't dead-end the user.
-      const intentB64 = btoa(JSON.stringify(intentPayload));
-      const returnUrl = `${window.location.origin}/auth/particle?intent=${encodeURIComponent(intentB64)}`;
-      await thirdpartyAuth({
-        authType: provider as any,
-        redirectUrl: returnUrl,
+      try {
+        sessionStorage.setItem('particle_uuid', uuid);
+        sessionStorage.setItem('particle_auth_method', confirmedProvider);
+      } catch { /* skip */ }
+
+      setParticleUser({
+        email,
+        name,
+        wallet: walletAddress,
+        uuid,
+        authMethod: confirmedProvider as SocialProvider,
       });
+      setView('phone');
+      setSocialLoading(null);
     } catch (err: any) {
-      localStorage.removeItem('particle_intent');
       console.error('[SignUp] Social login error:', err);
       toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);
