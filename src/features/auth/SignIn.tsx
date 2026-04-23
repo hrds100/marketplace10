@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { useConnect } from '@particle-network/authkit';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -61,6 +62,7 @@ function derivedPassword(uuid: string): string {
 export default function SignIn() {
   const { t } = useTranslation();
   const { signIn } = useAuth();
+  const { connect } = useConnect();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
   const prefillEmail = searchParams.get('email');
@@ -76,29 +78,129 @@ export default function SignIn() {
     setSocialLoading(provider);
     setError('');
     try {
-      const { particleAuth, thirdpartyAuth } = await import('@particle-network/auth-core');
-      const { bsc } = await import('@particle-network/authkit/chains');
-      const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
-      const pa = particleAuth as any;
-      try {
-        pa.init({
-          projectId: PARTICLE_LEGACY_CONFIG.projectId,
-          clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
-          appId: PARTICLE_LEGACY_CONFIG.appId,
-          chains: [bsc],
+      const userInfo = await connect({ socialType: provider });
+      if (!userInfo) {
+        setSocialLoading(null);
+        return;
+      }
 
-        });
-      } catch { /* already initialized */ }
-      localStorage.setItem(
-        'particle_intent',
-        JSON.stringify({ type: 'signin', provider, redirectTo: redirectTo || '' }),
-      );
-      await thirdpartyAuth({
-        authType: provider as any,
-        redirectUrl: window.location.origin + '/auth/particle',
+      const wallets = (userInfo as any).wallets || [];
+      const evmWallet = wallets.find((w: any) => w.chain_name === 'evm_chain');
+      const walletAddress: string = evmWallet?.public_address || '';
+      const particleEmail: string =
+        (userInfo as any)[`${provider}_email`] ||
+        (userInfo as any).thirdparty_user_info?.user_info?.email ||
+        (userInfo as any).email ||
+        '';
+      const displayName: string =
+        (userInfo as any).thirdparty_user_info?.user_info?.name ||
+        (userInfo as any).name ||
+        particleEmail.split('@')[0] ||
+        provider;
+      const uuid: string = (userInfo as any).uuid || '';
+
+      if (!uuid || !particleEmail) {
+        setError('Could not retrieve your account details. Please try again.');
+        setSocialLoading(null);
+        return;
+      }
+
+      try {
+        sessionStorage.setItem('particle_uuid', uuid);
+        sessionStorage.setItem('particle_auth_method', provider);
+      } catch { /* skip */ }
+
+      const pw = derivedPassword(uuid);
+
+      // Try signIn first; if no account, create one
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: particleEmail,
+        password: pw,
       });
+
+      if (signInErr) {
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email: particleEmail,
+          password: pw,
+          options: { data: { name: displayName } },
+        });
+
+        if (signUpErr) {
+          const isAlreadyRegistered =
+            signUpErr.message?.toLowerCase().includes('already registered') ||
+            signUpErr.message?.toLowerCase().includes('already been registered');
+          if (isAlreadyRegistered) {
+            toast.error('You already have an nfstay account with this email. Please sign in with your password.');
+            window.location.href = `/signin?email=${encodeURIComponent(particleEmail)}`;
+            return;
+          }
+          setError(`Could not create account: ${signUpErr.message}`);
+          setSocialLoading(null);
+          return;
+        }
+
+        if (signUpData?.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
+          toast.error('You already have an nfstay account with this email. Please sign in with your password.');
+          window.location.href = `/signin?email=${encodeURIComponent(particleEmail)}`;
+          return;
+        }
+
+        if (!signUpData?.session) {
+          const { error: reSignInErr } = await supabase.auth.signInWithPassword({
+            email: particleEmail,
+            password: pw,
+          });
+          if (reSignInErr) {
+            setError(`Sign in after signup failed: ${reSignInErr.message}`);
+            setSocialLoading(null);
+            return;
+          }
+        }
+      }
+
+      // Update profile with wallet info
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (userId) {
+        const refCode = localStorage.getItem('nfstay_ref');
+        const updatePayload: Record<string, string> = { wallet_auth_method: provider };
+        if (walletAddress) updatePayload.wallet_address = walletAddress;
+        if (refCode) updatePayload.referred_by = refCode;
+        await (supabase.from('profiles') as any).update(updatePayload).eq('id', userId);
+
+        if (refCode) {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+          fetch(
+            `${supabaseUrl}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${userId}&userName=${encodeURIComponent(displayName)}&userEmail=${encodeURIComponent(particleEmail)}`,
+            { method: 'POST' },
+          ).catch(() => {});
+          localStorage.removeItem('nfstay_ref');
+        }
+      }
+
+      (supabase.from('notifications') as any).insert({
+        type: 'new_signup',
+        title: 'New user signed up',
+        body: `${displayName} (${particleEmail}) signed up via social login.`,
+      }).then(() => {}).catch(() => {});
+
+      // WhatsApp gate
+      const signedInUserId = (await supabase.auth.getUser()).data.user?.id;
+      if (signedInUserId) {
+        const { data: profileCheck } = await (supabase.from('profiles') as any)
+          .select('whatsapp_verified')
+          .eq('id', signedInUserId)
+          .single();
+
+        if (!profileCheck?.whatsapp_verified) {
+          window.location.href =
+            `/verify-otp?phone=&name=${encodeURIComponent(displayName)}&email=${encodeURIComponent(particleEmail)}`;
+          return;
+        }
+      }
+
+      const dest = redirectTo ? decodeURIComponent(redirectTo) : '/dashboard/deals';
+      window.location.href = dest;
     } catch (err: any) {
-      localStorage.removeItem('particle_intent');
       console.error('[SignIn] Social login error:', err);
       setError(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);

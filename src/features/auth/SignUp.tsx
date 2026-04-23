@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Eye, EyeOff, CheckCircle2, ArrowLeft, Mail, Lock, User, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useConnect } from '@particle-network/authkit';
 import { useAuth } from '@/hooks/useAuth';
 import { sendOtp } from '@/core/auth/otp';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,6 +115,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
+  const { connect } = useConnect();
   const [view, setView] = useState<ViewState>('social');
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
@@ -176,31 +178,48 @@ export default function SignUp() {
     }
   }, []);
 
-  // ── Social login — redirect approach (no popup, no blocking) ─────────────
+  // ── Social login — legacy hook-based (no redirect, no popup of ours) ─────
 
   const handleSocialLogin = async (provider: SocialProvider) => {
     setSocialLoading(provider);
     try {
-      const { particleAuth, thirdpartyAuth } = await import('@particle-network/auth-core');
-      const { bsc } = await import('@particle-network/authkit/chains');
-      const { PARTICLE_LEGACY_CONFIG } = await import('@/lib/particle');
-      const pa = particleAuth as any;
-      try {
-        pa.init({
-          projectId: PARTICLE_LEGACY_CONFIG.projectId,
-          clientKey: PARTICLE_LEGACY_CONFIG.clientKey,
-          appId: PARTICLE_LEGACY_CONFIG.appId,
-          chains: [bsc],
+      const userInfo = await connect({ socialType: provider });
+      if (!userInfo) {
+        setSocialLoading(null);
+        return;
+      }
 
-        });
-      } catch { /* already initialized */ }
-      localStorage.setItem('particle_intent', JSON.stringify({ type: 'signup', provider }));
-      await thirdpartyAuth({
-        authType: provider as any,
-        redirectUrl: window.location.origin + '/auth/particle',
-      });
+      const wallets = (userInfo as any).wallets || [];
+      const evmWallet = wallets.find((w: any) => w.chain_name === 'evm_chain');
+      const walletAddress: string = evmWallet?.public_address || '';
+      const email: string =
+        (userInfo as any)[`${provider}_email`] ||
+        (userInfo as any).thirdparty_user_info?.user_info?.email ||
+        (userInfo as any).email ||
+        '';
+      const displayName: string =
+        (userInfo as any).thirdparty_user_info?.user_info?.name ||
+        (userInfo as any).name ||
+        email.split('@')[0] ||
+        provider;
+      const uuid: string = (userInfo as any).uuid || '';
+
+      if (!uuid || !email) {
+        toast.error('Could not retrieve your account details. Please try again.');
+        setSocialLoading(null);
+        return;
+      }
+
+      try {
+        sessionStorage.setItem('particle_uuid', uuid);
+        sessionStorage.setItem('particle_auth_method', provider);
+      } catch { /* skip */ }
+
+      // Hand off to WhatsApp step — collect phone before creating Supabase account
+      setParticleUser({ email, name: displayName, wallet: walletAddress, uuid, authMethod: provider });
+      setView('phone');
+      setSocialLoading(null);
     } catch (err: any) {
-      localStorage.removeItem('particle_intent');
       console.error('[SignUp] Social login error:', err);
       toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);
@@ -226,7 +245,7 @@ export default function SignUp() {
     }
   };
 
-  // ── Email / password signup (existing flow) ──────────────────────────────
+  // ── Email / password signup — Particle wallet first, then Supabase ───────
 
   const onSubmit = async (data: SignupFormData) => {
     setEmailLoading(true);
@@ -235,6 +254,28 @@ export default function SignUp() {
       const cleanEmail = data.email.trim().toLowerCase();
       const cleanName = data.name.trim();
 
+      // 1) Create / log into Particle wallet + verify email via Particle's OTP.
+      //    Particle shows its own email-OTP modal; on success we receive userInfo.
+      const userInfo = await connect({ email: cleanEmail });
+      if (!userInfo) {
+        toast.error('Email verification cancelled. Please try again.');
+        return;
+      }
+      const wallets = (userInfo as any).wallets || [];
+      const evmWallet = wallets.find((w: any) => w.chain_name === 'evm_chain');
+      const walletAddress: string = evmWallet?.public_address || '';
+      const particleUuid: string = (userInfo as any).uuid || '';
+      const particleEmail: string =
+        (userInfo as any).email ||
+        (userInfo as any).thirdparty_user_info?.user_info?.email ||
+        cleanEmail;
+
+      if (particleEmail.toLowerCase() !== cleanEmail) {
+        toast.error('Verified email did not match the email you entered.');
+        return;
+      }
+
+      // 2) Create Supabase account using the password the user typed.
       const { data: authData, error: authError } = await signUp(cleanEmail, data.password, cleanName, fullPhone);
       const isDuplicate = authError?.message?.toLowerCase().includes('already registered')
         || (authData?.user && (!authData.user.identities || authData.user.identities.length === 0));
@@ -256,16 +297,29 @@ export default function SignUp() {
       }
 
       if (userId) {
+        const profilePayload: Record<string, unknown> = {
+          name: cleanName,
+          email: cleanEmail,
+          whatsapp: fullPhone,
+          whatsapp_verified: false,
+          wallet_auth_method: 'email',
+        };
+        if (walletAddress) profilePayload.wallet_address = walletAddress;
+
         const { error: profileErr } = await (supabase.from('profiles') as any)
-          .update({ name: cleanName, email: cleanEmail, whatsapp: fullPhone, whatsapp_verified: false } as any)
+          .update(profilePayload)
           .eq('id', userId);
-        // If update fails (e.g., no profile row yet from trigger), try upsert as fallback
         if (profileErr) {
           console.error('Profile update failed, trying upsert:', profileErr.message);
           await (supabase.from('profiles') as any)
-            .upsert({ id: userId, name: cleanName, email: cleanEmail, whatsapp: fullPhone, whatsapp_verified: false } as any);
+            .upsert({ id: userId, ...profilePayload });
         }
       }
+
+      try {
+        sessionStorage.setItem('particle_uuid', particleUuid);
+        sessionStorage.setItem('particle_auth_method', 'email');
+      } catch { /* skip */ }
 
       // Funnel flow — check for pending payment and apply tier
       if (userId) {
