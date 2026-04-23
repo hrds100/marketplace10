@@ -8,7 +8,7 @@
 // After connect() resolves, userInfo is saved to localStorage and the user
 // is forwarded to SignUp (phone step) or SignIn (auto sign-in).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,8 +20,13 @@ function derivedPassword(uuid: string): string {
 export default function ParticleAuthCallback() {
   const [status, setStatus] = useState<'loading' | 'error'>('loading');
   const [errMsg, setErrMsg] = useState('');
+  // OAuth codes are single-use. Guard against React re-mount / StrictMode
+  // double-invoke consuming the code twice → "Invalid token".
+  const startedRef = useRef(false);
 
   useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
     handleCallback();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -89,15 +94,38 @@ export default function ParticleAuthCallback() {
       const particleThirdpartyParams = urlParams.get('particleThirdpartyParams');
       let code: string | undefined;
       let nonce: string | undefined;
+      let decodeError: string | null = null;
 
       if (particleThirdpartyParams) {
         try {
           const decoded = JSON.parse(atob(particleThirdpartyParams));
           code = decoded.code;
           nonce = decoded.nonce;
-        } catch (e) {
+        } catch (e: any) {
+          decodeError = e?.message || 'decode failed';
           console.error('[ParticleCallback] Could not decode particleThirdpartyParams:', e);
         }
+      }
+
+      // Diagnostic: which OAuth params are we holding as we call connect?
+      console.info('[ParticleAuthCallback] connect inputs:', {
+        provider: intent.provider,
+        hasParticleThirdpartyParams: !!particleThirdpartyParams,
+        hasCode: !!code,
+        hasNonce: !!nonce,
+        decodeError,
+        urlSearchKeys: Array.from(urlParams.keys()),
+      });
+
+      // If Particle's own callback params are missing, connect() will fail
+      // with a generic error like "Invalid token". Surface that precisely
+      // instead of letting the user see an opaque Particle message.
+      if (!particleThirdpartyParams) {
+        setErrMsg(
+          `Particle did not return OAuth params. The ${intent.provider} redirect landed on ${window.location.origin}/auth/particle without particleThirdpartyParams in the URL. Check the Particle dashboard redirect-URL whitelist for project 4f8aca10-…`
+        );
+        setStatus('error');
+        return;
       }
 
       // Complete the OAuth flow — pass code + nonce back to Particle
