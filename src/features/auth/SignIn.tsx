@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { useConnect, useUserInfo } from '@particle-network/authkit';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -9,6 +10,7 @@ import { NfsLogo } from '@/components/nfstay/NfsLogo';
 import { useTranslation } from 'react-i18next';
 
 const REMEMBER_KEY = 'nfstay_remember_email';
+const SOCIAL_PENDING_KEY = 'nfstay_social_pending';
 
 type SocialProvider = 'google' | 'apple' | 'twitter' | 'facebook';
 
@@ -61,6 +63,8 @@ function derivedPassword(uuid: string): string {
 export default function SignIn() {
   const { t } = useTranslation();
   const { signIn } = useAuth();
+  const { connect } = useConnect();
+  const { userInfo } = useUserInfo();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
   const prefillEmail = searchParams.get('email');
@@ -72,30 +76,54 @@ export default function SignIn() {
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [error, setError] = useState('');
 
-  const handleSocialSignIn = async (provider: SocialProvider) => {
+  // ── Social login via authkit's useConnect hook ──────────────────────────
+  //
+  // Legacy app.nfstay.com uses this exact pattern (see
+  // legacy/frontend/src/utils/loginPopup.js:70 — `await connect({ socialType: id })`).
+  // Calling connect() triggers a full-page OAuth redirect through Particle.
+  // When the browser returns to this page, authkit auto-processes the
+  // `?particleThirdpartyParams=…` URL and populates userInfo. We watch for
+  // that transition and finish the Supabase linkage.
+
+  const completeSocialSignIn = async (info: any, provider: SocialProvider, redirectAfter: string) => {
     setSocialLoading(provider);
     setError('');
     try {
-      const { particlePopupSocialLogin } = await import('@/lib/particlePopupLogin');
-      const particleUser = await particlePopupSocialLogin(provider);
-      const { email, name, walletAddress, uuid, provider: confirmedProvider } = particleUser;
+      const wallets = info.wallets || [];
+      const evmWallet = wallets.find((w: any) => w.chain_name === 'evm_chain');
+      const walletAddress: string = evmWallet?.public_address || '';
+      const particleEmail: string =
+        info[`${provider}_email`] ||
+        info.thirdparty_user_info?.user_info?.email ||
+        info.email ||
+        '';
+      const displayName: string =
+        info.thirdparty_user_info?.user_info?.name ||
+        info.name ||
+        particleEmail.split('@')[0] ||
+        provider;
+      const uuid: string = info.uuid || '';
+
+      if (!uuid || !particleEmail) {
+        setError('Could not retrieve your account details. Please try again.');
+        setSocialLoading(null);
+        return;
+      }
 
       try {
         sessionStorage.setItem('particle_uuid', uuid);
-        sessionStorage.setItem('particle_auth_method', confirmedProvider);
+        sessionStorage.setItem('particle_auth_method', provider);
       } catch { /* skip */ }
 
       const pw = derivedPassword(uuid);
 
-      // Try Supabase signin first
-      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password: pw });
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email: particleEmail, password: pw });
 
       if (signInErr) {
-        // No account yet — create one automatically
         const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-          email,
+          email: particleEmail,
           password: pw,
-          options: { data: { name } },
+          options: { data: { name: displayName } },
         });
 
         if (signUpErr) {
@@ -104,7 +132,7 @@ export default function SignIn() {
             signUpErr.message?.toLowerCase().includes('already been registered');
           if (isAlreadyRegistered) {
             toast.error('You already have an nfstay account with this email. Please sign in with your password.');
-            window.location.href = `/signin?email=${encodeURIComponent(email)}`;
+            window.location.href = `/signin?email=${encodeURIComponent(particleEmail)}`;
             return;
           }
           setError(`Could not create account: ${signUpErr.message}`);
@@ -112,16 +140,14 @@ export default function SignIn() {
           return;
         }
 
-        // Supabase may return a user with no identities when the email
-        // already exists but hasn't been confirmed — treat as existing account
         if (signUpData?.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
           toast.error('You already have an nfstay account with this email. Please sign in with your password.');
-          window.location.href = `/signin?email=${encodeURIComponent(email)}`;
+          window.location.href = `/signin?email=${encodeURIComponent(particleEmail)}`;
           return;
         }
 
         if (!signUpData?.session) {
-          const { error: reSignInErr } = await supabase.auth.signInWithPassword({ email, password: pw });
+          const { error: reSignInErr } = await supabase.auth.signInWithPassword({ email: particleEmail, password: pw });
           if (reSignInErr) {
             setError(`Sign in after signup failed: ${reSignInErr.message}`);
             setSocialLoading(null);
@@ -130,34 +156,27 @@ export default function SignIn() {
         }
       }
 
-      // Update profile with wallet + auth method
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (userId) {
         const refCode = localStorage.getItem('nfstay_ref');
-        const updatePayload: Record<string, string> = {
-          wallet_auth_method: confirmedProvider,
-        };
+        const updatePayload: Record<string, string> = { wallet_auth_method: provider };
         if (walletAddress) updatePayload.wallet_address = walletAddress;
         if (refCode) updatePayload.referred_by = refCode;
-        await (supabase.from('profiles') as any)
-          .update(updatePayload)
-          .eq('id', userId);
+        await (supabase.from('profiles') as any).update(updatePayload).eq('id', userId);
 
         if (refCode) {
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
-          fetch(`${supabaseUrl}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${userId}&userName=${encodeURIComponent(name)}&userEmail=${encodeURIComponent(email)}`, { method: 'POST' }).catch(() => {});
+          fetch(`${supabaseUrl}/functions/v1/track-referral?code=${encodeURIComponent(refCode)}&event=signup&userId=${userId}&userName=${encodeURIComponent(displayName)}&userEmail=${encodeURIComponent(particleEmail)}`, { method: 'POST' }).catch(() => {});
           localStorage.removeItem('nfstay_ref');
         }
       }
 
-      // Admin notification
       (supabase.from('notifications') as any).insert({
         type: 'new_signup',
         title: 'New user signed up',
-        body: `${name} (${email}) signed up via social login.`,
+        body: `${displayName} (${particleEmail}) signed up via social login.`,
       }).then(() => {}).catch(() => {});
 
-      // WhatsApp check
       const signedInUserId = (await supabase.auth.getUser()).data.user?.id;
       if (signedInUserId) {
         const { data: profileCheck } = await (supabase.from('profiles') as any)
@@ -166,15 +185,52 @@ export default function SignIn() {
           .single();
 
         if (!profileCheck?.whatsapp_verified) {
-          const verifyUrl = `/verify-otp?phone=&name=${encodeURIComponent(name || '')}&email=${encodeURIComponent(email || '')}`;
-          window.location.href = verifyUrl;
+          window.location.href = `/verify-otp?phone=&name=${encodeURIComponent(displayName)}&email=${encodeURIComponent(particleEmail)}`;
           return;
         }
       }
 
-      const dest = redirectTo ? decodeURIComponent(redirectTo) : '/dashboard/deals';
+      const dest = redirectAfter ? decodeURIComponent(redirectAfter) : '/dashboard/deals';
       window.location.href = dest;
     } catch (err: any) {
+      console.error('[SignIn] Social completion error:', err);
+      setError(`Social login failed: ${err?.message || 'Unknown error'}`);
+      setSocialLoading(null);
+    }
+  };
+
+  // Finish the OAuth return path: once authkit populates userInfo, run the
+  // Supabase linkage. A pending flag in localStorage tells us the user
+  // clicked a button on THIS view (vs /signup).
+  useEffect(() => {
+    if (!userInfo) return;
+    const raw = localStorage.getItem(SOCIAL_PENDING_KEY);
+    if (!raw) return;
+    let pending: { provider: SocialProvider; redirectTo?: string; view?: 'signin' | 'signup' };
+    try { pending = JSON.parse(raw); } catch { localStorage.removeItem(SOCIAL_PENDING_KEY); return; }
+    if (pending.view && pending.view !== 'signin') return;
+    localStorage.removeItem(SOCIAL_PENDING_KEY);
+    void completeSocialSignIn(userInfo, pending.provider, pending.redirectTo || '');
+  }, [userInfo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSocialSignIn = async (provider: SocialProvider) => {
+    setSocialLoading(provider);
+    setError('');
+    localStorage.setItem(
+      SOCIAL_PENDING_KEY,
+      JSON.stringify({ provider, redirectTo: redirectTo || '', view: 'signin' }),
+    );
+    try {
+      // If authkit already has a cached session (same tab, no redirect),
+      // connect() resolves synchronously with userInfo and we can finish in-place.
+      // Otherwise the browser redirects away and the useEffect above will pick it up on return.
+      const info = await connect({ socialType: provider });
+      if (info) {
+        localStorage.removeItem(SOCIAL_PENDING_KEY);
+        await completeSocialSignIn(info, provider, redirectTo || '');
+      }
+    } catch (err: any) {
+      localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignIn] Social login error:', err);
       setError(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);

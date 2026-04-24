@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Eye, EyeOff, CheckCircle2, ArrowLeft, Mail, Lock, User, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useConnect, useUserInfo } from '@particle-network/authkit';
 import { useAuth } from '@/hooks/useAuth';
 import { sendOtp } from '@/core/auth/otp';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +14,8 @@ import CountryCodeSelect from '@/components/CountryCodeSelect';
 import AuthSlidePanel from '@/components/AuthSlidePanel';
 import { NfsLogo } from '@/components/nfstay/NfsLogo';
 import { toast } from 'sonner';
+
+const SOCIAL_PENDING_KEY = 'nfstay_social_pending';
 
 // ── Social provider definitions ─────────────────────────────────────────────
 
@@ -114,6 +117,8 @@ export default function SignUp() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
+  const { connect } = useConnect();
+  const { userInfo } = useUserInfo();
   const [view, setView] = useState<ViewState>('social');
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
@@ -176,35 +181,86 @@ export default function SignUp() {
     }
   }, []);
 
-  // ── Social login — redirect approach (no popup, no blocking) ─────────────
+  // ── Social login via authkit's useConnect hook (legacy-proven pattern) ──
+  //
+  // See legacy/frontend/src/utils/loginPopup.js:70 — same `connect({ socialType })`
+  // call. Browser redirects out to Google/Apple/etc, comes back to this page
+  // with `?particleThirdpartyParams=…`, authkit populates userInfo, the
+  // useEffect below picks it up and transitions to the WhatsApp step.
 
-  const handleSocialLogin = async (provider: SocialProvider) => {
-    setSocialLoading(provider);
+  const finishSocialSignUp = (info: any, provider: SocialProvider) => {
     try {
-      const { particlePopupSocialLogin } = await import('@/lib/particlePopupLogin');
-      const {
-        email,
-        name,
-        walletAddress,
-        uuid,
-        provider: confirmedProvider,
-      } = await particlePopupSocialLogin(provider);
+      const wallets = info.wallets || [];
+      const evmWallet = wallets.find((w: any) => w.chain_name === 'evm_chain');
+      const walletAddress: string = evmWallet?.public_address || '';
+      const particleEmail: string =
+        info[`${provider}_email`] ||
+        info.thirdparty_user_info?.user_info?.email ||
+        info.email ||
+        '';
+      const displayName: string =
+        info.thirdparty_user_info?.user_info?.name ||
+        info.name ||
+        particleEmail.split('@')[0] ||
+        provider;
+      const uuid: string = info.uuid || '';
+
+      if (!uuid || !particleEmail) {
+        toast.error('Could not retrieve your account details. Please try again.');
+        setSocialLoading(null);
+        return;
+      }
 
       try {
         sessionStorage.setItem('particle_uuid', uuid);
-        sessionStorage.setItem('particle_auth_method', confirmedProvider);
+        sessionStorage.setItem('particle_auth_method', provider);
       } catch { /* skip */ }
 
       setParticleUser({
-        email,
-        name,
+        email: particleEmail,
+        name: displayName,
         wallet: walletAddress,
         uuid,
-        authMethod: confirmedProvider as SocialProvider,
+        authMethod: provider,
       });
       setView('phone');
       setSocialLoading(null);
     } catch (err: any) {
+      console.error('[SignUp] Social completion error:', err);
+      toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
+      setSocialLoading(null);
+    }
+  };
+
+  // OAuth return path — authkit populates userInfo once it has processed
+  // `particleThirdpartyParams` from the URL.
+  useEffect(() => {
+    if (!userInfo) return;
+    const raw = localStorage.getItem(SOCIAL_PENDING_KEY);
+    if (!raw) return;
+    let pending: { provider: SocialProvider; view?: 'signin' | 'signup' };
+    try { pending = JSON.parse(raw); } catch { localStorage.removeItem(SOCIAL_PENDING_KEY); return; }
+    if (pending.view && pending.view !== 'signup') return;
+    localStorage.removeItem(SOCIAL_PENDING_KEY);
+    finishSocialSignUp(userInfo, pending.provider);
+  }, [userInfo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSocialLogin = async (provider: SocialProvider) => {
+    setSocialLoading(provider);
+    localStorage.setItem(
+      SOCIAL_PENDING_KEY,
+      JSON.stringify({ provider, view: 'signup' }),
+    );
+    try {
+      const info = await connect({ socialType: provider });
+      if (info) {
+        localStorage.removeItem(SOCIAL_PENDING_KEY);
+        finishSocialSignUp(info, provider);
+      }
+      // If connect() redirects instead of resolving, the browser leaves this
+      // page. On return, the useEffect above picks up userInfo and finishes.
+    } catch (err: any) {
+      localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignUp] Social login error:', err);
       toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);
