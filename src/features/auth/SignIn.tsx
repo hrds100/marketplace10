@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 const REMEMBER_KEY = 'nfstay_remember_email';
 const SOCIAL_PENDING_KEY = 'nfstay_social_pending';
+const SOCIAL_ERROR_KEY = 'nfstay_social_error';
 
 type SocialProvider = 'google' | 'apple' | 'twitter' | 'facebook';
 
@@ -131,7 +132,9 @@ export default function SignIn() {
             signUpErr.message?.toLowerCase().includes('already registered') ||
             signUpErr.message?.toLowerCase().includes('already been registered');
           if (isAlreadyRegistered) {
-            toast.error('You already have an nfstay account with this email. Please sign in with your password.');
+            const msg = 'This email already has a password account. Please sign in with your password below.';
+            try { sessionStorage.setItem(SOCIAL_ERROR_KEY, msg); } catch { /* skip */ }
+            toast.error(msg);
             window.location.href = `/signin?email=${encodeURIComponent(particleEmail)}`;
             return;
           }
@@ -141,7 +144,9 @@ export default function SignIn() {
         }
 
         if (signUpData?.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
-          toast.error('You already have an nfstay account with this email. Please sign in with your password.');
+          const msg = 'This email already has a password account. Please sign in with your password below.';
+          try { sessionStorage.setItem(SOCIAL_ERROR_KEY, msg); } catch { /* skip */ }
+          toast.error(msg);
           window.location.href = `/signin?email=${encodeURIComponent(particleEmail)}`;
           return;
         }
@@ -204,6 +209,16 @@ export default function SignIn() {
   // return or whether our click handler even ran.
   useEffect(() => {
     console.info('[SignIn] mount — search=', window.location.search, 'pending=', localStorage.getItem(SOCIAL_PENDING_KEY));
+    // Surface any error message persisted by the previous page load —
+    // specifically the "already-registered" redirect where the toast would
+    // otherwise be eaten by the navigation.
+    try {
+      const msg = sessionStorage.getItem(SOCIAL_ERROR_KEY);
+      if (msg) {
+        sessionStorage.removeItem(SOCIAL_ERROR_KEY);
+        setError(msg);
+      }
+    } catch { /* skip */ }
   }, []);
 
   // Finish the OAuth return path: once authkit populates userInfo, run the
