@@ -105,7 +105,7 @@ export default function DealsPageV2() {
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<{ listing: ListingShape; message: string; channel: 'email' | 'whatsapp' } | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const perPage = 12;
+  const perPage = 15;
   const navigate = useNavigate();
   const location = useLocation();
 
