@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Eye, EyeOff, CheckCircle2, ArrowLeft, Mail, Lock, User, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useConnect } from '@particle-network/authkit';
+import { useConnect, useUserInfo } from '@particle-network/authkit';
 import { useAuth } from '@/hooks/useAuth';
 import { sendOtp } from '@/core/auth/otp';
 import { supabase } from '@/integrations/supabase/client';
@@ -117,7 +117,8 @@ export default function SignUp() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
-  const { connect, connected } = useConnect();
+  const { connect } = useConnect();
+  const { userInfo: particleUserInfo } = useUserInfo();
   const [view, setView] = useState<ViewState>('social');
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
@@ -181,45 +182,37 @@ export default function SignUp() {
   }, []);
 
   // ── Social sign-up — legacy redirect flow (Particle takes over full page) ─
-
-  // On return from Particle's OAuth redirect, complete the social sign-up
-  // by reading the user info the SDK has already persisted.
+  //
+  // useUserInfo() is reactive: once Particle's SDK finishes processing the
+  // `?particleThirdpartyParams=...` return URL, it flips from undefined to a
+  // populated object. That is our trigger to complete the WhatsApp handoff.
   useEffect(() => {
-    if (!connected) return;
+    if (!particleUserInfo) return;
     const raw = localStorage.getItem(SOCIAL_PENDING_KEY);
     if (!raw) return;
     let pending: { provider: SocialProvider; view?: 'signin' | 'signup' };
     try { pending = JSON.parse(raw); } catch { localStorage.removeItem(SOCIAL_PENDING_KEY); return; }
     if (pending.view !== 'signup') return; // not ours — /signin handles its own
     localStorage.removeItem(SOCIAL_PENDING_KEY);
-    void completeSocialSignUp(pending.provider);
-  }, [connected]); // eslint-disable-line react-hooks/exhaustive-deps
+    completeSocialSignUp(particleUserInfo, pending.provider);
+  }, [particleUserInfo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const completeSocialSignUp = async (provider: SocialProvider) => {
-    setSocialLoading(provider);
+  const completeSocialSignUp = (info: any, provider: SocialProvider) => {
     try {
-      const { particleAuth } = await import('@particle-network/auth-core');
-      const userInfo: any = (particleAuth as any).getUserInfo?.();
-      if (!userInfo) {
-        toast.error('Could not retrieve your account details. Please try again.');
-        setSocialLoading(null);
-        return;
-      }
-
-      const wallets = userInfo.wallets || [];
+      const wallets = info.wallets || [];
       const evmWallet = wallets.find((w: any) => w.chain_name === 'evm_chain');
       const walletAddress: string = evmWallet?.public_address || '';
       const email: string =
-        userInfo[`${provider}_email`] ||
-        userInfo.thirdparty_user_info?.user_info?.email ||
-        userInfo.email ||
+        info[`${provider}_email`] ||
+        info.thirdparty_user_info?.user_info?.email ||
+        info.email ||
         '';
       const displayName: string =
-        userInfo.thirdparty_user_info?.user_info?.name ||
-        userInfo.name ||
+        info.thirdparty_user_info?.user_info?.name ||
+        info.name ||
         email.split('@')[0] ||
         provider;
-      const uuid: string = userInfo.uuid || '';
+      const uuid: string = info.uuid || '';
 
       if (!uuid || !email) {
         toast.error('Could not retrieve your account details. Please try again.');
@@ -242,22 +235,18 @@ export default function SignUp() {
     }
   };
 
-  const handleSocialLogin = async (provider: SocialProvider) => {
+  const handleSocialLogin = (provider: SocialProvider) => {
     setSocialLoading(provider);
-    try {
-      localStorage.setItem(
-        SOCIAL_PENDING_KEY,
-        JSON.stringify({ provider, view: 'signup' }),
-      );
-      await connect({ socialType: provider });
-      // If we are still on this page after the await resolves (no redirect), complete in-place.
-      void completeSocialSignUp(provider);
-    } catch (err: any) {
+    localStorage.setItem(
+      SOCIAL_PENDING_KEY,
+      JSON.stringify({ provider, view: 'signup' }),
+    );
+    connect({ socialType: provider }).catch((err: any) => {
       localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignUp] Social login error:', err);
       toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);
-    }
+    });
   };
 
   // ── WhatsApp collection (after social login) ─────────────────────────────

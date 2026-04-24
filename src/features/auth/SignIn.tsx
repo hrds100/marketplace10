@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import { useConnect } from '@particle-network/authkit';
+import { useConnect, useUserInfo } from '@particle-network/authkit';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -64,7 +64,8 @@ const SOCIAL_PENDING_KEY = 'nfstay_social_pending';
 export default function SignIn() {
   const { t } = useTranslation();
   const { signIn } = useAuth();
-  const { connect, connected } = useConnect();
+  const { connect } = useConnect();
+  const { userInfo } = useUserInfo();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
   const prefillEmail = searchParams.get('email');
@@ -77,43 +78,37 @@ export default function SignIn() {
   const [error, setError] = useState('');
 
   // After Particle's OAuth redirect brings the user back, finish the Supabase side.
+  // useUserInfo() is reactive — it flips from undefined to populated once the SDK
+  // has processed the `?particleThirdpartyParams=...` URL and restored the session.
   useEffect(() => {
-    if (!connected) return;
+    if (!userInfo) return;
     const raw = localStorage.getItem(SOCIAL_PENDING_KEY);
     if (!raw) return;
     let pending: { provider: SocialProvider; redirectTo?: string; view?: 'signin' | 'signup' };
     try { pending = JSON.parse(raw); } catch { localStorage.removeItem(SOCIAL_PENDING_KEY); return; }
-    if (pending.view && pending.view !== 'signin') return; // the /signup page will handle its own pending
+    if (pending.view && pending.view !== 'signin') return; // /signup page handles its own
     localStorage.removeItem(SOCIAL_PENDING_KEY);
-    void completeSocialSignIn(pending.provider, pending.redirectTo || '');
-  }, [connected]); // eslint-disable-line react-hooks/exhaustive-deps
+    void completeSocialSignIn(userInfo, pending.provider, pending.redirectTo || '');
+  }, [userInfo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const completeSocialSignIn = async (provider: SocialProvider, redirectAfter: string) => {
+  const completeSocialSignIn = async (info: any, provider: SocialProvider, redirectAfter: string) => {
     setSocialLoading(provider);
     setError('');
     try {
-      const { particleAuth } = await import('@particle-network/auth-core');
-      const userInfo: any = (particleAuth as any).getUserInfo?.();
-      if (!userInfo) {
-        setError('Could not retrieve your account details. Please try again.');
-        setSocialLoading(null);
-        return;
-      }
-
-      const wallets = userInfo.wallets || [];
+      const wallets = info.wallets || [];
       const evmWallet = wallets.find((w: any) => w.chain_name === 'evm_chain');
       const walletAddress: string = evmWallet?.public_address || '';
       const particleEmail: string =
-        userInfo[`${provider}_email`] ||
-        userInfo.thirdparty_user_info?.user_info?.email ||
-        userInfo.email ||
+        info[`${provider}_email`] ||
+        info.thirdparty_user_info?.user_info?.email ||
+        info.email ||
         '';
       const displayName: string =
-        userInfo.thirdparty_user_info?.user_info?.name ||
-        userInfo.name ||
+        info.thirdparty_user_info?.user_info?.name ||
+        info.name ||
         particleEmail.split('@')[0] ||
         provider;
-      const uuid: string = userInfo.uuid || '';
+      const uuid: string = info.uuid || '';
 
       if (!uuid || !particleEmail) {
         setError('Could not retrieve your account details. Please try again.');
@@ -220,26 +215,21 @@ export default function SignIn() {
     }
   };
 
-  const handleSocialSignIn = async (provider: SocialProvider) => {
+  const handleSocialSignIn = (provider: SocialProvider) => {
     setSocialLoading(provider);
     setError('');
     // Persist intent — Particle will redirect the whole page to Google/Apple/etc
-    // and return here. The useEffect above completes the Supabase side on return.
-    try {
-      localStorage.setItem(
-        SOCIAL_PENDING_KEY,
-        JSON.stringify({ provider, redirectTo: redirectTo || '', view: 'signin' }),
-      );
-      await connect({ socialType: provider });
-      // If we're still here after await (no redirect happened for any reason),
-      // treat it as success-in-place and run completion directly.
-      void completeSocialSignIn(provider, redirectTo || '');
-    } catch (err: any) {
+    // and return here. The useEffect watching userInfo completes the Supabase side.
+    localStorage.setItem(
+      SOCIAL_PENDING_KEY,
+      JSON.stringify({ provider, redirectTo: redirectTo || '', view: 'signin' }),
+    );
+    connect({ socialType: provider }).catch((err: any) => {
       localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignIn] Social login error:', err);
       setError(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);
-    }
+    });
   };
 
   // Auto-redirect removed: always show the sign-in form so users can
