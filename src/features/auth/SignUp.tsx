@@ -235,18 +235,25 @@ export default function SignUp() {
     }
   };
 
-  const handleSocialLogin = (provider: SocialProvider) => {
+  const handleSocialLogin = async (provider: SocialProvider) => {
     setSocialLoading(provider);
     localStorage.setItem(
       SOCIAL_PENDING_KEY,
       JSON.stringify({ provider, view: 'signup' }),
     );
-    connect({ socialType: provider }).catch((err: any) => {
+    try {
+      const info = await connect({ socialType: provider });
+      // Cached-session path: no redirect happened, complete immediately.
+      if (info) {
+        localStorage.removeItem(SOCIAL_PENDING_KEY);
+        completeSocialSignUp(info, provider);
+      }
+    } catch (err: any) {
       localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignUp] Social login error:', err);
       toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);
-    });
+    }
   };
 
   // ── WhatsApp collection (after social login) ─────────────────────────────

@@ -215,21 +215,30 @@ export default function SignIn() {
     }
   };
 
-  const handleSocialSignIn = (provider: SocialProvider) => {
+  const handleSocialSignIn = async (provider: SocialProvider) => {
     setSocialLoading(provider);
     setError('');
-    // Persist intent — Particle will redirect the whole page to Google/Apple/etc
-    // and return here. The useEffect watching userInfo completes the Supabase side.
+    // Persist intent — Particle may redirect the whole page to Google/Apple/etc
+    // and return here. The useEffect watching userInfo completes the flow on return.
     localStorage.setItem(
       SOCIAL_PENDING_KEY,
       JSON.stringify({ provider, redirectTo: redirectTo || '', view: 'signin' }),
     );
-    connect({ socialType: provider }).catch((err: any) => {
+    try {
+      const info = await connect({ socialType: provider });
+      // If the SDK already had a cached session, connect() resolves without a
+      // redirect. Complete in-place — otherwise userInfo never changes and the
+      // useEffect above never re-fires.
+      if (info) {
+        localStorage.removeItem(SOCIAL_PENDING_KEY);
+        await completeSocialSignIn(info, provider, redirectTo || '');
+      }
+    } catch (err: any) {
       localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignIn] Social login error:', err);
       setError(`Social login failed: ${err?.message || 'Unknown error'}`);
       setSocialLoading(null);
-    });
+    }
   };
 
   // Auto-redirect removed: always show the sign-in form so users can
