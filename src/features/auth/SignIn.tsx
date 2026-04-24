@@ -218,22 +218,35 @@ export default function SignIn() {
   const handleSocialSignIn = async (provider: SocialProvider) => {
     setSocialLoading(provider);
     setError('');
-    // Persist intent — Particle may redirect the whole page to Google/Apple/etc
-    // and return here. The useEffect watching userInfo completes the flow on return.
+    console.info('[SignIn] Starting social login for', provider);
     localStorage.setItem(
       SOCIAL_PENDING_KEY,
       JSON.stringify({ provider, redirectTo: redirectTo || '', view: 'signin' }),
     );
+    // 15-second watchdog: if neither the browser redirects away nor connect()
+    // resolves, surface a visible error instead of leaving the button spinning.
+    const watchdog = window.setTimeout(() => {
+      console.error('[SignIn] Social login timed out — connect() never resolved and no redirect happened within 15s');
+      localStorage.removeItem(SOCIAL_PENDING_KEY);
+      setError('Social login timed out. Please try again, or check the browser console for details.');
+      setSocialLoading(null);
+    }, 15000);
+
     try {
+      console.info('[SignIn] Calling Particle connect({ socialType })');
       const info = await connect({ socialType: provider });
-      // If the SDK already had a cached session, connect() resolves without a
-      // redirect. Complete in-place — otherwise userInfo never changes and the
-      // useEffect above never re-fires.
+      window.clearTimeout(watchdog);
+      console.info('[SignIn] Particle connect() resolved', info ? 'with userInfo' : 'without userInfo');
       if (info) {
         localStorage.removeItem(SOCIAL_PENDING_KEY);
         await completeSocialSignIn(info, provider, redirectTo || '');
+      } else {
+        // No info + no redirect — user cancelled in SDK or SDK returned void
+        localStorage.removeItem(SOCIAL_PENDING_KEY);
+        setSocialLoading(null);
       }
     } catch (err: any) {
+      window.clearTimeout(watchdog);
       localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignIn] Social login error:', err);
       setError(`Social login failed: ${err?.message || 'Unknown error'}`);

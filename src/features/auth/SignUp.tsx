@@ -237,18 +237,32 @@ export default function SignUp() {
 
   const handleSocialLogin = async (provider: SocialProvider) => {
     setSocialLoading(provider);
+    console.info('[SignUp] Starting social login for', provider);
     localStorage.setItem(
       SOCIAL_PENDING_KEY,
       JSON.stringify({ provider, view: 'signup' }),
     );
+    const watchdog = window.setTimeout(() => {
+      console.error('[SignUp] Social login timed out after 15s — no redirect and no resolve.');
+      localStorage.removeItem(SOCIAL_PENDING_KEY);
+      toast.error('Social login timed out. Please try again, or check the browser console for details.');
+      setSocialLoading(null);
+    }, 15000);
+
     try {
+      console.info('[SignUp] Calling Particle connect({ socialType })');
       const info = await connect({ socialType: provider });
-      // Cached-session path: no redirect happened, complete immediately.
+      window.clearTimeout(watchdog);
+      console.info('[SignUp] Particle connect() resolved', info ? 'with userInfo' : 'without userInfo');
       if (info) {
         localStorage.removeItem(SOCIAL_PENDING_KEY);
         completeSocialSignUp(info, provider);
+      } else {
+        localStorage.removeItem(SOCIAL_PENDING_KEY);
+        setSocialLoading(null);
       }
     } catch (err: any) {
+      window.clearTimeout(watchdog);
       localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignUp] Social login error:', err);
       toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
