@@ -56,25 +56,38 @@ export const flowNodes: Node<FlowNodeData>[] = [
   }, GX.auth, 120),
 
   n('social-login', 'Social Login', {
-    description: 'Google, Apple, X, or Facebook login via Particle Network. Intent stored in localStorage. Redirects to /auth/particle callback.',
+    description: 'Google / Apple / X / Facebook via authkit useConnect({ socialType }) hook. Intent stored in localStorage (nfstay_social_pending). Browser redirects through Particle → OAuth provider → back to /signin or /signup. authkit processes the particleThirdpartyParams URL and populates userInfo; a useEffect picks it up and runs the Supabase linkage. No popup.',
     actor: 'tenant',
     files: ['src/features/auth/SignUp.tsx', 'src/features/auth/SignIn.tsx'],
     integrations: ['Particle Network', 'Google', 'Apple', 'X', 'Facebook'],
     confidence: 'confirmed',
-    debugTrigger: 'Click social button → Particle SDK',
+    debugTrigger: 'Click social button → [SignIn] logs in console',
     calledBy: ['signup'],
   }, GX.auth - 160, 240),
 
-  n('particle-callback', 'Particle OAuth Callback', {
-    description: 'Particle returns user info (email, name, wallet, uuid). Frontend derives Supabase password from UUID: uuid.slice(0,10) + "_NFsTay2!" + uuid.slice(-6). Creates Supabase user.',
+  n('link-social-identity', 'Silent Link (existing email user)', {
+    description: 'Called server-side when a user whose email already has a Supabase password account clicks a social button. Admin-API rekeys the existing account\'s Supabase password to derivedPassword(particleUuid), so retry signInWithPassword succeeds and the user is signed in. Logs to auth_link_events.',
+    actor: 'system',
+    files: ['supabase/functions/link-social-identity/index.ts', 'src/features/auth/SignIn.tsx'],
+    tables: ['auth.users', 'auth_link_events'],
+    edgeFunctions: ['link-social-identity'],
+    confidence: 'confirmed',
+    debugTrigger: 'signUp returns "already registered" → SignIn.completeSocialSignIn POSTs to /functions/v1/link-social-identity',
+    risks: [
+      'Particle has no public JWT verification endpoint — server cannot validate the caller actually holds a valid Particle session. Bounded by Supabase mailer_autoconfirm=true (pre-existing email-ownership gap) and Google OAuth email validation on the provider side.',
+    ],
+  }, GX.auth - 320, 380),
+
+  n('particle-callback', 'Particle OAuth Callback (legacy safety fallback)', {
+    description: 'Pre-PR-#499 social-login return page. Current flow returns to /signin or /signup directly and authkit processes particleThirdpartyParams in-place. This page is kept as a safety fallback: if any stale bookmark hits /auth/particle, it clears state and redirects to /signin.',
     actor: 'system',
     route: '/auth/particle',
     files: ['src/features/auth/ParticleAuthCallback.tsx'],
     tables: ['auth.users', 'profiles'],
-    edgeFunctions: ['particle-generate-jwt'],
+    edgeFunctions: [],
     integrations: ['Particle Network'],
     confidence: 'confirmed',
-    debugTrigger: 'OAuth callback from Particle',
+    debugTrigger: 'Stale bookmark only — not hit by the current flow',
   }, GX.auth - 160, 380),
 
   n('otp-verify', 'WhatsApp OTP Verification', {
