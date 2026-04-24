@@ -149,8 +149,8 @@ export default function SignIn() {
               body: JSON.stringify({
                 email: particleEmail,
                 particleUuid: uuid,
-                particleToken: (info as any).token || '',
                 provider,
+                walletAddress: walletAddress || '',
               }),
             });
             const linkJson = await linkRes.json().catch(() => ({}));
