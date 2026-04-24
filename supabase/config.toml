@@ -173,3 +173,9 @@ verify_jwt = false
 # Public because it's called internally via service_role bearer token
 [functions.sms-webhook-dispatch]
 verify_jwt = false
+
+# Link social identity — called pre-login to rekey an existing email user's
+# Supabase password to the Particle-derived value. Verifies Particle token
+# server-side against Particle's API before doing the update.
+[functions.link-social-identity]
+verify_jwt = false

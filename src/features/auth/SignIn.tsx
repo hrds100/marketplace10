@@ -127,36 +127,71 @@ export default function SignIn() {
           options: { data: { name: displayName } },
         });
 
-        if (signUpErr) {
-          const isAlreadyRegistered =
-            signUpErr.message?.toLowerCase().includes('already registered') ||
-            signUpErr.message?.toLowerCase().includes('already been registered');
+        // "Already registered" or empty-identities → existing email/password user.
+        // Instead of dead-ending them, call our server-side link function which
+        // verifies the Particle token and rekeys the Supabase password to the
+        // derived one, then retry signInWithPassword.
+        const isAlreadyRegistered =
+          signUpErr?.message?.toLowerCase().includes('already registered') ||
+          signUpErr?.message?.toLowerCase().includes('already been registered') ||
+          (signUpData?.user && (!signUpData.user.identities || signUpData.user.identities.length === 0));
+
+        if (isAlreadyRegistered) {
+          try {
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+            const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+            const linkRes = await fetch(`${supabaseUrl}/functions/v1/link-social-identity`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(anonKey ? { Authorization: `Bearer ${anonKey}`, apikey: anonKey } : {}),
+              },
+              body: JSON.stringify({
+                email: particleEmail,
+                particleUuid: uuid,
+                particleToken: (info as any).token || '',
+                provider,
+              }),
+            });
+            const linkJson = await linkRes.json().catch(() => ({}));
+            if (linkRes.ok && linkJson?.ok) {
+              const { error: retryErr } = await supabase.auth.signInWithPassword({ email: particleEmail, password: pw });
+              if (!retryErr) {
+                // Linked + signed in. Fall through to the profile-update / redirect block.
+              } else {
+                console.error('[SignIn] retry signIn after link failed:', retryErr.message);
+              }
+            } else {
+              console.error('[SignIn] link-social-identity rejected:', linkJson?.error);
+            }
+          } catch (e: any) {
+            console.error('[SignIn] link call threw:', e?.message);
+          }
+        }
+
+        // Check if signIn is now successful (either from the link above, or signUp gave us a session)
+        const { data: sessionNow } = await supabase.auth.getSession();
+        if (!sessionNow?.session) {
+          // Still no session — fall back to the old "go sign in with password" UX.
+          if (signUpErr && !isAlreadyRegistered) {
+            setError(`Could not create account: ${signUpErr.message}`);
+            setSocialLoading(null);
+            return;
+          }
           if (isAlreadyRegistered) {
-            const msg = 'This email already has a password account. Please sign in with your password below.';
+            const msg = 'This email already has an account but we could not sign you in automatically. Please sign in with your password below.';
             try { sessionStorage.setItem(SOCIAL_ERROR_KEY, msg); } catch { /* skip */ }
             toast.error(msg);
             window.location.href = `/signin?email=${encodeURIComponent(particleEmail)}`;
             return;
           }
-          setError(`Could not create account: ${signUpErr.message}`);
-          setSocialLoading(null);
-          return;
-        }
-
-        if (signUpData?.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
-          const msg = 'This email already has a password account. Please sign in with your password below.';
-          try { sessionStorage.setItem(SOCIAL_ERROR_KEY, msg); } catch { /* skip */ }
-          toast.error(msg);
-          window.location.href = `/signin?email=${encodeURIComponent(particleEmail)}`;
-          return;
-        }
-
-        if (!signUpData?.session) {
-          const { error: reSignInErr } = await supabase.auth.signInWithPassword({ email: particleEmail, password: pw });
-          if (reSignInErr) {
-            setError(`Sign in after signup failed: ${reSignInErr.message}`);
-            setSocialLoading(null);
-            return;
+          if (!signUpData?.session) {
+            const { error: reSignInErr } = await supabase.auth.signInWithPassword({ email: particleEmail, password: pw });
+            if (reSignInErr) {
+              setError(`Sign in after signup failed: ${reSignInErr.message}`);
+              setSocialLoading(null);
+              return;
+            }
           }
         }
       }
