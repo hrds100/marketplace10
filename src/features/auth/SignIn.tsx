@@ -77,21 +77,34 @@ export default function SignIn() {
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [error, setError] = useState('');
 
+  // Log mount + pending state so we can tell from console alone what's going on.
+  useEffect(() => {
+    const raw = localStorage.getItem(SOCIAL_PENDING_KEY);
+    console.info('[SignIn] mount — pendingFlag=', raw, 'search=', window.location.search);
+  }, []);
+
   // After Particle's OAuth redirect brings the user back, finish the Supabase side.
   // useUserInfo() is reactive — it flips from undefined to populated once the SDK
   // has processed the `?particleThirdpartyParams=...` URL and restored the session.
   useEffect(() => {
+    console.info('[SignIn] userInfo effect — userInfo present?', !!userInfo, 'uuid=', (userInfo as any)?.uuid);
     if (!userInfo) return;
     const raw = localStorage.getItem(SOCIAL_PENDING_KEY);
+    console.info('[SignIn] userInfo effect — pendingFlag=', raw);
     if (!raw) return;
     let pending: { provider: SocialProvider; redirectTo?: string; view?: 'signin' | 'signup' };
     try { pending = JSON.parse(raw); } catch { localStorage.removeItem(SOCIAL_PENDING_KEY); return; }
-    if (pending.view && pending.view !== 'signin') return; // /signup page handles its own
+    if (pending.view && pending.view !== 'signin') {
+      console.info('[SignIn] pending is for', pending.view, '- skipping in /signin');
+      return;
+    }
     localStorage.removeItem(SOCIAL_PENDING_KEY);
+    console.info('[SignIn] running completeSocialSignIn for', pending.provider);
     void completeSocialSignIn(userInfo, pending.provider, pending.redirectTo || '');
   }, [userInfo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const completeSocialSignIn = async (info: any, provider: SocialProvider, redirectAfter: string) => {
+    console.info('[SignIn] completeSocialSignIn START', { provider, uuid: info?.uuid });
     setSocialLoading(provider);
     setError('');
     try {
@@ -123,17 +136,21 @@ export default function SignIn() {
 
       const pw = derivedPassword(uuid);
 
+      console.info('[SignIn] calling supabase.signInWithPassword', { email: particleEmail });
       const { error: signInErr } = await supabase.auth.signInWithPassword({
         email: particleEmail,
         password: pw,
       });
+      console.info('[SignIn] supabase.signInWithPassword result', { error: signInErr?.message });
 
       if (signInErr) {
+        console.info('[SignIn] signIn failed, attempting signUp');
         const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
           email: particleEmail,
           password: pw,
           options: { data: { name: displayName } },
         });
+        console.info('[SignIn] supabase.signUp result', { error: signUpErr?.message, hasSession: !!signUpData?.session });
 
         if (signUpErr) {
           const isAlreadyRegistered =
