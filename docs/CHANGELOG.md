@@ -2,6 +2,39 @@
 
 ## [Unreleased]
 
+## [2026-04-24] - Auth: legacy redirect flow + silent Google↔password link
+
+### Fixed
+- Sign-in / sign-up buttons on [hub.nfstay.com/signin](https://hub.nfstay.com/signin) and `/signup` no longer hang. Root cause: the popup-based social flow (PRs #494-#498) hit a Cross-Origin-Opener-Policy issue where closing the popup never reached the opener, so the spinner ran forever in affected browsers.
+- Existing email+password users clicking Google / Apple / X / Facebook no longer dead-end. Silent account link now rekeys the Supabase password to the Particle-derived value so login completes in one click.
+
+### Changed
+- `src/features/auth/SignIn.tsx` + `SignUp.tsx`: replaced `particlePopupSocialLogin()` with `useConnect({ socialType })` from `@particle-network/authkit` (legacy-proven redirect flow). Same UI/UX, no popup, no COOP hazard.
+- `src/features/auth/ParticleAuthCallback.tsx`: reduced to a safety fallback that clears stale state and redirects to `/signin`. The current flow returns directly to `/signin` or `/signup` where `authkit` processes `particleThirdpartyParams` in-place.
+- Diagnostic `[SignIn]` / `[SignUp]` console logs at every decision point + 20s watchdog so silent hangs surface as visible errors.
+- `sessionStorage` error-persist shim so "already-registered" messages survive the redirect and show up as a visible error line.
+
+### Added
+- `supabase/functions/link-social-identity/` edge function. When `signUp` returns "already registered", the client POSTs `{email, particleUuid, provider, walletAddress}` and the function uses `service_role` to `admin.updateUserById(user.id, { password: derivedPassword })`. Client retries `signInWithPassword` and proceeds to `/dashboard/deals`.
+- `supabase/migrations/20260424_auth_link_events.sql` — append-only audit table for every silent-link operation. Service-role RLS only.
+- `docs/runbooks/SIGN_IN.md` — full runbook: four sign-in paths, file map, edge function API, audit queries, security disclosure, failure modes.
+
+### Removed
+- `src/lib/particlePopupLogin.ts` (163 LoC)
+- `src/features/auth/ParticleAuthPopup.tsx` (160 LoC)
+- `/auth/particle-popup` route from `src/App.tsx`
+
+### Security disclosure
+Particle Network has no public JWT verification endpoint or JWKS, so the link function cannot validate server-side that the caller holds a valid Particle session. Given Supabase `mailer_autoconfirm: true` (pre-existing email-ownership gap) and Google's own email validation during OAuth, the silent-link path is equivalent in risk to the existing email-signup path — not a new attack vector. Every call is audited in `auth_link_events`. See `link-social-identity/index.ts` header for the full argument and follow-up hardening options (wallet-signature proof-of-control, or Supabase-native OAuth once configured).
+
+### Flow map
+- New node: `link-social-identity`
+- `social-login` now edges to `link-social-identity` (existing-email branch) and directly to `otp-verify` (new-user branch)
+- `particle-callback` demoted to safety fallback
+
+### Merged in
+- [PR #499](https://github.com/hrds100/marketplace10/pull/499) (squash → commit `c6c36fc`)
+
 ## [2026-04-09a] - WhatsApp Cloud API + Template Management + Documentation
 
 ### Added
