@@ -199,37 +199,63 @@ export default function SignIn() {
     }
   };
 
+  // Diagnostic: log mount + userInfo state on every render so we can tell
+  // from Hugo's browser console whether authkit is processing the OAuth
+  // return or whether our click handler even ran.
+  useEffect(() => {
+    console.info('[SignIn] mount — search=', window.location.search, 'pending=', localStorage.getItem(SOCIAL_PENDING_KEY));
+  }, []);
+
   // Finish the OAuth return path: once authkit populates userInfo, run the
   // Supabase linkage. A pending flag in localStorage tells us the user
   // clicked a button on THIS view (vs /signup).
   useEffect(() => {
+    console.info('[SignIn] userInfo effect — populated?', !!userInfo, 'uuid=', (userInfo as any)?.uuid);
     if (!userInfo) return;
     const raw = localStorage.getItem(SOCIAL_PENDING_KEY);
+    console.info('[SignIn] userInfo effect — pending=', raw);
     if (!raw) return;
     let pending: { provider: SocialProvider; redirectTo?: string; view?: 'signin' | 'signup' };
     try { pending = JSON.parse(raw); } catch { localStorage.removeItem(SOCIAL_PENDING_KEY); return; }
-    if (pending.view && pending.view !== 'signin') return;
+    if (pending.view && pending.view !== 'signin') {
+      console.info('[SignIn] pending is for', pending.view, '- skipping in /signin');
+      return;
+    }
     localStorage.removeItem(SOCIAL_PENDING_KEY);
+    console.info('[SignIn] running completeSocialSignIn for', pending.provider);
     void completeSocialSignIn(userInfo, pending.provider, pending.redirectTo || '');
   }, [userInfo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSocialSignIn = async (provider: SocialProvider) => {
+    console.info('[SignIn] button clicked — provider=', provider);
     setSocialLoading(provider);
     setError('');
     localStorage.setItem(
       SOCIAL_PENDING_KEY,
       JSON.stringify({ provider, redirectTo: redirectTo || '', view: 'signin' }),
     );
+    // 20s watchdog: if nothing happened (no redirect, no resolve), show an
+    // actionable error instead of leaving the button spinning.
+    const watchdog = window.setTimeout(() => {
+      console.error('[SignIn] watchdog: connect() never resolved and no redirect happened within 20s');
+      localStorage.removeItem(SOCIAL_PENDING_KEY);
+      setError(
+        'Social login timed out. If a Particle window opened, please close it and try again, ' +
+        'or check your browser console for errors.',
+      );
+      setSocialLoading(null);
+    }, 20000);
     try {
-      // If authkit already has a cached session (same tab, no redirect),
-      // connect() resolves synchronously with userInfo and we can finish in-place.
-      // Otherwise the browser redirects away and the useEffect above will pick it up on return.
+      console.info('[SignIn] calling authkit connect({ socialType:', provider, '})');
       const info = await connect({ socialType: provider });
+      window.clearTimeout(watchdog);
+      console.info('[SignIn] connect() resolved —', info ? 'with userInfo (in-place)' : 'without userInfo (expect redirect)');
       if (info) {
         localStorage.removeItem(SOCIAL_PENDING_KEY);
         await completeSocialSignIn(info, provider, redirectTo || '');
       }
     } catch (err: any) {
+      window.clearTimeout(watchdog);
       localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignIn] Social login error:', err);
       setError(`Social login failed: ${err?.message || 'Unknown error'}`);

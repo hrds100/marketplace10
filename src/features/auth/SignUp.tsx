@@ -232,34 +232,54 @@ export default function SignUp() {
     }
   };
 
+  // Diagnostic mount log — helps debug "loading forever" reports.
+  useEffect(() => {
+    console.info('[SignUp] mount — search=', window.location.search, 'pending=', localStorage.getItem(SOCIAL_PENDING_KEY));
+  }, []);
+
   // OAuth return path — authkit populates userInfo once it has processed
   // `particleThirdpartyParams` from the URL.
   useEffect(() => {
+    console.info('[SignUp] userInfo effect — populated?', !!userInfo, 'uuid=', (userInfo as any)?.uuid);
     if (!userInfo) return;
     const raw = localStorage.getItem(SOCIAL_PENDING_KEY);
+    console.info('[SignUp] userInfo effect — pending=', raw);
     if (!raw) return;
     let pending: { provider: SocialProvider; view?: 'signin' | 'signup' };
     try { pending = JSON.parse(raw); } catch { localStorage.removeItem(SOCIAL_PENDING_KEY); return; }
-    if (pending.view && pending.view !== 'signup') return;
+    if (pending.view && pending.view !== 'signup') {
+      console.info('[SignUp] pending is for', pending.view, '- skipping in /signup');
+      return;
+    }
     localStorage.removeItem(SOCIAL_PENDING_KEY);
+    console.info('[SignUp] running finishSocialSignUp for', pending.provider);
     finishSocialSignUp(userInfo, pending.provider);
   }, [userInfo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSocialLogin = async (provider: SocialProvider) => {
+    console.info('[SignUp] button clicked — provider=', provider);
     setSocialLoading(provider);
     localStorage.setItem(
       SOCIAL_PENDING_KEY,
       JSON.stringify({ provider, view: 'signup' }),
     );
+    const watchdog = window.setTimeout(() => {
+      console.error('[SignUp] watchdog: connect() never resolved and no redirect happened within 20s');
+      localStorage.removeItem(SOCIAL_PENDING_KEY);
+      toast.error('Social login timed out. Please try again.');
+      setSocialLoading(null);
+    }, 20000);
     try {
+      console.info('[SignUp] calling authkit connect({ socialType:', provider, '})');
       const info = await connect({ socialType: provider });
+      window.clearTimeout(watchdog);
+      console.info('[SignUp] connect() resolved —', info ? 'with userInfo (in-place)' : 'without userInfo (expect redirect)');
       if (info) {
         localStorage.removeItem(SOCIAL_PENDING_KEY);
         finishSocialSignUp(info, provider);
       }
-      // If connect() redirects instead of resolving, the browser leaves this
-      // page. On return, the useEffect above picks up userInfo and finishes.
     } catch (err: any) {
+      window.clearTimeout(watchdog);
       localStorage.removeItem(SOCIAL_PENDING_KEY);
       console.error('[SignUp] Social login error:', err);
       toast.error(`Social login failed: ${err?.message || 'Unknown error'}`);
