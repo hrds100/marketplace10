@@ -58,7 +58,8 @@ serve(async (req: Request) => {
   }
 
   try {
-    const url = req.url;
+    // Use the public URL Twilio POSTed to, not req.url (proxied internal).
+    const url = `${SUPABASE_URL}/functions/v1/wk-voice-twiml-incoming`;
     const formData = await req.formData();
     const params: Record<string, string> = {};
     formData.forEach((v, k) => { params[k] = v.toString(); });
