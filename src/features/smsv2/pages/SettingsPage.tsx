@@ -25,11 +25,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ACTIVE_PIPELINE } from '../data/mockPipelines';
-import { MOCK_TEMPLATES, MOCK_CAMPAIGNS, COACH_PROMPTS } from '../data/mockCampaigns';
-import { MOCK_AGENTS } from '../data/mockAgents';
+import { MOCK_TEMPLATES, COACH_PROMPTS } from '../data/mockCampaigns';
 import { MOCK_NUMBERS } from '../data/mockCampaigns';
 import { formatPence } from '../data/helpers';
 import { useKillSwitch } from '../hooks/useKillSwitch';
+import { useSmsV2 } from '../store/SmsV2Store';
 import type { Agent, PipelineColumn } from '../types';
 
 const TABS = [
@@ -126,43 +126,46 @@ function Card({
 
 // ─── Pipelines tab — fully editable ────────────────────────────────
 function PipelinesTab() {
-  const [cols, setCols] = useState<PipelineColumn[]>(ACTIVE_PIPELINE.columns);
+  const { columns: cols, patchColumn, upsertColumn, removeColumn } = useSmsV2();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const update = (id: string, patch: Partial<PipelineColumn>) => {
-    setCols((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    patchColumn(id, patch);
   };
   const updateAuto = (id: string, patch: Partial<PipelineColumn['automation']>) => {
-    setCols((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, automation: { ...c.automation, ...patch } } : c
-      )
-    );
+    const target = cols.find((c) => c.id === id);
+    if (!target) return;
+    patchColumn(id, { automation: { ...target.automation, ...patch } });
   };
   const addColumn = () => {
     const id = `col-new-${Date.now()}`;
-    setCols((prev) => [
-      ...prev,
-      {
-        id,
-        pipelineId: ACTIVE_PIPELINE.id,
-        name: 'New stage',
-        colour: COLOUR_PALETTE[prev.length % COLOUR_PALETTE.length],
-        icon: 'Sparkles',
-        position: prev.length + 1,
-        automation: {
-          sendSms: false,
-          createTask: false,
-          retryDial: false,
-          addTag: false,
-        },
+    upsertColumn({
+      id,
+      pipelineId: ACTIVE_PIPELINE.id,
+      name: 'New stage',
+      colour: COLOUR_PALETTE[cols.length % COLOUR_PALETTE.length],
+      icon: 'Sparkles',
+      position: cols.length + 1,
+      automation: {
+        sendSms: false,
+        createTask: false,
+        retryDial: false,
+        addTag: false,
       },
-    ]);
+    });
     setExpandedId(id);
   };
   const remove = (id: string) => {
-    setCols((prev) => prev.filter((c) => c.id !== id));
+    removeColumn(id);
     if (expandedId === id) setExpandedId(null);
+  };
+  const setTimeoutDefault = (id: string, checked: boolean) => {
+    cols.forEach((c) => {
+      const shouldBe = c.id === id ? checked : false;
+      if ((c.isDefaultOnTimeout ?? false) !== shouldBe) {
+        patchColumn(c.id, { isDefaultOnTimeout: shouldBe });
+      }
+    });
   };
 
   return (
@@ -262,16 +265,7 @@ function PipelinesTab() {
                       <input
                         type="checkbox"
                         checked={col.isDefaultOnTimeout ?? false}
-                        onChange={(e) => {
-                          // only one column may be timeout default
-                          setCols((prev) =>
-                            prev.map((c) => ({
-                              ...c,
-                              isDefaultOnTimeout:
-                                c.id === col.id ? e.target.checked : false,
-                            }))
-                          );
-                        }}
+                        onChange={(e) => setTimeoutDefault(col.id, e.target.checked)}
                       />
                       <span className="text-[#1A1A1A]">
                         Default outcome when auto-advance timer expires
@@ -515,10 +509,11 @@ function TemplatesTab() {
 
 // ─── Campaigns ─────────────────────────────────────────────────────
 function CampaignsTab() {
+  const { campaigns, patchCampaign } = useSmsV2();
   return (
     <Card title="Campaigns & lead distribution">
       <div className="space-y-2">
-        {MOCK_CAMPAIGNS.map((c) => (
+        {campaigns.map((c) => (
           <div key={c.id} className="border border-[#E5E7EB] rounded-xl p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[13px] font-semibold text-[#1A1A1A]">{c.name}</span>
@@ -526,15 +521,31 @@ function CampaignsTab() {
                 {c.mode} · {c.parallelLines} lines
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-[#6B7280] mb-2">
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-[#6B7280] mb-2 items-center">
               <span>Pipeline: {ACTIVE_PIPELINE.name}</span>
               <span>{c.totalLeads} leads</span>
-              <span>AI coach: {c.aiCoachEnabled ? 'ON' : 'OFF'}</span>
-              <span>
+              <button
+                onClick={() => patchCampaign(c.id, { aiCoachEnabled: !c.aiCoachEnabled })}
+                className={cn(
+                  'inline-flex items-center justify-self-start gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors',
+                  c.aiCoachEnabled
+                    ? 'bg-[#ECFDF5] text-[#1E9A80] border-[#1E9A80]/30'
+                    : 'bg-[#F3F3EE] text-[#9CA3AF] border-[#E5E7EB]'
+                )}
+              >
+                <Bot className="w-3 h-3" />
+                AI coach: {c.aiCoachEnabled ? 'ON' : 'OFF'}
+              </button>
+              <span className="inline-flex items-center gap-1">
                 Auto-advance:{' '}
                 <input
                   type="number"
-                  defaultValue={c.autoAdvanceSeconds}
+                  value={c.autoAdvanceSeconds}
+                  onChange={(e) =>
+                    patchCampaign(c.id, {
+                      autoAdvanceSeconds: Math.max(1, parseInt(e.target.value, 10) || 1),
+                    })
+                  }
                   className="inline-block w-12 px-1 py-0.5 text-[11px] border border-[#E5E7EB] rounded tabular-nums"
                 />
                 s
@@ -546,7 +557,8 @@ function CampaignsTab() {
               </summary>
               <textarea
                 rows={4}
-                defaultValue={c.scriptMd ?? `Hi {name}, this is {agent} from NFSTAY…`}
+                value={c.scriptMd ?? `Hi {name}, this is {agent} from NFSTAY…`}
+                onChange={(e) => patchCampaign(c.id, { scriptMd: e.target.value })}
                 className="mt-1.5 w-full px-2 py-1.5 text-[11px] font-mono border border-[#E5E7EB] rounded-[8px]"
               />
             </details>
@@ -562,7 +574,7 @@ function CampaignsTab() {
 
 // ─── Agents — invite + delete + spend ──────────────────────────────
 function AgentsTab() {
-  const [agents, setAgents] = useState<Agent[]>(MOCK_AGENTS);
+  const { agents, upsertAgent, removeAgent } = useSmsV2();
   const [inviting, setInviting] = useState(false);
   const [invite, setInvite] = useState({
     email: '',
@@ -572,28 +584,24 @@ function AgentsTab() {
     limit: 10,
   });
 
-  const remove = (id: string) =>
-    setAgents((prev) => prev.filter((a) => a.id !== id));
+  const remove = (id: string) => removeAgent(id);
 
   const send = () => {
     if (!invite.email || !invite.name) return;
-    setAgents((prev) => [
-      ...prev,
-      {
-        id: `a-new-${Date.now()}`,
-        name: invite.name,
-        email: invite.email,
-        extension: invite.extension || `1${prev.length + 10}`,
-        role: invite.role,
-        status: 'offline',
-        callsToday: 0,
-        answeredToday: 0,
-        avgDurationSec: 0,
-        spendPence: 0,
-        limitPence: invite.limit * 100,
-        isAdmin: invite.role === 'admin',
-      },
-    ]);
+    upsertAgent({
+      id: `a-new-${Date.now()}`,
+      name: invite.name,
+      email: invite.email,
+      extension: invite.extension || `1${agents.length + 10}`,
+      role: invite.role,
+      status: 'offline',
+      callsToday: 0,
+      answeredToday: 0,
+      avgDurationSec: 0,
+      spendPence: 0,
+      limitPence: invite.limit * 100,
+      isAdmin: invite.role === 'admin',
+    });
     setInvite({ email: '', name: '', extension: '', role: 'agent', limit: 10 });
     setInviting(false);
   };

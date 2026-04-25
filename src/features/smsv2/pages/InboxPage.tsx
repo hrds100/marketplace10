@@ -11,29 +11,26 @@ import {
   Play,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MOCK_CONTACTS } from '../data/mockContacts';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../data/mockCalls';
 import { formatRelativeTime, formatTimeOnly, formatDuration } from '../data/helpers';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
-import type { Contact } from '../types';
+import { useSmsV2 } from '../store/SmsV2Store';
 
 type Filter = 'all' | 'sms' | 'calls' | 'voicemail' | 'missed';
 
 export default function InboxPage() {
+  const { contacts, patchContact } = useSmsV2();
   const [filter, setFilter] = useState<Filter>('all');
-  const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
-  const [activeContactId, setActiveContactId] = useState(MOCK_CONTACTS[0].id);
+  const [activeContactId, setActiveContactId] = useState(contacts[0].id);
   const { startCall } = useActiveCallCtx();
 
-  const activeContact = contacts.find((c) => c.id === activeContactId)!;
-  const contactSms = MOCK_SMS.filter((m) => m.contactId === activeContactId);
-  const contactActivity = MOCK_ACTIVITIES.filter((a) => a.contactId === activeContactId);
+  const activeContact = contacts.find((c) => c.id === activeContactId) ?? contacts[0];
+  const contactSms = MOCK_SMS.filter((m) => m.contactId === activeContact.id);
+  const contactActivity = MOCK_ACTIVITIES.filter((a) => a.contactId === activeContact.id);
 
   const setStage = (col: string) => {
-    setContacts((prev) =>
-      prev.map((c) => (c.id === activeContactId ? { ...c, pipelineColumnId: col } : c))
-    );
+    patchContact(activeContact.id, { pipelineColumnId: col });
   };
 
   return (

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { MOCK_CONTACTS } from '../../data/mockContacts';
+import { useSmsV2 } from '../../store/SmsV2Store';
 
 export type CallPhase = 'idle' | 'in_call' | 'post_call';
 
@@ -20,12 +20,22 @@ interface ActiveCallCtx {
   startCall: (contactId: string, phone?: string, name?: string) => void;
   endCall: () => void;
   clearCall: () => void;
-  applyOutcome: (columnId: string) => void;
+  /**
+   * Apply a pipeline-column outcome to the just-ended call.
+   * Mutates store (contact stage + activity + tags + queue) and auto-loads
+   * the next lead from the dialer queue.
+   *
+   * Special sentinels (no automation):
+   *   - 'skipped' — no outcome logged, lead stays in queue, advance to next
+   *   - 'next-now' — same, "Call now" button
+   */
+  applyOutcome: (columnId: string, note?: string) => void;
 }
 
 const Ctx = createContext<ActiveCallCtx | null>(null);
 
 export function ActiveCallProvider({ children }: { children: ReactNode }) {
+  const store = useSmsV2();
   const [phase, setPhase] = useState<CallPhase>('idle');
   const [call, setCall] = useState<ActiveCall | null>(null);
   const [, setTick] = useState(0);
@@ -46,37 +56,78 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ActiveCallCtx>(() => {
     const durationSec = call ? Math.floor((Date.now() - call.startedAt) / 1000) : 0;
+
+    const startCall = (
+      contactId: string,
+      phoneOverride?: string,
+      nameOverride?: string
+    ) => {
+      const contact = store.getContact(contactId);
+      setCall({
+        contactId,
+        contactName: contact?.name ?? nameOverride ?? 'Unknown caller',
+        phone: phoneOverride ?? contact?.phone ?? '',
+        startedAt: Date.now(),
+      });
+      setPhase('in_call');
+      setFullScreen(true);
+    };
+
     return {
       phase,
       call,
       durationSec,
       fullScreen,
       setFullScreen,
-      startCall: (contactId, phoneOverride, nameOverride) => {
-        const contact = MOCK_CONTACTS.find((c) => c.id === contactId);
-        setCall({
-          contactId,
-          contactName: contact?.name ?? nameOverride ?? 'Unknown caller',
-          phone: phoneOverride ?? contact?.phone ?? '',
-          startedAt: Date.now(),
-        });
-        setPhase('in_call');
-        setFullScreen(true);
-      },
+      startCall,
       endCall: () => setPhase('post_call'),
       clearCall: () => {
         setPhase('idle');
         setCall(null);
         setFullScreen(true);
       },
-      applyOutcome: (columnId) => {
-        // Phase 0: console only, then advance
-        console.log('[mock] outcome applied', columnId, 'for call', call?.contactId);
-        setPhase('idle');
-        setCall(null);
+      applyOutcome: (columnId, note) => {
+        if (!call) {
+          setPhase('idle');
+          return;
+        }
+
+        // Sentinels — Skip / Call Now: no stage move, just advance
+        if (columnId === 'skipped' || columnId === 'next-now') {
+          const nextId = store.popNextFromQueue();
+          if (nextId) {
+            startCall(nextId);
+          } else {
+            store.pushToast('Queue is empty — no more leads', 'info');
+            setPhase('idle');
+            setCall(null);
+          }
+          return;
+        }
+
+        // Real outcome: write to store, surface toast, auto-advance
+        const { nextContactId, badges, columnName } = store.applyOutcome(
+          call.contactId,
+          columnId,
+          note
+        );
+        const summary =
+          badges.length > 0
+            ? `Moved to ${columnName} · ${badges.join(' · ')}`
+            : `Moved to ${columnName}`;
+        store.pushToast(summary, 'success');
+
+        if (nextContactId) {
+          // small delay for the agent to read the toast
+          setTimeout(() => startCall(nextContactId), 600);
+        } else {
+          store.pushToast('Queue is empty — no more leads', 'info');
+          setPhase('idle');
+          setCall(null);
+        }
       },
     };
-  }, [phase, call, fullScreen]);
+  }, [phase, call, fullScreen, store]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

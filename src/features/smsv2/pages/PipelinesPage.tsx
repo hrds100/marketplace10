@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Flame, GripVertical, Pencil } from 'lucide-react';
 import { ACTIVE_PIPELINE } from '../data/mockPipelines';
-import { MOCK_CONTACTS } from '../data/mockContacts';
 import { formatPence } from '../data/helpers';
 import EditContactModal from '../components/contacts/EditContactModal';
+import { useSmsV2 } from '../store/SmsV2Store';
 import type { Contact } from '../types';
 
 export default function PipelinesPage() {
-  const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
+  const { contacts, columns, upsertContact } = useSmsV2();
   const [editing, setEditing] = useState<Contact | null>(null);
 
   const save = (updated: Contact) => {
-    setContacts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    upsertContact(updated);
   };
 
   return (
@@ -30,7 +30,7 @@ export default function PipelinesPage() {
       </header>
 
       <div className="flex gap-3 overflow-x-auto pb-3">
-        {ACTIVE_PIPELINE.columns.map((col) => {
+        {columns.map((col) => {
           const cards = contacts.filter((c) => c.pipelineColumnId === col.id);
           const totalValue = cards.reduce((s, c) => s + (c.dealValuePence ?? 0), 0);
           return (

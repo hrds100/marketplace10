@@ -10,9 +10,7 @@ import {
   Plus,
   X,
 } from 'lucide-react';
-import { MOCK_CONTACTS } from '../data/mockContacts';
 import { MOCK_CALLS, MOCK_SMS, MOCK_ACTIVITIES, MOCK_TASKS } from '../data/mockCalls';
-import { MOCK_AGENTS } from '../data/mockAgents';
 import {
   formatDuration,
   formatPence,
@@ -22,12 +20,13 @@ import {
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
+import { useSmsV2 } from '../store/SmsV2Store';
 import type { Contact } from '../types';
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const initial = MOCK_CONTACTS.find((c) => c.id === id);
-  const [contact, setContact] = useState<Contact | null>(initial ?? null);
+  const { getContact, agents, patchContact, upsertContact } = useSmsV2();
+  const contact = getContact(id ?? '');
   const [editing, setEditing] = useState<Contact | null>(null);
   const [newTag, setNewTag] = useState('');
   const [newField, setNewField] = useState({ key: '', value: '' });
@@ -48,23 +47,22 @@ export default function ContactDetailPage() {
   const sms = MOCK_SMS.filter((m) => m.contactId === contact.id);
   const activities = MOCK_ACTIVITIES.filter((a) => a.contactId === contact.id);
   const tasks = MOCK_TASKS.filter((t) => t.contactId === contact.id);
-  const owner = MOCK_AGENTS.find((a) => a.id === contact.ownerAgentId);
+  const owner = agents.find((a) => a.id === contact.ownerAgentId);
 
-  const setStage = (col: string) => setContact({ ...contact, pipelineColumnId: col });
+  const setStage = (col: string) => patchContact(contact.id, { pipelineColumnId: col });
 
   const addTag = () => {
     if (!newTag.trim()) return;
-    setContact({ ...contact, tags: [...contact.tags, newTag.trim()] });
+    patchContact(contact.id, { tags: [...contact.tags, newTag.trim()] });
     setNewTag('');
   };
 
   const removeTag = (t: string) =>
-    setContact({ ...contact, tags: contact.tags.filter((x) => x !== t) });
+    patchContact(contact.id, { tags: contact.tags.filter((x) => x !== t) });
 
   const addField = () => {
     if (!newField.key.trim()) return;
-    setContact({
-      ...contact,
+    patchContact(contact.id, {
       customFields: { ...contact.customFields, [newField.key.trim()]: newField.value },
     });
     setNewField({ key: '', value: '' });
@@ -73,7 +71,7 @@ export default function ContactDetailPage() {
   const removeField = (k: string) => {
     const cf = { ...contact.customFields };
     delete cf[k];
-    setContact({ ...contact, customFields: cf });
+    patchContact(contact.id, { customFields: cf });
   };
 
   return (
@@ -316,7 +314,7 @@ export default function ContactDetailPage() {
       <EditContactModal
         contact={editing}
         onClose={() => setEditing(null)}
-        onSave={(updated) => setContact(updated)}
+        onSave={(updated) => upsertContact(updated)}
       />
     </div>
   );
