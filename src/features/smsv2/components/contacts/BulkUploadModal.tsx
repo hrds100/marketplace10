@@ -1,39 +1,196 @@
 import { useState } from 'react';
-import { X, Upload, FileText, Users, Lock } from 'lucide-react';
-import { MOCK_AGENTS } from '../../data/mockAgents';
-import { ACTIVE_PIPELINE } from '../../data/mockPipelines';
+import Papa from 'papaparse';
+import { X, Upload, FileText, Users, Lock, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toE164 } from '@/core/utils/phone';
+import { useSmsV2 } from '../../store/SmsV2Store';
+import { useAgentsToday } from '../../hooks/useAgentsToday';
 
 interface Props {
   open: boolean;
   onClose: () => void;
 }
 
-/**
- * Bulk CSV upload + assign-to-user. In Phase 1 this will POST to
- * wk-leads-import which:
- *   - parses CSV
- *   - creates wk_contacts rows (visibility = ownerAgentId)
- *   - inserts wk_lead_assignments
- *   - kicks wk-leads-distribute if mode=round_robin
- */
+interface ParsedRow {
+  name: string;
+  phone: string;        // canonical E.164
+  rawPhone: string;     // original CSV value (for the error report)
+  email?: string;
+  customFields: Record<string, string>;
+}
+
+interface ImportResult {
+  inserted: number;
+  skipped: number;
+  errors: string[];
+}
+
+const PHONE_KEYS = ['phone', 'mobile', 'number', 'tel', 'whatsapp'];
+const NAME_KEYS = ['name', 'full_name', 'fullname', 'contact_name'];
+const EMAIL_KEYS = ['email', 'e-mail', 'mail'];
+
+function pickKey(row: Record<string, string>, candidates: string[]): string | undefined {
+  const lowered = Object.keys(row).reduce<Record<string, string>>((acc, k) => {
+    acc[k.toLowerCase().trim()] = k;
+    return acc;
+  }, {});
+  for (const c of candidates) {
+    const real = lowered[c];
+    if (real && row[real] && row[real].trim()) return real;
+  }
+  return undefined;
+}
+
 export default function BulkUploadModal({ open, onClose }: Props) {
-  const [step, setStep] = useState<'pick' | 'review' | 'done'>('pick');
-  const [assignTo, setAssignTo] = useState<string>('round_robin');
-  const [stageId, setStageId] = useState<string>(ACTIVE_PIPELINE.columns[0].id);
+  const [step, setStep] = useState<'pick' | 'review' | 'importing' | 'done'>('pick');
+  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [parseErrors, setParseErrors] = useState<string[]>([]);
+  const [fileName, setFileName] = useState<string>('');
+  const [assignTo, setAssignTo] = useState<string>('me');
   const [tags, setTags] = useState<string>('imported');
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const { columns, pushToast } = useSmsV2();
+  const { agents } = useAgentsToday();
+  const [stageId, setStageId] = useState<string>(columns[0]?.id ?? '');
 
   if (!open) return null;
 
   const reset = () => {
     setStep('pick');
-    setAssignTo('round_robin');
-    setStageId(ACTIVE_PIPELINE.columns[0].id);
+    setRows([]);
+    setParseErrors([]);
+    setFileName('');
+    setAssignTo('me');
     setTags('imported');
+    setResult(null);
+    setStageId(columns[0]?.id ?? '');
   };
 
   const close = () => {
     reset();
     onClose();
+  };
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (parsed) => {
+        const errs: string[] = [];
+        const seen = new Set<string>();
+        const accepted: ParsedRow[] = [];
+        for (const [i, raw] of parsed.data.entries()) {
+          const phoneKey = pickKey(raw, PHONE_KEYS);
+          if (!phoneKey) {
+            errs.push(`Row ${i + 2}: missing phone column`);
+            continue;
+          }
+          const phoneRaw = raw[phoneKey].trim();
+          const phone = toE164(phoneRaw);
+          if (!phone) {
+            errs.push(`Row ${i + 2}: cannot parse phone "${phoneRaw}"`);
+            continue;
+          }
+          if (seen.has(phone)) {
+            errs.push(`Row ${i + 2}: duplicate phone "${phone}" — skipped`);
+            continue;
+          }
+          seen.add(phone);
+
+          const nameKey = pickKey(raw, NAME_KEYS);
+          const name = nameKey ? raw[nameKey].trim() : phone;
+          const emailKey = pickKey(raw, EMAIL_KEYS);
+          const email = emailKey ? raw[emailKey].trim() : undefined;
+
+          // Custom fields: anything that wasn't phone/name/email
+          const customFields: Record<string, string> = {};
+          for (const [k, v] of Object.entries(raw)) {
+            if (k === phoneKey || k === nameKey || k === emailKey) continue;
+            const lk = k.toLowerCase().trim();
+            if (PHONE_KEYS.includes(lk) || NAME_KEYS.includes(lk) || EMAIL_KEYS.includes(lk)) continue;
+            const val = (v ?? '').trim();
+            if (val) customFields[k] = val;
+          }
+
+          accepted.push({ name, phone, rawPhone: phoneRaw, email, customFields });
+        }
+        setRows(accepted);
+        setParseErrors(errs);
+        setStep('review');
+      },
+      error: (err) => {
+        setParseErrors([`Parse error: ${err.message}`]);
+        setStep('review');
+      },
+    });
+  };
+
+  const runImport = async () => {
+    setStep('importing');
+    const tagList = tags.split(',').map((t) => t.trim()).filter(Boolean);
+
+    // Decide owner
+    const { data: { user } } = await supabase.auth.getUser();
+    let ownerAgentId: string | null = null;
+    if (assignTo === 'me') ownerAgentId = user?.id ?? null;
+    else if (assignTo === 'pull') ownerAgentId = null; // shared queue
+    else if (assignTo !== 'round_robin') ownerAgentId = assignTo;
+
+    const inserts = rows.map((row, i) => {
+      const ownerForThis =
+        assignTo === 'round_robin'
+          ? agents[i % Math.max(1, agents.length)]?.id ?? null
+          : ownerAgentId;
+      return {
+        name: row.name,
+        phone: row.phone,
+        email: row.email ?? null,
+        owner_agent_id: ownerForThis,
+        pipeline_column_id: stageId || null,
+        custom_fields: row.customFields,
+        is_hot: false,
+      };
+    });
+
+    const errors: string[] = [];
+    let inserted = 0;
+    let skipped = 0;
+
+    // Chunk inserts to avoid hitting URL/payload limits
+    const CHUNK = 50;
+    for (let i = 0; i < inserts.length; i += CHUNK) {
+      const slice = inserts.slice(i, i + CHUNK);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('wk_contacts' as any) as any)
+        .upsert(slice, { onConflict: 'phone', ignoreDuplicates: true })
+        .select('id, phone');
+
+      if (error) {
+        errors.push(error.message);
+        continue;
+      }
+      const insertedRows = (data ?? []) as Array<{ id: string; phone: string }>;
+      inserted += insertedRows.length;
+      skipped += slice.length - insertedRows.length;
+
+      // Tag every inserted row
+      if (tagList.length > 0 && insertedRows.length > 0) {
+        const tagInserts = insertedRows.flatMap((r) =>
+          tagList.map((tag) => ({ contact_id: r.id, tag }))
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: tagErr } = await (supabase.from('wk_contact_tags' as any) as any)
+          .upsert(tagInserts, { onConflict: 'contact_id,tag', ignoreDuplicates: true });
+        if (tagErr) errors.push(`tags: ${tagErr.message}`);
+      }
+    }
+
+    setResult({ inserted, skipped, errors });
+    setStep('done');
+    pushToast(`Imported ${inserted} contacts (${skipped} skipped)`, inserted > 0 ? 'success' : 'info');
   };
 
   return (
@@ -46,40 +203,24 @@ export default function BulkUploadModal({ open, onClose }: Props) {
               CSV → assign to user → only that user + admins can see them
             </p>
           </div>
-          <button
-            onClick={close}
-            className="p-1.5 rounded hover:bg-[#F3F3EE]"
-          >
+          <button onClick={close} className="p-1.5 rounded hover:bg-[#F3F3EE]">
             <X className="w-4 h-4 text-[#6B7280]" />
           </button>
         </div>
 
         {step === 'pick' && (
-          <>
-            <div className="p-5 space-y-4">
-              <label className="block border-2 border-dashed border-[#E5E7EB] rounded-2xl p-8 text-center cursor-pointer hover:border-[#1E9A80] hover:bg-[#ECFDF5]/30 transition-colors">
-                <input
-                  type="file"
-                  accept=".csv"
-                  className="hidden"
-                  onChange={() => setStep('review')}
-                />
-                <Upload className="w-7 h-7 text-[#9CA3AF] mx-auto mb-2" />
-                <div className="text-[14px] font-medium text-[#1A1A1A]">
-                  Drop CSV or click to browse
-                </div>
-                <div className="text-[11px] text-[#6B7280] mt-0.5">
-                  Required cols: name, phone · Optional: email, tags, custom fields
-                </div>
-              </label>
-              <button
-                onClick={() => setStep('review')}
-                className="text-[11px] text-[#1E9A80] hover:underline"
-              >
-                Skip · use mock CSV (112 rows)
-              </button>
-            </div>
-          </>
+          <div className="p-5 space-y-4">
+            <label className="block border-2 border-dashed border-[#E5E7EB] rounded-2xl p-8 text-center cursor-pointer hover:border-[#1E9A80] hover:bg-[#ECFDF5]/30 transition-colors">
+              <input type="file" accept=".csv" className="hidden" onChange={onFile} />
+              <Upload className="w-7 h-7 text-[#9CA3AF] mx-auto mb-2" />
+              <div className="text-[14px] font-medium text-[#1A1A1A]">
+                Drop CSV or click to browse
+              </div>
+              <div className="text-[11px] text-[#6B7280] mt-0.5">
+                Required cols: name, phone · Optional: email, anything else becomes a custom field
+              </div>
+            </label>
+          </div>
         )}
 
         {step === 'review' && (
@@ -88,39 +229,52 @@ export default function BulkUploadModal({ open, onClose }: Props) {
               <div className="flex items-center gap-2 px-3 py-2 bg-[#ECFDF5] border border-[#1E9A80]/30 rounded-[10px]">
                 <FileText className="w-4 h-4 text-[#1E9A80]" />
                 <div className="flex-1 text-[12px]">
-                  <span className="font-semibold text-[#1A1A1A]">
-                    landlords-april-2026.csv
-                  </span>
+                  <span className="font-semibold text-[#1A1A1A]">{fileName || 'CSV'}</span>
                   <span className="text-[#6B7280] ml-2">
-                    · 112 rows · 3 duplicates skipped · 0 errors
+                    · {rows.length} valid rows · {parseErrors.length} skipped
                   </span>
                 </div>
               </div>
 
+              {parseErrors.length > 0 && (
+                <details className="bg-[#FEF2F2] border border-[#FECACA] rounded-[10px] px-3 py-2 text-[11px] text-[#991B1B]">
+                  <summary className="cursor-pointer flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {parseErrors.length} row{parseErrors.length === 1 ? '' : 's'} skipped — click to view
+                  </summary>
+                  <ul className="mt-2 max-h-[120px] overflow-y-auto space-y-0.5 list-disc list-inside">
+                    {parseErrors.slice(0, 50).map((e, i) => (
+                      <li key={i}>{e}</li>
+                    ))}
+                    {parseErrors.length > 50 && <li>…and {parseErrors.length - 50} more</li>}
+                  </ul>
+                </details>
+              )}
+
               <div>
-                <Label icon={<Users className="w-3.5 h-3.5" />}>
-                  Assign to
-                </Label>
+                <Label icon={<Users className="w-3.5 h-3.5" />}>Assign to</Label>
                 <select
                   value={assignTo}
                   onChange={(e) => setAssignTo(e.target.value)}
                   className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
                 >
+                  <option value="me">Me (current user)</option>
                   <option value="round_robin">Round-robin across all agents</option>
-                  <option value="pull">Shared queue (agents pull)</option>
-                  <optgroup label="Specific agent (only they + admins see)">
-                    {MOCK_AGENTS.filter((a) => !a.isAdmin).map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </optgroup>
+                  <option value="pull">Shared queue (no owner — agents pull)</option>
+                  {agents.length > 0 && (
+                    <optgroup label="Specific agent (only they + admins see)">
+                      {agents.filter((a) => !a.isAdmin).map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
-                {assignTo !== 'round_robin' && assignTo !== 'pull' && (
+                {assignTo !== 'round_robin' && assignTo !== 'pull' && assignTo !== 'me' && (
                   <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#1E9A80]">
                     <Lock className="w-3 h-3" />
-                    Visibility: only{' '}
-                    {MOCK_AGENTS.find((a) => a.id === assignTo)?.name} + admins
+                    Visibility: only {agents.find((a) => a.id === assignTo)?.name} + admins
                   </div>
                 )}
               </div>
@@ -133,7 +287,7 @@ export default function BulkUploadModal({ open, onClose }: Props) {
                     onChange={(e) => setStageId(e.target.value)}
                     className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
                   >
-                    {ACTIVE_PIPELINE.columns.map((c) => (
+                    {columns.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
@@ -159,31 +313,45 @@ export default function BulkUploadModal({ open, onClose }: Props) {
                 ← Back
               </button>
               <button
-                onClick={() => setStep('done')}
-                className="bg-[#1E9A80] text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
+                onClick={() => void runImport()}
+                disabled={rows.length === 0}
+                className="bg-[#1E9A80] text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Import 112 contacts
+                Import {rows.length} contact{rows.length === 1 ? '' : 's'}
               </button>
             </div>
           </>
         )}
 
-        {step === 'done' && (
+        {step === 'importing' && (
+          <div className="p-12 text-center">
+            <div className="inline-block w-8 h-8 border-2 border-[#1E9A80] border-t-transparent rounded-full animate-spin mb-3" />
+            <div className="text-[13px] text-[#6B7280]">Importing {rows.length} contacts…</div>
+          </div>
+        )}
+
+        {step === 'done' && result && (
           <div className="p-8 text-center">
             <div className="w-12 h-12 rounded-full bg-[#ECFDF5] text-[#1E9A80] flex items-center justify-center mx-auto mb-3 text-[24px]">
               ✓
             </div>
             <h3 className="text-[16px] font-semibold text-[#1A1A1A]">
-              112 contacts imported
+              {result.inserted} contacts imported
             </h3>
             <p className="text-[12px] text-[#6B7280] mt-1">
-              Assigned to{' '}
-              {assignTo === 'round_robin'
-                ? '5 agents (round-robin)'
-                : assignTo === 'pull'
-                  ? 'shared queue'
-                  : MOCK_AGENTS.find((a) => a.id === assignTo)?.name}
+              {result.skipped > 0 && `${result.skipped} duplicates skipped · `}
+              {result.errors.length > 0 ? `${result.errors.length} errors` : 'no errors'}
             </p>
+            {result.errors.length > 0 && (
+              <details className="mt-3 text-left text-[11px] text-[#991B1B] bg-[#FEF2F2] border border-[#FECACA] rounded-[10px] p-2">
+                <summary className="cursor-pointer">View errors</summary>
+                <ul className="mt-1 max-h-[120px] overflow-y-auto list-disc list-inside">
+                  {result.errors.map((e, i) => (
+                    <li key={i}>{e}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
             <button
               onClick={close}
               className="mt-4 bg-[#1E9A80] text-white text-[13px] font-semibold px-5 py-2 rounded-[10px]"
@@ -197,13 +365,7 @@ export default function BulkUploadModal({ open, onClose }: Props) {
   );
 }
 
-function Label({
-  children,
-  icon,
-}: {
-  children: React.ReactNode;
-  icon?: React.ReactNode;
-}) {
+function Label({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
   return (
     <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1 flex items-center gap-1">
       {icon}
