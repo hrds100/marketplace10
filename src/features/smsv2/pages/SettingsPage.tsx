@@ -30,26 +30,9 @@ import { formatPence } from '../data/helpers';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useAiSettings } from '../hooks/useAiSettings';
 import { useTwilioAccount } from '../hooks/useTwilioAccount';
+import { useAgents } from '../hooks/useAgents';
 import { useSmsV2 } from '../store/SmsV2Store';
-import { supabase } from '@/integrations/supabase/client';
 import type { Agent, PipelineColumn } from '../types';
-
-interface CreateAgentInvoke {
-  invoke: (
-    name: string,
-    options: { body: Record<string, unknown> }
-  ) => Promise<{
-    data: {
-      user_id?: string;
-      email?: string;
-      role?: string;
-      extension?: string | null;
-      daily_limit_pence?: number;
-      error?: string;
-    } | null;
-    error: { message: string } | null;
-  }>;
-}
 
 const TABS = [
   { id: 'pipelines', label: 'Pipelines & outcomes', icon: Kanban },
@@ -591,9 +574,10 @@ function CampaignsTab() {
   );
 }
 
-// ─── Agents — invite + delete + spend ──────────────────────────────
+// ─── Agents — invite + delete + spend (real DB) ────────────────────
 function AgentsTab() {
-  const { agents, upsertAgent, removeAgent, pushToast } = useSmsV2();
+  const { pushToast } = useSmsV2();
+  const { agents, loading, busy, error: listError, create, remove } = useAgents();
   const [inviting, setInviting] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -607,7 +591,15 @@ function AgentsTab() {
     limit: 10,
   });
 
-  const remove = (id: string) => removeAgent(id);
+  const onRemove = async (id: string, name: string) => {
+    if (!confirm(`Remove ${name}? They lose workspace access immediately.`)) return;
+    const res = await remove(id, false);
+    if (!res.ok) {
+      pushToast(`Delete failed: ${res.error ?? 'unknown'}`, 'error');
+    } else {
+      pushToast(`${name} removed`, 'success');
+    }
+  };
 
   const randomPassword = () => {
     const charset = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -629,98 +621,84 @@ function AgentsTab() {
       return;
     }
     setSubmitting(true);
-    try {
-      const { data, error } = await (
-        supabase.functions as unknown as CreateAgentInvoke
-      ).invoke('wk-create-agent', {
-        body: {
-          email: invite.email.trim().toLowerCase(),
-          password: invite.password,
-          name: invite.name.trim(),
-          extension: invite.extension.trim() || null,
-          role: invite.role,
-          daily_limit_pence: Math.max(0, Math.floor(invite.limit * 100)),
-        },
-      });
-      if (error) {
-        setErrorMsg(error.message);
-        setSubmitting(false);
-        return;
-      }
-      if (data?.error) {
-        setErrorMsg(data.error);
-        setSubmitting(false);
-        return;
-      }
-      // Reflect locally so the table updates without a reload
-      upsertAgent({
-        id: data?.user_id ?? `a-new-${Date.now()}`,
-        name: invite.name,
-        email: invite.email,
-        extension: data?.extension ?? invite.extension ?? '',
-        role: invite.role,
-        status: 'offline',
-        callsToday: 0,
-        answeredToday: 0,
-        avgDurationSec: 0,
-        spendPence: 0,
-        limitPence: data?.daily_limit_pence ?? invite.limit * 100,
-        isAdmin: invite.role === 'admin',
-      });
-      pushToast(`Agent created — share login with ${invite.email}`, 'success');
-      setInvite({ email: '', password: '', name: '', extension: '', role: 'agent', limit: 10 });
-      setInviting(false);
-    } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : 'Unknown error');
-    } finally {
-      setSubmitting(false);
+    const res = await create({
+      email: invite.email.trim().toLowerCase(),
+      password: invite.password,
+      name: invite.name.trim(),
+      extension: invite.extension.trim() || null,
+      role: invite.role,
+      daily_limit_pence: Math.max(0, Math.floor(invite.limit * 100)),
+    });
+    setSubmitting(false);
+    if (!res.ok) {
+      setErrorMsg(res.error ?? 'Unknown error');
+      return;
     }
+    pushToast(`Agent created — share login with ${invite.email}`, 'success');
+    setInvite({ email: '', password: '', name: '', extension: '', role: 'agent', limit: 10 });
+    setInviting(false);
   };
 
   return (
     <>
       <Card title="Agents & spend limits" hint="Edit limit = instant effect">
-        <table className="w-full text-[13px]">
-          <thead className="text-[10px] uppercase tracking-wide text-[#9CA3AF]">
-            <tr>
-              <th className="text-left py-2">Name</th>
-              <th className="text-left py-2">Role</th>
-              <th className="text-left py-2">Ext.</th>
-              <th className="text-right py-2">Spend</th>
-              <th className="text-right py-2">Limit (£)</th>
-              <th className="py-2"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E5E7EB]">
-            {agents.map((a) => (
-              <tr key={a.id}>
-                <td className="py-2 font-semibold text-[#1A1A1A]">{a.name}</td>
-                <td className="py-2 text-[#6B7280] capitalize">{a.role}</td>
-                <td className="py-2 text-[#6B7280] tabular-nums">{a.extension}</td>
-                <td className="py-2 text-right tabular-nums">{formatPence(a.spendPence)}</td>
-                <td className="py-2 text-right">
-                  <input
-                    defaultValue={a.isAdmin ? '∞' : (a.limitPence / 100).toFixed(0)}
-                    className="w-16 px-2 py-1 text-right tabular-nums border border-[#E5E7EB] rounded-[8px]"
-                  />
-                </td>
-                <td className="py-2 text-right">
-                  {a.isAdmin ? (
-                    <span className="text-[10px] text-[#9CA3AF]">protected</span>
-                  ) : (
-                    <button
-                      onClick={() => remove(a.id)}
-                      className="text-[#9CA3AF] hover:text-[#EF4444] p-1.5 rounded"
-                      title="Remove agent"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </td>
+        {loading ? (
+          <div className="text-[12px] text-[#6B7280] py-3">Loading agents…</div>
+        ) : listError ? (
+          <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FCA5A5] rounded px-2 py-1.5">
+            {listError}
+          </div>
+        ) : agents.length === 0 ? (
+          <div className="text-[12px] text-[#6B7280] py-3">
+            No agents yet — click "Invite agent" below.
+          </div>
+        ) : (
+          <table className="w-full text-[13px]">
+            <thead className="text-[10px] uppercase tracking-wide text-[#9CA3AF]">
+              <tr>
+                <th className="text-left py-2">Name</th>
+                <th className="text-left py-2">Email</th>
+                <th className="text-left py-2">Role</th>
+                <th className="text-left py-2">Ext.</th>
+                <th className="text-right py-2">Spend</th>
+                <th className="text-right py-2">Limit (£)</th>
+                <th className="py-2"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[#E5E7EB]">
+              {agents.map((a) => (
+                <tr key={a.id}>
+                  <td className="py-2 font-semibold text-[#1A1A1A]">{a.name}</td>
+                  <td className="py-2 text-[#6B7280] truncate max-w-[200px]">{a.email}</td>
+                  <td className="py-2 text-[#6B7280] capitalize">{a.role}</td>
+                  <td className="py-2 text-[#6B7280] tabular-nums">{a.extension ?? '—'}</td>
+                  <td className="py-2 text-right tabular-nums">{formatPence(a.spend_pence)}</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {a.is_admin
+                      ? '∞'
+                      : a.limit_pence != null
+                        ? (a.limit_pence / 100).toFixed(0)
+                        : '—'}
+                  </td>
+                  <td className="py-2 text-right">
+                    {a.is_admin ? (
+                      <span className="text-[10px] text-[#9CA3AF]">protected</span>
+                    ) : (
+                      <button
+                        onClick={() => void onRemove(a.id, a.name)}
+                        disabled={busy === 'delete'}
+                        className="text-[#9CA3AF] hover:text-[#EF4444] p-1.5 rounded disabled:opacity-50"
+                        title="Remove agent"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
         {!inviting && (
           <button
