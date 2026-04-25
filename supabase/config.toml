@@ -179,3 +179,24 @@ verify_jwt = false
 # server-side against Particle's API before doing the update.
 [functions.link-social-identity]
 verify_jwt = false
+
+# /smsv2 — Workspace voice (Twilio Voice SDK) — Phase 1
+# All wk-* functions handle their own auth (Supabase JWT for agent calls,
+# Twilio HMAC-SHA1 signature for webhooks, service-role bearer for the worker).
+[functions.wk-voice-token]
+verify_jwt = false
+
+[functions.wk-voice-twiml-outgoing]
+verify_jwt = false
+
+[functions.wk-voice-twiml-incoming]
+verify_jwt = false
+
+[functions.wk-voice-status]
+verify_jwt = false
+
+[functions.wk-voice-recording]
+verify_jwt = false
+
+[functions.wk-jobs-worker]
+verify_jwt = false
