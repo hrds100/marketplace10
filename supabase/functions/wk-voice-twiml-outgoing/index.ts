@@ -51,6 +51,44 @@ function escapeXml(s: string): string {
           .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
+// CANONICAL: src/features/smsv2/lib/buildOutgoingTwiml.ts (vitest pins this).
+// Edge functions can't import from src/, so the body is mirrored here.
+// Keep them in sync — tests live in the canonical location.
+function buildOutgoingTwiml(args: {
+  to: string;
+  callerIdE164: string | null;
+  statusUrl: string;
+  recordingUrl: string;
+  streamWssUrl: string | null;
+}): string {
+  const callerIdAttr = args.callerIdE164
+    ? `callerId="${escapeXml(args.callerIdE164)}"`
+    : '';
+
+  const dialBlock = [
+    `<Dial ${callerIdAttr} answerOnBridge="true" record="record-from-answer-dual"`,
+    `      recordingStatusCallback="${escapeXml(args.recordingUrl)}"`,
+    `      recordingStatusCallbackEvent="completed"`,
+    `      action="${escapeXml(args.statusUrl)}"`,
+    `      method="POST">`,
+    `  <Number>${escapeXml(args.to)}</Number>`,
+    `</Dial>`,
+  ].join('\n');
+
+  const streamBlock = args.streamWssUrl
+    ? [
+        `<Start>`,
+        `  <Stream url="${escapeXml(args.streamWssUrl)}" track="both_tracks">`,
+        `    <Parameter name="callSid" value="{{CallSid}}"/>`,
+        `  </Stream>`,
+        `</Start>`,
+      ].join('\n')
+    : '';
+
+  const body = [streamBlock, dialBlock].filter((s) => s.length > 0).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n${body}\n</Response>`;
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') {
@@ -138,6 +176,7 @@ serve(async (req: Request) => {
     // If wk-calls-create already minted a row (CallId param baked in), we
     // UPDATE it with the Twilio CallSid + status='in_progress'. Otherwise
     // we INSERT (covers legacy paths and direct-dial without pre-mint).
+    let aiCoachEnabledForThisCall = false;
     try {
       if (preMintedCallId) {
         await supabase.from('wk_calls').update({
@@ -146,6 +185,13 @@ serve(async (req: Request) => {
           status: 'in_progress',
           to_e164: to || null,
         }).eq('id', preMintedCallId);
+        // Read back the flag set by wk-calls-create at mint time.
+        const { data: row } = await supabase
+          .from('wk_calls')
+          .select('ai_coach_enabled')
+          .eq('id', preMintedCallId)
+          .maybeSingle();
+        aiCoachEnabledForThisCall = !!row?.ai_coach_enabled;
       } else {
         await supabase.from('wk_calls').insert({
           twilio_call_sid: callSid,
@@ -162,21 +208,21 @@ serve(async (req: Request) => {
       console.warn('wk_calls upsert failed (continuing):', e);
     }
 
-    // Build TwiML — record both legs, hit our status webhook for completion
-    const statusUrl = `${PUBLIC_FN_BASE}/wk-voice-status`;
-    const recordingUrl = `${PUBLIC_FN_BASE}/wk-voice-recording`;
-    const callerId = callerIdE164 ? `callerId="${escapeXml(callerIdE164)}"` : '';
-    const dial = [
-      `<Dial ${callerId} answerOnBridge="true" record="record-from-answer-dual"`,
-      `      recordingStatusCallback="${escapeXml(recordingUrl)}"`,
-      `      recordingStatusCallbackEvent="completed"`,
-      `      action="${escapeXml(statusUrl)}"`,
-      `      method="POST">`,
-      `  <Number>${escapeXml(to)}</Number>`,
-      `</Dial>`,
-    ].join('\n');
+    // Live AI coach stream — only when the call's ai_coach_enabled flag is
+    // set. wk-ai-live-coach itself enforces the kill switch + settings, so
+    // a 503 there just closes the stream cleanly without breaking the call.
+    const wssBase = SUPABASE_URL.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://');
+    const streamWssUrl = aiCoachEnabledForThisCall
+      ? `${wssBase}/functions/v1/wk-ai-live-coach?callSid=${encodeURIComponent(callSid)}`
+      : null;
 
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n${dial}\n</Response>`;
+    const twiml = buildOutgoingTwiml({
+      to,
+      callerIdE164,
+      statusUrl: `${PUBLIC_FN_BASE}/wk-voice-status`,
+      recordingUrl: `${PUBLIC_FN_BASE}/wk-voice-recording`,
+      streamWssUrl,
+    });
     return new Response(twiml, {
       status: 200,
       headers: { 'Content-Type': 'text/xml' },
