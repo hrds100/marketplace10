@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Phone,
   PhoneOff,
@@ -26,6 +26,31 @@ export default function Softphone() {
   const { phase, call, durationSec, fullScreen, setFullScreen, startCall, endCall } =
     useActiveCallCtx();
   const spend = useSpendLimit();
+
+  // Mid-call drop recovery — when the Twilio device's active call drops
+  // (remote hangup, network loss, etc.) we transition to post_call so the
+  // outcome panel appears instead of the UI being stuck in 'in_call' forever.
+  const wasActiveRef = useRef(false);
+  useEffect(() => {
+    const isActive = !!device.activeCall;
+    if (wasActiveRef.current && !isActive && phase === 'in_call') {
+      endCall();
+    }
+    wasActiveRef.current = isActive;
+  }, [device.activeCall, phase, endCall]);
+
+  // Distinguish three statuses so the launcher label is honest:
+  //   on_call → there's a live Twilio call right now
+  //   ready   → device registered, idle (can dial)
+  //   else    → registering / idle / error
+  const launcherStatus =
+    phase === 'in_call' || device.activeCall
+      ? 'On call'
+      : device.status === 'ready'
+        ? 'Ready'
+        : device.status === 'registering'
+          ? 'Connecting…'
+          : 'Offline';
 
   const handleCall = (phone: string) => {
     if (spend.isLimitReached) return;
@@ -109,9 +134,7 @@ export default function Softphone() {
         </span>
         <div className="text-left">
           <div className="text-[12px] font-semibold text-[#1A1A1A]">Softphone</div>
-          <div className="text-[10px] text-[#6B7280]">
-            {device.status === 'ready' ? 'Connected' : 'Offline'}
-          </div>
+          <div className="text-[10px] text-[#6B7280]">{launcherStatus}</div>
         </div>
       </button>
     );
