@@ -38,7 +38,7 @@ interface ContactRow {
 
 interface ProfileRow {
   id: string;
-  full_name: string | null;
+  name: string | null;
   email: string | null;
 }
 
@@ -71,7 +71,7 @@ export function useLiveActivity(): { rows: LiveActivityRow[]; loading: boolean }
       agentIds.length > 0
         ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (supabase.from('profiles' as any) as any)
-            .select('id, full_name, email')
+            .select('id, name, email')
             .in('id', agentIds)
         : Promise.resolve({ data: [] }),
     ]);
@@ -88,7 +88,7 @@ export function useLiveActivity(): { rows: LiveActivityRow[]; loading: boolean }
         return {
           callId: c.id,
           agentId: c.agent_id ?? '',
-          agentName: agent?.full_name ?? agent?.email ?? 'Agent',
+          agentName: agent?.name ?? agent?.email ?? 'Agent',
           contactName: contact?.name ?? c.to_e164 ?? 'Unknown',
           contactPhone: contact?.phone ?? c.to_e164 ?? '',
           status: c.status as 'queued' | 'ringing' | 'in_progress',

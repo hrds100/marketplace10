@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import type { Contact } from '../../types';
+import type { Agent, Contact } from '../../types';
 import { MOCK_AGENTS } from '../../data/mockAgents';
 import { ACTIVE_PIPELINE } from '../../data/mockPipelines';
 
@@ -8,9 +8,17 @@ interface Props {
   contact: Contact | null;
   onClose: () => void;
   onSave: (c: Contact) => void;
+  /**
+   * Real agents from useAgentsToday() etc. When provided, replaces
+   * MOCK_AGENTS in the owner dropdown so the saved owner_agent_id is
+   * a real profiles.id (UUID), not a synthetic mock id like "a-hugo".
+   */
+  agents?: Agent[];
 }
 
-export default function EditContactModal({ contact, onClose, onSave }: Props) {
+export default function EditContactModal({ contact, onClose, onSave, agents }: Props) {
+  // Real agents when provided, mock fallback so dev/Storybook still works.
+  const ownerOptions = agents && agents.length > 0 ? agents : MOCK_AGENTS;
   const [draft, setDraft] = useState<Contact | null>(contact);
   const [newField, setNewField] = useState({ key: '', value: '' });
   const [newTag, setNewTag] = useState('');
@@ -80,7 +88,7 @@ export default function EditContactModal({ contact, onClose, onSave }: Props) {
                 className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
               >
                 <option value="">Unassigned</option>
-                {MOCK_AGENTS.map((a) => (
+                {ownerOptions.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name}
                   </option>
