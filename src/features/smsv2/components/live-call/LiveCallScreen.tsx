@@ -21,7 +21,7 @@ import EditContactModal from '../contacts/EditContactModal';
 import type { Contact } from '../../types';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../../data/mockCalls';
-import { CURRENT_AGENT } from '../../data/mockAgents';
+import { useCurrentAgent } from '../../hooks/useCurrentAgent';
 import {
   formatDuration,
   formatPence,
@@ -32,6 +32,7 @@ import {
 export default function LiveCallScreen() {
   const { phase, call, durationSec, endCall, setFullScreen } = useActiveCallCtx();
   const store = useSmsV2();
+  const { agent: me, firstName: myFirstName, talkRatioPercent } = useCurrentAgent();
   const [editing, setEditing] = useState<Contact | null>(null);
 
   // Resolve a contact for context — fall back to first contact if direct dial
@@ -87,20 +88,18 @@ export default function LiveCallScreen() {
           >
             <span>
               Talk{' '}
-              <span className="font-semibold tabular-nums">
-                {Math.round((CURRENT_AGENT.answeredToday / CURRENT_AGENT.callsToday) * 100) || 0}%
-              </span>
+              <span className="font-semibold tabular-nums">{talkRatioPercent}%</span>
             </span>
             <span className="opacity-50">·</span>
             <span>
               Calls{' '}
-              <span className="font-semibold tabular-nums">{CURRENT_AGENT.callsToday}</span>
+              <span className="font-semibold tabular-nums">{me?.callsToday ?? 0}</span>
             </span>
             <span className="opacity-50">·</span>
             <span>
               Spend{' '}
               <span className="font-semibold tabular-nums">
-                {formatPence(CURRENT_AGENT.spendPence)}
+                {formatPence(me?.spendPence ?? 0)}
               </span>
             </span>
           </div>
@@ -214,7 +213,7 @@ export default function LiveCallScreen() {
                 Call script
               </div>
               <div className="bg-[#F3F3EE] rounded-lg p-2 text-[12px] text-[#1A1A1A] leading-snug">
-                Hi {contact.name.split(' ')[0]}, this is {CURRENT_AGENT.name.split(' ')[0]} from
+                Hi {contact.name.split(' ')[0]}, this is {myFirstName || 'me'} from
                 NFSTAY. I noticed you signed up for our landlord guide — got a few minutes?
               </div>
             </div>
