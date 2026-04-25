@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   MessageSquare,
   PhoneIncoming,
@@ -6,10 +6,10 @@ import {
   PhoneMissed,
   Voicemail,
   Search,
-  Reply,
   Phone,
   Play,
   Pencil,
+  Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../data/mockCalls';
@@ -18,24 +18,97 @@ import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { useContactTimeline } from '../hooks/useContactTimeline';
+import { useContactPersistence } from '../hooks/useContactPersistence';
+import { supabase } from '@/integrations/supabase/client';
 import type { Contact } from '../types';
+
+interface SmsSendInvoke {
+  invoke: (
+    name: string,
+    options: { body: Record<string, unknown> }
+  ) => Promise<{
+    data: { sid?: string; error?: string } | null;
+    error: { message: string } | null;
+  }>;
+}
 
 type Filter = 'all' | 'sms' | 'calls' | 'voicemail' | 'missed';
 
 export default function InboxPage() {
-  const { contacts, patchContact, upsertContact } = useSmsV2();
+  const { contacts, patchContact, upsertContact, pushToast } = useSmsV2();
+  const persist = useContactPersistence();
   const [filter, setFilter] = useState<Filter>('all');
-  const [activeContactId, setActiveContactId] = useState(contacts[0].id);
+  const [activeContactId, setActiveContactId] = useState(contacts[0]?.id ?? '');
   const [editing, setEditing] = useState<Contact | null>(null);
+  const [reply, setReply] = useState('');
+  const [sending, setSending] = useState(false);
   const { startCall } = useActiveCallCtx();
 
   const activeContact = contacts.find((c) => c.id === activeContactId) ?? contacts[0];
-  const contactSms = MOCK_SMS.filter((m) => m.contactId === activeContact.id);
-  const contactActivity = MOCK_ACTIVITIES.filter((a) => a.contactId === activeContact.id);
+  const timeline = useContactTimeline(activeContact?.id ?? '', activeContact?.phone);
+
+  // Real data when present, mock fallback otherwise so the demo state still renders.
+  const contactSms = timeline.sms.length > 0
+    ? timeline.sms
+    : MOCK_SMS.filter((m) => m.contactId === activeContact?.id);
+  const contactActivity = timeline.activities.length > 0
+    ? timeline.activities
+    : MOCK_ACTIVITIES.filter((a) => a.contactId === activeContact?.id);
+
+  // Sort the unified thread by timestamp so SMS interleave with calls if present
+  const threadItems = useMemo(() => {
+    const items = contactSms.map((m) => ({
+      kind: 'sms' as const,
+      ts: m.sentAt,
+      payload: m,
+    }));
+    // Add call entries from timeline so the bubble list shows both
+    for (const c of timeline.calls) {
+      items.push({ kind: 'call' as const, ts: c.startedAt, payload: c });
+    }
+    items.sort((a, b) => +new Date(a.ts) - +new Date(b.ts));
+    return items;
+  }, [contactSms, timeline.calls]);
 
   const setStage = (col: string) => {
+    if (!activeContact) return;
     patchContact(activeContact.id, { pipelineColumnId: col });
+    void persist.moveToColumn(activeContact.id, col);
   };
+
+  const send = async () => {
+    if (!reply.trim() || !activeContact || sending) return;
+    setSending(true);
+    try {
+      const { data, error } = await (
+        supabase.functions as unknown as SmsSendInvoke
+      ).invoke('sms-send', {
+        body: {
+          to: activeContact.phone,
+          body: reply.trim(),
+        },
+      });
+      if (error || data?.error) {
+        pushToast(`SMS send failed: ${error?.message ?? data?.error ?? 'unknown'}`, 'error');
+      } else {
+        pushToast('SMS sent', 'success');
+        setReply('');
+      }
+    } catch (e) {
+      pushToast(`SMS send crashed: ${e instanceof Error ? e.message : 'unknown'}`, 'error');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!activeContact) {
+    return (
+      <div className="p-12 text-center text-[14px] text-[#9CA3AF] italic">
+        No contacts yet. Import a CSV or add one in Contacts.
+      </div>
+    );
+  }
 
   return (
     <>
@@ -158,39 +231,80 @@ export default function InboxPage() {
           >
             <Phone className="w-3.5 h-3.5" /> Call
           </button>
-          <button className="flex items-center gap-1.5 border border-[#E5E7EB] text-[#1A1A1A] text-[12px] font-medium px-3 py-1.5 rounded-[10px] hover:bg-white">
-            <Reply className="w-3.5 h-3.5" /> Reply
-          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
-          {contactSms.map((m) => (
-            <div
-              key={m.id}
-              className={cn(
-                'rounded-2xl px-3 py-2 max-w-[60%] text-[13px] leading-snug',
-                m.direction === 'outbound'
-                  ? 'bg-[#1E9A80]/15 text-[#1A1A1A] ml-auto'
-                  : 'bg-white border border-[#E5E7EB] text-[#1A1A1A]'
-              )}
-            >
-              {m.body}
-              <div className="text-[10px] text-[#9CA3AF] mt-0.5 tabular-nums">
-                {formatTimeOnly(m.sentAt)}
+          {threadItems.map((item) => {
+            if (item.kind === 'sms') {
+              const m = item.payload;
+              return (
+                <div
+                  key={`sms-${m.id}`}
+                  className={cn(
+                    'rounded-2xl px-3 py-2 max-w-[60%] text-[13px] leading-snug',
+                    m.direction === 'outbound'
+                      ? 'bg-[#1E9A80]/15 text-[#1A1A1A] ml-auto'
+                      : 'bg-white border border-[#E5E7EB] text-[#1A1A1A]'
+                  )}
+                >
+                  {m.body}
+                  <div className="text-[10px] text-[#9CA3AF] mt-0.5 tabular-nums">
+                    {formatTimeOnly(m.sentAt)}
+                  </div>
+                </div>
+              );
+            }
+            const c = item.payload;
+            return (
+              <div
+                key={`call-${c.id}`}
+                className="rounded-2xl px-3 py-2 max-w-[60%] mx-auto bg-white border border-[#E5E7EB] text-[#1A1A1A] text-[12px]"
+              >
+                <div className="flex items-center gap-1.5 font-semibold">
+                  {c.direction === 'outbound' ? (
+                    <PhoneOutgoing className="w-3 h-3 text-[#3B82F6]" />
+                  ) : (
+                    <PhoneIncoming className="w-3 h-3 text-[#1E9A80]" />
+                  )}
+                  {c.direction} call · {c.status}
+                  {c.durationSec > 0 && ` · ${formatDuration(c.durationSec)}`}
+                </div>
+                {c.aiSummary && (
+                  <div className="text-[11px] text-[#6B7280] italic mt-1">
+                    "{c.aiSummary}"
+                  </div>
+                )}
+                <div className="text-[10px] text-[#9CA3AF] mt-1 tabular-nums">
+                  {formatTimeOnly(c.startedAt)}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        <div className="px-5 py-3 bg-white border-t border-[#E5E7EB] flex gap-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void send();
+          }}
+          className="px-5 py-3 bg-white border-t border-[#E5E7EB] flex gap-2"
+        >
           <input
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
             placeholder="Type a reply…"
-            className="flex-1 px-3 py-2 text-[13px] bg-[#F3F3EE] border-0 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#1E9A80]/30"
+            disabled={sending}
+            className="flex-1 px-3 py-2 text-[13px] bg-[#F3F3EE] border-0 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#1E9A80]/30 disabled:opacity-60"
           />
-          <button className="bg-[#1E9A80] text-white text-[13px] font-semibold px-4 rounded-[10px] hover:bg-[#1E9A80]/90">
-            Send
+          <button
+            type="submit"
+            disabled={!reply.trim() || sending}
+            className="flex items-center gap-1.5 bg-[#1E9A80] text-white text-[13px] font-semibold px-4 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Send className="w-3.5 h-3.5" />
+            {sending ? 'Sending…' : 'Send'}
           </button>
-        </div>
+        </form>
       </section>
 
       {/* Pane 3 — timeline */}
