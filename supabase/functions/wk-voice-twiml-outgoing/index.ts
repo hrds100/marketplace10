@@ -58,7 +58,11 @@ serve(async (req: Request) => {
   }
 
   try {
-    const url = req.url;
+    // Twilio computed its signature against the public URL it POSTed to, not
+    // the internal proxy URL `req.url` returns inside the Edge Function. We
+    // must reconstruct the same public URL Twilio used (matches the Voice
+    // URL configured on the TwiML App).
+    const url = `${SUPABASE_URL}/functions/v1/wk-voice-twiml-outgoing`;
     const formData = await req.formData();
     const params: Record<string, string> = {};
     formData.forEach((v, k) => { params[k] = v.toString(); });
