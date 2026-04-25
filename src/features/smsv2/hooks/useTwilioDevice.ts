@@ -22,7 +22,7 @@ export function useTwilioDevice(): {
   error: string | null;
   muted: boolean;
   setMuted: (m: boolean) => void;
-  dial: (phone: string) => Promise<void>;
+  dial: (phone: string, extraParams?: Record<string, string>) => Promise<TwilioCall>;
   hangup: () => void;
   sendDigits: (digits: string) => void;
   activeCall: TwilioCall | null;
@@ -60,10 +60,10 @@ export function useTwilioDevice(): {
     };
   }, []);
 
-  const dial = useCallback(async (phone: string) => {
+  const dial = useCallback(async (phone: string, extraParams?: Record<string, string>) => {
     setError(null);
     try {
-      const call = await voiceDial({ to: phone });
+      const call = await voiceDial({ to: phone, extraParams });
       callRef.current = call;
       setActiveCall(call);
       call.on('disconnect', () => {
@@ -78,6 +78,7 @@ export function useTwilioDevice(): {
         callRef.current = null;
         setActiveCall(null);
       });
+      return call;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'dial failed');
       throw e;

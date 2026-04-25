@@ -1,9 +1,12 @@
-import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import type { Call as TwilioCall } from '@twilio/voice-sdk';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
+import { useTwilioDevice } from '../../hooks/useTwilioDevice';
+import { startCallOrchestration, type StartCallResult } from '../../lib/startCallOrchestration';
 
-export type CallPhase = 'idle' | 'in_call' | 'post_call';
+export type CallPhase = 'idle' | 'placing' | 'in_call' | 'post_call';
 
 interface ActiveCall {
   contactId: string;
@@ -27,13 +30,43 @@ interface OutcomeInvoke {
   }>;
 }
 
+interface CreateCallInvoke {
+  invoke: (
+    name: string,
+    options: { body: Record<string, unknown> }
+  ) => Promise<{
+    data: { call_id?: string; allowed?: boolean; reason?: string } | null;
+    error: { message: string } | null;
+  }>;
+}
+
 interface ActiveCallCtx {
   phase: CallPhase;
   call: ActiveCall | null;
   durationSec: number;
   fullScreen: boolean;
   setFullScreen: (v: boolean) => void;
-  startCall: (contactId: string, phone?: string, name?: string, callId?: string | null) => void;
+  /**
+   * Manual dial — minted call_id server-side, dials Twilio Device, and
+   * drives phase transitions via call event listeners. Returns the
+   * orchestration result for callers that want the typed reason on
+   * failure (most just await and ignore).
+   */
+  startCall: (
+    contactId: string,
+    phoneOverride?: string,
+    nameOverride?: string
+  ) => Promise<StartCallResult>;
+  /**
+   * Internal: used by the dialer-winner broadcast handler when the call is
+   * already up server-side. Skips the dial/mint flow.
+   */
+  resumeFromBroadcast: (input: {
+    contactId: string;
+    contactName?: string;
+    phone?: string;
+    callId?: string | null;
+  }) => void;
   endCall: () => void;
   clearCall: () => void;
   /**
@@ -52,11 +85,13 @@ const Ctx = createContext<ActiveCallCtx | null>(null);
 
 export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const store = useSmsV2();
+  const device = useTwilioDevice();
   const [phase, setPhase] = useState<CallPhase>('idle');
   const [call, setCall] = useState<ActiveCall | null>(null);
   const [, setTick] = useState(0);
   const [fullScreen, setFullScreen] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeTwilioCallRef = useRef<TwilioCall | null>(null);
 
   useEffect(() => {
     if (phase === 'in_call') {
@@ -122,26 +157,90 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     };
   }, [store]);
 
-  const value = useMemo<ActiveCallCtx>(() => {
-    const durationSec = call ? Math.floor((Date.now() - call.startedAt) / 1000) : 0;
-
-    const startCall = (
-      contactId: string,
-      phoneOverride?: string,
-      nameOverride?: string,
-      callId: string | null = null
-    ) => {
+  const startCall = useCallback<ActiveCallCtx['startCall']>(
+    async (contactId, phoneOverride, nameOverride) => {
       const contact = store.getContact(contactId);
+      const phone = (phoneOverride ?? contact?.phone ?? '').trim();
+      const contactName = contact?.name ?? nameOverride ?? 'Unknown caller';
+
+      // Optimistic UI: show placing state so the agent gets immediate
+      // feedback (the "calling…" pill). startedAt is set once the call
+      // is accepted, not now, so the duration reflects real talk time.
+      setCall({ contactId, contactName, phone, startedAt: Date.now(), callId: null });
+      setPhase('placing');
+      setFullScreen(true);
+
+      const result = await startCallOrchestration(
+        { contactId, contactName, phone },
+        {
+          invokeCreateCall: async (input) => {
+            const { data, error } = await (
+              supabase.functions as unknown as CreateCallInvoke
+            ).invoke('wk-calls-create', { body: input });
+            return { data, error };
+          },
+          dial: device.dial,
+          pushToast: store.pushToast,
+        }
+      );
+
+      if (!result.ok) {
+        setPhase('idle');
+        setCall(null);
+        return result;
+      }
+
+      // Wire phase transitions to the Twilio Call lifecycle. 'accept' means
+      // the agent's mic is connected to Twilio (call is up). 'disconnect',
+      // 'cancel', 'reject' all collapse to post_call.
+      activeTwilioCallRef.current = result.twilioCall;
+      setCall((prev) =>
+        prev ? { ...prev, callId: result.callId, startedAt: Date.now() } : prev
+      );
+
+      const onAccept = () => {
+        setPhase('in_call');
+        setCall((prev) => (prev ? { ...prev, startedAt: Date.now() } : prev));
+      };
+      const onEnd = () => {
+        if (activeTwilioCallRef.current === result.twilioCall) {
+          activeTwilioCallRef.current = null;
+        }
+        setPhase('post_call');
+      };
+      result.twilioCall.on('accept', onAccept);
+      result.twilioCall.on('disconnect', onEnd);
+      result.twilioCall.on('cancel', () => {
+        if (activeTwilioCallRef.current === result.twilioCall) {
+          activeTwilioCallRef.current = null;
+        }
+        setPhase('idle');
+        setCall(null);
+      });
+      result.twilioCall.on('reject', onEnd);
+
+      return result;
+    },
+    [device.dial, store]
+  );
+
+  const resumeFromBroadcast = useCallback<ActiveCallCtx['resumeFromBroadcast']>(
+    (input) => {
       setCall({
-        contactId,
-        contactName: contact?.name ?? nameOverride ?? 'Unknown caller',
-        phone: phoneOverride ?? contact?.phone ?? '',
+        contactId: input.contactId,
+        contactName: input.contactName ?? 'Inbound',
+        phone: input.phone ?? '',
         startedAt: Date.now(),
-        callId,
+        callId: input.callId ?? null,
       });
       setPhase('in_call');
       setFullScreen(true);
-    };
+    },
+    []
+  );
+
+  const value = useMemo<ActiveCallCtx>(() => {
+    const durationSec = call ? Math.floor((Date.now() - call.startedAt) / 1000) : 0;
 
     return {
       phase,
@@ -150,7 +249,11 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       fullScreen,
       setFullScreen,
       startCall,
-      endCall: () => setPhase('post_call'),
+      resumeFromBroadcast,
+      endCall: () => {
+        try { activeTwilioCallRef.current?.disconnect(); } catch { /* ignore */ }
+        setPhase('post_call');
+      },
       clearCall: () => {
         setPhase('idle');
         setCall(null);
@@ -166,7 +269,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         if (columnId === 'skipped' || columnId === 'next-now') {
           const nextId = store.popNextFromQueue();
           if (nextId) {
-            startCall(nextId);
+            void startCall(nextId);
           } else {
             store.pushToast('Queue is empty — no more leads', 'info');
             setPhase('idle');
@@ -207,7 +310,6 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
               if (error) {
                 store.pushToast(`Server outcome failed: ${error.message}`, 'error');
               } else if (data?.applied && data.applied.length === 0 && badges.length > 0) {
-                // Server fired nothing but we showed badges — note it.
                 console.warn('outcome: server fired no automations', data);
               }
             } catch (e) {
@@ -221,7 +323,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
 
         if (nextContactId) {
           // small delay for the agent to read the toast
-          setTimeout(() => startCall(nextContactId), 600);
+          setTimeout(() => void startCall(nextContactId), 600);
         } else {
           store.pushToast('Queue is empty — no more leads', 'info');
           setPhase('idle');
@@ -229,7 +331,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         }
       },
     };
-  }, [phase, call, fullScreen, store]);
+  }, [phase, call, fullScreen, store, startCall, resumeFromBroadcast]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
