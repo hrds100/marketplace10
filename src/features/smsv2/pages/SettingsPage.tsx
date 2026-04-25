@@ -26,12 +26,30 @@ import {
 import { cn } from '@/lib/utils';
 import { ACTIVE_PIPELINE } from '../data/mockPipelines';
 import { MOCK_TEMPLATES, COACH_PROMPTS } from '../data/mockCampaigns';
-import { MOCK_NUMBERS } from '../data/mockCampaigns';
 import { formatPence } from '../data/helpers';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useAiSettings } from '../hooks/useAiSettings';
+import { useTwilioAccount } from '../hooks/useTwilioAccount';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { supabase } from '@/integrations/supabase/client';
 import type { Agent, PipelineColumn } from '../types';
+
+interface CreateAgentInvoke {
+  invoke: (
+    name: string,
+    options: { body: Record<string, unknown> }
+  ) => Promise<{
+    data: {
+      user_id?: string;
+      email?: string;
+      role?: string;
+      extension?: string | null;
+      daily_limit_pence?: number;
+      error?: string;
+    } | null;
+    error: { message: string } | null;
+  }>;
+}
 
 const TABS = [
   { id: 'pipelines', label: 'Pipelines & outcomes', icon: Kanban },
@@ -575,10 +593,14 @@ function CampaignsTab() {
 
 // ─── Agents — invite + delete + spend ──────────────────────────────
 function AgentsTab() {
-  const { agents, upsertAgent, removeAgent } = useSmsV2();
+  const { agents, upsertAgent, removeAgent, pushToast } = useSmsV2();
   const [inviting, setInviting] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [invite, setInvite] = useState({
     email: '',
+    password: '',
     name: '',
     extension: '',
     role: 'agent' as Agent['role'],
@@ -587,24 +609,72 @@ function AgentsTab() {
 
   const remove = (id: string) => removeAgent(id);
 
-  const send = () => {
-    if (!invite.email || !invite.name) return;
-    upsertAgent({
-      id: `a-new-${Date.now()}`,
-      name: invite.name,
-      email: invite.email,
-      extension: invite.extension || `1${agents.length + 10}`,
-      role: invite.role,
-      status: 'offline',
-      callsToday: 0,
-      answeredToday: 0,
-      avgDurationSec: 0,
-      spendPence: 0,
-      limitPence: invite.limit * 100,
-      isAdmin: invite.role === 'admin',
-    });
-    setInvite({ email: '', name: '', extension: '', role: 'agent', limit: 10 });
-    setInviting(false);
+  const randomPassword = () => {
+    const charset = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let out = '';
+    const arr = new Uint32Array(12);
+    crypto.getRandomValues(arr);
+    for (const n of arr) out += charset[n % charset.length];
+    return out;
+  };
+
+  const send = async () => {
+    setErrorMsg(null);
+    if (!invite.email || !invite.name) {
+      setErrorMsg('Name and email are required.');
+      return;
+    }
+    if (invite.password.length < 8) {
+      setErrorMsg('Password must be at least 8 characters.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data, error } = await (
+        supabase.functions as unknown as CreateAgentInvoke
+      ).invoke('wk-create-agent', {
+        body: {
+          email: invite.email.trim().toLowerCase(),
+          password: invite.password,
+          name: invite.name.trim(),
+          extension: invite.extension.trim() || null,
+          role: invite.role,
+          daily_limit_pence: Math.max(0, Math.floor(invite.limit * 100)),
+        },
+      });
+      if (error) {
+        setErrorMsg(error.message);
+        setSubmitting(false);
+        return;
+      }
+      if (data?.error) {
+        setErrorMsg(data.error);
+        setSubmitting(false);
+        return;
+      }
+      // Reflect locally so the table updates without a reload
+      upsertAgent({
+        id: data?.user_id ?? `a-new-${Date.now()}`,
+        name: invite.name,
+        email: invite.email,
+        extension: data?.extension ?? invite.extension ?? '',
+        role: invite.role,
+        status: 'offline',
+        callsToday: 0,
+        answeredToday: 0,
+        avgDurationSec: 0,
+        spendPence: 0,
+        limitPence: data?.daily_limit_pence ?? invite.limit * 100,
+        isAdmin: invite.role === 'admin',
+      });
+      pushToast(`Agent created — share login with ${invite.email}`, 'success');
+      setInvite({ email: '', password: '', name: '', extension: '', role: 'agent', limit: 10 });
+      setInviting(false);
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -664,7 +734,7 @@ function AgentsTab() {
         {inviting && (
           <div className="mt-3 border border-[#E5E7EB] rounded-xl p-3 bg-[#F3F3EE]/40 space-y-2">
             <div className="text-[12px] font-semibold text-[#1A1A1A] mb-1 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5" /> Invite by email
+              <Mail className="w-3.5 h-3.5" /> Create agent — they sign in with this email + password
             </div>
             <div className="grid grid-cols-2 gap-2">
               <input
@@ -679,6 +749,38 @@ function AgentsTab() {
                 onChange={(e) => setInvite({ ...invite, email: e.target.value })}
                 className="px-2 py-1.5 text-[12px] border border-[#E5E7EB] rounded-[8px]"
               />
+              <div className="col-span-2 flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Key className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    placeholder="Password (≥ 8 chars)"
+                    value={invite.password}
+                    onChange={(e) => setInvite({ ...invite, password: e.target.value })}
+                    className="w-full pl-7 pr-8 py-1.5 text-[12px] border border-[#E5E7EB] rounded-[8px] font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#1A1A1A]"
+                    title={showPw ? 'Hide password' : 'Show password'}
+                  >
+                    {showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const pw = randomPassword();
+                    setInvite((s) => ({ ...s, password: pw }));
+                    setShowPw(true);
+                  }}
+                  className="text-[11px] font-medium text-[#1E9A80] hover:bg-[#ECFDF5] px-2 py-1.5 rounded-[8px] whitespace-nowrap"
+                  title="Generate a strong password"
+                >
+                  Generate
+                </button>
+              </div>
               <input
                 placeholder="Extension (e.g. 106)"
                 value={invite.extension}
@@ -708,18 +810,27 @@ function AgentsTab() {
                 />
               </div>
             </div>
+            {errorMsg && (
+              <div className="text-[11px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FCA5A5] rounded px-2 py-1.5">
+                {errorMsg}
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2 border-t border-[#E5E7EB]">
               <button
-                onClick={() => setInviting(false)}
+                onClick={() => {
+                  setInviting(false);
+                  setErrorMsg(null);
+                }}
                 className="text-[11px] text-[#6B7280] hover:text-[#1A1A1A] px-2 py-1"
               >
                 Cancel
               </button>
               <button
-                onClick={send}
-                className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[8px] hover:bg-[#1E9A80]/90"
+                onClick={() => void send()}
+                disabled={submitting}
+                className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[8px] hover:bg-[#1E9A80]/90 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Send invite
+                {submitting ? 'Creating…' : 'Create agent'}
               </button>
             </div>
           </div>
@@ -729,37 +840,200 @@ function AgentsTab() {
   );
 }
 
-// ─── Numbers ───────────────────────────────────────────────────────
+// ─── Numbers — Twilio connection + per-number toggles ─────────────
 function NumbersTab() {
+  const { state, loading, busy, error, connect, disconnect, sync, toggleNumber } =
+    useTwilioAccount();
+  const [sid, setSid] = useState('');
+  const [token, setToken] = useState('');
+  const [showToken, setShowToken] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const onConnect = async () => {
+    setLocalError(null);
+    if (!sid.trim().startsWith('AC')) {
+      setLocalError('Account SID must start with "AC".');
+      return;
+    }
+    if (token.trim().length < 16) {
+      setLocalError('Auth token looks too short.');
+      return;
+    }
+    const ok = await connect(sid.trim(), token.trim());
+    if (ok) {
+      setSid('');
+      setToken('');
+    }
+  };
+
+  const onDisconnect = async () => {
+    if (!confirm('Disconnect Twilio? Numbers stay in the workspace but calls will fail.'))
+      return;
+    await disconnect();
+  };
+
+  if (loading) {
+    return (
+      <Card title="Twilio account">
+        <div className="text-[12px] text-[#6B7280] py-4">Loading…</div>
+      </Card>
+    );
+  }
+
+  // ---------- Disconnected state ---------------------------------------
+  if (!state.connected) {
+    return (
+      <Card
+        title="Twilio account"
+        hint="Paste your Account SID and Auth Token to connect"
+      >
+        <div className="space-y-3 max-w-[560px]">
+          <div>
+            <div className="text-[12px] font-medium text-[#1A1A1A] mb-1">Account SID</div>
+            <input
+              value={sid}
+              onChange={(e) => setSid(e.target.value)}
+              placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              className="w-full px-3 py-2 text-[13px] font-mono border border-[#E5E7EB] rounded-[10px] bg-white"
+            />
+          </div>
+          <div>
+            <div className="text-[12px] font-medium text-[#1A1A1A] mb-1">Auth Token</div>
+            <div className="relative">
+              <Key className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+              <input
+                type={showToken ? 'text' : 'password'}
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="Auth token from Twilio console"
+                className="w-full pl-9 pr-9 py-2 text-[13px] font-mono border border-[#E5E7EB] rounded-[10px] bg-white"
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#1A1A1A]"
+                title={showToken ? 'Hide' : 'Show'}
+              >
+                {showToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+          {(localError || error) && (
+            <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg px-3 py-2">
+              {localError ?? error}
+            </div>
+          )}
+          <button
+            onClick={() => void onConnect()}
+            disabled={busy === 'connect'}
+            className="bg-[#1E9A80] text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {busy === 'connect' ? 'Connecting…' : 'Connect Twilio account'}
+          </button>
+        </div>
+      </Card>
+    );
+  }
+
+  // ---------- Connected state ------------------------------------------
+  const sidMasked = state.account_sid
+    ? `${state.account_sid.slice(0, 6)}…${state.account_sid.slice(-6)}`
+    : '';
+
   return (
-    <Card title="Twilio numbers">
-      <table className="w-full text-[13px]">
-        <thead className="text-[10px] uppercase tracking-wide text-[#9CA3AF]">
-          <tr>
-            <th className="text-left py-2">Number</th>
-            <th className="text-left py-2">Label</th>
-            <th className="text-left py-2">Capabilities</th>
-            <th className="text-right py-2">Max/min</th>
-            <th className="text-right py-2">Cooldown</th>
-            <th className="text-center py-2">Recording</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#E5E7EB]">
-          {MOCK_NUMBERS.map((n) => (
-            <tr key={n.id}>
-              <td className="py-2 font-mono text-[12px] tabular-nums">{n.e164}</td>
-              <td className="py-2 text-[#1A1A1A]">{n.label}</td>
-              <td className="py-2 text-[#6B7280] uppercase text-[10px]">
-                {n.capabilities.join(' · ')}
-              </td>
-              <td className="py-2 text-right tabular-nums">{n.maxCallsPerMinute}</td>
-              <td className="py-2 text-right tabular-nums">{n.cooldownSecondsAfterCall}s</td>
-              <td className="py-2 text-center">{n.recordingEnabled ? '✅' : '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </Card>
+    <>
+      <Card title="Twilio account" hint="Connected">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#1E9A80]" />
+              <span className="text-[13px] font-semibold text-[#1A1A1A]">Twilio connected</span>
+            </div>
+            {state.friendly_name && (
+              <div className="text-[12px] text-[#6B7280]">{state.friendly_name}</div>
+            )}
+            <div className="text-[11px] text-[#6B7280] font-mono">SID {sidMasked}</div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => void sync()}
+              disabled={busy === 'sync'}
+              className="text-[12px] font-medium border border-[#E5E7EB] text-[#1A1A1A] hover:bg-[#F3F3EE] px-3 py-1.5 rounded-[10px] disabled:opacity-60"
+            >
+              {busy === 'sync' ? 'Syncing…' : 'Sync numbers'}
+            </button>
+            <button
+              onClick={() => void onDisconnect()}
+              disabled={busy === 'disconnect'}
+              className="text-[12px] font-medium border border-[#FCA5A5] text-[#B91C1C] hover:bg-[#FEF2F2] px-3 py-1.5 rounded-[10px] disabled:opacity-60"
+            >
+              {busy === 'disconnect' ? 'Disconnecting…' : 'Disconnect Twilio account'}
+            </button>
+          </div>
+        </div>
+        {error && (
+          <div className="mt-3 text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
+      </Card>
+
+      <Card
+        title="Enable your numbers below"
+        hint="Toggle voice on/off — only enabled numbers can make outbound calls"
+      >
+        {state.numbers.length === 0 ? (
+          <div className="text-[12px] text-[#6B7280] py-4">
+            No numbers found. Buy a number in the Twilio console then click Sync.
+          </div>
+        ) : (
+          <div className="divide-y divide-[#E5E7EB]">
+            {state.numbers.map((n) => (
+              <div key={n.id} className="flex items-center justify-between py-3">
+                <div className="space-y-0.5">
+                  <div className="font-mono text-[14px] tabular-nums text-[#1A1A1A]">
+                    {n.e164}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF]">
+                    {[n.sms_enabled ? 'SMS' : null, n.recording_enabled ? 'recording' : null]
+                      .filter(Boolean)
+                      .join(' · ') || 'voice only'}
+                    {' · '}max {n.max_calls_per_minute}/min
+                  </div>
+                </div>
+                <button
+                  onClick={() => void toggleNumber(n.e164, !n.voice_enabled)}
+                  className="flex items-center gap-2 group"
+                  title={n.voice_enabled ? 'Click to disable voice' : 'Click to enable voice'}
+                >
+                  <span
+                    className={cn(
+                      'relative w-10 h-6 rounded-full transition-colors',
+                      n.voice_enabled ? 'bg-[#1E9A80]' : 'bg-[#E5E7EB]'
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform',
+                        n.voice_enabled ? 'translate-x-[18px]' : 'translate-x-0.5'
+                      )}
+                    />
+                  </span>
+                  <span
+                    className={cn(
+                      'text-[12px] font-medium tabular-nums',
+                      n.voice_enabled ? 'text-[#1E9A80]' : 'text-[#9CA3AF]'
+                    )}
+                  >
+                    {n.voice_enabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </>
   );
 }
 

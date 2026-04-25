@@ -229,6 +229,12 @@ verify_jwt = false
 [functions.wk-killswitch-check]
 verify_jwt = false
 
+[functions.wk-create-agent]
+verify_jwt = false
+
+[functions.wk-twilio-connect]
+verify_jwt = false
+
 [functions.wk-ai-postcall]
 verify_jwt = false
 
