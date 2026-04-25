@@ -15,17 +15,26 @@ import { MOCK_CONTACTS } from '../data/mockContacts';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../data/mockCalls';
 import { formatRelativeTime, formatTimeOnly, formatDuration } from '../data/helpers';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
+import StageSelector from '../components/shared/StageSelector';
+import type { Contact } from '../types';
 
 type Filter = 'all' | 'sms' | 'calls' | 'voicemail' | 'missed';
 
 export default function InboxPage() {
   const [filter, setFilter] = useState<Filter>('all');
+  const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
   const [activeContactId, setActiveContactId] = useState(MOCK_CONTACTS[0].id);
   const { startCall } = useActiveCallCtx();
 
-  const activeContact = MOCK_CONTACTS.find((c) => c.id === activeContactId)!;
+  const activeContact = contacts.find((c) => c.id === activeContactId)!;
   const contactSms = MOCK_SMS.filter((m) => m.contactId === activeContactId);
   const contactActivity = MOCK_ACTIVITIES.filter((a) => a.contactId === activeContactId);
+
+  const setStage = (col: string) => {
+    setContacts((prev) =>
+      prev.map((c) => (c.id === activeContactId ? { ...c, pipelineColumnId: col } : c))
+    );
+  };
 
   return (
     <div className="h-full flex">
@@ -57,7 +66,7 @@ export default function InboxPage() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto divide-y divide-[#E5E7EB]">
-          {MOCK_CONTACTS.map((c) => {
+          {contacts.map((c) => {
             const lastCall = MOCK_CALLS.filter((cl) => cl.contactId === c.id).sort(
               (a, b) => +new Date(b.startedAt) - +new Date(a.startedAt)
             )[0];
@@ -121,9 +130,19 @@ export default function InboxPage() {
               .slice(0, 2)}
           </div>
           <div className="flex-1">
-            <div className="text-[14px] font-semibold text-[#1A1A1A]">{activeContact.name}</div>
-            <div className="text-[11px] text-[#6B7280] tabular-nums">{activeContact.phone}</div>
+            <div className="text-[14px] font-semibold text-[#1A1A1A]">
+              {activeContact.name}
+            </div>
+            <div className="text-[11px] text-[#6B7280] tabular-nums">
+              {activeContact.phone}
+            </div>
           </div>
+          {/* Stage selector — change stage from inbox */}
+          <StageSelector
+            value={activeContact.pipelineColumnId}
+            onChange={setStage}
+            size="md"
+          />
           <button
             onClick={() => startCall(activeContact.id)}
             className="flex items-center gap-1.5 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
@@ -171,14 +190,13 @@ export default function InboxPage() {
           <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
             Contact timeline
           </div>
-          <div className="text-[14px] font-semibold text-[#1A1A1A] mt-0.5">{activeContact.name}</div>
+          <div className="text-[14px] font-semibold text-[#1A1A1A] mt-0.5">
+            {activeContact.name}
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {contactActivity.map((a) => (
-            <div
-              key={a.id}
-              className="flex gap-2.5 text-[12px]"
-            >
+            <div key={a.id} className="flex gap-2.5 text-[12px]">
               <ActivityIcon kind={a.kind} />
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-[#1A1A1A]">{a.title}</div>
@@ -204,12 +222,36 @@ export default function InboxPage() {
 
 function ActivityIcon({ kind }: { kind: string }) {
   const map: Record<string, { icon: React.ReactNode; bg: string; fg: string }> = {
-    call_inbound: { icon: <PhoneIncoming className="w-3.5 h-3.5" />, bg: '#ECFDF5', fg: '#1E9A80' },
-    call_outbound: { icon: <PhoneOutgoing className="w-3.5 h-3.5" />, bg: '#DBEAFE', fg: '#3B82F6' },
-    call_missed: { icon: <PhoneMissed className="w-3.5 h-3.5" />, bg: '#FEF2F2', fg: '#EF4444' },
-    sms_inbound: { icon: <MessageSquare className="w-3.5 h-3.5" />, bg: '#F3F3EE', fg: '#6B7280' },
-    sms_outbound: { icon: <MessageSquare className="w-3.5 h-3.5" />, bg: '#ECFDF5', fg: '#1E9A80' },
-    voicemail: { icon: <Voicemail className="w-3.5 h-3.5" />, bg: '#F3F3EE', fg: '#9CA3AF' },
+    call_inbound: {
+      icon: <PhoneIncoming className="w-3.5 h-3.5" />,
+      bg: '#ECFDF5',
+      fg: '#1E9A80',
+    },
+    call_outbound: {
+      icon: <PhoneOutgoing className="w-3.5 h-3.5" />,
+      bg: '#DBEAFE',
+      fg: '#3B82F6',
+    },
+    call_missed: {
+      icon: <PhoneMissed className="w-3.5 h-3.5" />,
+      bg: '#FEF2F2',
+      fg: '#EF4444',
+    },
+    sms_inbound: {
+      icon: <MessageSquare className="w-3.5 h-3.5" />,
+      bg: '#F3F3EE',
+      fg: '#6B7280',
+    },
+    sms_outbound: {
+      icon: <MessageSquare className="w-3.5 h-3.5" />,
+      bg: '#ECFDF5',
+      fg: '#1E9A80',
+    },
+    voicemail: {
+      icon: <Voicemail className="w-3.5 h-3.5" />,
+      bg: '#F3F3EE',
+      fg: '#9CA3AF',
+    },
     stage_moved: { icon: <span>↗</span>, bg: '#ECFDF5', fg: '#1E9A80' },
     tag_added: { icon: <span>#</span>, bg: '#F3F3EE', fg: '#6B7280' },
   };

@@ -1,8 +1,17 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Phone, MessageSquare, Flame, Play } from 'lucide-react';
+import {
+  ArrowLeft,
+  Phone,
+  MessageSquare,
+  Flame,
+  Play,
+  Pencil,
+  Plus,
+  X,
+} from 'lucide-react';
 import { MOCK_CONTACTS } from '../data/mockContacts';
 import { MOCK_CALLS, MOCK_SMS, MOCK_ACTIVITIES, MOCK_TASKS } from '../data/mockCalls';
-import { ACTIVE_PIPELINE } from '../data/mockPipelines';
 import { MOCK_AGENTS } from '../data/mockAgents';
 import {
   formatDuration,
@@ -11,10 +20,17 @@ import {
   formatTimeOnly,
 } from '../data/helpers';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
+import StageSelector from '../components/shared/StageSelector';
+import EditContactModal from '../components/contacts/EditContactModal';
+import type { Contact } from '../types';
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const contact = MOCK_CONTACTS.find((c) => c.id === id);
+  const initial = MOCK_CONTACTS.find((c) => c.id === id);
+  const [contact, setContact] = useState<Contact | null>(initial ?? null);
+  const [editing, setEditing] = useState<Contact | null>(null);
+  const [newTag, setNewTag] = useState('');
+  const [newField, setNewField] = useState({ key: '', value: '' });
   const { startCall } = useActiveCallCtx();
 
   if (!contact) {
@@ -33,7 +49,32 @@ export default function ContactDetailPage() {
   const activities = MOCK_ACTIVITIES.filter((a) => a.contactId === contact.id);
   const tasks = MOCK_TASKS.filter((t) => t.contactId === contact.id);
   const owner = MOCK_AGENTS.find((a) => a.id === contact.ownerAgentId);
-  const stage = ACTIVE_PIPELINE.columns.find((c) => c.id === contact.pipelineColumnId);
+
+  const setStage = (col: string) => setContact({ ...contact, pipelineColumnId: col });
+
+  const addTag = () => {
+    if (!newTag.trim()) return;
+    setContact({ ...contact, tags: [...contact.tags, newTag.trim()] });
+    setNewTag('');
+  };
+
+  const removeTag = (t: string) =>
+    setContact({ ...contact, tags: contact.tags.filter((x) => x !== t) });
+
+  const addField = () => {
+    if (!newField.key.trim()) return;
+    setContact({
+      ...contact,
+      customFields: { ...contact.customFields, [newField.key.trim()]: newField.value },
+    });
+    setNewField({ key: '', value: '' });
+  };
+
+  const removeField = (k: string) => {
+    const cf = { ...contact.customFields };
+    delete cf[k];
+    setContact({ ...contact, customFields: cf });
+  };
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
@@ -60,6 +101,12 @@ export default function ContactDetailPage() {
           <div className="text-[13px] text-[#6B7280] tabular-nums">{contact.phone}</div>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setEditing(contact)}
+            className="flex items-center gap-1.5 border border-[#E5E7EB] bg-white text-[#1A1A1A] text-[13px] font-medium px-4 py-2 rounded-[10px] hover:bg-[#F3F3EE]"
+          >
+            <Pencil className="w-4 h-4" /> Edit
+          </button>
           <button
             onClick={() => startCall(contact.id)}
             className="flex items-center gap-1.5 bg-[#1E9A80] text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
@@ -91,17 +138,14 @@ export default function ContactDetailPage() {
               </div>
             )}
             <div>
-              <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+              <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1">
                 Stage
               </div>
-              {stage && (
-                <span
-                  className="inline-flex items-center gap-1 text-[12px] font-medium px-2 py-0.5 rounded-full mt-0.5"
-                  style={{ background: `${stage.colour}1A`, color: stage.colour }}
-                >
-                  {stage.name}
-                </span>
-              )}
+              <StageSelector
+                value={contact.pipelineColumnId}
+                onChange={setStage}
+                size="md"
+              />
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
@@ -111,11 +155,32 @@ export default function ContactDetailPage() {
                 {contact.tags.map((t) => (
                   <span
                     key={t}
-                    className="text-[10px] font-medium bg-[#F3F3EE] text-[#6B7280] px-1.5 py-0.5 rounded"
+                    className="group inline-flex items-center gap-0.5 text-[10px] font-medium bg-[#F3F3EE] text-[#6B7280] pl-1.5 pr-1 py-0.5 rounded"
                   >
                     #{t}
+                    <button
+                      onClick={() => removeTag(t)}
+                      className="text-[#9CA3AF] hover:text-[#EF4444] opacity-0 group-hover:opacity-100"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
                   </span>
                 ))}
+              </div>
+              <div className="flex gap-1 mt-2">
+                <input
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addTag()}
+                  placeholder="Add tag…"
+                  className="flex-1 px-2 py-1 text-[11px] border border-[#E5E7EB] rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30"
+                />
+                <button
+                  onClick={addTag}
+                  className="px-1.5 text-[#1E9A80] hover:bg-[#ECFDF5] rounded-[8px]"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
               </div>
             </div>
           </div>
@@ -125,11 +190,41 @@ export default function ContactDetailPage() {
               Custom fields
             </div>
             {Object.entries(contact.customFields).map(([k, v]) => (
-              <div key={k}>
-                <div className="text-[10px] text-[#9CA3AF]">{k}</div>
-                <div className="text-[12px] text-[#1A1A1A]">{v}</div>
+              <div key={k} className="group flex items-start gap-1.5">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-[#9CA3AF]">{k}</div>
+                  <div className="text-[12px] text-[#1A1A1A] truncate">{v}</div>
+                </div>
+                <button
+                  onClick={() => removeField(k)}
+                  className="text-[#9CA3AF] hover:text-[#EF4444] opacity-0 group-hover:opacity-100 mt-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </div>
             ))}
+            <div className="border-t border-[#E5E7EB] pt-2 mt-2 space-y-1">
+              <input
+                value={newField.key}
+                onChange={(e) => setNewField({ ...newField, key: e.target.value })}
+                placeholder="Field name"
+                className="w-full px-2 py-1 text-[11px] border border-[#E5E7EB] rounded-[8px]"
+              />
+              <div className="flex gap-1">
+                <input
+                  value={newField.value}
+                  onChange={(e) => setNewField({ ...newField, value: e.target.value })}
+                  placeholder="Value"
+                  className="flex-1 px-2 py-1 text-[11px] border border-[#E5E7EB] rounded-[8px]"
+                />
+                <button
+                  onClick={addField}
+                  className="px-1.5 text-[#1E9A80] hover:bg-[#ECFDF5] rounded-[8px]"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
           </div>
         </aside>
 
@@ -184,7 +279,6 @@ export default function ContactDetailPage() {
             <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-2">
               Opportunity
             </div>
-            <div className="text-[14px] font-semibold text-[#1A1A1A]">{stage?.name ?? '—'}</div>
             <div className="text-[12px] text-[#6B7280] mt-0.5">
               Value:{' '}
               <span className="font-semibold text-[#1E9A80] tabular-nums">
@@ -218,6 +312,12 @@ export default function ContactDetailPage() {
           </div>
         </aside>
       </div>
+
+      <EditContactModal
+        contact={editing}
+        onClose={() => setEditing(null)}
+        onSave={(updated) => setContact(updated)}
+      />
     </div>
   );
 }
