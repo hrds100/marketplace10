@@ -117,6 +117,17 @@ import SmsNumbersPage from '@/features/sms/pages/SmsNumbersPage';
 import SmsSettingsPage from '@/features/sms/pages/SmsSettingsPage';
 import SmsDashboardPage from '@/features/sms/pages/SmsDashboardPage';
 import SmsWebhooksPage from '@/features/sms/pages/SmsWebhooksPage';
+// SMSv2 Workspace — sandbox build (calling + CRM)
+import Smsv2Layout from '@/features/smsv2/layout/Smsv2Layout';
+import Smsv2DashboardPage from '@/features/smsv2/pages/DashboardPage';
+import Smsv2InboxPage from '@/features/smsv2/pages/InboxPage';
+import Smsv2CallsPage from '@/features/smsv2/pages/CallsPage';
+import Smsv2DialerPage from '@/features/smsv2/pages/DialerPage';
+import Smsv2ContactsPage from '@/features/smsv2/pages/ContactsPage';
+import Smsv2ContactDetailPage from '@/features/smsv2/pages/ContactDetailPage';
+import Smsv2PipelinesPage from '@/features/smsv2/pages/PipelinesPage';
+import Smsv2ReportsPage from '@/features/smsv2/pages/ReportsPage';
+import Smsv2SettingsPage from '@/features/smsv2/pages/SettingsPage';
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -293,6 +304,19 @@ const App = () => (
             <Route path="settings" element={<SmsSettingsPage />} />
             <Route path="dashboard" element={<SmsDashboardPage />} />
             <Route path="webhooks" element={<SmsWebhooksPage />} />
+          </Route>
+          {/* SMSv2 Workspace — sandbox calling + CRM (Phase 0 UI) */}
+          <Route path="/smsv2" element={<Smsv2Layout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<Smsv2DashboardPage />} />
+            <Route path="inbox" element={<Smsv2InboxPage />} />
+            <Route path="calls" element={<Smsv2CallsPage />} />
+            <Route path="dialer" element={<Smsv2DialerPage />} />
+            <Route path="contacts" element={<Smsv2ContactsPage />} />
+            <Route path="contacts/:id" element={<Smsv2ContactDetailPage />} />
+            <Route path="pipelines" element={<Smsv2PipelinesPage />} />
+            <Route path="reports" element={<Smsv2ReportsPage />} />
+            <Route path="settings" element={<Smsv2SettingsPage />} />
           </Route>
           {/* nfstay traveler-facing routes — standalone (no operator layout) */}
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
