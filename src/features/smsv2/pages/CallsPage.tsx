@@ -19,6 +19,7 @@ import { formatDuration, formatPence, formatRelativeTime } from '../data/helpers
 import { cn } from '@/lib/utils';
 import { useCalls, signCallRecording } from '../hooks/useCalls';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { useDemoMode } from '../lib/useDemoMode';
 import type { CallRecord } from '../types';
 
 const STATUS_ICON = {
@@ -40,12 +41,15 @@ export default function CallsPage() {
 
   const { calls: realCalls } = useCalls();
   const { contacts: realContacts } = useSmsV2();
+  const demoMode = useDemoMode();
 
-  // Real data when available, mocks only when wk_calls is empty (e.g. fresh
-  // workspace with no calls yet). Lets the page render in dev / Storybook.
-  const calls = realCalls.length > 0 ? realCalls : MOCK_CALLS;
-  const contacts = realContacts.length > 0 ? realContacts : MOCK_CONTACTS;
-  const agents = MOCK_AGENTS;
+  // In production, always use real data — even if empty. The mock fallback
+  // is reachable only with `?demo=1` so internal demos / screenshots still
+  // work, but Hugo never sees Sarah Jenkins on a live page.
+  const calls = demoMode && realCalls.length === 0 ? MOCK_CALLS : realCalls;
+  const contacts =
+    demoMode && realContacts.length === 0 ? MOCK_CONTACTS : realContacts;
+  const agents = demoMode ? MOCK_AGENTS : [];
 
   // When the user clicks Play on a row with a real recording_path, swap
   // it for a short-lived signed URL.

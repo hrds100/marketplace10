@@ -158,9 +158,14 @@ function PipelinesTab() {
   };
   const addColumn = () => {
     const id = `col-new-${Date.now()}`;
+    // Use the pipelineId from the first real hydrated column. Falls back
+    // to the mock ACTIVE_PIPELINE.id only when no real columns exist
+    // (fresh workspace with no rows yet) so writes land on a real
+    // pipeline UUID instead of the mock string.
+    const realPipelineId = cols[0]?.pipelineId ?? ACTIVE_PIPELINE.id;
     upsertColumn({
       id,
-      pipelineId: ACTIVE_PIPELINE.id,
+      pipelineId: realPipelineId,
       name: 'New stage',
       colour: COLOUR_PALETTE[cols.length % COLOUR_PALETTE.length],
       icon: 'Sparkles',

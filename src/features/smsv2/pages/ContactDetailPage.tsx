@@ -23,6 +23,7 @@ import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactTimeline } from '../hooks/useContactTimeline';
 import { useContactPersistence } from '../hooks/useContactPersistence';
+import { useDemoMode } from '../lib/useDemoMode';
 import type { Contact } from '../types';
 
 export default function ContactDetailPage() {
@@ -35,6 +36,7 @@ export default function ContactDetailPage() {
   const { startCall } = useActiveCallCtx();
   const persist = useContactPersistence();
   const timeline = useContactTimeline(contact?.id ?? '', contact?.phone);
+  const demoMode = useDemoMode();
 
   if (!contact) {
     return (
@@ -47,19 +49,20 @@ export default function ContactDetailPage() {
     );
   }
 
-  // Real data when this is a wk_contacts row (UUID id), mock fallback otherwise.
+  // Real wk_calls / wk_sms / wk_activities / wk_tasks rows. Mock fallback
+  // is reachable only with ?demo=1 — production always shows truth.
   const calls = timeline.calls.length > 0
     ? timeline.calls
-    : MOCK_CALLS.filter((c) => c.contactId === contact.id);
+    : demoMode ? MOCK_CALLS.filter((c) => c.contactId === contact.id) : [];
   const sms = timeline.sms.length > 0
     ? timeline.sms
-    : MOCK_SMS.filter((m) => m.contactId === contact.id);
+    : demoMode ? MOCK_SMS.filter((m) => m.contactId === contact.id) : [];
   const activities = timeline.activities.length > 0
     ? timeline.activities
-    : MOCK_ACTIVITIES.filter((a) => a.contactId === contact.id);
+    : demoMode ? MOCK_ACTIVITIES.filter((a) => a.contactId === contact.id) : [];
   const tasks = timeline.tasks.length > 0
     ? timeline.tasks
-    : MOCK_TASKS.filter((t) => t.contactId === contact.id);
+    : demoMode ? MOCK_TASKS.filter((t) => t.contactId === contact.id) : [];
   const owner = agents.find((a) => a.id === contact.ownerAgentId);
 
   // Optimistic local + write-through to wk_contacts
