@@ -54,6 +54,7 @@ export function useTwilioDevice(): {
       }
     })();
     return () => {
+      cancelled = true;
       consumerCount = Math.max(0, consumerCount - 1);
       if (consumerCount === 0) void destroyDevice();
     };
