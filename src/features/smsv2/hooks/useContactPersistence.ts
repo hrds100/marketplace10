@@ -42,6 +42,15 @@ export interface ContactPersistAPI {
    * for the contact, then inserts the new list. Skipped for mock IDs.
    */
   replaceTags: (contactId: string, tags: string[]) => Promise<boolean>;
+  /** Insert a new contact. Returns the new row's id on success, null on fail. */
+  createContact: (input: {
+    name: string;
+    phone: string;
+    email?: string;
+    pipelineColumnId?: string | null;
+    ownerAgentId?: string | null;
+    customFields?: Record<string, string>;
+  }) => Promise<string | null>;
 }
 
 export function useContactPersistence(): ContactPersistAPI {
@@ -96,5 +105,31 @@ export function useContactPersistence(): ContactPersistAPI {
     return true;
   }, []);
 
-  return { moveToColumn, patchContact, replaceTags };
+  const createContact = useCallback<ContactPersistAPI['createContact']>(async (input) => {
+    let owner = input.ownerAgentId ?? null;
+    if (!owner) {
+      const { data } = await supabase.auth.getUser();
+      owner = data.user?.id ?? null;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('wk_contacts' as any) as any)
+      .insert({
+        name: input.name,
+        phone: input.phone,
+        email: input.email ?? null,
+        owner_agent_id: owner,
+        pipeline_column_id: input.pipelineColumnId ?? null,
+        custom_fields: input.customFields ?? {},
+        is_hot: false,
+      })
+      .select('id')
+      .single();
+    if (error) {
+      console.warn('[contact-persist] createContact failed:', error.message);
+      return null;
+    }
+    return (data as { id: string } | null)?.id ?? null;
+  }, []);
+
+  return { moveToColumn, patchContact, replaceTags, createContact };
 }

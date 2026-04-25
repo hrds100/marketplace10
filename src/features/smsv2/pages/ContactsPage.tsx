@@ -6,15 +6,62 @@ import StageSelector from '../components/shared/StageSelector';
 import BulkUploadModal from '../components/contacts/BulkUploadModal';
 import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { useContactPersistence } from '../hooks/useContactPersistence';
+import { toE164 } from '@/core/utils/phone';
 import type { Contact } from '../types';
 
 export default function ContactsPage() {
-  const { contacts, columns, agents, patchContact, upsertContact } = useSmsV2();
+  const { contacts, columns, agents, patchContact, upsertContact, pushToast } = useSmsV2();
+  const persist = useContactPersistence();
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
   const [editing, setEditing] = useState<Contact | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [creatingDraft, setCreatingDraft] = useState<Contact | null>(null);
+
+  const startNewContact = () => {
+    // Empty draft fed into the existing EditContactModal. Same UX, no
+    // separate "New Contact" component needed.
+    setCreatingDraft({
+      id: `new-${Date.now()}`,
+      name: '',
+      phone: '',
+      email: undefined,
+      tags: [],
+      isHot: false,
+      customFields: {},
+      pipelineColumnId: columns[0]?.id,
+      createdAt: new Date().toISOString(),
+    });
+  };
+
+  const saveNewContact = async (draft: Contact) => {
+    if (!draft.name.trim() || !draft.phone.trim()) {
+      pushToast('Name and phone are required', 'error');
+      return;
+    }
+    const e164 = toE164(draft.phone);
+    if (!e164) {
+      pushToast('Invalid phone number', 'error');
+      return;
+    }
+    const newId = await persist.createContact({
+      name: draft.name.trim(),
+      phone: e164,
+      email: draft.email,
+      pipelineColumnId: draft.pipelineColumnId ?? null,
+      ownerAgentId: draft.ownerAgentId ?? null,
+      customFields: draft.customFields,
+    });
+    if (!newId) {
+      pushToast('Could not create contact', 'error');
+      return;
+    }
+    upsertContact({ ...draft, id: newId, phone: e164 });
+    setCreatingDraft(null);
+    pushToast('Contact created', 'success');
+  };
 
   const filtered = useMemo(() => {
     return contacts.filter((c) => {
@@ -57,7 +104,10 @@ export default function ContactsPage() {
           >
             <Upload className="w-3.5 h-3.5" /> Bulk import
           </button>
-          <button className="bg-[#1E9A80] text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]">
+          <button
+            onClick={startNewContact}
+            className="bg-[#1E9A80] text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
+          >
             + New contact
           </button>
         </div>
@@ -179,6 +229,11 @@ export default function ContactsPage() {
         contact={editing}
         onClose={() => setEditing(null)}
         onSave={save}
+      />
+      <EditContactModal
+        contact={creatingDraft}
+        onClose={() => setCreatingDraft(null)}
+        onSave={(draft) => void saveNewContact(draft)}
       />
     </div>
   );
