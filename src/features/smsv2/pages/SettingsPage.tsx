@@ -31,7 +31,25 @@ import { formatPence } from '../data/helpers';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useAiSettings } from '../hooks/useAiSettings';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { supabase } from '@/integrations/supabase/client';
 import type { Agent, PipelineColumn } from '../types';
+
+interface CreateAgentInvoke {
+  invoke: (
+    name: string,
+    options: { body: Record<string, unknown> }
+  ) => Promise<{
+    data: {
+      user_id?: string;
+      email?: string;
+      role?: string;
+      extension?: string | null;
+      daily_limit_pence?: number;
+      error?: string;
+    } | null;
+    error: { message: string } | null;
+  }>;
+}
 
 const TABS = [
   { id: 'pipelines', label: 'Pipelines & outcomes', icon: Kanban },
@@ -575,10 +593,14 @@ function CampaignsTab() {
 
 // ─── Agents — invite + delete + spend ──────────────────────────────
 function AgentsTab() {
-  const { agents, upsertAgent, removeAgent } = useSmsV2();
+  const { agents, upsertAgent, removeAgent, pushToast } = useSmsV2();
   const [inviting, setInviting] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [invite, setInvite] = useState({
     email: '',
+    password: '',
     name: '',
     extension: '',
     role: 'agent' as Agent['role'],
@@ -587,24 +609,72 @@ function AgentsTab() {
 
   const remove = (id: string) => removeAgent(id);
 
-  const send = () => {
-    if (!invite.email || !invite.name) return;
-    upsertAgent({
-      id: `a-new-${Date.now()}`,
-      name: invite.name,
-      email: invite.email,
-      extension: invite.extension || `1${agents.length + 10}`,
-      role: invite.role,
-      status: 'offline',
-      callsToday: 0,
-      answeredToday: 0,
-      avgDurationSec: 0,
-      spendPence: 0,
-      limitPence: invite.limit * 100,
-      isAdmin: invite.role === 'admin',
-    });
-    setInvite({ email: '', name: '', extension: '', role: 'agent', limit: 10 });
-    setInviting(false);
+  const randomPassword = () => {
+    const charset = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let out = '';
+    const arr = new Uint32Array(12);
+    crypto.getRandomValues(arr);
+    for (const n of arr) out += charset[n % charset.length];
+    return out;
+  };
+
+  const send = async () => {
+    setErrorMsg(null);
+    if (!invite.email || !invite.name) {
+      setErrorMsg('Name and email are required.');
+      return;
+    }
+    if (invite.password.length < 8) {
+      setErrorMsg('Password must be at least 8 characters.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data, error } = await (
+        supabase.functions as unknown as CreateAgentInvoke
+      ).invoke('wk-create-agent', {
+        body: {
+          email: invite.email.trim().toLowerCase(),
+          password: invite.password,
+          name: invite.name.trim(),
+          extension: invite.extension.trim() || null,
+          role: invite.role,
+          daily_limit_pence: Math.max(0, Math.floor(invite.limit * 100)),
+        },
+      });
+      if (error) {
+        setErrorMsg(error.message);
+        setSubmitting(false);
+        return;
+      }
+      if (data?.error) {
+        setErrorMsg(data.error);
+        setSubmitting(false);
+        return;
+      }
+      // Reflect locally so the table updates without a reload
+      upsertAgent({
+        id: data?.user_id ?? `a-new-${Date.now()}`,
+        name: invite.name,
+        email: invite.email,
+        extension: data?.extension ?? invite.extension ?? '',
+        role: invite.role,
+        status: 'offline',
+        callsToday: 0,
+        answeredToday: 0,
+        avgDurationSec: 0,
+        spendPence: 0,
+        limitPence: data?.daily_limit_pence ?? invite.limit * 100,
+        isAdmin: invite.role === 'admin',
+      });
+      pushToast(`Agent created — share login with ${invite.email}`, 'success');
+      setInvite({ email: '', password: '', name: '', extension: '', role: 'agent', limit: 10 });
+      setInviting(false);
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -664,7 +734,7 @@ function AgentsTab() {
         {inviting && (
           <div className="mt-3 border border-[#E5E7EB] rounded-xl p-3 bg-[#F3F3EE]/40 space-y-2">
             <div className="text-[12px] font-semibold text-[#1A1A1A] mb-1 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5" /> Invite by email
+              <Mail className="w-3.5 h-3.5" /> Create agent — they sign in with this email + password
             </div>
             <div className="grid grid-cols-2 gap-2">
               <input
@@ -679,6 +749,38 @@ function AgentsTab() {
                 onChange={(e) => setInvite({ ...invite, email: e.target.value })}
                 className="px-2 py-1.5 text-[12px] border border-[#E5E7EB] rounded-[8px]"
               />
+              <div className="col-span-2 flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Key className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    placeholder="Password (≥ 8 chars)"
+                    value={invite.password}
+                    onChange={(e) => setInvite({ ...invite, password: e.target.value })}
+                    className="w-full pl-7 pr-8 py-1.5 text-[12px] border border-[#E5E7EB] rounded-[8px] font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#1A1A1A]"
+                    title={showPw ? 'Hide password' : 'Show password'}
+                  >
+                    {showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const pw = randomPassword();
+                    setInvite((s) => ({ ...s, password: pw }));
+                    setShowPw(true);
+                  }}
+                  className="text-[11px] font-medium text-[#1E9A80] hover:bg-[#ECFDF5] px-2 py-1.5 rounded-[8px] whitespace-nowrap"
+                  title="Generate a strong password"
+                >
+                  Generate
+                </button>
+              </div>
               <input
                 placeholder="Extension (e.g. 106)"
                 value={invite.extension}
@@ -708,18 +810,27 @@ function AgentsTab() {
                 />
               </div>
             </div>
+            {errorMsg && (
+              <div className="text-[11px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FCA5A5] rounded px-2 py-1.5">
+                {errorMsg}
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2 border-t border-[#E5E7EB]">
               <button
-                onClick={() => setInviting(false)}
+                onClick={() => {
+                  setInviting(false);
+                  setErrorMsg(null);
+                }}
                 className="text-[11px] text-[#6B7280] hover:text-[#1A1A1A] px-2 py-1"
               >
                 Cancel
               </button>
               <button
-                onClick={send}
-                className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[8px] hover:bg-[#1E9A80]/90"
+                onClick={() => void send()}
+                disabled={submitting}
+                className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[8px] hover:bg-[#1E9A80]/90 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Send invite
+                {submitting ? 'Creating…' : 'Create agent'}
               </button>
             </div>
           </div>
