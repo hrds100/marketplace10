@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Lightbulb, HelpCircle, Activity } from 'lucide-react';
 import { MOCK_TRANSCRIPT, MOCK_COACH_EVENTS } from '../../data/mockTranscripts';
 import { useKillSwitch } from '../../hooks/useKillSwitch';
+import { useSmsV2 } from '../../store/SmsV2Store';
 
 interface Props {
   durationSec: number;
+  contactId: string;
 }
 
 const COACH_ICONS = {
@@ -14,9 +16,26 @@ const COACH_ICONS = {
   warning: { Icon: Activity, colour: '#F59E0B', label: '📊 INSIGHT' },
 };
 
-export default function LiveTranscriptPane({ durationSec }: Props) {
+export default function LiveTranscriptPane({ durationSec, contactId }: Props) {
   const { aiCoach } = useKillSwitch();
+  const store = useSmsV2();
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Sticky note — auto-saved to store with 2s debounce
+  const [note, setNote] = useState(store.getNote(contactId));
+  useEffect(() => {
+    setNote(store.getNote(contactId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contactId]);
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      if (note !== store.getNote(contactId)) {
+        store.saveNote(contactId, note);
+      }
+    }, 2000);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note, contactId]);
 
   // Show transcript lines that have already happened (ts <= durationSec) — caps to all in mock.
   const lines = MOCK_TRANSCRIPT.filter((l) => l.ts <= Math.max(durationSec, 140));
@@ -90,6 +109,8 @@ export default function LiveTranscriptPane({ durationSec }: Props) {
 
       <div className="px-4 py-2 border-t border-[#E5E7EB] bg-[#F3F3EE]/40">
         <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
           placeholder="Quick note (auto-saves)…"
           className="w-full px-2 py-1.5 text-[12px] bg-white border border-[#E5E5E5] rounded-[10px] resize-none focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
           rows={2}

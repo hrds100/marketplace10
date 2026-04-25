@@ -14,9 +14,8 @@ import { cn } from '@/lib/utils';
 import { useActiveCallCtx } from './ActiveCallContext';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import PostCallPanel from './PostCallPanel';
-import { MOCK_CONTACTS } from '../../data/mockContacts';
+import { useSmsV2 } from '../../store/SmsV2Store';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../../data/mockCalls';
-import { ACTIVE_PIPELINE } from '../../data/mockPipelines';
 import { CURRENT_AGENT } from '../../data/mockAgents';
 import {
   formatDuration,
@@ -27,16 +26,17 @@ import {
 
 export default function LiveCallScreen() {
   const { phase, call, durationSec, endCall, setFullScreen } = useActiveCallCtx();
+  const store = useSmsV2();
 
-  // Resolve a contact for context — fall back to Sarah Jenkins if direct dial
+  // Resolve a contact for context — fall back to first contact if direct dial
   const contact =
-    MOCK_CONTACTS.find((c) => c.id === call?.contactId) ?? MOCK_CONTACTS[0];
+    store.contacts.find((c) => c.id === call?.contactId) ?? store.contacts[0];
 
   const sms = MOCK_SMS.filter((s) => s.contactId === contact.id);
   const calls = MOCK_CALLS.filter((c) => c.contactId === contact.id);
   const activities = MOCK_ACTIVITIES.filter((a) => a.contactId === contact.id);
 
-  const stage = ACTIVE_PIPELINE.columns.find((c) => c.id === contact.pipelineColumnId);
+  const stage = store.columns.find((c) => c.id === contact.pipelineColumnId);
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#F3F3EE] flex flex-col">
@@ -204,7 +204,7 @@ export default function LiveCallScreen() {
         {/* Centre — transcript + coach OR post-call panel */}
         <section className="flex-1 bg-white border-r border-[#E5E7EB] overflow-hidden">
           {phase === 'in_call' ? (
-            <LiveTranscriptPane durationSec={durationSec} />
+            <LiveTranscriptPane durationSec={durationSec} contactId={contact.id} />
           ) : (
             <PostCallPanel />
           )}

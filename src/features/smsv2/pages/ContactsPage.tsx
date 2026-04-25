@@ -1,17 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Search, Phone, MessageSquare, Flame, Pencil, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { MOCK_CONTACTS } from '../data/mockContacts';
-import { ACTIVE_PIPELINE } from '../data/mockPipelines';
-import { MOCK_AGENTS } from '../data/mockAgents';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import StageSelector from '../components/shared/StageSelector';
 import BulkUploadModal from '../components/contacts/BulkUploadModal';
 import EditContactModal from '../components/contacts/EditContactModal';
+import { useSmsV2 } from '../store/SmsV2Store';
 import type { Contact } from '../types';
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
+  const { contacts, columns, agents, patchContact, upsertContact } = useSmsV2();
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
@@ -36,13 +34,11 @@ export default function ContactsPage() {
   }, [contacts, search, stageFilter, ownerFilter]);
 
   const setStage = (id: string, col: string) => {
-    setContacts((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, pipelineColumnId: col } : c))
-    );
+    patchContact(id, { pipelineColumnId: col });
   };
 
   const save = (updated: Contact) => {
-    setContacts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    upsertContact(updated);
   };
 
   return (
@@ -82,7 +78,7 @@ export default function ContactsPage() {
             className="text-[12px] px-2 py-1 bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]"
           >
             <option value="all">All stages</option>
-            {ACTIVE_PIPELINE.columns.map((c) => (
+            {columns.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
@@ -94,7 +90,7 @@ export default function ContactsPage() {
             className="text-[12px] px-2 py-1 bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]"
           >
             <option value="all">All owners</option>
-            {MOCK_AGENTS.map((a) => (
+            {agents.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
               </option>
@@ -115,7 +111,7 @@ export default function ContactsPage() {
           </thead>
           <tbody className="divide-y divide-[#E5E7EB]">
             {filtered.map((c) => {
-              const owner = MOCK_AGENTS.find((a) => a.id === c.ownerAgentId);
+              const owner = agents.find((a) => a.id === c.ownerAgentId);
               return (
                 <tr key={c.id} className="hover:bg-[#F3F3EE]/30">
                   <td className="px-4 py-2.5">
