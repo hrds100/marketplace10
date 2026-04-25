@@ -9,7 +9,6 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CURRENT_AGENT } from '../data/mockAgents';
 import type { AgentStatus } from '../types';
 
 const CHANNEL_NAME = 'presence:smsv2';
@@ -18,7 +17,7 @@ export function useAgentPresence(): {
   status: AgentStatus;
   setStatus: (s: AgentStatus) => void;
 } {
-  const [status, setStatusLocal] = useState<AgentStatus>(CURRENT_AGENT.status);
+  const [status, setStatusLocal] = useState<AgentStatus>('offline');
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const userIdRef = useRef<string | null>(null);
 
@@ -52,7 +51,7 @@ export function useAgentPresence(): {
         if (state !== 'SUBSCRIBED') return;
         await ch.track({
           user_id: uid,
-          status: profile?.agent_status ?? CURRENT_AGENT.status,
+          status: profile?.agent_status ?? 'offline',
           ts: new Date().toISOString(),
         });
       });

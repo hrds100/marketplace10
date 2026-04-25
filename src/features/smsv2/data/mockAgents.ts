@@ -82,5 +82,3 @@ export const MOCK_AGENTS: Agent[] = [
   },
 ];
 
-export const CURRENT_AGENT_ID = 'a-tom';
-export const CURRENT_AGENT = MOCK_AGENTS.find((a) => a.id === CURRENT_AGENT_ID)!;

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useAgentPresence } from '../hooks/useAgentPresence';
-import { CURRENT_AGENT } from '../data/mockAgents';
+import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { formatPence } from '../data/helpers';
 
 const STATUS_LABELS: Record<string, { label: string; colour: string }> = {
@@ -18,6 +18,7 @@ export default function Smsv2StatusBar() {
   const spend = useSpendLimit();
   const ks = useKillSwitch();
   const presence = useAgentPresence();
+  const { firstName } = useCurrentAgent();
   const [open, setOpen] = useState(false);
   const status = STATUS_LABELS[presence.status] ?? STATUS_LABELS.available;
 
@@ -74,7 +75,7 @@ export default function Smsv2StatusBar() {
           className="flex items-center gap-1.5 text-[11px] font-medium text-[#1A1A1A] hover:bg-black/[0.04] px-2 py-0.5 rounded-full transition-colors"
         >
           <Circle className="w-2.5 h-2.5" fill={status.colour} stroke={status.colour} />
-          {CURRENT_AGENT.name.split(' ')[0]} · {status.label}
+          {firstName || 'Agent'} · {status.label}
         </button>
         {open && (
           <div className="absolute right-0 top-full mt-1 bg-white border border-[#E5E7EB] rounded-xl shadow-lg p-1 z-50 w-32">

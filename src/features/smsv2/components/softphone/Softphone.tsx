@@ -17,7 +17,7 @@ import { useTwilioDevice } from '../../hooks/useTwilioDevice';
 import { useSpendLimit } from '../../hooks/useSpendLimit';
 import { formatDuration, formatPence } from '../../data/helpers';
 import LiveCallScreen from '../live-call/LiveCallScreen';
-import { CURRENT_AGENT } from '../../data/mockAgents';
+import { useCurrentAgent } from '../../hooks/useCurrentAgent';
 
 export default function Softphone() {
   const [open, setOpen] = useState(false);
@@ -26,6 +26,7 @@ export default function Softphone() {
   const { phase, call, durationSec, fullScreen, setFullScreen, startCall, endCall } =
     useActiveCallCtx();
   const spend = useSpendLimit();
+  const { agent: me } = useCurrentAgent();
 
   // Mid-call drop recovery — when the Twilio device's active call drops
   // (remote hangup, network loss, etc.) we transition to post_call so the
@@ -144,7 +145,7 @@ export default function Softphone() {
     <div className="fixed bottom-5 right-5 z-[120] bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] w-[280px] overflow-hidden">
       <div className="px-3 py-2 bg-[#F3F3EE] border-b border-[#E5E7EB] flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-[#1E9A80]" />
-        <span className="text-[12px] font-semibold text-[#1A1A1A]">{CURRENT_AGENT.name}</span>
+        <span className="text-[12px] font-semibold text-[#1A1A1A]">{me?.name ?? 'Agent'}</span>
         <span className="text-[11px] text-[#6B7280]">· Available</span>
         <div className="ml-auto flex items-center gap-0.5">
           <button
