@@ -3,10 +3,28 @@ import { AlertTriangle, Lightbulb, HelpCircle, Activity } from 'lucide-react';
 import { MOCK_TRANSCRIPT, MOCK_COACH_EVENTS } from '../../data/mockTranscripts';
 import { useKillSwitch } from '../../hooks/useKillSwitch';
 import { useSmsV2 } from '../../store/SmsV2Store';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   durationSec: number;
   contactId: string;
+  /** Server-side wk_calls.id — when set, subscribe to wk_live_transcripts
+   *  and wk_live_coach_events for live data. Falls back to MOCK_* otherwise. */
+  callId?: string | null;
+}
+
+interface LiveTranscriptRow {
+  id: string;
+  speaker: 'agent' | 'caller' | 'unknown';
+  body: string;
+  created_at: string;
+}
+
+interface LiveCoachRow {
+  id: string;
+  kind: 'objection' | 'suggestion' | 'question' | 'metric' | 'warning';
+  body: string;
+  created_at: string;
 }
 
 const COACH_ICONS = {
@@ -16,10 +34,12 @@ const COACH_ICONS = {
   warning: { Icon: Activity, colour: '#F59E0B', label: '📊 INSIGHT' },
 };
 
-export default function LiveTranscriptPane({ durationSec, contactId }: Props) {
+export default function LiveTranscriptPane({ durationSec, contactId, callId }: Props) {
   const { aiCoach } = useKillSwitch();
   const store = useSmsV2();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [liveLines, setLiveLines] = useState<LiveTranscriptRow[]>([]);
+  const [liveEvents, setLiveEvents] = useState<LiveCoachRow[]>([]);
 
   // Sticky note — auto-saved to store with 2s debounce
   const [note, setNote] = useState(store.getNote(contactId));
@@ -37,9 +57,69 @@ export default function LiveTranscriptPane({ durationSec, contactId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note, contactId]);
 
-  // Show transcript lines that have already happened (ts <= durationSec) — caps to all in mock.
-  const lines = MOCK_TRANSCRIPT.filter((l) => l.ts <= Math.max(durationSec, 140));
-  const events = MOCK_COACH_EVENTS.filter((e) => e.ts <= Math.max(durationSec, 140));
+  // Subscribe to realtime transcript + coach events when we have a real callId
+  useEffect(() => {
+    if (!callId) {
+      setLiveLines([]);
+      setLiveEvents([]);
+      return;
+    }
+    const tCh = supabase
+      .channel(`live-transcripts:${callId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'wk_live_transcripts',
+          filter: `call_id=eq.${callId}`,
+        },
+        (payload: { new: LiveTranscriptRow }) => {
+          setLiveLines((prev) => [...prev, payload.new]);
+        }
+      )
+      .subscribe();
+    const cCh = supabase
+      .channel(`live-coach:${callId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'wk_live_coach_events',
+          filter: `call_id=eq.${callId}`,
+        },
+        (payload: { new: LiveCoachRow }) => {
+          setLiveEvents((prev) => [...prev, payload.new]);
+        }
+      )
+      .subscribe();
+    return () => {
+      try { supabase.removeChannel(tCh); } catch { /* ignore */ }
+      try { supabase.removeChannel(cCh); } catch { /* ignore */ }
+    };
+  }, [callId]);
+
+  // Use live data when present, otherwise fall back to mock for the demo.
+  const useLive = !!callId;
+  const lines = useLive
+    ? liveLines.map((r) => ({
+        id: r.id,
+        speaker: r.speaker === 'agent' ? 'agent' : 'caller',
+        text: r.body,
+      }))
+    : MOCK_TRANSCRIPT.filter((l) => l.ts <= Math.max(durationSec, 140));
+  const events = useLive
+    ? liveEvents
+        .filter((e) => e.kind === 'objection' || e.kind === 'suggestion'
+          || e.kind === 'question' || e.kind === 'warning')
+        .map((e) => ({
+          id: e.id,
+          kind: e.kind as 'objection' | 'suggestion' | 'question' | 'warning',
+          title: '',
+          body: e.body,
+        }))
+    : MOCK_COACH_EVENTS.filter((e) => e.ts <= Math.max(durationSec, 140));
 
   useEffect(() => {
     if (scrollRef.current) {

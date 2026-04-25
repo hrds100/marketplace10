@@ -29,6 +29,7 @@ import { MOCK_TEMPLATES, COACH_PROMPTS } from '../data/mockCampaigns';
 import { MOCK_NUMBERS } from '../data/mockCampaigns';
 import { formatPence } from '../data/helpers';
 import { useKillSwitch } from '../hooks/useKillSwitch';
+import { useAiSettings } from '../hooks/useAiSettings';
 import { useSmsV2 } from '../store/SmsV2Store';
 import type { Agent, PipelineColumn } from '../types';
 
@@ -765,9 +766,8 @@ function NumbersTab() {
 // ─── AI — API key + model dropdown ─────────────────────────────────
 function AITab() {
   const ks = useKillSwitch();
+  const { settings, loading, saving, error, saved, setField, save } = useAiSettings();
   const [showKey, setShowKey] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [model, setModel] = useState('gpt-4o-mini');
 
   return (
     <>
@@ -783,10 +783,11 @@ function AITab() {
               <div className="relative flex-1">
                 <input
                   type={showKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-proj-…"
-                  className="w-full px-3 py-2 pr-9 text-[13px] font-mono border border-[#E5E7EB] rounded-[10px]"
+                  value={settings.openai_api_key}
+                  onChange={(e) => setField('openai_api_key', e.target.value)}
+                  placeholder={loading ? 'Loading…' : 'sk-proj-…'}
+                  disabled={loading}
+                  className="w-full px-3 py-2 pr-9 text-[13px] font-mono border border-[#E5E7EB] rounded-[10px] disabled:bg-[#F9FAFB]"
                 />
                 <button
                   type="button"
@@ -800,21 +801,29 @@ function AITab() {
                   )}
                 </button>
               </div>
-              <button className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-2 rounded-[10px] hover:bg-[#1E9A80]/90">
-                Save
+              <button
+                onClick={() => void save()}
+                disabled={saving || loading}
+                className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+              >
+                {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save'}
               </button>
             </div>
             <div className="text-[10px] text-[#9CA3AF] mt-1">
-              Stored encrypted in Supabase Vault. Never exposed to browser.
+              Stored in <code className="bg-[#F3F3EE] px-1 rounded">wk_ai_settings</code> (admin-RLS).
+              Read server-side only by edge functions; never sent to the browser bundle.
             </div>
+            {error && (
+              <div className="text-[10px] text-[#EF4444] mt-1">⚠ {error}</div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Model — post-call analysis</Label>
+              <Label>Model — post-call analysis (Whisper + summary)</Label>
               <select
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
+                value={settings.postcall_model}
+                onChange={(e) => setField('postcall_model', e.target.value)}
                 className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
               >
                 <option value="gpt-4o">gpt-4o (most accurate)</option>
@@ -827,53 +836,107 @@ function AITab() {
               </select>
             </div>
             <div>
-              <Label>Model — live coach</Label>
+              <Label>Model — live coach (Realtime API)</Label>
               <select
-                defaultValue="gpt-4o-mini"
+                value={settings.live_coach_model}
+                onChange={(e) => setField('live_coach_model', e.target.value)}
                 className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
               >
-                <option value="gpt-4o-mini">gpt-4o-mini (fast, low latency)</option>
-                <option value="gpt-4o">gpt-4o (slower, smarter)</option>
-                <option value="gpt-3.5-turbo">gpt-3.5-turbo (cheapest)</option>
+                <option value="gpt-4o-realtime-preview">
+                  gpt-4o-realtime-preview (live audio, current)
+                </option>
+                <option value="gpt-4o-mini-realtime-preview">
+                  gpt-4o-mini-realtime-preview (cheaper)
+                </option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <Label>Whisper model (post-call transcription)</Label>
+            <select
+              value={settings.whisper_model}
+              onChange={(e) => setField('whisper_model', e.target.value)}
+              className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
+            >
+              <option value="whisper-1">whisper-1 (default)</option>
+            </select>
           </div>
         </div>
       </Card>
 
       <Card title="AI coach master switch">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => ks.toggle('aiCoach')}
-            className={cn(
-              'px-4 py-2 rounded-[10px] text-[13px] font-semibold transition-colors',
-              !ks.aiCoach
-                ? 'bg-[#1E9A80] text-white'
-                : 'bg-[#F3F3EE] text-[#6B7280]'
-            )}
-          >
-            {!ks.aiCoach ? 'AI Coach: ON' : 'AI Coach: OFF (kill switch active)'}
-          </button>
-          <span className="text-[11px] text-[#6B7280]">
-            Master switch — disables coach across all campaigns immediately
-          </span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => ks.toggle('aiCoach')}
+              className={cn(
+                'px-4 py-2 rounded-[10px] text-[13px] font-semibold transition-colors',
+                !ks.aiCoach
+                  ? 'bg-[#1E9A80] text-white'
+                  : 'bg-[#F3F3EE] text-[#6B7280]'
+              )}
+            >
+              {!ks.aiCoach ? 'AI Coach: ON' : 'AI Coach: OFF (kill switch active)'}
+            </button>
+            <span className="text-[11px] text-[#6B7280]">
+              Master switch — disables coach across all campaigns immediately
+            </span>
+          </div>
+          <div className="flex items-center gap-4 pt-2 border-t border-[#E5E7EB]">
+            <label className="flex items-center gap-2 text-[12px] text-[#1A1A1A]">
+              <input
+                type="checkbox"
+                checked={settings.ai_enabled}
+                onChange={(e) => setField('ai_enabled', e.target.checked)}
+              />
+              ai_enabled (post-call summaries on/off)
+            </label>
+            <label className="flex items-center gap-2 text-[12px] text-[#1A1A1A]">
+              <input
+                type="checkbox"
+                checked={settings.live_coach_enabled}
+                onChange={(e) => setField('live_coach_enabled', e.target.checked)}
+              />
+              live_coach_enabled (real-time WebSocket on/off)
+            </label>
+          </div>
         </div>
       </Card>
 
-      <Card title="System prompts" hint="One per use case">
-        <div className="space-y-2">
-          {COACH_PROMPTS.map((p) => (
-            <details key={p.id} className="border border-[#E5E7EB] rounded-xl p-3">
-              <summary className="text-[13px] font-semibold text-[#1A1A1A] cursor-pointer">
-                {p.name}
-              </summary>
-              <textarea
-                defaultValue={p.body}
-                rows={6}
-                className="mt-2 w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2"
-              />
-            </details>
-          ))}
+      <Card title="System prompts" hint="Persisted to wk_ai_settings — used by every call">
+        <div className="space-y-3">
+          <div>
+            <Label>Live coach prompt</Label>
+            <textarea
+              value={settings.live_coach_system_prompt}
+              onChange={(e) => setField('live_coach_system_prompt', e.target.value)}
+              rows={6}
+              className="w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2"
+            />
+          </div>
+          <div>
+            <Label>Post-call analysis prompt</Label>
+            <textarea
+              value={settings.postcall_system_prompt}
+              onChange={(e) => setField('postcall_system_prompt', e.target.value)}
+              rows={6}
+              className="w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2"
+            />
+          </div>
+          <details className="border border-[#E5E7EB] rounded-xl p-3">
+            <summary className="text-[12px] font-semibold text-[#6B7280] cursor-pointer">
+              Reference prompts (read-only — copy into the editors above)
+            </summary>
+            <div className="mt-2 space-y-2">
+              {COACH_PROMPTS.map((p) => (
+                <div key={p.id} className="border border-[#E5E7EB] rounded-lg p-2">
+                  <div className="text-[12px] font-semibold mb-1">{p.name}</div>
+                  <pre className="text-[10px] text-[#6B7280] whitespace-pre-wrap font-mono">{p.body}</pre>
+                </div>
+              ))}
+            </div>
+          </details>
         </div>
       </Card>
     </>

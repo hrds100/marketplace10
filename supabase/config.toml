@@ -200,3 +200,37 @@ verify_jwt = false
 
 [functions.wk-jobs-worker]
 verify_jwt = false
+
+# /smsv2 — outcome engine, lead picker, dialer, AI coach, spend, kill switches
+[functions.wk-outcome-apply]
+verify_jwt = false
+
+[functions.wk-leads-next]
+verify_jwt = false
+
+[functions.wk-leads-distribute]
+verify_jwt = false
+
+[functions.wk-dialer-start]
+verify_jwt = false
+
+[functions.wk-dialer-answer]
+verify_jwt = false
+
+[functions.wk-dialer-tick]
+verify_jwt = false
+
+[functions.wk-spend-check]
+verify_jwt = false
+
+[functions.wk-spend-record]
+verify_jwt = false
+
+[functions.wk-killswitch-check]
+verify_jwt = false
+
+[functions.wk-ai-postcall]
+verify_jwt = false
+
+[functions.wk-ai-live-coach]
+verify_jwt = false

@@ -10,7 +10,25 @@ import { MOCK_CAMPAIGNS, COACH_PROMPTS } from '../data/mockCampaigns';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { supabase } from '@/integrations/supabase/client';
 import type { Contact } from '../types';
+
+interface DialerStartInvoke {
+  invoke: (
+    name: string,
+    options: { body: Record<string, unknown> }
+  ) => Promise<{
+    data: {
+      campaign_id?: string;
+      lines?: number;
+      blocked?: boolean;
+      reason?: string;
+      fired?: Array<{ contact_id: string; phone: string; sid?: string; error?: string }>;
+      error?: string;
+    } | null;
+    error: { message: string } | null;
+  }>;
+}
 
 export default function DialerPage() {
   const [activeId, setActiveId] = useState(MOCK_CAMPAIGNS[0].id);
@@ -19,9 +37,52 @@ export default function DialerPage() {
   const camp = MOCK_CAMPAIGNS.find((c) => c.id === activeId)!;
   const { startCall } = useActiveCallCtx();
   const spend = useSpendLimit();
-  const { contacts, patchContact, upsertContact } = useSmsV2();
+  const { contacts, patchContact, upsertContact, pushToast } = useSmsV2();
 
   const upcoming = contacts.slice(0, 5);
+
+  const handleStart = async () => {
+    setRunning(true);
+    // Looks like a UUID? Then it's likely a real wk_dialer_campaigns row —
+    // call the edge function. Mock campaign IDs (e.g. 'campaign-1') just
+    // toggle the visual `running` state and rely on the local store.
+    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      activeId
+    );
+    if (!looksLikeUuid) {
+      pushToast('Mock campaign — wire a real campaign UUID to dial', 'info');
+      return;
+    }
+    try {
+      const { data, error } = await (
+        supabase.functions as unknown as DialerStartInvoke
+      ).invoke('wk-dialer-start', {
+        body: { campaign_id: activeId },
+      });
+      if (error) {
+        pushToast(`Dialer error: ${error.message}`, 'error');
+        setRunning(false);
+        return;
+      }
+      if (data?.blocked) {
+        pushToast(`Blocked: ${data.reason ?? 'spend or killswitch'}`, 'error');
+        setRunning(false);
+        return;
+      }
+      if (data?.error) {
+        pushToast(`Dialer: ${data.error}`, 'error');
+        setRunning(false);
+        return;
+      }
+      pushToast(`Dialing ${data?.fired?.length ?? 0} line(s)`, 'success');
+    } catch (e) {
+      pushToast(
+        `Dialer crashed: ${e instanceof Error ? e.message : 'unknown'}`,
+        'error'
+      );
+      setRunning(false);
+    }
+  };
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
@@ -100,7 +161,7 @@ export default function DialerPage() {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setRunning(true)}
+                  onClick={() => void handleStart()}
                   disabled={spend.isLimitReached}
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12px] font-semibold shadow-[0_4px_12px_rgba(30,154,128,0.35)]',

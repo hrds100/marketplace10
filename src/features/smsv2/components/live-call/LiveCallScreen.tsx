@@ -224,7 +224,7 @@ export default function LiveCallScreen() {
         {/* Centre — transcript + coach OR post-call panel */}
         <section className="flex-1 bg-white border-r border-[#E5E7EB] overflow-hidden">
           {phase === 'in_call' ? (
-            <LiveTranscriptPane durationSec={durationSec} contactId={contact.id} />
+            <LiveTranscriptPane durationSec={durationSec} contactId={contact.id} callId={call?.callId ?? null} />
           ) : (
             <PostCallPanel />
           )}
