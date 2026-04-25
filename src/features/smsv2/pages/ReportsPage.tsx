@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import { Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MOCK_AGENTS } from '../data/mockAgents';
 import { formatDuration, formatPence } from '../data/helpers';
+import { useReports, type ReportRange } from '../hooks/useReports';
 
-const RANGES = ['Today', 'Week', 'Month', 'Custom'];
-
-const HOURLY = [3, 6, 9, 12, 24, 38, 41, 36, 30, 28, 22, 18, 14];
+const RANGES: Array<{ key: ReportRange; label: string }> = [
+  { key: 'today', label: 'Today' },
+  { key: 'week', label: 'Week' },
+  { key: 'month', label: 'Month' },
+];
 
 export default function ReportsPage() {
-  const [range, setRange] = useState('Today');
-
-  const sorted = [...MOCK_AGENTS]
-    .filter((a) => !a.isAdmin)
-    .sort((a, b) => b.callsToday - a.callsToday);
+  const [range, setRange] = useState<ReportRange>('today');
+  const r = useReports(range);
+  const maxBucket = Math.max(1, ...r.hourly);
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
@@ -21,49 +21,67 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Reports</h1>
           <p className="text-[13px] text-[#6B7280]">
-            Calls per hour · leaderboard · spend
+            Calls per {range === 'today' ? 'hour' : 'day'} · leaderboard · spend
           </p>
         </div>
         <div className="flex gap-1 bg-[#F3F3EE] p-1 rounded-[10px] border border-[#E5E7EB]">
-          {RANGES.map((r) => (
+          {RANGES.map((opt) => (
             <button
-              key={r}
-              onClick={() => setRange(r)}
+              key={opt.key}
+              onClick={() => setRange(opt.key)}
               className={cn(
                 'px-3 py-1 text-[12px] font-medium rounded-[8px]',
-                range === r ? 'bg-white text-[#1E9A80] shadow-sm' : 'text-[#6B7280]'
+                range === opt.key ? 'bg-white text-[#1E9A80] shadow-sm' : 'text-[#6B7280]'
               )}
             >
-              {r}
+              {opt.label}
             </button>
           ))}
         </div>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPI label="Calls" value="342" />
-        <KPI label="Answer rate" value="47%" />
-        <KPI label="Avg duration" value="3:14" />
-        <KPI label="Total spend" value="£38.40" />
+        <KPI label="Calls" value={r.loading ? '—' : String(r.totalCalls)} />
+        <KPI
+          label="Answer rate"
+          value={r.loading ? '—' : `${r.answerRatePercent}%`}
+        />
+        <KPI
+          label="Avg duration"
+          value={r.loading || r.avgDurationSec === 0 ? '—' : formatDuration(r.avgDurationSec)}
+        />
+        <KPI label="Total spend" value={r.loading ? '—' : formatPence(r.totalSpendPence)} />
       </div>
 
-      {/* Calls per hour chart */}
+      {/* Calls per hour / per day chart */}
       <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5">
-        <h3 className="text-[13px] font-semibold text-[#1A1A1A] mb-3">Calls per hour</h3>
-        <div className="flex items-end gap-1.5 h-32">
-          {HOURLY.map((h, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div
-                className="w-full bg-[#1E9A80] rounded-t transition-all hover:opacity-80"
-                style={{ height: `${(h / Math.max(...HOURLY)) * 100}%` }}
-                title={`${h} calls`}
-              />
-              <div className="text-[9px] text-[#9CA3AF] tabular-nums">
-                {(8 + i).toString().padStart(2, '0')}
+        <h3 className="text-[13px] font-semibold text-[#1A1A1A] mb-3">
+          Calls per {range === 'today' ? 'hour' : 'day'}
+        </h3>
+        {r.loading ? (
+          <div className="h-32 flex items-center justify-center text-[12px] text-[#9CA3AF]">
+            Loading…
+          </div>
+        ) : r.hourly.every((h) => h === 0) ? (
+          <div className="h-32 flex items-center justify-center text-[12px] text-[#9CA3AF] italic">
+            No calls in this range yet.
+          </div>
+        ) : (
+          <div className="flex items-end gap-1.5 h-32">
+            {r.hourly.map((h, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div
+                  className="w-full bg-[#1E9A80] rounded-t transition-all hover:opacity-80"
+                  style={{ height: `${(h / maxBucket) * 100}%` }}
+                  title={`${h} calls`}
+                />
+                <div className="text-[9px] text-[#9CA3AF] tabular-nums">
+                  {r.hourLabels[i]}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Leaderboard */}
@@ -84,17 +102,13 @@ export default function ReportsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E5E7EB]">
-            {sorted.map((a, i) => (
-              <tr key={a.id} className="hover:bg-[#F3F3EE]/30">
-                <td className="px-4 py-2.5 text-[#9CA3AF] font-bold tabular-nums">
-                  {i + 1}
-                </td>
-                <td className="px-2 py-2.5 font-semibold text-[#1A1A1A]">{a.name}</td>
-                <td className="px-2 py-2.5 text-right tabular-nums">{a.callsToday}</td>
+            {r.leaderboard.map((a, i) => (
+              <tr key={a.agentId} className="hover:bg-[#F3F3EE]/30">
+                <td className="px-4 py-2.5 text-[#9CA3AF] font-bold tabular-nums">{i + 1}</td>
+                <td className="px-2 py-2.5 font-semibold text-[#1A1A1A]">{a.agentName}</td>
+                <td className="px-2 py-2.5 text-right tabular-nums">{a.calls}</td>
                 <td className="px-2 py-2.5 text-right tabular-nums">
-                  {a.callsToday
-                    ? Math.round((a.answeredToday / a.callsToday) * 100) + '%'
-                    : '—'}
+                  {a.calls ? Math.round((a.answered / a.calls) * 100) + '%' : '—'}
                 </td>
                 <td className="px-2 py-2.5 text-right tabular-nums">
                   {a.avgDurationSec ? formatDuration(a.avgDurationSec) : '—'}
@@ -107,6 +121,13 @@ export default function ReportsPage() {
                 </td>
               </tr>
             ))}
+            {!r.loading && r.leaderboard.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-[12px] text-[#9CA3AF] italic">
+                  No agent calls in this range yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
