@@ -1,5 +1,76 @@
 # Changelog
 
+## 2026-04-25 — smsv2: real Twilio dial + mock cleanup (PRs #526–#532)
+
+End-to-end TDD fix series so the /smsv2 surface stops being theater. Hugo
+clicks Call → his phone actually rings → outcome applies to a real wk_calls
+row.
+
+**Living docs:** all wk-* edge functions deployed and ACTIVE. New function
+`wk-calls-create` deployed at 2026-04-25 21:11 UTC. Updated:
+`wk-voice-twiml-outgoing` (v4, also 21:11 UTC) now reads `CallId` /
+`ContactId` form params and UPDATEs the pre-minted row instead of inserting
+a duplicate. Full deployed list (20):
+
+| function | role |
+|----------|------|
+| wk-create-agent | provision an agent profile + spend-limit row |
+| wk-twilio-connect | OAuth callback for Twilio Connect |
+| wk-spend-check | pre-dial spend / killswitch RPC wrapper |
+| wk-spend-record | record cost after a call ends |
+| wk-killswitch-check | global enable/disable flags |
+| wk-outcome-apply | server automation when an outcome is picked |
+| wk-leads-next | atomic "next lead" picker |
+| wk-leads-distribute | bulk distribute leads to agents |
+| wk-dialer-start | parallel/power-dialer originator |
+| wk-dialer-answer | winner-takes-screen broadcast on first answer |
+| wk-dialer-tick | poll loop for stuck queues |
+| wk-ai-postcall | post-call summary + sentiment + tagging |
+| wk-ai-live-coach | live transcription + coach event publisher |
+| wk-voice-token | Twilio access-token mint |
+| wk-voice-twiml-outgoing | TwiML for browser-initiated outbound |
+| wk-voice-twiml-incoming | TwiML for PSTN→Client routing |
+| wk-voice-status | call status callback receiver |
+| wk-voice-recording | recording status callback receiver |
+| wk-jobs-worker | scheduled background tasks |
+| wk-calls-create | **NEW** mints wk_calls UUID before dialing |
+
+### What landed
+
+- **PR #526** — Empty store seed + atomic contact replace. The 8 mock
+  contacts no longer leak into /smsv2/contacts. `useHydrateContacts` now
+  calls `setContacts(real)` once instead of upserting per row on top of
+  the seed.
+- **PR #527** — `useCurrentAgent` hook replaces hardcoded `CURRENT_AGENT`
+  (a-tom). Status bar, softphone header, live-call agent stats, and call
+  greeting all show the signed-in user's real identity / spend / call
+  counts.
+- **PR #528** — Real Twilio dial in `startCall`. New edge function
+  `wk-calls-create` mints the wk_calls row server-side; orchestrator
+  invokes it, dials with `{ CallId, ContactId }` baked into TwiML params;
+  `wk-voice-twiml-outgoing` now updates that row instead of inserting a
+  dupe. Phase transitions only after Twilio Call accept/disconnect.
+- **PR #529** — `LiveTranscriptPane` empty state. Production no longer
+  shows MOCK_TRANSCRIPT / MOCK_COACH_EVENTS. Mock fallback gated behind
+  `?demo=1` URL flag for internal demos.
+- **PR #530** — Post-call button guard. Orange "Pick outcome" only
+  renders when `call.callId` is a real UUID, so the button never appears
+  for calls that didn't really happen.
+- **PR #531** — Per-page mock fallbacks gated behind `?demo=1`.
+  CallsPage / InboxPage / ContactDetailPage / SettingsPage stop leaking
+  Sarah Jenkins / Tom Richards / fake history into production. New
+  `useDemoMode()` helper reads `?demo=1` from the URL.
+- **PR #532** — Inbound call wiring. `Device.on('incoming')` auto-accepts
+  + notifies subscribers via `addIncomingCallListener`. ActiveCallContext
+  morphs into the live-call screen for inbound PSTN calls the same way
+  it does for the dialer-winner broadcast.
+
+### Verification
+- 87/87 vitest tests green (was 43 before this series; +44 across the 7
+  PRs).
+- `npx tsc --noEmit` clean throughout.
+- All edge fns ACTIVE on `asazddtvjvmckouxcmmo`.
+
 ## 2026-04-15 — Growth config backend (A/B + social proof)
 
 Admin Growth page (/admin/marketplace/growth) now persists A/B weights and social-proof settings to a new `growth_config` Supabase table via a new `growth-config` edge function. The landing router (public/landing/index.html) and social-proof toast script (public/landing/js/social-proof.js) read from the edge function on load (2.5s timeout, localStorage cache fallback, hardcoded defaults as last resort), so admin changes finally reach real visitors within ~30s instead of dying in the admin's own browser.
