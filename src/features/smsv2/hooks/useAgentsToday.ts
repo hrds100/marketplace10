@@ -1,7 +1,7 @@
 // useAgentsToday — agent list + per-agent stats for today.
 //
 // Joins:
-//   profiles.id, full_name, agent_status, workspace_role
+//   profiles.id, name, agent_status, workspace_role
 //   wk_voice_agent_limits.daily_limit_pence + daily_spend_pence + is_admin
 //   wk_calls aggregations (calls today, answered today, avg duration today)
 //
@@ -46,7 +46,7 @@ export function useAgentsToday(): { agents: Agent[]; loading: boolean } {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const profilesRes = await (supabase.from('profiles' as any) as any)
-      .select('id, email, full_name, agent_status, agent_extension, workspace_role')
+      .select('id, email, name, agent_status, agent_extension, workspace_role')
       .in('workspace_role', ['agent', 'admin']);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -80,7 +80,7 @@ export function useAgentsToday(): { agents: Agent[]; loading: boolean } {
 
       return {
         id: p.id,
-        name: (p.full_name as string | null) ?? (p.email as string | null) ?? 'Agent',
+        name: (p.name as string | null) ?? (p.email as string | null) ?? 'Agent',
         email: (p.email as string | null) ?? '',
         extension: (p.agent_extension as string | null) ?? '',
         role: (p.workspace_role as 'admin' | 'agent' | 'viewer' | null) ?? 'agent',

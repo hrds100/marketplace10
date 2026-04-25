@@ -6,13 +6,18 @@ import StageSelector from '../components/shared/StageSelector';
 import BulkUploadModal from '../components/contacts/BulkUploadModal';
 import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
-import { useContactPersistence } from '../hooks/useContactPersistence';
+import { useContactPersistence, isRealContactId } from '../hooks/useContactPersistence';
+import { useAgentsToday } from '../hooks/useAgentsToday';
 import { toE164 } from '@/core/utils/phone';
 import type { Contact } from '../types';
 
 export default function ContactsPage() {
-  const { contacts, columns, agents, patchContact, upsertContact, pushToast } = useSmsV2();
+  const { contacts, columns, agents: storeAgents, patchContact, upsertContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
+  // Prefer real agents (from profiles) for the owner dropdown so saved
+  // owner_agent_id is a real UUID, not a mock id like "a-hugo".
+  const { agents: realAgents } = useAgentsToday();
+  const agents = realAgents.length > 0 ? realAgents : storeAgents;
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
@@ -46,12 +51,18 @@ export default function ContactsPage() {
       pushToast('Invalid phone number', 'error');
       return;
     }
+    // Drop synthetic mock IDs (e.g. "a-hugo") — createContact will fall back
+    // to the current user's auth.uid() when ownerAgentId is missing.
+    const ownerAgentId =
+      draft.ownerAgentId && isRealContactId(draft.ownerAgentId)
+        ? draft.ownerAgentId
+        : null;
     const newId = await persist.createContact({
       name: draft.name.trim(),
       phone: e164,
       email: draft.email,
       pipelineColumnId: draft.pipelineColumnId ?? null,
-      ownerAgentId: draft.ownerAgentId ?? null,
+      ownerAgentId,
       customFields: draft.customFields,
     });
     if (!newId) {
@@ -227,11 +238,13 @@ export default function ContactsPage() {
       <BulkUploadModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
       <EditContactModal
         contact={editing}
+        agents={agents}
         onClose={() => setEditing(null)}
         onSave={save}
       />
       <EditContactModal
         contact={creatingDraft}
+        agents={agents}
         onClose={() => setCreatingDraft(null)}
         onSave={(draft) => void saveNewContact(draft)}
       />

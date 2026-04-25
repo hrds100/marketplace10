@@ -106,8 +106,12 @@ export function useContactPersistence(): ContactPersistAPI {
   }, []);
 
   const createContact = useCallback<ContactPersistAPI['createContact']>(async (input) => {
-    let owner = input.ownerAgentId ?? null;
-    if (!owner) {
+    // Owner must be a real UUID (FK to profiles.id). Reject mock IDs like
+    // "a-hugo" from MOCK_AGENTS — they crash the INSERT with a uuid type error.
+    let owner: string | null = null;
+    if (input.ownerAgentId && isRealContactId(input.ownerAgentId)) {
+      owner = input.ownerAgentId;
+    } else {
       const { data } = await supabase.auth.getUser();
       owner = data.user?.id ?? null;
     }

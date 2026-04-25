@@ -153,14 +153,14 @@ export function useReports(range: ReportRange): ReportData {
     if (agentIds.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const profRes = await (supabase.from('profiles' as any) as any)
-        .select('id, full_name, email')
+        .select('id, name, email')
         .in('id', agentIds);
       for (const p of (profRes.data ?? []) as Array<{
         id: string;
-        full_name: string | null;
+        name: string | null;
         email: string | null;
       }>) {
-        profilesById.set(p.id, p.full_name ?? p.email ?? 'Agent');
+        profilesById.set(p.id, p.name ?? p.email ?? 'Agent');
       }
     }
 
