@@ -6,9 +6,6 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { MOCK_CONTACTS } from '../data/mockContacts';
-import { ACTIVE_PIPELINE } from '../data/mockPipelines';
-import { MOCK_AGENTS } from '../data/mockAgents';
 import { MOCK_CAMPAIGNS, MOCK_TEMPLATES } from '../data/mockCampaigns';
 import type {
   Agent,
@@ -42,6 +39,7 @@ interface State {
 // ─── Actions ──────────────────────────────────────────────────────────
 type Action =
   | { type: 'contact/upsert'; contact: Contact }
+  | { type: 'contact/setAll'; contacts: Contact[] }
   | { type: 'contact/patch'; id: string; patch: Partial<Contact> }
   | { type: 'contact/remove'; id: string }
   | { type: 'column/set'; columns: PipelineColumn[] }
@@ -60,13 +58,12 @@ type Action =
   | { type: 'toast/dismiss'; id: string };
 
 const initialState: State = {
-  contacts: MOCK_CONTACTS,
-  columns: ACTIVE_PIPELINE.columns,
-  agents: MOCK_AGENTS,
+  contacts: [],
+  columns: [],
+  agents: [],
   campaigns: MOCK_CAMPAIGNS,
   activeCampaignId: MOCK_CAMPAIGNS[0].id,
-  // Seed queue with all non-hot contacts (hot leads jumped via priority elsewhere)
-  queue: MOCK_CONTACTS.map((c) => c.id),
+  queue: [],
   activity: [],
   notesByContactId: {},
   toasts: [],
@@ -83,6 +80,12 @@ function reducer(state: State, action: Action): State {
           : [...state.contacts, action.contact],
       };
     }
+    case 'contact/setAll':
+      return {
+        ...state,
+        contacts: action.contacts,
+        queue: action.contacts.map((c) => c.id),
+      };
     case 'contact/patch':
       return {
         ...state,
@@ -173,6 +176,7 @@ export interface SmsV2API {
 
   // Contact actions
   upsertContact: (c: Contact) => void;
+  setContacts: (contacts: Contact[]) => void;
   patchContact: (id: string, patch: Partial<Contact>) => void;
   removeContact: (id: string) => void;
 
@@ -361,6 +365,7 @@ export function SmsV2Provider({ children }: { children: ReactNode }) {
 
       // Contact
       upsertContact: (c) => dispatch({ type: 'contact/upsert', contact: c }),
+      setContacts: (contacts) => dispatch({ type: 'contact/setAll', contacts }),
       patchContact: (id, patch) => dispatch({ type: 'contact/patch', id, patch }),
       removeContact: (id) => dispatch({ type: 'contact/remove', id }),
 

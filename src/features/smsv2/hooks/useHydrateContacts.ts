@@ -46,7 +46,7 @@ export function rowToContact(row: WkContactRow, tags: string[]): Contact {
 }
 
 export function useHydrateContacts(): void {
-  const { upsertContact, removeContact } = useSmsV2();
+  const { setContacts, upsertContact, removeContact } = useSmsV2();
 
   useEffect(() => {
     let cancelled = false;
@@ -80,9 +80,13 @@ export function useHydrateContacts(): void {
         tagsByContact.set(row.contact_id, list);
       }
 
-      for (const row of (contactsRes.data ?? []) as WkContactRow[]) {
-        upsertContact(rowToContact(row, tagsByContact.get(row.id) ?? []));
-      }
+      const real = ((contactsRes.data ?? []) as WkContactRow[]).map((row) =>
+        rowToContact(row, tagsByContact.get(row.id) ?? [])
+      );
+
+      // Atomic replace — never append-on-top of seed/realtime state, so the
+      // store always reflects exactly what the DB returned.
+      setContacts(real);
     }
 
     void load();
@@ -111,5 +115,5 @@ export function useHydrateContacts(): void {
       cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [upsertContact, removeContact]);
+  }, [setContacts, upsertContact, removeContact]);
 }
