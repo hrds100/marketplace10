@@ -1,25 +1,38 @@
 import { Plus, Megaphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOCK_CAMPAIGNS } from '../../data/mockCampaigns';
+import type { Campaign } from '../../types';
 
 interface Props {
   activeId: string;
   onSelect: (id: string) => void;
+  /** When provided, replaces the mock campaign list. */
+  campaigns?: Campaign[];
 }
 
-export default function CampaignList({ activeId, onSelect }: Props) {
+export default function CampaignList({ activeId, onSelect, campaigns }: Props) {
+  // Phase A.2: real campaigns when provided, mock fallback so other callers
+  // (admin previews, storybook) still work without props.
+  const list = campaigns && campaigns.length > 0 ? campaigns : MOCK_CAMPAIGNS;
+  const isReal = Boolean(campaigns && campaigns.length > 0);
+
   return (
     <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
       <div className="px-4 py-3 border-b border-[#E5E7EB] flex items-center justify-between">
         <h3 className="text-[12px] font-semibold text-[#1A1A1A] uppercase tracking-wide">
           My campaigns
+          {!isReal && (
+            <span className="ml-2 text-[10px] font-medium text-[#9CA3AF] normal-case tracking-normal">
+              (mock — no real campaigns yet)
+            </span>
+          )}
         </h3>
         <button className="text-[#1E9A80] hover:bg-[#ECFDF5] p-1 rounded">
           <Plus className="w-4 h-4" />
         </button>
       </div>
       <div className="divide-y divide-[#E5E7EB]">
-        {MOCK_CAMPAIGNS.map((c) => (
+        {list.map((c) => (
           <button
             key={c.id}
             onClick={() => onSelect(c.id)}
@@ -49,6 +62,11 @@ export default function CampaignList({ activeId, onSelect }: Props) {
             </div>
           </button>
         ))}
+        {list.length === 0 && (
+          <div className="px-4 py-8 text-center text-[12px] text-[#9CA3AF] italic">
+            No campaigns yet. Create one in Settings to start dialing.
+          </div>
+        )}
       </div>
     </div>
   );
