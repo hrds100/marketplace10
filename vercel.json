@@ -116,6 +116,14 @@
       "destination": "/app.html"
     },
     {
+      "source": "/smsv2",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/smsv2/:path*",
+      "destination": "/app.html"
+    },
+    {
       "source": "/ads",
       "destination": "/app.html"
     },
