@@ -8,6 +8,15 @@ import Softphone from '../components/softphone/Softphone';
 import { ActiveCallProvider } from '../components/live-call/ActiveCallContext';
 import { SmsV2Provider } from '../store/SmsV2Store';
 import GlobalToasts from '../store/GlobalToasts';
+import { useHydrateContacts } from '../hooks/useHydrateContacts';
+
+// Side-effect-only component: pumps real wk_contacts into the store so
+// every /smsv2 page reads live data instead of mocks. Must live inside
+// <SmsV2Provider>.
+function StoreHydrator() {
+  useHydrateContacts();
+  return null;
+}
 
 export default function Smsv2Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -15,6 +24,7 @@ export default function Smsv2Layout() {
   return (
     <ProtectedRoute>
       <SmsV2Provider>
+        <StoreHydrator />
         <ActiveCallProvider>
           <div
             data-feature="SMSV2__LAYOUT"
