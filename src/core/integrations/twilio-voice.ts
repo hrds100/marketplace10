@@ -146,6 +146,10 @@ export async function destroyDevice(): Promise<void> {
 export interface OutboundParams {
   to: string;                // E.164 number to dial
   agentId?: string;          // for server-side logging hint (TwiML App ignores it)
+  /** Extra params forwarded as form fields on the wk-voice-twiml-outgoing
+   *  POST. Used to bake CallId (our wk_calls UUID) + ContactId in so the
+   *  TwiML handler can match the existing row instead of inserting a dupe. */
+  extraParams?: Record<string, string>;
 }
 
 export async function dial(params: OutboundParams): Promise<TwilioCall> {
@@ -158,6 +162,7 @@ export async function dial(params: OutboundParams): Promise<TwilioCall> {
     params: {
       To: params.to,
       ...(params.agentId ? { AgentId: params.agentId } : {}),
+      ...(params.extraParams ?? {}),
     },
   });
   return call;

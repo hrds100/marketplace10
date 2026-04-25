@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   Phone,
   PhoneOff,
@@ -28,25 +28,12 @@ export default function Softphone() {
   const spend = useSpendLimit();
   const { agent: me } = useCurrentAgent();
 
-  // Mid-call drop recovery — when the Twilio device's active call drops
-  // (remote hangup, network loss, etc.) we transition to post_call so the
-  // outcome panel appears instead of the UI being stuck in 'in_call' forever.
-  const wasActiveRef = useRef(false);
-  useEffect(() => {
-    const isActive = !!device.activeCall;
-    if (wasActiveRef.current && !isActive && phase === 'in_call') {
-      endCall();
-    }
-    wasActiveRef.current = isActive;
-  }, [device.activeCall, phase, endCall]);
-
-  // Distinguish three statuses so the launcher label is honest:
-  //   on_call → there's a live Twilio call right now
-  //   ready   → device registered, idle (can dial)
-  //   else    → registering / idle / error
+  // Drop recovery now lives inside ActiveCallContext (call.on('disconnect')).
+  // The launcher status reflects the unified phase + the Twilio device
+  // registration state.
   const launcherStatus =
-    phase === 'in_call' || device.activeCall
-      ? 'On call'
+    phase === 'in_call' || phase === 'placing'
+      ? phase === 'in_call' ? 'On call' : 'Calling…'
       : device.status === 'ready'
         ? 'Ready'
         : device.status === 'registering'
@@ -55,7 +42,7 @@ export default function Softphone() {
 
   const handleCall = (phone: string) => {
     if (spend.isLimitReached) return;
-    startCall('manual-' + Date.now(), phone, 'Direct dial');
+    void startCall('manual-' + Date.now(), phone, 'Direct dial');
     setOpen(false);
   };
 

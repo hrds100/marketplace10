@@ -78,6 +78,10 @@ serve(async (req: Request) => {
     const fromClient = (params.From ?? '').trim();    // expected: "client:<uuid>"
     const callSid = params.CallSid ?? '';
     const identity = fromClient.startsWith('client:') ? fromClient.slice(7) : null;
+    // Optional: our pre-minted wk_calls.id baked in by wk-calls-create. When
+    // present we UPDATE the existing row instead of inserting a duplicate.
+    const preMintedCallId = (params.CallId ?? '').trim();
+    const preContactId = (params.ContactId ?? '').trim() || null;
 
     if (!to) {
       return new Response('<Response><Say>Missing destination.</Say></Response>', {
@@ -126,18 +130,32 @@ serve(async (req: Request) => {
       }
     }
 
-    // Best-effort log into wk_calls (failures don't break the dial)
+    // Best-effort log into wk_calls (failures don't break the dial).
+    // If wk-calls-create already minted a row (CallId param baked in), we
+    // UPDATE it with the Twilio CallSid + status='in_progress'. Otherwise
+    // we INSERT (covers legacy paths and direct-dial without pre-mint).
     try {
-      await supabase.from('wk_calls').insert({
-        twilio_call_sid: callSid,
-        agent_id: agentId,
-        number_id: numberId,
-        direction: 'outbound',
-        status: 'in_progress',
-        started_at: new Date().toISOString(),
-      });
+      if (preMintedCallId) {
+        await supabase.from('wk_calls').update({
+          twilio_call_sid: callSid,
+          number_id: numberId,
+          status: 'in_progress',
+          to_e164: to || null,
+        }).eq('id', preMintedCallId);
+      } else {
+        await supabase.from('wk_calls').insert({
+          twilio_call_sid: callSid,
+          agent_id: agentId,
+          contact_id: preContactId,
+          number_id: numberId,
+          direction: 'outbound',
+          status: 'in_progress',
+          to_e164: to || null,
+          started_at: new Date().toISOString(),
+        });
+      }
     } catch (e) {
-      console.warn('wk_calls insert failed (continuing):', e);
+      console.warn('wk_calls upsert failed (continuing):', e);
     }
 
     // Build TwiML — record both legs, hit our status webhook for completion
