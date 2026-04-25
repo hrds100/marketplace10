@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Phone,
   PhoneOff,
@@ -15,6 +15,7 @@ import DialPad from './DialPad';
 import { useActiveCallCtx } from '../live-call/ActiveCallContext';
 import { useTwilioDevice } from '../../hooks/useTwilioDevice';
 import { useSpendLimit } from '../../hooks/useSpendLimit';
+import { useSmsV2 } from '../../store/SmsV2Store';
 import { formatDuration, formatPence } from '../../data/helpers';
 import LiveCallScreen from '../live-call/LiveCallScreen';
 import { CURRENT_AGENT } from '../../data/mockAgents';
@@ -26,9 +27,72 @@ export default function Softphone() {
   const { phase, call, durationSec, fullScreen, setFullScreen, startCall, endCall } =
     useActiveCallCtx();
   const spend = useSpendLimit();
+  const store = useSmsV2();
+
+  // Bridge: UI call state machine ↔ Twilio Voice SDK.
+  //
+  // - The context's `startCall` sets `phase='in_call'` + a fresh `startedAt`.
+  //   We watch `startedAt` and kick the SDK dial on every new session, so all
+  //   call origins (manual dial pad, dialer "Call Now", auto-advance after
+  //   outcome) place a real Twilio leg.
+  // - When the UI leaves `in_call` (End button, post-call screen, queue
+  //   exhausted), we hang up the SDK leg.
+  // - When the SDK leg disconnects on its own (callee hangs up, network drop)
+  //   we trigger `endCall()` so the post-call outcome panel appears.
+  const lastDialedForRef = useRef<number | null>(null);
+  const sdkActiveRef = useRef(false);
+
+  useEffect(() => {
+    // (1) Outbound dial: phase entered in_call with a brand-new session.
+    if (
+      phase === 'in_call' &&
+      call &&
+      call.phone &&
+      device.status === 'ready' &&
+      lastDialedForRef.current !== call.startedAt
+    ) {
+      lastDialedForRef.current = call.startedAt;
+      void device.dial(call.phone).catch((e) => {
+        const msg = e instanceof Error ? e.message : 'unknown error';
+        store.pushToast(`Dial failed: ${msg}`, 'error');
+        lastDialedForRef.current = null;
+        // Bail back to post_call so the agent can pick "no pickup" or skip.
+        endCall();
+      });
+    }
+    // (2) UI ended the call — drop the SDK leg.
+    if (phase !== 'in_call' && device.activeCall) {
+      device.hangup();
+    }
+    // (3) Reset dial marker on full idle so a redial of the same number works.
+    if (phase === 'idle') {
+      lastDialedForRef.current = null;
+    }
+  }, [phase, call, device.status, device.activeCall, device.dial, device.hangup, endCall, store]);
+
+  // Natural-end detection: SDK call went non-null → null while UI still says
+  // in_call. That means the far end disconnected; flip UI to post_call.
+  useEffect(() => {
+    const isActive = device.activeCall !== null;
+    if (sdkActiveRef.current && !isActive && phase === 'in_call') {
+      endCall();
+    }
+    sdkActiveRef.current = isActive;
+  }, [device.activeCall, phase, endCall]);
 
   const handleCall = (phone: string) => {
     if (spend.isLimitReached) return;
+    if (device.status !== 'ready') {
+      store.pushToast(
+        device.status === 'error'
+          ? `Softphone error: ${device.error ?? 'unknown'}`
+          : 'Softphone is still connecting — try again in a moment.',
+        'error'
+      );
+      return;
+    }
+    // Trigger the SDK via the context state change; the bridge effect above
+    // picks up the new `call.startedAt` and calls `device.dial(phone)`.
     startCall('manual-' + Date.now(), phone, 'Direct dial');
     setOpen(false);
   };
