@@ -79,8 +79,44 @@ export function useSpendLimit(): SpendState {
 
   useEffect(() => {
     void refresh();
+    // Slow poll as a safety net (in case realtime drops or a backend
+    // change happened while the tab was backgrounded).
     const t = setInterval(refresh, 20_000);
-    return () => clearInterval(t);
+
+    // Realtime: any UPDATE on wk_voice_agent_limits (which the AI cost +
+    // carrier cost RPCs bump on every call) refreshes immediately so the
+    // banner doesn't lag the actual spend by up to 20s.
+    let mounted = true;
+    let agentId: string | null = null;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
+      agentId = data.user?.id ?? null;
+      if (!agentId) return;
+      channel = supabase
+        .channel(`smsv2-spend-${agentId}`)
+        .on(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          'postgres_changes' as any,
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'wk_voice_agent_limits',
+            filter: `agent_id=eq.${agentId}`,
+          },
+          () => {
+            void refresh();
+          }
+        )
+        .subscribe();
+    });
+
+    return () => {
+      mounted = false;
+      clearInterval(t);
+      if (channel) void supabase.removeChannel(channel);
+    };
   }, [refresh]);
 
   return state;
