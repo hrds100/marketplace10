@@ -4,6 +4,7 @@ import type { Call as TwilioCall } from '@twilio/voice-sdk';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
 import { useTwilioDevice } from '../../hooks/useTwilioDevice';
+import { addIncomingCallListener } from '@/core/integrations/twilio-voice';
 import { startCallOrchestration, type StartCallResult } from '../../lib/startCallOrchestration';
 
 export type CallPhase = 'idle' | 'placing' | 'in_call' | 'post_call';
@@ -155,6 +156,43 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       if (unsubscribe) unsubscribe();
     };
+  }, [store]);
+
+  // Inbound PSTN calls — Twilio routes to the agent's browser <Client>.
+  // The core voice wrapper auto-accepts and notifies us; we morph into the
+  // live-call screen the same way we do for the dialer-winner broadcast.
+  useEffect(() => {
+    const unsubscribe = addIncomingCallListener((call) => {
+      const fromParam = call.parameters?.get?.('From') ?? '';
+      const callSid = call.parameters?.get?.('CallSid') ?? '';
+      // Try to look up an existing contact by phone before we name them
+      // "Inbound" — keeps continuity with their existing wk_contacts row.
+      const phone = typeof fromParam === 'string' ? fromParam : '';
+      const matched = phone
+        ? store.contacts.find((c) => c.phone === phone)
+        : undefined;
+      setCall({
+        contactId: matched?.id ?? `inbound-${callSid || Date.now()}`,
+        contactName: matched?.name ?? 'Inbound caller',
+        phone,
+        startedAt: Date.now(),
+        callId: null, // server fills the wk_calls row via wk-voice-twiml-incoming
+      });
+      activeTwilioCallRef.current = call;
+      setPhase('in_call');
+      setFullScreen(true);
+
+      const onEnd = () => {
+        if (activeTwilioCallRef.current === call) {
+          activeTwilioCallRef.current = null;
+        }
+        setPhase('post_call');
+      };
+      call.on('disconnect', onEnd);
+      call.on('cancel', onEnd);
+      call.on('reject', onEnd);
+    });
+    return unsubscribe;
   }, [store]);
 
   const startCall = useCallback<ActiveCallCtx['startCall']>(
