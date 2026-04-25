@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Lightbulb, HelpCircle, Activity } from 'lucide-react';
+import { AlertTriangle, Lightbulb, HelpCircle, Activity, MessageSquare } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { MOCK_TRANSCRIPT, MOCK_COACH_EVENTS } from '../../data/mockTranscripts';
 import { useKillSwitch } from '../../hooks/useKillSwitch';
 import { useSmsV2 } from '../../store/SmsV2Store';
@@ -40,6 +41,12 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
   const scrollRef = useRef<HTMLDivElement>(null);
   const [liveLines, setLiveLines] = useState<LiveTranscriptRow[]>([]);
   const [liveEvents, setLiveEvents] = useState<LiveCoachRow[]>([]);
+  // ?demo=1 in the URL keeps the legacy mock transcript reachable for
+  // internal demos / Storybook screenshots. Default behaviour: show an
+  // explicit empty state instead, so production calls never surface mock
+  // text.
+  const [searchParams] = useSearchParams();
+  const demoMode = searchParams.get('demo') === '1';
 
   // Sticky note — auto-saved to store with 2s debounce
   const [note, setNote] = useState(store.getNote(contactId));
@@ -100,15 +107,22 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
     };
   }, [callId]);
 
-  // Use live data when present, otherwise fall back to mock for the demo.
+  // Use live data when callId is present. Without a callId we render an
+  // empty state in production. The legacy mock fallback is only allowed
+  // when ?demo=1 is in the URL (internal demos / screenshots).
   const useLive = !!callId;
+  const allowMock = !useLive && demoMode;
+  const showEmptyState = !useLive && !demoMode;
+
   const lines = useLive
     ? liveLines.map((r) => ({
         id: r.id,
         speaker: r.speaker === 'agent' ? 'agent' : 'caller',
         text: r.body,
       }))
-    : MOCK_TRANSCRIPT.filter((l) => l.ts <= Math.max(durationSec, 140));
+    : allowMock
+      ? MOCK_TRANSCRIPT.filter((l) => l.ts <= Math.max(durationSec, 140))
+      : [];
   const events = useLive
     ? liveEvents
         .filter((e) => e.kind === 'objection' || e.kind === 'suggestion'
@@ -119,7 +133,9 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
           title: '',
           body: e.body,
         }))
-    : MOCK_COACH_EVENTS.filter((e) => e.ts <= Math.max(durationSec, 140));
+    : allowMock
+      ? MOCK_COACH_EVENTS.filter((e) => e.ts <= Math.max(durationSec, 140))
+      : [];
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -147,6 +163,18 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
       )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+        {showEmptyState && (
+          <div className="h-full flex flex-col items-center justify-center text-center px-6 py-10 text-[#9CA3AF]">
+            <MessageSquare className="w-8 h-8 mb-3 opacity-40" />
+            <div className="text-[13px] font-medium text-[#6B7280] mb-1">
+              No active call
+            </div>
+            <div className="text-[12px] leading-snug max-w-[280px]">
+              Live transcript will appear here once you place or receive a call.
+            </div>
+          </div>
+        )}
+
         {lines.map((line) => (
           <div key={line.id} className="text-[13px] leading-relaxed">
             <span
