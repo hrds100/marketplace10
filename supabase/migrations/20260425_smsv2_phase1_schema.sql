@@ -693,6 +693,90 @@ BEGIN
 END $$;
 
 -- ============================================================================
+-- Tier 4 seed — first agent: Tajul (tajul@nfstay.com, ext 101)
+-- We can only seed the workspace columns; the auth.users + profiles row is
+-- created by the normal sign-up flow. This block runs idempotently and only
+-- updates the profile if it already exists.
+-- ============================================================================
+DO $$
+DECLARE
+  tajul_profile_id uuid;
+BEGIN
+  SELECT id INTO tajul_profile_id
+    FROM profiles
+   WHERE email = 'tajul@nfstay.com'
+   LIMIT 1;
+
+  IF tajul_profile_id IS NOT NULL THEN
+    UPDATE profiles
+       SET workspace_role = COALESCE(workspace_role, 'agent'),
+           agent_extension = COALESCE(agent_extension, '101')
+     WHERE id = tajul_profile_id;
+
+    -- Default per-agent spend limit row (£10/day cap, admin can override)
+    INSERT INTO wk_voice_agent_limits (agent_id, daily_limit_pence, is_admin)
+    VALUES (tajul_profile_id, 1000, false)
+    ON CONFLICT (agent_id) DO NOTHING;
+  END IF;
+END $$;
+
+-- ============================================================================
+-- Step B additions — columns referenced by the wk-voice-* edge functions
+-- ============================================================================
+
+-- wk_calls: keep the inbound caller's E.164 + a tiny AI status flag for the UI
+ALTER TABLE wk_calls
+  ADD COLUMN IF NOT EXISTS from_e164 text,
+  ADD COLUMN IF NOT EXISTS to_e164   text,
+  ADD COLUMN IF NOT EXISTS ai_status text
+    CHECK (ai_status IN ('queued', 'running', 'done', 'failed'));
+
+-- wk_recordings: keep Twilio's raw media URL until the worker uploads to storage
+ALTER TABLE wk_recordings
+  ADD COLUMN IF NOT EXISTS twilio_media_url text,
+  ADD COLUMN IF NOT EXISTS channels         integer NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS ingested_at      timestamptz;
+
+-- wk_jobs: track completion + last attempt for visibility / retry
+ALTER TABLE wk_jobs
+  ADD COLUMN IF NOT EXISTS completed_at    timestamptz,
+  ADD COLUMN IF NOT EXISTS last_attempt_at timestamptz;
+
+-- ----------------------------------------------------------------------------
+-- wk_claim_jobs(batch_size int) — atomic SKIP-LOCKED job picker.
+-- Used by wk-jobs-worker. Marks claimed rows as 'processing' and returns them.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION wk_claim_jobs(batch_size int DEFAULT 10)
+RETURNS TABLE (id uuid, kind text, payload jsonb, attempts int)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  WITH picked AS (
+    SELECT j.id
+    FROM wk_jobs j
+    WHERE j.status = 'pending'
+      AND j.scheduled_for <= now()
+    ORDER BY j.scheduled_for ASC
+    LIMIT batch_size
+    FOR UPDATE SKIP LOCKED
+  )
+  UPDATE wk_jobs u
+     SET status = 'processing',
+         last_attempt_at = now(),
+         updated_at = now()
+   FROM picked p
+   WHERE u.id = p.id
+   RETURNING u.id, u.kind, u.payload, u.attempts;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION wk_claim_jobs(int) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION wk_claim_jobs(int) TO service_role;
+
+-- ============================================================================
 -- DONE — Phase 1 schema applied.
 -- Next: storage bucket call-recordings is created in a separate migration
 --       (storage schema lives in the storage namespace and is best handled
