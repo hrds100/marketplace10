@@ -1,16 +1,26 @@
-import { Flame, GripVertical } from 'lucide-react';
+import { useState } from 'react';
+import { Flame, GripVertical, Pencil } from 'lucide-react';
 import { ACTIVE_PIPELINE } from '../data/mockPipelines';
 import { MOCK_CONTACTS } from '../data/mockContacts';
 import { formatPence } from '../data/helpers';
+import EditContactModal from '../components/contacts/EditContactModal';
+import type { Contact } from '../types';
 
 export default function PipelinesPage() {
+  const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
+  const [editing, setEditing] = useState<Contact | null>(null);
+
+  const save = (updated: Contact) => {
+    setContacts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
+
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-5">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Pipelines</h1>
           <p className="text-[13px] text-[#6B7280]">
-            {ACTIVE_PIPELINE.name} · drag cards between columns · columns are live outcome buttons
+            {ACTIVE_PIPELINE.name} · click any card to edit · columns are live outcome buttons
           </p>
         </div>
         <select className="text-[12px] px-3 py-2 bg-white border border-[#E5E7EB] rounded-[10px]">
@@ -21,7 +31,7 @@ export default function PipelinesPage() {
 
       <div className="flex gap-3 overflow-x-auto pb-3">
         {ACTIVE_PIPELINE.columns.map((col) => {
-          const cards = MOCK_CONTACTS.filter((c) => c.pipelineColumnId === col.id);
+          const cards = contacts.filter((c) => c.pipelineColumnId === col.id);
           const totalValue = cards.reduce((s, c) => s + (c.dealValuePence ?? 0), 0);
           return (
             <div
@@ -48,9 +58,10 @@ export default function PipelinesPage() {
               </div>
               <div className="flex-1 overflow-y-auto p-2 space-y-2">
                 {cards.map((c) => (
-                  <div
+                  <button
                     key={c.id}
-                    className="bg-white border border-[#E5E7EB] rounded-xl p-2.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all cursor-grab"
+                    onClick={() => setEditing(c)}
+                    className="group w-full text-left bg-white border border-[#E5E7EB] rounded-xl p-2.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:border-[#1E9A80]/40 transition-all cursor-pointer"
                   >
                     <div className="flex items-start gap-1.5">
                       <GripVertical className="w-3 h-3 text-[#9CA3AF] mt-0.5 flex-shrink-0" />
@@ -63,6 +74,7 @@ export default function PipelinesPage() {
                               fill="#EF4444"
                             />
                           )}
+                          <Pencil className="w-2.5 h-2.5 text-[#9CA3AF] opacity-0 group-hover:opacity-100 ml-auto" />
                         </div>
                         <div className="text-[10px] text-[#6B7280] tabular-nums mt-0.5">
                           {c.phone}
@@ -72,9 +84,21 @@ export default function PipelinesPage() {
                             {formatPence(c.dealValuePence)}
                           </div>
                         )}
+                        {c.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {c.tags.slice(0, 3).map((t) => (
+                              <span
+                                key={t}
+                                className="text-[9px] font-medium bg-[#F3F3EE] text-[#6B7280] px-1.5 py-0.5 rounded"
+                              >
+                                #{t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
                 {cards.length === 0 && (
                   <div className="text-[11px] text-[#9CA3AF] text-center py-4 italic">
@@ -94,6 +118,12 @@ export default function PipelinesPage() {
           );
         })}
       </div>
+
+      <EditContactModal
+        contact={editing}
+        onClose={() => setEditing(null)}
+        onSave={save}
+      />
     </div>
   );
 }
