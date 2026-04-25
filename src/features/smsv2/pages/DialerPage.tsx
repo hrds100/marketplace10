@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Play, Pause, Square, Bot, ArrowRight, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CampaignList from '../components/dialer/CampaignList';
@@ -10,8 +10,9 @@ import { MOCK_CAMPAIGNS, COACH_PROMPTS } from '../data/mockCampaigns';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
 import { supabase } from '@/integrations/supabase/client';
-import type { Contact } from '../types';
+import type { Campaign, Contact } from '../types';
 
 interface DialerStartInvoke {
   invoke: (
@@ -31,13 +32,40 @@ interface DialerStartInvoke {
 }
 
 export default function DialerPage() {
-  const [activeId, setActiveId] = useState(MOCK_CAMPAIGNS[0].id);
+  const { campaigns: realCampaigns } = useDialerCampaigns();
+  const allCampaigns = useMemo<Campaign[]>(
+    () => (realCampaigns.length > 0 ? realCampaigns : MOCK_CAMPAIGNS),
+    [realCampaigns]
+  );
+
+  const [activeId, setActiveId] = useState<string>(allCampaigns[0]?.id ?? MOCK_CAMPAIGNS[0].id);
   const [running, setRunning] = useState(true);
   const [editing, setEditing] = useState<Contact | null>(null);
-  const camp = MOCK_CAMPAIGNS.find((c) => c.id === activeId)!;
   const { startCall } = useActiveCallCtx();
   const spend = useSpendLimit();
   const { contacts, patchContact, upsertContact, pushToast } = useSmsV2();
+
+  // Keep activeId valid when the real list arrives or changes
+  useEffect(() => {
+    if (allCampaigns.length === 0) return;
+    if (!allCampaigns.some((c) => c.id === activeId)) {
+      setActiveId(allCampaigns[0].id);
+    }
+  }, [allCampaigns, activeId]);
+
+  const camp = allCampaigns.find((c) => c.id === activeId) ?? allCampaigns[0] ?? MOCK_CAMPAIGNS[0];
+
+  // Controlled form state — hydrates from the active campaign, persists user edits.
+  const [mode, setMode] = useState<Campaign['mode']>(camp.mode);
+  const [lines, setLines] = useState<number>(camp.parallelLines);
+  const [autoAdvance, setAutoAdvance] = useState<number>(camp.autoAdvanceSeconds);
+
+  // When the user switches campaign, snap form to that campaign's defaults.
+  useEffect(() => {
+    setMode(camp.mode);
+    setLines(camp.parallelLines);
+    setAutoAdvance(camp.autoAdvanceSeconds);
+  }, [camp.id, camp.mode, camp.parallelLines, camp.autoAdvanceSeconds]);
 
   const upcoming = contacts.slice(0, 5);
 
@@ -57,7 +85,12 @@ export default function DialerPage() {
       const { data, error } = await (
         supabase.functions as unknown as DialerStartInvoke
       ).invoke('wk-dialer-start', {
-        body: { campaign_id: activeId },
+        body: {
+          campaign_id: activeId,
+          mode,
+          parallel_lines: lines,
+          auto_advance_seconds: autoAdvance,
+        },
       });
       if (error) {
         pushToast(`Dialer error: ${error.message}`, 'error');
@@ -100,7 +133,11 @@ export default function DialerPage() {
       <div className="grid grid-cols-12 gap-5">
         {/* Left — campaigns + queue */}
         <div className="col-span-12 lg:col-span-4 space-y-3">
-          <CampaignList activeId={activeId} onSelect={setActiveId} />
+          <CampaignList
+            activeId={activeId}
+            onSelect={setActiveId}
+            campaigns={realCampaigns.length > 0 ? realCampaigns : undefined}
+          />
 
           <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
             <div className="px-4 py-3 border-b border-[#E5E7EB] flex items-center justify-between">
@@ -186,7 +223,11 @@ export default function DialerPage() {
 
             <div className="grid grid-cols-3 gap-3">
               <Field label="Mode">
-                <select className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]">
+                <select
+                  value={mode}
+                  onChange={(e) => setMode(e.target.value as Campaign['mode'])}
+                  className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]"
+                >
                   <option value="parallel">Parallel</option>
                   <option value="power">Power</option>
                   <option value="manual">Manual</option>
@@ -194,21 +235,27 @@ export default function DialerPage() {
               </Field>
               <Field label="Lines">
                 <select
-                  defaultValue={camp.parallelLines}
+                  value={lines}
+                  onChange={(e) => setLines(Number(e.target.value))}
                   className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]"
                 >
                   {[1, 2, 3, 4, 5].map((n) => (
-                    <option key={n}>{n}</option>
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
                   ))}
                 </select>
               </Field>
               <Field label="Auto-advance">
                 <select
-                  defaultValue={camp.autoAdvanceSeconds}
+                  value={autoAdvance}
+                  onChange={(e) => setAutoAdvance(Number(e.target.value))}
                   className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]"
                 >
                   {[5, 10, 15, 20, 30].map((n) => (
-                    <option key={n}>{n}s</option>
+                    <option key={n} value={n}>
+                      {n}s
+                    </option>
                   ))}
                 </select>
               </Field>
