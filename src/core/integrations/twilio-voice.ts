@@ -71,6 +71,20 @@ let device: TwilioDevice | null = null;
 let currentToken: VoiceTokenResponse | null = null;
 let renewalTimer: number | null = null;
 
+// Module-level listener registry for inbound calls. Subscribers are notified
+// after the device has auto-accepted the call so the UI can transition into
+// the live-call screen. Returning the unsubscribe handle keeps callers
+// reference-clean (e.g. ActiveCallProvider on unmount).
+type IncomingCallListener = (call: TwilioCall) => void;
+const incomingCallListeners = new Set<IncomingCallListener>();
+
+export function addIncomingCallListener(listener: IncomingCallListener): () => void {
+  incomingCallListeners.add(listener);
+  return () => {
+    incomingCallListeners.delete(listener);
+  };
+}
+
 /** Lazy-import the SDK so SSR / non-voice routes don't pay the bundle cost. */
 async function loadVoiceSdk(): Promise<typeof import('@twilio/voice-sdk')> {
   return import('@twilio/voice-sdk');
@@ -95,6 +109,25 @@ export async function createDevice(): Promise<DeviceHandle> {
     closeProtection: true,
     logLevel: 'warn',
     edge: 'roaming',         // pick best Twilio edge automatically
+  });
+
+  // Inbound calls — wk-voice-twiml-incoming routes a PSTN ring to a Client
+  // identity. The agent's browser receives an 'incoming' Call here. We
+  // auto-accept (matches the dialer-winner flow) and notify subscribers so
+  // ActiveCallProvider can morph straight into the live-call view.
+  d.on('incoming', (call: TwilioCall) => {
+    try {
+      call.accept();
+    } catch (e) {
+      console.warn('[twilio-voice] incoming call accept failed:', e);
+    }
+    incomingCallListeners.forEach((listener) => {
+      try {
+        listener(call);
+      } catch (e) {
+        console.warn('[twilio-voice] incoming listener threw:', e);
+      }
+    });
   });
 
   await d.register();
