@@ -5,16 +5,28 @@ import { ACTIVE_PIPELINE } from '../data/mockPipelines';
 import { formatPence } from '../data/helpers';
 import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { useContactPersistence } from '../hooks/useContactPersistence';
 import type { Contact } from '../types';
 
 export default function PipelinesPage() {
-  const { contacts, columns, upsertContact, patchContact } = useSmsV2();
+  const { contacts, columns, upsertContact, patchContact, pushToast } = useSmsV2();
+  const persist = useContactPersistence();
   const [editing, setEditing] = useState<Contact | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverColId, setDragOverColId] = useState<string | null>(null);
 
   const save = (updated: Contact) => {
     upsertContact(updated);
+    void persist.patchContact(updated.id, {
+      name: updated.name,
+      phone: updated.phone,
+      email: updated.email ?? null,
+      pipeline_column_id: updated.pipelineColumnId ?? null,
+      owner_agent_id: updated.ownerAgentId ?? null,
+      deal_value_pence: updated.dealValuePence ?? null,
+      is_hot: updated.isHot,
+      custom_fields: updated.customFields,
+    });
   };
 
   const onDragStart = (e: React.DragEvent, contactId: string) => {
@@ -33,7 +45,17 @@ export default function PipelinesPage() {
     e.preventDefault();
     const contactId = e.dataTransfer.getData('text/plain') || draggingId;
     if (contactId) {
+      // Optimistic local move — UI updates immediately.
+      const previousColumnId = contacts.find((c) => c.id === contactId)?.pipelineColumnId;
       patchContact(contactId, { pipelineColumnId: colId });
+      // Persist write-through. Mock IDs (contact-X) become no-op true.
+      void persist.moveToColumn(contactId, colId).then((ok) => {
+        if (!ok) {
+          // Rollback on failure so the UI doesn't lie about persisted state.
+          patchContact(contactId, { pipelineColumnId: previousColumnId });
+          pushToast('Move failed — restored previous column', 'error');
+        }
+      });
     }
     setDraggingId(null);
     setDragOverColId(null);
