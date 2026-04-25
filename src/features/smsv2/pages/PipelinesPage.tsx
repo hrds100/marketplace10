@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Flame, GripVertical, Pencil } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { ACTIVE_PIPELINE } from '../data/mockPipelines';
 import { formatPence } from '../data/helpers';
 import EditContactModal from '../components/contacts/EditContactModal';
@@ -7,11 +8,40 @@ import { useSmsV2 } from '../store/SmsV2Store';
 import type { Contact } from '../types';
 
 export default function PipelinesPage() {
-  const { contacts, columns, upsertContact } = useSmsV2();
+  const { contacts, columns, upsertContact, patchContact } = useSmsV2();
   const [editing, setEditing] = useState<Contact | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null);
 
   const save = (updated: Contact) => {
     upsertContact(updated);
+  };
+
+  const onDragStart = (e: React.DragEvent, contactId: string) => {
+    setDraggingId(contactId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', contactId);
+  };
+
+  const onDragOverCol = (e: React.DragEvent, colId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverColId !== colId) setDragOverColId(colId);
+  };
+
+  const onDropCol = (e: React.DragEvent, colId: string) => {
+    e.preventDefault();
+    const contactId = e.dataTransfer.getData('text/plain') || draggingId;
+    if (contactId) {
+      patchContact(contactId, { pipelineColumnId: colId });
+    }
+    setDraggingId(null);
+    setDragOverColId(null);
+  };
+
+  const onDragEnd = () => {
+    setDraggingId(null);
+    setDragOverColId(null);
   };
 
   return (
@@ -36,7 +66,15 @@ export default function PipelinesPage() {
           return (
             <div
               key={col.id}
-              className="w-[280px] flex-shrink-0 bg-[#F3F3EE]/50 rounded-2xl border border-[#E5E7EB] flex flex-col max-h-[75vh]"
+              onDragOver={(e) => onDragOverCol(e, col.id)}
+              onDrop={(e) => onDropCol(e, col.id)}
+              onDragLeave={() => setDragOverColId((prev) => (prev === col.id ? null : prev))}
+              className={cn(
+                'w-[280px] flex-shrink-0 rounded-2xl border flex flex-col max-h-[75vh] transition-colors',
+                dragOverColId === col.id
+                  ? 'bg-[#ECFDF5] border-[#1E9A80]/40'
+                  : 'bg-[#F3F3EE]/50 border-[#E5E7EB]'
+              )}
             >
               <div
                 className="px-3 py-2.5 border-b border-[#E5E7EB] flex items-center gap-2 rounded-t-2xl"
@@ -60,8 +98,14 @@ export default function PipelinesPage() {
                 {cards.map((c) => (
                   <button
                     key={c.id}
+                    draggable
+                    onDragStart={(e) => onDragStart(e, c.id)}
+                    onDragEnd={onDragEnd}
                     onClick={() => setEditing(c)}
-                    className="group w-full text-left bg-white border border-[#E5E7EB] rounded-xl p-2.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:border-[#1E9A80]/40 transition-all cursor-pointer"
+                    className={cn(
+                      'group w-full text-left bg-white border border-[#E5E7EB] rounded-xl p-2.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:border-[#1E9A80]/40 transition-all cursor-grab active:cursor-grabbing',
+                      draggingId === c.id && 'opacity-40'
+                    )}
                   >
                     <div className="flex items-start gap-1.5">
                       <GripVertical className="w-3 h-3 text-[#9CA3AF] mt-0.5 flex-shrink-0" />

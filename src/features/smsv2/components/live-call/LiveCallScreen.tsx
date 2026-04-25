@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   MicOff,
   Pause,
@@ -9,11 +10,15 @@ import {
   PhoneIncoming,
   PhoneOutgoing,
   Tag,
+  Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useActiveCallCtx } from './ActiveCallContext';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import PostCallPanel from './PostCallPanel';
+import StageSelector from '../shared/StageSelector';
+import EditContactModal from '../contacts/EditContactModal';
+import type { Contact } from '../../types';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../../data/mockCalls';
 import { CURRENT_AGENT } from '../../data/mockAgents';
@@ -27,6 +32,7 @@ import {
 export default function LiveCallScreen() {
   const { phase, call, durationSec, endCall, setFullScreen } = useActiveCallCtx();
   const store = useSmsV2();
+  const [editing, setEditing] = useState<Contact | null>(null);
 
   // Resolve a contact for context — fall back to first contact if direct dial
   const contact =
@@ -136,10 +142,24 @@ export default function LiveCallScreen() {
                   <Flame className="w-3 h-3" /> HOT
                 </span>
               )}
+              <button
+                onClick={() => setEditing(contact)}
+                className="ml-auto p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280] hover:text-[#1A1A1A]"
+                title="Edit lead"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
             </div>
             <div className="text-[12px] text-[#6B7280] tabular-nums mt-0.5">{contact.phone}</div>
             <div className="text-[11px] text-[#9CA3AF] mt-0.5">
               Added {formatRelativeTime(contact.createdAt)}
+            </div>
+            <div className="mt-2">
+              <StageSelector
+                value={contact.pipelineColumnId}
+                onChange={(col) => store.patchContact(contact.id, { pipelineColumnId: col })}
+                size="sm"
+              />
             </div>
           </div>
 
@@ -277,6 +297,12 @@ export default function LiveCallScreen() {
           </div>
         </aside>
       </div>
+
+      <EditContactModal
+        contact={editing}
+        onClose={() => setEditing(null)}
+        onSave={(updated) => store.upsertContact(updated)}
+      />
     </div>
   );
 }

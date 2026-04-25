@@ -1,22 +1,27 @@
 import { useState } from 'react';
-import { Play, Pause, Square, Bot, ArrowRight } from 'lucide-react';
+import { Play, Pause, Square, Bot, ArrowRight, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CampaignList from '../components/dialer/CampaignList';
 import ParallelDialerBoard from '../components/dialer/ParallelDialerBoard';
 import SpendBanner from '../components/dialer/SpendBanner';
+import StageSelector from '../components/shared/StageSelector';
+import EditContactModal from '../components/contacts/EditContactModal';
 import { MOCK_CAMPAIGNS, COACH_PROMPTS } from '../data/mockCampaigns';
-import { MOCK_CONTACTS } from '../data/mockContacts';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { useSpendLimit } from '../hooks/useSpendLimit';
+import { useSmsV2 } from '../store/SmsV2Store';
+import type { Contact } from '../types';
 
 export default function DialerPage() {
   const [activeId, setActiveId] = useState(MOCK_CAMPAIGNS[0].id);
   const [running, setRunning] = useState(true);
+  const [editing, setEditing] = useState<Contact | null>(null);
   const camp = MOCK_CAMPAIGNS.find((c) => c.id === activeId)!;
   const { startCall } = useActiveCallCtx();
   const spend = useSpendLimit();
+  const { contacts, patchContact, upsertContact } = useSmsV2();
 
-  const upcoming = MOCK_CONTACTS.slice(0, 5);
+  const upcoming = contacts.slice(0, 5);
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
@@ -45,19 +50,39 @@ export default function DialerPage() {
             </div>
             <div className="divide-y divide-[#E5E7EB]">
               {upcoming.map((c) => (
-                <button
+                <div
                   key={c.id}
-                  onClick={() => startCall(c.id)}
-                  className="w-full text-left px-4 py-2.5 hover:bg-[#F3F3EE]/50 flex items-center gap-2"
+                  className="px-4 py-2.5 hover:bg-[#F3F3EE]/50 flex items-center gap-2"
                 >
-                  <div className="flex-1 min-w-0">
+                  <button
+                    onClick={() => startCall(c.id)}
+                    className="flex-1 min-w-0 text-left"
+                  >
                     <div className="text-[13px] font-medium text-[#1A1A1A] truncate">
                       {c.name}
                     </div>
                     <div className="text-[11px] text-[#6B7280] tabular-nums">{c.phone}</div>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#9CA3AF]" />
-                </button>
+                  </button>
+                  <StageSelector
+                    value={c.pipelineColumnId}
+                    onChange={(col) => patchContact(c.id, { pipelineColumnId: col })}
+                    size="sm"
+                  />
+                  <button
+                    onClick={() => setEditing(c)}
+                    className="p-1.5 rounded hover:bg-white text-[#6B7280] hover:text-[#1A1A1A]"
+                    title="Edit lead"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => startCall(c.id)}
+                    className="p-1.5 rounded hover:bg-white text-[#9CA3AF]"
+                    title="Call"
+                  >
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -164,6 +189,12 @@ export default function DialerPage() {
           <ParallelDialerBoard active={running} />
         </div>
       </div>
+
+      <EditContactModal
+        contact={editing}
+        onClose={() => setEditing(null)}
+        onSave={(updated) => upsertContact(updated)}
+      />
     </div>
   );
 }

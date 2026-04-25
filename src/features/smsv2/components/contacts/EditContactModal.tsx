@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Contact } from '../../types';
 import { MOCK_AGENTS } from '../../data/mockAgents';
@@ -14,6 +14,13 @@ export default function EditContactModal({ contact, onClose, onSave }: Props) {
   const [draft, setDraft] = useState<Contact | null>(contact);
   const [newField, setNewField] = useState({ key: '', value: '' });
   const [newTag, setNewTag] = useState('');
+
+  // Sync draft whenever the modal opens for a new contact (or closes)
+  useEffect(() => {
+    setDraft(contact);
+    setNewField({ key: '', value: '' });
+    setNewTag('');
+  }, [contact]);
 
   if (!contact || !draft) return null;
 

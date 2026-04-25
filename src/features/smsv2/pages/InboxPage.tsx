@@ -9,20 +9,24 @@ import {
   Reply,
   Phone,
   Play,
+  Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../data/mockCalls';
 import { formatRelativeTime, formatTimeOnly, formatDuration } from '../data/helpers';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
+import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
+import type { Contact } from '../types';
 
 type Filter = 'all' | 'sms' | 'calls' | 'voicemail' | 'missed';
 
 export default function InboxPage() {
-  const { contacts, patchContact } = useSmsV2();
+  const { contacts, patchContact, upsertContact } = useSmsV2();
   const [filter, setFilter] = useState<Filter>('all');
   const [activeContactId, setActiveContactId] = useState(contacts[0].id);
+  const [editing, setEditing] = useState<Contact | null>(null);
   const { startCall } = useActiveCallCtx();
 
   const activeContact = contacts.find((c) => c.id === activeContactId) ?? contacts[0];
@@ -34,6 +38,7 @@ export default function InboxPage() {
   };
 
   return (
+    <>
     <div className="h-full flex">
       {/* Pane 1 — list */}
       <aside className="w-[280px] bg-white border-r border-[#E5E7EB] flex flex-col">
@@ -141,6 +146,13 @@ export default function InboxPage() {
             size="md"
           />
           <button
+            onClick={() => setEditing(activeContact)}
+            className="flex items-center gap-1.5 border border-[#E5E7EB] text-[#1A1A1A] text-[12px] font-medium px-3 py-1.5 rounded-[10px] hover:bg-[#F3F3EE]"
+            title="Edit lead"
+          >
+            <Pencil className="w-3.5 h-3.5" /> Edit
+          </button>
+          <button
             onClick={() => startCall(activeContact.id)}
             className="flex items-center gap-1.5 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
           >
@@ -214,6 +226,12 @@ export default function InboxPage() {
         </div>
       </aside>
     </div>
+    <EditContactModal
+      contact={editing}
+      onClose={() => setEditing(null)}
+      onSave={(updated) => upsertContact(updated)}
+    />
+    </>
   );
 }
 
