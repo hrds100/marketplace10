@@ -19,6 +19,33 @@ export function isRealContactId(id: string): boolean {
   return UUID_RE.test(id);
 }
 
+/** Returns the value if it is a real UUID, otherwise null. */
+function uuidOrNull(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null;
+  return UUID_RE.test(value) ? value : null;
+}
+
+/**
+ * Strips fields whose values look like mock IDs (non-UUID strings) so they
+ * never land in a Supabase update against a uuid column. Operates on the
+ * known UUID-typed wk_contacts columns: pipeline_column_id, owner_agent_id.
+ */
+const UUID_FIELDS = ['pipeline_column_id', 'owner_agent_id'] as const;
+
+function sanitizeUuidFields<T extends Record<string, unknown>>(patch: T): T {
+  const out: Record<string, unknown> = { ...patch };
+  for (const key of UUID_FIELDS) {
+    if (key in out) {
+      const v = out[key];
+      // null is valid (clears the FK). Strings must be UUIDs to survive.
+      if (typeof v === 'string' && !UUID_RE.test(v)) {
+        delete out[key];
+      }
+    }
+  }
+  return out as T;
+}
+
 export interface ContactPersistAPI {
   /** Move a contact to a pipeline column. Returns true on success. */
   moveToColumn: (contactId: string, columnId: string) => Promise<boolean>;
@@ -56,6 +83,9 @@ export interface ContactPersistAPI {
 export function useContactPersistence(): ContactPersistAPI {
   const moveToColumn = useCallback(async (contactId: string, columnId: string) => {
     if (!isRealContactId(contactId)) return true;
+    // Mock column ID (e.g. "col-interested" from MOCK_PIPELINES) — no-op.
+    // The store will keep the optimistic local move; persistence skipped.
+    if (!isRealContactId(columnId)) return true;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('wk_contacts' as any) as any)
       .update({ pipeline_column_id: columnId, last_contact_at: new Date().toISOString() })
@@ -70,9 +100,11 @@ export function useContactPersistence(): ContactPersistAPI {
   const patchContact = useCallback<ContactPersistAPI['patchContact']>(
     async (contactId, patch) => {
       if (!isRealContactId(contactId)) return true;
+      const cleaned = sanitizeUuidFields(patch);
+      if (Object.keys(cleaned).length === 0) return true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('wk_contacts' as any) as any)
-        .update(patch)
+        .update(cleaned)
         .eq('id', contactId);
       if (error) {
         console.warn('[contact-persist] patchContact failed:', error.message);
@@ -107,14 +139,16 @@ export function useContactPersistence(): ContactPersistAPI {
 
   const createContact = useCallback<ContactPersistAPI['createContact']>(async (input) => {
     // Owner must be a real UUID (FK to profiles.id). Reject mock IDs like
-    // "a-hugo" from MOCK_AGENTS — they crash the INSERT with a uuid type error.
-    let owner: string | null = null;
-    if (input.ownerAgentId && isRealContactId(input.ownerAgentId)) {
-      owner = input.ownerAgentId;
-    } else {
+    // "a-hugo" from MOCK_AGENTS — Postgres throws "invalid input syntax for type uuid".
+    let owner: string | null = uuidOrNull(input.ownerAgentId ?? null);
+    if (!owner) {
       const { data } = await supabase.auth.getUser();
-      owner = data.user?.id ?? null;
+      owner = uuidOrNull(data.user?.id ?? null);
     }
+    // Same guard for pipeline_column_id (FK to wk_pipeline_columns.id).
+    // Mock id "col-interested" from MOCK_PIPELINES → null.
+    const pipelineColumnId = uuidOrNull(input.pipelineColumnId ?? null);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('wk_contacts' as any) as any)
       .insert({
@@ -122,7 +156,7 @@ export function useContactPersistence(): ContactPersistAPI {
         phone: input.phone,
         email: input.email ?? null,
         owner_agent_id: owner,
-        pipeline_column_id: input.pipelineColumnId ?? null,
+        pipeline_column_id: pipelineColumnId,
         custom_fields: input.customFields ?? {},
         is_hot: false,
       })

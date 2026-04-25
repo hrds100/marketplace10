@@ -9,12 +9,14 @@ import { ActiveCallProvider } from '../components/live-call/ActiveCallContext';
 import { SmsV2Provider } from '../store/SmsV2Store';
 import GlobalToasts from '../store/GlobalToasts';
 import { useHydrateContacts } from '../hooks/useHydrateContacts';
+import { useHydratePipelineColumns } from '../hooks/useHydratePipelineColumns';
 
-// Side-effect-only component: pumps real wk_contacts into the store so
-// every /smsv2 page reads live data instead of mocks. Must live inside
-// <SmsV2Provider>.
+// Side-effect-only component: pumps real wk_contacts and wk_pipeline_columns
+// into the store so every /smsv2 page reads live data with real UUIDs
+// instead of mocks. Must live inside <SmsV2Provider>.
 function StoreHydrator() {
   useHydrateContacts();
+  useHydratePipelineColumns();
   return null;
 }
 
