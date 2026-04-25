@@ -37,6 +37,11 @@ export interface ContactPersistAPI {
       last_contact_at: string;
     }>
   ) => Promise<boolean>;
+  /**
+   * Replace the full tag set for a contact. Wipes wk_contact_tags rows
+   * for the contact, then inserts the new list. Skipped for mock IDs.
+   */
+  replaceTags: (contactId: string, tags: string[]) => Promise<boolean>;
 }
 
 export function useContactPersistence(): ContactPersistAPI {
@@ -69,5 +74,27 @@ export function useContactPersistence(): ContactPersistAPI {
     []
   );
 
-  return { moveToColumn, patchContact };
+  const replaceTags = useCallback(async (contactId: string, tags: string[]) => {
+    if (!isRealContactId(contactId)) return true;
+    // Wipe + insert. Cheap because tag count is always small (<10 typical).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: delErr } = await (supabase.from('wk_contact_tags' as any) as any)
+      .delete()
+      .eq('contact_id', contactId);
+    if (delErr) {
+      console.warn('[contact-persist] replaceTags delete failed:', delErr.message);
+      return false;
+    }
+    if (tags.length === 0) return true;
+    const rows = tags.map((tag) => ({ contact_id: contactId, tag }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insErr } = await (supabase.from('wk_contact_tags' as any) as any).insert(rows);
+    if (insErr) {
+      console.warn('[contact-persist] replaceTags insert failed:', insErr.message);
+      return false;
+    }
+    return true;
+  }, []);
+
+  return { moveToColumn, patchContact, replaceTags };
 }

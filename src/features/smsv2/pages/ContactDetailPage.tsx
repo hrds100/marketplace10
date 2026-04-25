@@ -21,6 +21,8 @@ import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { useContactTimeline } from '../hooks/useContactTimeline';
+import { useContactPersistence } from '../hooks/useContactPersistence';
 import type { Contact } from '../types';
 
 export default function ContactDetailPage() {
@@ -31,6 +33,8 @@ export default function ContactDetailPage() {
   const [newTag, setNewTag] = useState('');
   const [newField, setNewField] = useState({ key: '', value: '' });
   const { startCall } = useActiveCallCtx();
+  const persist = useContactPersistence();
+  const timeline = useContactTimeline(contact?.id ?? '', contact?.phone);
 
   if (!contact) {
     return (
@@ -43,28 +47,47 @@ export default function ContactDetailPage() {
     );
   }
 
-  const calls = MOCK_CALLS.filter((c) => c.contactId === contact.id);
-  const sms = MOCK_SMS.filter((m) => m.contactId === contact.id);
-  const activities = MOCK_ACTIVITIES.filter((a) => a.contactId === contact.id);
-  const tasks = MOCK_TASKS.filter((t) => t.contactId === contact.id);
+  // Real data when this is a wk_contacts row (UUID id), mock fallback otherwise.
+  const calls = timeline.calls.length > 0
+    ? timeline.calls
+    : MOCK_CALLS.filter((c) => c.contactId === contact.id);
+  const sms = timeline.sms.length > 0
+    ? timeline.sms
+    : MOCK_SMS.filter((m) => m.contactId === contact.id);
+  const activities = timeline.activities.length > 0
+    ? timeline.activities
+    : MOCK_ACTIVITIES.filter((a) => a.contactId === contact.id);
+  const tasks = timeline.tasks.length > 0
+    ? timeline.tasks
+    : MOCK_TASKS.filter((t) => t.contactId === contact.id);
   const owner = agents.find((a) => a.id === contact.ownerAgentId);
 
-  const setStage = (col: string) => patchContact(contact.id, { pipelineColumnId: col });
+  // Optimistic local + write-through to wk_contacts
+  const setStage = (col: string) => {
+    patchContact(contact.id, { pipelineColumnId: col });
+    void persist.moveToColumn(contact.id, col);
+  };
 
   const addTag = () => {
     if (!newTag.trim()) return;
-    patchContact(contact.id, { tags: [...contact.tags, newTag.trim()] });
+    const t = newTag.trim();
+    const next = [...contact.tags, t];
+    patchContact(contact.id, { tags: next });
+    void persist.replaceTags(contact.id, next);
     setNewTag('');
   };
 
-  const removeTag = (t: string) =>
-    patchContact(contact.id, { tags: contact.tags.filter((x) => x !== t) });
+  const removeTag = (t: string) => {
+    const next = contact.tags.filter((x) => x !== t);
+    patchContact(contact.id, { tags: next });
+    void persist.replaceTags(contact.id, next);
+  };
 
   const addField = () => {
     if (!newField.key.trim()) return;
-    patchContact(contact.id, {
-      customFields: { ...contact.customFields, [newField.key.trim()]: newField.value },
-    });
+    const next = { ...contact.customFields, [newField.key.trim()]: newField.value };
+    patchContact(contact.id, { customFields: next });
+    void persist.patchContact(contact.id, { custom_fields: next });
     setNewField({ key: '', value: '' });
   };
 
@@ -72,6 +95,7 @@ export default function ContactDetailPage() {
     const cf = { ...contact.customFields };
     delete cf[k];
     patchContact(contact.id, { customFields: cf });
+    void persist.patchContact(contact.id, { custom_fields: cf });
   };
 
   return (

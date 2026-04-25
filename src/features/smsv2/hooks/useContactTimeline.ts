@@ -1,0 +1,195 @@
+// useContactTimeline — loads everything that should appear on
+// ContactDetailPage's timeline for a single contact:
+//
+//   - wk_calls + wk_recordings + wk_call_intelligence  (real calls)
+//   - wk_activities                                    (stage moves, notes, etc.)
+//   - wk_tasks                                         (open + done tasks)
+//   - sms_messages (read-only)                         (existing SMS history)
+//
+// Hugo's decision (2026-04-25): /smsv2 reads existing sms_messages
+// read-only — the original /sms/inbox keeps writing it. Per-agent
+// filtering happens at the page level (only show messages for the
+// current agent's contacts).
+//
+// All queries skip if contactId is not a real UUID.
+
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { isRealContactId } from './useContactPersistence';
+import { rowToCall } from './useCalls';
+import type { CallRecord, SmsMessage, ActivityEvent, Task } from '../types';
+
+interface WkActivityRow {
+  id: string;
+  contact_id: string;
+  agent_id: string | null;
+  call_id: string | null;
+  kind: ActivityEvent['kind'];
+  title: string;
+  body: string | null;
+  ts: string;
+}
+
+interface WkTaskRow {
+  id: string;
+  contact_id: string;
+  assignee_id: string | null;
+  title: string;
+  due_at: string | null;
+  status: 'open' | 'done' | 'cancelled';
+}
+
+interface SmsMessageRow {
+  id: string;
+  body: string;
+  direction: 'inbound' | 'outbound';
+  created_at: string;
+  from_number: string;
+  to_number: string;
+}
+
+export interface ContactTimeline {
+  calls: CallRecord[];
+  sms: SmsMessage[];
+  activities: ActivityEvent[];
+  tasks: Task[];
+  loading: boolean;
+}
+
+export function useContactTimeline(contactId: string, contactPhone?: string): ContactTimeline {
+  const [calls, setCalls] = useState<CallRecord[]>([]);
+  const [sms, setSms] = useState<SmsMessage[]>([]);
+  const [activities, setActivities] = useState<ActivityEvent[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isRealContactId(contactId)) {
+      // Mock contact — leave empty so the page falls back to MOCK_*
+      setLoading(false);
+      return;
+    }
+
+    async function load() {
+      setLoading(true);
+
+      const queries: Promise<unknown>[] = [
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_calls' as any) as any)
+          .select(
+            'id, contact_id, agent_id, direction, status, started_at, duration_sec, disposition_column_id, agent_note'
+          )
+          .eq('contact_id', contactId)
+          .order('started_at', { ascending: false }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_recordings' as any) as any).select('call_id, storage_path, status'),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_call_intelligence' as any) as any).select('call_id, summary'),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_voice_call_costs' as any) as any).select('call_id, total_pence'),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_activities' as any) as any)
+          .select('id, contact_id, agent_id, call_id, kind, title, body, ts')
+          .eq('contact_id', contactId)
+          .order('ts', { ascending: false })
+          .limit(100),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_tasks' as any) as any)
+          .select('id, contact_id, assignee_id, title, due_at, status')
+          .eq('contact_id', contactId)
+          .order('due_at', { ascending: true, nullsFirst: false }),
+      ];
+
+      // sms_messages — only if we have the contact's phone to filter on.
+      // Existing /sms/inbox owns this table; we only READ. Match either
+      // direction so inbound + outbound show up.
+      if (contactPhone) {
+        queries.push(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase.from('sms_messages' as any) as any)
+            .select('id, body, direction, created_at, from_number, to_number')
+            .or(`from_number.eq.${contactPhone},to_number.eq.${contactPhone}`)
+            .order('created_at', { ascending: false })
+            .limit(100)
+        );
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const results: any[] = await Promise.all(queries);
+      if (cancelled) return;
+
+      const callsRes = results[0];
+      const recRes = results[1];
+      const intelRes = results[2];
+      const costRes = results[3];
+      const actRes = results[4];
+      const tasksRes = results[5];
+      const smsRes = contactPhone ? results[6] : { data: [] };
+
+      // Build call list with joined metadata
+      const recById = new Map<string, { call_id: string; storage_path: string | null }>();
+      for (const r of (recRes.data ?? []) as Array<{ call_id: string; storage_path: string | null; status: string }>) {
+        recById.set(r.call_id, r);
+      }
+      const intelById = new Map<string, { call_id: string; summary: string | null }>();
+      for (const i of (intelRes.data ?? []) as Array<{ call_id: string; summary: string | null }>) {
+        intelById.set(i.call_id, i);
+      }
+      const costById = new Map<string, { call_id: string; total_pence: number | null }>();
+      for (const c of (costRes.data ?? []) as Array<{ call_id: string; total_pence: number | null }>) {
+        costById.set(c.call_id, c);
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setCalls(((callsRes.data ?? []) as any[]).map((row) =>
+        rowToCall(row, recById.get(row.id), intelById.get(row.id), costById.get(row.id))
+      ));
+
+      setActivities(
+        ((actRes.data ?? []) as WkActivityRow[]).map((row): ActivityEvent => ({
+          id: row.id,
+          contactId: row.contact_id,
+          kind: row.kind,
+          title: row.title,
+          body: row.body ?? undefined,
+          ts: row.ts,
+          agentId: row.agent_id ?? undefined,
+          refId: row.call_id ?? undefined,
+        }))
+      );
+
+      setTasks(
+        ((tasksRes.data ?? []) as WkTaskRow[])
+          .filter((row) => row.status !== 'cancelled')
+          .map((row): Task => ({
+            id: row.id,
+            contactId: row.contact_id,
+            title: row.title,
+            dueAt: row.due_at ?? new Date().toISOString(),
+            assignedAgentId: row.assignee_id ?? '',
+            done: row.status === 'done',
+          }))
+      );
+
+      setSms(
+        ((smsRes.data ?? []) as SmsMessageRow[]).map((row): SmsMessage => ({
+          id: row.id,
+          contactId,
+          direction: row.direction,
+          body: row.body,
+          sentAt: row.created_at,
+        }))
+      );
+
+      setLoading(false);
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [contactId, contactPhone]);
+
+  return { calls, sms, activities, tasks, loading };
+}
