@@ -85,8 +85,14 @@ export default function Softphone() {
     );
   }
 
-  // Post-call collapsed (rare — usually full-screen)
-  if (phase === 'post_call' && !fullScreen) {
+  // Post-call collapsed (rare — usually full-screen).
+  // Guard: only render the orange "Pick outcome" button when there's a real
+  // wk_calls.id (UUID) to apply the outcome to. Without it, wk-outcome-apply
+  // can't fire and the click would be a no-op + leak fake state.
+  const UUID_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const hasRealCallId = !!call?.callId && UUID_RE.test(call.callId);
+  if (phase === 'post_call' && !fullScreen && hasRealCallId) {
     return (
       <button
         onClick={() => setFullScreen(true)}
