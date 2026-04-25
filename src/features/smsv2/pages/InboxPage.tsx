@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../data/mockCalls';
+import { useDemoMode } from '../lib/useDemoMode';
 import { formatRelativeTime, formatTimeOnly, formatDuration } from '../data/helpers';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
@@ -38,6 +39,7 @@ type Filter = 'all' | 'sms' | 'calls' | 'voicemail' | 'missed';
 export default function InboxPage() {
   const { contacts, patchContact, upsertContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
+  const demoMode = useDemoMode();
   const [filter, setFilter] = useState<Filter>('all');
   const [activeContactId, setActiveContactId] = useState(contacts[0]?.id ?? '');
   const [editing, setEditing] = useState<Contact | null>(null);
@@ -48,13 +50,17 @@ export default function InboxPage() {
   const activeContact = contacts.find((c) => c.id === activeContactId) ?? contacts[0];
   const timeline = useContactTimeline(activeContact?.id ?? '', activeContact?.phone);
 
-  // Real data when present, mock fallback otherwise so the demo state still renders.
+  // Real data only in production. Mock fallback restricted to ?demo=1.
   const contactSms = timeline.sms.length > 0
     ? timeline.sms
-    : MOCK_SMS.filter((m) => m.contactId === activeContact?.id);
+    : demoMode
+      ? MOCK_SMS.filter((m) => m.contactId === activeContact?.id)
+      : [];
   const contactActivity = timeline.activities.length > 0
     ? timeline.activities
-    : MOCK_ACTIVITIES.filter((a) => a.contactId === activeContact?.id);
+    : demoMode
+      ? MOCK_ACTIVITIES.filter((a) => a.contactId === activeContact?.id)
+      : [];
 
   // Sort the unified thread by timestamp so SMS interleave with calls if present
   const threadItems = useMemo(() => {
@@ -142,12 +148,19 @@ export default function InboxPage() {
         </div>
         <div className="flex-1 overflow-y-auto divide-y divide-[#E5E7EB]">
           {contacts.map((c) => {
-            const lastCall = MOCK_CALLS.filter((cl) => cl.contactId === c.id).sort(
-              (a, b) => +new Date(b.startedAt) - +new Date(a.startedAt)
-            )[0];
-            const lastSms = MOCK_SMS.filter((m) => m.contactId === c.id).sort(
-              (a, b) => +new Date(b.sentAt) - +new Date(a.sentAt)
-            )[0];
+            // No mock leak in production: list rows surface only real
+            // history. The legacy mock fallback returns ONLY when ?demo=1
+            // is in the URL.
+            const lastCall = demoMode
+              ? MOCK_CALLS.filter((cl) => cl.contactId === c.id).sort(
+                  (a, b) => +new Date(b.startedAt) - +new Date(a.startedAt)
+                )[0]
+              : undefined;
+            const lastSms = demoMode
+              ? MOCK_SMS.filter((m) => m.contactId === c.id).sort(
+                  (a, b) => +new Date(b.sentAt) - +new Date(a.sentAt)
+                )[0]
+              : undefined;
             return (
               <button
                 key={c.id}
