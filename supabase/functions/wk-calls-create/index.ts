@@ -138,6 +138,30 @@ serve(async (req: Request) => {
       resolvedContactId = contact?.id ?? null;
     }
 
+    // Live AI coach gate — workspace-level toggle in wk_ai_settings. We mint
+    // the call with ai_coach_enabled=true ONLY if all three are set: the
+    // master ai_enabled flag, the live_coach_enabled flag, AND a non-empty
+    // openai_api_key. wk-voice-twiml-outgoing reads this flag back to decide
+    // whether to inject <Start><Stream>; wk-ai-live-coach also re-checks it
+    // when accepting the upgrade.
+    let aiCoachEnabled = false;
+    try {
+      const { data: ai } = await supa
+        .from('wk_ai_settings')
+        .select('ai_enabled, live_coach_enabled, openai_api_key')
+        .limit(1)
+        .maybeSingle();
+      aiCoachEnabled = !!(
+        ai &&
+        ai.ai_enabled &&
+        ai.live_coach_enabled &&
+        ai.openai_api_key &&
+        String(ai.openai_api_key).length > 0
+      );
+    } catch {
+      aiCoachEnabled = false;
+    }
+
     // INSERT the wk_calls row with status='queued' and our minted UUID.
     const { data: inserted, error: insErr } = await supa
       .from('wk_calls')
@@ -150,6 +174,7 @@ serve(async (req: Request) => {
         from_e164: fromE164,
         to_e164: phone,
         started_at: new Date().toISOString(),
+        ai_coach_enabled: aiCoachEnabled,
       })
       .select('id')
       .single();

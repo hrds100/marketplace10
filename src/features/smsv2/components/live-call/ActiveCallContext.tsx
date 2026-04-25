@@ -215,6 +215,26 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
             const { data, error } = await (
               supabase.functions as unknown as CreateCallInvoke
             ).invoke('wk-calls-create', { body: input });
+            // supabase-js wraps every non-2xx into FunctionsHttpError with the
+            // useless message "Edge Function returned a non-2xx status code".
+            // Pull the real status + body off the captured Response so the
+            // toast tells the agent what actually happened (auth expired,
+            // spend block, missing env, etc.).
+            if (error && (error as { context?: Response }).context) {
+              try {
+                const ctx = (error as { context: Response }).context;
+                const body = await ctx.clone().text();
+                let parsed: { error?: string; reason?: string } | null = null;
+                try { parsed = body ? JSON.parse(body) : null; } catch { /* not JSON */ }
+                const real = parsed?.error || parsed?.reason || body || error.message;
+                return {
+                  data,
+                  error: { message: `${ctx.status} ${real}`.trim() },
+                };
+              } catch {
+                return { data, error };
+              }
+            }
             return { data, error };
           },
           dial: device.dial,
