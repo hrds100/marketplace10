@@ -1,5 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Phone, Users, PoundSterling, Activity, Radio } from 'lucide-react';
+import { useDashboardStats } from '../../hooks/useDashboardStats';
+import { formatPence } from '../../data/helpers';
 
 interface Stat {
   label: string;
@@ -9,15 +11,42 @@ interface Stat {
   tone?: 'default' | 'green';
 }
 
-const STATS: Stat[] = [
-  { label: 'Calls today', value: '342', icon: Phone, hint: '+22 vs yesterday', tone: 'green' },
-  { label: 'Active agents', value: '4 / 5', icon: Users, hint: 'James offline' },
-  { label: 'Spend today', value: '£38.40', icon: PoundSterling, hint: '£11.60 left' },
-  { label: 'Answer rate', value: '47%', icon: Activity, hint: 'rolling 24h' },
-  { label: 'Connected now', value: '3', icon: Radio, hint: 'live calls' },
-];
-
 export default function StatCards() {
+  const s = useDashboardStats();
+  const STATS: Stat[] = [
+    {
+      label: 'Calls today',
+      value: s.loading ? '—' : String(s.callsToday),
+      icon: Phone,
+      hint: 'live count',
+      tone: 'green',
+    },
+    {
+      label: 'Active agents',
+      value: s.loading ? '—' : `${s.activeAgents} / ${s.totalAgents}`,
+      icon: Users,
+      hint: s.totalAgents - s.activeAgents > 0 ? `${s.totalAgents - s.activeAgents} offline` : 'all online',
+    },
+    {
+      label: 'Spend today',
+      value: s.loading ? '—' : formatPence(s.spendTodayPence),
+      icon: PoundSterling,
+      hint: 'across all agents',
+    },
+    {
+      label: 'Answer rate',
+      value: s.loading ? '—' : `${s.answerRatePercent}%`,
+      icon: Activity,
+      hint: 'rolling 24h',
+    },
+    {
+      label: 'Connected now',
+      value: s.loading ? '—' : String(s.connectedNow),
+      icon: Radio,
+      hint: 'live calls',
+    },
+  ];
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
       {STATS.map((s) => (

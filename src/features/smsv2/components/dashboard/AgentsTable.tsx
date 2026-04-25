@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Settings as SettingsIcon, Circle } from 'lucide-react';
 import { MOCK_AGENTS } from '../../data/mockAgents';
 import { formatPence, formatDuration, statusColour } from '../../data/helpers';
+import { useAgentsToday } from '../../hooks/useAgentsToday';
 
 const STATUS_LABEL: Record<string, string> = {
   busy: '🟢 busy',
@@ -12,6 +13,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function AgentsTable() {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const { agents: realAgents } = useAgentsToday();
+  const agents = realAgents.length > 0 ? realAgents : MOCK_AGENTS;
 
   return (
     <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
@@ -32,7 +35,7 @@ export default function AgentsTable() {
           </tr>
         </thead>
         <tbody className="divide-y divide-[#E5E7EB]">
-          {MOCK_AGENTS.filter((a) => !a.isAdmin).map((a) => (
+          {agents.filter((a) => !a.isAdmin).map((a) => (
             <tr key={a.id} className="hover:bg-[#F3F3EE]/30">
               <td className="px-4 py-2.5 font-semibold text-[#1A1A1A]">{a.name}</td>
               <td className="px-2 py-2.5">
