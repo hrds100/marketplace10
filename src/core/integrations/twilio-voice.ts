@@ -219,3 +219,53 @@ export function getDevice(): TwilioDevice | null {
 export function getIdentity(): string | null {
   return currentToken?.identity ?? null;
 }
+
+/**
+ * Return every Call the Twilio Device is currently maintaining.
+ * The SDK keeps prior Calls alive across `device.connect()` invocations —
+ * if we don't iterate them when muting, a zombie call from an earlier dial
+ * keeps streaming the agent's mic to its (now stale) leg.
+ */
+export function getDeviceCalls(): TwilioCall[] {
+  if (!device) return [];
+  try {
+    // The .calls getter returns the SDK's internal list directly.
+    return [...device.calls];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Mute every active Call on the Device. Prevents the "I clicked Mute but the
+ * callee still hears me" bug when multiple Calls are alive at once (rapid
+ * test cycles, dialer-winner overlaps, missed disconnects). Returns the
+ * resulting mute state for the most recently observed Call (true if at least
+ * one is now muted).
+ */
+export function muteAllCalls(shouldMute: boolean): boolean {
+  const calls = getDeviceCalls();
+  let any = false;
+  for (const c of calls) {
+    try {
+      c.mute(shouldMute);
+      any = true;
+    } catch (e) {
+      console.warn('[twilio-voice] muteAllCalls: mute threw on a call', e);
+    }
+  }
+  return any && shouldMute;
+}
+
+/**
+ * Disconnect every active Call on the Device. Used to evict zombies before
+ * placing a fresh dial so we don't accumulate parallel audio paths.
+ */
+export function disconnectAllCalls(): void {
+  if (!device) return;
+  try {
+    device.disconnectAll();
+  } catch (e) {
+    console.warn('[twilio-voice] disconnectAll threw', e);
+  }
+}

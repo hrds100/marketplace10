@@ -14,6 +14,23 @@ import { useEffect } from 'react';
 import { ActiveCallProvider, useActiveCallCtx } from '../ActiveCallContext';
 import { SmsV2Provider, useSmsV2 } from '../../../store/SmsV2Store';
 
+// Shared fake-Device list used by the twilio-voice mock below. Tests push
+// the fakeCall they construct; the mock exposes it via getDeviceCalls so
+// muteAllCalls iterates the right thing.
+const fakeDeviceCalls: Array<{ mute: (s: boolean) => void; disconnect: () => void }> = [];
+
+vi.mock('@/core/integrations/twilio-voice', () => ({
+  addIncomingCallListener: vi.fn(() => () => {}),
+  getDeviceCalls: () => [...fakeDeviceCalls],
+  muteAllCalls: (shouldMute: boolean) => {
+    for (const c of fakeDeviceCalls) c.mute(shouldMute);
+    return shouldMute && fakeDeviceCalls.length > 0;
+  },
+  disconnectAllCalls: () => {
+    for (const c of [...fakeDeviceCalls]) c.disconnect();
+  },
+}));
+
 vi.mock('../../../hooks/useTwilioDevice', () => {
   const dialMock = vi.fn();
   return {
@@ -81,7 +98,10 @@ function makeFakeCall(): FakeCall {
     fire(event, ...args) {
       (handlers[event] ?? []).forEach((cb) => cb(...args));
     },
-    disconnect: vi.fn(),
+    disconnect: vi.fn(() => {
+      const idx = fakeDeviceCalls.indexOf(obj);
+      if (idx >= 0) fakeDeviceCalls.splice(idx, 1);
+    }),
     mute: vi.fn((shouldMute: boolean) => {
       const wasMuted = obj._muted;
       obj._muted = shouldMute;
@@ -135,6 +155,7 @@ function renderProvider() {
 
 beforeEach(() => {
   snapshot = null;
+  fakeDeviceCalls.length = 0;
   dialMock.mockReset();
   invokeMock.mockReset();
 });
@@ -146,7 +167,10 @@ describe('ActiveCallProvider toggleMute', () => {
       data: { call_id: CALL_UUID, allowed: true },
       error: null,
     });
-    dialMock.mockResolvedValue(fakeCall);
+    dialMock.mockImplementation(async () => {
+      fakeDeviceCalls.push(fakeCall);
+      return fakeCall;
+    });
 
     renderProvider();
     await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
@@ -173,7 +197,10 @@ describe('ActiveCallProvider toggleMute', () => {
       data: { call_id: CALL_UUID, allowed: true },
       error: null,
     });
-    dialMock.mockResolvedValue(fakeCall);
+    dialMock.mockImplementation(async () => {
+      fakeDeviceCalls.push(fakeCall);
+      return fakeCall;
+    });
 
     renderProvider();
     await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
@@ -206,7 +233,10 @@ describe('ActiveCallProvider toggleMute', () => {
       data: { call_id: CALL_UUID, allowed: true },
       error: null,
     });
-    dialMock.mockResolvedValue(fakeCall);
+    dialMock.mockImplementation(async () => {
+      fakeDeviceCalls.push(fakeCall);
+      return fakeCall;
+    });
 
     renderProvider();
     await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
