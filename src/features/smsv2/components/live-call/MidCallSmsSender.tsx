@@ -1,23 +1,27 @@
 // MidCallSmsSender — embedded in COL 1 of LiveCallScreen.
 //
 // Hugo's 2026-04-26 ask: "Mid-call actions (send templated SMS …) need
-// to be reachable from the live-call screen". This is the templated SMS
-// sender. Reuses the same `sms-send` edge function used on InboxPage so
-// the message lands in sms_messages and follows the GHL/Twilio path.
+// to be reachable from the live-call screen". Hugo 2026-04-30 update:
+// templates can now carry a target pipeline stage (move_to_stage_id).
+// Sending a stage-coupled template moves the contact to that stage.
 //
-// Templates come from wk_sms_templates. Merge fields {{first_name}} +
-// {{agent_first_name}} are substituted at render time before send.
+// Reuses the same `sms-send` edge function used on InboxPage so the
+// message lands in sms_messages and follows the GHL/Twilio path.
+// Merge fields {{first_name}} + {{agent_first_name}} are substituted
+// at render time before send.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Send, MessageSquare } from 'lucide-react';
+import { Send, MessageSquare, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
+import { useContactPersistence } from '../../hooks/useContactPersistence';
 
 interface Template {
   id: string;
   name: string;
   body_md: string;
+  move_to_stage_id: string | null;
 }
 
 interface SmsSendInvoke {
@@ -49,12 +53,15 @@ interface Props {
 }
 
 export default function MidCallSmsSender({
+  contactId,
   contactName,
   contactPhone,
   agentFirstName,
 }: Props) {
-  const { pushToast } = useSmsV2();
+  const { pushToast, columns, patchContact } = useSmsV2();
+  const persist = useContactPersistence();
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [loadingTpls, setLoadingTpls] = useState(true);
@@ -65,7 +72,7 @@ export default function MidCallSmsSender({
       try {
         const { data } = await (supabase as unknown as TemplatesTable)
           .from('wk_sms_templates')
-          .select('id, name, body_md')
+          .select('id, name, body_md, move_to_stage_id')
           .order('name', { ascending: true });
         if (!cancelled && data) setTemplates(data);
       } catch {
@@ -84,8 +91,22 @@ export default function MidCallSmsSender({
     [contactName]
   );
 
+  const selectedTemplate = useMemo(
+    () => templates.find((t) => t.id === selectedTemplateId) ?? null,
+    [templates, selectedTemplateId]
+  );
+
+  const targetStage = useMemo(() => {
+    if (!selectedTemplate?.move_to_stage_id) return null;
+    return columns.find((c) => c.id === selectedTemplate.move_to_stage_id) ?? null;
+  }, [selectedTemplate, columns]);
+
   const applyTemplate = (id: string) => {
-    if (!id) return;
+    setSelectedTemplateId(id);
+    if (!id) {
+      setBody('');
+      return;
+    }
     const tpl = templates.find((t) => t.id === id);
     if (!tpl) return;
     const expanded = tpl.body_md
@@ -109,10 +130,27 @@ export default function MidCallSmsSender({
           `SMS send failed: ${error?.message ?? data?.error ?? 'unknown'}`,
           'error'
         );
-      } else {
-        pushToast('SMS sent', 'success');
-        setBody('');
+        return;
       }
+      pushToast('SMS sent', 'success');
+
+      // v8 / Phase 4: stage-coupled templates. If the picked template
+      // had move_to_stage_id, move the contact to that stage now (post-
+      // send so a failing send doesn't move the contact).
+      if (selectedTemplate?.move_to_stage_id && targetStage) {
+        patchContact(contactId, { pipelineColumnId: targetStage.id });
+        try {
+          await persist.moveToColumn(contactId, targetStage.id);
+          pushToast(`Moved to ${targetStage.name}`, 'success');
+        } catch (e) {
+          pushToast(
+            `Stage move failed: ${e instanceof Error ? e.message : 'unknown'}`,
+            'error'
+          );
+        }
+      }
+      setBody('');
+      setSelectedTemplateId('');
     } catch (e) {
       pushToast(
         `SMS send crashed: ${e instanceof Error ? e.message : 'unknown'}`,
@@ -134,7 +172,7 @@ export default function MidCallSmsSender({
         </span>
       </div>
       <select
-        value=""
+        value={selectedTemplateId}
         onChange={(e) => applyTemplate(e.target.value)}
         disabled={loadingTpls || templates.length === 0}
         className="w-full mb-2 px-2 py-1.5 text-[11px] border border-[#E5E5E5] rounded-[8px] bg-white disabled:bg-[#F9FAFB] disabled:text-[#9CA3AF]"
@@ -149,9 +187,19 @@ export default function MidCallSmsSender({
         {templates.map((t) => (
           <option key={t.id} value={t.id}>
             {t.name}
+            {t.move_to_stage_id ? ' →' : ''}
           </option>
         ))}
       </select>
+      {targetStage && (
+        <div className="flex items-center gap-1 mb-2 text-[10px] text-[#1E9A80] bg-[#ECFDF5] px-2 py-1 rounded-[6px]">
+          <ArrowRight className="w-3 h-3" />
+          <span>
+            Send will move contact to:{' '}
+            <span className="font-semibold">{targetStage.name}</span>
+          </span>
+        </div>
+      )}
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}

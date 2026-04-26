@@ -34,6 +34,7 @@ import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useAiSettings } from '../hooks/useAiSettings';
 import { useDefaultCallScript } from '../hooks/useDefaultCallScript';
 import { useAgentScript } from '../hooks/useAgentScript';
+import { useSmsTemplates, type SmsTemplate } from '../hooks/useSmsTemplates';
 import { useTerminologies, type Terminology } from '../hooks/useTerminologies';
 import { useCoachFacts, type CoachFact } from '../hooks/useCoachFacts';
 import { useTwilioAccount } from '../hooks/useTwilioAccount';
@@ -511,34 +512,241 @@ function Chip({ label, colour }: { label: string; colour: string }) {
   );
 }
 
-// ─── Templates ─────────────────────────────────────────────────────
+// ─── SMS templates — real CRUD on wk_sms_templates ──────────────
+//
+// Hugo 2026-04-30: stage-coupled templates. Each template can
+// optionally carry a move_to_stage_id; when an agent picks the
+// template and sends, the contact moves to that stage.
 function TemplatesTab() {
+  const { items, loading, error, add, patch, remove } = useSmsTemplates();
+  const { columns } = useSmsV2();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{
+    name: string;
+    body_md: string;
+    move_to_stage_id: string | null;
+  }>({ name: '', body_md: '', move_to_stage_id: null });
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const startEdit = (t: SmsTemplate) => {
+    setEditingId(t.id);
+    setDraft({
+      name: t.name,
+      body_md: t.body_md,
+      move_to_stage_id: t.move_to_stage_id,
+    });
+  };
+  const startNew = () => {
+    setEditingId('new');
+    setDraft({ name: '', body_md: '', move_to_stage_id: null });
+  };
+  const cancel = () => {
+    setEditingId(null);
+    setActionError(null);
+  };
+
+  const save = async () => {
+    setActionError(null);
+    try {
+      if (editingId === 'new') {
+        await add({
+          name: draft.name.trim(),
+          body_md: draft.body_md.trim(),
+          is_global: true,
+          owner_agent_id: null,
+          move_to_stage_id: draft.move_to_stage_id,
+        });
+      } else if (editingId) {
+        await patch(editingId, {
+          name: draft.name.trim(),
+          body_md: draft.body_md.trim(),
+          move_to_stage_id: draft.move_to_stage_id,
+        });
+      }
+      cancel();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'save failed');
+    }
+  };
+
+  const del = async (t: SmsTemplate) => {
+    if (!confirm(`Delete template "${t.name}"?`)) return;
+    setActionError(null);
+    try {
+      await remove(t.id);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'delete failed');
+    }
+  };
+
   return (
-    <Card title="SMS templates" hint={`${MOCK_TEMPLATES.length} templates`}>
-      <div className="space-y-2">
-        {MOCK_TEMPLATES.map((t) => (
-          <div key={t.id} className="border border-[#E5E7EB] rounded-xl p-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[13px] font-semibold text-[#1A1A1A]">{t.name}</span>
-              <div className="flex gap-1">
-                {t.mergeFields.map((f) => (
-                  <span
-                    key={f}
-                    className="text-[10px] bg-[#F3F3EE] text-[#6B7280] px-1.5 py-0.5 rounded"
-                  >
-                    {`{${f}}`}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="text-[12px] text-[#6B7280] leading-snug">{t.bodyMd}</div>
-          </div>
-        ))}
-        <button className="flex items-center gap-1 text-[12px] font-medium text-[#1E9A80] hover:bg-[#ECFDF5] px-2 py-1.5 rounded-[10px]">
+    <Card title="SMS templates" hint={`${items.length} templates · stage-coupled = sending moves contact`}>
+      <div className="text-[11px] text-[#6B7280] leading-snug mb-3">
+        Each template can optionally <strong>move the contact to a pipeline stage</strong> when an
+        agent uses it to send. Replaces the old "AI auto-detects stage" idea
+        — stage progression is now triggered by template choice.
+      </div>
+
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[12px] text-[#6B7280]">
+          {loading ? 'Loading…' : `${items.length} templates`}
+        </div>
+        <button
+          onClick={startNew}
+          disabled={editingId !== null}
+          className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] inline-flex items-center gap-1 hover:bg-[#1E9A80]/90 disabled:opacity-60"
+        >
           <Plus className="w-3.5 h-3.5" /> New template
         </button>
       </div>
+
+      {(error || actionError) && (
+        <div className="text-[11px] text-[#EF4444] mb-2">
+          ⚠ {actionError ?? error}
+        </div>
+      )}
+
+      {editingId === 'new' && (
+        <TemplateEditor
+          draft={draft}
+          setDraft={setDraft}
+          columns={columns}
+          onSave={save}
+          onCancel={cancel}
+        />
+      )}
+
+      <div className="space-y-2">
+        {items.map((t) => {
+          const targetStage = columns.find((c) => c.id === t.move_to_stage_id);
+          return (
+            <div
+              key={t.id}
+              className="border border-[#E5E7EB] rounded-xl p-3 bg-white"
+            >
+              {editingId === t.id ? (
+                <TemplateEditor
+                  draft={draft}
+                  setDraft={setDraft}
+                  columns={columns}
+                  onSave={save}
+                  onCancel={cancel}
+                />
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-semibold text-[#1A1A1A]">{t.name}</span>
+                      {targetStage && (
+                        <span className="text-[10px] bg-[#ECFDF5] text-[#1E9A80] px-1.5 py-0.5 rounded font-semibold inline-flex items-center gap-0.5">
+                          → {targetStage.name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => startEdit(t)}
+                        className="text-[11px] px-2 py-1 rounded-md border border-[#E5E7EB] hover:bg-[#F3F3EE]"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => void del(t)}
+                        className="text-[11px] px-2 py-1 rounded-md text-[#EF4444] hover:bg-[#FEF2F2]"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-[12px] text-[#6B7280] leading-snug whitespace-pre-wrap">
+                    {t.body_md}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+        {!loading && items.length === 0 && editingId !== 'new' && (
+          <div className="text-[12px] text-[#9CA3AF] text-center py-6">
+            No templates yet. Click "New template" to add one.
+          </div>
+        )}
+      </div>
     </Card>
+  );
+}
+
+function TemplateEditor({
+  draft,
+  setDraft,
+  columns,
+  onSave,
+  onCancel,
+}: {
+  draft: { name: string; body_md: string; move_to_stage_id: string | null };
+  setDraft: (d: { name: string; body_md: string; move_to_stage_id: string | null }) => void;
+  columns: PipelineColumn[];
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const set = <K extends keyof typeof draft>(k: K, v: (typeof draft)[K]) =>
+    setDraft({ ...draft, [k]: v });
+  const canSave = draft.name.trim().length > 0 && draft.body_md.trim().length > 0;
+  return (
+    <div className="border border-[#1E9A80]/40 bg-[#ECFDF5] rounded-xl p-3 mb-3 space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label>Name</Label>
+          <input
+            type="text"
+            value={draft.name}
+            onChange={(e) => set('name', e.target.value)}
+            placeholder="e.g. Send breakdown"
+            className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
+          />
+        </div>
+        <div>
+          <Label>Move contact to stage (optional)</Label>
+          <select
+            value={draft.move_to_stage_id ?? ''}
+            onChange={(e) => set('move_to_stage_id', e.target.value || null)}
+            className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
+          >
+            <option value="">— No stage move —</option>
+            {columns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div>
+        <Label>Body (use {'{{first_name}}'} / {'{{agent_first_name}}'})</Label>
+        <textarea
+          value={draft.body_md}
+          onChange={(e) => set('body_md', e.target.value)}
+          rows={4}
+          placeholder="Hi {{first_name}}, …"
+          className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
+        />
+      </div>
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={onSave}
+          disabled={!canSave}
+          className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+        >
+          Save
+        </button>
+        <button
+          onClick={onCancel}
+          className="text-[12px] text-[#6B7280] px-3 py-1.5 rounded-[10px] hover:bg-[#F3F3EE]"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 
