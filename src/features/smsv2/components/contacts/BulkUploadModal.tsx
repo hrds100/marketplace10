@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import Papa from 'papaparse';
-import { X, Upload, FileText, Users, Lock, AlertTriangle } from 'lucide-react';
+import { X, Upload, FileText, Users, Lock, AlertTriangle, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toE164 } from '@/core/utils/phone';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { useAgentsToday } from '../../hooks/useAgentsToday';
+import { useDialerCampaigns } from '../../hooks/useDialerCampaigns';
 
 interface Props {
   open: boolean;
@@ -22,6 +23,9 @@ interface ParsedRow {
 interface ImportResult {
   inserted: number;
   skipped: number;
+  /** PR 22: how many contacts were also enqueued into wk_dialer_queue
+   *  (campaign + contact_id rows ready for parallel dial). */
+  queued: number;
   errors: string[];
 }
 
@@ -51,7 +55,12 @@ export default function BulkUploadModal({ open, onClose }: Props) {
   const [result, setResult] = useState<ImportResult | null>(null);
   const { columns, pushToast } = useSmsV2();
   const { agents } = useAgentsToday();
+  const { campaigns } = useDialerCampaigns();
   const [stageId, setStageId] = useState<string>(columns[0]?.id ?? '');
+  // PR 22: optional "add to campaign queue" — when set, the imported
+  // contacts are also INSERTed into wk_dialer_queue for that campaign
+  // so wk-dialer-start has leads to pick from.
+  const [campaignId, setCampaignId] = useState<string>('');
 
   if (!open) return null;
 
@@ -64,6 +73,7 @@ export default function BulkUploadModal({ open, onClose }: Props) {
     setTags('imported');
     setResult(null);
     setStageId(columns[0]?.id ?? '');
+    setCampaignId('');
   };
 
   const close = () => {
@@ -158,6 +168,12 @@ export default function BulkUploadModal({ open, onClose }: Props) {
     const errors: string[] = [];
     let inserted = 0;
     let skipped = 0;
+    let queued = 0;
+    // Phones uploaded in this batch — used after the upsert to look
+    // up contact ids (existing rows aren't returned by the
+    // ignoreDuplicates upsert, so we need a separate SELECT to get
+    // their ids for the dialer-queue insert).
+    const allPhones = inserts.map((r) => r.phone);
 
     // Chunk inserts to avoid hitting URL/payload limits
     const CHUNK = 50;
@@ -188,9 +204,63 @@ export default function BulkUploadModal({ open, onClose }: Props) {
       }
     }
 
-    setResult({ inserted, skipped, errors });
+    // PR 22: enqueue the uploaded contacts into wk_dialer_queue if a
+    // campaign was picked. Re-fetch ids by phone so that already-
+    // existing contacts (skipped in the upsert) are also enqueued —
+    // Hugo's expectation: "uploaded list = ready to dial".
+    if (campaignId && allPhones.length > 0) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: idRows, error: idErr } = await (
+          supabase.from('wk_contacts' as any) as any
+        )
+          .select('id, phone')
+          .in('phone', allPhones);
+        if (idErr) {
+          errors.push(`queue lookup: ${idErr.message}`);
+        } else {
+          const queueInserts = ((idRows ?? []) as Array<{ id: string; phone: string }>)
+            .map((r) => ({
+              campaign_id: campaignId,
+              contact_id: r.id,
+              status: 'pending',
+              priority: 0,
+            }));
+          // Chunk to avoid payload limits.
+          for (let i = 0; i < queueInserts.length; i += CHUNK) {
+            const slice = queueInserts.slice(i, i + CHUNK);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: qData, error: qErr } = await (
+              supabase.from('wk_dialer_queue' as any) as any
+            )
+              .upsert(slice, {
+                onConflict: 'campaign_id,contact_id',
+                ignoreDuplicates: true,
+              })
+              .select('id');
+            if (qErr) {
+              errors.push(`queue: ${qErr.message}`);
+              continue;
+            }
+            queued += ((qData ?? []) as unknown[]).length;
+          }
+        }
+      } catch (e) {
+        errors.push(
+          `queue: ${e instanceof Error ? e.message : 'unknown error'}`
+        );
+      }
+    }
+
+    setResult({ inserted, skipped, queued, errors });
     setStep('done');
-    pushToast(`Imported ${inserted} contacts (${skipped} skipped)`, inserted > 0 ? 'success' : 'info');
+    const queuedNote = campaignId
+      ? ` · ${queued} queued for dial`
+      : '';
+    pushToast(
+      `Imported ${inserted} contacts (${skipped} skipped)${queuedNote}`,
+      inserted > 0 ? 'success' : 'info'
+    );
   };
 
   return (
@@ -303,6 +373,34 @@ export default function BulkUploadModal({ open, onClose }: Props) {
                   />
                 </div>
               </div>
+
+              {/* PR 22: optional campaign queue. When set, every uploaded
+                  contact (new or already-existing) is also INSERTed
+                  into wk_dialer_queue for that campaign. Without this,
+                  the parallel dialer has no leads to pick from. */}
+              <div>
+                <Label icon={<Phone className="w-3.5 h-3.5" />}>
+                  Add to dialer queue (optional)
+                </Label>
+                <select
+                  value={campaignId}
+                  onChange={(e) => setCampaignId(e.target.value)}
+                  className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
+                >
+                  <option value="">— don't queue, just import —</option>
+                  {campaigns.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.parallelLines} {c.parallelLines === 1 ? 'line' : 'lines'})
+                    </option>
+                  ))}
+                </select>
+                {campaignId && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#1E9A80]">
+                    <Phone className="w-3 h-3" />
+                    These leads will be ready to dial via the campaign on /smsv2/dialer
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="px-5 py-3 bg-[#F3F3EE]/50 border-t border-[#E5E7EB] flex justify-between">
@@ -340,6 +438,7 @@ export default function BulkUploadModal({ open, onClose }: Props) {
             </h3>
             <p className="text-[12px] text-[#6B7280] mt-1">
               {result.skipped > 0 && `${result.skipped} duplicates skipped · `}
+              {result.queued > 0 && `${result.queued} queued for dial · `}
               {result.errors.length > 0 ? `${result.errors.length} errors` : 'no errors'}
             </p>
             {result.errors.length > 0 && (
