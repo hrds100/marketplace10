@@ -13,6 +13,11 @@ import {
   Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@/components/ui/resizable';
 import { useActiveCallCtx } from './ActiveCallContext';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import PostCallPanel from './PostCallPanel';
@@ -168,10 +173,17 @@ export default function LiveCallScreen() {
         </div>
       </header>
 
-      {/* 3-column body */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Resizable 3-column body. Widths persist per-browser via
+          autoSaveId on the panel group. Drag the dividers to rebalance.
+          Min sizes keep each pane usable on narrow viewports. Item B2
+          will extend this to 4 columns (script + terminology). */}
+      <ResizablePanelGroup
+        direction="horizontal"
+        autoSaveId="smsv2-live-call-layout"
+        className="flex-1 overflow-hidden"
+      >
         {/* Left — lead context */}
-        <aside className="w-[320px] bg-white border-r border-[#E5E7EB] flex flex-col overflow-hidden">
+        <ResizablePanel defaultSize={22} minSize={16} className="bg-white border-r border-[#E5E7EB] flex flex-col overflow-hidden">
           <div className="px-4 py-3 border-b border-[#E5E7EB]">
             <div className="flex items-center gap-2">
               <div className="text-[16px] font-bold text-[#1A1A1A]">{contact.name}</div>
@@ -260,22 +272,26 @@ export default function LiveCallScreen() {
               </div>
             </div>
           </div>
-        </aside>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
 
         {/* Centre — transcript + coach during dial/in-call, post-call panel
             after hangup. We mount LiveTranscriptPane the moment callId is
             known (during 'placing'), not just on 'in_call', so we don't miss
             the first transcript chunks Twilio fires before bridge-accept. */}
-        <section className="flex-1 bg-white border-r border-[#E5E7EB] overflow-hidden">
+        <ResizablePanel defaultSize={56} minSize={30} className="bg-white border-r border-[#E5E7EB] overflow-hidden">
           {phase === 'placing' || phase === 'in_call' ? (
             <LiveTranscriptPane durationSec={durationSec} contactId={contact.id} callId={call?.callId ?? null} />
           ) : (
             <PostCallPanel />
           )}
-        </section>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
 
         {/* Right — SMS thread + history */}
-        <aside className="w-[340px] bg-white flex flex-col overflow-hidden">
+        <ResizablePanel defaultSize={22} minSize={16} className="bg-white flex flex-col overflow-hidden">
           <div className="px-4 py-2.5 border-b border-[#E5E7EB] flex items-center justify-between">
             <span className="text-[12px] font-semibold text-[#1A1A1A]">SMS conversation</span>
             <span className="text-[10px] text-[#9CA3AF]">{sms.length} messages</span>
@@ -339,8 +355,8 @@ export default function LiveCallScreen() {
               ))}
             </div>
           </div>
-        </aside>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       <EditContactModal
         contact={editing}
