@@ -8,12 +8,14 @@ import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence, isRealContactId } from '../hooks/useContactPersistence';
 import { useAgentsToday } from '../hooks/useAgentsToday';
+import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { toE164 } from '@/core/utils/phone';
 import type { Contact } from '../types';
 
 export default function ContactsPage() {
   const { contacts, columns, agents: storeAgents, patchContact, upsertContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
+  const { startCall } = useActiveCallCtx();
   // Prefer real agents (from profiles) for the owner dropdown so saved
   // owner_agent_id is a real UUID, not a mock id like "a-hugo".
   const { agents: realAgents } = useAgentsToday();
@@ -213,10 +215,24 @@ export default function ContactsPage() {
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
-                      <button className="p-1.5 hover:bg-[#ECFDF5] rounded text-[#1E9A80]">
+                      <button
+                        onClick={(e) => {
+                          // Stop the row's <Link> (navigates to detail) from
+                          // hijacking the click — we want to dial in place.
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void startCall(c.id);
+                        }}
+                        className="p-1.5 hover:bg-[#ECFDF5] rounded text-[#1E9A80]"
+                        title={`Call ${c.name}`}
+                      >
                         <Phone className="w-3.5 h-3.5" />
                       </button>
-                      <button className="p-1.5 hover:bg-[#ECFDF5] rounded text-[#1E9A80]">
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        className="p-1.5 hover:bg-[#ECFDF5] rounded text-[#1E9A80]"
+                        title={`SMS ${c.name}`}
+                      >
                         <MessageSquare className="w-3.5 h-3.5" />
                       </button>
                     </div>

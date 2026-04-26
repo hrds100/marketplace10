@@ -186,12 +186,19 @@ export interface OutboundParams {
 }
 
 export async function dial(params: OutboundParams): Promise<TwilioCall> {
+  // Auto-initialise the device if the agent clicks Call before the
+  // useTwilioDevice hook's mount-effect has finished registering. This
+  // happens on a fresh tab → click Call quickly → the previous code
+  // threw "Voice device not initialised". Now we just register lazily.
   if (!device) {
-    throw new Error('Voice device not initialised — call createDevice() first.');
+    await createDevice();
+  }
+  if (!device) {
+    throw new Error('Voice device failed to initialise. Try refreshing the page.');
   }
   // The TwiML App points at wk-voice-twiml-outgoing. Twilio forwards
   // these `params` as form fields on that POST.
-  const call = await device.connect({
+  const call = await (device as TwilioDevice).connect({
     params: {
       To: params.to,
       ...(params.agentId ? { AgentId: params.agentId } : {}),
