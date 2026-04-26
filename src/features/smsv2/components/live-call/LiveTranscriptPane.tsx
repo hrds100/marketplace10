@@ -64,13 +64,37 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note, contactId]);
 
-  // Subscribe to realtime transcript + coach events when we have a real callId
+  // Backfill any rows that already exist for this call (Twilio's first
+  // transcript event can land in the DB while the UI is still in 'placing'
+  // phase — i.e. BEFORE this component mounts/subscribes). Then subscribe
+  // for new rows from now on.
   useEffect(() => {
     if (!callId) {
       setLiveLines([]);
       setLiveEvents([]);
       return;
     }
+
+    let cancelled = false;
+
+    void (async () => {
+      const [tRes, cRes] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_live_transcripts' as any) as any)
+          .select('id, speaker, body, created_at')
+          .eq('call_id', callId)
+          .order('ts', { ascending: true }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_live_coach_events' as any) as any)
+          .select('id, kind, body, created_at')
+          .eq('call_id', callId)
+          .order('ts', { ascending: true }),
+      ]);
+      if (cancelled) return;
+      if (tRes.data) setLiveLines(tRes.data as LiveTranscriptRow[]);
+      if (cRes.data) setLiveEvents(cRes.data as LiveCoachRow[]);
+    })();
+
     const tCh = supabase
       .channel(`live-transcripts:${callId}`)
       .on(
@@ -82,7 +106,10 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
           filter: `call_id=eq.${callId}`,
         },
         (payload: { new: LiveTranscriptRow }) => {
-          setLiveLines((prev) => [...prev, payload.new]);
+          // Dedupe in case the backfill SELECT and the realtime INSERT race.
+          setLiveLines((prev) =>
+            prev.some((l) => l.id === payload.new.id) ? prev : [...prev, payload.new]
+          );
         }
       )
       .subscribe();
@@ -97,11 +124,14 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
           filter: `call_id=eq.${callId}`,
         },
         (payload: { new: LiveCoachRow }) => {
-          setLiveEvents((prev) => [...prev, payload.new]);
+          setLiveEvents((prev) =>
+            prev.some((e) => e.id === payload.new.id) ? prev : [...prev, payload.new]
+          );
         }
       )
       .subscribe();
     return () => {
+      cancelled = true;
       try { supabase.removeChannel(tCh); } catch { /* ignore */ }
       try { supabase.removeChannel(cCh); } catch { /* ignore */ }
     };
