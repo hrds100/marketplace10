@@ -116,19 +116,23 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     expect(source).toContain('priorCards');
   });
 
-  it('default prompt is the script-faithful v6 (no acting notes, follows the rep script)', () => {
-    // Hugo 2026-04-28: replaced the earlier "Belfort straight-line"
-    // direction with a script-faithful prompt. Lock the markers that
-    // tell us we're on v6.
+  it('default prompt is the script-faithful v7 (open-ended default + earned-close)', () => {
+    // Hugo 2026-04-28: v7 keeps v6's script-faithful direction but
+    // adds two explicit blocks — OPEN-ENDED DEFAULT and EARNED-CLOSE
+    // RULE — to stop the model force-closing on every other line.
     expect(source).toContain('CORE RULES');
     expect(source).toContain('Default to the script. Do not freestyle unless needed.');
     expect(source).toContain('OPEN → QUALIFY → PERMISSION TO PITCH → PITCH → RETURNS → SMS CLOSE → FOLLOW-UP LOCK');
     expect(source).toMatch(/NEVER output labels or acting notes/);
+    expect(source).toContain('OPEN-ENDED DEFAULT');
+    expect(source).toContain('EARNED-CLOSE RULE');
+    expect(source).toMatch(/Most lines should end with a question/);
+    expect(source).toMatch(/PITCH and RETURNS steps already/);
     // The old "Three Tens / Belfort" framing must NOT be back.
     expect(source).not.toMatch(/THREE TENS/);
     expect(source).not.toMatch(/Straight Line Selling/);
     // The old example openers we'd anchored on must NOT be in the
-    // default prompt anymore (they leaked through to live cards).
+    // default prompt anymore.
     expect(source).not.toMatch(/Yeah fair enough — sounds like/);
   });
 

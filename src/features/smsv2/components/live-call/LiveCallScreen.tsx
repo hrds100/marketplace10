@@ -285,7 +285,12 @@ export default function LiveCallScreen() {
             the first transcript chunks Twilio fires before bridge-accept. */}
         <ResizablePanel defaultSize={38} minSize={26} className="bg-white border-r border-[#E5E7EB] overflow-hidden">
           {phase === 'placing' || phase === 'in_call' ? (
-            <LiveTranscriptPane durationSec={durationSec} contactId={contact.id} callId={call?.callId ?? null} />
+            <LiveTranscriptPane
+              durationSec={durationSec}
+              contactId={contact.id}
+              callId={call?.callId ?? null}
+              agentFirstName={myFirstName ?? ''}
+            />
           ) : (
             <PostCallPanel />
           )}

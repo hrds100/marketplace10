@@ -41,7 +41,10 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-function renderWith(props: { callId: string | null; demo?: boolean }, search?: string) {
+function renderWith(
+  props: { callId: string | null; demo?: boolean; agentFirstName?: string },
+  search?: string
+) {
   return render(
     <MemoryRouter initialEntries={[search ?? '/smsv2/inbox']}>
       <SmsV2Provider>
@@ -49,6 +52,7 @@ function renderWith(props: { callId: string | null; demo?: boolean }, search?: s
           durationSec={30}
           contactId={'11111111-1111-1111-1111-111111111111'}
           callId={props.callId}
+          agentFirstName={props.agentFirstName}
         />
       </SmsV2Provider>
     </MemoryRouter>
@@ -91,5 +95,37 @@ describe('LiveTranscriptPane — ?demo=1 still allows the legacy mock fallback',
     // exact wording (it can change), but presence indicates the fallback
     // path is still reachable behind the demo flag.
     expect(text.length).toBeGreaterThan(50);
+  });
+});
+
+describe('LiveTranscriptPane — opener prefill (Hugo 2026-04-28)', () => {
+  it('shows the synthetic opener card on call connect (no realtime events yet)', () => {
+    const { getByTestId, container } = renderWith({
+      callId: '33333333-3333-3333-3333-333333333333',
+      agentFirstName: 'Hugo',
+    });
+    // Opener card present with a known testid.
+    const openerCard = getByTestId('opener-card');
+    expect(openerCard).toBeTruthy();
+    // Body uses agent first name + the canonical NFSTAY opener phrasing
+    // (matches the OPEN step in the v7 prompt).
+    const text = container.textContent ?? '';
+    expect(text).toMatch(/Hugo from NFSTAY/);
+    expect(text).toMatch(/property WhatsApp group/);
+    // The "OPENER · READ WHEN THEY PICK UP" badge tells the rep this
+    // is a starter line, not a generated coach card.
+    expect(text).toMatch(/OPENER/);
+  });
+
+  it('falls back to "Hugo" if no agentFirstName prop is provided', () => {
+    const { container } = renderWith({
+      callId: '44444444-4444-4444-4444-444444444444',
+    });
+    expect(container.textContent ?? '').toMatch(/Hugo from NFSTAY/);
+  });
+
+  it('does NOT show the opener card when callId is null (no live call)', () => {
+    const { queryByTestId } = renderWith({ callId: null });
+    expect(queryByTestId('opener-card')).toBeNull();
   });
 });
