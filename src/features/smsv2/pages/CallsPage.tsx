@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   PhoneIncoming,
   PhoneOutgoing,
@@ -11,7 +12,10 @@ import {
   ChevronDown,
   ChevronRight,
   Download,
+  MessageSquare,
+  ExternalLink,
 } from 'lucide-react';
+import CallTranscriptModal from '../components/calls/CallTranscriptModal';
 import { MOCK_CALLS } from '../data/mockCalls';
 import { MOCK_CONTACTS } from '../data/mockContacts';
 import { MOCK_AGENTS } from '../data/mockAgents';
@@ -38,6 +42,7 @@ export default function CallsPage() {
   const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [transcriptCallId, setTranscriptCallId] = useState<string | null>(null);
 
   const { calls: realCalls } = useCalls();
   const { contacts: realContacts } = useSmsV2();
@@ -302,6 +307,20 @@ export default function CallsPage() {
                             <Sparkles className="w-3.5 h-3.5" />
                           </button>
                         )}
+                        <button
+                          onClick={() => setTranscriptCallId(c.id)}
+                          className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[#6B7280] bg-[#F3F3EE] hover:bg-[#1A1A1A] hover:text-white rounded-[8px] transition-colors"
+                          title="View transcript (Hugo 2026-04-26)"
+                        >
+                          <MessageSquare className="w-3 h-3" /> Transcript
+                        </button>
+                        <Link
+                          to={`/smsv2/calls/${c.id}`}
+                          className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[#1E9A80] hover:bg-[#1E9A80] hover:text-white rounded-[8px] transition-colors"
+                          title="Open the full call screen with transcript + recording + coach events"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Open
+                        </Link>
                       </div>
                     </td>
                   </tr>
@@ -402,6 +421,19 @@ export default function CallsPage() {
           </tbody>
         </table>
       </div>
+
+      {transcriptCallId && (() => {
+        const tCall = calls.find((c) => c.id === transcriptCallId);
+        const tContact = tCall ? contacts.find((c) => c.id === tCall.contactId) : null;
+        const callerLabel = tContact?.name?.trim().split(/\s+/)[0] ?? 'Caller';
+        return (
+          <CallTranscriptModal
+            callId={transcriptCallId}
+            callerLabel={callerLabel}
+            onClose={() => setTranscriptCallId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

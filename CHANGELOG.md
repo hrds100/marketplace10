@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-04-26 — smsv2: past-call transcript + full-screen archive view (item F)
+
+Hugo's 2026-04-26 ask: "Calls history page is missing recording playback
+for transcripts (recording is already there). Wants the full transcript
+and ability to 'go back to that screen' to see history of a call."
+
+- New `CallTranscriptModal` component. Click the new "Transcript" button
+  on any row in /smsv2/calls → modal loads `wk_live_transcripts` for
+  that call_id, renders speaker-labelled lines (You / first-name).
+  Modal includes an "Open full screen →" link to the new past-call route.
+- New `PastCallScreen` component routed at `/smsv2/calls/:callId`. Shows
+  recording (signed URL), AI summary, transcript, AI coach events
+  captured live during the call. Read-only.
+- New "Open" button on each /smsv2/calls row → routes to
+  /smsv2/calls/:callId.
+- Empty state: "No transcript captured for this call. Real-time
+  transcription was added on 2026-04-25 — earlier calls don't have
+  transcripts." (per the review note before this work item shipped).
+
+This completes the live-call surface overhaul plan (items A → G).
+
 ## 2026-04-26 — smsv2: "Apply automation" mid-call button (item E)
 
 Hugo's 2026-04-26 ask: "Mid-call actions (… change pipeline stage) need
