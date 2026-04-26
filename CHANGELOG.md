@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-04-27 — smsv2: coach model → gpt-5.4-mini
+
+Hugo's directive after the v3 ship: switch from `gpt-4.1-mini` to
+`gpt-5.4-mini`. Newer family, better stage-awareness + variation, still
+mini-tier latency.
+
+Also: improved error logging in `generateCoachSuggestion` so a wrong
+model name surfaces in edge fn logs (response body included on non-2xx)
+instead of silently producing zero coach cards.
+
+Edge fn redeployed.
+
 ## 2026-04-27 — smsv2: coach prompt v3 + model upgrade (gpt-4.1-mini)
 
 Hugo's 2026-04-26 live test still showed the coach pushing "I'll send the
