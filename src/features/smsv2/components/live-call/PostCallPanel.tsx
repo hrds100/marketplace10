@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useActiveCallCtx } from './ActiveCallContext';
 import { useSmsV2 } from '../../store/SmsV2Store';
+import FollowupPromptModal from '../followups/FollowupPromptModal';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Sparkles,
@@ -32,6 +33,11 @@ export default function PostCallPanel() {
   const [secondsLeft, setSecondsLeft] = useState(autoAdvanceSeconds);
   const [paused, setPaused] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // PR 19: when the picked stage carries requires_followup=true, open
+  // the prompt modal BEFORE committing applyOutcome. Pausing the auto-
+  // advance timer while the modal is open keeps the agent from being
+  // dragged onto the next call before they've set the timer.
+  const [pendingFollowupColId, setPendingFollowupColId] = useState<string | null>(null);
 
   // Reset countdown if the active campaign changes (different auto-advance)
   useEffect(() => {
@@ -39,10 +45,10 @@ export default function PostCallPanel() {
   }, [autoAdvanceSeconds]);
 
   useEffect(() => {
-    if (paused || submitted) return;
+    if (paused || submitted || pendingFollowupColId) return;
     const id = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
-  }, [paused, submitted]);
+  }, [paused, submitted, pendingFollowupColId]);
 
   useEffect(() => {
     if (secondsLeft === 0 && !paused && !submitted) {
@@ -54,6 +60,19 @@ export default function PostCallPanel() {
 
   const handleClick = (columnId: string) => {
     if (submitted) return;
+    const col = columns.find((c) => c.id === columnId);
+    // PR 19: if the picked stage requires a follow-up, open the modal
+    // FIRST and let the agent pick a time + note. The actual outcome
+    // submission happens in commitOutcome after the modal saves or is
+    // skipped.
+    if (col?.requiresFollowup) {
+      setPendingFollowupColId(columnId);
+      return;
+    }
+    commitOutcome(columnId);
+  };
+
+  const commitOutcome = (columnId: string) => {
     setSubmitted(true);
     // Defer slightly so the button's optimistic disabled state paints first
     setTimeout(() => applyOutcome(columnId), 200);
@@ -216,6 +235,47 @@ export default function PostCallPanel() {
           <Phone className="w-3.5 h-3.5" /> Call now
         </button>
       </div>
+
+      {/* PR 19: follow-up prompt for Nurturing / Callback / Interested.
+          Mount only when the agent picks a follow-up stage; auto-
+          unmount after save/skip + commitOutcome runs. */}
+      {pendingFollowupColId && call?.contactId && (() => {
+        const col = columns.find((c) => c.id === pendingFollowupColId);
+        const contact = store.getContact(call.contactId);
+        if (!col || !contact) return null;
+        const suggestedHours =
+          col.name.toLowerCase() === 'callback'
+            ? 2
+            : col.name.toLowerCase() === 'interested'
+              ? 24
+              : 24 * 3; // Nurturing default
+        return (
+          <FollowupPromptModal
+            open
+            onOpenChange={(o) => {
+              if (!o) {
+                // Closed without saving = treated as "skip" — still
+                // commits the outcome so the contact moves to the
+                // chosen stage; agent just hasn't set a follow-up.
+                const colId = pendingFollowupColId;
+                setPendingFollowupColId(null);
+                if (colId) commitOutcome(colId);
+              }
+            }}
+            contactId={contact.id}
+            contactName={contact.name}
+            columnId={col.id}
+            columnName={col.name}
+            suggestedHoursAhead={suggestedHours}
+            callId={call.callId}
+            onSaved={() => {
+              const colId = pendingFollowupColId;
+              setPendingFollowupColId(null);
+              if (colId) commitOutcome(colId);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
