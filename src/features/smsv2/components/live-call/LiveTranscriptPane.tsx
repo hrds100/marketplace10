@@ -19,6 +19,8 @@ import { MOCK_TRANSCRIPT, MOCK_COACH_EVENTS } from '../../data/mockTranscripts';
 import { useKillSwitch } from '../../hooks/useKillSwitch';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
+import { useAgentScript } from '../../hooks/useAgentScript';
+import { parseBlocks } from '../../lib/scriptParser';
 
 interface Props {
   durationSec: number;
@@ -99,24 +101,23 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
     return first || 'Caller';
   })();
 
-  // v8 (PR #575): rotate through 6 opener variants on an hourly cadence
-  // so reps doing back-to-back calls don't read the same line every time.
-  // The synthetic card renders only while the call is active AND no real
-  // coach event has landed yet. The first realtime INSERT replaces it.
+  // PR 13 (Hugo 2026-04-26): the opener card now mirrors the agent's
+  // ACTUAL script. v8's hardcoded rotation produced lines like "Hey
+  // Hugo, calling from NFSTAY..." that didn't match what was on screen
+  // in col 3. Now we parse the script body, find the OPEN heading
+  // (## …Open…), pick the first read-aloud line under it, substitute
+  // {{first_name}} / {{agent_first_name}}, and use that as the opener.
+  // Falls back to a single canonical line if the script parser doesn't
+  // find an OPEN section.
+  const { script: agentScript } = useAgentScript();
   const opener = useMemo(() => {
     const them = callerLabel === 'Caller' ? 'mate' : callerLabel;
     const me = (agentFirstName ?? '').trim() || 'Hugo';
-    const variants = [
-      `Hey, is that ${them}? It's ${me} from NFSTAY — saw you in the property WhatsApp group. Are you actively looking at deals at the moment, or more keeping an eye?`,
-      `${them}? ${me} from NFSTAY here — noticed you in our property WhatsApp group. Quick one, are you investing right now or just watching the market?`,
-      `Hey ${them}, ${me} calling from NFSTAY. You popped up in our property WhatsApp group — alright if I take a couple of minutes?`,
-      `Hi ${them}, this is ${me} at NFSTAY. Saw your name in the property WhatsApp group — are you actively looking at Airbnb deals or just exploring at the moment?`,
-      `Alright ${them}, ${me} from NFSTAY. You came through the property WhatsApp group — is now an okay time for a quick chat?`,
-      `Hey ${them}, it's ${me} at NFSTAY — caught you on the property WhatsApp group. Are you investing already, or just keeping an eye?`,
-    ];
-    const idx = Math.floor(Date.now() / 3600000) % variants.length;
-    return variants[idx];
-  }, [callerLabel, agentFirstName]);
+    const FALLBACK = `Hi ${them}, this is ${me} from NFSTAY — saw you in the property WhatsApp group. Have you got a couple of minutes?`;
+    const body = (agentScript.body_md || '').trim();
+    if (!body) return FALLBACK;
+    return extractOpenerFromScript(body, them, me) ?? FALLBACK;
+  }, [callerLabel, agentFirstName, agentScript.body_md]);
   // ?demo=1 in the URL keeps the legacy mock transcript reachable for
   // internal demos / Storybook screenshots. Default behaviour: show an
   // explicit empty state instead, so production calls never surface mock
@@ -436,4 +437,57 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
       </div>
     </div>
   );
+}
+
+// Pull the first read-aloud line of the OPEN section from the agent's
+// script body. Returns null if no usable line is found — caller falls
+// back to a hardcoded opener.
+//
+// "OPEN section" is detected as the first heading whose text contains
+// "open" (case-insensitive). The first read-aloud line under it is
+// the first list item OR the first paragraph. Quotes around the line
+// are stripped — the agent doesn't read the curly quotes aloud.
+function extractOpenerFromScript(
+  body: string,
+  contactFirstName: string,
+  agentFirstName: string
+): string | null {
+  const blocks = parseBlocks(body);
+  let inOpen = false;
+  let candidate: string | null = null;
+  for (const b of blocks) {
+    if (b.type === 'h') {
+      // New heading — only stay "in OPEN" while the first heading is
+      // the one we matched. Subsequent headings exit.
+      if (/open\b/i.test(b.text)) {
+        inOpen = true;
+        continue;
+      }
+      if (inOpen) break; // hit the next stage heading
+      continue;
+    }
+    if (!inOpen) continue;
+    if (b.type === 'ul') {
+      // First plain (non-IF) list item is the script's primary
+      // read-aloud line. Skip IF branches — those are situational.
+      const first = b.items.find((it) => it.kind === 'plain');
+      if (first) {
+        candidate = first.text;
+        break;
+      }
+    } else if (b.type === 'p') {
+      candidate = b.text;
+      break;
+    }
+  }
+  if (!candidate) return null;
+  // Strip wrapping quotes/backticks the script body uses for read-aloud.
+  const stripped = candidate
+    .trim()
+    .replace(/^["“”'`]+|["“”'`]+$/g, '')
+    .trim();
+  if (!stripped) return null;
+  return stripped
+    .replace(/\{\{\s*first_name\s*\}\}/gi, contactFirstName)
+    .replace(/\{\{\s*agent_first_name\s*\}\}/gi, agentFirstName);
 }
