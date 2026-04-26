@@ -10,6 +10,7 @@ import { SmsV2Provider } from '../store/SmsV2Store';
 import GlobalToasts from '../store/GlobalToasts';
 import { useHydrateContacts } from '../hooks/useHydrateContacts';
 import { useHydratePipelineColumns } from '../hooks/useHydratePipelineColumns';
+import FollowupBanner from '../components/followups/FollowupBanner';
 
 // Side-effect-only component: pumps real wk_contacts and wk_pipeline_columns
 // into the store so every /smsv2 page reads live data with real UUIDs
@@ -60,8 +61,11 @@ export default function Smsv2Layout() {
             {/* Sidebar + main */}
             <div className="flex-1 flex overflow-hidden">
               <Smsv2Sidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
-              <main className="flex-1 overflow-auto">
-                <Outlet />
+              <main className="flex-1 overflow-auto flex flex-col">
+                <FollowupBanner />
+                <div className="flex-1 overflow-auto">
+                  <Outlet />
+                </div>
               </main>
             </div>
 
