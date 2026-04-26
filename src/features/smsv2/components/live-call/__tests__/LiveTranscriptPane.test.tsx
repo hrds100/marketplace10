@@ -107,10 +107,13 @@ describe('LiveTranscriptPane — opener prefill (Hugo 2026-04-28)', () => {
     // Opener card present with a known testid.
     const openerCard = getByTestId('opener-card');
     expect(openerCard).toBeTruthy();
-    // Body uses agent first name + the canonical NFSTAY opener phrasing
-    // (matches the OPEN step in the v7 prompt).
+    // PR #575 (v8) rotates between 6 variants hourly. Each one uses
+    // either "from NFSTAY" or "at NFSTAY" + "property WhatsApp group".
+    // Loosen the regex to match either phrasing so the hour-of-day
+    // doesn't determine pass/fail.
     const text = container.textContent ?? '';
-    expect(text).toMatch(/Hugo from NFSTAY/);
+    expect(text).toMatch(/Hugo/);
+    expect(text).toMatch(/\bNFSTAY\b/);
     expect(text).toMatch(/property WhatsApp group/);
     // The "OPENER · READ WHEN THEY PICK UP" badge tells the rep this
     // is a starter line, not a generated coach card.
@@ -121,7 +124,9 @@ describe('LiveTranscriptPane — opener prefill (Hugo 2026-04-28)', () => {
     const { container } = renderWith({
       callId: '44444444-4444-4444-4444-444444444444',
     });
-    expect(container.textContent ?? '').toMatch(/Hugo from NFSTAY/);
+    const text = container.textContent ?? '';
+    expect(text).toMatch(/Hugo/);
+    expect(text).toMatch(/\bNFSTAY\b/);
   });
 
   it('does NOT show the opener card when callId is null (no live call)', () => {
