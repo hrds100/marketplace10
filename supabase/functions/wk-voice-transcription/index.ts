@@ -263,11 +263,17 @@ async function generateCoachSuggestion(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: liveCoachModel,       // sourced from wk_ai_settings.live_coach_model (Settings UI)
-        temperature: 0.9,            // higher → less repetition / more colour
-        presence_penalty: 0.85,      // strongly discourage reusing words from prior tips
+        model: liveCoachModel,         // sourced from wk_ai_settings.live_coach_model (Settings UI)
+        temperature: 0.9,              // higher → less repetition / more colour
+        presence_penalty: 0.85,        // strongly discourage reusing words from prior tips
         frequency_penalty: 0.5,
-        max_tokens: 180,             // ~50-word breakdown + slack — variable length per the prompt
+        // GPT-5 family (gpt-5.4-mini etc.) rejects `max_tokens` with HTTP
+        // 400 ("Unsupported parameter: 'max_tokens' is not supported with
+        // this model. Use 'max_completion_tokens' instead.") — verified
+        // 2026-04-27 against the live API. The newer name also works on
+        // gpt-4o-mini / gpt-4.1-mini / gpt-4.1-nano, so it's safe across
+        // the whole dropdown. ~180 tokens ≈ 50-word breakdown + slack.
+        max_completion_tokens: 180,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMsg },
