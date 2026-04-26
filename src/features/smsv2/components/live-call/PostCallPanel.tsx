@@ -12,7 +12,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MOCK_TEMPLATES } from '../../data/mockCampaigns';
 import { useActiveCallCtx } from './ActiveCallContext';
 import { useSmsV2 } from '../../store/SmsV2Store';
 
@@ -150,31 +149,30 @@ export default function PostCallPanel() {
           })}
         </div>
 
-        {/* Quick SMS / note row */}
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <div>
-            <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1.5">
-              Quick SMS (override)
-            </div>
-            <select className="w-full px-2 py-2 text-[13px] bg-white border border-[#E5E5E5] rounded-[10px]">
-              <option value="">Pick template…</option>
-              {MOCK_TEMPLATES.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
+        {/* Quick note — single row, full width. The "Quick SMS template"
+            dropdown that used to live here was removed: SMS automation runs
+            from the column's automation rules already (no manual override
+            needed at this surface), and Hugo asked for buttons-only here. */}
+        <div className="mt-5">
+          <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1.5">
+            Quick note
           </div>
-          <div>
-            <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1.5">
-              Quick note
-            </div>
-            <input
-              placeholder="Add a note…"
-              className="w-full px-2 py-2 text-[13px] bg-white border border-[#E5E5E5] rounded-[10px]"
-            />
-          </div>
+          <input
+            placeholder="Add a note (optional)…"
+            className="w-full px-3 py-2 text-[13px] bg-white border border-[#E5E5E5] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
+          />
         </div>
+
+        {/* Empty-state hint when no pipeline columns are hydrated yet. The
+            most common cause is a fresh workspace before useHydratePipelineColumns
+            populates the store. Without this, PostCallPanel rendered just
+            the section header + dropdown and looked broken. */}
+        {columns.length === 0 && (
+          <div className="mt-4 p-3 rounded-[10px] bg-[#FEF7E6] border border-[#FDE68A] text-[12px] text-[#1A1A1A]">
+            No pipeline columns yet. Open Settings → Pipelines and add a few
+            stages so you can pick an outcome from buttons here.
+          </div>
+        )}
       </div>
 
       {/* Footer auto-advance */}

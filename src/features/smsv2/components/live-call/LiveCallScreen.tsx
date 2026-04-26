@@ -30,7 +30,7 @@ import {
 } from '../../data/helpers';
 
 export default function LiveCallScreen() {
-  const { phase, call, durationSec, endCall, setFullScreen } = useActiveCallCtx();
+  const { phase, call, durationSec, endCall, setFullScreen, muted, toggleMute } = useActiveCallCtx();
   const store = useSmsV2();
   const { agent: me, firstName: myFirstName, talkRatioPercent } = useCurrentAgent();
   const [editing, setEditing] = useState<Contact | null>(null);
@@ -47,29 +47,62 @@ export default function LiveCallScreen() {
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#F3F3EE] flex flex-col">
-      {/* Top bar */}
+      {/* Top bar — three visual states:
+            placing  → amber bar with ringing dots (clearly "calling…")
+            in_call  → green bar with pulsing dot + duration
+            post_call → white bar, muted */}
       <header
         className={cn(
-          'h-14 flex items-center px-5 gap-3 flex-shrink-0',
-          phase === 'in_call' ? 'bg-[#1E9A80] text-white' : 'bg-white border-b border-[#E5E7EB]'
+          'h-14 flex items-center px-5 gap-3 flex-shrink-0 transition-colors',
+          phase === 'in_call' && 'bg-[#1E9A80] text-white',
+          phase === 'placing' && 'bg-[#F59E0B] text-white',
+          phase === 'post_call' && 'bg-white border-b border-[#E5E7EB] text-[#1A1A1A]',
+          phase === 'idle' && 'bg-white border-b border-[#E5E7EB] text-[#1A1A1A]'
         )}
       >
-        <span
-          className={cn(
-            'w-2 h-2 rounded-full',
-            phase === 'in_call' ? 'bg-white animate-pulse' : 'bg-[#1E9A80]'
+        {phase === 'placing' ? (
+          <span className="relative w-2.5 h-2.5 inline-flex">
+            <span className="absolute inset-0 rounded-full bg-white animate-ping" />
+            <span className="relative w-2.5 h-2.5 rounded-full bg-white" />
+          </span>
+        ) : (
+          <span
+            className={cn(
+              'w-2.5 h-2.5 rounded-full',
+              phase === 'in_call' && 'bg-white animate-pulse',
+              (phase === 'post_call' || phase === 'idle') && 'bg-[#1E9A80]'
+            )}
+          />
+        )}
+        <span className="text-[14px] font-semibold flex items-center gap-2">
+          {phase === 'placing' && (
+            <>
+              <span>Calling {call?.contactName}</span>
+              <span className="inline-flex gap-0.5">
+                <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} />
+              </span>
+            </>
           )}
-        />
-        <span className="text-[14px] font-semibold">
-          {phase === 'in_call' ? 'In call' : 'Call ended'} · {call?.contactName}
           {phase === 'in_call' && (
-            <span className="ml-2 tabular-nums opacity-90">{formatDuration(durationSec)}</span>
+            <>
+              <span>In call · {call?.contactName}</span>
+              <span className="ml-2 tabular-nums opacity-90">{formatDuration(durationSec)}</span>
+            </>
           )}
+          {phase === 'post_call' && <span>Call ended · {call?.contactName}</span>}
+          {phase === 'idle' && <span>Idle</span>}
         </span>
 
         {phase === 'in_call' && (
           <div className="ml-6 flex items-center gap-1">
-            <TopBtn icon={<MicOff className="w-4 h-4" />} label="Mute" />
+            <TopBtn
+              icon={<MicOff className="w-4 h-4" />}
+              label={muted ? 'Unmute' : 'Mute'}
+              onClick={toggleMute}
+              active={muted}
+            />
             <TopBtn icon={<Pause className="w-4 h-4" />} label="Hold" />
             <TopBtn icon={<PhoneForwarded className="w-4 h-4" />} label="Transfer" />
             <TopBtn icon={<StickyNote className="w-4 h-4" />} label="Note" />
@@ -309,11 +342,25 @@ export default function LiveCallScreen() {
   );
 }
 
-function TopBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
+function TopBtn({
+  icon,
+  label,
+  onClick,
+  active = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  active?: boolean;
+}) {
   return (
     <button
+      onClick={onClick}
       title={label}
-      className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/15 text-[11px] font-medium"
+      className={cn(
+        'flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-colors',
+        active ? 'bg-white text-[#1E9A80]' : 'hover:bg-white/15'
+      )}
     >
       {icon}
       <span className="hidden lg:inline">{label}</span>

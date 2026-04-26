@@ -23,7 +23,7 @@ export default function Softphone() {
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const device = useTwilioDevice();
-  const { phase, call, durationSec, fullScreen, setFullScreen, startCall, endCall } =
+  const { phase, call, durationSec, fullScreen, setFullScreen, startCall, endCall, muted, toggleMute } =
     useActiveCallCtx();
   const spend = useSpendLimit();
   const { agent: me } = useCurrentAgent();
@@ -51,6 +51,40 @@ export default function Softphone() {
     return <LiveCallScreen />;
   }
 
+  // Placing collapsed bar (calling but not yet answered) — amber + ringing dot.
+  if (phase === 'placing' && !fullScreen) {
+    return (
+      <div className="fixed bottom-5 right-5 z-[120] bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] w-[320px] overflow-hidden">
+        <div className="px-4 py-2.5 bg-[#F59E0B] text-white flex items-center gap-2">
+          <span className="relative w-2 h-2 inline-flex">
+            <span className="absolute inset-0 rounded-full bg-white animate-ping" />
+            <span className="relative w-2 h-2 rounded-full bg-white" />
+          </span>
+          <span className="text-[13px] font-semibold">Calling…</span>
+          <button
+            onClick={() => setFullScreen(true)}
+            className="ml-auto p-1 hover:bg-white/20 rounded"
+            title="Open full call screen"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="px-4 py-3">
+          <div className="text-[14px] font-semibold text-[#1A1A1A]">{call?.contactName}</div>
+          <div className="text-[12px] text-[#6B7280] tabular-nums">{call?.phone}</div>
+        </div>
+        <div className="px-3 py-2 border-t border-[#E5E7EB]">
+          <CallBtn
+            icon={<PhoneOff className="w-4 h-4" />}
+            label="Cancel"
+            onClick={endCall}
+            danger
+          />
+        </div>
+      </div>
+    );
+  }
+
   // Mid-call collapsed bar
   if (phase === 'in_call' && !fullScreen) {
     return (
@@ -71,7 +105,12 @@ export default function Softphone() {
           <div className="text-[12px] text-[#6B7280] tabular-nums">{call?.phone}</div>
         </div>
         <div className="px-3 py-2 border-t border-[#E5E7EB] grid grid-cols-4 gap-1">
-          <CallBtn icon={<MicOff className="w-4 h-4" />} label="Mute" />
+          <CallBtn
+            icon={muted ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+            label={muted ? 'Unmute' : 'Mute'}
+            onClick={toggleMute}
+            active={muted}
+          />
           <CallBtn icon={<Pause className="w-4 h-4" />} label="Hold" />
           <CallBtn icon={<PhoneForwarded className="w-4 h-4" />} label="Xfer" />
           <CallBtn
@@ -197,20 +236,22 @@ function CallBtn({
   label,
   onClick,
   danger,
+  active,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick?: () => void;
   danger?: boolean;
+  active?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       className={cn(
         'flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[10px] font-medium transition-colors',
-        danger
-          ? 'bg-[#FEF2F2] text-[#EF4444] hover:bg-[#FCA5A5]/40'
-          : 'text-[#6B7280] hover:bg-[#F3F3EE]'
+        active && 'bg-[#1E9A80] text-white',
+        !active && danger && 'bg-[#FEF2F2] text-[#EF4444] hover:bg-[#FCA5A5]/40',
+        !active && !danger && 'text-[#6B7280] hover:bg-[#F3F3EE]'
       )}
     >
       {icon}

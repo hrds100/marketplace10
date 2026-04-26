@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Lightbulb, HelpCircle, Activity, MessageSquare } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { MOCK_TRANSCRIPT, MOCK_COACH_EVENTS } from '../../data/mockTranscripts';
 import { useKillSwitch } from '../../hooks/useKillSwitch';
 import { useSmsV2 } from '../../store/SmsV2Store';
@@ -231,19 +232,32 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
         {events.length > 0 && !aiCoach && (
           <div className="mt-3 space-y-2">
             <div className="border-t border-[#E5E7EB] pt-3" />
-            {events.map((event) => {
+            {/* Newest tip on top — when the model fires a fresh suggestion
+                the agent shouldn't have to scroll past stale ones. The first
+                card also gets a subtle highlight pulse so it's obviously the
+                latest. */}
+            {[...events].reverse().map((event, idx) => {
               const meta = COACH_ICONS[event.kind];
+              const isLatest = idx === 0;
               return (
                 <div
                   key={event.id}
-                  className="p-3 rounded-lg border border-[#E5E7EB] bg-white"
+                  className={cn(
+                    'p-3 rounded-lg border bg-white transition-colors',
+                    isLatest ? 'border-[#1E9A80] bg-[#ECFDF5]/40' : 'border-[#E5E7EB]'
+                  )}
                   style={{ borderLeftColor: meta.colour, borderLeftWidth: 3 }}
                 >
                   <div
-                    className="text-[10px] font-bold tracking-wide mb-0.5"
+                    className="text-[10px] font-bold tracking-wide mb-0.5 flex items-center gap-2"
                     style={{ color: meta.colour }}
                   >
-                    {meta.label} · {event.title}
+                    <span>{meta.label}{event.title ? ` · ${event.title}` : ''}</span>
+                    {isLatest && (
+                      <span className="text-[9px] font-semibold uppercase bg-[#1E9A80] text-white px-1.5 py-0.5 rounded">
+                        latest
+                      </span>
+                    )}
                   </div>
                   <div className="text-[12px] text-[#1A1A1A] leading-snug">{event.body}</div>
                 </div>
