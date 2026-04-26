@@ -1,5 +1,48 @@
 # Changelog
 
+## 2026-04-28 — smsv2: coach prompt v6 (script-faithful, no acting notes)
+
+Hugo's directive after testing v5: "Replace the teleprompter system
+prompt. The current prompt is too clever, too improvisational, and not
+aligned with the actual NFSTAY sales script. It is producing unnatural
+lines like '[reasonable man] Fair enough...' instead of the direct
+script the reps already use successfully."
+
+Hard reset on prompt direction:
+- Model now follows the actual NFSTAY rep call script verbatim where
+  possible (OPEN → QUALIFY → PERMISSION TO PITCH → PITCH → RETURNS →
+  SMS CLOSE → FOLLOW-UP LOCK). Only deviates to answer a direct
+  question or handle an objection from the approved book.
+- Removed "Three Tens / Belfort / Straight Line Selling" framing.
+- Removed tonality markers from the prompt entirely. Acting notes
+  ([warm], [firm], [low], [reasonable man], etc.) are now banned —
+  the rep should not see or read them.
+- ONE primary line, no variants, ready to read aloud.
+- "Plain. Direct. Commercial. UK. Human. No fluff. No fancy reframes.
+  No motivational language. No tonal annotations. No meta commentary."
+
+Sampling tuned for compliance over creativity (per Hugo):
+- temperature 0.9 → 0.3
+- presence_penalty 0.85 → 0.3
+- frequency_penalty 0.5 → 0.2
+- max_completion_tokens 180 → 120 (1-3 short sentences)
+
+Defensive post-processor (belt & braces):
+- Strips any leading [bracket-label] from the model output (e.g.
+  "[reasonable man] Fair enough..." → "Fair enough...").
+- Strips bracket-labels at sentence starts mid-line.
+- Doesn't touch [Name]-style template placeholders.
+
+Contract test refreshed (9 assertions). Locks the v6 markers
+("CORE RULES", "Default to the script. Do not freestyle"), bans the
+old Belfort/Three-Tens framing from regressing, and exercises the
+bracket-strip on representative leak shapes.
+
+Migration applied via supabase db push. Edge fn redeployed.
+
+Next PR (TDD): real-time streaming of coach tokens + interim transcript
+chunk triggering. Even a perfect prompt feels slow without it.
+
 ## 2026-04-28 — smsv2: kill coach repetition + readable card UI (prompt v5)
 
 Hugo's 2026-04-28 audit: 4-of-4 coach cards in a row opened with
