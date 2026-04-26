@@ -89,6 +89,11 @@ export interface PipelineColumn {
   icon: string; // lucide name
   position: number; // 1-9 keyboard hint
   isDefaultOnTimeout?: boolean;
+  /** PR 18: stages with requires_followup = true (Nurturing, Callback,
+   *  Interested) prompt the agent for a follow-up datetime + note when
+   *  a contact is moved into them. The follow-up surfaces in the
+   *  persistent banner UI (PR 19) until done or dismissed. */
+  requiresFollowup?: boolean;
   automation: ColumnAutomation;
 }
 
