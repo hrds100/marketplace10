@@ -122,7 +122,12 @@ async function generateCoachSuggestion(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        // gpt-4.1-nano (Apr 2026): cheapest + fastest in the 4.1 family
+        // (~300-500ms typical for short outputs). Plenty smart for a
+        // 1-sentence teleprompter line, and the latency win matters far
+        // more than reasoning depth for live coaching. Hugo's directive
+        // 2026-04-26: "unless better option in 2026, use gpt-4.1-nano".
+        model: 'gpt-4.1-nano',
         temperature: 0.7,            // higher → less repetition across calls
         presence_penalty: 0.6,       // discourage reusing words from prior tips
         frequency_penalty: 0.4,
