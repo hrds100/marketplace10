@@ -16,16 +16,18 @@
 // once stage-coupled templates land).
 
 import { useEffect, useMemo, useState } from 'react';
-import { Send, MessageSquare, X, Check } from 'lucide-react';
+import { Send, MessageSquare, X, Check, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
+import { useContactPersistence } from '../../hooks/useContactPersistence';
 import type { Contact } from '../../types';
 
 interface Template {
   id: string;
   name: string;
   body_md: string;
+  move_to_stage_id: string | null;
 }
 
 interface SmsSendInvoke {
@@ -60,8 +62,10 @@ export default function ContactSmsModal({
   onClose,
   agentFirstName,
 }: Props) {
-  const { pushToast } = useSmsV2();
+  const { pushToast, columns, patchContact } = useSmsV2();
+  const persist = useContactPersistence();
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [loadingTpls, setLoadingTpls] = useState(true);
@@ -76,7 +80,7 @@ export default function ContactSmsModal({
         // alphabetical within each — frontend doesn't need to split.
         const { data } = await (supabase as unknown as TemplatesTable)
           .from('wk_sms_templates')
-          .select('id, name, body_md')
+          .select('id, name, body_md, move_to_stage_id')
           .order('name', { ascending: true });
         if (!cancelled && data) setTemplates(data);
       } catch {
@@ -94,6 +98,7 @@ export default function ContactSmsModal({
   useEffect(() => {
     if (contact) {
       setBody('');
+      setSelectedTemplateId('');
       setRecentSendCount(0);
       setShowSentBanner(false);
     }
@@ -104,8 +109,22 @@ export default function ContactSmsModal({
     [contact]
   );
 
+  const selectedTemplate = useMemo(
+    () => templates.find((t) => t.id === selectedTemplateId) ?? null,
+    [templates, selectedTemplateId]
+  );
+
+  const targetStage = useMemo(() => {
+    if (!selectedTemplate?.move_to_stage_id) return null;
+    return columns.find((c) => c.id === selectedTemplate.move_to_stage_id) ?? null;
+  }, [selectedTemplate, columns]);
+
   const applyTemplate = (id: string) => {
-    if (!id) return;
+    setSelectedTemplateId(id);
+    if (!id) {
+      setBody('');
+      return;
+    }
     const tpl = templates.find((t) => t.id === id);
     if (!tpl) return;
     const expanded = tpl.body_md
@@ -132,10 +151,26 @@ export default function ContactSmsModal({
         return;
       }
       pushToast('SMS sent', 'success');
+
+      // Phase 4: stage-coupled templates. Move contact to template's
+      // target stage (if set) AFTER successful send.
+      if (selectedTemplate?.move_to_stage_id && targetStage && contact.id) {
+        patchContact(contact.id, { pipelineColumnId: targetStage.id });
+        try {
+          await persist.moveToColumn(contact.id, targetStage.id);
+          pushToast(`Moved to ${targetStage.name}`, 'success');
+        } catch (e) {
+          pushToast(
+            `Stage move failed: ${e instanceof Error ? e.message : 'unknown'}`,
+            'error'
+          );
+        }
+      }
+
       setBody('');
+      setSelectedTemplateId('');
       setRecentSendCount((n) => n + 1);
       setShowSentBanner(true);
-      // Auto-dismiss the banner after 4s so the user can fire another.
       setTimeout(() => setShowSentBanner(false), 4000);
     } catch (e) {
       pushToast(
@@ -195,7 +230,7 @@ export default function ContactSmsModal({
           )}
 
           <select
-            value=""
+            value={selectedTemplateId}
             onChange={(e) => applyTemplate(e.target.value)}
             disabled={loadingTpls || templates.length === 0}
             className="w-full px-2 py-1.5 text-[12px] border border-[#E5E5E5] rounded-[10px] bg-white disabled:bg-[#F9FAFB] disabled:text-[#9CA3AF]"
@@ -210,9 +245,19 @@ export default function ContactSmsModal({
             {templates.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
+                {t.move_to_stage_id ? ' →' : ''}
               </option>
             ))}
           </select>
+          {targetStage && (
+            <div className="flex items-center gap-1 text-[11px] text-[#1E9A80] bg-[#ECFDF5] px-2 py-1 rounded-[6px]">
+              <ArrowRight className="w-3 h-3" />
+              <span>
+                Send will move contact to:{' '}
+                <span className="font-semibold">{targetStage.name}</span>
+              </span>
+            </div>
+          )}
 
           <textarea
             value={body}
