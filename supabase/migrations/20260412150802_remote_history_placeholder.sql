@@ -1,0 +1,8 @@
+-- Placeholder for migration 20260412150802 (applied directly to the remote
+-- database — likely via Supabase dashboard SQL editor or supabase db query.
+-- This empty file lets the supabase CLI's filename parser see a local match
+-- for the remote history entry, so 'db push' and migration repair don't
+-- complain about 'remote versions not found in local migrations directory'.
+--
+-- DO NOT add SQL here. To deploy a NEW migration, create a new file with
+-- a timestamp dated after the latest remote entry.
