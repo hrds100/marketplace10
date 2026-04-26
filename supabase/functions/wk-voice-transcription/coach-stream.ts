@@ -180,3 +180,33 @@ export function retrieveFacts(
   }
   return out;
 }
+
+// ----------------------------------------------------------------------------
+// Opener n-gram ban list — extracts the first 3 words of each prior coach
+// card (lowercased, deduped). The edge fn passes this in the user message
+// as a "DO NOT START WITH" list so the model can't open with the same
+// 3-word opener as a recent card.
+//
+// PR #575 (v8) — anti-repetition tightened from "first 5 words" rule in
+// the prompt to an explicit ban list constructed from the actual last 5
+// cards. More precise than the prompt's verbal rule.
+// ----------------------------------------------------------------------------
+
+export function buildOpenerBanList(
+  priorCards: (string | null | undefined)[]
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const card of priorCards) {
+    if (typeof card !== 'string') continue;
+    const normalised = card.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!normalised) continue;
+    const words = normalised.split(' ').slice(0, 3);
+    if (words.length < 2) continue; // too short to form a useful 3-gram
+    const key = words.join(' ');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
+  }
+  return out;
+}

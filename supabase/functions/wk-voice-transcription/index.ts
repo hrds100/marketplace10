@@ -26,6 +26,7 @@ import {
   parseSseChunk,
   createThrottledWriter,
   retrieveFacts,
+  buildOpenerBanList,
   type CoachFact,
 } from './coach-stream.ts';
 
@@ -129,9 +130,14 @@ async function generateCoachSuggestion(
     'VOICE',
     '- UK English. Plain, commercial, natural — like a real human salesperson, not a coach, therapist, or copywriter.',
     '- Short lines: 1–3 short sentences. Up to ~50 words for explanations, fewer for everything else.',
-    '- Use light fillers (right, yeah, fair enough, no worries) only when they earn their place. Never use the same opener twice in a row.',
     '- If the caller is short or blunt, match their energy. Don\'t over-warm.',
     '- Every line should move the conversation forward.',
+    '',
+    'FILLER CADENCE',
+    '- Light fillers — right / yeah / fair enough / no worries / look / listen / alright / makes sense / ok — should appear in roughly 1 in 4 lines, no more.',
+    '- Never two filler-led lines in a row.',
+    '- Vary the vocabulary across the call. Don\'t lean on the same one twice in a row.',
+    '- A filler must be doing work (acknowledgement, soft pivot). If it\'s just there for warmth, drop it.',
     '',
     'ABSOLUTE BANS',
     '- No style labels or acting notes ([warm], [firm], [low], [reasonable man], [you could say], etc.).',
@@ -146,7 +152,10 @@ async function generateCoachSuggestion(
   ].join('\n');
 
   const DEFAULT_SCRIPT_PROMPT = [
-    'You follow the NFSTAY call script. Default to script wording. Only deviate when the caller asks a direct factual question or raises an objection.',
+    'You follow the NFSTAY call script. Default to script INTENT, paraphrase fresh each time. Only deviate when the caller asks a direct factual question or raises an objection.',
+    '',
+    'USE FRESH WORDING',
+    'You\'re on a live call with a real human. Repeating the exact same phrasing twice in a call sounds canned. Use the example phrasings below as anchors, then pick a fresh wording each time you hit the same stage / branch. Never copy a phrasing word-for-word from your last 5 cards (see ANTI-REPETITION).',
     '',
     'OPEN-ENDED DEFAULT',
     'Most lines end with a question or invitation that keeps the conversation moving:',
@@ -159,6 +168,12 @@ async function generateCoachSuggestion(
     '',
     'CALL STAGES (always know which one you\'re in)',
     'OPEN → QUALIFY → PERMISSION TO PITCH → PITCH → RETURNS → SMS CLOSE → FOLLOW-UP LOCK',
+    '',
+    'EARNED-PITCH RULE',
+    'Only ask permission-to-pitch ("would it be okay if I explain quickly how our deals work?") when EITHER:',
+    '1. The caller has confirmed interest in deals ("yeah I\'m looking", "tell me about it", etc.), OR',
+    '2. The caller has given more than a one-word answer to QUALIFY (e.g. "I\'ve done a couple of buy-to-lets", not just "yeah").',
+    'Otherwise: ask another open question that gets them talking. Don\'t burn the permission-to-pitch on a cold caller.',
     '',
     'EARNED-CLOSE RULE',
     'Fire the SMS-close + tomorrow lock ONLY when ALL of these are true:',
@@ -174,30 +189,61 @@ async function generateCoachSuggestion(
     'If the caller pushes back, use the matching approved answer from the KNOWLEDGE BASE. Then return to the next open-ended question — NOT immediately to a close (see EARNED-CLOSE RULE).',
     '',
     'ANTI-REPETITION',
-    'The user message includes "YOUR LAST FEW COACH CARDS". Don\'t ship a card whose opening words match a recent one. Move forward through the script — don\'t loop the same line.',
+    'The user message includes "YOUR LAST FEW COACH CARDS" and a "DO NOT START WITH" list of opener n-grams from your last 5 cards. Don\'t ship a card whose opening 3 words match any banned n-gram. Move forward through the script — don\'t loop the same line.',
     '',
-    'DEFAULT SCRIPT (use these phrasings almost verbatim where the moment fits)',
+    'DEFAULT SCRIPT — INTENT + 2-3 EXAMPLE PHRASINGS (paraphrase fresh each time)',
     '',
     'OPEN',
-    'Hey, is that [Name]? It\'s [Your Name] from NFSTAY — I saw you in the property WhatsApp group. Quick one, are you looking at Airbnb deals at the moment, or just watching the market?',
+    'INTENT: Confirm the caller is the right person + introduce yourself + reference the WhatsApp-group source + ask if they\'re actively looking at deals or just watching.',
+    'EXAMPLES (anchors — paraphrase, do not read verbatim):',
+    '- "Hey, is that [Name]? It\'s [Your Name] from NFSTAY — saw you in the property WhatsApp group. Are you actively looking at deals at the moment, or more keeping an eye?"',
+    '- "[Name]? [Your Name] from NFSTAY here, I noticed you in our property WhatsApp group. Quick one — are you investing right now or just watching the market?"',
     '',
     'QUALIFY',
-    'Are you currently running Airbnbs and investing already, or just exploring?',
+    'INTENT: Find out whether they\'re already running short-lets / Airbnbs or new to it. Don\'t make them feel quizzed.',
+    'EXAMPLES:',
+    '- "Are you already running Airbnbs yourself, or is this newer territory?"',
+    '- "Are you investing already, or more in research mode at the moment?"',
+    '- "Have you done short-let stuff before, or first proper look?"',
+    '',
+    'JUST EXPLORING (when caller says "just exploring" / "just looking" / "just keeping an eye")',
+    'Don\'t permission-pitch yet. Pick ONE of these angles, NEVER the same shape twice in a row across the call:',
+    '- WARM CURIOSITY — ask what triggered them to even pick up the phone today (e.g. "fair — what made you join the WhatsApp group in the first place?").',
+    '- LIGHT CONTEXT — most of our partners started exactly there, share that briefly, no pitch (e.g. "makes sense, most of our partners started right where you are now — anything specific catching your eye lately?").',
+    '- SOCIAL PROOF (light, no numbers) — mention the typical profile of who\'s already in (e.g. "fair enough — most people in are working professionals with a bit of capital sitting still, sounds familiar?").',
+    '- LOW-PRESSURE PERMISSION — happy to walk through one as a reference point (e.g. "no worries — happy to keep it quick, want me to walk through one deal so you\'ve got a reference, or save it for next time?").',
+    '- EMPATHY BRIDGE — ask what would have to be true for them to actually move (e.g. "fair, market\'s busy. What would have to line up for you to actually move on something?").',
     '',
     'PERMISSION TO PITCH',
-    'Great. Would it be okay if I explain quickly how our deals work?',
+    'INTENT: Quick, low-pressure check before launching the JV explanation. Only fire when the EARNED-PITCH RULE is met.',
+    'EXAMPLES:',
+    '- "Mind if I run through how we structure our deals — two minutes max?"',
+    '- "Quick one — alright if I show you what we\'re running at the moment?"',
+    '- "Fair if I walk you through one quickly so you\'ve got something concrete?"',
     '',
     'PITCH',
-    'We run Airbnb properties as Joint Venture Partnerships — partners pool money, we run the property, you take a monthly share. Right now we\'ve got a 15-bed in Liverpool, entry from £500.',
+    'INTENT: Explain the JV structure + name the flagship deal + entry minimum. Quote numbers ONLY from the KNOWLEDGE BASE — do not invent or substitute. Use the deal_structure / flagship_deal / entry_minimum facts; never hardcode numbers in your line.',
+    'PARAPHRASE: a sentence about the JV ("we run Airbnb properties as joint ventures, partners pool in, we run the property, you take a monthly share"), then a sentence pulling the flagship deal + entry from KB facts, then a soft check-in.',
     '',
     'RETURNS',
-    'Income comes in monthly via the platform, costs covered, profit distributed by participation. You can track your holdings and payouts on the platform, and exit by selling allocations subject to demand. Does that make sense?',
+    'INTENT: Explain monthly cash flow + how partners track on the platform + exit. Reference KB facts (payment_cadence, exit_path, monthly_yield) — don\'t invent percentages.',
+    'EXAMPLES (anchors):',
+    '- "Income comes in monthly via the platform, costs covered, the rest split by participation. You can see holdings and payouts on the platform, and exit by selling allocations subject to demand. Make sense?"',
+    '- "Pretty straightforward — monthly distribution through the platform, all the costs are netted off, and you can exit by listing your allocation when you want. Any of that prompt anything?"',
     '',
     'SMS CLOSE',
-    'To keep it simple and not run all the numbers on this call, would it be okay if I send you the full breakdown?',
+    'INTENT: Frame the breakdown as a courtesy, not pressure. Only fire when the EARNED-CLOSE RULE is met.',
+    'EXAMPLES:',
+    '- "Easiest thing — want me to drop the full breakdown over so you can sit with the numbers properly?"',
+    '- "Mind if I send the full numbers across so you\'ve got them in writing?"',
+    '- "Want me to fire the breakdown over by text so you\'ve got it to look at?"',
     '',
     'FOLLOW-UP LOCK',
-    'After you check it, I\'ll give you a quick call tomorrow. Will tomorrow work?',
+    'INTENT: Lock tomorrow without being pushy.',
+    'EXAMPLES:',
+    '- "After you\'ve had a look, I\'ll give you a quick call tomorrow to talk through it. Will tomorrow work?"',
+    '- "Once it lands, mind if I ring you tomorrow to talk through it — morning or afternoon?"',
+    '- "I\'ll call you tomorrow to walk through anything that\'s come up, what time suits?"',
     '',
     'OUTPUT',
     'Return exactly one read-aloud line for the next thing the rep should say.',
@@ -236,13 +282,21 @@ async function generateCoachSuggestion(
           .join('\n');
 
   // Last few coach cards passed back to the model so it doesn't echo
-  // openers / structures it just produced. Without this, the model has
-  // no memory across calls — Hugo 2026-04-28: "Yeah fair enough" was
-  // appearing on 4 of 4 cards in a row.
+  // openers / structures it just produced. v8 (PR #575): expanded from
+  // 3 to 5 cards for better coverage of repeated openers.
   const priorCardsBlock =
     priorCards.length === 0
       ? '(none yet — this is your first card on this call)'
       : priorCards.map((c, i) => `${i + 1}. "${c}"`).join('\n');
+
+  // v8: explicit 3-word opener n-gram ban list, derived from the last 5
+  // cards. Beats the prompt's verbal "first 5 words" rule because the
+  // banned strings are concrete, not abstract.
+  const banList = buildOpenerBanList(priorCards);
+  const banListBlock =
+    banList.length === 0
+      ? '(no openers to avoid yet)'
+      : banList.map((b) => `- "${b}"`).join('\n');
 
   const userMsg = [
     'Recent conversation (most recent line at bottom):',
@@ -252,12 +306,16 @@ async function generateCoachSuggestion(
     'Don\'t ship a card whose opening matches a recent one. Move forward through the script — don\'t loop the same line.',
     priorCardsBlock,
     '',
+    '=== DO NOT START WITH — banned opener n-grams (first 3 words from your last 5 cards) ===',
+    'Your next card MUST NOT begin with any of these phrases. Pick a different opener.',
+    banListBlock,
+    '',
     '=== POSSIBLY RELEVANT FACTS (matched to the caller\'s last utterance) ===',
     relevantFactsHint,
     '',
     `Caller just said: "${latestUtterance}"`,
     '',
-    'Return ONE script-faithful read-aloud line for the rep to say next. Plain UK English. No labels. No quotation marks. No acting notes. No variants. Just the line.',
+    'Return ONE script-faithful read-aloud line for the rep to say next. Plain UK English. No labels. No quotation marks. No acting notes. No variants. Just the line. Do NOT start with any banned opener n-gram listed above.',
   ].join('\n');
 
   try {
@@ -301,16 +359,21 @@ async function streamCoachInternal(args: {
     },
     body: JSON.stringify({
       model,
-      // Hugo 2026-04-28: "this job needs compliance more than
-      // creativity". Low temp + penalties keep the model on the rep
-      // script. User message still passes the last 3 cards for
-      // anti-repetition.
-      temperature: 0.3,
+      // v8 (PR #575): bumped temperature 0.3 → 0.55. v6/v7 was over-
+      // corrected for instruction-following at the cost of variety; the
+      // post-processor + style-prompt bans now make 0.55 safe, and the
+      // explicit n-gram ban list (user message) catches duplicates that
+      // higher temp could surface.
+      temperature: 0.55,
       presence_penalty: 0.3,
       frequency_penalty: 0.2,
       // GPT-5 family rejects `max_tokens` — use max_completion_tokens.
       max_completion_tokens: 120,
       stream: true,
+      // v8: tag this prompt prefix so OpenAI prompt-caching buckets
+      // calls with the same three system messages together. Cache TTL
+      // is ~5 min; back-to-back calls in a session reuse the prefix.
+      prompt_cache_key: 'nfstay-coach-v8',
       messages: [
         ...systemMessages
           .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
@@ -533,7 +596,11 @@ serve(async (req: Request) => {
               p_call_id: call.id,
               p_gen_id: generationId,
               p_force: isFinal,
-              p_min_age_ms: 400,
+              // v8 (PR #575): debounce dropped 400 → 250ms. Generation
+              // kicks off ~150ms sooner per caller turn at the cost of
+              // ~1.5-2× OpenAI calls per utterance. Existing supersede
+              // logic absorbs the extra cancellations cleanly.
+              p_min_age_ms: 250,
             }
           );
           if (lockErr) {
@@ -573,7 +640,9 @@ serve(async (req: Request) => {
               .eq('call_id', call.id)
               .eq('status', 'final')
               .order('ts', { ascending: false })
-              .limit(3),
+              // v8 (PR #575): expanded 3 → 5 to give buildOpenerBanList
+              // and the prompt's anti-repetition rule more material.
+              .limit(5),
             supa
               .from('wk_coach_facts')
               .select('key, label, value, keywords, sort_order')

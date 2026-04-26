@@ -9,6 +9,7 @@ import {
   parseSseChunk,
   createThrottledWriter,
   retrieveFacts,
+  buildOpenerBanList,
   type CoachFact,
 } from '../../../../supabase/functions/wk-voice-transcription/coach-stream';
 
@@ -216,5 +217,56 @@ describe('retrieveFacts — keyword-matched knowledge base lookup', () => {
 
   it('handles undefined / null utterance defensively', () => {
     expect(retrieveFacts(undefined as unknown as string, facts)).toEqual([]);
+  });
+});
+
+describe('buildOpenerBanList — first-3-words extracted from prior cards', () => {
+  it('returns an empty list for no prior cards', () => {
+    expect(buildOpenerBanList([])).toEqual([]);
+  });
+
+  it('extracts the first 3 words of each card, lowercased', () => {
+    const out = buildOpenerBanList([
+      'Yeah fair enough — the timing matters.',
+      'Right, makes sense — what kind of returns?',
+    ]);
+    expect(out).toContain('yeah fair enough');
+    expect(out).toContain('right, makes sense');
+  });
+
+  it('deduplicates identical openers (last 5 might overlap)', () => {
+    const out = buildOpenerBanList([
+      'No worries — we can keep it short.',
+      'No worries — happy to keep it short.',
+    ]);
+    expect(out).toEqual(['no worries —']);
+  });
+
+  it('handles short cards (1-2 words) by joining what is available', () => {
+    const out = buildOpenerBanList(['Sure thing.', 'Ok.', 'Right okay']);
+    expect(out).toContain('sure thing.');
+    expect(out).toContain('right okay');
+    // 1-word cards are too short to form a meaningful 3-gram — skipped.
+    expect(out).not.toContain('ok.');
+  });
+
+  it('skips empty / whitespace-only cards', () => {
+    const out = buildOpenerBanList(['', '   ', 'Real card here mate.']);
+    expect(out).toEqual(['real card here']);
+  });
+
+  it('strips punctuation that would defeat startsWith matching at the model side', () => {
+    // Light normalisation: collapse repeated whitespace, lowercase.
+    const out = buildOpenerBanList(['  Multiple   spaces here  .']);
+    expect(out).toEqual(['multiple spaces here']);
+  });
+
+  it('handles non-string inputs defensively', () => {
+    const out = buildOpenerBanList([
+      null as unknown as string,
+      undefined as unknown as string,
+      'Real card here please.',
+    ]);
+    expect(out).toEqual(['real card here']);
   });
 });
