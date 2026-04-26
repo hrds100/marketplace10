@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { useContactPersistence } from '../../hooks/useContactPersistence';
+import StageSelector from '../shared/StageSelector';
 
 interface Template {
   id: string;
@@ -58,7 +59,8 @@ export default function MidCallSmsSender({
   contactPhone,
   agentFirstName,
 }: Props) {
-  const { pushToast, columns, patchContact } = useSmsV2();
+  const { pushToast, columns, patchContact, contacts } = useSmsV2();
+  const currentContact = contacts.find((c) => c.id === contactId);
   const persist = useContactPersistence();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
@@ -165,11 +167,21 @@ export default function MidCallSmsSender({
 
   return (
     <div className="border border-[#E5E7EB] rounded-xl p-2.5 bg-white">
-      <div className="flex items-center gap-1.5 mb-2">
+      {/* Header — SMS title + inline stage selector. PR E (Hugo
+          2026-04-30): stage moves are co-located with SMS sends so the
+          rep sees them as one action ("send + advance"). */}
+      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
         <MessageSquare className="w-3.5 h-3.5 text-[#1E9A80]" />
         <span className="text-[11px] font-bold uppercase tracking-wide text-[#1A1A1A]">
           Send SMS to {firstName || contactName}
         </span>
+        <div className="ml-auto">
+          <StageSelector
+            value={currentContact?.pipelineColumnId}
+            onChange={(col) => patchContact(contactId, { pipelineColumnId: col })}
+            size="xs"
+          />
+        </div>
       </div>
       <select
         value={selectedTemplateId}
