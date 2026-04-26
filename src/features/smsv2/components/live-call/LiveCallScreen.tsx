@@ -18,7 +18,7 @@ import {
 import { useActiveCallCtx } from './ActiveCallContext';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import CallScriptPane from './CallScriptPane';
-import FactsDrawer from './FactsDrawer';
+import TerminologyPane from './TerminologyPane';
 import MidCallSmsSender from './MidCallSmsSender';
 import ApplyAutomationButton from './ApplyAutomationButton';
 import ContactMetaCompact from './ContactMetaCompact';
@@ -269,7 +269,7 @@ export default function LiveCallScreen() {
 
         {/* COL 4 — glossary cards (click-to-expand, item G) */}
         <ResizablePanel defaultSize={20} minSize={14} className="overflow-hidden">
-          <FactsDrawer />
+          <TerminologyPane />
         </ResizablePanel>
       </ResizablePanelGroup>
 
