@@ -241,15 +241,10 @@ async function generateCoachSuggestion(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // gpt-4.1-mini (Apr 2026 upgrade): nano was producing repetitive
-        // close-driven output even on light conversational utterances —
-        // Hugo's 2026-04-26 live test flagged "AI is dumb, every line is
-        // 'send breakdown, tomorrow morning or afternoon'". Mini gives
-        // noticeably better stage-awareness and variation at ~1.5-2x the
-        // latency (~600-900ms vs ~300-500ms for nano). Acceptable trade
-        // for a teleprompter — the agent reads each line, so a slight
-        // delay doesn't break the flow.
-        model: 'gpt-4.1-mini',
+        // gpt-5.4-mini (Hugo's directive 2026-04-27). Newer family with
+        // better stage-awareness + variation than gpt-4.1-mini, while
+        // staying mini-tier for latency.
+        model: 'gpt-5.4-mini',
         temperature: 0.9,            // higher → less repetition / more colour
         presence_penalty: 0.85,      // strongly discourage reusing words from prior tips
         frequency_penalty: 0.5,
@@ -261,7 +256,12 @@ async function generateCoachSuggestion(
       }),
     });
     if (!resp.ok) {
-      console.warn('[wk-voice-transcription] openai chat failed', resp.status);
+      // Include the response body so a wrong model name (e.g. typo, model
+      // not yet GA on this account) surfaces in edge fn logs instead of
+      // silently producing zero coach cards.
+      let errBody = '';
+      try { errBody = await resp.text(); } catch { /* ignore */ }
+      console.warn('[wk-voice-transcription] openai chat failed', resp.status, errBody.slice(0, 500));
       return null;
     }
     const j = await resp.json();
