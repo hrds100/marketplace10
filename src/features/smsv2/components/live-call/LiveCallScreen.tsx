@@ -106,6 +106,15 @@ export default function LiveCallScreen() {
             <TopBtn icon={<Pause className="w-4 h-4" />} label="Hold" />
             <TopBtn icon={<PhoneForwarded className="w-4 h-4" />} label="Transfer" />
             <TopBtn icon={<StickyNote className="w-4 h-4" />} label="Note" />
+            {muted && (
+              // Self-test hint: when Hugo calls his own phone in the same
+              // room and mutes the browser, his phone's OWN microphone keeps
+              // picking up ambient sound and sending it back. Mute can only
+              // silence the browser side. Headphones eliminate the loop.
+              <span className="ml-2 text-[11px] text-white/80">
+                Mic off · your phone's mic may still hear the room
+              </span>
+            )}
           </div>
         )}
 
