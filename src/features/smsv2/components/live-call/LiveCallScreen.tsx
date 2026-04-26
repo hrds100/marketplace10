@@ -21,6 +21,7 @@ import LiveTranscriptPane from './LiveTranscriptPane';
 import CallScriptPane from './CallScriptPane';
 import TerminologyPane from './TerminologyPane';
 import MidCallSmsSender from './MidCallSmsSender';
+import ApplyAutomationButton from './ApplyAutomationButton';
 import PostCallPanel from './PostCallPanel';
 import StageSelector from '../shared/StageSelector';
 import EditContactModal from '../contacts/EditContactModal';
@@ -205,11 +206,16 @@ export default function LiveCallScreen() {
             <div className="text-[11px] text-[#9CA3AF] mt-0.5">
               Added {formatRelativeTime(contact.createdAt)}
             </div>
-            <div className="mt-2">
+            <div className="mt-2 space-y-2">
               <StageSelector
                 value={contact.pipelineColumnId}
                 onChange={(col) => store.patchContact(contact.id, { pipelineColumnId: col })}
                 size="sm"
+              />
+              <ApplyAutomationButton
+                callId={call?.callId ?? null}
+                contactId={contact.id}
+                columnId={contact.pipelineColumnId}
               />
             </div>
           </div>
