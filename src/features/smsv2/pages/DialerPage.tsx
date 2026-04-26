@@ -69,17 +69,34 @@ export default function DialerPage() {
 
   const upcoming = contacts.slice(0, 5);
 
+  const isUuid = (s: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
   const handleStart = async () => {
     setRunning(true);
     // Looks like a UUID? Then it's likely a real wk_dialer_campaigns row —
     // call the edge function. Mock campaign IDs (e.g. 'campaign-1') just
     // toggle the visual `running` state and rely on the local store.
-    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      activeId
-    );
-    if (!looksLikeUuid) {
+    if (!isUuid(activeId)) {
       pushToast('Mock campaign — wire a real campaign UUID to dial', 'info');
       return;
+    }
+    // PR 23: ensure the campaign is active before firing the dialer.
+    // Pause/Stop flip is_active=false; Start must flip it back.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: activateErr } = await (
+        supabase.from('wk_dialer_campaigns' as any) as any
+      )
+        .update({ is_active: true })
+        .eq('id', activeId);
+      if (activateErr) {
+        pushToast(`Couldn't activate campaign: ${activateErr.message}`, 'error');
+        setRunning(false);
+        return;
+      }
+    } catch {
+      /* ignore — wk-dialer-start will surface a clearer error */
     }
     try {
       const { data, error } = await (
@@ -114,6 +131,65 @@ export default function DialerPage() {
         'error'
       );
       setRunning(false);
+    }
+  };
+
+  // PR 23: Pause = flip is_active=false on the server. New dial calls
+  // refuse until the agent presses Start (which flips it back).
+  const handlePause = async () => {
+    setRunning(false);
+    if (!isUuid(activeId)) return;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('wk_dialer_campaigns' as any) as any)
+        .update({ is_active: false })
+        .eq('id', activeId);
+      if (error) {
+        pushToast(`Pause failed: ${error.message}`, 'error');
+        return;
+      }
+      pushToast('Campaign paused', 'info');
+    } catch (e) {
+      pushToast(
+        `Pause crashed: ${e instanceof Error ? e.message : 'unknown'}`,
+        'error'
+      );
+    }
+  };
+
+  // PR 23: Stop = Pause + revert in-flight queue rows so cancelled-mid
+  // -ring contacts re-enter the pool on the next Start.
+  const handleStop = async () => {
+    setRunning(false);
+    if (!isUuid(activeId)) return;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sp = supabase as any;
+      const { error: pauseErr } = await sp
+        .from('wk_dialer_campaigns')
+        .update({ is_active: false })
+        .eq('id', activeId);
+      if (pauseErr) {
+        pushToast(`Stop failed: ${pauseErr.message}`, 'error');
+        return;
+      }
+      const { data, error: rpcErr } = await sp.rpc('wk_dialer_revert_inflight', {
+        p_campaign_id: activeId,
+      });
+      if (rpcErr) {
+        pushToast(`Stop reverted partial: ${rpcErr.message}`, 'error');
+        return;
+      }
+      const reverted = typeof data === 'number' ? data : 0;
+      pushToast(
+        `Campaign stopped${reverted > 0 ? ` · ${reverted} re-queued` : ''}`,
+        'info'
+      );
+    } catch (e) {
+      pushToast(
+        `Stop crashed: ${e instanceof Error ? e.message : 'unknown'}`,
+        'error'
+      );
     }
   };
 
@@ -210,12 +286,15 @@ export default function DialerPage() {
                   <Play className="w-3.5 h-3.5" /> Start
                 </button>
                 <button
-                  onClick={() => setRunning(false)}
+                  onClick={() => void handlePause()}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12px] font-medium border border-[#E5E7EB] text-[#1A1A1A] hover:bg-[#F3F3EE]"
                 >
                   <Pause className="w-3.5 h-3.5" /> Pause
                 </button>
-                <button className="flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12px] font-medium border border-[#E5E7EB] text-[#EF4444] hover:bg-[#FEF2F2]">
+                <button
+                  onClick={() => void handleStop()}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12px] font-medium border border-[#E5E7EB] text-[#EF4444] hover:bg-[#FEF2F2]"
+                >
                   <Square className="w-3.5 h-3.5" /> Stop
                 </button>
               </div>
