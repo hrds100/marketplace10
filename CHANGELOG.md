@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-04-26 — smsv2: 4-column live-call layout (item B2)
+
+The live-call screen is now split into 4 resizable columns. Transcript
+and coach are split vertically inside col 2 with a draggable handle. The
+old right-side SMS / past-calls / activity panel is replaced by the
+glossary; the SMS thread is reachable via /smsv2/inbox and past calls
+via /smsv2/calls. Item F adds the past-call deep-link.
+
+- COL 1 — contact + KV (pipeline, last contact, tags, deal value, custom
+  fields) + sticky notes. Mid-call SMS sender lands here in item D.
+- COL 2 — transcript (smaller, default 40%) + AI coach (larger, default
+  60%) split with a vertical resize handle. Coach card text scales with
+  body length: <60 chars = 15px, <120 = 16px, <200 = 17px, longer = 18px,
+  so the longer breakdown lines (caller refused SMS path from item A) are
+  legible. Coach badge label changed: "💡 SAY" → "💡 YOU COULD SAY"
+  (Hugo's note: the agent was reading "Say:" out loud).
+- COL 3 — `CallScriptPane` reads the `wk_call_scripts` row flagged
+  is_default. Renders a small Markdown subset (#/##/### headings, lists,
+  bold/italic/code, blockquotes, hr). `{{first_name}}` and
+  `{{agent_first_name}}` are substituted with the live values.
+- COL 4 — `TerminologyPane`: search + click-to-expand glossary cards.
+  Reads `wk_terminologies` (active rows only) with realtime subscription
+  so admin edits in Settings appear without reload.
+
+`autoSaveId` bumped from `smsv2-live-call-layout` → `…-v2` so old 3-col
+widths don't bleed in. Min sizes 14/26/14/14 keep panes usable on narrow
+viewports.
+
+Coach text scaling uses tailwind utility classes only — no inline style.
+Markdown is rendered without an external dep (admin-controlled content).
+
 ## 2026-04-26 — smsv2: Settings UI for call script + glossary (item G)
 
 Hugo can now self-serve both the live-call call script and the agent
