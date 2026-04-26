@@ -198,6 +198,9 @@ verify_jwt = false
 [functions.wk-voice-recording]
 verify_jwt = false
 
+[functions.wk-voice-transcription]
+verify_jwt = false
+
 [functions.wk-jobs-worker]
 verify_jwt = false
 

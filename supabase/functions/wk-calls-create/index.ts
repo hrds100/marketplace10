@@ -184,12 +184,11 @@ serve(async (req: Request) => {
       return jsonResponse(500, { error: 'Failed to mint call row' });
     }
 
-    // Pre-warm wk-ai-live-coach so its pod is hot by the time Twilio opens
-    // the Media Stream WebSocket ~2s later. Cold-start on Supabase Edge
-    // Functions can be 3-7s, which blows Twilio's ~5s WS upgrade budget
-    // and triggers error 31920. Fire-and-forget — never blocks dialing.
+    // Pre-warm wk-voice-transcription so its pod is hot by the time Twilio
+    // fires the first transcription-content webhook. Fire-and-forget —
+    // never blocks dialing.
     if (aiCoachEnabled) {
-      const warmupUrl = `${SUPABASE_URL}/functions/v1/wk-ai-live-coach?warmup=1`;
+      const warmupUrl = `${SUPABASE_URL}/functions/v1/wk-voice-transcription?warmup=1`;
       void fetch(warmupUrl, { method: 'GET' }).catch(() => null);
     }
 
