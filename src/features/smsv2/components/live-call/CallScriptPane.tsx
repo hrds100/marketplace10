@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FileText, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAgentScript } from '../../hooks/useAgentScript';
+import { parseBlocks, type Block } from '../../lib/scriptParser';
 
 interface Props {
   /** Active call id — used to scope read-tracking state in localStorage. */
@@ -211,72 +212,9 @@ function ClickableBlock({
   );
 }
 
-interface Heading { type: 'h'; level: 1 | 2 | 3; text: string; }
-interface Paragraph { type: 'p'; text: string; }
-interface List { type: 'ul'; items: string[]; }
-interface Quote { type: 'q'; text: string; }
-interface HRule { type: 'hr'; }
-type Block = Heading | Paragraph | List | Quote | HRule;
-
-function parseBlocks(body: string): Block[] {
-  const lines = body.split(/\r?\n/);
-  const blocks: Block[] = [];
-  let buf: string[] = [];
-  let listBuf: string[] = [];
-
-  const flushPara = () => {
-    if (buf.length) {
-      blocks.push({ type: 'p', text: buf.join(' ') });
-      buf = [];
-    }
-  };
-  const flushList = () => {
-    if (listBuf.length) {
-      blocks.push({ type: 'ul', items: listBuf });
-      listBuf = [];
-    }
-  };
-
-  for (const raw of lines) {
-    const line = raw.trimEnd();
-    if (!line.trim()) {
-      flushPara();
-      flushList();
-      continue;
-    }
-    if (line.trim() === '---') {
-      flushPara();
-      flushList();
-      blocks.push({ type: 'hr' });
-      continue;
-    }
-    const h = /^(#{1,3})\s+(.*)$/.exec(line);
-    if (h) {
-      flushPara();
-      flushList();
-      blocks.push({ type: 'h', level: h[1].length as 1 | 2 | 3, text: h[2] });
-      continue;
-    }
-    const li = /^\s*[-*]\s+(.*)$/.exec(line);
-    if (li) {
-      flushPara();
-      listBuf.push(li[1]);
-      continue;
-    }
-    const q = /^>\s+(.*)$/.exec(line);
-    if (q) {
-      flushPara();
-      flushList();
-      blocks.push({ type: 'q', text: q[1] });
-      continue;
-    }
-    flushList();
-    buf.push(line);
-  }
-  flushPara();
-  flushList();
-  return blocks;
-}
+// Block parser + types live in src/features/smsv2/lib/scriptParser.ts so
+// vitest can exercise them without dragging React + Supabase imports
+// into the test environment. Renderer below consumes the parsed blocks.
 
 function renderBlock(b: Block, i: number) {
   if (b.type === 'h') {
@@ -303,7 +241,20 @@ function renderBlock(b: Block, i: number) {
     return (
       <ul key={i} className="list-disc pl-4 space-y-1 text-[13px] text-[#1A1A1A]">
         {b.items.map((it, j) => (
-          <li key={j}>{renderInline(it)}</li>
+          <li key={j}>
+            {it.kind === 'if' ? (
+              <span className="inline-flex items-baseline gap-1.5 flex-wrap">
+                <span
+                  className="inline-block bg-[#FEF3C7] text-[#B45309] text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                >
+                  if {it.condition}
+                </span>
+                <span>{renderInline(it.text)}</span>
+              </span>
+            ) : (
+              renderInline(it.text)
+            )}
+          </li>
         ))}
       </ul>
     );
