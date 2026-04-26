@@ -16,6 +16,8 @@ export interface CoachFact {
   keywords: string[];
   sort_order: number;
   is_active: boolean;
+  /** Phase 1 migration 2026-04-30: groups facts in the FactsDrawer UI. */
+  category: 'deal' | 'returns' | 'compliance' | 'logistics' | 'objection';
   updated_at: string;
 }
 
@@ -69,7 +71,7 @@ export function useCoachFacts(opts: { activeOnly?: boolean } = {}) {
     try {
       const { data, error: e } = await (supabase as unknown as FactTable)
         .from('wk_coach_facts')
-        .select('id, key, label, value, keywords, sort_order, is_active, updated_at')
+        .select('id, key, label, value, keywords, sort_order, is_active, category, updated_at')
         .order('sort_order', { ascending: true })
         .order('key', { ascending: true });
       if (e) {
@@ -110,7 +112,7 @@ export function useCoachFacts(opts: { activeOnly?: boolean } = {}) {
     const { data, error: e } = await (supabase as unknown as FactTable)
       .from('wk_coach_facts')
       .insert(row)
-      .select('id, key, label, value, keywords, sort_order, is_active, updated_at')
+      .select('id, key, label, value, keywords, sort_order, is_active, category, updated_at')
       .single();
     if (e) throw new Error(e.message);
     if (!data) throw new Error('insert returned no row');
