@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Lightbulb, HelpCircle, Activity, MessageSquare } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@/components/ui/resizable';
 import { MOCK_TRANSCRIPT, MOCK_COACH_EVENTS } from '../../data/mockTranscripts';
 import { useKillSwitch } from '../../hooks/useKillSwitch';
 import { useSmsV2 } from '../../store/SmsV2Store';
@@ -31,10 +36,22 @@ interface LiveCoachRow {
 
 const COACH_ICONS = {
   objection: { Icon: AlertTriangle, colour: '#EF4444', label: '⚠ OBJECTION' },
-  suggestion: { Icon: Lightbulb, colour: '#1E9A80', label: '💡 SAY' },
+  suggestion: { Icon: Lightbulb, colour: '#1E9A80', label: '💡 YOU COULD SAY' },
   question: { Icon: HelpCircle, colour: '#3B82F6', label: '❓ ASK' },
   warning: { Icon: Activity, colour: '#F59E0B', label: '📊 INSIGHT' },
 };
+
+// Coach card text scales with length: short rebuttals stay punchy at 15px,
+// longer breakdowns scale up to 17-18px so they're easy to read aloud
+// without squinting (Hugo 2026-04-26: "coach card text is too small,
+// especially for longer recommended lines").
+function coachBodyTextSize(text: string): string {
+  const len = text.length;
+  if (len < 60) return 'text-[15px]';
+  if (len < 120) return 'text-[16px]';
+  if (len < 200) return 'text-[17px]';
+  return 'text-[18px]';
+}
 
 export default function LiveTranscriptPane({ durationSec, contactId, callId }: Props) {
   const { aiCoach } = useKillSwitch();
@@ -201,92 +218,101 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
         </div>
       )}
 
-      {/* Two-column layout (Hugo 2026-04-26):
-            LEFT  — transcript stream (what's actually being said)
-            RIGHT — coach cards (what the agent should say next, latest on top)
-          The split keeps the live conversation legible while the coach
-          panel can shout for attention without burying older lines. */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-hidden">
-        {/* LEFT: transcript */}
-        <div ref={scrollRef} className="overflow-y-auto px-4 py-3 space-y-2 md:border-r md:border-[#E5E7EB]">
-          <div className="sticky top-0 -mt-3 -mx-4 px-4 py-1.5 mb-2 bg-white/95 backdrop-blur text-[10px] font-bold uppercase tracking-wide text-[#9CA3AF]">
-            Live transcript
-          </div>
-          {showEmptyState && (
-            <div className="h-full flex flex-col items-center justify-center text-center px-6 py-10 text-[#9CA3AF]">
-              <MessageSquare className="w-8 h-8 mb-3 opacity-40" />
-              <div className="text-[13px] font-medium text-[#6B7280] mb-1">
-                No active call
-              </div>
-              <div className="text-[12px] leading-snug max-w-[280px]">
-                Live transcript will appear here once you place or receive a call.
-              </div>
+      {/* Vertical resizable split (Hugo 2026-04-26):
+            TOP    — transcript stream (smaller default — the agent doesn't
+                     need to read every word back, it's the context).
+            BOTTOM — coach cards (bigger default — this is what the agent
+                     READS ALOUD; needs the most space + biggest text).
+          autoSaveId persists drag widths per browser. */}
+      <ResizablePanelGroup
+        direction="vertical"
+        autoSaveId="smsv2-livecall-transcript-coach"
+        className="flex-1 overflow-hidden"
+      >
+        <ResizablePanel defaultSize={40} minSize={20} className="overflow-hidden">
+          <div ref={scrollRef} className="h-full overflow-y-auto px-4 py-3 space-y-2">
+            <div className="sticky top-0 -mt-3 -mx-4 px-4 py-1.5 mb-2 bg-white/95 backdrop-blur text-[10px] font-bold uppercase tracking-wide text-[#9CA3AF]">
+              Live transcript
             </div>
-          )}
-
-          {lines.map((line) => (
-            <div key={line.id} className="text-[13px] leading-relaxed">
-              <span
-                className={
-                  line.speaker === 'agent'
-                    ? 'font-semibold text-[#1E9A80]'
-                    : 'font-semibold text-[#1A1A1A]'
-                }
-              >
-                {line.speaker === 'agent' ? 'You' : callerLabel}:
-              </span>{' '}
-              <span className="text-[#1A1A1A]">{line.text}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* RIGHT: coach cards (always rendered, even with no events, so the
-            agent learns where to look — empty state guides the eye). */}
-        <div className="overflow-y-auto px-4 py-3 space-y-2">
-          <div className="sticky top-0 -mt-3 -mx-4 px-4 py-1.5 mb-2 bg-white/95 backdrop-blur text-[10px] font-bold uppercase tracking-wide text-[#1E9A80]">
-            AI coach — say this
-          </div>
-          {events.length === 0 && !aiCoach && (
-            <div className="h-full flex flex-col items-center justify-center text-center px-6 py-10 text-[#9CA3AF]">
-              <Lightbulb className="w-8 h-8 mb-3 opacity-40" />
-              <div className="text-[12px] leading-snug max-w-[240px]">
-                Coach tips appear here when the caller speaks — exact words to read aloud.
-              </div>
-            </div>
-          )}
-          {events.length > 0 && !aiCoach && (
-            // Newest on top so the agent never has to scroll past stale tips.
-            // First card gets a halo + LATEST badge.
-            [...events].reverse().map((event, idx) => {
-              const meta = COACH_ICONS[event.kind];
-              const isLatest = idx === 0;
-              return (
-                <div
-                  key={event.id}
-                  className={cn(
-                    'p-3 rounded-lg border bg-white transition-colors',
-                    isLatest ? 'border-[#1E9A80] bg-[#ECFDF5]/40 shadow-[0_4px_16px_rgba(30,154,128,0.18)]' : 'border-[#E5E7EB]'
-                  )}
-                  style={{ borderLeftColor: meta.colour, borderLeftWidth: 3 }}
-                >
-                  <div
-                    className="text-[10px] font-bold tracking-wide mb-0.5 flex items-center gap-2"
-                    style={{ color: meta.colour }}
-                  >
-                    <span>{meta.label}{event.title ? ` · ${event.title}` : ''}</span>
-                    {isLatest && (
-                      <span className="text-[9px] font-semibold uppercase bg-[#1E9A80] text-white px-1.5 py-0.5 rounded">
-                        latest
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[13px] text-[#1A1A1A] leading-snug font-medium">{event.body}</div>
+            {showEmptyState && (
+              <div className="h-full flex flex-col items-center justify-center text-center px-6 py-10 text-[#9CA3AF]">
+                <MessageSquare className="w-8 h-8 mb-3 opacity-40" />
+                <div className="text-[13px] font-medium text-[#6B7280] mb-1">
+                  No active call
                 </div>
-              );
-            })
-          )}
-        </div>
-      </div>
+                <div className="text-[12px] leading-snug max-w-[280px]">
+                  Live transcript will appear here once you place or receive a call.
+                </div>
+              </div>
+            )}
+
+            {lines.map((line) => (
+              <div key={line.id} className="text-[13px] leading-relaxed">
+                <span
+                  className={
+                    line.speaker === 'agent'
+                      ? 'font-semibold text-[#1E9A80]'
+                      : 'font-semibold text-[#1A1A1A]'
+                  }
+                >
+                  {line.speaker === 'agent' ? 'You' : callerLabel}:
+                </span>{' '}
+                <span className="text-[#1A1A1A]">{line.text}</span>
+              </div>
+            ))}
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
+
+        <ResizablePanel defaultSize={60} minSize={25} className="overflow-hidden">
+          <div className="h-full overflow-y-auto px-4 py-3 space-y-2.5">
+            <div className="sticky top-0 -mt-3 -mx-4 px-4 py-1.5 mb-2 bg-white/95 backdrop-blur text-[10px] font-bold uppercase tracking-wide text-[#1E9A80]">
+              AI coach — read this aloud
+            </div>
+            {events.length === 0 && !aiCoach && (
+              <div className="h-full flex flex-col items-center justify-center text-center px-6 py-10 text-[#9CA3AF]">
+                <Lightbulb className="w-8 h-8 mb-3 opacity-40" />
+                <div className="text-[12px] leading-snug max-w-[240px]">
+                  Coach tips appear here when the caller speaks — exact words to read aloud.
+                </div>
+              </div>
+            )}
+            {events.length > 0 && !aiCoach && (
+              [...events].reverse().map((event, idx) => {
+                const meta = COACH_ICONS[event.kind];
+                const isLatest = idx === 0;
+                const sizeClass = coachBodyTextSize(event.body);
+                return (
+                  <div
+                    key={event.id}
+                    className={cn(
+                      'p-3.5 rounded-lg border bg-white transition-colors',
+                      isLatest ? 'border-[#1E9A80] bg-[#ECFDF5]/40 shadow-[0_4px_16px_rgba(30,154,128,0.18)]' : 'border-[#E5E7EB]'
+                    )}
+                    style={{ borderLeftColor: meta.colour, borderLeftWidth: 3 }}
+                  >
+                    <div
+                      className="text-[10px] font-bold tracking-wide mb-1 flex items-center gap-2"
+                      style={{ color: meta.colour }}
+                    >
+                      <span>{meta.label}{event.title ? ` · ${event.title}` : ''}</span>
+                      {isLatest && (
+                        <span className="text-[9px] font-semibold uppercase bg-[#1E9A80] text-white px-1.5 py-0.5 rounded">
+                          latest
+                        </span>
+                      )}
+                    </div>
+                    <div className={cn('text-[#1A1A1A] leading-relaxed font-medium', sizeClass)}>
+                      {event.body}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       <div className="px-4 py-2 border-t border-[#E5E7EB] bg-[#F3F3EE]/40">
         <textarea

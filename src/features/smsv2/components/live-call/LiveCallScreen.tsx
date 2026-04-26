@@ -7,8 +7,6 @@ import {
   PhoneOff,
   Minimize2,
   Flame,
-  PhoneIncoming,
-  PhoneOutgoing,
   Tag,
   Pencil,
 } from 'lucide-react';
@@ -20,17 +18,17 @@ import {
 } from '@/components/ui/resizable';
 import { useActiveCallCtx } from './ActiveCallContext';
 import LiveTranscriptPane from './LiveTranscriptPane';
+import CallScriptPane from './CallScriptPane';
+import TerminologyPane from './TerminologyPane';
 import PostCallPanel from './PostCallPanel';
 import StageSelector from '../shared/StageSelector';
 import EditContactModal from '../contacts/EditContactModal';
 import type { Contact } from '../../types';
 import { useSmsV2 } from '../../store/SmsV2Store';
-import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../../data/mockCalls';
 import { useCurrentAgent } from '../../hooks/useCurrentAgent';
 import {
   formatDuration,
   formatPence,
-  formatTimeOnly,
   formatRelativeTime,
 } from '../../data/helpers';
 
@@ -44,11 +42,8 @@ export default function LiveCallScreen() {
   const contact =
     store.contacts.find((c) => c.id === call?.contactId) ?? store.contacts[0];
 
-  const sms = MOCK_SMS.filter((s) => s.contactId === contact.id);
-  const calls = MOCK_CALLS.filter((c) => c.contactId === contact.id);
-  const activities = MOCK_ACTIVITIES.filter((a) => a.contactId === contact.id);
-
   const stage = store.columns.find((c) => c.id === contact.pipelineColumnId);
+  const contactFirstName = contact.name?.trim().split(/\s+/)[0] ?? '';
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#F3F3EE] flex flex-col">
@@ -173,17 +168,19 @@ export default function LiveCallScreen() {
         </div>
       </header>
 
-      {/* Resizable 3-column body. Widths persist per-browser via
-          autoSaveId on the panel group. Drag the dividers to rebalance.
-          Min sizes keep each pane usable on narrow viewports. Item B2
-          will extend this to 4 columns (script + terminology). */}
+      {/* Resizable 4-column body (Hugo 2026-04-26):
+            COL 1 — contact context (name, stage, KV, sticky notes)
+            COL 2 — live transcript + AI coach (vertical resize inside)
+            COL 3 — call script (admin-edited via /smsv2/settings)
+            COL 4 — glossary (click-to-expand, admin-edited via Settings)
+          autoSaveId bumped to v2 so old 3-col widths don't bleed in. */}
       <ResizablePanelGroup
         direction="horizontal"
-        autoSaveId="smsv2-live-call-layout"
+        autoSaveId="smsv2-live-call-layout-v2"
         className="flex-1 overflow-hidden"
       >
-        {/* Left — lead context */}
-        <ResizablePanel defaultSize={22} minSize={16} className="bg-white border-r border-[#E5E7EB] flex flex-col overflow-hidden">
+        {/* COL 1 — lead context */}
+        <ResizablePanel defaultSize={20} minSize={14} className="bg-white border-r border-[#E5E7EB] flex flex-col overflow-hidden">
           <div className="px-4 py-3 border-b border-[#E5E7EB]">
             <div className="flex items-center gap-2">
               <div className="text-[16px] font-bold text-[#1A1A1A]">{contact.name}</div>
@@ -261,26 +258,16 @@ export default function LiveCallScreen() {
                 comparing Rightmove gross.
               </div>
             </div>
-
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-wide text-[#9CA3AF] mb-1.5">
-                Call script
-              </div>
-              <div className="bg-[#F3F3EE] rounded-lg p-2 text-[12px] text-[#1A1A1A] leading-snug">
-                Hi {contact.name.split(' ')[0]}, this is {myFirstName || 'me'} from
-                NFSTAY. I noticed you signed up for our landlord guide — got a few minutes?
-              </div>
-            </div>
           </div>
         </ResizablePanel>
 
         <ResizableHandle withHandle />
 
-        {/* Centre — transcript + coach during dial/in-call, post-call panel
+        {/* COL 2 — transcript + coach during dial/in-call, post-call panel
             after hangup. We mount LiveTranscriptPane the moment callId is
             known (during 'placing'), not just on 'in_call', so we don't miss
             the first transcript chunks Twilio fires before bridge-accept. */}
-        <ResizablePanel defaultSize={56} minSize={30} className="bg-white border-r border-[#E5E7EB] overflow-hidden">
+        <ResizablePanel defaultSize={38} minSize={26} className="bg-white border-r border-[#E5E7EB] overflow-hidden">
           {phase === 'placing' || phase === 'in_call' ? (
             <LiveTranscriptPane durationSec={durationSec} contactId={contact.id} callId={call?.callId ?? null} />
           ) : (
@@ -290,71 +277,19 @@ export default function LiveCallScreen() {
 
         <ResizableHandle withHandle />
 
-        {/* Right — SMS thread + history */}
-        <ResizablePanel defaultSize={22} minSize={16} className="bg-white flex flex-col overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-[#E5E7EB] flex items-center justify-between">
-            <span className="text-[12px] font-semibold text-[#1A1A1A]">SMS conversation</span>
-            <span className="text-[10px] text-[#9CA3AF]">{sms.length} messages</span>
-          </div>
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-            {sms.map((m) => (
-              <div
-                key={m.id}
-                className={cn(
-                  'rounded-2xl px-3 py-2 max-w-[85%] text-[12px] leading-snug',
-                  m.direction === 'outbound'
-                    ? 'bg-[#1E9A80]/10 text-[#1A1A1A] ml-auto'
-                    : 'bg-[#F3F3EE] text-[#1A1A1A]'
-                )}
-              >
-                {m.body}
-                <div className="text-[10px] text-[#9CA3AF] mt-0.5 tabular-nums">
-                  {formatTimeOnly(m.sentAt)}
-                </div>
-              </div>
-            ))}
+        {/* COL 3 — call script (admin-edited Markdown, item G) */}
+        <ResizablePanel defaultSize={22} minSize={14} className="border-r border-[#E5E7EB] overflow-hidden">
+          <CallScriptPane
+            contactFirstName={contactFirstName}
+            agentFirstName={myFirstName ?? ''}
+          />
+        </ResizablePanel>
 
-            <div className="border-t border-[#E5E7EB] pt-2 mt-3">
-              <div className="text-[10px] font-bold uppercase tracking-wide text-[#9CA3AF] mb-1.5">
-                Past calls
-              </div>
-              {calls.map((c) => (
-                <div key={c.id} className="flex items-start gap-2 py-1.5 text-[12px]">
-                  {c.direction === 'inbound' ? (
-                    <PhoneIncoming className="w-3.5 h-3.5 text-[#1E9A80] mt-0.5" />
-                  ) : (
-                    <PhoneOutgoing className="w-3.5 h-3.5 text-[#3B82F6] mt-0.5" />
-                  )}
-                  <div className="flex-1">
-                    <div className="text-[12px] text-[#1A1A1A]">
-                      {formatRelativeTime(c.startedAt)} ·{' '}
-                      <span className="text-[#6B7280]">
-                        {c.status === 'missed'
-                          ? 'missed'
-                          : `${c.direction} · ${formatDuration(c.durationSec)}`}
-                      </span>
-                    </div>
-                    {c.aiSummary && (
-                      <div className="text-[11px] text-[#6B7280] italic leading-snug">
-                        "{c.aiSummary.slice(0, 80)}…"
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+        <ResizableHandle withHandle />
 
-            <div className="border-t border-[#E5E7EB] pt-2 mt-3">
-              <div className="text-[10px] font-bold uppercase tracking-wide text-[#9CA3AF] mb-1.5">
-                Activity
-              </div>
-              {activities.slice(0, 5).map((a) => (
-                <div key={a.id} className="text-[11px] text-[#6B7280] py-0.5">
-                  • {a.title} · {formatRelativeTime(a.ts)}
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* COL 4 — glossary cards (click-to-expand, item G) */}
+        <ResizablePanel defaultSize={20} minSize={14} className="overflow-hidden">
+          <TerminologyPane />
         </ResizablePanel>
       </ResizablePanelGroup>
 
