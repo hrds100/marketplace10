@@ -79,13 +79,17 @@ describe('buildOutgoingTwiml — with transcription URL', () => {
     expect(out).toContain('statusCallbackUrl="https://example.test/cb?x=1&amp;y=2"');
   });
 
-  it('labels tracks as caller/agent so wk-voice-transcription maps cleanly', () => {
+  it('labels tracks per Twilio outbound-call semantics (inbound=agent, outbound=caller)', () => {
+    // Twilio docs: for an outbound dial, inbound_track is the originator
+    // (agent) and outbound_track is the recipient (caller). Labels here
+    // are cosmetic for the Twilio dashboard; wk-voice-transcription does
+    // its own mapping via the Track field.
     const out = buildOutgoingTwiml({
       ...BASE,
       transcriptionCallbackUrl: TRANSCRIPTION_URL,
     });
-    expect(out).toContain('inboundTrackLabel="caller"');
-    expect(out).toContain('outboundTrackLabel="agent"');
+    expect(out).toContain('inboundTrackLabel="agent"');
+    expect(out).toContain('outboundTrackLabel="caller"');
   });
 
   it('uses partialResults="false" — only final chunks, no draft noise', () => {

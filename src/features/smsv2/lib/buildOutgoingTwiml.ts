@@ -55,10 +55,12 @@ export function buildOutgoingTwiml(args: BuildOutgoingTwimlArgs): string {
   ].join('\n');
 
   // <Start><Transcription> must come BEFORE <Dial> so transcription begins
-  // the moment the bridge connects. track="both_tracks" captures BOTH legs:
-  //   inbound_track  → caller (the dialed number's audio)
-  //   outbound_track → agent  (Twilio Client → bridged in)
-  // wk-voice-transcription maps these labels back to the speaker enum.
+  // the moment the bridge connects. Per Twilio docs, for OUTBOUND calls the
+  // tracks are:
+  //   inbound_track  → the agent (originator who triggered the dial)
+  //   outbound_track → the dialed recipient (Hugo's "caller")
+  // wk-voice-transcription reads `Track` directly to map back to the
+  // speaker enum. Label attributes below are cosmetic (Twilio dashboard).
   const transcriptionBlock = args.transcriptionCallbackUrl
     ? [
         `<Start>`,
@@ -70,8 +72,8 @@ export function buildOutgoingTwiml(args: BuildOutgoingTwimlArgs): string {
         `    enableAutomaticPunctuation="true"`,
         `    profanityFilter="false"`,
         `    speechModel="telephony"`,
-        `    inboundTrackLabel="caller"`,
-        `    outboundTrackLabel="agent"`,
+        `    inboundTrackLabel="agent"`,
+        `    outboundTrackLabel="caller"`,
         `    partialResults="false"`,
         `  />`,
         `</Start>`,

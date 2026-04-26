@@ -239,13 +239,22 @@ serve(async (req: Request) => {
       return new Response('ok', { status: 200, headers: corsHeaders });
     }
 
-    // Map Twilio's track label back to our speaker enum. Default labels are
-    // "inbound_track" / "outbound_track"; the TwiML can override them with
-    // inboundTrackLabel/outboundTrackLabel. From the agent's outbound dial:
-    //   - inbound_track  = the caller (the person Twilio dialed)
-    //   - outbound_track = the agent (Twilio Client → bridged in)
+    // Map Twilio's track label back to our speaker enum.
+    //
+    // Per Twilio Real-Time Transcription docs, the meaning of inbound vs.
+    // outbound depends on the DIRECTION of the call:
+    //   - For OUTBOUND calls (the parent leg dials someone), inbound_track
+    //     = the agent (the originator who triggered the dial), and
+    //     outbound_track = the customer (the dialed recipient).
+    //   - For INBOUND calls (the parent leg received the call), it's the
+    //     other way around.
+    //
+    // smsv2's softphone dials out via device.connect() → outbound call →
+    // inbound_track = agent, outbound_track = caller. Earlier code had this
+    // inverted, which caused Hugo's recent test to label the caller's voice
+    // as "You" (agent) in the transcript pane (2026-04-26 evidence).
     const track = (params.Track ?? '').toLowerCase();
-    const speaker: 'caller' | 'agent' = track.startsWith('outbound') ? 'agent' : 'caller';
+    const speaker: 'caller' | 'agent' = track.startsWith('outbound') ? 'caller' : 'agent';
 
     // Persist transcript line — LiveTranscriptPane subscribes via realtime
     // and renders this within ~250ms.
