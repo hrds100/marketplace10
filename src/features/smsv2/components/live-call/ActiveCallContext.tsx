@@ -231,10 +231,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       setFullScreen(true);
       setMuted(false);
 
+      // Same stale-call guard as the outbound path: only mutate state if
+      // THIS Call is still the current one. Without this, an old leaked
+      // inbound Call's late 'disconnect' would stomp on a fresh dial.
+      const isThisCall = () => activeTwilioCallRef.current === call;
       const onEnd = () => {
-        if (activeTwilioCallRef.current === call) {
-          activeTwilioCallRef.current = null;
-        }
+        if (!isThisCall()) return;
+        activeTwilioCallRef.current = null;
         setPhase('post_call');
       };
       call.on('disconnect', onEnd);
@@ -318,25 +321,34 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       );
       setMuted(false);
 
+      // GUARD against stale-call event leaks: every listener checks that the
+      // disconnecting Call is THIS call (the one we just dialed). Without
+      // this, a previous call's 'disconnect' / 'cancel' (fired when
+      // disconnectAllCalls() evicts it at the start of a new dial) would
+      // run setPhase('post_call' / 'idle') and stomp on the new call,
+      // hanging it up before it can ring. Hugo's regression report
+      // (2026-04-26): "I try to recall and then it gets hung up immediately".
+      const isThisCall = () => activeTwilioCallRef.current === result.twilioCall;
+
       const onAccept = () => {
+        if (!isThisCall()) return;
         setPhase('in_call');
         setCall((prev) => (prev ? { ...prev, startedAt: Date.now() } : prev));
       };
       const onEnd = () => {
-        if (activeTwilioCallRef.current === result.twilioCall) {
-          activeTwilioCallRef.current = null;
-        }
+        if (!isThisCall()) return;
+        activeTwilioCallRef.current = null;
         setPhase('post_call');
+      };
+      const onCancel = () => {
+        if (!isThisCall()) return;
+        activeTwilioCallRef.current = null;
+        setPhase('idle');
+        setCall(null);
       };
       result.twilioCall.on('accept', onAccept);
       result.twilioCall.on('disconnect', onEnd);
-      result.twilioCall.on('cancel', () => {
-        if (activeTwilioCallRef.current === result.twilioCall) {
-          activeTwilioCallRef.current = null;
-        }
-        setPhase('idle');
-        setCall(null);
-      });
+      result.twilioCall.on('cancel', onCancel);
       result.twilioCall.on('reject', onEnd);
       // SDK is the source of truth for mute state. Without this, calling
       // .mute() externally (or any internal track-replacement re-application)
