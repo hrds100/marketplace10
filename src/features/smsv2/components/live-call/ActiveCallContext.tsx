@@ -70,6 +70,10 @@ interface ActiveCallCtx {
   }) => void;
   endCall: () => void;
   clearCall: () => void;
+  /** Whether the active TwilioCall's mic is currently muted. */
+  muted: boolean;
+  /** Toggle the active TwilioCall's mute. No-op if no live call. */
+  toggleMute: () => void;
   /**
    * Apply a pipeline-column outcome to the just-ended call.
    * Mutates store (contact stage + activity + tags + queue) and auto-loads
@@ -91,8 +95,17 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const [call, setCall] = useState<ActiveCall | null>(null);
   const [, setTick] = useState(0);
   const [fullScreen, setFullScreen] = useState(true);
+  const [muted, setMuted] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeTwilioCallRef = useRef<TwilioCall | null>(null);
+
+  const toggleMute = useCallback(() => {
+    const c = activeTwilioCallRef.current;
+    if (!c) return;
+    const next = !muted;
+    try { c.mute(next); } catch (e) { console.warn('mute failed', e); return; }
+    setMuted(next);
+  }, [muted]);
 
   useEffect(() => {
     if (phase === 'in_call') {
@@ -306,16 +319,20 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       durationSec,
       fullScreen,
       setFullScreen,
+      muted,
+      toggleMute,
       startCall,
       resumeFromBroadcast,
       endCall: () => {
         try { activeTwilioCallRef.current?.disconnect(); } catch { /* ignore */ }
         setPhase('post_call');
+        setMuted(false);
       },
       clearCall: () => {
         setPhase('idle');
         setCall(null);
         setFullScreen(true);
+        setMuted(false);
       },
       applyOutcome: (columnId, note) => {
         if (!call) {
@@ -389,7 +406,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         }
       },
     };
-  }, [phase, call, fullScreen, store, startCall, resumeFromBroadcast]);
+  }, [phase, call, fullScreen, muted, toggleMute, store, startCall, resumeFromBroadcast]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
