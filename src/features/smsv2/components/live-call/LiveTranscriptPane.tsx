@@ -44,13 +44,14 @@ const COACH_ICONS = {
   warning: { Icon: Activity, colour: '#F59E0B', label: '📊 INSIGHT' },
 };
 
-// Hugo 2026-04-28: only the LATEST card matters for reading aloud.
-// Older cards get visually demoted (smaller, dimmed, truncated) so the
-// agent's eye snaps to the new line. Latest is fixed at 22px (sweet
-// spot for fast-scan from the laptop while on a call) — older are
-// 12px clamped to 2 lines.
+// Hugo 2026-04-28 / 30: only the LATEST card matters for reading
+// aloud. Older cards get heavily demoted (smaller, dimmer, truncated to
+// one line) so the agent's eye snaps to the new line.
+//
+// PR #584 (Phase 9, Hugo 2026-04-30): older cards even more demoted —
+// 11px / opacity-40 / line-clamp-1 — so the latest dominates.
 const LATEST_BODY_CLASS = 'text-[22px] leading-[1.35] font-semibold tracking-[-0.005em]';
-const OLDER_BODY_CLASS = 'text-[12px] leading-snug line-clamp-2';
+const OLDER_BODY_CLASS = 'text-[11px] leading-tight line-clamp-1';
 
 export default function LiveTranscriptPane({ durationSec, contactId, callId, agentFirstName }: Props) {
   const { aiCoach } = useKillSwitch();
@@ -357,7 +358,7 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
                       'rounded-lg border bg-white transition-all',
                       isLatest
                         ? 'p-4 border-[#1E9A80] bg-[#ECFDF5]/50 shadow-[0_6px_24px_rgba(30,154,128,0.22)]'
-                        : 'p-2 border-[#E5E7EB] opacity-55 hover:opacity-90'
+                        : 'px-2 py-1.5 border-[#E5E7EB] opacity-40 hover:opacity-90'
                     )}
                     style={{ borderLeftColor: meta.colour, borderLeftWidth: isLatest ? 4 : 2 }}
                   >
