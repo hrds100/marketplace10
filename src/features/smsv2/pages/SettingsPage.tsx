@@ -33,6 +33,7 @@ import { formatPence } from '../data/helpers';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useAiSettings } from '../hooks/useAiSettings';
 import { useDefaultCallScript } from '../hooks/useDefaultCallScript';
+import { useAgentScript } from '../hooks/useAgentScript';
 import { useTerminologies, type Terminology } from '../hooks/useTerminologies';
 import { useCoachFacts, type CoachFact } from '../hooks/useCoachFacts';
 import { useTwilioAccount } from '../hooks/useTwilioAccount';
@@ -1290,18 +1291,107 @@ function AITab() {
         </div>
       </Card>
 
+      <AgentScriptCard />
       <CallScriptCard />
     </>
   );
 }
 
-// ─── Default call script — feeds the live-call CallScriptPane (item B2) ──
+// ─── My script (agent's own — overrides the default) ──────────────
+// Hugo 2026-04-30: each agent edits their own script. The live-call
+// pane resolves: own > default > hardcoded fallback.
+function AgentScriptCard() {
+  const { script, loading, saving, saved, error, setField, save, resetToDefault } =
+    useAgentScript();
+  return (
+    <Card
+      title="My script"
+      hint={
+        script.source === 'own'
+          ? 'Your personal script (overrides the default). Markdown.'
+          : script.source === 'default'
+            ? 'Currently showing the default. Edit + save to create your own copy.'
+            : 'No script yet. Edit + save to create one.'
+      }
+    >
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-[11px]">
+          <span
+            className={cn(
+              'px-2 py-0.5 rounded-full font-semibold',
+              script.source === 'own'
+                ? 'bg-[#1E9A80]/10 text-[#1E9A80]'
+                : 'bg-[#F3F3EE] text-[#6B7280]'
+            )}
+          >
+            {script.source === 'own'
+              ? '● Your version'
+              : script.source === 'default'
+                ? '○ Default (read-only preview)'
+                : '○ Empty'}
+          </span>
+          {script.source === 'own' && (
+            <button
+              onClick={() => void resetToDefault()}
+              disabled={saving}
+              className="text-[10px] text-[#6B7280] underline hover:text-[#EF4444] disabled:opacity-50"
+            >
+              Reset to default
+            </button>
+          )}
+        </div>
+        <div>
+          <Label>
+            <span className="inline-flex items-center gap-1">
+              <FileText className="w-3 h-3" /> Script name
+            </span>
+          </Label>
+          <input
+            type="text"
+            value={script.name}
+            onChange={(e) => setField('name', e.target.value)}
+            disabled={loading}
+            className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] disabled:bg-[#F9FAFB]"
+          />
+        </div>
+        <div>
+          <Label>Body (Markdown)</Label>
+          <textarea
+            value={script.body_md}
+            onChange={(e) => setField('body_md', e.target.value)}
+            disabled={loading}
+            rows={18}
+            placeholder={loading ? 'Loading…' : '# Open\n- "Hi {{first_name}}, this is {{agent_first_name}}…"'}
+            className="w-full px-3 py-2 text-[12px] font-mono border border-[#E5E7EB] rounded-[10px] disabled:bg-[#F9FAFB]"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => void save()}
+            disabled={saving || loading}
+            className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save my script'}
+          </button>
+          <span className="text-[10px] text-[#9CA3AF]">
+            Stored in <code className="bg-[#F3F3EE] px-1 rounded">wk_call_scripts</code> with{' '}
+            <code className="bg-[#F3F3EE] px-1 rounded">owner_agent_id = your user id</code>.
+            Live-call screen reads your own script first, falls back to default.
+          </span>
+        </div>
+        {error && <div className="text-[10px] text-[#EF4444]">⚠ {error}</div>}
+      </div>
+    </Card>
+  );
+}
+
+// ─── Default call script (admin) — fallback for everyone ──────────
 function CallScriptCard() {
   const { script, loading, saving, saved, error, setField, save } = useDefaultCallScript();
   return (
     <Card
-      title="Default call script"
-      hint="Read by the live-call screen (col 3). Markdown supported."
+      title="Default call script (admin)"
+      hint="Fallback for any agent who hasn't saved their own. Markdown."
     >
       <div className="space-y-3">
         <div>

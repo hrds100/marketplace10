@@ -1,14 +1,18 @@
 // CallScriptPane — col 3 of the LiveCallScreen.
 //
-// Shows the editable default call script (wk_call_scripts where
-// is_default = true). Renders the body_md as Markdown for headings, lists,
-// emphasis. Admin edits via /smsv2/settings → AI coach → Default call
-// script. The script is the *map* the agent follows — the AI coach pane
-// (col 2) writes the literal next sentence to read.
+// Hugo 2026-04-30: each agent has their OWN editable script. Resolution
+// priority (via useAgentScript):
+//   1. Agent's own row (wk_call_scripts WHERE owner_agent_id = auth.uid())
+//   2. Default row (wk_call_scripts WHERE is_default = true)
+//   3. Empty state
+// Each agent edits via /smsv2/settings → AI coach → "My script".
+//
+// The script is the *map* the agent follows — the AI coach pane (col 2)
+// writes the literal next sentence to read.
 
 import { useMemo } from 'react';
 import { FileText } from 'lucide-react';
-import { useDefaultCallScript } from '../../hooks/useDefaultCallScript';
+import { useAgentScript } from '../../hooks/useAgentScript';
 
 interface Props {
   /** First name of the contact, used for {{first_name}} substitution. */
@@ -18,7 +22,7 @@ interface Props {
 }
 
 export default function CallScriptPane({ contactFirstName, agentFirstName }: Props) {
-  const { script, loading, error } = useDefaultCallScript();
+  const { script, loading, error } = useAgentScript();
 
   const rendered = useMemo(() => {
     const body = (script.body_md || '').trim();
