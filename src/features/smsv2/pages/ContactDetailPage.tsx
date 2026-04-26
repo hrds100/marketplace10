@@ -19,7 +19,9 @@ import {
 } from '../data/helpers';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
+import ContactSmsModal from '../components/contacts/ContactSmsModal';
 import EditContactModal from '../components/contacts/EditContactModal';
+import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactTimeline } from '../hooks/useContactTimeline';
 import { useContactPersistence } from '../hooks/useContactPersistence';
@@ -31,6 +33,8 @@ export default function ContactDetailPage() {
   const { getContact, agents, patchContact, upsertContact } = useSmsV2();
   const contact = getContact(id ?? '');
   const [editing, setEditing] = useState<Contact | null>(null);
+  const [smsTo, setSmsTo] = useState<Contact | null>(null);
+  const { firstName: agentFirstName } = useCurrentAgent();
   const [newTag, setNewTag] = useState('');
   const [newField, setNewField] = useState({ key: '', value: '' });
   const { startCall } = useActiveCallCtx();
@@ -138,7 +142,11 @@ export default function ContactDetailPage() {
           >
             <Phone className="w-4 h-4" /> Call
           </button>
-          <button className="flex items-center gap-1.5 border border-[#E5E7EB] bg-white text-[#1A1A1A] text-[13px] font-medium px-4 py-2 rounded-[10px] hover:bg-[#F3F3EE]">
+          <button
+            onClick={() => setSmsTo(contact)}
+            className="flex items-center gap-1.5 border border-[#E5E7EB] bg-white text-[#1A1A1A] text-[13px] font-medium px-4 py-2 rounded-[10px] hover:bg-[#F3F3EE]"
+            data-testid="contact-detail-text-button"
+          >
             <MessageSquare className="w-4 h-4" /> Text
           </button>
         </div>
@@ -342,6 +350,11 @@ export default function ContactDetailPage() {
         contact={editing}
         onClose={() => setEditing(null)}
         onSave={(updated) => upsertContact(updated)}
+      />
+      <ContactSmsModal
+        contact={smsTo}
+        onClose={() => setSmsTo(null)}
+        agentFirstName={agentFirstName ?? ''}
       />
     </div>
   );

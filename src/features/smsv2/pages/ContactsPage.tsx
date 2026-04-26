@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import StageSelector from '../components/shared/StageSelector';
 import BulkUploadModal from '../components/contacts/BulkUploadModal';
+import ContactSmsModal from '../components/contacts/ContactSmsModal';
 import EditContactModal from '../components/contacts/EditContactModal';
+import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence, isRealContactId } from '../hooks/useContactPersistence';
 import { useAgentsToday } from '../hooks/useAgentsToday';
@@ -26,6 +28,8 @@ export default function ContactsPage() {
   const [editing, setEditing] = useState<Contact | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [creatingDraft, setCreatingDraft] = useState<Contact | null>(null);
+  const [smsTo, setSmsTo] = useState<Contact | null>(null);
+  const { firstName: agentFirstName } = useCurrentAgent();
 
   const startNewContact = () => {
     // Empty draft fed into the existing EditContactModal. Same UX, no
@@ -229,9 +233,14 @@ export default function ContactsPage() {
                         <Phone className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSmsTo(c);
+                        }}
                         className="p-1.5 hover:bg-[#ECFDF5] rounded text-[#1E9A80]"
                         title={`SMS ${c.name}`}
+                        data-testid={`contacts-row-sms-${c.id}`}
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                       </button>
@@ -252,6 +261,11 @@ export default function ContactsPage() {
       </div>
 
       <BulkUploadModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
+      <ContactSmsModal
+        contact={smsTo}
+        onClose={() => setSmsTo(null)}
+        agentFirstName={agentFirstName ?? ''}
+      />
       <EditContactModal
         contact={editing}
         agents={agents}
