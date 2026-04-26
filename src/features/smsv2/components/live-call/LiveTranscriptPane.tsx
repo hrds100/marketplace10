@@ -19,14 +19,14 @@ interface LiveTranscriptRow {
   id: string;
   speaker: 'agent' | 'caller' | 'unknown';
   body: string;
-  created_at: string;
+  ts: string;
 }
 
 interface LiveCoachRow {
   id: string;
   kind: 'objection' | 'suggestion' | 'question' | 'metric' | 'warning';
   body: string;
-  created_at: string;
+  ts: string;
 }
 
 const COACH_ICONS = {
@@ -90,12 +90,12 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
       const [tRes, cRes] = await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_live_transcripts' as any) as any)
-          .select('id, speaker, body, created_at')
+          .select('id, speaker, body, ts')
           .eq('call_id', callId)
           .order('ts', { ascending: true }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_live_coach_events' as any) as any)
-          .select('id, kind, body, created_at')
+          .select('id, kind, body, ts')
           .eq('call_id', callId)
           .order('ts', { ascending: true }),
       ]);
