@@ -36,7 +36,7 @@ export default function CallScriptPane({
   contactFirstName,
   agentFirstName,
 }: Props) {
-  const { script, loading, error, saving, save } = useAgentScript();
+  const { script, loading, error, saving, save, resetToDefault } = useAgentScript();
   const [editing, setEditing] = useState(false);
 
   const rendered = useMemo(() => {
@@ -113,6 +113,7 @@ export default function CallScriptPane({
         saving={saving}
         error={error}
         onSave={(next) => save({ name: next.name, body_md: next.body_md })}
+        onResetToDefault={resetToDefault}
       />
     </div>
   );
