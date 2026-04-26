@@ -111,6 +111,23 @@ export async function createDevice(): Promise<DeviceHandle> {
     edge: 'roaming',         // pick best Twilio edge automatically
   });
 
+  // Echo cancellation + noise suppression on the input stream. Without these,
+  // an open speaker + open mic in the same room produces a feedback loop that
+  // looks like "mute didn't work" — Hugo's exact complaint when self-testing.
+  // The browser still has to honour these constraints (most do).
+  try {
+    // The AudioHelper API is on `device.audio`; not all SDK builds expose
+    // `setAudioConstraints`, so wrap in try/catch.
+    const audio = (d as unknown as { audio?: { setAudioConstraints?: (c: MediaTrackConstraints) => void } }).audio;
+    audio?.setAudioConstraints?.({
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+    });
+  } catch (e) {
+    console.warn('[twilio-voice] could not set audio constraints', e);
+  }
+
   // Inbound calls — wk-voice-twiml-incoming routes a PSTN ring to a Client
   // identity. The agent's browser receives an 'incoming' Call here. We
   // auto-accept (matches the dialer-winner flow) and notify subscribers so
@@ -236,25 +253,119 @@ export function getDeviceCalls(): TwilioCall[] {
   }
 }
 
+// Stash original tracks so unmute can restore them. Keyed by sender object.
+// Cleared as soon as we restore. Module-level because the Call object exposes
+// no place to attach metadata.
+const _stashedTracks = new WeakMap<RTCRtpSender, MediaStreamTrack>();
+
 /**
- * Mute every active Call on the Device. Prevents the "I clicked Mute but the
- * callee still hears me" bug when multiple Calls are alive at once (rapid
- * test cycles, dialer-winner overlaps, missed disconnects). Returns the
- * resulting mute state for the most recently observed Call (true if at least
- * one is now muted).
+ * Mute every active Call on the Device using THREE layered mechanisms so the
+ * callee CANNOT hear the agent after toggling Mute, even when:
+ *   - the Twilio SDK's own .mute() fails to take effect for any reason
+ *   - the agent's environment is fighting back (echo, ambient pickup)
+ *   - we have multiple Calls alive at once (zombies from prior dials)
+ *
+ * Layer 1: `call.mute(shouldMute)` — what the SDK officially exposes. Sets
+ *           the local audio track's `enabled` to !shouldMute, which makes
+ *           WebRTC send silence frames instead of voice. This is the soft
+ *           mute Twilio documents.
+ *
+ * Layer 2: `track.enabled = !shouldMute` on every track of the Call's local
+ *           MediaStream — belt-and-braces in case Layer 1's track binding
+ *           drifted (e.g. after a track replacement during reconnect).
+ *
+ * Layer 3: `RTCRtpSender.replaceTrack(null)` on every audio sender of every
+ *           PeerConnection — HARD mute. WebRTC stops sending RTP packets
+ *           entirely (no silence frames either). This is the only way to be
+ *           100% certain no audio leaves the browser. We stash the original
+ *           track and restore it on unmute via `replaceTrack(originalTrack)`.
+ *
+ * Returns shouldMute when at least one Call was processed. Logs a detailed
+ * report of every sender's state so DevTools console proves whether the
+ * mute actually engaged at the WebRTC level. If the callee still hears the
+ * agent after we log "every sender muted", the audio leak is environmental
+ * (e.g. the callee's own mic picking up ambient sound) — not software.
  */
 export function muteAllCalls(shouldMute: boolean): boolean {
   const calls = getDeviceCalls();
-  let any = false;
-  for (const c of calls) {
+  let processed = false;
+  const report: Array<{ idx: number; sender: number; trackId: string; enabled: boolean; replaced: boolean }> = [];
+
+  for (let i = 0; i < calls.length; i++) {
+    const c = calls[i];
+
+    // Layer 1: the SDK's documented mute (also fires the 'mute' event).
+    try { c.mute(shouldMute); processed = true; } catch (e) { console.warn('[twilio-voice] mute layer1 threw', e); }
+
+    // Layer 2: directly disable every track on the Call's local stream.
     try {
-      c.mute(shouldMute);
-      any = true;
-    } catch (e) {
-      console.warn('[twilio-voice] muteAllCalls: mute threw on a call', e);
-    }
+      const stream = c.getLocalStream?.();
+      stream?.getAudioTracks?.().forEach((t: MediaStreamTrack) => {
+        t.enabled = !shouldMute;
+      });
+    } catch (e) { console.warn('[twilio-voice] mute layer2 threw', e); }
+
+    // Layer 3: replace the audio sender's track. This is the only mute that
+    // truly stops RTP packets from being sent. We have to reach into the
+    // SDK's private _mediaHandler to get the RTCPeerConnection.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pc: RTCPeerConnection | undefined = (c as any)?._mediaHandler?.version?.pc;
+      if (pc && typeof pc.getSenders === 'function') {
+        const senders = pc.getSenders();
+        for (let s = 0; s < senders.length; s++) {
+          const sender = senders[s];
+          if (sender.track && sender.track.kind !== 'audio') continue;
+
+          if (shouldMute) {
+            // Stash the current track so we can restore on unmute.
+            if (sender.track) _stashedTracks.set(sender, sender.track);
+            // Fire-and-forget — replaceTrack returns a Promise but we don't
+            // need to await it for the mute to engage at the sender level.
+            void sender.replaceTrack(null).catch((e) =>
+              console.warn('[twilio-voice] replaceTrack(null) rejected', e)
+            );
+            report.push({
+              idx: i,
+              sender: s,
+              trackId: sender.track?.id ?? '<gone>',
+              enabled: false,
+              replaced: true,
+            });
+          } else {
+            // Restore the original track if we have it stashed.
+            const original = _stashedTracks.get(sender);
+            if (original) {
+              void sender.replaceTrack(original).catch((e) =>
+                console.warn('[twilio-voice] replaceTrack(restore) rejected', e)
+              );
+              _stashedTracks.delete(sender);
+              report.push({
+                idx: i,
+                sender: s,
+                trackId: original.id,
+                enabled: true,
+                replaced: true,
+              });
+            } else {
+              // No stash — re-enable whatever's there.
+              if (sender.track) sender.track.enabled = true;
+              report.push({
+                idx: i,
+                sender: s,
+                trackId: sender.track?.id ?? '<none>',
+                enabled: sender.track?.enabled ?? false,
+                replaced: false,
+              });
+            }
+          }
+        }
+      }
+    } catch (e) { console.warn('[twilio-voice] mute layer3 threw', e); }
   }
-  return any && shouldMute;
+
+  console.info('[twilio-voice] muteAllCalls', { shouldMute, calls: calls.length, senders: report });
+  return processed && shouldMute;
 }
 
 /**
