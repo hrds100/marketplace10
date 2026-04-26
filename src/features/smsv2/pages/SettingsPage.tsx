@@ -1111,29 +1111,50 @@ function AITab() {
                 onChange={(e) => setField('postcall_model', e.target.value)}
                 className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
               >
-                <option value="gpt-4o">gpt-4o (most accurate)</option>
-                <option value="gpt-4o-mini">
-                  gpt-4o-mini (recommended · cheap + fast)
-                </option>
-                <option value="gpt-4-turbo">gpt-4-turbo</option>
-                <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                <option value="o1-mini">o1-mini (reasoning)</option>
+                <optgroup label="GPT-5 family (newest)">
+                  <option value="gpt-5.4">gpt-5.4 (most accurate)</option>
+                  <option value="gpt-5.4-mini">gpt-5.4-mini (recommended · smart + fast)</option>
+                  <option value="gpt-5.4-nano">gpt-5.4-nano (fastest)</option>
+                </optgroup>
+                <optgroup label="GPT-4.1 family">
+                  <option value="gpt-4.1">gpt-4.1</option>
+                  <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                  <option value="gpt-4.1-nano">gpt-4.1-nano</option>
+                </optgroup>
+                <optgroup label="GPT-4o family (legacy)">
+                  <option value="gpt-4o">gpt-4o</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                </optgroup>
+                <optgroup label="Reasoning">
+                  <option value="o1-mini">o1-mini</option>
+                </optgroup>
               </select>
             </div>
             <div>
-              <Label>Model — live coach (Realtime API)</Label>
+              <Label>Model — live coach (chat completions, per-utterance)</Label>
               <select
                 value={settings.live_coach_model}
                 onChange={(e) => setField('live_coach_model', e.target.value)}
                 className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
               >
-                <option value="gpt-4o-realtime-preview">
-                  gpt-4o-realtime-preview (live audio, current)
-                </option>
-                <option value="gpt-4o-mini-realtime-preview">
-                  gpt-4o-mini-realtime-preview (cheaper)
-                </option>
+                <optgroup label="GPT-5 family (newest)">
+                  <option value="gpt-5.4">gpt-5.4 (most accurate · slower)</option>
+                  <option value="gpt-5.4-mini">gpt-5.4-mini (recommended · smart + fast)</option>
+                  <option value="gpt-5.4-nano">gpt-5.4-nano (fastest · less smart)</option>
+                </optgroup>
+                <optgroup label="GPT-4.1 family">
+                  <option value="gpt-4.1">gpt-4.1</option>
+                  <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                  <option value="gpt-4.1-nano">gpt-4.1-nano</option>
+                </optgroup>
+                <optgroup label="GPT-4o family (legacy)">
+                  <option value="gpt-4o">gpt-4o</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                </optgroup>
               </select>
+              <div className="text-[10px] text-[#9CA3AF] mt-1">
+                Used by <code className="bg-[#F3F3EE] px-1 rounded">wk-voice-transcription</code> per caller utterance. Hot-swap takes effect on the next coach card (no redeploy).
+              </div>
             </div>
           </div>
 
