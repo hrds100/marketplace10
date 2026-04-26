@@ -209,10 +209,14 @@ describe('ActiveCallProvider toggleMute — multi-Call zombies', () => {
     expect(zombie.mute).toHaveBeenCalledWith(true);
   });
 
-  it('startCall evicts pre-existing zombie Calls before dialing', async () => {
+  it('startCall does NOT pre-disconnect existing Calls (regression: pre-eviction killed new dials)', async () => {
+    // Hugo's regression on 2026-04-26: pre-dial disconnectAllCalls() caused
+    // new dials to never reach Twilio's TwiML endpoint (status stuck at
+    // 'queued', twilio_call_sid null, phone never rang). Zombie cleanup
+    // now happens only on endCall, never before a fresh dial.
     const zombie = makeFakeCall();
     const live = makeFakeCall();
-    fakeDeviceCalls.push(zombie); // leftover from a prior test cycle
+    fakeDeviceCalls.push(zombie);
 
     invokeMock.mockResolvedValue({
       data: { call_id: CALL_UUID, allowed: true },
@@ -230,10 +234,11 @@ describe('ActiveCallProvider toggleMute — multi-Call zombies', () => {
       await snapshot!.startCall(CONTACT.id);
     });
 
-    expect(zombie.disconnect).toHaveBeenCalled();
-    // After eviction + new dial, the live Call is the only one tracked.
+    // Zombie must NOT be auto-disconnected at startCall — that path broke
+    // the new dial in production. The new live call is added alongside.
+    expect(zombie.disconnect).not.toHaveBeenCalled();
     expect(fakeDeviceCalls).toContain(live);
-    expect(fakeDeviceCalls).not.toContain(zombie);
+    expect(fakeDeviceCalls).toContain(zombie);
   });
 
   it('a prior Call disconnect does NOT stomp on a freshly placed call (regression for "hangs up immediately")', async () => {

@@ -258,11 +258,14 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       const phone = (phoneOverride ?? contact?.phone ?? '').trim();
       const contactName = contact?.name ?? nameOverride ?? 'Unknown caller';
 
-      // Evict any zombie Twilio Calls before placing a fresh one. Without
-      // this, prior leaked Calls (rapid test cycles, navigation mid-call,
-      // missed disconnects) keep streaming the agent's mic in parallel,
-      // and Mute can't catch up. Cheap no-op when device.calls is empty.
-      try { disconnectAllCalls(); } catch { /* ignore */ }
+      // We used to call disconnectAllCalls() here to evict zombie Calls
+      // before each new dial. Hugo's regression report (2026-04-26): "I
+      // try to recall and then it gets hung up immediately, never rings".
+      // Symptom: wk_calls inserted with status='queued', twilio_call_sid
+      // never set — Twilio never reaches our TwiML endpoint. Reverting the
+      // pre-dial eviction restores the dial flow. Zombie cleanup still
+      // happens on endCall and via muteAllCalls (which iterates device.calls
+      // and falls back to the active ref).
       activeTwilioCallRef.current = null;
 
       // Optimistic UI: show placing state so the agent gets immediate
@@ -350,6 +353,23 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       result.twilioCall.on('disconnect', onEnd);
       result.twilioCall.on('cancel', onCancel);
       result.twilioCall.on('reject', onEnd);
+      // Surface Twilio Call errors so we can see WHY a dial fails (no
+      // edge errors, no network errors, just the SDK-side reason). Hugo's
+      // "never rings" repro had no error trail at all — this fixes that.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      result.twilioCall.on('error', (err: any) => {
+        console.error('[twilio-call] error', {
+          code: err?.code,
+          message: err?.message,
+          name: err?.name,
+          causes: err?.causes,
+          description: err?.description,
+        });
+        store.pushToast(
+          `Call error ${err?.code ?? ''}: ${err?.message ?? 'unknown'}`,
+          'error'
+        );
+      });
       // SDK is the source of truth for mute state. Without this, calling
       // .mute() externally (or any internal track-replacement re-application)
       // would leave the React icon out of sync with the actual track.
