@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-04-26 — smsv2: coach prompt v2 (Belfort-style + bend on SMS-refusal)
+
+Hugo's 2026-04-26 live test surfaced that the coach was rigid: caller said
+"give me the breakdown over the phone" and the coach kept echoing "I'll send
+you the SMS, speak tomorrow". Coach prompt rewritten to fix that.
+
+**What changed**
+- `DEFAULT_COACH_PROMPT` in `supabase/functions/wk-voice-transcription/index.ts`
+  rewritten with: a straight-line Belfort stance (assumptive, looping,
+  scarcity/social-proof/urgency, never pushy), variable line length (1-3
+  sentences, up to ~50 words), and an explicit CRITICAL BRANCH for when the
+  caller refuses the SMS — coach now gives the spoken breakdown using the
+  deal numbers, then loops back to the tomorrow follow-up.
+- `max_tokens` raised 90 → 180 to fit the longer breakdown lines.
+- New migration `20260426_smsv2_coach_prompt_v2.sql` UPDATEs the canonical
+  singleton row in `wk_ai_settings.live_coach_system_prompt` AND changes the
+  column DEFAULT so fresh installs get v2 too. The DB value and the edge
+  function fallback are kept identical in the same PR.
+- Existing instructional-verb post-processor regex left untouched — still
+  drops lines that open with "Reintroduce…", "Tell them…", "Explain…", etc.
+
+**Not yet shipped (next PRs in this series — work items B–G of the plan)**
+- B: 4-column resizable LiveCallScreen layout (transcript + coach split,
+  contact/script/terminology panes, mid-call SMS).
+- C: `wk_terminologies` table + `wk_ai_settings.call_script` column.
+- D: mid-call SMS sender embedded in the call screen.
+- E: manual "Apply automation" button next to StageSelector.
+- F: transcript modal + `PastCallScreen` route on the calls page.
+- G: Settings UI — call script editor + Terminology tab.
+
+**Living docs**
+- Edge function `wk-voice-transcription` source-of-truth changed; will need
+  redeploy via `scripts/deploy-function.sh wk-voice-transcription` (Hugo /
+  Co-Pilot, agents do not deploy).
+- Migration applied via Supabase migration runner on next deploy.
+
 ## 2026-04-25 — smsv2: real Twilio dial + mock cleanup (PRs #526–#532)
 
 End-to-end TDD fix series so the /smsv2 surface stops being theater. Hugo
