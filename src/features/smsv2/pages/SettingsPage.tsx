@@ -21,6 +21,8 @@ import {
   Eye,
   EyeOff,
   Mail,
+  BookOpen,
+  FileText,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,6 +31,8 @@ import { MOCK_TEMPLATES, COACH_PROMPTS } from '../data/mockCampaigns';
 import { formatPence } from '../data/helpers';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useAiSettings } from '../hooks/useAiSettings';
+import { useDefaultCallScript } from '../hooks/useDefaultCallScript';
+import { useTerminologies, type Terminology } from '../hooks/useTerminologies';
 import { useTwilioAccount } from '../hooks/useTwilioAccount';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,6 +62,7 @@ const TABS = [
   { id: 'agents', label: 'Agents & spend', icon: Users },
   { id: 'numbers', label: 'Numbers', icon: Phone },
   { id: 'ai', label: 'AI coach', icon: Bot },
+  { id: 'glossary', label: 'Glossary', icon: BookOpen },
   { id: 'pacing', label: 'Pacing & safety', icon: Shield },
   { id: 'kill', label: 'Kill switches & audit', icon: Activity },
 ] as const;
@@ -115,6 +120,7 @@ export default function SettingsPage() {
           {tab === 'agents' && <AgentsTab />}
           {tab === 'numbers' && <NumbersTab />}
           {tab === 'ai' && <AITab />}
+          {tab === 'glossary' && <GlossaryTab />}
           {tab === 'pacing' && <PacingTab />}
           {tab === 'kill' && <KillTab />}
         </main>
@@ -1218,7 +1224,348 @@ function AITab() {
           </details>
         </div>
       </Card>
+
+      <CallScriptCard />
     </>
+  );
+}
+
+// ─── Default call script — feeds the live-call CallScriptPane (item B2) ──
+function CallScriptCard() {
+  const { script, loading, saving, saved, error, setField, save } = useDefaultCallScript();
+  return (
+    <Card
+      title="Default call script"
+      hint="Read by the live-call screen (col 3). Markdown supported."
+    >
+      <div className="space-y-3">
+        <div>
+          <Label>
+            <span className="inline-flex items-center gap-1">
+              <FileText className="w-3 h-3" /> Script name
+            </span>
+          </Label>
+          <input
+            type="text"
+            value={script.name}
+            onChange={(e) => setField('name', e.target.value)}
+            disabled={loading}
+            className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] disabled:bg-[#F9FAFB]"
+          />
+        </div>
+        <div>
+          <Label>Body (Markdown)</Label>
+          <textarea
+            value={script.body_md}
+            onChange={(e) => setField('body_md', e.target.value)}
+            disabled={loading}
+            rows={18}
+            placeholder={loading ? 'Loading…' : '# Open\n- "Hi {{first_name}}, this is {{agent_first_name}}…"'}
+            className="w-full px-3 py-2 text-[12px] font-mono border border-[#E5E7EB] rounded-[10px] disabled:bg-[#F9FAFB]"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => void save()}
+            disabled={saving || loading}
+            className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save script'}
+          </button>
+          <span className="text-[10px] text-[#9CA3AF]">
+            Stored in <code className="bg-[#F3F3EE] px-1 rounded">wk_call_scripts</code> (is_default = true).
+            Live-call CallScriptPane reads this row.
+          </span>
+        </div>
+        {error && <div className="text-[10px] text-[#EF4444]">⚠ {error}</div>}
+      </div>
+    </Card>
+  );
+}
+
+// ─── Glossary tab — wk_terminologies CRUD (admin) ─────────────────
+function GlossaryTab() {
+  const { items, loading, error, add, patch, remove } = useTerminologies();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{
+    term: string;
+    short_gist: string;
+    definition_md: string;
+  }>({ term: '', short_gist: '', definition_md: '' });
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const startEdit = (t: Terminology) => {
+    setEditingId(t.id);
+    setDraft({
+      term: t.term,
+      short_gist: t.short_gist ?? '',
+      definition_md: t.definition_md,
+    });
+  };
+
+  const startNew = () => {
+    setEditingId('new');
+    setDraft({ term: '', short_gist: '', definition_md: '' });
+  };
+
+  const cancel = () => {
+    setEditingId(null);
+    setDraft({ term: '', short_gist: '', definition_md: '' });
+    setActionError(null);
+  };
+
+  const save = async () => {
+    setActionError(null);
+    try {
+      if (editingId === 'new') {
+        const nextOrder = (items[items.length - 1]?.sort_order ?? 0) + 10;
+        await add({
+          term: draft.term.trim(),
+          short_gist: draft.short_gist.trim() || null,
+          definition_md: draft.definition_md.trim(),
+          sort_order: nextOrder,
+          is_active: true,
+        });
+      } else if (editingId) {
+        await patch(editingId, {
+          term: draft.term.trim(),
+          short_gist: draft.short_gist.trim() || null,
+          definition_md: draft.definition_md.trim(),
+        });
+      }
+      cancel();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'save failed');
+    }
+  };
+
+  const toggleActive = async (t: Terminology) => {
+    setActionError(null);
+    try {
+      await patch(t.id, { is_active: !t.is_active });
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'update failed');
+    }
+  };
+
+  const move = async (t: Terminology, dir: -1 | 1) => {
+    const idx = items.findIndex((x) => x.id === t.id);
+    const swapWith = items[idx + dir];
+    if (!swapWith) return;
+    setActionError(null);
+    try {
+      await Promise.all([
+        patch(t.id, { sort_order: swapWith.sort_order }),
+        patch(swapWith.id, { sort_order: t.sort_order }),
+      ]);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'reorder failed');
+    }
+  };
+
+  const del = async (t: Terminology) => {
+    if (!confirm(`Delete "${t.term}"? This is permanent.`)) return;
+    setActionError(null);
+    try {
+      await remove(t.id);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'delete failed');
+    }
+  };
+
+  return (
+    <>
+      <Card
+        title="Glossary"
+        hint="Terms shown on the live-call screen (col 4). Realtime — agents see edits live."
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[12px] text-[#6B7280]">
+            {loading ? 'Loading…' : `${items.length} terms`}
+          </div>
+          <button
+            onClick={startNew}
+            disabled={editingId !== null}
+            className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] inline-flex items-center gap-1 hover:bg-[#1E9A80]/90 disabled:opacity-60"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add term
+          </button>
+        </div>
+
+        {(error || actionError) && (
+          <div className="text-[11px] text-[#EF4444] mb-2">
+            ⚠ {actionError ?? error}
+          </div>
+        )}
+
+        {editingId === 'new' && (
+          <GlossaryEditor
+            draft={draft}
+            setDraft={setDraft}
+            onSave={save}
+            onCancel={cancel}
+          />
+        )}
+
+        <div className="space-y-2">
+          {items.map((t, i) => (
+            <div
+              key={t.id}
+              className={cn(
+                'border rounded-xl p-3 transition-colors',
+                t.is_active
+                  ? 'border-[#E5E7EB] bg-white'
+                  : 'border-[#E5E7EB] bg-[#F9FAFB] opacity-70'
+              )}
+            >
+              {editingId === t.id ? (
+                <GlossaryEditor
+                  draft={draft}
+                  setDraft={setDraft}
+                  onSave={save}
+                  onCancel={cancel}
+                />
+              ) : (
+                <div className="flex gap-3">
+                  <div className="flex flex-col items-center gap-0.5 pt-0.5">
+                    <button
+                      onClick={() => void move(t, -1)}
+                      disabled={i === 0}
+                      className="text-[#9CA3AF] hover:text-[#1A1A1A] disabled:opacity-30 text-[10px]"
+                      title="Move up"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => void move(t, 1)}
+                      disabled={i === items.length - 1}
+                      className="text-[#9CA3AF] hover:text-[#1A1A1A] disabled:opacity-30 text-[10px]"
+                      title="Move down"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="text-[14px] font-semibold text-[#1A1A1A]">
+                        {t.term}
+                      </div>
+                      {!t.is_active && (
+                        <span className="text-[10px] text-[#9CA3AF] uppercase tracking-wide">
+                          inactive
+                        </span>
+                      )}
+                    </div>
+                    {t.short_gist && (
+                      <div className="text-[12px] text-[#6B7280] mt-0.5">
+                        {t.short_gist}
+                      </div>
+                    )}
+                    <details className="mt-1.5">
+                      <summary className="text-[11px] text-[#1E9A80] cursor-pointer hover:underline">
+                        Show definition
+                      </summary>
+                      <pre className="mt-2 text-[11px] text-[#1A1A1A] whitespace-pre-wrap font-mono bg-[#F3F3EE] rounded p-2 leading-relaxed">
+                        {t.definition_md}
+                      </pre>
+                    </details>
+                  </div>
+                  <div className="flex flex-col gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => startEdit(t)}
+                      className="text-[11px] px-2 py-1 rounded-md border border-[#E5E7EB] hover:bg-[#F3F3EE] text-[#1A1A1A]"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => void toggleActive(t)}
+                      className="text-[11px] px-2 py-1 rounded-md border border-[#E5E7EB] hover:bg-[#F3F3EE] text-[#6B7280]"
+                    >
+                      {t.is_active ? 'Hide' : 'Show'}
+                    </button>
+                    <button
+                      onClick={() => void del(t)}
+                      className="text-[11px] px-2 py-1 rounded-md text-[#EF4444] hover:bg-[#FEF2F2]"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+          {!loading && items.length === 0 && editingId !== 'new' && (
+            <div className="text-[12px] text-[#9CA3AF] text-center py-6">
+              No glossary terms yet. Click "Add term" to create the first one.
+            </div>
+          )}
+        </div>
+      </Card>
+    </>
+  );
+}
+
+function GlossaryEditor({
+  draft,
+  setDraft,
+  onSave,
+  onCancel,
+}: {
+  draft: { term: string; short_gist: string; definition_md: string };
+  setDraft: (d: { term: string; short_gist: string; definition_md: string }) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const set = (k: keyof typeof draft, v: string) => setDraft({ ...draft, [k]: v });
+  const canSave = draft.term.trim().length > 0 && draft.definition_md.trim().length > 0;
+  return (
+    <div className="border border-[#1E9A80]/40 bg-[#ECFDF5] rounded-xl p-3 mb-3 space-y-2">
+      <div>
+        <Label>Term</Label>
+        <input
+          type="text"
+          value={draft.term}
+          onChange={(e) => set('term', e.target.value)}
+          placeholder="e.g. Gross yield"
+          className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
+        />
+      </div>
+      <div>
+        <Label>Short gist (one line, shown collapsed)</Label>
+        <input
+          type="text"
+          value={draft.short_gist}
+          onChange={(e) => set('short_gist', e.target.value)}
+          placeholder="e.g. Annual rental income / property value, before costs."
+          className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
+        />
+      </div>
+      <div>
+        <Label>Definition (Markdown)</Label>
+        <textarea
+          value={draft.definition_md}
+          onChange={(e) => set('definition_md', e.target.value)}
+          rows={5}
+          placeholder="**Term** — full definition. Use **bold** + bullets if needed."
+          className="w-full px-3 py-2 text-[12px] font-mono border border-[#E5E7EB] rounded-[10px] bg-white"
+        />
+      </div>
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={onSave}
+          disabled={!canSave}
+          className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+        >
+          Save
+        </button>
+        <button
+          onClick={onCancel}
+          className="text-[12px] text-[#6B7280] px-3 py-1.5 rounded-[10px] hover:bg-[#F3F3EE]"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 

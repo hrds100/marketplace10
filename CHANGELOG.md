@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-04-26 — smsv2: Settings UI for call script + glossary (item G)
+
+Hugo can now self-serve both the live-call call script and the agent
+glossary from the Settings UI — no code changes needed.
+
+- New "Default call script" card at the bottom of the **AI coach** tab.
+  Loads / saves the `wk_call_scripts` row flagged `is_default = true`
+  (Markdown body). The CallScriptPane on the live-call screen reads this
+  same row (item B2 wires the read).
+- New top-level **Glossary** tab. Lists every `wk_terminologies` entry
+  with: term, optional one-line gist, expandable Markdown definition,
+  reorder (▲▼), hide/show (is_active toggle), delete, and add-new.
+  Realtime — agents on a live call see admin edits propagate without
+  reload.
+- New hooks:
+  - `useDefaultCallScript` — load/save the default script row.
+  - `useTerminologies` — list + add/patch/delete + realtime channel.
+
+No frontend changes to LiveCallScreen yet — that's item B2.
+
 ## 2026-04-26 — smsv2: terminology cards + default call script (item C)
 
 Schema scaffolding for the new live-call surface (items B2 + G).
