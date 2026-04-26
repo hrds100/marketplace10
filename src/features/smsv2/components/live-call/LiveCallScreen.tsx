@@ -7,7 +7,6 @@ import {
   PhoneOff,
   Minimize2,
   Flame,
-  Tag,
   Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -22,8 +21,9 @@ import CallScriptPane from './CallScriptPane';
 import FactsDrawer from './FactsDrawer';
 import MidCallSmsSender from './MidCallSmsSender';
 import ApplyAutomationButton from './ApplyAutomationButton';
+import ContactMetaCompact from './ContactMetaCompact';
+import CallTimeline from './CallTimeline';
 import PostCallPanel from './PostCallPanel';
-import StageSelector from '../shared/StageSelector';
 import EditContactModal from '../contacts/EditContactModal';
 import type { Contact } from '../../types';
 import { useSmsV2 } from '../../store/SmsV2Store';
@@ -44,7 +44,6 @@ export default function LiveCallScreen() {
   const contact =
     store.contacts.find((c) => c.id === call?.contactId) ?? store.contacts[0];
 
-  const stage = store.columns.find((c) => c.id === contact.pipelineColumnId);
   const contactFirstName = contact.name?.trim().split(/\s+/)[0] ?? '';
 
   return (
@@ -206,66 +205,22 @@ export default function LiveCallScreen() {
             <div className="text-[11px] text-[#9CA3AF] mt-0.5">
               Added {formatRelativeTime(contact.createdAt)}
             </div>
-            <div className="mt-2 space-y-2">
-              <StageSelector
-                value={contact.pipelineColumnId}
-                onChange={(col) => store.patchContact(contact.id, { pipelineColumnId: col })}
-                size="sm"
-              />
-              <ApplyAutomationButton
-                callId={call?.callId ?? null}
-                contactId={contact.id}
-                columnId={contact.pipelineColumnId}
-              />
+            {/* Phase 6 (Hugo 2026-04-30): compact meta — pipeline + tags
+                + last-contact side-by-side, frees vertical space for the
+                timeline below SMS. */}
+            <div className="mt-2">
+              <ContactMetaCompact contact={contact} />
+              <div className="mt-2">
+                <ApplyAutomationButton
+                  callId={call?.callId ?? null}
+                  contactId={contact.id}
+                  columnId={contact.pipelineColumnId}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 text-[12px]">
-            <KV label="Pipeline" value={stage?.name ?? '—'} colour={stage?.colour} />
-            <KV
-              label="Last contact"
-              value={contact.lastContactAt ? formatRelativeTime(contact.lastContactAt) : 'Never'}
-            />
-            <KV
-              label="Tags"
-              value={
-                <div className="flex gap-1 flex-wrap">
-                  {contact.tags.map((t) => (
-                    <span
-                      key={t}
-                      className="text-[10px] font-medium bg-[#F3F3EE] text-[#6B7280] px-1.5 py-0.5 rounded inline-flex items-center gap-0.5"
-                    >
-                      <Tag className="w-2.5 h-2.5" /> {t}
-                    </span>
-                  ))}
-                </div>
-              }
-            />
-            {contact.dealValuePence && (
-              <KV
-                label="Deal value"
-                value={
-                  <span className="font-semibold text-[#1E9A80] tabular-nums">
-                    {formatPence(contact.dealValuePence)}
-                  </span>
-                }
-              />
-            )}
-
-            {Object.entries(contact.customFields).map(([k, v]) => (
-              <KV key={k} label={k} value={v} />
-            ))}
-
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-wide text-[#9CA3AF] mb-1.5">
-                Notes (sticky)
-              </div>
-              <div className="bg-[#FEF7E6] border border-[#FDE68A] rounded-lg p-2 text-[12px] text-[#1A1A1A] leading-snug">
-                Asked about deposit handling on the previous call. Wants written breakdown
-                comparing Rightmove gross.
-              </div>
-            </div>
-
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-[12px]">
             {/* Mid-call SMS sender (Hugo 2026-04-26): templated send without
                 leaving the call screen. Reuses sms-send edge fn. */}
             <MidCallSmsSender
@@ -274,6 +229,9 @@ export default function LiveCallScreen() {
               contactPhone={contact.phone}
               agentFirstName={myFirstName ?? ''}
             />
+            {/* Phase 6 (Hugo 2026-04-30): timeline below SMS — sends,
+                coach lines, stage moves, notes. Reads wk_call_timeline. */}
+            <CallTimeline callId={call?.callId ?? null} />
           </div>
         </ResizablePanel>
 
@@ -349,26 +307,4 @@ function TopBtn({
   );
 }
 
-function KV({
-  label,
-  value,
-  colour,
-}: {
-  label: string;
-  value: React.ReactNode;
-  colour?: string;
-}) {
-  return (
-    <div>
-      <div className="text-[10px] font-bold uppercase tracking-wide text-[#9CA3AF] mb-0.5">
-        {label}
-      </div>
-      <div className="text-[12px] text-[#1A1A1A] flex items-center gap-1.5">
-        {colour && (
-          <span className="w-2 h-2 rounded-full inline-block" style={{ background: colour }} />
-        )}
-        {value}
-      </div>
-    </div>
-  );
-}
+// KV helper removed in Phase 6 — meta moved into ContactMetaCompact.
