@@ -100,12 +100,35 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const activeTwilioCallRef = useRef<TwilioCall | null>(null);
 
   const toggleMute = useCallback(() => {
-    const c = activeTwilioCallRef.current;
-    if (!c) return;
-    const next = !muted;
-    try { c.mute(next); } catch (e) { console.warn('mute failed', e); return; }
+    // Prefer the active call ref (set on startCall + inbound paths). Fall back
+    // to whatever Twilio Device currently treats as the live call — covers the
+    // dialer-winner broadcast path and any race where the manual ref hasn't
+    // landed yet. Without this, clicking Mute silently no-ops and the callee
+    // keeps hearing the agent.
+    const c = activeTwilioCallRef.current ?? device.activeCall ?? null;
+    if (!c) {
+      console.info('[mute] no active Twilio Call — toggleMute is a no-op');
+      return;
+    }
+    // Read truth from the SDK, not stale React state. If another flow (or
+    // the SDK itself, on a track replacement) flipped mute, our local state
+    // could be wrong, and !muted would re-mute instead of unmute.
+    const wasMuted = (() => {
+      try { return c.isMuted(); } catch { return muted; }
+    })();
+    const next = !wasMuted;
+    console.info('[mute] toggle', { wasMuted, next });
+    try {
+      c.mute(next);
+    } catch (e) {
+      console.warn('[mute] failed', e);
+      return;
+    }
+    // The 'mute' event listener wired in startCall / incoming will sync
+    // React state. Set optimistically so the icon flips immediately even
+    // if the SDK doesn't emit (e.g. unit tests with a bare fake Call).
     setMuted(next);
-  }, [muted]);
+  }, [muted, device.activeCall]);
 
   useEffect(() => {
     if (phase === 'in_call') {
@@ -194,6 +217,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       activeTwilioCallRef.current = call;
       setPhase('in_call');
       setFullScreen(true);
+      setMuted(false);
 
       const onEnd = () => {
         if (activeTwilioCallRef.current === call) {
@@ -204,6 +228,11 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       call.on('disconnect', onEnd);
       call.on('cancel', onEnd);
       call.on('reject', onEnd);
+      // SDK is the source of truth for mute state — wire it into React.
+      call.on('mute', (isMuted: boolean) => {
+        console.info('[mute] sdk event', isMuted);
+        setMuted(isMuted);
+      });
     });
     return unsubscribe;
   }, [store]);
@@ -268,6 +297,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       setCall((prev) =>
         prev ? { ...prev, callId: result.callId, startedAt: Date.now() } : prev
       );
+      setMuted(false);
 
       const onAccept = () => {
         setPhase('in_call');
@@ -289,6 +319,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         setCall(null);
       });
       result.twilioCall.on('reject', onEnd);
+      // SDK is the source of truth for mute state. Without this, calling
+      // .mute() externally (or any internal track-replacement re-application)
+      // would leave the React icon out of sync with the actual track.
+      result.twilioCall.on('mute', (isMuted: boolean) => {
+        console.info('[mute] sdk event', isMuted);
+        setMuted(isMuted);
+      });
 
       return result;
     },
