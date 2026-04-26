@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Lightbulb, HelpCircle, Activity, MessageSquare } from 'lucide-react';
+import {
+  AlertTriangle,
+  Lightbulb,
+  HelpCircle,
+  Activity,
+  MessageSquare,
+  BookOpen,
+  Megaphone,
+} from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -30,18 +38,41 @@ interface LiveTranscriptRow {
   ts: string;
 }
 
+// PR 6 (Hugo 2026-04-26) — kind set extended to script | suggestion |
+// explain. Legacy kinds (objection, question, metric, warning) kept for
+// historic rows but not produced by the coach prompt anymore.
+type CoachKind =
+  | 'script'
+  | 'suggestion'
+  | 'explain'
+  | 'objection'
+  | 'question'
+  | 'metric'
+  | 'warning';
+
 interface LiveCoachRow {
   id: string;
-  kind: 'objection' | 'suggestion' | 'question' | 'metric' | 'warning';
+  kind: CoachKind;
   body: string;
   ts: string;
+  /** For kind === 'script': human label of the section (Open / Qualify
+   *  / Pitch / …). Surfaces in the badge as "SCRIPT — <section>". */
+  script_section?: string | null;
 }
 
-const COACH_ICONS = {
+const COACH_ICONS: Record<
+  CoachKind,
+  { Icon: typeof Lightbulb; colour: string; label: string }
+> = {
+  // v10 kinds (PR 6)
+  script: { Icon: BookOpen, colour: '#1E9A80', label: 'SCRIPT' },
+  suggestion: { Icon: Lightbulb, colour: '#0F766E', label: 'SUGGESTION' },
+  explain: { Icon: Megaphone, colour: '#7C3AED', label: 'EXPLAIN' },
+  // Legacy kinds — historic rows still render with sensible icons.
   objection: { Icon: AlertTriangle, colour: '#EF4444', label: '⚠ OBJECTION' },
-  suggestion: { Icon: Lightbulb, colour: '#1E9A80', label: '💡 YOU COULD SAY' },
   question: { Icon: HelpCircle, colour: '#3B82F6', label: '❓ ASK' },
   warning: { Icon: Activity, colour: '#F59E0B', label: '📊 INSIGHT' },
+  metric: { Icon: Activity, colour: '#F59E0B', label: '📊 METRIC' },
 };
 
 // Hugo 2026-04-28 / 30: only the LATEST card matters for reading
@@ -139,7 +170,7 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
           .order('ts', { ascending: true }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_live_coach_events' as any) as any)
-          .select('id, kind, body, ts')
+          .select('id, kind, body, ts, script_section')
           .eq('call_id', callId)
           .order('ts', { ascending: true }),
       ]);
@@ -230,16 +261,18 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
       : [];
   const events = useLive
     ? liveEvents
-        .filter((e) => e.kind === 'objection' || e.kind === 'suggestion'
-          || e.kind === 'question' || e.kind === 'warning')
+        .filter((e) => e.kind in COACH_ICONS)
         .map((e) => ({
           id: e.id,
-          kind: e.kind as 'objection' | 'suggestion' | 'question' | 'warning',
+          kind: e.kind,
           title: '',
           body: e.body,
+          script_section: e.script_section ?? null,
         }))
     : allowMock
-      ? MOCK_COACH_EVENTS.filter((e) => e.ts <= Math.max(durationSec, 140))
+      ? MOCK_COACH_EVENTS.filter((e) => e.ts <= Math.max(durationSec, 140)).map(
+          (e) => ({ ...e, script_section: null as string | null })
+        )
       : [];
 
   useEffect(() => {
@@ -369,7 +402,12 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
                       )}
                       style={{ color: meta.colour }}
                     >
-                      <span>{meta.label}{event.title ? ` · ${event.title}` : ''}</span>
+                      <span>
+                        {event.kind === 'script' && event.script_section
+                          ? `${meta.label} — ${event.script_section}`
+                          : meta.label}
+                        {event.title ? ` · ${event.title}` : ''}
+                      </span>
                       {isLatest && (
                         <span className="text-[9px] font-semibold uppercase bg-[#1E9A80] text-white px-1.5 py-0.5 rounded">
                           latest
