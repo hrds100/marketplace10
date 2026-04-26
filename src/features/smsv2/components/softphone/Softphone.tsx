@@ -51,11 +51,12 @@ export default function Softphone() {
     return <LiveCallScreen />;
   }
 
-  // Placing collapsed bar (calling but not yet answered) — amber + ringing dot.
+  // Placing collapsed bar (calling but not yet answered) — black + ringing
+  // dot. Hugo's call (2026-04-26): orange "felt off" for a connecting state.
   if (phase === 'placing' && !fullScreen) {
     return (
       <div className="fixed bottom-5 right-5 z-[120] bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] w-[320px] overflow-hidden">
-        <div className="px-4 py-2.5 bg-[#F59E0B] text-white flex items-center gap-2">
+        <div className="px-4 py-2.5 bg-[#1A1A1A] text-white flex items-center gap-2">
           <span className="relative w-2 h-2 inline-flex">
             <span className="absolute inset-0 rounded-full bg-white animate-ping" />
             <span className="relative w-2 h-2 rounded-full bg-white" />

@@ -74,28 +74,35 @@ async function generateCoachSuggestion(
 ): Promise<string | null> {
   if (!apiKey || !latestUtterance || speaker !== 'caller') return null;
 
-  // Strong, opinionated system prompt that grounds the model in the actual
-  // business (NFSTAY / UK rent-to-rent landlord acquisition) and forbids
-  // the generic "Mirror their energy" filler the model defaults to. The
-  // wk_ai_settings.live_coach_system_prompt is intentionally NOT used here
-  // until we can audit what it contains — it was producing repetitive
-  // suggestions in production.
+  // Teleprompter-style coach. Hugo's feedback (2026-04-26): "you need to say
+  // EXACTLY what to say". The previous prompt produced meta-guidance like
+  // "Reintroduce yourself and ask if they have a moment to talk" — useful as
+  // an instruction but useless on a live call where the agent needs words to
+  // read aloud right now. We now demand a verbatim line, first person, ready
+  // to speak. No instructional verbs ("Reintroduce / Describe / Ask / Pivot
+  // to / Tell them"); the model must write the SCRIPT, not direct it.
   const systemPrompt = [
-    'You are a real-time sales coach for an NFSTAY rent-to-rent agent in the UK.',
-    'NFSTAY signs landlords to a 3-5 year lease, then sublets short-term on Airbnb / Booking.com.',
-    'The agent is on a live phone call with a landlord lead.',
+    'You are a live teleprompter for an NFSTAY rent-to-rent agent on a phone call with a UK landlord.',
+    'NFSTAY signs landlords to a 3-5 year lease, then sublets short-term on Airbnb / Booking.com — landlord gets guaranteed rent (often above market), zero void months, no tenant management.',
     '',
-    'Your job: REACT to the SPECIFIC thing the caller just said and give the agent ONE concrete, situational tip.',
+    'Your job: write the EXACT next sentence the agent should say out loud, in first person, ready to read verbatim.',
     '',
     'Hard rules:',
-    '- Reply with exactly ONE tip, max 14 words.',
-    '- Never use the phrase "Mirror their energy".',
-    '- Never reply with the word "skip".',
-    '- Do not give generic advice (e.g. "ask open questions"). Be specific to what the caller said.',
-    '- If the caller asked a question, suggest the exact answer the agent should give.',
-    '- If the caller raised an objection, suggest how to handle that objection.',
-    '- If the caller stated a fact (location, property type, timeline), suggest the next probe.',
-    '- No greeting. No prefix. Just the tip itself.',
+    '- Reply with ONE spoken line only, 8-25 words. No bullets, no quotes, no prefix.',
+    '- First person ("I", "we", "us"), conversational, plain English. UK spelling.',
+    '- NEVER use instructional verbs like "Reintroduce", "Ask", "Describe", "Pivot", "Mention", "Tell them", "Explain", "Suggest", "Confirm". You are writing the line, not giving directions about it.',
+    '- React to the SPECIFIC thing the caller just said. If they asked a question, write the answer. If they objected, write the rebuttal. If they shared a fact, write the next probe — all as a sentence the agent says next.',
+    '- Never say "Mirror their energy". Never reply with "skip".',
+    '',
+    'Good examples (teleprompter style):',
+    '- "Totally fair — most landlords ask that. We sign a 3-5 year lease and pay you a fixed monthly rent regardless of bookings."',
+    '- "Sounds like the boiler is the bottleneck — would you want us to handle that maintenance under our lease?"',
+    '- "Perfect, a 2-bed in Manchester city centre normally clears around £2,400 a month for us — could that work for you?"',
+    '',
+    'Bad examples (NEVER write like this):',
+    '- "Reintroduce yourself and ask if they have a moment." (instructional)',
+    '- "Describe how NFSTAY maximizes rental income." (instructional)',
+    '- "Ask about the property location." (instructional)',
   ].join('\n');
 
   const userMsg = [
@@ -104,7 +111,7 @@ async function generateCoachSuggestion(
     '',
     `Caller just said: "${latestUtterance}"`,
     '',
-    'One concrete tip:',
+    'Write the EXACT next sentence the agent should say (first person, verbatim, no instructions):',
   ].join('\n');
 
   try {
@@ -119,7 +126,7 @@ async function generateCoachSuggestion(
         temperature: 0.7,            // higher → less repetition across calls
         presence_penalty: 0.6,       // discourage reusing words from prior tips
         frequency_penalty: 0.4,
-        max_tokens: 60,
+        max_tokens: 90,              // ~25-word teleprompter line + slack
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMsg },
@@ -134,11 +141,18 @@ async function generateCoachSuggestion(
     let text = String(j?.choices?.[0]?.message?.content ?? '').trim();
     if (!text) return null;
     // Strip leading "Tip:" / "Coach:" / leading dash, etc.
-    text = text.replace(/^["“”'`]*(tip|coach|suggestion)\s*[:\-—]\s*/i, '').replace(/^[-•—]\s*/, '').trim();
+    text = text.replace(/^["“”'`]*(tip|coach|suggestion|say|script)\s*[:\-—]\s*/i, '').replace(/^[-•—]\s*/, '').trim();
     text = text.replace(/^["“”'`]+|["“”'`]+$/g, '').trim();
     if (!text) return null;
     if (/^skip\.?$/i.test(text)) return null;
     if (/mirror\s+(their|the)\s+energy/i.test(text)) return null; // belt-and-braces
+    // Reject instructional output that slipped through. The model still
+    // sometimes opens with "Reintroduce…", "Ask…", "Describe…" — drop it
+    // rather than mislead the agent. Better no card than a meta-instruction.
+    if (/^(reintroduce|ask\b|describe\b|pivot\b|mention\b|tell them\b|explain\b|suggest\b|confirm\b|probe\b|emphasi[sz]e\b|highlight\b|address\b|acknowledge\b|reassure\b|offer\b|propose\b|invite\b|encourage\b|remind\b|clarify\b|share\b|present\b|discuss\b|outline\b|summari[sz]e\b)/i.test(text)) {
+      console.warn('[wk-voice-transcription] coach produced instructional output, dropping:', text);
+      return null;
+    }
     return text;
   } catch (e) {
     console.warn('[wk-voice-transcription] openai chat threw', e);

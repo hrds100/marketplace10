@@ -48,14 +48,14 @@ export default function LiveCallScreen() {
   return (
     <div className="fixed inset-0 z-[200] bg-[#F3F3EE] flex flex-col">
       {/* Top bar — three visual states:
-            placing  → amber bar with ringing dots (clearly "calling…")
+            placing  → black bar with ringing dots (Hugo: no orange/red here)
             in_call  → green bar with pulsing dot + duration
             post_call → white bar, muted */}
       <header
         className={cn(
           'h-14 flex items-center px-5 gap-3 flex-shrink-0 transition-colors',
           phase === 'in_call' && 'bg-[#1E9A80] text-white',
-          phase === 'placing' && 'bg-[#F59E0B] text-white',
+          phase === 'placing' && 'bg-[#1A1A1A] text-white',
           phase === 'post_call' && 'bg-white border-b border-[#E5E7EB] text-[#1A1A1A]',
           phase === 'idle' && 'bg-white border-b border-[#E5E7EB] text-[#1A1A1A]'
         )}
