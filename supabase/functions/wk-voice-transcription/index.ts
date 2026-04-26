@@ -97,7 +97,7 @@ interface CoachOptions {
 
 async function generateCoachSuggestion(
   opts: CoachOptions
-): Promise<string | null> {
+): Promise<CoachOutput | null> {
   const {
     apiKey,
     model: modelOverride,
@@ -255,8 +255,14 @@ async function generateCoachSuggestion(
     '- "Once it lands, mind if I ring you tomorrow to talk through it — morning or afternoon?"',
     '- "I\'ll call you tomorrow to walk through anything that\'s come up, what time suits?"',
     '',
-    'OUTPUT',
-    'Return exactly one read-aloud line for the next thing the rep should say.',
+    'OUTPUT FORMAT — v10 (Hugo 2026-04-26)',
+    'Every line MUST start with one of these classifier prefixes so the UI can label the card correctly:',
+    '- `[SCRIPT: <stage>] <line>` — caller is on-script, your line is the next thing the rep should read from the script. <stage> must be one of: Open, Qualify, Permission to pitch, Pitch, Returns, SMS close, Follow-up lock. Example: `[SCRIPT: Qualify] Are you already running Airbnbs yourself, or is this newer territory?`',
+    '- `[SUGGESTION] <line>` — caller went off-script and the rep needs a fresh line that isn\'t in the script. Example: `[SUGGESTION] Fair, market\'s busy — what would have to line up for you to actually move on something?`',
+    '- `[EXPLAIN] <line>` — caller raised an objection or asked a factual question; your line answers it from the KNOWLEDGE BASE. Example: `[EXPLAIN] Fair — yields aren\'t guaranteed, but partners vote on management and platform, and monthly actuals are visible on the platform.`',
+    'Default to SCRIPT whenever the caller\'s utterance plausibly falls inside one of the seven stages above. SUGGESTION is for genuine off-script moments; EXPLAIN is reserved for objections or KB-grounded factual answers.',
+    'If you output the silence marker (see SILENCE RULE), do NOT add a prefix — just the bare `STAY_ON_SCRIPT`.',
+    'Return exactly ONE classified line. No quotes around the line. No labels other than the prefix.',
   ].join('\n');
 
   // Resolve each layer: prefer DB content, fall back to canonical default.
@@ -325,7 +331,7 @@ async function generateCoachSuggestion(
     '',
     `Caller just said: "${latestUtterance}"`,
     '',
-    'Return ONE script-faithful read-aloud line for the rep to say next. Plain UK English. No labels. No quotation marks. No acting notes. No variants. Just the line. Do NOT start with any banned opener n-gram listed above.',
+    'Return ONE classified line per the OUTPUT FORMAT block — `[SCRIPT: <stage>]`, `[SUGGESTION]`, `[EXPLAIN]`, or the bare `STAY_ON_SCRIPT` marker. Plain UK English. No quotation marks around the line. No acting notes. No variants. Do NOT start with any banned opener n-gram listed above.',
   ].join('\n');
 
   try {
@@ -357,7 +363,7 @@ async function streamCoachInternal(args: {
   userMsg: string;
   onChunk: (accumulated: string, isFirst: boolean) => void;
   isAborted: () => boolean;
-}): Promise<string | null> {
+}): Promise<CoachOutput | null> {
   const { apiKey, model, systemMessages, userMsg, onChunk, isAborted } = args;
 
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -382,7 +388,7 @@ async function streamCoachInternal(args: {
       // v8: tag this prompt prefix so OpenAI prompt-caching buckets
       // calls with the same three system messages together. Cache TTL
       // is ~5 min; back-to-back calls in a session reuse the prefix.
-      prompt_cache_key: 'nfstay-coach-v8',
+      prompt_cache_key: 'nfstay-coach-v10',
       messages: [
         ...systemMessages
           .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
@@ -440,11 +446,37 @@ async function streamCoachInternal(args: {
   return postProcessCoachText(accumulated);
 }
 
+// Coach card kinds shipped in PR 6 (Hugo 2026-04-26):
+//   script     — model echoed (or paraphrased) the next script line
+//   suggestion — caller went off-script, model wrote a fresh line
+//   explain    — caller raised an objection / KB question, model
+//                composed a KB-grounded answer
+//
+// `scriptSection` carries the human label of the section the SCRIPT
+// card belongs to (e.g. "Qualify", "Permission to pitch") — surfaced
+// in the UI as `SCRIPT — Qualify`. Null for non-script kinds.
+type CoachKind = 'script' | 'suggestion' | 'explain';
+
+interface CoachOutput {
+  kind: CoachKind;
+  scriptSection: string | null;
+  body: string;
+}
+
+// Recognises the v10 prefix the model emits to classify its own line.
+// Tolerates the colon being absent for SUGGESTION / EXPLAIN, and any
+// whitespace inside the brackets. Match is anchored to the start —
+// must run BEFORE the generic [bracket-tag] strip below or that
+// regex will eat the prefix.
+const COACH_KIND_PREFIX_RE =
+  /^\[\s*(script|suggestion|explain)\s*(?::\s*([^\]]+))?\s*\]\s*/i;
+
 // Pulled out so streaming and any future non-streaming caller share the
 // same rejection rules. Returns null when the line should be dropped.
-function postProcessCoachText(raw: string): string | null {
+function postProcessCoachText(raw: string): CoachOutput | null {
   let text = (raw ?? '').trim();
   if (!text) return null;
+
   // v9 (PR D 2026-04-30): SILENCE RULE marker. The script prompt
   // instructs the model to output exactly `STAY_ON_SCRIPT` when the
   // caller's last utterance is filler, an acknowledgement, mid-thought,
@@ -455,6 +487,23 @@ function postProcessCoachText(raw: string): string | null {
   if (/^stay[_\s-]?on[_\s-]?script$/i.test(stripped)) {
     return null;
   }
+
+  // v10 (PR 6 2026-04-26): parse the kind prefix BEFORE generic bracket
+  // stripping. If absent, fall back to suggestion (the legacy default).
+  let kind: CoachKind = 'suggestion';
+  let scriptSection: string | null = null;
+  const prefixMatch = COACH_KIND_PREFIX_RE.exec(text);
+  if (prefixMatch) {
+    const tag = prefixMatch[1].toLowerCase();
+    if (tag === 'script' || tag === 'suggestion' || tag === 'explain') {
+      kind = tag as CoachKind;
+    }
+    if (prefixMatch[2]) {
+      scriptSection = prefixMatch[2].trim();
+    }
+    text = text.slice(prefixMatch[0].length).trim();
+  }
+
   // Strip leading "Tip:" / "Coach:" / leading dash, etc.
   text = text.replace(/^["“”'`]*(tip|coach|suggestion|say|script)\s*[:\-—]\s*/i, '').replace(/^[-•—]\s*/, '').trim();
   text = text.replace(/^["“”'`]+|["“”'`]+$/g, '').trim();
@@ -473,7 +522,7 @@ function postProcessCoachText(raw: string): string | null {
     console.warn('[wk-voice-transcription] coach produced instructional output, dropping:', text);
     return null;
   }
-  return text;
+  return { kind, scriptSection, body: text };
 }
 
 // ----------------------------------------------------------------------------
@@ -794,18 +843,23 @@ serve(async (req: Request) => {
           }
 
           // 10. Finalize: post-processor either keeps the row (status
-          //     = 'final', body = cleaned) or deletes it.
+          //     = 'final', body / kind / script_section from cleaned)
+          //     or deletes it.
           if (!cleaned) {
             await supa.from('wk_live_coach_events').delete().eq('id', placeholderId);
             log('rejected by post-processor', 'deleted');
             return;
           }
-          const kind = cleaned.endsWith('?') ? 'question' : 'suggestion';
           await supa
             .from('wk_live_coach_events')
-            .update({ body: cleaned, status: 'final', kind })
+            .update({
+              body: cleaned.body,
+              status: 'final',
+              kind: cleaned.kind,
+              script_section: cleaned.scriptSection,
+            })
             .eq('id', placeholderId);
-          log('final update', `chars=${cleaned.length} kind=${kind}`);
+          log('final update', `chars=${cleaned.body.length} kind=${cleaned.kind}${cleaned.scriptSection ? ` section="${cleaned.scriptSection}"` : ''}`);
         } catch (e) {
           console.warn(`[wk-voice-transcription] [coach gen=${genShort}] pipeline threw`, e);
         }

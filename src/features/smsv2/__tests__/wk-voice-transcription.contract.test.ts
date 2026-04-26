@@ -237,7 +237,7 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
   });
 
   it('v8 — OpenAI request tagged with prompt_cache_key for prefix caching', () => {
-    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v8['"]/);
+    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10)['"]/);
   });
 
   it('v8 — script prompt is intent-based with USE FRESH WORDING + EARNED-PITCH + JUST EXPLORING', () => {
@@ -293,5 +293,34 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     // punctuation when the model wraps it; the early-return must
     // tolerate that or the marker leaks into the agent UI.
     expect(source).toMatch(/stay\[_\\s-\]\?on\[_\\s-\]\?script/i);
+  });
+
+  it('v10 — script prompt has OUTPUT FORMAT block with [SCRIPT] / [SUGGESTION] / [EXPLAIN]', () => {
+    // PR 6: every coach line must start with one of the three classifier
+    // prefixes so the UI can label cards correctly. Lock the prompt
+    // block so a future edit can't silently drop it (without the prompt,
+    // the model defaults to no-prefix → all cards collapse to SUGGESTION).
+    expect(source).toContain('OUTPUT FORMAT — v10');
+    expect(source).toContain('[SCRIPT: <stage>]');
+    expect(source).toContain('[SUGGESTION]');
+    expect(source).toContain('[EXPLAIN]');
+    expect(source).toMatch(/<stage> must be one of:\s*Open,\s*Qualify/);
+  });
+
+  it('v10 — postProcessCoachText returns { kind, scriptSection, body } and parses prefix', () => {
+    // The post-processor must extract the kind prefix BEFORE the generic
+    // bracket strip — otherwise [SCRIPT: Qualify] gets eaten as an
+    // acting-note. Lock the regex literal AND the return shape.
+    expect(source).toContain('COACH_KIND_PREFIX_RE');
+    expect(source).toMatch(/script\|suggestion\|explain/);
+    expect(source).toMatch(/CoachOutput\s*\|\s*null/);
+    expect(source).toContain('scriptSection');
+  });
+
+  it('v10 — final UPDATE writes kind + script_section to wk_live_coach_events', () => {
+    // The final UPDATE must persist BOTH the parsed kind and the script
+    // section so the renderer can label cards "SCRIPT — Qualify".
+    expect(source).toMatch(/script_section:\s*cleaned\.scriptSection/);
+    expect(source).toMatch(/kind:\s*cleaned\.kind/);
   });
 });
