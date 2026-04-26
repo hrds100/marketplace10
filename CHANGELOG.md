@@ -1,5 +1,78 @@
 # Changelog
 
+## 2026-04-28 — smsv2: streaming coach (interim trigger + token streaming)
+
+Even with prompt v6 the coach still felt slow because every card waited
+for Twilio to finalize the caller's utterance (1-3s after they stopped),
+then a single blocking OpenAI call (~700-1500ms) before any text
+appeared. Total card-to-screen latency: 2-4s.
+
+Streaming PR fixes this. Architecture:
+
+**Trigger surface widens (interim chunks for coach only)**
+- `wk-voice-transcription` now acts on Twilio's interim
+  `transcription-content` chunks (Final=false) for the coach pipeline.
+  `wk_live_transcripts` still only stores Final=true chunks to keep
+  the transcript pane clean (no "Hello" → "Hello there" → "Hello there
+  um" spam).
+- Interim chunks debounce on a per-call lock — if a generation
+  acquired the lock within the last 400ms, skip. Otherwise supersede.
+- Final chunks ALWAYS supersede (force=true) so the most accurate
+  transcript gets the last word.
+
+**Per-call lock + generation_id**
+- New `wk_live_coach_locks` table (one row per call) holds the active
+  generation_id. Stateless edge invocations call
+  `wk_acquire_coach_lock(call_id, gen_id, force, min_age_ms)` to
+  arbitrate. Returns `gen_id` to the winner, NULL to debounced losers.
+- Lock auto-expires after 8s so a crashed generation can't deadlock
+  the call.
+
+**Streaming OpenAI → placeholder UPDATE**
+- OpenAI request body now includes `stream: true`.
+- Edge fn pre-INSERTs a placeholder `wk_live_coach_events` row with
+  `body: '…'`, `status: 'streaming'`, `generation_id: <new>`.
+- New `coach-stream.ts` (pure TS, importable from both Deno and
+  vitest) ships:
+  - `parseSseChunk(buf) → { events, remaining }` — robust SSE parser.
+  - `createThrottledWriter(fn, intervalMs)` — first call immediate,
+    coalesce within window, latest-wins, `flush()` drains pending.
+- The streaming worker reads SSE, accumulates tokens, schedules
+  throttled UPDATEs at 200ms cadence (~5 writes/sec). Each UPDATE
+  asserts the row still exists — if it's gone (newer generation
+  deleted it via `wk_supersede_streaming_coach`), the worker
+  detects supersedence and aborts the stream.
+- On stream done: the post-processor runs. If the line passes,
+  status flips to `'final'` with the cleaned body. If rejected
+  (instructional verb, etc.), the row is DELETEd — the client
+  realtime DELETE event clears the placeholder card from the UI.
+
+**Client UPDATE/DELETE subscription**
+- `LiveTranscriptPane` realtime channel changed from
+  `event: 'INSERT'` to `event: '*'`. INSERT adds a card, UPDATE
+  morphs the body in place, DELETE removes the card. Dedup by id.
+
+**Logging (every stage timestamped)**
+Per Hugo's spec, edge fn logs (with `[coach gen=<8-char-id>]` prefix
+and `+<ms_since_start>ms`):
+- "interim received" (final=true|false, chars=N)
+- "lock acquired" / "lock lost — debounced"
+- "superseded prior streaming rows" (count=N)
+- "placeholder inserted"
+- "first token"
+- "first update"
+- "final update" (chars, kind) / "rejected by post-processor" / "aborted (superseded mid-stream)"
+
+**Tests**
+- `coach-stream.test.ts` — 13 unit tests on the pure SSE parser +
+  throttled writer (no network, no DB).
+- `wk-voice-transcription.contract.test.ts` extended with 4 new
+  assertions: stream:true, lock RPC, placeholder shape, lifecycle
+  log markers.
+- All 118 smsv2 tests green.
+
+Migration applied via `supabase db push`. Edge fn redeployed.
+
 ## 2026-04-28 — smsv2: coach prompt v6 (script-faithful, no acting notes)
 
 Hugo's directive after testing v5: "Replace the teleprompter system

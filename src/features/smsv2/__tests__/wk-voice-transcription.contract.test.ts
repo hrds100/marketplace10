@@ -22,6 +22,42 @@ const SOURCE_PATH = resolve(
 const source = readFileSync(SOURCE_PATH, 'utf8');
 
 describe('wk-voice-transcription — OpenAI request contract', () => {
+  it('uses streaming OpenAI (stream: true) so tokens land in the placeholder live', () => {
+    // Hugo 2026-04-28: streaming PR. The OpenAI request body must
+    // include `stream: true` so we can pipe tokens into the live
+    // placeholder card via the SSE parser.
+    expect(source).toMatch(/stream:\s*true/);
+    expect(source).toContain('parseSseChunk');
+    expect(source).toContain('createThrottledWriter');
+  });
+
+  it('acquires a per-call lock before streaming (no race between concurrent invocations)', () => {
+    // Hugo 2026-04-28: stateless edge invocations could race. The lock
+    // RPC arbitrates which generation_id wins.
+    expect(source).toMatch(/rpc\(\s*['"]wk_acquire_coach_lock['"]/);
+    expect(source).toMatch(/p_force:\s*isFinal/);
+    expect(source).toMatch(/p_min_age_ms:\s*400/);
+  });
+
+  it('inserts a streaming placeholder before the first token, then UPDATEs in place', () => {
+    // The placeholder appears immediately so the agent sees something
+    // happening within ~ms of caller speech, then the body morphs as
+    // tokens stream.
+    expect(source).toMatch(/status:\s*['"]streaming['"]/);
+    expect(source).toMatch(/body:\s*['"]…['"]/);
+    expect(source).toMatch(/generation_id:\s*generationId/);
+  });
+
+  it('logs the streaming lifecycle (interim received → first token → first update → final)', () => {
+    // Per Hugo's spec: "Log timestamps for interim received, stream
+    // started, first token, first update, final update, delete/reject."
+    expect(source).toMatch(/log\(['"]interim received/);
+    expect(source).toMatch(/log\(['"]first token/);
+    expect(source).toMatch(/log\(['"]first update/);
+    expect(source).toMatch(/log\(['"]final update/);
+    expect(source).toMatch(/rejected by post-processor/);
+  });
+
   it('uses max_completion_tokens, not max_tokens (GPT-5 family compatibility)', () => {
     // The chat.completions body must use the modern parameter name. The
     // legacy `max_tokens` is rejected by gpt-5.4-mini and other GPT-5

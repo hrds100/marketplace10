@@ -22,6 +22,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { parseSseChunk, createThrottledWriter } from './coach-stream.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -72,7 +73,9 @@ async function generateCoachSuggestion(
   recentTranscript: string,
   latestUtterance: string,
   speaker: 'caller' | 'agent',
-  priorCards: string[] = []
+  priorCards: string[] = [],
+  onChunk: (accumulated: string, isFirst: boolean) => void = () => {},
+  isAborted: () => boolean = () => false
 ): Promise<string | null> {
   if (!apiKey || !latestUtterance || speaker !== 'caller') return null;
 
@@ -248,72 +251,131 @@ async function generateCoachSuggestion(
   ].join('\n');
 
   try {
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: liveCoachModel,         // sourced from wk_ai_settings.live_coach_model (Settings UI)
-        // Hugo 2026-04-28: "this job needs compliance more than
-        // creativity". Lowered temperature + penalties so the model
-        // sticks to script wording. The user message still passes the
-        // last 3 cards as anti-repetition context — script fidelity
-        // outranks variation, but obvious duplicates are still caught.
-        temperature: 0.3,
-        presence_penalty: 0.3,
-        frequency_penalty: 0.2,
-        // GPT-5 family (gpt-5.4-mini etc.) rejects `max_tokens` with HTTP
-        // 400 ("Unsupported parameter: 'max_tokens' is not supported with
-        // this model. Use 'max_completion_tokens' instead.") — verified
-        // 2026-04-27 against the live API. The newer name also works on
-        // gpt-4o-mini / gpt-4.1-mini / gpt-4.1-nano, so it's safe across
-        // the whole dropdown. ~120 tokens ≈ 1-3 short sentences.
-        max_completion_tokens: 120,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMsg },
-        ],
-      }),
+    return await streamCoachInternal({
+      apiKey,
+      model: liveCoachModel,
+      systemPrompt,
+      userMsg,
+      onChunk,
+      isAborted,
     });
-    if (!resp.ok) {
-      // Include the response body so a wrong model name (e.g. typo, model
-      // not yet GA on this account) surfaces in edge fn logs instead of
-      // silently producing zero coach cards.
-      let errBody = '';
-      try { errBody = await resp.text(); } catch { /* ignore */ }
-      console.warn('[wk-voice-transcription] openai chat failed', resp.status, errBody.slice(0, 500));
-      return null;
-    }
-    const j = await resp.json();
-    let text = String(j?.choices?.[0]?.message?.content ?? '').trim();
-    if (!text) return null;
-    // Strip leading "Tip:" / "Coach:" / leading dash, etc.
-    text = text.replace(/^["“”'`]*(tip|coach|suggestion|say|script)\s*[:\-—]\s*/i, '').replace(/^[-•—]\s*/, '').trim();
-    text = text.replace(/^["“”'`]+|["“”'`]+$/g, '').trim();
-    // Hugo 2026-04-28: prompt v6 forbids acting notes, but defend
-    // anyway. Strip leading [warm] / [firm] / [low] / [reasonable man] /
-    // any other [bracket-tag] from the start of the line so the agent
-    // never reads "[reasonable man] Fair enough..." aloud. Also strip
-    // any bracketed tag that survives mid-line at sentence start.
-    text = text.replace(/^\s*(?:\[[^\]]+\]\s*)+/, '').trim();
-    text = text.replace(/(^|[.!?]\s+)(?:\[[^\]]+\]\s*)+/g, '$1').trim();
-    if (!text) return null;
-    if (/^skip\.?$/i.test(text)) return null;
-    if (/mirror\s+(their|the)\s+energy/i.test(text)) return null; // belt-and-braces
-    // Reject instructional output that slipped through. The model still
-    // sometimes opens with "Reintroduce…", "Ask…", "Describe…" — drop it
-    // rather than mislead the agent. Better no card than a meta-instruction.
-    if (/^(reintroduce|ask\b|describe\b|pivot\b|mention\b|tell them\b|explain\b|suggest\b|confirm\b|probe\b|emphasi[sz]e\b|highlight\b|address\b|acknowledge\b|reassure\b|offer\b|propose\b|invite\b|encourage\b|remind\b|clarify\b|share\b|present\b|discuss\b|outline\b|summari[sz]e\b)/i.test(text)) {
-      console.warn('[wk-voice-transcription] coach produced instructional output, dropping:', text);
-      return null;
-    }
-    return text;
   } catch (e) {
     console.warn('[wk-voice-transcription] openai chat threw', e);
     return null;
   }
+}
+
+// Internal streaming worker — separated so tests / future callers can
+// invoke without rebuilding the prompt. Returns the post-processed
+// final text or null on rejection.
+async function streamCoachInternal(args: {
+  apiKey: string;
+  model: string;
+  systemPrompt: string;
+  userMsg: string;
+  onChunk: (accumulated: string, isFirst: boolean) => void;
+  isAborted: () => boolean;
+}): Promise<string | null> {
+  const { apiKey, model, systemPrompt, userMsg, onChunk, isAborted } = args;
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+    },
+    body: JSON.stringify({
+      model,
+      // Hugo 2026-04-28: "this job needs compliance more than
+      // creativity". Low temp + penalties keep the model on the rep
+      // script. User message still passes the last 3 cards for
+      // anti-repetition.
+      temperature: 0.3,
+      presence_penalty: 0.3,
+      frequency_penalty: 0.2,
+      // GPT-5 family rejects `max_tokens` — use max_completion_tokens.
+      max_completion_tokens: 120,
+      stream: true,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMsg },
+      ],
+    }),
+  });
+
+  if (!resp.ok) {
+    let errBody = '';
+    try { errBody = await resp.text(); } catch { /* ignore */ }
+    console.warn('[wk-voice-transcription] openai chat failed', resp.status, errBody.slice(0, 500));
+    return null;
+  }
+  if (!resp.body) {
+    console.warn('[wk-voice-transcription] openai response had no body');
+    return null;
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let accumulated = '';
+  let isFirst = true;
+
+  try {
+    while (true) {
+      if (isAborted()) {
+        try { await reader.cancel(); } catch { /* ignore */ }
+        return null;
+      }
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const { events, remaining } = parseSseChunk(buffer);
+      buffer = remaining;
+      for (const ev of events) {
+        if (ev.done) {
+          // [DONE] marker — finish naturally.
+          break;
+        }
+        if (ev.delta) {
+          accumulated += ev.delta;
+          onChunk(accumulated, isFirst);
+          isFirst = false;
+        }
+      }
+    }
+  } finally {
+    try { reader.releaseLock(); } catch { /* ignore */ }
+  }
+
+  // Post-processor on the final accumulated text.
+  return postProcessCoachText(accumulated);
+}
+
+// Pulled out so streaming and any future non-streaming caller share the
+// same rejection rules. Returns null when the line should be dropped.
+function postProcessCoachText(raw: string): string | null {
+  let text = (raw ?? '').trim();
+  if (!text) return null;
+  // Strip leading "Tip:" / "Coach:" / leading dash, etc.
+  text = text.replace(/^["“”'`]*(tip|coach|suggestion|say|script)\s*[:\-—]\s*/i, '').replace(/^[-•—]\s*/, '').trim();
+  text = text.replace(/^["“”'`]+|["“”'`]+$/g, '').trim();
+  // Hugo 2026-04-28: prompt v6 forbids acting notes, but defend
+  // anyway. Strip leading [warm] / [firm] / [low] / [reasonable man] /
+  // any other [bracket-tag] from the start of the line so the agent
+  // never reads "[reasonable man] Fair enough..." aloud. Also strip
+  // any bracketed tag that survives mid-line at sentence start.
+  text = text.replace(/^\s*(?:\[[^\]]+\]\s*)+/, '').trim();
+  text = text.replace(/(^|[.!?]\s+)(?:\[[^\]]+\]\s*)+/g, '$1').trim();
+  if (!text) return null;
+  if (/^skip\.?$/i.test(text)) return null;
+  if (/mirror\s+(their|the)\s+energy/i.test(text)) return null; // belt-and-braces
+  // Reject instructional output that slipped through.
+  if (/^(reintroduce|ask\b|describe\b|pivot\b|mention\b|tell them\b|explain\b|suggest\b|confirm\b|probe\b|emphasi[sz]e\b|highlight\b|address\b|acknowledge\b|reassure\b|offer\b|propose\b|invite\b|encourage\b|remind\b|clarify\b|share\b|present\b|discuss\b|outline\b|summari[sz]e\b)/i.test(text)) {
+    console.warn('[wk-voice-transcription] coach produced instructional output, dropping:', text);
+    return null;
+  }
+  return text;
 }
 
 // ----------------------------------------------------------------------------
@@ -391,7 +453,7 @@ serve(async (req: Request) => {
       transcriptText = '';
     }
     const isFinal = (params.Final ?? '').toLowerCase() === 'true';
-    if (!transcriptText || !isFinal) {
+    if (!transcriptText) {
       return new Response('ok', { status: 200, headers: corsHeaders });
     }
 
@@ -412,32 +474,76 @@ serve(async (req: Request) => {
     const track = (params.Track ?? '').toLowerCase();
     const speaker: 'caller' | 'agent' = track.startsWith('outbound') ? 'caller' : 'agent';
 
-    // Persist transcript line — LiveTranscriptPane subscribes via realtime
-    // and renders this within ~250ms.
-    await supa.from('wk_live_transcripts').insert({
-      call_id: call.id,
-      speaker,
-      body: transcriptText,
-    });
+    // Persist transcript line ONLY for finalized chunks. Hugo
+    // 2026-04-28: "Interim chunks for coach only — keep transcript
+    // pane clean." Interim chunks would spam the pane with partial
+    // re-writes ("Hello", "Hello there", "Hello there um"…).
+    if (isFinal) {
+      await supa.from('wk_live_transcripts').insert({
+        call_id: call.id,
+        speaker,
+        body: transcriptText,
+      });
+    }
 
-    // Coaching path — only when AI is enabled for THIS call AND the caller
-    // (not the agent) just spoke. Use EdgeRuntime.waitUntil so the async
-    // pipeline survives past the 200 response to Twilio. A bare `void async`
-    // IIFE gets torn down by Deno Deploy / Supabase Edge Functions when the
-    // handler returns; transcripts INSERT but coach calls die mid-flight.
+    // Coaching path — fires on BOTH interim and final chunks for the
+    // caller, so the coach card starts streaming within ~400ms of the
+    // caller speaking instead of waiting for Twilio to finalize the
+    // utterance (which can be 1-3s after the caller stops).
+    //
+    // Per-call lock + generation_id keep the streams sane:
+    //   - interim with a recent active lock → debounced (skipped)
+    //   - interim past 400ms debounce → supersedes prior generation
+    //   - final → ALWAYS supersedes (force=true); the final transcript
+    //     is the most accurate, so the last word goes to it
+    //
+    // EdgeRuntime.waitUntil keeps the streaming worker alive past the
+    // 200 we return to Twilio.
     if (call.ai_coach_enabled && speaker === 'caller') {
+      const generationId = crypto.randomUUID();
+      const genShort = generationId.slice(0, 8);
+      const t0 = Date.now();
+      const log = (event: string, extra: string = '') =>
+        console.log(`[wk-voice-transcription] [coach gen=${genShort}] ${event} +${Date.now() - t0}ms ${extra}`.trim());
+      log('interim received', `final=${isFinal} chars=${transcriptText.length}`);
+
       const coachPromise = (async () => {
         try {
+          // 1. Try to acquire the lock. Interim chunks debounce on
+          //    400ms; final chunks force-supersede.
+          const { data: lockResult, error: lockErr } = await supa.rpc(
+            'wk_acquire_coach_lock',
+            {
+              p_call_id: call.id,
+              p_gen_id: generationId,
+              p_force: isFinal,
+              p_min_age_ms: 400,
+            }
+          );
+          if (lockErr) {
+            console.warn(`[wk-voice-transcription] [coach gen=${genShort}] lock RPC error`, lockErr.message);
+            return;
+          }
+          if (lockResult !== generationId) {
+            // Lost the race — another generation is already in flight
+            // and the debounce window hasn't elapsed.
+            log('lock lost — debounced');
+            return;
+          }
+          log('lock acquired');
+
+          // 2. Read AI settings.
           const { data: ai } = await supa
             .from('wk_ai_settings')
             .select('ai_enabled, live_coach_enabled, openai_api_key, live_coach_system_prompt, live_coach_model')
             .limit(1)
             .maybeSingle();
-          if (!ai?.ai_enabled || !ai?.live_coach_enabled || !ai?.openai_api_key) return;
+          if (!ai?.ai_enabled || !ai?.live_coach_enabled || !ai?.openai_api_key) {
+            log('ai disabled — bailing');
+            return;
+          }
 
-          // Build a rolling 6-line context window from recent transcripts.
-          // Run in parallel with the prior-cards fetch — both are
-          // independent reads against different tables.
+          // 3. Read recent transcripts + prior cards in parallel.
           const [recentRes, priorCardsRes] = await Promise.all([
             supa
               .from('wk_live_transcripts')
@@ -449,47 +555,124 @@ serve(async (req: Request) => {
               .from('wk_live_coach_events')
               .select('body, ts')
               .eq('call_id', call.id)
+              .eq('status', 'final')
               .order('ts', { ascending: false })
               .limit(3),
           ]);
-
           const ctx = (recentRes.data ?? [])
             .reverse()
             .map((r: { speaker: string; body: string }) =>
               `${r.speaker === 'agent' ? 'Agent' : 'Caller'}: ${r.body}`
             )
             .join('\n');
-
-          // Hugo 2026-04-28: the model was producing "Yeah fair enough"
-          // openers on 4-of-4 cards in a row because each call is
-          // independent — the model has no memory of what it just said.
-          // Pass the last 3 cards back so the prompt's anti-repetition
-          // rule has something concrete to compare against.
           const priorCards: string[] = ((priorCardsRes.data ?? []) as { body: string }[])
             .map((c) => c.body)
             .filter((s): s is string => typeof s === 'string' && s.length > 0);
 
-          // Pass the DB-stored prompt straight through. generateCoachSuggestion
-          // falls back to the canonical DEFAULT_COACH_PROMPT if it's empty.
-          const tip = await generateCoachSuggestion(
+          // 4. Sweep prior streaming placeholders for THIS call (from
+          //    superseded generations). They get DELETEd so the client
+          //    realtime DELETE event clears the stale card.
+          const { data: superseded } = await supa.rpc(
+            'wk_supersede_streaming_coach',
+            { p_call_id: call.id, p_keep_gen_id: generationId }
+          );
+          if (typeof superseded === 'number' && superseded > 0) {
+            log('superseded prior streaming rows', `count=${superseded}`);
+          }
+
+          // 5. Pre-INSERT placeholder so the client gets a card to
+          //    morph in place as tokens arrive.
+          const { data: placeholder, error: insErr } = await supa
+            .from('wk_live_coach_events')
+            .insert({
+              call_id: call.id,
+              kind: 'suggestion',
+              body: '…',
+              generation_id: generationId,
+              status: 'streaming',
+            })
+            .select('id')
+            .single();
+          if (insErr || !placeholder) {
+            console.warn(`[wk-voice-transcription] [coach gen=${genShort}] placeholder insert failed`, insErr?.message);
+            return;
+          }
+          const placeholderId = placeholder.id as string;
+          log('placeholder inserted');
+
+          // 6. Set up the throttled writer. UPDATE the placeholder body
+          //    at most every 200ms so we don't hammer the DB. The
+          //    eq('id', ...) WITHOUT eq('generation_id', ...) catches
+          //    DELETEs (row gone) — UPDATE returns 0 rows when our
+          //    placeholder was superseded by a newer generation.
+          let aborted = false;
+          let firstUpdate = true;
+          const writer = createThrottledWriter<string>(async (text) => {
+            const { data, error: updErr } = await supa
+              .from('wk_live_coach_events')
+              .update({ body: text })
+              .eq('id', placeholderId)
+              .select('id');
+            if (updErr) {
+              console.warn(`[wk-voice-transcription] [coach gen=${genShort}] update error`, updErr.message);
+              aborted = true;
+              return;
+            }
+            if (!data || data.length === 0) {
+              // Our placeholder is gone — newer generation deleted it.
+              if (!aborted) log('placeholder deleted — superseded, aborting');
+              aborted = true;
+              return;
+            }
+            if (firstUpdate) {
+              log('first update');
+              firstUpdate = false;
+            }
+          }, 200);
+
+          // 7. Build the user message + run streaming.
+          let firstToken = true;
+          const cleaned = await generateCoachSuggestion(
             ai.openai_api_key as string,
             (ai.live_coach_system_prompt as string) ?? '',
             (ai.live_coach_model as string) ?? '',
             ctx,
             transcriptText,
             speaker,
-            priorCards
+            priorCards,
+            (accumulated, _isFirst) => {
+              if (firstToken) {
+                log('first token');
+                firstToken = false;
+              }
+              writer.schedule(accumulated);
+            },
+            () => aborted
           );
-          if (!tip) return;
 
-          const kind = tip.endsWith('?') ? 'question' : 'suggestion';
-          await supa.from('wk_live_coach_events').insert({
-            call_id: call.id,
-            kind,
-            body: tip,
-          });
+          // 8. Flush any pending UPDATE so the final body lands.
+          await writer.flush();
+
+          if (aborted) {
+            log('aborted (superseded mid-stream)');
+            return;
+          }
+
+          // 9. Finalize: post-processor either keeps the row (status
+          //    = 'final', body = cleaned) or deletes it.
+          if (!cleaned) {
+            await supa.from('wk_live_coach_events').delete().eq('id', placeholderId);
+            log('rejected by post-processor', 'deleted');
+            return;
+          }
+          const kind = cleaned.endsWith('?') ? 'question' : 'suggestion';
+          await supa
+            .from('wk_live_coach_events')
+            .update({ body: cleaned, status: 'final', kind })
+            .eq('id', placeholderId);
+          log('final update', `chars=${cleaned.length} kind=${kind}`);
         } catch (e) {
-          console.warn('[wk-voice-transcription] coach pipeline threw', e);
+          console.warn(`[wk-voice-transcription] [coach gen=${genShort}] pipeline threw`, e);
         }
       })();
 

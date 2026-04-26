@@ -1,0 +1,147 @@
+// Pure helpers for the streaming coach pipeline.
+//
+// Lives next to wk-voice-transcription/index.ts and is imported by both
+// the Deno edge runtime AND the vitest test harness. KEEP THIS FILE
+// PLATFORM-FREE — no Deno globals, no node:* imports, no fetch, no
+// timers other than the standard `setTimeout` / `clearTimeout`.
+
+// ----------------------------------------------------------------------------
+// SSE parser for OpenAI chat.completions stream=true responses.
+//
+// OpenAI emits one event per token (sometimes batched) as
+//   data: {"choices":[{"delta":{"content":"..."}}]}\n\n
+// terminated by
+//   data: [DONE]\n\n
+// We feed the parser the raw decoded bytes from each chunk and it
+// returns:
+//   - events: every complete SSE event in this chunk
+//   - remaining: trailing bytes that didn't end with a newline yet
+//     (caller carries this forward into the next chunk)
+// ----------------------------------------------------------------------------
+
+export interface SseEvent {
+  delta: string;
+  done: boolean;
+}
+
+export interface SseParseResult {
+  events: SseEvent[];
+  remaining: string;
+}
+
+export function parseSseChunk(buf: string): SseParseResult {
+  if (!buf) return { events: [], remaining: '' };
+  const events: SseEvent[] = [];
+  const lines = buf.split('\n');
+  // The last element is whatever came after the final newline. If the
+  // chunk did NOT end on \n, that tail is incomplete and must be
+  // carried into the next chunk.
+  const remaining = lines.pop() ?? '';
+
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/\r$/, '').trimEnd();
+    if (!line) continue;
+    if (!line.startsWith('data:')) continue; // ignore comments / event:/id:
+    const data = line.slice(5).trim();
+    if (!data) continue;
+    if (data === '[DONE]') {
+      events.push({ delta: '', done: true });
+      continue;
+    }
+    let json: unknown;
+    try {
+      json = JSON.parse(data);
+    } catch {
+      // Malformed JSON — skip rather than blow up the stream.
+      continue;
+    }
+    const delta =
+      (json as { choices?: { delta?: { content?: string } }[] })?.choices?.[0]
+        ?.delta?.content ?? '';
+    events.push({ delta, done: false });
+  }
+  return { events, remaining };
+}
+
+// ----------------------------------------------------------------------------
+// Throttled async write.
+//
+// During streaming we want to UPDATE the placeholder coach card row as
+// tokens arrive, but we don't want to hammer the DB at 30 writes/sec.
+// This helper:
+//   - runs the first schedule() immediately
+//   - coalesces rapid follow-ups inside the throttle window into a single
+//     trailing call with the LATEST value
+//   - flush() drains any pending value synchronously (used at end of
+//     stream so the final UPDATE always lands)
+// ----------------------------------------------------------------------------
+
+export interface ThrottledWriter<T> {
+  schedule: (value: T) => void;
+  flush: () => Promise<void>;
+}
+
+export function createThrottledWriter<T>(
+  fn: (value: T) => Promise<void> | void,
+  intervalMs: number
+): ThrottledWriter<T> {
+  let lastFiredAt = 0;
+  let pendingValue: T | undefined;
+  let hasPending = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let inflight: Promise<void> | null = null;
+
+  const fire = async (value: T) => {
+    lastFiredAt = Date.now();
+    hasPending = false;
+    pendingValue = undefined;
+    inflight = Promise.resolve(fn(value)).then(
+      () => {
+        inflight = null;
+      },
+      () => {
+        inflight = null;
+      }
+    );
+    await inflight;
+  };
+
+  return {
+    schedule(value: T) {
+      const now = Date.now();
+      const elapsed = now - lastFiredAt;
+      if (elapsed >= intervalMs && !timer) {
+        // Cool — fire immediately.
+        void fire(value);
+        return;
+      }
+      // Inside the window. Replace pending and arm a trailing timer.
+      pendingValue = value;
+      hasPending = true;
+      if (!timer) {
+        const delay = Math.max(0, intervalMs - elapsed);
+        timer = setTimeout(() => {
+          timer = null;
+          if (hasPending) {
+            const v = pendingValue as T;
+            void fire(v);
+          }
+        }, delay);
+      }
+    },
+
+    async flush() {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      if (hasPending) {
+        const v = pendingValue as T;
+        await fire(v);
+      }
+      // Wait for any in-flight write to settle so callers can rely on
+      // "after flush(), every write has hit the DB".
+      if (inflight) await inflight;
+    },
+  };
+}
