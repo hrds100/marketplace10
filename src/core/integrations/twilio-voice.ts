@@ -111,22 +111,11 @@ export async function createDevice(): Promise<DeviceHandle> {
     edge: 'roaming',         // pick best Twilio edge automatically
   });
 
-  // Echo cancellation + noise suppression on the input stream. Without these,
-  // an open speaker + open mic in the same room produces a feedback loop that
-  // looks like "mute didn't work" — Hugo's exact complaint when self-testing.
-  // The browser still has to honour these constraints (most do).
-  try {
-    // The AudioHelper API is on `device.audio`; not all SDK builds expose
-    // `setAudioConstraints`, so wrap in try/catch.
-    const audio = (d as unknown as { audio?: { setAudioConstraints?: (c: MediaTrackConstraints) => void } }).audio;
-    audio?.setAudioConstraints?.({
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-    });
-  } catch (e) {
-    console.warn('[twilio-voice] could not set audio constraints', e);
-  }
+  // (Earlier: tried setAudioConstraints({ echoCancellation, noiseSuppression,
+  // autoGainControl }) here for self-call echo. Reverted on 2026-04-26 because
+  // Hugo started seeing 31401 PermissionDeniedError after that change. Twilio
+  // already applies sensible defaults; rely on those. If self-call echo
+  // returns, fix the room (headphones), not the SDK config.)
 
   // Inbound calls — wk-voice-twiml-incoming routes a PSTN ring to a Client
   // identity. The agent's browser receives an 'incoming' Call here. We
