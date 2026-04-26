@@ -128,14 +128,85 @@ async function handleComputeCost(
   }, { onConflict: 'call_id' });
 }
 
-// ---- send_sms (stub) -------------------------------------------------------
+// ---- send_sms --------------------------------------------------------------
+//
+// Hugo 2026-04-26 (PR 9): the outcome-card pipeline was firing — the
+// wk_apply_outcome RPC enqueues a `send_sms` job after each click — but
+// this handler was a stub, so the SMS never actually went out. Now it:
+//   1. Reads contact (phone, name) and agent (name) for merge fields.
+//   2. Substitutes {name} / {agent} in the template body.
+//   3. Calls the existing sms-send edge fn over service-role bearer so
+//      the message lands in sms_messages and follows the Twilio path.
+//
+// Throws on any error so the job worker retries with backoff (up to 5).
 
 async function handleSendSms(
-  _supabase: ReturnType<typeof createClient>,
-  _payload: Record<string, unknown>
+  supabase: ReturnType<typeof createClient>,
+  payload: Record<string, unknown>
 ): Promise<void> {
-  // Will call the existing sms-send edge function via service role bearer.
-  // Real implementation lands with wk-outcome-apply (Step E).
+  const contactId = String(payload.contact_id ?? '');
+  const agentId = String(payload.agent_id ?? '');
+  const rawBody = String(payload.body ?? '');
+  if (!contactId) throw new Error('send_sms: missing contact_id');
+  if (!rawBody) throw new Error('send_sms: missing body');
+
+  // Resolve contact + agent in parallel.
+  const [contactRes, agentRes] = await Promise.all([
+    // wk_contacts is the source of truth for the smsv2 / live-call surface.
+    supabase
+      .from('wk_contacts' as never)
+      .select('phone, name')
+      .eq('id', contactId)
+      .maybeSingle(),
+    agentId
+      ? supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', agentId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+
+  const contactRow = contactRes.data as { phone?: string; name?: string } | null;
+  if (!contactRow?.phone) {
+    throw new Error(`send_sms: contact ${contactId} has no phone number`);
+  }
+  const phone = contactRow.phone;
+  const contactFirstName = (contactRow.name ?? '').trim().split(/\s+/)[0] || '';
+  const agentName = (
+    (agentRes.data as { name?: string } | null)?.name ?? ''
+  ).trim();
+  const agentFirstName = agentName.split(/\s+/)[0] || '';
+
+  // Substitute merge fields. Template syntax in seed data is `{name}`
+  // and `{agent}` — keep the existing convention (no `{{ }}` here).
+  const body = rawBody
+    .replace(/\{\s*name\s*\}/gi, contactFirstName)
+    .replace(/\{\s*first_name\s*\}/gi, contactFirstName)
+    .replace(/\{\s*agent\s*\}/gi, agentFirstName)
+    .replace(/\{\s*agent_first_name\s*\}/gi, agentFirstName);
+
+  // Call sms-send via service-role bearer so it lands in sms_messages
+  // and follows the Twilio path. fetch direct rather than using
+  // supabase.functions.invoke so we control the timeout + error shape.
+  const url = `${SUPABASE_URL}/functions/v1/sms-send`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+    },
+    body: JSON.stringify({ to: phone, body, contact_id: contactId }),
+  });
+  if (!resp.ok) {
+    let errBody = '';
+    try {
+      errBody = await resp.text();
+    } catch {
+      /* ignore */
+    }
+    throw new Error(`send_sms: sms-send returned ${resp.status} ${errBody.slice(0, 200)}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
