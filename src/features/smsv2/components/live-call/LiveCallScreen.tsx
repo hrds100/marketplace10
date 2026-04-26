@@ -35,14 +35,31 @@ import {
 } from '../../data/helpers';
 
 export default function LiveCallScreen() {
-  const { phase, call, durationSec, endCall, setFullScreen, muted, toggleMute } = useActiveCallCtx();
+  const {
+    phase,
+    call,
+    durationSec,
+    endCall,
+    setFullScreen,
+    muted,
+    toggleMute,
+    previewContactId,
+    closeCallRoom,
+    startCall,
+  } = useActiveCallCtx();
   const store = useSmsV2();
   const { agent: me, firstName: myFirstName, talkRatioPercent } = useCurrentAgent();
   const [editing, setEditing] = useState<Contact | null>(null);
 
-  // Resolve a contact for context — fall back to first contact if direct dial
+  // Preview mode (PR 10): no active call, but agent opened the room for
+  // a specific contact from the inbox. Use that contact instead of the
+  // active call's contact. When neither is set, fall back to first
+  // contact (legacy direct-dial case).
+  const isPreview = phase === 'idle' && previewContactId !== null;
   const contact =
-    store.contacts.find((c) => c.id === call?.contactId) ?? store.contacts[0];
+    store.contacts.find((c) =>
+      isPreview ? c.id === previewContactId : c.id === call?.contactId
+    ) ?? store.contacts[0];
 
   const contactFirstName = contact.name?.trim().split(/\s+/)[0] ?? '';
 
@@ -93,7 +110,15 @@ export default function LiveCallScreen() {
             </>
           )}
           {phase === 'post_call' && <span>Call ended · {call?.contactName}</span>}
-          {phase === 'idle' && <span>Idle</span>}
+          {phase === 'idle' && !isPreview && <span>Idle</span>}
+          {isPreview && (
+            <>
+              <span>Call room · {contact.name}</span>
+              <span className="ml-1 text-[10px] uppercase tracking-wide font-semibold bg-[#1E9A80]/10 text-[#1E9A80] px-1.5 py-0.5 rounded">
+                Preview
+              </span>
+            </>
+          )}
         </span>
 
         {phase === 'in_call' && (
@@ -156,13 +181,25 @@ export default function LiveCallScreen() {
             </button>
           )}
 
+          {/* Preview mode: agent can dial the lead from inside the call
+              room without bouncing back to the inbox. Closing the room
+              uses closeCallRoom() instead of fullScreen toggle. */}
+          {isPreview && (
+            <button
+              onClick={() => void startCall(contact.id)}
+              className="flex items-center gap-1.5 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white px-3 py-1.5 rounded-[10px] text-[12px] font-semibold shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
+            >
+              <PhoneOff className="w-3.5 h-3.5 rotate-[135deg]" /> Call now
+            </button>
+          )}
+
           <button
-            onClick={() => setFullScreen(false)}
+            onClick={() => (isPreview ? closeCallRoom() : setFullScreen(false))}
             className={cn(
               'p-1.5 rounded-lg',
               phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
             )}
-            title="Minimise (call continues)"
+            title={isPreview ? 'Close call room' : 'Minimise (call continues)'}
           >
             <Minimize2 className="w-4 h-4" />
           </button>
@@ -247,6 +284,16 @@ export default function LiveCallScreen() {
               durationSec={durationSec}
               contactId={contact.id}
               callId={call?.callId ?? null}
+              agentFirstName={myFirstName ?? ''}
+            />
+          ) : isPreview ? (
+            // PR 10: preview mode — no active call, show the empty
+            // transcript / coach layout so the agent sees the FULL call-
+            // room view for the lead, ready to dial.
+            <LiveTranscriptPane
+              durationSec={0}
+              contactId={contact.id}
+              callId={null}
               agentFirstName={myFirstName ?? ''}
             />
           ) : (

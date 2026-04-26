@@ -23,8 +23,18 @@ export default function Softphone() {
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const device = useTwilioDevice();
-  const { phase, call, durationSec, fullScreen, setFullScreen, startCall, endCall, muted, toggleMute } =
-    useActiveCallCtx();
+  const {
+    phase,
+    call,
+    durationSec,
+    fullScreen,
+    setFullScreen,
+    startCall,
+    endCall,
+    muted,
+    toggleMute,
+    previewContactId,
+  } = useActiveCallCtx();
   const spend = useSpendLimit();
   const { agent: me } = useCurrentAgent();
 
@@ -46,8 +56,11 @@ export default function Softphone() {
     setOpen(false);
   };
 
-  // Render the live call full-screen overlay if the call is active and full-screen mode is on
-  if (phase !== 'idle' && fullScreen) {
+  // Render the live call full-screen overlay if the call is active and
+  // full-screen mode is on. PR 10: also render in idle-preview mode so
+  // the agent can open the call room layout for a contact from the
+  // inbox without dialling.
+  if ((phase !== 'idle' || previewContactId !== null) && fullScreen) {
     return <LiveCallScreen />;
   }
 
