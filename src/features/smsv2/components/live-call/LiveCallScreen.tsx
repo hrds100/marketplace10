@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/resizable';
 import { useActiveCallCtx } from './ActiveCallContext';
 import LiveTranscriptPane from './LiveTranscriptPane';
-import CallScriptPane from './CallScriptPane';
+import ScriptRail from './ScriptRail';
 import FactsDrawer from './FactsDrawer';
 import MidCallSmsSender from './MidCallSmsSender';
 import ApplyAutomationButton from './ApplyAutomationButton';
@@ -256,9 +256,10 @@ export default function LiveCallScreen() {
 
         <ResizableHandle withHandle />
 
-        {/* COL 3 — call script (admin-edited Markdown, item G) */}
+        {/* COL 3 — script rail (Phase 7): stateful stage tracker + script body */}
         <ResizablePanel defaultSize={22} minSize={14} className="border-r border-[#E5E7EB] overflow-hidden">
-          <CallScriptPane
+          <ScriptRail
+            callId={call?.callId ?? null}
             contactFirstName={contactFirstName}
             agentFirstName={myFirstName ?? ''}
           />
