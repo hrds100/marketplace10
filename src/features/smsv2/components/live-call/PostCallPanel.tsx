@@ -99,14 +99,15 @@ export default function PostCallPanel() {
           ⚡ Pick an outcome — pipeline columns
         </div>
 
+        {/* Hugo 2026-04-26 (PR 17): outcome cards are pure pipeline
+            routing now. The +SMS / +task / +tag automation badges came
+            off because Hugo doesn't want the post-call pick to fire
+            extra side-effects — the SMS already went out via the mid-
+            call SMS sender (PR 16, mandatory stage). The outcome card
+            just records WHERE the lead lands. */}
         <div className="grid grid-cols-2 gap-3">
           {columns.map((col) => {
             const Icon = ICON_MAP[col.icon] ?? Sparkles;
-            const badges: string[] = [];
-            if (col.automation.sendSms) badges.push('+SMS');
-            if (col.automation.createTask) badges.push('+task');
-            if (col.automation.retryDial) badges.push(`+retry ${col.automation.retryInHours}h`);
-            if (col.automation.addTag) badges.push(`+tag`);
             return (
               <button
                 key={col.id}
@@ -117,31 +118,21 @@ export default function PostCallPanel() {
                   'border-[#E5E7EB] hover:border-[#1E9A80]/50',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
-                style={
-                  {
-                    '--col-colour': col.colour,
-                  } as React.CSSProperties
-                }
               >
-                <div className="flex items-start gap-2.5">
+                <div className="flex items-center gap-2.5">
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                     style={{ background: `${col.colour}1A`, color: col.colour }}
                   >
                     <Icon className="w-4 h-4" strokeWidth={2} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-[#9CA3AF] tabular-nums">
-                        {col.position}.
-                      </span>
-                      <span className="text-[14px] font-semibold text-[#1A1A1A] truncate">
-                        {col.name}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-[#6B7280] mt-1 leading-tight">
-                      {badges.length > 0 ? badges.join(' · ') : 'Logged · no automation'}
-                    </div>
+                  <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-[#9CA3AF] tabular-nums">
+                      {col.position}.
+                    </span>
+                    <span className="text-[14px] font-semibold text-[#1A1A1A] truncate">
+                      {col.name}
+                    </span>
                   </div>
                 </div>
               </button>
