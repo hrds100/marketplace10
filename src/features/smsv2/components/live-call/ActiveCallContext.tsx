@@ -52,6 +52,13 @@ interface ActiveCallCtx {
   durationSec: number;
   fullScreen: boolean;
   setFullScreen: (v: boolean) => void;
+  /** Hugo 2026-04-26 (PR 10): "calling room" preview — open the live-
+   *  call screen layout for a contact WITHOUT dialling. The agent uses
+   *  it to look at the lead's context (script, glossary, mid-call SMS
+   *  sender) without committing to a call. Set via openCallRoom. */
+  previewContactId: string | null;
+  openCallRoom: (contactId: string) => void;
+  closeCallRoom: () => void;
   /**
    * Manual dial — minted call_id server-side, dials Twilio Device, and
    * drives phase transitions via call event listeners. Returns the
@@ -101,6 +108,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const [, setTick] = useState(0);
   const [fullScreen, setFullScreen] = useState(true);
   const [muted, setMuted] = useState(false);
+  const [previewContactId, setPreviewContactId] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeTwilioCallRef = useRef<TwilioCall | null>(null);
 
@@ -419,6 +427,18 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       durationSec,
       fullScreen,
       setFullScreen,
+      previewContactId,
+      openCallRoom: (contactId: string) => {
+        // Preview mode: no dial, no Twilio Call, just the layout. Skip
+        // if there's already an active call — preview would race with
+        // the live transcript/coach state.
+        if (phase !== 'idle') return;
+        setPreviewContactId(contactId);
+        setFullScreen(true);
+      },
+      closeCallRoom: () => {
+        setPreviewContactId(null);
+      },
       muted,
       toggleMute,
       startCall,
@@ -528,7 +548,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         }
       },
     };
-  }, [phase, call, fullScreen, muted, toggleMute, store, startCall, resumeFromBroadcast]);
+  }, [phase, call, fullScreen, muted, toggleMute, store, startCall, resumeFromBroadcast, previewContactId]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
