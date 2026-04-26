@@ -477,6 +477,15 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        // PR 26 (Hugo 2026-04-27): capture the contact's previous
+        // pipelineColumnId BEFORE the optimistic move, so we can roll
+        // back if the server-side wk-outcome-apply rejects the move.
+        // Without this, the UI lies about persisted state when RLS or
+        // FK errors fire on the server.
+        const previousColumnId =
+          store.contacts.find((c) => c.id === call.contactId)?.pipelineColumnId ?? null;
+        const previousContactId = call.contactId;
+
         // Real outcome: write to store, surface toast, auto-advance
         const { nextContactId, badges, columnName } = store.applyOutcome(
           call.contactId,
@@ -490,9 +499,9 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         store.pushToast(summary, 'success');
 
         // Fire the server-side automation in the background. We've already
-        // optimistically updated the local store; if the server returns a
-        // different applied[] list (e.g. SMS template missing) we surface
-        // a follow-up toast but don't roll back.
+        // optimistically updated the local store; if the server rejects
+        // the move we ROLL BACK the contact's pipelineColumnId so the UI
+        // reflects truth (PR 26).
         if (call.callId) {
           void (async () => {
             try {
@@ -525,13 +534,28 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
                   }
                 }
                 console.error('[wk-outcome-apply] failed', real);
-                store.pushToast(`Server outcome failed: ${real}`, 'error');
+                // PR 26: roll back the optimistic move. The auto-advance
+                // already kicked off above, so we don't undo the queue
+                // pop — that would race with the new call. We just put
+                // the LEAD back where it was so /smsv2/pipelines /
+                // contacts shows truth.
+                store.patchContact(previousContactId, {
+                  pipelineColumnId: previousColumnId ?? undefined,
+                });
+                store.pushToast(
+                  `Server outcome failed: ${real} — restored previous stage`,
+                  'error'
+                );
               } else if (data?.applied && data.applied.length === 0 && badges.length > 0) {
                 console.warn('outcome: server fired no automations', data);
               }
             } catch (e) {
+              // Same rollback path on a thrown error.
+              store.patchContact(previousContactId, {
+                pipelineColumnId: previousColumnId ?? undefined,
+              });
               store.pushToast(
-                `Outcome did not save server-side: ${e instanceof Error ? e.message : 'unknown'}`,
+                `Outcome did not save server-side: ${e instanceof Error ? e.message : 'unknown'} — restored previous stage`,
                 'error'
               );
             }
