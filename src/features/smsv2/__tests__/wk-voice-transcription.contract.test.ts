@@ -33,10 +33,12 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
 
   it('acquires a per-call lock before streaming (no race between concurrent invocations)', () => {
     // Hugo 2026-04-28: stateless edge invocations could race. The lock
-    // RPC arbitrates which generation_id wins.
+    // RPC arbitrates which generation_id wins. v8 dropped p_min_age_ms
+    // to 250 (separate assertion below) — here we just lock the RPC
+    // call shape.
     expect(source).toMatch(/rpc\(\s*['"]wk_acquire_coach_lock['"]/);
     expect(source).toMatch(/p_force:\s*isFinal/);
-    expect(source).toMatch(/p_min_age_ms:\s*400/);
+    expect(source).toMatch(/p_min_age_ms:\s*\d+/);
   });
 
   it('inserts a streaming placeholder before the first token, then UPDATEs in place', () => {
@@ -200,13 +202,75 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
       .toBe('Hi [Name], it\'s Hugo from NFSTAY.');
   });
 
-  it('keeps temperature low for compliance (script fidelity > creativity)', () => {
-    // Hugo 2026-04-28: "this job needs compliance more than
-    // creativity". Lock temperature ≤ 0.5 so we don't drift back to
-    // the high-creativity 0.9 used by the Belfort prompt.
+  it('temperature is in the v8 conversational-but-controlled range (0.4-0.65)', () => {
+    // PR #575 (v8) bumped 0.3 → 0.55 to recover variety without
+    // sacrificing instruction-following. Lock the band so we don't drift
+    // back to fully scripty (≤0.3) or fully wild (≥0.7).
     const m = source.match(/temperature:\s*([0-9.]+)/);
     expect(m).toBeTruthy();
     const temp = parseFloat(m![1]);
-    expect(temp).toBeLessThanOrEqual(0.5);
+    expect(temp).toBeGreaterThanOrEqual(0.4);
+    expect(temp).toBeLessThanOrEqual(0.65);
+  });
+
+  it('v8 — prior coach cards window is 5 (was 3)', () => {
+    // PR #575: expanded so the n-gram ban list and the verbal anti-rep
+    // rule have more material.
+    expect(source).toMatch(
+      /from\(['"]wk_live_coach_events['"]\)[\s\S]*?\.limit\(5\)/
+    );
+  });
+
+  it('v8 — interim debounce dropped to 250ms', () => {
+    // PR #575: 400ms → 250ms at the wk_acquire_coach_lock call site.
+    expect(source).toMatch(/p_min_age_ms:\s*250/);
+    expect(source).not.toMatch(/p_min_age_ms:\s*400/);
+  });
+
+  it('v8 — explicit n-gram opener ban list passed in user message', () => {
+    expect(source).toContain('buildOpenerBanList');
+    expect(source).toContain('DO NOT START WITH');
+    expect(source).toMatch(/banned opener n-gram/);
+  });
+
+  it('v8 — OpenAI request tagged with prompt_cache_key for prefix caching', () => {
+    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v8['"]/);
+  });
+
+  it('v8 — script prompt is intent-based with USE FRESH WORDING + EARNED-PITCH + JUST EXPLORING', () => {
+    expect(source).toContain('USE FRESH WORDING');
+    expect(source).toContain('EARNED-PITCH RULE');
+    expect(source).toContain('JUST EXPLORING');
+    expect(source).toMatch(/INTENT:\s*Confirm the caller/);
+    expect(source).toMatch(/paraphrase fresh each time/);
+    // Five JUST EXPLORING angles must be present.
+    expect(source).toContain('WARM CURIOSITY');
+    expect(source).toContain('LIGHT CONTEXT');
+    expect(source).toContain('SOCIAL PROOF');
+    expect(source).toContain('LOW-PRESSURE PERMISSION');
+    expect(source).toContain('EMPATHY BRIDGE');
+  });
+
+  it('v8 — script prompt has NO hardcoded deal numbers (those live in wk_coach_facts)', () => {
+    // Hugo's audit: numbers belong in the KB layer, not the script
+    // prompt. Lock that they're absent so they can't sneak back in.
+    // We only check the DEFAULT_SCRIPT_PROMPT slice to avoid false
+    // positives on numbers in the migration / comments / etc.
+    const scriptStart = source.indexOf('DEFAULT_SCRIPT_PROMPT');
+    const scriptEnd = scriptStart >= 0 ? source.indexOf("].join('\\n')", scriptStart) : -1;
+    expect(scriptStart).toBeGreaterThan(0);
+    expect(scriptEnd).toBeGreaterThan(scriptStart);
+    const scriptBlock = source.slice(scriptStart, scriptEnd);
+    expect(scriptBlock).not.toMatch(/15-bed/);
+    expect(scriptBlock).not.toMatch(/£500\b/);
+    expect(scriptBlock).not.toMatch(/£37k/);
+    expect(scriptBlock).not.toMatch(/5-year agreement/);
+    expect(scriptBlock).not.toMatch(/9\.6%/);
+  });
+
+  it('v8 — style prompt has FILLER CADENCE block', () => {
+    expect(source).toContain('FILLER CADENCE');
+    expect(source).toMatch(/roughly 1 in 4 lines/);
+    expect(source).toMatch(/Never two filler-led lines in a row/);
   });
 });

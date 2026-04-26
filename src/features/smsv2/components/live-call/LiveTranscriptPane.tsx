@@ -67,15 +67,23 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
     return first || 'Caller';
   })();
 
-  // Hugo 2026-04-28: prefill the opener card so the rep never stares at
-  // an empty teleprompter. Composed client-side from the contact's and
-  // agent's first names — matches the OPEN step of the v7 prompt. The
-  // synthetic card renders only while the call is active AND no real
+  // v8 (PR #575): rotate through 6 opener variants on an hourly cadence
+  // so reps doing back-to-back calls don't read the same line every time.
+  // The synthetic card renders only while the call is active AND no real
   // coach event has landed yet. The first realtime INSERT replaces it.
   const opener = useMemo(() => {
     const them = callerLabel === 'Caller' ? 'mate' : callerLabel;
     const me = (agentFirstName ?? '').trim() || 'Hugo';
-    return `Hey, is that ${them}? It's ${me} from NFSTAY — I saw you in the property WhatsApp group. Quick one, are you looking at Airbnb deals at the moment, or just watching the market?`;
+    const variants = [
+      `Hey, is that ${them}? It's ${me} from NFSTAY — saw you in the property WhatsApp group. Are you actively looking at deals at the moment, or more keeping an eye?`,
+      `${them}? ${me} from NFSTAY here — noticed you in our property WhatsApp group. Quick one, are you investing right now or just watching the market?`,
+      `Hey ${them}, ${me} calling from NFSTAY. You popped up in our property WhatsApp group — alright if I take a couple of minutes?`,
+      `Hi ${them}, this is ${me} at NFSTAY. Saw your name in the property WhatsApp group — are you actively looking at Airbnb deals or just exploring at the moment?`,
+      `Alright ${them}, ${me} from NFSTAY. You came through the property WhatsApp group — is now an okay time for a quick chat?`,
+      `Hey ${them}, it's ${me} at NFSTAY — caught you on the property WhatsApp group. Are you investing already, or just keeping an eye?`,
+    ];
+    const idx = Math.floor(Date.now() / 3600000) % variants.length;
+    return variants[idx];
   }, [callerLabel, agentFirstName]);
   // ?demo=1 in the URL keeps the legacy mock transcript reachable for
   // internal demos / Storybook screenshots. Default behaviour: show an

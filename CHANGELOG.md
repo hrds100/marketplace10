@@ -1,5 +1,69 @@
 # Changelog
 
+## 2026-04-29 — smsv2: coach v8 (looser script + filler cadence + faster debounce)
+
+Per Hugo's PR-v8 spec — high-impact / low-risk subset of the audit fix
+plan. Targets two pain points from live testing: scripty/parroted lines
+and ~1.1-1.7s perceived latency.
+
+**Script prompt** (now ~7,000 chars in `coach_script_prompt`)
+- Stages converted from rigid wording to INTENT + 2-3 example phrasings.
+- New "USE FRESH WORDING" block — explicit instruction to paraphrase
+  each time, never copy verbatim from last 5 cards.
+- New JUST EXPLORING handler with 5 named angles (WARM CURIOSITY,
+  LIGHT CONTEXT, SOCIAL PROOF, LOW-PRESSURE PERMISSION, EMPATHY BRIDGE)
+  — picks one, never the same shape twice in a row.
+- New EARNED-PITCH RULE: don't permission-pitch on a one-word answer.
+  Caller must either confirm interest OR give >1-word QUALIFY answer.
+- Hardcoded deal numbers removed — PITCH and RETURNS reference KB facts
+  (deal_structure / flagship_deal / entry_minimum / payment_cadence /
+  exit_path / monthly_yield) instead.
+
+**Style prompt** (now ~1,500 chars in `coach_style_prompt`)
+- New FILLER CADENCE block: ~1 in 4 lines, never two filler-led in a
+  row, vary vocabulary across the call.
+- Existing voice + bans unchanged.
+
+**Variety controls** (edge fn config)
+- `temperature` 0.3 → 0.55 (audit showed 0.3 was over-corrected).
+- Prior coach cards window 3 → 5.
+- New `buildOpenerBanList(priorCards)` pure helper extracts first-3-
+  words of each prior card; passed in user message as a "DO NOT START
+  WITH" ban list. Beats the prompt's verbal "first 5 words" rule
+  because the banned strings are concrete.
+
+**Latency**
+- Interim debounce 400ms → 250ms in `wk_acquire_coach_lock` call.
+  ~150ms faster start of generation per turn at the cost of ~1.5-2×
+  OpenAI calls per utterance. Existing supersede logic absorbs the
+  extra cancellations.
+- New `prompt_cache_key: 'nfstay-coach-v8'` on the chat completions
+  request — OpenAI prefix caching shaves ~150-300ms first-token on
+  warm cache (5-min TTL between calls).
+
+**Opener rotation** (client-only, no DB)
+- `LiveTranscriptPane.tsx` now has 6 opener variants, rotated hourly
+  via `Math.floor(Date.now() / 3600000) % 6`. Reps doing back-to-back
+  calls don't read the same line every time.
+
+**Tests**
+- `buildOpenerBanList` — 7 new pure-fn tests (lowercase normalisation,
+  dedup, short-card skip, defensive null handling).
+- Contract test +9 new assertions: temperature band 0.4-0.65, prior-
+  cards limit 5, debounce 250, ban list block, prompt_cache_key, USE
+  FRESH WORDING / JUST EXPLORING / EARNED-PITCH markers, NO hardcoded
+  numbers in DEFAULT_SCRIPT_PROMPT, FILLER CADENCE block.
+- 145/145 smsv2 tests green; tsc clean.
+
+Migration applied via `supabase db push`. Edge fn redeployed.
+
+**Rollback path** (if instruction-following regresses):
+1. Drop temperature back to 0.3 — single line in edge fn, redeploy.
+2. Or revert the script prompt by re-running the v6 migration content
+   via Settings UI (no migration revert needed).
+The two are independent levers — try (1) first; (2) is a bigger
+rollback if the prompt itself is the issue.
+
 ## 2026-04-29 — smsv2: coach prompt three-layer split (style / script / KB)
 
 Hugo's directive: stop blending voice, script logic, and factual deal
