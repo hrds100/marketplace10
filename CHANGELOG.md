@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-04-28 — smsv2: opener prefill + prompt v7 (open-ended default)
+
+Hugo's pre-emptive teleprompter spec. Three remaining gaps from the
+streaming PR closed in one shot:
+
+**Opener prefill (no more empty teleprompter)**
+On call connect, the coach pane now renders a synthetic opener card
+immediately — the rep never stares at an empty prompt. Composed
+client-side from the contact's first name + agent's first name:
+"Hey, is that {name}? It's {agent} from NFSTAY — I saw you in the
+property WhatsApp group. Quick one, are you looking at Airbnb deals
+at the moment, or just watching the market?". Replaced as soon as
+the first realtime coach event lands. No DB write — pure UI.
+
+**Prompt v7 — OPEN-ENDED DEFAULT + EARNED-CLOSE RULE**
+v6 was script-faithful but the model still trended toward force-
+closing on every other line. v7 adds two explicit blocks:
+- OPEN-ENDED DEFAULT: most lines should end with a question or
+  invitation. List of canonical examples ("What's pulled you toward
+  property at the moment?", "Are you looking more at cashflow or
+  growth?", etc.). "Match short/blunt energy when caller is short."
+- EARNED-CLOSE RULE: only fire SMS-close + tomorrow lock when ALL
+  three are true: (1) PITCH and RETURNS already delivered, (2)
+  caller has shown interest, (3) caller has NOT refused the SMS.
+  Otherwise default to a question that moves the conversation.
+
+**Lifecycle logs — call start + opener render**
+Client-side console.logs added so we can correlate the rep's first
+visible card with the edge-fn timestamps from PR #572.
+
+Migration applied via `supabase db push`. Edge fn redeployed.
+
 ## 2026-04-28 — smsv2: streaming coach (interim trigger + token streaming)
 
 Even with prompt v6 the coach still felt slow because every card waited

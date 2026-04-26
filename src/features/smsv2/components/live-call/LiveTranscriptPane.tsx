@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Lightbulb, HelpCircle, Activity, MessageSquare } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,9 @@ interface Props {
   /** Server-side wk_calls.id — when set, subscribe to wk_live_transcripts
    *  and wk_live_coach_events for live data. Falls back to MOCK_* otherwise. */
   callId?: string | null;
+  /** First name of the agent placing the call. Used for the prefill
+   *  opener card. */
+  agentFirstName?: string;
 }
 
 interface LiveTranscriptRow {
@@ -49,7 +52,7 @@ const COACH_ICONS = {
 const LATEST_BODY_CLASS = 'text-[22px] leading-[1.35] font-semibold tracking-[-0.005em]';
 const OLDER_BODY_CLASS = 'text-[12px] leading-snug line-clamp-2';
 
-export default function LiveTranscriptPane({ durationSec, contactId, callId }: Props) {
+export default function LiveTranscriptPane({ durationSec, contactId, callId, agentFirstName }: Props) {
   const { aiCoach } = useKillSwitch();
   const store = useSmsV2();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -63,6 +66,17 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
     const first = c?.name?.trim().split(/\s+/)[0];
     return first || 'Caller';
   })();
+
+  // Hugo 2026-04-28: prefill the opener card so the rep never stares at
+  // an empty teleprompter. Composed client-side from the contact's and
+  // agent's first names — matches the OPEN step of the v7 prompt. The
+  // synthetic card renders only while the call is active AND no real
+  // coach event has landed yet. The first realtime INSERT replaces it.
+  const opener = useMemo(() => {
+    const them = callerLabel === 'Caller' ? 'mate' : callerLabel;
+    const me = (agentFirstName ?? '').trim() || 'Hugo';
+    return `Hey, is that ${them}? It's ${me} from NFSTAY — I saw you in the property WhatsApp group. Quick one, are you looking at Airbnb deals at the moment, or just watching the market?`;
+  }, [callerLabel, agentFirstName]);
   // ?demo=1 in the URL keeps the legacy mock transcript reachable for
   // internal demos / Storybook screenshots. Default behaviour: show an
   // explicit empty state instead, so production calls never surface mock
@@ -85,6 +99,14 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note, contactId]);
+
+  // Hugo 2026-04-28: log call start + opener render so we can correlate
+  // edge-fn timestamps with what the agent actually saw.
+  useEffect(() => {
+    if (!callId) return;
+    console.log(`[live-coach] call start callId=${callId.slice(0, 8)}…`);
+    console.log(`[live-coach] opener render`);
+  }, [callId]);
 
   // Backfill any rows that already exist for this call (Twilio's first
   // transcript event can land in the DB while the UI is still in 'placing'
@@ -288,7 +310,27 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
             <div className="sticky top-0 -mt-3 -mx-4 px-4 py-1.5 mb-2 bg-white/95 backdrop-blur text-[10px] font-bold uppercase tracking-wide text-[#1E9A80]">
               AI coach — read this aloud
             </div>
-            {events.length === 0 && !aiCoach && (
+            {events.length === 0 && !aiCoach && useLive && (
+              // Hugo 2026-04-28: the rep should never stare at an empty
+              // teleprompter. Pre-fill the opener immediately on call
+              // start; first real coach event replaces it.
+              <div
+                className="rounded-lg border bg-white p-4 transition-all border-[#1E9A80] bg-[#ECFDF5]/50 shadow-[0_6px_24px_rgba(30,154,128,0.22)]"
+                style={{ borderLeftColor: '#1E9A80', borderLeftWidth: 4 }}
+                data-testid="opener-card"
+              >
+                <div
+                  className="font-bold tracking-wide flex items-center gap-2 text-[10px] mb-2"
+                  style={{ color: '#1E9A80' }}
+                >
+                  <span>💡 OPENER · READ WHEN THEY PICK UP</span>
+                </div>
+                <div className={cn('text-[#1A1A1A]', LATEST_BODY_CLASS)}>
+                  {opener}
+                </div>
+              </div>
+            )}
+            {events.length === 0 && !aiCoach && !useLive && (
               <div className="h-full flex flex-col items-center justify-center text-center px-6 py-10 text-[#9CA3AF]">
                 <Lightbulb className="w-8 h-8 mb-3 opacity-40" />
                 <div className="text-[12px] leading-snug max-w-[240px]">
