@@ -286,8 +286,17 @@ const _stashedTracks = new WeakMap<RTCRtpSender, MediaStreamTrack>();
  * agent after we log "every sender muted", the audio leak is environmental
  * (e.g. the callee's own mic picking up ambient sound) — not software.
  */
-export function muteAllCalls(shouldMute: boolean): boolean {
-  const calls = getDeviceCalls();
+export function muteAllCalls(shouldMute: boolean, fallbackCall?: TwilioCall | null): boolean {
+  // device.calls is only populated reliably for inbound calls — outbound
+  // dials placed via device.connect() come back as a Call object that the
+  // caller holds, but the SDK does NOT push them into the public `calls`
+  // array (verified live: Hugo's mute logs showed `calls: 0, senders: []`
+  // mid-call). If the device list is empty, fall back to whatever Call the
+  // caller is holding (activeTwilioCallRef / device.activeCall).
+  let calls = getDeviceCalls();
+  if (calls.length === 0 && fallbackCall) {
+    calls = [fallbackCall];
+  }
   let processed = false;
   const report: Array<{ idx: number; sender: number; trackId: string; enabled: boolean; replaced: boolean }> = [];
 

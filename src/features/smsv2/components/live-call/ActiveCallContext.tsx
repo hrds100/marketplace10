@@ -125,12 +125,17 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       console.info('[mute] no Twilio Calls on device — toggleMute is a no-op');
       return;
     }
-    const wasMuted = (() => {
-      try { return truth ? truth.isMuted() : muted; } catch { return muted; }
-    })();
-    const next = !wasMuted;
-    console.info('[mute] toggle', { wasMuted, next, calls: all.length });
-    muteAllCalls(next);
+    // Toggle based on React state (the source of truth for the UI) instead of
+    // the SDK's isMuted(). After Layer 3 replaceTrack(null), the SDK's
+    // _sender.track is null, which can leave isMuted() in an inconsistent
+    // state — Hugo (2026-04-26): "click mute, button stays selected".
+    // React state is what the user sees; toggle it predictably.
+    const next = !muted;
+    console.info('[mute] toggle', { wasMuted: muted, next, calls: all.length, hasFallback: !!truth });
+    // Pass `truth` as the fallback so muteAllCalls can hard-mute the active
+    // outbound Call even when device.calls is empty (the SDK doesn't list
+    // outbound dials in its public `calls` array).
+    muteAllCalls(next, truth);
     // The 'mute' event listener wired in startCall / incoming will sync
     // React state on the active Call. Set optimistically too so the icon
     // flips immediately even if a Call's stream isn't fully wired yet.
