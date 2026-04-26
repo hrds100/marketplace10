@@ -67,20 +67,44 @@ async function validateTwilioSignature(
 
 async function generateCoachSuggestion(
   apiKey: string,
-  systemPrompt: string,
+  _systemPromptIgnoredForNow: string,
   recentTranscript: string,
   latestUtterance: string,
   speaker: 'caller' | 'agent'
 ): Promise<string | null> {
   if (!apiKey || !latestUtterance || speaker !== 'caller') return null;
 
+  // Strong, opinionated system prompt that grounds the model in the actual
+  // business (NFSTAY / UK rent-to-rent landlord acquisition) and forbids
+  // the generic "Mirror their energy" filler the model defaults to. The
+  // wk_ai_settings.live_coach_system_prompt is intentionally NOT used here
+  // until we can audit what it contains — it was producing repetitive
+  // suggestions in production.
+  const systemPrompt = [
+    'You are a real-time sales coach for an NFSTAY rent-to-rent agent in the UK.',
+    'NFSTAY signs landlords to a 3-5 year lease, then sublets short-term on Airbnb / Booking.com.',
+    'The agent is on a live phone call with a landlord lead.',
+    '',
+    'Your job: REACT to the SPECIFIC thing the caller just said and give the agent ONE concrete, situational tip.',
+    '',
+    'Hard rules:',
+    '- Reply with exactly ONE tip, max 14 words.',
+    '- Never use the phrase "Mirror their energy".',
+    '- Never reply with the word "skip".',
+    '- Do not give generic advice (e.g. "ask open questions"). Be specific to what the caller said.',
+    '- If the caller asked a question, suggest the exact answer the agent should give.',
+    '- If the caller raised an objection, suggest how to handle that objection.',
+    '- If the caller stated a fact (location, property type, timeline), suggest the next probe.',
+    '- No greeting. No prefix. Just the tip itself.',
+  ].join('\n');
+
   const userMsg = [
-    'Recent conversation (most recent at bottom):',
-    recentTranscript,
+    'Recent conversation (most recent line at bottom):',
+    recentTranscript || '(no prior context yet)',
     '',
     `Caller just said: "${latestUtterance}"`,
     '',
-    'Give the agent ONE short, actionable coaching tip (max 14 words). Always provide a tip — even early in the call ("Mirror their energy", "Ask their goal", etc.). Never reply with "skip".',
+    'One concrete tip:',
   ].join('\n');
 
   try {
@@ -92,7 +116,9 @@ async function generateCoachSuggestion(
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        temperature: 0.4,
+        temperature: 0.7,            // higher → less repetition across calls
+        presence_penalty: 0.6,       // discourage reusing words from prior tips
+        frequency_penalty: 0.4,
         max_tokens: 60,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -105,10 +131,14 @@ async function generateCoachSuggestion(
       return null;
     }
     const j = await resp.json();
-    const text = String(j?.choices?.[0]?.message?.content ?? '').trim();
+    let text = String(j?.choices?.[0]?.message?.content ?? '').trim();
     if (!text) return null;
-    // Belt-and-braces: if the model still says "skip", drop it.
+    // Strip leading "Tip:" / "Coach:" / leading dash, etc.
+    text = text.replace(/^["“”'`]*(tip|coach|suggestion)\s*[:\-—]\s*/i, '').replace(/^[-•—]\s*/, '').trim();
+    text = text.replace(/^["“”'`]+|["“”'`]+$/g, '').trim();
+    if (!text) return null;
     if (/^skip\.?$/i.test(text)) return null;
+    if (/mirror\s+(their|the)\s+energy/i.test(text)) return null; // belt-and-braces
     return text;
   } catch (e) {
     console.warn('[wk-voice-transcription] openai chat threw', e);

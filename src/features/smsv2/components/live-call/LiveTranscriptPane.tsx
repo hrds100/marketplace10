@@ -41,6 +41,14 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
   const scrollRef = useRef<HTMLDivElement>(null);
   const [liveLines, setLiveLines] = useState<LiveTranscriptRow[]>([]);
   const [liveEvents, setLiveEvents] = useState<LiveCoachRow[]>([]);
+  // Real contact name → first-name label for the caller side. Falls back
+  // to "Caller" if we can't resolve a name (e.g. inbound from a number we
+  // don't have a wk_contacts row for yet).
+  const callerLabel = (() => {
+    const c = store.getContact(contactId);
+    const first = c?.name?.trim().split(/\s+/)[0];
+    return first || 'Caller';
+  })();
   // ?demo=1 in the URL keeps the legacy mock transcript reachable for
   // internal demos / Storybook screenshots. Default behaviour: show an
   // explicit empty state instead, so production calls never surface mock
@@ -214,7 +222,7 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
                   : 'font-semibold text-[#1A1A1A]'
               }
             >
-              {line.speaker === 'agent' ? 'You' : 'Sarah'}:
+              {line.speaker === 'agent' ? 'You' : callerLabel}:
             </span>{' '}
             <span className="text-[#1A1A1A]">{line.text}</span>
           </div>
