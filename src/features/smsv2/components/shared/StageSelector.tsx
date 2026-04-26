@@ -6,7 +6,7 @@ import { ACTIVE_PIPELINE } from '../../data/mockPipelines';
 interface Props {
   value?: string; // pipeline column id
   onChange: (columnId: string) => void;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
   className?: string;
 }
 
@@ -14,6 +14,11 @@ interface Props {
  * Reusable pipeline stage selector. Drop-in anywhere a contact's stage
  * needs to be visible + editable (inbox, contacts list, pipeline cards,
  * contact detail, etc.).
+ *
+ * Size variants:
+ *   - xs: very compact, for inline embedding (e.g. mid-call SMS card header)
+ *   - sm: default
+ *   - md: pipeline cards / detail header
  */
 export default function StageSelector({ value, onChange, size = 'sm', className }: Props) {
   const [open, setOpen] = useState(false);
@@ -26,10 +31,12 @@ export default function StageSelector({ value, onChange, size = 'sm', className 
         onClick={() => setOpen((v) => !v)}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full font-medium border transition-colors',
-          size === 'sm'
-            ? 'text-[10px] px-2 py-0.5'
-            : 'text-[12px] px-2.5 py-1'
+          'inline-flex items-center gap-1 rounded-full font-medium border transition-colors',
+          size === 'xs'
+            ? 'text-[9px] px-1.5 py-0 leading-none gap-1'
+            : size === 'sm'
+              ? 'text-[10px] px-2 py-0.5'
+              : 'text-[12px] px-2.5 py-1'
         )}
         style={
           current
