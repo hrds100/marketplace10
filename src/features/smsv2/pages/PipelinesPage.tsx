@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Flame, GripVertical, Pencil } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Flame, GripVertical, Pencil, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ACTIVE_PIPELINE } from '../data/mockPipelines';
-import { formatPence } from '../data/helpers';
+import { formatPence, formatRelativeTime } from '../data/helpers';
 import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence } from '../hooks/useContactPersistence';
+import { useContactSmsStatus } from '../hooks/useContactSmsStatus';
 import type { Contact } from '../types';
 
 export default function PipelinesPage() {
@@ -14,6 +15,15 @@ export default function PipelinesPage() {
   const [editing, setEditing] = useState<Contact | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverColId, setDragOverColId] = useState<string | null>(null);
+
+  // PR 20: SMS-sent badge per pipeline card. Hook returns a Map<phone,
+  // { lastSentAt, bodyPreview }> populated from sms_messages outbound
+  // rows that target any of the visible contacts' phone numbers.
+  const phones = useMemo(
+    () => contacts.map((c) => c.phone).filter(Boolean),
+    [contacts]
+  );
+  const smsStatus = useContactSmsStatus(phones);
 
   const save = (updated: Contact) => {
     upsertContact(updated);
@@ -162,6 +172,19 @@ export default function PipelinesPage() {
                             ))}
                           </div>
                         )}
+                        {(() => {
+                          const sms = smsStatus.get(c.phone);
+                          if (!sms) return null;
+                          return (
+                            <div
+                              className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-medium bg-[#1E9A80]/10 text-[#1E9A80] px-1.5 py-0.5 rounded"
+                              title={sms.bodyPreview}
+                            >
+                              <MessageSquare className="w-2.5 h-2.5" />
+                              SMS · {formatRelativeTime(sms.lastSentAt)}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </button>
