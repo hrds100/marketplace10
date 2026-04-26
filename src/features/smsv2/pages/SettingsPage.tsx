@@ -755,6 +755,16 @@ function CampaignsTab() {
   const { campaigns, patchCampaign } = useSmsV2();
   return (
     <Card title="Campaigns & lead distribution">
+      {/* PR 27 honesty banner: this tab edits the IN-MEMORY store
+          campaigns (mock data), not real wk_dialer_campaigns rows.
+          Real CRUD lands in a follow-up. Today: use /smsv2/dialer to
+          run the real campaigns Hugo seeded via SQL / Supabase Studio. */}
+      <div className="mb-3 px-3 py-2 bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-[10px] text-[11px] text-[#92400E]">
+        ⚠ Heads up — edits below only update local state. Real campaigns
+        live in <code className="bg-white/60 px-1 rounded">wk_dialer_campaigns</code> and aren't editable
+        from this tab yet (use Supabase Studio for now). Running campaigns
+        + parallel-dial UI is on /smsv2/dialer.
+      </div>
       <div className="space-y-2">
         {campaigns.map((c) => (
           <div key={c.id} className="border border-[#E5E7EB] rounded-xl p-3">
@@ -2266,27 +2276,46 @@ function KnowledgeBaseEditor({
 function PacingTab() {
   return (
     <>
-      <Card title="Global limits">
-        <div className="grid grid-cols-2 gap-3">
+      {/* PR 27 honesty banner: every input here is uncontrolled with
+          static defaultValues — nothing saves anywhere. Real pacing
+          + block-list lands in a follow-up. Existing per-agent spend
+          limits + the global kill switch ARE wired (see Agents +
+          Kill-switches tabs); this tab is the future home for CSV
+          block-list + global concurrency caps. */}
+      <Card title="Pacing & safety">
+        <div className="px-3 py-2 bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-[10px] text-[11px] text-[#92400E]">
+          ⚠ Coming soon — none of the inputs below persist yet. Per-agent
+          spend caps (real, persisted) live in the <strong>Agents & spend</strong>
+          tab. Global kill switches are in the <strong>Kill switches & audit</strong>
+          tab. The block list + global parallel-line cap shown here is a
+          mockup; if you need to block a number today, do it in the
+          Twilio console or via SQL on <code className="bg-white/60 px-1 rounded">sms_opt_outs</code>.
+        </div>
+      </Card>
+      <Card title="Global limits (mockup)">
+        <div className="grid grid-cols-2 gap-3 opacity-60">
           <Field label="Max parallel lines per agent">
             <input
               defaultValue={3}
-              className="w-full px-2 py-1.5 text-[13px] border border-[#E5E7EB] rounded-[10px] tabular-nums"
+              disabled
+              className="w-full px-2 py-1.5 text-[13px] border border-[#E5E7EB] rounded-[10px] tabular-nums bg-[#F3F3EE] cursor-not-allowed"
             />
           </Field>
           <Field label="Retry attempts cap per lead">
             <input
               defaultValue={3}
-              className="w-full px-2 py-1.5 text-[13px] border border-[#E5E7EB] rounded-[10px] tabular-nums"
+              disabled
+              className="w-full px-2 py-1.5 text-[13px] border border-[#E5E7EB] rounded-[10px] tabular-nums bg-[#F3F3EE] cursor-not-allowed"
             />
           </Field>
         </div>
       </Card>
-      <Card title="Block list" hint="Numbers we never dial">
+      <Card title="Block list (mockup)" hint="Numbers we never dial">
         <textarea
           rows={4}
+          disabled
           defaultValue={'+44 7000 000000\n+44 7000 000001'}
-          className="w-full px-3 py-2 text-[12px] font-mono border border-[#E5E7EB] rounded-[10px]"
+          className="w-full px-3 py-2 text-[12px] font-mono border border-[#E5E7EB] rounded-[10px] bg-[#F3F3EE] cursor-not-allowed opacity-60"
         />
       </Card>
     </>
