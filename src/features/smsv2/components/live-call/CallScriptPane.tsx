@@ -14,7 +14,7 @@
 // from PR #585. The current (next-to-read) block gets a green left
 // border so the agent's eye snaps to it.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, RotateCcw, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAgentScript } from '../../hooks/useAgentScript';
@@ -156,14 +156,28 @@ function TeleprompterBlock({
   isCurrent: boolean;
   children: React.ReactNode;
 }) {
+  // Hugo 2026-04-26 (PR 14): "as the agent speaks throughout the script
+  // it gets a background color so the agent knows it's being read."
+  //
+  // Read blocks get a soft highlighter wash (pale yellow) instead of
+  // line-through — the agent can still read the text easily but sees
+  // at a glance which lines are behind them. Current block (the next
+  // unread one) gets a bright mint highlight + green left border so
+  // the eye snaps to it. Auto-scroll keeps the cursor in view.
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isCurrent && ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isCurrent]);
   return (
     <div
+      ref={ref}
       className={cn(
-        'rounded -mx-1 px-1 transition-opacity',
-        isRead && 'opacity-50 line-through',
+        'rounded -mx-1 px-2 py-0.5 transition-colors',
+        isRead && !isCurrent && 'bg-[#FEF9C3]/60 text-[#525252]',
         isCurrent &&
-          !isRead &&
-          'border-l-2 border-[#1E9A80] -ml-[2px] pl-2 bg-[#ECFDF5]/40'
+          'border-l-[3px] border-[#1E9A80] -ml-[3px] pl-2 bg-[#ECFDF5] shadow-[0_2px_8px_rgba(30,154,128,0.12)]'
       )}
     >
       {children}
