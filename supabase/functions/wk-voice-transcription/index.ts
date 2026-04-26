@@ -81,6 +81,13 @@ interface CoachLayers {
   stylePrompt: string;   // wk_ai_settings.coach_style_prompt
   scriptPrompt: string;  // wk_ai_settings.coach_script_prompt
   facts: CoachFact[];    // wk_coach_facts (active rows)
+  // PR 8 (Hugo 2026-04-26): the agent's actual call script body
+  // (wk_call_scripts WHERE owner_agent_id = call.agent_id, falling
+  // back to is_default = true). Already substituted: `{{first_name}}`
+  // → contact's first name, `{{agent_first_name}}` → agent's first
+  // name. Empty string when no script is found at all.
+  agentScriptBody: string;
+  agentScriptSource: 'own' | 'default' | 'none';
 }
 
 interface CoachOptions {
@@ -255,9 +262,10 @@ async function generateCoachSuggestion(
     '- "Once it lands, mind if I ring you tomorrow to talk through it — morning or afternoon?"',
     '- "I\'ll call you tomorrow to walk through anything that\'s come up, what time suits?"',
     '',
-    'OUTPUT FORMAT — v10 (Hugo 2026-04-26)',
+    'OUTPUT FORMAT — v11 (Hugo 2026-04-26)',
+    'A separate system message titled `=== AGENT\'S CALL SCRIPT ===` carries the EXACT lines the agent has on screen. Mirror those lines whenever you emit a SCRIPT card.',
     'Every line MUST start with one of these classifier prefixes so the UI can label the card correctly:',
-    '- `[SCRIPT: <stage>] <line>` — caller is on-script, your line is the next thing the rep should read from the script. <stage> must be one of: Open, Qualify, Permission to pitch, Pitch, Returns, SMS close, Follow-up lock. Example: `[SCRIPT: Qualify] Are you already running Airbnbs yourself, or is this newer territory?`',
+    '- `[SCRIPT: <stage>] <line>` — caller is on-script, your line is the next thing the rep should read. The <stage> MUST match a "## N. <Stage>" heading from the AGENT\'S CALL SCRIPT body. The <line> SHOULD be a verbatim or near-verbatim quote of the next line under that heading; only paraphrase when adapting an example phrasing to the caller. Example: `[SCRIPT: Qualify] Are you currently running Airbnbs and investing already, or just exploring?`',
     '- `[SUGGESTION] <line>` — caller went off-script and the rep needs a fresh line that isn\'t in the script. Example: `[SUGGESTION] Fair, market\'s busy — what would have to line up for you to actually move on something?`',
     '- `[EXPLAIN] <line>` — caller raised an objection or asked a factual question; your line answers it from the KNOWLEDGE BASE. Example: `[EXPLAIN] Fair — yields aren\'t guaranteed, but partners vote on management and platform, and monthly actuals are visible on the platform.`',
     'Default to SCRIPT whenever the caller\'s utterance plausibly falls inside one of the seven stages above. SUGGESTION is for genuine off-script moments; EXPLAIN is reserved for objections or KB-grounded factual answers.',
@@ -286,6 +294,18 @@ async function generateCoachSuggestion(
 
   const knowledgeBaseSystemPrompt =
     `=== NFSTAY KNOWLEDGE BASE ===\nThese are the only facts you may quote. Do NOT invent figures or new facts. If the answer isn't here, say "I'll check that and come back to you".\n\n${factsBlock}`;
+
+  // PR 8 (Hugo 2026-04-26): the agent's actual call script. The model
+  // can see the EXACT lines the agent reads and should mirror them
+  // verbatim when emitting `[SCRIPT: <stage>]` cards. Placeholders are
+  // already substituted, so anything inside this block can be quoted
+  // back to the agent without modification.
+  const agentScriptBody = (layers.agentScriptBody ?? '').trim();
+  const agentScriptSource = layers.agentScriptSource ?? 'none';
+  const agentScriptSystemPrompt =
+    agentScriptBody.length === 0
+      ? `=== AGENT'S CALL SCRIPT ===\n(no per-agent or default script loaded — fall back to your built-in stage map.)`
+      : `=== AGENT'S CALL SCRIPT (source: ${agentScriptSource}) ===\nThis is the EXACT script the agent has open in front of them right now. When you emit a [SCRIPT: <stage>] card, the body MUST be the literal next line from this script (or a very close paraphrase if a placeholder needed substituting). Do NOT invent script lines that aren't in this body. The <stage> in your prefix MUST match a "## N. <Stage>" heading from this script.\n\n${agentScriptBody}`;
 
   // Retrieval: highlight facts whose keywords match the caller's last
   // utterance so the model focuses on the most likely-relevant ones.
@@ -338,7 +358,12 @@ async function generateCoachSuggestion(
     return await streamCoachInternal({
       apiKey,
       model: liveCoachModel,
-      systemMessages: [stylePrompt, scriptPrompt, knowledgeBaseSystemPrompt],
+      systemMessages: [
+        stylePrompt,
+        scriptPrompt,
+        knowledgeBaseSystemPrompt,
+        agentScriptSystemPrompt,
+      ],
       userMsg,
       onChunk,
       isAborted,
@@ -388,7 +413,7 @@ async function streamCoachInternal(args: {
       // v8: tag this prompt prefix so OpenAI prompt-caching buckets
       // calls with the same three system messages together. Cache TTL
       // is ~5 min; back-to-back calls in a session reuse the prefix.
-      prompt_cache_key: 'nfstay-coach-v10',
+      prompt_cache_key: 'nfstay-coach-v11',
       messages: [
         ...systemMessages
           .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
@@ -560,9 +585,11 @@ serve(async (req: Request) => {
     const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // Resolve our wk_calls.id once (Twilio sends multiple events per call).
+    // Also pull agent_id + contact_id so we can fetch the agent's actual
+    // call script and substitute the contact's first name into it (PR 8).
     const { data: call } = await supa
       .from('wk_calls')
-      .select('id, ai_coach_enabled')
+      .select('id, ai_coach_enabled, agent_id, contact_id')
       .eq('twilio_call_sid', callSid)
       .maybeSingle();
 
@@ -695,8 +722,22 @@ serve(async (req: Request) => {
             return;
           }
 
-          // 3. Read recent transcripts + prior cards + coach facts in parallel.
-          const [recentRes, priorCardsRes, factsRes] = await Promise.all([
+          // 3. Read recent transcripts + prior cards + coach facts +
+          //    agent profile + contact + agent's call script in parallel.
+          //    Agent's call script (PR 8): prefer the agent's OWN row
+          //    (wk_call_scripts WHERE owner_agent_id = call.agent_id),
+          //    fall back to the default row (is_default = true). Two
+          //    queries — Promise.all keeps total latency at one round-
+          //    trip's worth.
+          const [
+            recentRes,
+            priorCardsRes,
+            factsRes,
+            agentProfileRes,
+            contactRes,
+            ownScriptRes,
+            defaultScriptRes,
+          ] = await Promise.all([
             supa
               .from('wk_live_transcripts')
               .select('speaker, body, ts')
@@ -717,6 +758,32 @@ serve(async (req: Request) => {
               .select('key, label, value, keywords, sort_order')
               .eq('is_active', true)
               .order('sort_order', { ascending: true }),
+            call.agent_id
+              ? supa
+                  .from('profiles')
+                  .select('name')
+                  .eq('id', call.agent_id)
+                  .maybeSingle()
+              : Promise.resolve({ data: null, error: null }),
+            call.contact_id
+              ? supa
+                  .from('wk_contacts')
+                  .select('name')
+                  .eq('id', call.contact_id)
+                  .maybeSingle()
+              : Promise.resolve({ data: null, error: null }),
+            call.agent_id
+              ? supa
+                  .from('wk_call_scripts')
+                  .select('name, body_md')
+                  .eq('owner_agent_id', call.agent_id)
+                  .limit(1)
+              : Promise.resolve({ data: null, error: null }),
+            supa
+              .from('wk_call_scripts')
+              .select('name, body_md')
+              .eq('is_default', true)
+              .limit(1),
           ]);
           const ctx = (recentRes.data ?? [])
             .reverse()
@@ -797,6 +864,45 @@ serve(async (req: Request) => {
           const dbStyle = (ai.coach_style_prompt as string | null) ?? '';
           const dbScript = (ai.coach_script_prompt as string | null) ?? '';
           const legacyPrompt = (ai.live_coach_system_prompt as string | null) ?? '';
+          // PR 8 (2026-04-26): the AGENT'S CALL SCRIPT is now a separate
+          // layer the coach can see. Resolution priority mirrors the
+          // useAgentScript hook on the client:
+          //   1. Agent's own row in wk_call_scripts (per-agent edits)
+          //   2. is_default = true row (admin-controlled fallback)
+          //   3. Empty (coach falls through to its built-in stage map)
+          //
+          // We substitute {{first_name}} with the contact's first name
+          // and {{agent_first_name}} with the agent's first name BEFORE
+          // passing to the model, so the model never echoes raw
+          // placeholders into the agent's UI.
+          const ownScriptRow = Array.isArray(ownScriptRes.data)
+            ? (ownScriptRes.data[0] as { name: string; body_md: string } | undefined)
+            : undefined;
+          const defaultScriptRow = Array.isArray(defaultScriptRes.data)
+            ? (defaultScriptRes.data[0] as { name: string; body_md: string } | undefined)
+            : undefined;
+          const resolvedAgentScript = ownScriptRow ?? defaultScriptRow ?? null;
+          const agentScriptSource: 'own' | 'default' | 'none' = ownScriptRow
+            ? 'own'
+            : defaultScriptRow
+              ? 'default'
+              : 'none';
+
+          const agentName = (
+            (agentProfileRes.data as { name?: string | null } | null)?.name ?? ''
+          ).trim();
+          const agentFirstName = agentName.split(/\s+/)[0] || 'the agent';
+          const contactName = (
+            (contactRes.data as { name?: string | null } | null)?.name ?? ''
+          ).trim();
+          const contactFirstName = contactName.split(/\s+/)[0] || 'the caller';
+
+          const agentScriptBody = resolvedAgentScript
+            ? resolvedAgentScript.body_md
+                .replace(/\{\{\s*first_name\s*\}\}/gi, contactFirstName)
+                .replace(/\{\{\s*agent_first_name\s*\}\}/gi, agentFirstName)
+            : '';
+
           const layers = {
             stylePrompt:
               dbStyle.trim().length > 0
@@ -811,8 +917,13 @@ serve(async (req: Request) => {
                   ? '' // style set, script empty — DEFAULT_SCRIPT_PROMPT
                   : '', // legacy prompt is fine in stylePrompt slot; let script default apply
             facts: ((factsRes.data ?? []) as CoachFact[]),
+            agentScriptBody,
+            agentScriptSource,
           };
-          log('layers loaded', `style=${layers.stylePrompt.length}c script=${layers.scriptPrompt.length}c facts=${layers.facts.length}`);
+          log(
+            'layers loaded',
+            `style=${layers.stylePrompt.length}c script=${layers.scriptPrompt.length}c facts=${layers.facts.length} agentScript=${agentScriptBody.length}c(${agentScriptSource}) caller=${contactFirstName}`
+          );
 
           // 8. Build the user message + run streaming.
           let firstToken = true;

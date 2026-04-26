@@ -156,7 +156,9 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     // ride as its own system message so the model treats them as
     // independent constraints.
     expect(source).toContain('systemMessages');
-    expect(source).toMatch(/systemMessages:\s*\[stylePrompt,\s*scriptPrompt,\s*knowledgeBaseSystemPrompt\]/);
+    expect(source).toMatch(
+      /systemMessages:\s*\[\s*stylePrompt,\s*scriptPrompt,\s*knowledgeBaseSystemPrompt(?:,\s*agentScriptSystemPrompt,?\s*)?\]/
+    );
     // The OpenAI call must spread the systemMessages into the messages
     // array with role: 'system' on each.
     expect(source).toMatch(/role:\s*['"]system['"]\s+as\s+const/);
@@ -237,7 +239,7 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
   });
 
   it('v8 — OpenAI request tagged with prompt_cache_key for prefix caching', () => {
-    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10)['"]/);
+    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11)['"]/);
   });
 
   it('v8 — script prompt is intent-based with USE FRESH WORDING + EARNED-PITCH + JUST EXPLORING', () => {
@@ -300,11 +302,14 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     // prefixes so the UI can label cards correctly. Lock the prompt
     // block so a future edit can't silently drop it (without the prompt,
     // the model defaults to no-prefix → all cards collapse to SUGGESTION).
-    expect(source).toContain('OUTPUT FORMAT — v10');
+    expect(source).toMatch(/OUTPUT FORMAT — v(?:10|11)/);
     expect(source).toContain('[SCRIPT: <stage>]');
     expect(source).toContain('[SUGGESTION]');
     expect(source).toContain('[EXPLAIN]');
-    expect(source).toMatch(/<stage> must be one of:\s*Open,\s*Qualify/);
+    // v10 used a hardcoded stage list; v11 derives the stage from the
+    // agent's script body (## N. <Stage> headings). Either form is OK,
+    // as long as the prompt explicitly references the stage source.
+    expect(source).toMatch(/<stage>\s+(?:must be one of:\s*Open|MUST match a "## N\. <Stage>" heading)/);
   });
 
   it('v10 — postProcessCoachText returns { kind, scriptSection, body } and parses prefix', () => {
@@ -322,5 +327,20 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     // section so the renderer can label cards "SCRIPT — Qualify".
     expect(source).toMatch(/script_section:\s*cleaned\.scriptSection/);
     expect(source).toMatch(/kind:\s*cleaned\.kind/);
+  });
+
+  it('v11 — coach loads agent\'s actual call script and injects it as a 4th system message', () => {
+    // PR 8: the coach must SELECT the agent's own row from
+    // wk_call_scripts (with default fallback) and pass the body as a
+    // separate system message so the model can mirror lines verbatim.
+    expect(source).toMatch(/from\(['"]wk_call_scripts['"]\)/);
+    expect(source).toMatch(/owner_agent_id/);
+    expect(source).toContain('agentScriptSystemPrompt');
+    expect(source).toContain("=== AGENT'S CALL SCRIPT");
+    // Substitution of {{first_name}} / {{agent_first_name}} happens
+    // BEFORE the body lands in the prompt — model never echoes raw
+    // placeholders into the agent UI.
+    expect(source).toMatch(/\\\{\\\{\\s\*first_name\\s\*\\\}\\\}/);
+    expect(source).toMatch(/\\\{\\\{\\s\*agent_first_name\\s\*\\\}\\\}/);
   });
 });
