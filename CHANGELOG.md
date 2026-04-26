@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-04-26 — smsv2: terminology cards + default call script (item C)
+
+Schema scaffolding for the new live-call surface (items B2 + G).
+
+- New table `wk_terminologies` (term, short_gist, definition_md, sort_order,
+  is_active). Admin write, agent-or-admin read. Added to `supabase_realtime`
+  so admin edits propagate live to the call screen. Seeded with 10 nfstay
+  glossary entries (JV partnership, HMO, finder's fee, gross yield,
+  occupancy, ADR, rent-to-rent, setup cost, voting, exit).
+- `wk_call_scripts.is_default boolean` + partial unique index. The
+  CallScriptPane reads the `is_default = true` row. Original plan called for
+  a `call_script` column on `wk_ai_settings`; chose to reuse the existing
+  `wk_call_scripts` table instead — it already had the right shape and zero
+  callers in src. Documented in the migration header.
+- Seeded a canonical NFSTAY default script (open + qualify + permission to
+  pitch + JV pitch + returns + SMS-close + follow-up + objection cheatsheet).
+  Hugo can edit it via the Settings UI in item G.
+
+No frontend changes in this PR — types regen + UI ship in items G and B2.
+
+## 2026-04-26 — smsv2: 3-column live-call layout now resizable (item B1)
+
+Pure layout skeleton. Wrapped the existing 3-pane flex layout in a
+`ResizablePanelGroup` (horizontal, `autoSaveId="smsv2-live-call-layout"`).
+Each border is now draggable; widths persist per browser. Min sizes
+16/30/16% keep panes usable on narrow viewports. No behaviour change, no
+new components. Item B2 will split into 4 columns and add nested vertical
+resize between transcript and coach.
+
 ## 2026-04-26 — smsv2: coach prompt v2 (Belfort-style + bend on SMS-refusal)
 
 Hugo's 2026-04-26 live test surfaced that the coach was rigid: caller said
