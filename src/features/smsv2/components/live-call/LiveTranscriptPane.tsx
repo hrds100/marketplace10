@@ -201,42 +201,63 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-        {showEmptyState && (
-          <div className="h-full flex flex-col items-center justify-center text-center px-6 py-10 text-[#9CA3AF]">
-            <MessageSquare className="w-8 h-8 mb-3 opacity-40" />
-            <div className="text-[13px] font-medium text-[#6B7280] mb-1">
-              No active call
-            </div>
-            <div className="text-[12px] leading-snug max-w-[280px]">
-              Live transcript will appear here once you place or receive a call.
-            </div>
+      {/* Two-column layout (Hugo 2026-04-26):
+            LEFT  — transcript stream (what's actually being said)
+            RIGHT — coach cards (what the agent should say next, latest on top)
+          The split keeps the live conversation legible while the coach
+          panel can shout for attention without burying older lines. */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-hidden">
+        {/* LEFT: transcript */}
+        <div ref={scrollRef} className="overflow-y-auto px-4 py-3 space-y-2 md:border-r md:border-[#E5E7EB]">
+          <div className="sticky top-0 -mt-3 -mx-4 px-4 py-1.5 mb-2 bg-white/95 backdrop-blur text-[10px] font-bold uppercase tracking-wide text-[#9CA3AF]">
+            Live transcript
           </div>
-        )}
+          {showEmptyState && (
+            <div className="h-full flex flex-col items-center justify-center text-center px-6 py-10 text-[#9CA3AF]">
+              <MessageSquare className="w-8 h-8 mb-3 opacity-40" />
+              <div className="text-[13px] font-medium text-[#6B7280] mb-1">
+                No active call
+              </div>
+              <div className="text-[12px] leading-snug max-w-[280px]">
+                Live transcript will appear here once you place or receive a call.
+              </div>
+            </div>
+          )}
 
-        {lines.map((line) => (
-          <div key={line.id} className="text-[13px] leading-relaxed">
-            <span
-              className={
-                line.speaker === 'agent'
-                  ? 'font-semibold text-[#1E9A80]'
-                  : 'font-semibold text-[#1A1A1A]'
-              }
-            >
-              {line.speaker === 'agent' ? 'You' : callerLabel}:
-            </span>{' '}
-            <span className="text-[#1A1A1A]">{line.text}</span>
+          {lines.map((line) => (
+            <div key={line.id} className="text-[13px] leading-relaxed">
+              <span
+                className={
+                  line.speaker === 'agent'
+                    ? 'font-semibold text-[#1E9A80]'
+                    : 'font-semibold text-[#1A1A1A]'
+                }
+              >
+                {line.speaker === 'agent' ? 'You' : callerLabel}:
+              </span>{' '}
+              <span className="text-[#1A1A1A]">{line.text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* RIGHT: coach cards (always rendered, even with no events, so the
+            agent learns where to look — empty state guides the eye). */}
+        <div className="overflow-y-auto px-4 py-3 space-y-2">
+          <div className="sticky top-0 -mt-3 -mx-4 px-4 py-1.5 mb-2 bg-white/95 backdrop-blur text-[10px] font-bold uppercase tracking-wide text-[#1E9A80]">
+            AI coach — say this
           </div>
-        ))}
-
-        {events.length > 0 && !aiCoach && (
-          <div className="mt-3 space-y-2">
-            <div className="border-t border-[#E5E7EB] pt-3" />
-            {/* Newest tip on top — when the model fires a fresh suggestion
-                the agent shouldn't have to scroll past stale ones. The first
-                card also gets a subtle highlight pulse so it's obviously the
-                latest. */}
-            {[...events].reverse().map((event, idx) => {
+          {events.length === 0 && !aiCoach && (
+            <div className="h-full flex flex-col items-center justify-center text-center px-6 py-10 text-[#9CA3AF]">
+              <Lightbulb className="w-8 h-8 mb-3 opacity-40" />
+              <div className="text-[12px] leading-snug max-w-[240px]">
+                Coach tips appear here when the caller speaks — exact words to read aloud.
+              </div>
+            </div>
+          )}
+          {events.length > 0 && !aiCoach && (
+            // Newest on top so the agent never has to scroll past stale tips.
+            // First card gets a halo + LATEST badge.
+            [...events].reverse().map((event, idx) => {
               const meta = COACH_ICONS[event.kind];
               const isLatest = idx === 0;
               return (
@@ -244,7 +265,7 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
                   key={event.id}
                   className={cn(
                     'p-3 rounded-lg border bg-white transition-colors',
-                    isLatest ? 'border-[#1E9A80] bg-[#ECFDF5]/40' : 'border-[#E5E7EB]'
+                    isLatest ? 'border-[#1E9A80] bg-[#ECFDF5]/40 shadow-[0_4px_16px_rgba(30,154,128,0.18)]' : 'border-[#E5E7EB]'
                   )}
                   style={{ borderLeftColor: meta.colour, borderLeftWidth: 3 }}
                 >
@@ -259,12 +280,12 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
                       </span>
                     )}
                   </div>
-                  <div className="text-[12px] text-[#1A1A1A] leading-snug">{event.body}</div>
+                  <div className="text-[13px] text-[#1A1A1A] leading-snug font-medium">{event.body}</div>
                 </div>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </div>
 
       <div className="px-4 py-2 border-t border-[#E5E7EB] bg-[#F3F3EE]/40">
