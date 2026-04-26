@@ -10,6 +10,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export type TerminologyCategory = 'glossary' | 'objection';
+
 export interface Terminology {
   id: string;
   term: string;
@@ -17,6 +19,7 @@ export interface Terminology {
   definition_md: string;
   sort_order: number;
   is_active: boolean;
+  category: TerminologyCategory;
   updated_at: string;
 }
 
@@ -70,7 +73,9 @@ export function useTerminologies(opts: { activeOnly?: boolean } = {}) {
     try {
       const { data, error: e } = await (supabase as unknown as TermTable)
         .from('wk_terminologies')
-        .select('id, term, short_gist, definition_md, sort_order, is_active, updated_at')
+        .select(
+          'id, term, short_gist, definition_md, sort_order, is_active, category, updated_at'
+        )
         .order('sort_order', { ascending: true })
         .order('term', { ascending: true });
       if (e) {
@@ -112,7 +117,9 @@ export function useTerminologies(opts: { activeOnly?: boolean } = {}) {
     const { data, error: e } = await (supabase as unknown as TermTable)
       .from('wk_terminologies')
       .insert(row)
-      .select('id, term, short_gist, definition_md, sort_order, is_active, updated_at')
+      .select(
+        'id, term, short_gist, definition_md, sort_order, is_active, category, updated_at'
+      )
       .single();
     if (e) throw new Error(e.message);
     if (!data) throw new Error('insert returned no row');
