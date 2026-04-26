@@ -154,6 +154,16 @@ async function generateCoachSuggestion(
   const DEFAULT_SCRIPT_PROMPT = [
     'You follow the NFSTAY call script. Default to script INTENT, paraphrase fresh each time. Only deviate when the caller asks a direct factual question or raises an objection.',
     '',
+    'SILENCE RULE — ABSOLUTE PRIORITY',
+    'Most caller utterances do NOT need a new coach line. The agent has the script in front of them; your job is to help when they actually need help, not to talk over them.',
+    'Output the literal marker `STAY_ON_SCRIPT` on a single line — and nothing else — when ANY of these are true:',
+    '- Caller utterance is filler / acknowledgement / backchannel ("yeah", "right", "ok", "mhm", "sure", "go on", "I see", "uh huh", "got it").',
+    '- Caller is asking a question already covered by the SCRIPT or KNOWLEDGE BASE — the agent can read the script line themselves.',
+    '- Caller is mid-thought (incomplete sentence, trailing off) and there is nothing concrete to respond to yet.',
+    '- The agent\'s last move was already the right move and the caller hasn\'t introduced anything new.',
+    'If you output STAY_ON_SCRIPT, output ONLY that string. No explanation, no quotes, no leading words.',
+    'Only produce a real coach line when the caller asks something NOT covered by the script AND NOT covered by the knowledge base — something the agent genuinely needs help responding to (a curveball question, an unexpected objection, an emotional reaction).',
+    '',
     'USE FRESH WORDING',
     'You\'re on a live call with a real human. Repeating the exact same phrasing twice in a call sounds canned. Use the example phrasings below as anchors, then pick a fresh wording each time you hit the same stage / branch. Never copy a phrasing word-for-word from your last 5 cards (see ANTI-REPETITION).',
     '',
@@ -359,12 +369,11 @@ async function streamCoachInternal(args: {
     },
     body: JSON.stringify({
       model,
-      // v8 (PR #575): bumped temperature 0.3 → 0.55. v6/v7 was over-
-      // corrected for instruction-following at the cost of variety; the
-      // post-processor + style-prompt bans now make 0.55 safe, and the
-      // explicit n-gram ban list (user message) catches duplicates that
-      // higher temp could surface.
-      temperature: 0.55,
+      // v9 (PR D 2026-04-30): dropped temperature 0.55 → 0.4. Hugo's
+      // call: coach is too noisy / too creative; with the SILENCE RULE
+      // doing the variety-reduction work, lower temp keeps coach lines
+      // tighter and closer to the script when they DO fire.
+      temperature: 0.4,
       presence_penalty: 0.3,
       frequency_penalty: 0.2,
       // GPT-5 family rejects `max_tokens` — use max_completion_tokens.
@@ -436,6 +445,16 @@ async function streamCoachInternal(args: {
 function postProcessCoachText(raw: string): string | null {
   let text = (raw ?? '').trim();
   if (!text) return null;
+  // v9 (PR D 2026-04-30): SILENCE RULE marker. The script prompt
+  // instructs the model to output exactly `STAY_ON_SCRIPT` when the
+  // caller's last utterance is filler, an acknowledgement, mid-thought,
+  // or a question already covered by the script / knowledge base.
+  // Strip surrounding quotes / backticks / punctuation before matching
+  // so a stray wrapper doesn't leak the marker into the agent's UI.
+  const stripped = text.replace(/^[\s"“”'`.\-–—]+|[\s"“”'`.\-–—]+$/g, '');
+  if (/^stay[_\s-]?on[_\s-]?script$/i.test(stripped)) {
+    return null;
+  }
   // Strip leading "Tip:" / "Coach:" / leading dash, etc.
   text = text.replace(/^["“”'`]*(tip|coach|suggestion|say|script)\s*[:\-—]\s*/i, '').replace(/^[-•—]\s*/, '').trim();
   text = text.replace(/^["“”'`]+|["“”'`]+$/g, '').trim();
@@ -596,11 +615,12 @@ serve(async (req: Request) => {
               p_call_id: call.id,
               p_gen_id: generationId,
               p_force: isFinal,
-              // v8 (PR #575): debounce dropped 400 → 250ms. Generation
-              // kicks off ~150ms sooner per caller turn at the cost of
-              // ~1.5-2× OpenAI calls per utterance. Existing supersede
-              // logic absorbs the extra cancellations cleanly.
-              p_min_age_ms: 250,
+              // v9 (PR D 2026-04-30): debounce raised 250 → 700ms. Coach
+              // was generating too many cards per turn; ~3× fewer
+              // OpenAI calls per utterance, and combined with the new
+              // SILENCE RULE the model returns STAY_ON_SCRIPT for most
+              // of those generations anyway.
+              p_min_age_ms: 700,
             }
           );
           if (lockErr) {

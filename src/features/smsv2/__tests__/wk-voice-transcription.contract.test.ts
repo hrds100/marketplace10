@@ -221,10 +221,13 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     );
   });
 
-  it('v8 — interim debounce dropped to 250ms', () => {
-    // PR #575: 400ms → 250ms at the wk_acquire_coach_lock call site.
-    expect(source).toMatch(/p_min_age_ms:\s*250/);
-    expect(source).not.toMatch(/p_min_age_ms:\s*400/);
+  it('v9 — interim debounce raised to 700ms', () => {
+    // PR D (v9): 250ms → 700ms — the SILENCE RULE handles variety,
+    // so we trade ~3× fewer OpenAI generations per turn for slightly
+    // slower first-token latency. Lock the value so we don't drift
+    // back to the noisy v8 cadence.
+    expect(source).toMatch(/p_min_age_ms:\s*700/);
+    expect(source).not.toMatch(/p_min_age_ms:\s*250/);
   });
 
   it('v8 — explicit n-gram opener ban list passed in user message', () => {
@@ -272,5 +275,23 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     expect(source).toContain('FILLER CADENCE');
     expect(source).toMatch(/roughly 1 in 4 lines/);
     expect(source).toMatch(/Never two filler-led lines in a row/);
+  });
+
+  it('v9 — script prompt has SILENCE RULE block with STAY_ON_SCRIPT marker', () => {
+    // PR D: model is instructed to output the literal STAY_ON_SCRIPT
+    // marker for filler / acknowledgement / questions already covered.
+    // Lock the prompt shape so the SILENCE RULE doesn't get accidentally
+    // edited out — without it, the postProcessor's marker check has
+    // nothing to suppress.
+    expect(source).toContain('SILENCE RULE');
+    expect(source).toContain('STAY_ON_SCRIPT');
+    expect(source).toMatch(/Most caller utterances do NOT need a new coach line/);
+  });
+
+  it('v9 — postProcessCoachText drops STAY_ON_SCRIPT marker (returns null)', () => {
+    // The marker can leak with surrounding quotes / backticks /
+    // punctuation when the model wraps it; the early-return must
+    // tolerate that or the marker leaks into the agent UI.
+    expect(source).toMatch(/stay\[_\\s-\]\?on\[_\\s-\]\?script/i);
   });
 });
