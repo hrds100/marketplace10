@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-04-26 — smsv2: "Apply automation" mid-call button (item E)
+
+Hugo's 2026-04-26 ask: "Mid-call actions (… change pipeline stage) need
+to be reachable from the live-call screen". The agent already changes
+stage via `StageSelector` on the live-call screen, but its automations
+(templated SMS, task, retry-dial, tag) only fire post-call. The new
+button lets the agent fire those server-side automations *now* without
+ending the call.
+
+- New `ApplyAutomationButton` component placed under `StageSelector` in
+  COL 1 of LiveCallScreen.
+- Reuses the existing `wk-outcome-apply` edge function (no new infra).
+- Confirms before firing ("Fire this stage's automation now? The call
+  stays open.").
+- Surfaces success / failure via existing `pushToast`. Wraps the same
+  FunctionsHttpError → real-error unwrapping pattern used by
+  ActiveCallContext so the toast shows the actual server error, not the
+  generic "non-2xx".
+- Disabled until the call has a `callId` and the contact has a
+  `pipelineColumnId`.
+
 ## 2026-04-26 — smsv2: mid-call SMS sender (item D)
 
 New `MidCallSmsSender` component embedded at the bottom of COL 1
