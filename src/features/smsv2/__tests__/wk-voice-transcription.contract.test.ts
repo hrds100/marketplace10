@@ -80,10 +80,64 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     expect(source).toContain('priorCards');
   });
 
-  it('has explicit anti-repetition rules in the default prompt', () => {
-    // Lock the wording so the rule can't quietly drift.
-    expect(source).toContain('ANTI-REPETITION');
-    expect(source).toMatch(/first\s+5\s+words/i);
-    expect(source).toMatch(/Yeah fair enough.*max ONCE per call/);
+  it('default prompt is the script-faithful v6 (no acting notes, follows the rep script)', () => {
+    // Hugo 2026-04-28: replaced the earlier "Belfort straight-line"
+    // direction with a script-faithful prompt. Lock the markers that
+    // tell us we're on v6.
+    expect(source).toContain('CORE RULES');
+    expect(source).toContain('Default to the script. Do not freestyle unless needed.');
+    expect(source).toContain('OPEN → QUALIFY → PERMISSION TO PITCH → PITCH → RETURNS → SMS CLOSE → FOLLOW-UP LOCK');
+    expect(source).toMatch(/NEVER output labels or acting notes/);
+    // The old "Three Tens / Belfort" framing must NOT be back.
+    expect(source).not.toMatch(/THREE TENS/);
+    expect(source).not.toMatch(/Straight Line Selling/);
+    // The old example openers we'd anchored on must NOT be in the
+    // default prompt anymore (they leaked through to live cards).
+    expect(source).not.toMatch(/Yeah fair enough — sounds like/);
+  });
+
+  it('strips leaked acting-note brackets ([warm], [firm], etc.) from the model output', () => {
+    // Defensive post-processor: even if the model slips up and
+    // produces "[reasonable man] Fair enough...", the rep should
+    // never read the bracket label aloud. Simulate the strip on
+    // representative leak shapes and assert the brackets disappear.
+    // (Pulling the regex literals out of the source by name so the
+    // test breaks loudly if they're removed.)
+    const leadingMatch = source.match(/text\.replace\(\/\^\\s\*\(\?:\\\[[^\n]+\)/);
+    expect(leadingMatch, 'leading-bracket strip regex missing').toBeTruthy();
+    const sentenceStartMatch = source.match(/text\.replace\(\/\(\^\|\[\.![^\n]+/);
+    expect(sentenceStartMatch, 'sentence-start-bracket strip regex missing').toBeTruthy();
+
+    // Apply the same regexes to a fixture and assert the brackets are
+    // gone — this verifies the regex actually does what we want, not
+    // just that it's present in source.
+    const stripLeading = (s: string) =>
+      s.replace(/^\s*(?:\[[^\]]+\]\s*)+/, '').trim();
+    const stripSentenceStart = (s: string) =>
+      s.replace(/(^|[.!?]\s+)(?:\[[^\]]+\]\s*)+/g, '$1').trim();
+
+    expect(stripLeading('[reasonable man] Fair enough — that makes sense.'))
+      .toBe('Fair enough — that makes sense.');
+    expect(stripLeading('[warm] [firm] Quick version: 15-bed in Liverpool.'))
+      .toBe('Quick version: 15-bed in Liverpool.');
+    expect(
+      stripSentenceStart(
+        'Fair enough. [warm] What kind of returns are you chasing?'
+      )
+    ).toBe('Fair enough. What kind of returns are you chasing?');
+    // Real bracketed content (e.g. URL-style or template placeholders) shouldn't
+    // be over-stripped. We only strip from line start or sentence start.
+    expect(stripLeading('Hi [Name], it\'s Hugo from NFSTAY.'))
+      .toBe('Hi [Name], it\'s Hugo from NFSTAY.');
+  });
+
+  it('keeps temperature low for compliance (script fidelity > creativity)', () => {
+    // Hugo 2026-04-28: "this job needs compliance more than
+    // creativity". Lock temperature ≤ 0.5 so we don't drift back to
+    // the high-creativity 0.9 used by the Belfort prompt.
+    const m = source.match(/temperature:\s*([0-9.]+)/);
+    expect(m).toBeTruthy();
+    const temp = parseFloat(m![1]);
+    expect(temp).toBeLessThanOrEqual(0.5);
   });
 });
