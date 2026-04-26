@@ -293,6 +293,50 @@ serve(async (req: Request) => {
 
     console.log(`Inbound ${channel.toUpperCase()} from ${from}: "${body.substring(0, 50)}..." → message ${message.id}`);
 
+    // ---- BRIDGE TO smsv2 wk_contacts (PR 28, Hugo 2026-04-27) ----
+    // Inbound channels (SMS / WhatsApp) used to live exclusively in
+    // sms_contacts. The smsv2 module reads from wk_contacts, so unknown
+    // numbers texting in were invisible to the dialer / pipeline /
+    // call-room surfaces. Best-effort upsert into wk_contacts so the
+    // sender becomes a first-class smsv2 contact: pipeline_column_id =
+    // null (lands in "no stage"), owner_agent_id = null (shared queue),
+    // name defaults to the phone number until the agent edits it.
+    //
+    // Idempotent via UNIQUE phone constraint + ignoreDuplicates. Errors
+    // are logged but do not fail the webhook (the inbound conversation
+    // is already saved on the legacy sms_* schema).
+    try {
+      const { data: existingWk } = await supabase
+        .from('wk_contacts')
+        .select('id')
+        .eq('phone', fromE164)
+        .maybeSingle();
+      if (!existingWk) {
+        const { error: wkErr } = await supabase.from('wk_contacts').insert({
+          name: fromE164, // placeholder; agent renames via /smsv2/contacts
+          phone: fromE164,
+          owner_agent_id: null,
+          pipeline_column_id: null,
+          custom_fields: {
+            source: 'inbound_sms',
+            first_message_sid: messageSid,
+            channel,
+          },
+          is_hot: false,
+        });
+        if (wkErr) {
+          console.warn('[sms-webhook-incoming] wk_contacts bridge failed', wkErr.message);
+        } else {
+          console.log(`[sms-webhook-incoming] bridged ${fromE164} into wk_contacts`);
+        }
+      }
+    } catch (e) {
+      console.warn(
+        '[sms-webhook-incoming] wk_contacts bridge crashed',
+        e instanceof Error ? e.message : 'unknown'
+      );
+    }
+
     // ---- TRIGGER AUTOMATION (turn-based, with 5s debounce inside sms-automation-run) ----
     try {
       const { data: conv } = await supabase

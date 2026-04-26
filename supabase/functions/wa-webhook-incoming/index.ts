@@ -262,6 +262,42 @@ serve(async (req: Request) => {
 
             console.log(`Inbound WhatsApp from ${senderE164}: "${msgBody.substring(0, 50)}..." → message ${message.id}`);
 
+            // ---- BRIDGE TO smsv2 wk_contacts (PR 28) ----
+            // Mirrors the SMS bridge in sms-webhook-incoming. Unknown
+            // WhatsApp senders become first-class smsv2 contacts so
+            // they show up in /smsv2/contacts + can be added to a
+            // dialer campaign. Best-effort — errors logged, webhook
+            // still returns 200.
+            try {
+              const { data: existingWk } = await supabase
+                .from('wk_contacts')
+                .select('id')
+                .eq('phone', senderE164)
+                .maybeSingle();
+              if (!existingWk) {
+                const { error: wkErr } = await supabase.from('wk_contacts').insert({
+                  name: senderE164,
+                  phone: senderE164,
+                  owner_agent_id: null,
+                  pipeline_column_id: null,
+                  custom_fields: {
+                    source: 'inbound_whatsapp',
+                    first_message_sid: wamid,
+                    channel: 'whatsapp',
+                  },
+                  is_hot: false,
+                });
+                if (wkErr) {
+                  console.warn('[wa-webhook-incoming] wk_contacts bridge failed', wkErr.message);
+                }
+              }
+            } catch (e) {
+              console.warn(
+                '[wa-webhook-incoming] wk_contacts bridge crashed',
+                e instanceof Error ? e.message : 'unknown'
+              );
+            }
+
             // ---- TRIGGER AUTOMATION ----
             try {
               if (numberId) {
