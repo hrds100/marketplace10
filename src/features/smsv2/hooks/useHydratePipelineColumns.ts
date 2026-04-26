@@ -8,7 +8,7 @@
 //
 // Side-effect-only — replaces the `columns` array on first successful load.
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../store/SmsV2Store';
 import type { PipelineColumn } from '../types';
@@ -67,6 +67,16 @@ export function rowToPipelineColumn(
 export function useHydratePipelineColumns(): void {
   const { setColumns } = useSmsV2();
 
+  // SmsV2Store builds its api inside useMemo([state, ...]), so `setColumns`
+  // gets a fresh reference every dispatch. Putting it in the effect deps
+  // re-runs the effect on every store change, and since the effect itself
+  // ends with setColumns(real) — which dispatches — that produced an infinite
+  // fetch/render loop in production: the columns never settled, PostCallPanel
+  // saw `columns: []`, and Hugo got the "No pipeline columns yet" empty
+  // state even though the DB had 6 rows. Pin via a ref instead.
+  const setColumnsRef = useRef(setColumns);
+  setColumnsRef.current = setColumns;
+
   useEffect(() => {
     let cancelled = false;
 
@@ -100,8 +110,10 @@ export function useHydratePipelineColumns(): void {
         (row) => rowToPipelineColumn(row, automationByCol.get(row.id))
       );
 
+      console.info('[hydrate-columns] loaded', real.length, 'columns');
+
       if (real.length > 0) {
-        setColumns(real);
+        setColumnsRef.current(real);
       }
     }
 
@@ -110,5 +122,5 @@ export function useHydratePipelineColumns(): void {
     return () => {
       cancelled = true;
     };
-  }, [setColumns]);
+  }, []);
 }
