@@ -145,3 +145,38 @@ export function createThrottledWriter<T>(
     },
   };
 }
+
+// ----------------------------------------------------------------------------
+// Knowledge base retrieval — pulls facts whose keywords match the caller's
+// last utterance. Pure, case-insensitive substring match. Each fact is
+// returned at most once even if several of its keywords hit.
+//
+// We pass the FULL knowledge base in a system message AND the matched-
+// facts subset as a hint in the user message. The model uses the hint to
+// focus, but the full KB is always there as a safety net.
+// ----------------------------------------------------------------------------
+
+export interface CoachFact {
+  key: string;
+  label: string;
+  value: string;
+  keywords: string[];
+}
+
+export function retrieveFacts(
+  utterance: string | null | undefined,
+  facts: CoachFact[]
+): CoachFact[] {
+  const u = (utterance ?? '').toLowerCase();
+  if (!u) return [];
+  const out: CoachFact[] = [];
+  for (const f of facts) {
+    if (!f.keywords || f.keywords.length === 0) continue;
+    const hit = f.keywords.some((kw) => {
+      const k = kw.toLowerCase().trim();
+      return k.length > 0 && u.includes(k);
+    });
+    if (hit) out.push(f);
+  }
+  return out;
+}

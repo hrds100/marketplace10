@@ -15,20 +15,26 @@ export interface AiSettings {
   ai_enabled: boolean;
   live_coach_enabled: boolean;
   postcall_system_prompt: string;
+  /** @deprecated 2026-04-29 — replaced by coach_style_prompt + coach_script_prompt + wk_coach_facts. Kept as fallback only. */
   live_coach_system_prompt: string;
+  /** Voice / tone / bans layer. Hugo 2026-04-29 three-layer split. */
+  coach_style_prompt: string;
+  /** Call stages + decision rules + retrieval instruction layer. */
+  coach_script_prompt: string;
 }
 
 const DEFAULTS: AiSettings = {
   openai_api_key: '',
   postcall_model: 'gpt-4o-mini',
-  live_coach_model: 'gpt-4o-realtime-preview',
+  live_coach_model: 'gpt-5.4-mini',
   whisper_model: 'whisper-1',
   ai_enabled: true,
   live_coach_enabled: true,
   postcall_system_prompt:
     'You are a sales-call analyst. Summarise the call, score sentiment 0-100, list next steps.',
-  live_coach_system_prompt:
-    'You are a real-time sales coach. Listen to the conversation. When you detect an objection, fire a one-line rebuttal. When the agent talks too much, suggest a question to ask. Keep responses under 12 words.',
+  live_coach_system_prompt: '', // legacy, deprecated
+  coach_style_prompt: '',
+  coach_script_prompt: '',
 };
 
 export function useAiSettings(): {
@@ -62,7 +68,7 @@ export function useAiSettings(): {
         })
           .from('wk_ai_settings')
           .select(
-            'openai_api_key, postcall_model, live_coach_model, whisper_model, ai_enabled, live_coach_enabled, postcall_system_prompt, live_coach_system_prompt'
+            'openai_api_key, postcall_model, live_coach_model, whisper_model, ai_enabled, live_coach_enabled, postcall_system_prompt, live_coach_system_prompt, coach_style_prompt, coach_script_prompt'
           )
           .eq('name', 'default')
           .maybeSingle();

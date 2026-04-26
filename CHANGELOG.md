@@ -1,5 +1,72 @@
 # Changelog
 
+## 2026-04-29 — smsv2: coach prompt three-layer split (style / script / KB)
+
+Hugo's directive: stop blending voice, script logic, and factual deal
+data into one giant prompt. The model was inventing facts (wrong
+partner count, wrong office addresses) and over-closing because the
+rules were tangled. This is a hard reset on the coach prompt
+architecture.
+
+**Three independently-editable layers**
+
+| Layer | Storage | Edited in |
+|---|---|---|
+| 1. Style / voice | `wk_ai_settings.coach_style_prompt` | /smsv2/settings → AI coach |
+| 2. Script / call logic | `wk_ai_settings.coach_script_prompt` | /smsv2/settings → AI coach |
+| 3. Knowledge base / facts | `wk_coach_facts` table | /smsv2/settings → Knowledge base (new tab) |
+
+**Edge function changes** (`wk-voice-transcription`)
+- Reads all 3 sources (style + script + facts) on every coach call,
+  parallel with the existing transcript + prior-cards SELECTs.
+- Builds 3 independent system messages (voice / stages / KB) plus 1
+  user message — no more giant blended prompt.
+- New pure helper `retrieveFacts(utterance, facts)` — case-insensitive
+  substring keyword matcher — picks facts likely relevant to the
+  caller's last utterance and passes them as a "POSSIBLY RELEVANT
+  FACTS" hint in the user message. Full KB still passes as a system
+  message (safety net).
+- Script prompt instructs: "answer factual questions ONLY from the
+  KNOWLEDGE BASE — never guess. If the answer isn't there, say 'I'll
+  check that and come back to you'."
+
+**Knowledge base seeded with 16 facts**
+Including the partner count Hugo flagged as missing ("About 14
+partners already on this deal"), plus all the existing approved
+objection answers, deal numbers, and compliance facts.
+
+**Settings UI**
+- AI coach tab — replaced the single prompt textarea with two layer-
+  specific textareas (Style / Script). Legacy single-prompt textarea
+  hidden behind a `<details>` collapse, marked deprecated.
+- New "Knowledge base" tab (sibling of Glossary) — full CRUD on
+  `wk_coach_facts` with key / label / value / keywords. Realtime —
+  edits propagate to live calls instantly.
+
+**Documentation**
+- New `docs/runbooks/COACH_PROMPT_LAYERS.md` — full architecture +
+  operator runbook for editing each layer.
+- `CLAUDE.md` updated with the three-layer summary so future agents
+  don't blend layers again.
+- `.claude/rules/edge-functions.md` + `shared-tables.md` updated with
+  ownership entries for the new table + edge-fn role.
+
+**Tests**
+- 7 new pure-fn tests for `retrieveFacts` (keyword matching, case
+  insensitivity, empty-keywords skip, deduplication, defensive null
+  handling).
+- Contract test refreshed with 4 new assertions: three-layer prompt
+  structure, DB reads of all three sources, three system messages
+  passed to OpenAI, retrieveFacts wired into user message.
+- 131/131 smsv2 tests green.
+
+Migration applied via `supabase db push`. Edge fn redeployed.
+
+The legacy `wk_ai_settings.live_coach_system_prompt` column is
+**deprecated** but kept on the table for back-compat. Used as fallback
+ONLY if both new layer columns are empty (which won't happen — the
+migration seeded both).
+
 ## 2026-04-28 — smsv2: opener prefill + prompt v7 (open-ended default)
 
 Hugo's pre-emptive teleprompter spec. Three remaining gaps from the

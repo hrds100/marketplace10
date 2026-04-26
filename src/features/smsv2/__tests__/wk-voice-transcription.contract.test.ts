@@ -116,24 +116,53 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     expect(source).toContain('priorCards');
   });
 
-  it('default prompt is the script-faithful v7 (open-ended default + earned-close)', () => {
-    // Hugo 2026-04-28: v7 keeps v6's script-faithful direction but
-    // adds two explicit blocks — OPEN-ENDED DEFAULT and EARNED-CLOSE
-    // RULE — to stop the model force-closing on every other line.
-    expect(source).toContain('CORE RULES');
-    expect(source).toContain('Default to the script. Do not freestyle unless needed.');
+  it('uses the three-layer prompt structure (style + script + knowledge base) — Hugo 2026-04-29', () => {
+    // The single mega-prompt is gone. Now:
+    //   - DEFAULT_STYLE_PROMPT  (voice / bans)
+    //   - DEFAULT_SCRIPT_PROMPT (call stages, earned-close, retrieval)
+    //   - knowledgeBaseSystemPrompt rendered from wk_coach_facts
+    expect(source).toContain('DEFAULT_STYLE_PROMPT');
+    expect(source).toContain('DEFAULT_SCRIPT_PROMPT');
+    expect(source).toContain('knowledgeBaseSystemPrompt');
+    // Style markers
+    expect(source).toMatch(/UK English/);
+    expect(source).toMatch(/ABSOLUTE BANS/);
+    expect(source).toMatch(/No multiple variants/);
+    // Script markers
     expect(source).toContain('OPEN → QUALIFY → PERMISSION TO PITCH → PITCH → RETURNS → SMS CLOSE → FOLLOW-UP LOCK');
-    expect(source).toMatch(/NEVER output labels or acting notes/);
     expect(source).toContain('OPEN-ENDED DEFAULT');
     expect(source).toContain('EARNED-CLOSE RULE');
-    expect(source).toMatch(/Most lines should end with a question/);
-    expect(source).toMatch(/PITCH and RETURNS steps already/);
-    // The old "Three Tens / Belfort" framing must NOT be back.
+    expect(source).toMatch(/PITCH and RETURNS already delivered/);
+    expect(source).toMatch(/answer ONLY from the KNOWLEDGE BASE/);
+    // The old "Three Tens / Belfort" framing must not be back.
     expect(source).not.toMatch(/THREE TENS/);
     expect(source).not.toMatch(/Straight Line Selling/);
-    // The old example openers we'd anchored on must NOT be in the
-    // default prompt anymore.
     expect(source).not.toMatch(/Yeah fair enough — sounds like/);
+  });
+
+  it('reads coach_style_prompt + coach_script_prompt + wk_coach_facts on every coach call', () => {
+    // The edge fn must SELECT all three layer sources from the DB so
+    // admins editing the Settings UI see immediate effect.
+    expect(source).toMatch(/coach_style_prompt/);
+    expect(source).toMatch(/coach_script_prompt/);
+    expect(source).toMatch(/from\(['"]wk_coach_facts['"]\)/);
+  });
+
+  it('passes three independent system messages (style / script / KB) to OpenAI', () => {
+    // Hugo 2026-04-29: ONE blended system prompt regressed to "force-
+    // close every line" because rules were tangled. Each layer must
+    // ride as its own system message so the model treats them as
+    // independent constraints.
+    expect(source).toContain('systemMessages');
+    expect(source).toMatch(/systemMessages:\s*\[stylePrompt,\s*scriptPrompt,\s*knowledgeBaseSystemPrompt\]/);
+    // The OpenAI call must spread the systemMessages into the messages
+    // array with role: 'system' on each.
+    expect(source).toMatch(/role:\s*['"]system['"]\s+as\s+const/);
+  });
+
+  it('runs retrieveFacts on the caller utterance and includes the matches in the user message', () => {
+    expect(source).toContain('retrieveFacts');
+    expect(source).toContain('POSSIBLY RELEVANT FACTS');
   });
 
   it('strips leaked acting-note brackets ([warm], [firm], etc.) from the model output', () => {

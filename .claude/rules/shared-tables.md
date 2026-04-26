@@ -26,6 +26,8 @@ const { data } = await supabase.from('profiles').select('id, name, email, tier, 
 | landlord_invites | features/inquiry | landlord-login | inquiry (INSERT), landlord-login (UPDATE used) |
 | aff_profiles | features/affiliates | admin-affiliates, payment | affiliates, admin-affiliates |
 | aff_events | features/affiliates | admin-affiliates | affiliates, payment |
+| wk_ai_settings | features/smsv2 | smsv2 settings UI | smsv2 settings UI; edge fn `wk-voice-transcription` reads (see `docs/runbooks/COACH_PROMPT_LAYERS.md` — three-layer prompt) |
+| wk_coach_facts | features/smsv2 | smsv2 settings UI + edge fn `wk-voice-transcription` (read) | smsv2 settings UI (admin CRUD) |
 
 ## Schema Change Process
 1. Update contract in core/contracts/tables.ts

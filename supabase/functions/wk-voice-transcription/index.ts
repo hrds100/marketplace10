@@ -22,7 +22,12 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { parseSseChunk, createThrottledWriter } from './coach-stream.ts';
+import {
+  parseSseChunk,
+  createThrottledWriter,
+  retrieveFacts,
+  type CoachFact,
+} from './coach-stream.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -66,184 +71,169 @@ async function validateTwilioSignature(
 // don't want to block returning 200 to Twilio (which may retry or get noisy).
 // ----------------------------------------------------------------------------
 
+// Hugo 2026-04-29: replaced the single mega-prompt with three independently
+// editable layers (style / script / knowledge base). The model receives them
+// as separate system messages so each can evolve in isolation. See
+// docs/runbooks/COACH_PROMPT_LAYERS.md for the full architecture.
+
+interface CoachLayers {
+  stylePrompt: string;   // wk_ai_settings.coach_style_prompt
+  scriptPrompt: string;  // wk_ai_settings.coach_script_prompt
+  facts: CoachFact[];    // wk_coach_facts (active rows)
+}
+
+interface CoachOptions {
+  apiKey: string;
+  model: string;
+  layers: CoachLayers;
+  recentTranscript: string;
+  latestUtterance: string;
+  speaker: 'caller' | 'agent';
+  priorCards: string[];
+  onChunk: (accumulated: string, isFirst: boolean) => void;
+  isAborted: () => boolean;
+}
+
 async function generateCoachSuggestion(
-  apiKey: string,
-  systemPromptOverride: string,
-  modelOverride: string,
-  recentTranscript: string,
-  latestUtterance: string,
-  speaker: 'caller' | 'agent',
-  priorCards: string[] = [],
-  onChunk: (accumulated: string, isFirst: boolean) => void = () => {},
-  isAborted: () => boolean = () => false
+  opts: CoachOptions
 ): Promise<string | null> {
+  const {
+    apiKey,
+    model: modelOverride,
+    layers,
+    recentTranscript,
+    latestUtterance,
+    speaker,
+    priorCards,
+    onChunk,
+    isAborted,
+  } = opts;
   if (!apiKey || !latestUtterance || speaker !== 'caller') return null;
 
-  // Model is admin-editable via /smsv2/settings → AI coach → "Model — live
-  // coach". Hugo's directive 2026-04-27: "make sure it's always wired and
-  // it's always reflects on our front end as well for the user, you know,
-  // like make that a rule". The DB column wk_ai_settings.live_coach_model
-  // is the source of truth; the hard-coded fallback below applies only
-  // when the column is empty / null.
+  // Model is admin-editable via /smsv2/settings → AI coach. Fallback used
+  // only when the DB column is empty.
   const DEFAULT_LIVE_COACH_MODEL = 'gpt-5.4-mini';
   const trimmedModel = (modelOverride ?? '').trim();
   const liveCoachModel = trimmedModel.length > 0 ? trimmedModel : DEFAULT_LIVE_COACH_MODEL;
 
-  // The system prompt is now sourced from wk_ai_settings.live_coach_system_prompt
-  // (editable via /smsv2/settings → AI coach → System prompts). Hugo's
-  // 2026-04-26 directive: "it cannot be just hard-coded invisible, it has to
-  // be there where I can edit and change". The DEFAULT_COACH_PROMPT below is
-  // only used if the DB column is empty / null — the seeded value is the
-  // canonical nfstay teleprompter prompt with the full deal + JV + script
-  // context.
-  const DEFAULT_COACH_PROMPT = [
-    'You are the live teleprompter for an NFSTAY sales rep. Your job is NOT to invent a new sales style. Your job is to follow the NFSTAY call script as closely as possible, using plain UK English, unless the caller asks a direct question or raises an objection.',
+  // ----- LAYER FALLBACKS (used only if DB columns / facts are empty) -----
+  //
+  // The canonical content lives in
+  // supabase/migrations/20260429000000_smsv2_coach_three_layer.sql. These
+  // constants must stay in sync — keep one as the canonical, copy to the
+  // other when changing.
+
+  const DEFAULT_STYLE_PROMPT = [
+    'You are voicing the lines an NFSTAY sales rep will read aloud, mid-call. Output ONE primary line, ready to read.',
     '',
-    'CORE RULES',
-    '- Default to the script. Do not freestyle unless needed.',
-    '- Use the exact structure the human reps use: OPEN → QUALIFY → PERMISSION TO PITCH → PITCH → RETURNS → SMS CLOSE → FOLLOW-UP LOCK.',
-    '- Keep the line simple, direct, and easy to read aloud.',
-    '- Sound like a normal UK salesperson, not a coach, not a therapist, not a copywriter.',
-    '- NEVER output labels or acting notes like [warm], [reasonable man], [firm], [low], [you could say], or anything similar.',
-    '- NEVER try to sound "clever".',
-    '- NEVER analyse the caller\'s psychology out loud.',
-    '- NEVER say things like "you\'re open, not desperate".',
-    '- NEVER create multiple variants.',
-    '- Output ONE line only, ready to read aloud.',
-    '- Prefer the actual script wording over novelty.',
-    '- If the current moment matches the script, reuse the script wording almost exactly.',
-    '- Only deviate when answering a direct caller question or handling an objection.',
-    '- Keep to 1–3 short sentences.',
-    '- Use UK English.',
-    '- No bullets. No quotation marks. No labels.',
+    'VOICE',
+    '- UK English. Plain, commercial, natural — like a real human salesperson, not a coach, therapist, or copywriter.',
+    '- Short lines: 1–3 short sentences. Up to ~50 words for explanations, fewer for everything else.',
+    '- Use light fillers (right, yeah, fair enough, no worries) only when they earn their place. Never use the same opener twice in a row.',
+    '- If the caller is short or blunt, match their energy. Don\'t over-warm.',
+    '- Every line should move the conversation forward.',
     '',
-    'PRIMARY OBJECTIVE',
-    'Get the lead interested enough to accept the SMS, then lock a follow-up for tomorrow.',
+    'ABSOLUTE BANS',
+    '- No style labels or acting notes ([warm], [firm], [low], [reasonable man], [you could say], etc.).',
+    '- No coaching-language metaphors ("you\'re open, not desperate"). No therapist tone.',
+    '- No multiple variants. ONE primary line.',
+    '- No bullets. No quotation marks around your line. No labels.',
+    '- No instructional verbs (Reintroduce, Ask, Describe, Tell them, Explain, Suggest, Confirm, Probe, Pivot, Mention, Address, Acknowledge). You are WRITING the line, not directing it.',
+    '- No American/corporate slop ("reach out", "circle back", "for sure", "absolutely", "appreciate that", "that\'s a great question", "going forward").',
     '',
-    'OPEN-ENDED DEFAULT (read this every time)',
-    'Most lines should end with a question or a light invitation that keeps the conversation moving:',
-    '  - "What\'s pulled you toward property at the moment?"',
-    '  - "Are you looking more at cashflow or growth?"',
-    '  - "Want me to give you the quick version?"',
-    '  - "Does that make sense?"',
-    '  - "Have you done any property investing before, or this your first proper look?"',
-    'If the caller is short or blunt, match their energy with a short, natural reply — don\'t over-warm.',
+    'OUTPUT',
+    'Return exactly one read-aloud line. Nothing else.',
+  ].join('\n');
+
+  const DEFAULT_SCRIPT_PROMPT = [
+    'You follow the NFSTAY call script. Default to script wording. Only deviate when the caller asks a direct factual question or raises an objection.',
+    '',
+    'OPEN-ENDED DEFAULT',
+    'Most lines end with a question or invitation that keeps the conversation moving:',
+    '- "What\'s pulled you toward property at the moment?"',
+    '- "Are you looking more at cashflow or growth?"',
+    '- "Want me to give you the quick version?"',
+    '- "Does that make sense?"',
+    '- "Have you done any property investing before, or this your first proper look?"',
+    'If the caller is short or blunt, match their energy.',
+    '',
+    'CALL STAGES (always know which one you\'re in)',
+    'OPEN → QUALIFY → PERMISSION TO PITCH → PITCH → RETURNS → SMS CLOSE → FOLLOW-UP LOCK',
     '',
     'EARNED-CLOSE RULE',
-    'Only fire the SMS-close + tomorrow lock when ALL of the following are true:',
-    '  1. You\'ve delivered the PITCH and RETURNS steps already.',
-    '  2. The caller has shown interest (asked a relevant question, agreed, or stayed engaged for more than two exchanges).',
-    '  3. The caller has NOT refused the SMS in this call.',
-    'If any of those are missing, default to a question that moves the conversation forward — not a close.',
+    'Fire the SMS-close + tomorrow lock ONLY when ALL of these are true:',
+    '1. PITCH and RETURNS already delivered.',
+    '2. The caller has shown interest (asked a relevant question, agreed, or stayed engaged for more than two exchanges).',
+    '3. The caller has NOT refused the SMS in this call.',
+    'Otherwise default to a question that moves the conversation forward.',
     '',
-    'DEFAULT SCRIPT TO FOLLOW',
+    'DIRECT FACTUAL QUESTIONS',
+    'If the caller asks a factual question (numbers, locations, structure, agreement length, payouts, etc.), answer ONLY from the KNOWLEDGE BASE that the system message provides. Do not invent. If the fact is not in the KNOWLEDGE BASE, say "I\'ll check that and come back to you" — never guess.',
+    '',
+    'OBJECTIONS',
+    'If the caller pushes back, use the matching approved answer from the KNOWLEDGE BASE. Then return to the next open-ended question — NOT immediately to a close (see EARNED-CLOSE RULE).',
+    '',
+    'ANTI-REPETITION',
+    'The user message includes "YOUR LAST FEW COACH CARDS". Don\'t ship a card whose opening words match a recent one. Move forward through the script — don\'t loop the same line.',
+    '',
+    'DEFAULT SCRIPT (use these phrasings almost verbatim where the moment fits)',
     '',
     'OPEN',
     'Hey, is that [Name]? It\'s [Your Name] from NFSTAY — I saw you in the property WhatsApp group. Quick one, are you looking at Airbnb deals at the moment, or just watching the market?',
     '',
-    'IF YES',
-    'Perfect, I\'ll be quick.',
-    '',
-    'IF NO',
-    'No worries — are you open to hearing one deal if the numbers make sense?',
-    '',
-    'IF NO AGAIN',
-    'All good, appreciate your time.',
-    '',
     'QUALIFY',
     'Are you currently running Airbnbs and investing already, or just exploring?',
-    '',
-    'IF INVESTING',
-    'Nice, so you already get how this works.',
-    '',
-    'IF EXPLORING',
-    'Perfect, this is a simple way to get started without running it yourself.',
     '',
     'PERMISSION TO PITCH',
     'Great. Would it be okay if I explain quickly how our deals work?',
     '',
-    'IF YES',
-    'Proceed.',
-    '',
-    'IF NO',
-    'No problem, appreciate your time.',
-    '',
     'PITCH',
-    'So we run Airbnb properties and bring partners into deals as a Joint Venture Partnership.',
-    'Instead of going alone, we group partners together and fund it jointly — so you have a share without having to run the property by yourself.',
-    'We handle everything: setup, bookings, management, and operations.',
-    'Right now we\'ve got a 15-bed property in Liverpool already running.',
-    'Entry starts from around £500 for a small participation in the deal.',
+    'We run Airbnb properties as Joint Venture Partnerships — partners pool money, we run the property, you take a monthly share. Right now we\'ve got a 15-bed in Liverpool, entry from £500.',
     '',
     'RETURNS',
-    'Income comes in monthly, costs are covered, and the remaining profit is distributed based on your participation.',
-    'You can track your holdings and payouts directly on the platform, and if you ever want to exit, you can sell your allocations there, subject to demand.',
-    'Does that make sense?',
+    'Income comes in monthly via the platform, costs covered, profit distributed by participation. You can track your holdings and payouts on the platform, and exit by selling allocations subject to demand. Does that make sense?',
     '',
     'SMS CLOSE',
-    'To keep it simple and not run through all the numbers on this call, would it be okay if I send you the full breakdown so you can see everything properly?',
-    '',
-    'IF YES',
-    'Perfect — can you confirm your name so I can add you properly here?',
-    'Great, you\'ll receive the SMS right after this call.',
-    '',
-    'IF NO',
-    'No problem, appreciate your time.',
+    'To keep it simple and not run all the numbers on this call, would it be okay if I send you the full breakdown?',
     '',
     'FOLLOW-UP LOCK',
-    'I\'ll keep it short today.',
-    'After you check it, I\'ll give you a quick call tomorrow to go through it properly.',
-    'Will tomorrow work?',
+    'After you check it, I\'ll give you a quick call tomorrow. Will tomorrow work?',
     '',
-    'IF YES',
-    'Nice — morning or afternoon?',
-    '',
-    'IF NO',
-    'No problem, what suits you better?',
-    '',
-    'IF REFUSE',
-    'All good, you\'ve got the info anyway.',
-    '',
-    'OBJECTIONS / DIRECT QUESTIONS',
-    'If the caller asks a direct question, answer directly in one short sentence, then return to the script.',
-    '',
-    'Approved answers:',
-    '- How many properties? → Just under 100 across Manchester and Liverpool.',
-    '- Where are you based? → Manchester, 9 Owen Street.',
-    '- Can I visit the office? → It\'s not open to the public — we run everything online.',
-    '- Can I visit the property? → Yes, we can usually arrange that.',
-    '- How do I get paid? → Monthly payouts via the platform.',
-    '- How long is the agreement? → It\'s a 5-year agreement on this property.',
-    '- Sounds too good / legit? → Fair — that\'s why I send the full breakdown first.',
-    '',
-    'AFTER ANSWERING AN OBJECTION',
-    'Loop back simply:',
-    'So I\'ll send it now, you check it, and we speak tomorrow, yeah?',
-    '…unless the EARNED-CLOSE RULE above isn\'t met yet, in which case ask an open-ended question instead.',
-    '',
-    'STYLE',
-    '- Plain.',
-    '- Direct.',
-    '- Commercial.',
-    '- UK.',
-    '- Human.',
-    '- No fluff.',
-    '- No fancy reframes.',
-    '- No motivational language.',
-    '- No tonal annotations.',
-    '- No meta commentary.',
-    '',
-    'ANTI-REPETITION',
-    'The user message includes "YOUR LAST FEW COACH CARDS". Don\'t ship a card whose opening words match a recent one. Script fidelity outranks variation — but if you\'re already past a script step, move forward, don\'t loop the same line.',
-    '',
-    'OUTPUT FORMAT',
-    'Return exactly one read-aloud line for the rep to say next.',
+    'OUTPUT',
+    'Return exactly one read-aloud line for the next thing the rep should say.',
   ].join('\n');
 
-  // Prefer the DB-stored prompt (editable in Settings); fall back to the
-  // default if the column is empty or whitespace-only.
-  const trimmed = (systemPromptOverride ?? '').trim();
-  const systemPrompt = trimmed.length > 0 ? trimmed : DEFAULT_COACH_PROMPT;
+  // Resolve each layer: prefer DB content, fall back to canonical default.
+  const stylePrompt =
+    (layers.stylePrompt ?? '').trim().length > 0
+      ? layers.stylePrompt.trim()
+      : DEFAULT_STYLE_PROMPT;
+  const scriptPrompt =
+    (layers.scriptPrompt ?? '').trim().length > 0
+      ? layers.scriptPrompt.trim()
+      : DEFAULT_SCRIPT_PROMPT;
+
+  // Render the knowledge base as a flat block. Empty list → tells the
+  // model the KB is empty and it must defer rather than guess.
+  const factsBlock =
+    layers.facts.length === 0
+      ? '(no facts loaded — if asked a factual question, say "I\'ll check that and come back to you" rather than guessing.)'
+      : layers.facts
+          .map((f) => `- ${f.label}: ${f.value}`)
+          .join('\n');
+
+  const knowledgeBaseSystemPrompt =
+    `=== NFSTAY KNOWLEDGE BASE ===\nThese are the only facts you may quote. Do NOT invent figures or new facts. If the answer isn't here, say "I'll check that and come back to you".\n\n${factsBlock}`;
+
+  // Retrieval: highlight facts whose keywords match the caller's last
+  // utterance so the model focuses on the most likely-relevant ones.
+  const matched = retrieveFacts(latestUtterance, layers.facts);
+  const relevantFactsHint =
+    matched.length === 0
+      ? '(no specific fact keyword matched — answer from the script unless the caller is asking for a fact in the KB above.)'
+      : matched
+          .map((f) => `- ${f.label}: ${f.value}`)
+          .join('\n');
 
   // Last few coach cards passed back to the model so it doesn't echo
   // openers / structures it just produced. Without this, the model has
@@ -262,6 +252,9 @@ async function generateCoachSuggestion(
     'Don\'t ship a card whose opening matches a recent one. Move forward through the script — don\'t loop the same line.',
     priorCardsBlock,
     '',
+    '=== POSSIBLY RELEVANT FACTS (matched to the caller\'s last utterance) ===',
+    relevantFactsHint,
+    '',
     `Caller just said: "${latestUtterance}"`,
     '',
     'Return ONE script-faithful read-aloud line for the rep to say next. Plain UK English. No labels. No quotation marks. No acting notes. No variants. Just the line.',
@@ -271,7 +264,7 @@ async function generateCoachSuggestion(
     return await streamCoachInternal({
       apiKey,
       model: liveCoachModel,
-      systemPrompt,
+      systemMessages: [stylePrompt, scriptPrompt, knowledgeBaseSystemPrompt],
       userMsg,
       onChunk,
       isAborted,
@@ -288,12 +281,16 @@ async function generateCoachSuggestion(
 async function streamCoachInternal(args: {
   apiKey: string;
   model: string;
-  systemPrompt: string;
+  /** Three-layer system messages — style, script, knowledge base.
+   *  OpenAI accepts multiple system messages; treating each as a
+   *  separate message gives cleaner separation than one big concatenated
+   *  prompt. */
+  systemMessages: string[];
   userMsg: string;
   onChunk: (accumulated: string, isFirst: boolean) => void;
   isAborted: () => boolean;
 }): Promise<string | null> {
-  const { apiKey, model, systemPrompt, userMsg, onChunk, isAborted } = args;
+  const { apiKey, model, systemMessages, userMsg, onChunk, isAborted } = args;
 
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -315,7 +312,9 @@ async function streamCoachInternal(args: {
       max_completion_tokens: 120,
       stream: true,
       messages: [
-        { role: 'system', content: systemPrompt },
+        ...systemMessages
+          .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
+          .map((content) => ({ role: 'system' as const, content })),
         { role: 'user', content: userMsg },
       ],
     }),
@@ -549,10 +548,10 @@ serve(async (req: Request) => {
           }
           log('lock acquired');
 
-          // 2. Read AI settings.
+          // 2. Read AI settings (now includes the three-layer prompts).
           const { data: ai } = await supa
             .from('wk_ai_settings')
-            .select('ai_enabled, live_coach_enabled, openai_api_key, live_coach_system_prompt, live_coach_model')
+            .select('ai_enabled, live_coach_enabled, openai_api_key, live_coach_system_prompt, coach_style_prompt, coach_script_prompt, live_coach_model')
             .limit(1)
             .maybeSingle();
           if (!ai?.ai_enabled || !ai?.live_coach_enabled || !ai?.openai_api_key) {
@@ -560,8 +559,8 @@ serve(async (req: Request) => {
             return;
           }
 
-          // 3. Read recent transcripts + prior cards in parallel.
-          const [recentRes, priorCardsRes] = await Promise.all([
+          // 3. Read recent transcripts + prior cards + coach facts in parallel.
+          const [recentRes, priorCardsRes, factsRes] = await Promise.all([
             supa
               .from('wk_live_transcripts')
               .select('speaker, body, ts')
@@ -575,6 +574,11 @@ serve(async (req: Request) => {
               .eq('status', 'final')
               .order('ts', { ascending: false })
               .limit(3),
+            supa
+              .from('wk_coach_facts')
+              .select('key, label, value, keywords, sort_order')
+              .eq('is_active', true)
+              .order('sort_order', { ascending: true }),
           ]);
           const ctx = (recentRes.data ?? [])
             .reverse()
@@ -647,27 +651,52 @@ serve(async (req: Request) => {
             }
           }, 200);
 
-          // 7. Build the user message + run streaming.
+          // 7. Resolve the three layers (style + script + KB facts).
+          //    Hugo 2026-04-29: each layer is independently editable
+          //    via Settings UI. The legacy live_coach_system_prompt is
+          //    only used as a back-compat fallback if BOTH new layer
+          //    columns are empty.
+          const dbStyle = (ai.coach_style_prompt as string | null) ?? '';
+          const dbScript = (ai.coach_script_prompt as string | null) ?? '';
+          const legacyPrompt = (ai.live_coach_system_prompt as string | null) ?? '';
+          const layers = {
+            stylePrompt:
+              dbStyle.trim().length > 0
+                ? dbStyle
+                : dbScript.trim().length > 0
+                  ? '' // script set, style empty — let the in-fn DEFAULT_STYLE_PROMPT apply
+                  : legacyPrompt, // both new layers empty — fall back to the old single prompt
+            scriptPrompt:
+              dbScript.trim().length > 0
+                ? dbScript
+                : dbStyle.trim().length > 0
+                  ? '' // style set, script empty — DEFAULT_SCRIPT_PROMPT
+                  : '', // legacy prompt is fine in stylePrompt slot; let script default apply
+            facts: ((factsRes.data ?? []) as CoachFact[]),
+          };
+          log('layers loaded', `style=${layers.stylePrompt.length}c script=${layers.scriptPrompt.length}c facts=${layers.facts.length}`);
+
+          // 8. Build the user message + run streaming.
           let firstToken = true;
-          const cleaned = await generateCoachSuggestion(
-            ai.openai_api_key as string,
-            (ai.live_coach_system_prompt as string) ?? '',
-            (ai.live_coach_model as string) ?? '',
-            ctx,
-            transcriptText,
+          const cleaned = await generateCoachSuggestion({
+            apiKey: ai.openai_api_key as string,
+            model: (ai.live_coach_model as string) ?? '',
+            layers,
+            recentTranscript: ctx,
+            latestUtterance: transcriptText,
             speaker,
             priorCards,
-            (accumulated, _isFirst) => {
+            onChunk: (accumulated) => {
               if (firstToken) {
                 log('first token');
                 firstToken = false;
               }
               writer.schedule(accumulated);
             },
-            () => aborted
-          );
+            isAborted: () => aborted,
+          });
 
-          // 8. Flush any pending UPDATE so the final body lands.
+          // 9. Flush any pending UPDATE so the final body lands.
           await writer.flush();
 
           if (aborted) {
@@ -675,8 +704,8 @@ serve(async (req: Request) => {
             return;
           }
 
-          // 9. Finalize: post-processor either keeps the row (status
-          //    = 'final', body = cleaned) or deletes it.
+          // 10. Finalize: post-processor either keeps the row (status
+          //     = 'final', body = cleaned) or deletes it.
           if (!cleaned) {
             await supa.from('wk_live_coach_events').delete().eq('id', placeholderId);
             log('rejected by post-processor', 'deleted');
