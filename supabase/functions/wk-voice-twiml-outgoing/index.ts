@@ -216,6 +216,17 @@ serve(async (req: Request) => {
       ? `${wssBase}/functions/v1/wk-ai-live-coach?callSid=${encodeURIComponent(callSid)}`
       : null;
 
+    // Pre-warm wk-ai-live-coach BEFORE Twilio attempts the WebSocket. Cold
+    // start on Supabase Edge Functions can take 3-7s — well over Twilio's
+    // ~5s upgrade budget for Media Streams. By the time Twilio reads the
+    // TwiML response below and opens its WebSocket, the function pod has
+    // had ~1s of head-start to bootstrap. Fire-and-forget — failures here
+    // never block the call (worst case: Twilio reports 31920 like before).
+    if (streamWssUrl) {
+      const warmupUrl = `${SUPABASE_URL}/functions/v1/wk-ai-live-coach?warmup=1`;
+      void fetch(warmupUrl, { method: 'GET' }).catch(() => null);
+    }
+
     const twiml = buildOutgoingTwiml({
       to,
       callerIdE164,

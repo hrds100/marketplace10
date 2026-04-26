@@ -116,7 +116,7 @@ function bridge(twilioWs: WebSocket, openaiWs: WebSocket, callSid: string, callI
   openaiWs.onerror = (e) => console.error('openai ws error:', e);
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve((req: Request) => {
   const upgrade = req.headers.get('upgrade') ?? '';
   if (upgrade.toLowerCase() !== 'websocket') {
     return new Response('expected websocket upgrade', { status: 426 });
@@ -127,57 +127,81 @@ Deno.serve(async (req: Request) => {
   const callSid = url.searchParams.get('callSid') ?? '';
   if (!callSid) return new Response('missing callSid', { status: 400 });
 
-  // Resolve the call + check kill switch + load AI settings
-  const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-  const { data: call } = await supa
-    .from('wk_calls')
-    .select('id, ai_coach_enabled')
-    .eq('twilio_call_sid', callSid)
-    .maybeSingle();
-  if (!call) return new Response('call not found', { status: 404 });
-  if (!call.ai_coach_enabled) return new Response('coach not enabled for this call', { status: 403 });
-
-  if (await killswitchActive()) {
-    return new Response('ai_coach killswitch active', { status: 503 });
-  }
-
-  const ai = await loadAi();
-  if (!ai || !ai.ai_enabled || !ai.live_coach_enabled || !ai.openai_api_key) {
-    return new Response('ai disabled or no api key', { status: 503 });
-  }
-
-  // Upgrade the Twilio side
+  // ----------------------------------------------------------------------
+  // CRITICAL: upgrade FIRST, validate AFTER.
+  //
+  // Twilio's Media Streams client gives up after ~5s if the server hasn't
+  // returned 101. Cold-start + 3 sequential DB/RPC round-trips can blow
+  // that budget on the first call after deploy → Twilio reports 31920
+  // (Stream WebSocket - General Error) and the audio never reaches us.
+  //
+  // We respond with 101 synchronously, then run the validation +
+  // OpenAI handshake on the upgraded socket. If anything fails we close
+  // the socket cleanly. The voice call itself is unaffected.
+  // ----------------------------------------------------------------------
   const { socket: twilioWs, response } = Deno.upgradeWebSocket(req);
 
-  // Open the OpenAI Realtime side
-  const openaiWs = new WebSocket(
-    `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(ai.live_coach_model)}`,
-    [
-      'realtime',
-      // OpenAI accepts auth via subprotocol in browser-style upgrades:
-      `openai-insecure-api-key.${ai.openai_api_key}`,
-      'openai-beta.realtime-v1',
-    ]
-  );
+  (async () => {
+    try {
+      const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+      const { data: call } = await supa
+        .from('wk_calls')
+        .select('id, ai_coach_enabled')
+        .eq('twilio_call_sid', callSid)
+        .maybeSingle();
+      if (!call) {
+        console.warn('[wk-ai-live-coach] call not found', callSid);
+        try { twilioWs.close(1011, 'call not found'); } catch { /* ignore */ }
+        return;
+      }
+      if (!call.ai_coach_enabled) {
+        try { twilioWs.close(1011, 'coach not enabled'); } catch { /* ignore */ }
+        return;
+      }
+      if (await killswitchActive()) {
+        try { twilioWs.close(1011, 'killswitch'); } catch { /* ignore */ }
+        return;
+      }
+      const ai = await loadAi();
+      if (!ai || !ai.ai_enabled || !ai.live_coach_enabled || !ai.openai_api_key) {
+        console.warn('[wk-ai-live-coach] ai disabled or no api key');
+        try { twilioWs.close(1011, 'ai disabled'); } catch { /* ignore */ }
+        return;
+      }
 
-  openaiWs.onopen = () => {
-    // Configure the session: we receive μ-law audio in, want text out only,
-    // and a system prompt that turns the model into a sales coach.
-    openaiWs.send(JSON.stringify({
-      type: 'session.update',
-      session: {
-        modalities: ['text'],                       // text-only suggestions
-        input_audio_format: 'g711_ulaw',
-        input_audio_transcription: { model: 'whisper-1' },
-        instructions: ai.live_coach_system_prompt,
-        turn_detection: { type: 'server_vad', threshold: 0.5 },
-      },
-    }));
+      // Open the OpenAI Realtime side
+      const openaiWs = new WebSocket(
+        `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(ai.live_coach_model)}`,
+        [
+          'realtime',
+          `openai-insecure-api-key.${ai.openai_api_key}`,
+          'openai-beta.realtime-v1',
+        ]
+      );
 
-    bridge(twilioWs, openaiWs, callSid, call.id);
-    // Mark coach as running
-    void supa.from('wk_calls').update({ ai_status: 'running' }).eq('id', call.id);
-  };
+      openaiWs.onopen = () => {
+        openaiWs.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            modalities: ['text'],
+            input_audio_format: 'g711_ulaw',
+            input_audio_transcription: { model: 'whisper-1' },
+            instructions: ai.live_coach_system_prompt,
+            turn_detection: { type: 'server_vad', threshold: 0.5 },
+          },
+        }));
+        bridge(twilioWs, openaiWs, callSid, call.id);
+        void supa.from('wk_calls').update({ ai_status: 'running' }).eq('id', call.id);
+      };
+      openaiWs.onerror = (e) => {
+        console.error('[wk-ai-live-coach] openai ws error:', e);
+        void supa.from('wk_calls').update({ ai_status: 'failed' }).eq('id', call.id);
+      };
+    } catch (e) {
+      console.error('[wk-ai-live-coach] post-upgrade validation threw:', e);
+      try { twilioWs.close(1011, 'internal'); } catch { /* ignore */ }
+    }
+  })();
 
   return response;
 });
