@@ -13,7 +13,7 @@
 // content are bumped to z-[220] so they sit above.
 
 import { useEffect, useState } from 'react';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, RotateCcw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,11 @@ interface Props {
   saving: boolean;
   error: string | null;
   onSave: (next: { name: string; body_md: string }) => Promise<void> | void;
+  /** PR 21: when present, clicking "Reset to default" calls this to
+   *  DELETE the agent's personal row and pull down whatever is
+   *  currently flagged is_default = true. Pass undefined when the
+   *  agent is already viewing the default (nothing to reset to). */
+  onResetToDefault?: () => Promise<void> | void;
 }
 
 export default function EditScriptModal({
@@ -40,10 +45,12 @@ export default function EditScriptModal({
   saving,
   error,
   onSave,
+  onResetToDefault,
 }: Props) {
   const [name, setName] = useState(script.name);
   const [body, setBody] = useState(script.body_md);
   const [savedHint, setSavedHint] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   // Re-seed local form state every time the modal opens — matches the
   // current persisted script, even if the agent edited / discarded a
@@ -70,6 +77,24 @@ export default function EditScriptModal({
       // callback after this resolves.
       onOpenChange(false);
     }, 500);
+  };
+
+  const handleReset = async () => {
+    if (!onResetToDefault || resetting || saving) return;
+    if (
+      !confirm(
+        "Reset to the admin default? Your personal copy of this script will be deleted and you'll see the latest default body. This can't be undone."
+      )
+    ) {
+      return;
+    }
+    setResetting(true);
+    try {
+      await onResetToDefault();
+      onOpenChange(false);
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
@@ -126,28 +151,52 @@ export default function EditScriptModal({
           )}
         </div>
 
-        <DialogFooter>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
-            className="px-3 py-1.5 text-[12px] font-medium border border-[#E5E7EB] rounded-[8px] hover:bg-[#F3F3EE] disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={saving || !body.trim()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold bg-[#1E9A80] text-white rounded-[8px] hover:bg-[#1E9A80]/90 disabled:opacity-50"
-          >
-            {saving ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Save className="w-3.5 h-3.5" />
+        <DialogFooter className="sm:justify-between">
+          {/* Left side: destructive Reset to default. Hidden when the
+              agent is already viewing the default (nothing to reset). */}
+          <div>
+            {onResetToDefault && script.source === 'own' && (
+              <button
+                type="button"
+                onClick={() => void handleReset()}
+                disabled={saving || resetting}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-[#B45309] hover:bg-[#FFFBEB] rounded-[8px] disabled:opacity-50"
+                title="Delete your personal copy and pull the admin default"
+              >
+                {resetting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-3.5 h-3.5" />
+                )}
+                {resetting ? 'Resetting…' : 'Reset to default'}
+              </button>
             )}
-            {saving ? 'Saving…' : 'Save'}
-          </button>
+          </div>
+
+          {/* Right side: Cancel + Save. */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              disabled={saving || resetting}
+              className="px-3 py-1.5 text-[12px] font-medium border border-[#E5E7EB] rounded-[8px] hover:bg-[#F3F3EE] disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saving || resetting || !body.trim()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold bg-[#1E9A80] text-white rounded-[8px] hover:bg-[#1E9A80]/90 disabled:opacity-50"
+            >
+              {saving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Save className="w-3.5 h-3.5" />
+              )}
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
