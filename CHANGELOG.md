@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-04-27 — smsv2: fix coach silently producing zero cards on gpt-5.4-mini
+
+Hugo's live test 2026-04-27: AI coach pane was empty during a call,
+even though the live transcript was streaming fine. Audit found:
+`gpt-5.4-mini` (the model the previous PR wired in) rejects
+`max_tokens` with HTTP 400 "Unsupported parameter: 'max_tokens' is not
+supported with this model. Use 'max_completion_tokens' instead."
+Verified directly against the live OpenAI API.
+
+Fix: switched `max_tokens` → `max_completion_tokens` in
+`generateCoachSuggestion`. The newer parameter name also works on
+`gpt-4o-mini`, `gpt-4.1-mini`, `gpt-4.1-nano` — verified across the
+whole dropdown — so it's a safe upgrade.
+
+Added `src/features/smsv2/__tests__/wk-voice-transcription.contract.test.ts`
+to lock the OpenAI request shape so this class of regression can't
+ship silently again. The test asserts:
+- `max_completion_tokens` is used (no `max_tokens` lines)
+- `live_coach_model` is read from `wk_ai_settings`
+- `live_coach_system_prompt` is read from `wk_ai_settings`
+- Non-2xx responses log the body
+- Speaker→track mapping is intact
+
 ## 2026-04-27 — smsv2: coach model wired to Settings UI + prompt v4 (Belfort)
 
 Two issues from Hugo's 2026-04-27 audit:
