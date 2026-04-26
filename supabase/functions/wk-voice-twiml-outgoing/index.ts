@@ -59,7 +59,7 @@ function buildOutgoingTwiml(args: {
   callerIdE164: string | null;
   statusUrl: string;
   recordingUrl: string;
-  streamWssUrl: string | null;
+  transcriptionCallbackUrl: string | null;
 }): string {
   const callerIdAttr = args.callerIdE164
     ? `callerId="${escapeXml(args.callerIdE164)}"`
@@ -75,17 +75,26 @@ function buildOutgoingTwiml(args: {
     `</Dial>`,
   ].join('\n');
 
-  const streamBlock = args.streamWssUrl
+  const transcriptionBlock = args.transcriptionCallbackUrl
     ? [
         `<Start>`,
-        `  <Stream url="${escapeXml(args.streamWssUrl)}" track="both_tracks">`,
-        `    <Parameter name="callSid" value="{{CallSid}}"/>`,
-        `  </Stream>`,
+        `  <Transcription`,
+        `    statusCallbackUrl="${escapeXml(args.transcriptionCallbackUrl)}"`,
+        `    statusCallbackMethod="POST"`,
+        `    track="both_tracks"`,
+        `    languageCode="en-GB"`,
+        `    enableAutomaticPunctuation="true"`,
+        `    profanityFilter="false"`,
+        `    speechModel="telephony"`,
+        `    inboundTrackLabel="caller"`,
+        `    outboundTrackLabel="agent"`,
+        `    partialResults="false"`,
+        `  />`,
         `</Start>`,
       ].join('\n')
     : '';
 
-  const body = [streamBlock, dialBlock].filter((s) => s.length > 0).join('\n');
+  const body = [transcriptionBlock, dialBlock].filter((s) => s.length > 0).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n${body}\n</Response>`;
 }
 
@@ -208,23 +217,21 @@ serve(async (req: Request) => {
       console.warn('wk_calls upsert failed (continuing):', e);
     }
 
-    // Live AI coach stream — only when the call's ai_coach_enabled flag is
-    // set. wk-ai-live-coach itself enforces the kill switch + settings, so
-    // a 503 there just closes the stream cleanly without breaking the call.
-    const wssBase = SUPABASE_URL.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://');
-    const streamWssUrl = aiCoachEnabledForThisCall
-      ? `${wssBase}/functions/v1/wk-ai-live-coach?callSid=${encodeURIComponent(callSid)}`
+    // Real-time transcription via Twilio's <Start><Transcription> verb —
+    // delivers transcript chunks over plain HTTP POST to wk-voice-transcription
+    // (no WebSocket). Earlier <Start><Stream> + Supabase WebSocket bridge
+    // failed reliably with Twilio error 31920; the HTTP path is rock-solid.
+    // wk-voice-transcription itself enforces ai_coach_enabled + killswitch.
+    const transcriptionCallbackUrl = aiCoachEnabledForThisCall
+      ? `${PUBLIC_FN_BASE}/wk-voice-transcription`
       : null;
 
-    // Pre-warm wk-ai-live-coach BEFORE Twilio attempts the WebSocket. Cold
-    // start on Supabase Edge Functions can take 3-7s — well over Twilio's
-    // ~5s upgrade budget for Media Streams. By the time Twilio reads the
-    // TwiML response below and opens its WebSocket, the function pod has
-    // had ~1s of head-start to bootstrap. Fire-and-forget — failures here
-    // never block the call (worst case: Twilio reports 31920 like before).
-    if (streamWssUrl) {
-      const warmupUrl = `${SUPABASE_URL}/functions/v1/wk-ai-live-coach?warmup=1`;
-      void fetch(warmupUrl, { method: 'GET' }).catch(() => null);
+    // Pre-warm wk-voice-transcription so its pod is hot before Twilio fires
+    // the first transcription-content webhook. HTTP cold start is way more
+    // forgiving than WebSocket (no handshake budget) but a warm pod still
+    // lands the first transcript line ~1s sooner.
+    if (transcriptionCallbackUrl) {
+      void fetch(`${transcriptionCallbackUrl}?warmup=1`, { method: 'GET' }).catch(() => null);
     }
 
     const twiml = buildOutgoingTwiml({
@@ -232,7 +239,7 @@ serve(async (req: Request) => {
       callerIdE164,
       statusUrl: `${PUBLIC_FN_BASE}/wk-voice-status`,
       recordingUrl: `${PUBLIC_FN_BASE}/wk-voice-recording`,
-      streamWssUrl,
+      transcriptionCallbackUrl,
     });
     return new Response(twiml, {
       status: 200,

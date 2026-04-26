@@ -5,8 +5,11 @@
 // inline copy of this exact function (Deno deploy can't import from src/).
 // If you change one, change the other — the tests pin the contract.
 //
-// Audit reference: PR that added live transcript wiring (Twilio Media
-// Streams to wk-ai-live-coach).
+// Audit reference: live coach refactor — switched from <Start><Stream>
+// (WebSocket-based, unreliable behind Supabase Edge Functions, returned
+// Twilio error 31920 every time) to <Start><Transcription> which delivers
+// transcripts over plain HTTP webhooks. wk-voice-transcription handles the
+// inserts and triggers OpenAI Chat for coaching events.
 
 export interface BuildOutgoingTwimlArgs {
   /** E.164 destination number to dial through Twilio. */
@@ -18,12 +21,13 @@ export interface BuildOutgoingTwimlArgs {
   /** Public URL Twilio will POST when the recording is ready. */
   recordingUrl: string;
   /**
-   * Public WebSocket URL of wk-ai-live-coach. When provided, we emit
-   * `<Start><Stream …/></Start>` before `<Dial>` so Twilio Media Streams
-   * forks the audio to the AI coach. Pass null to skip (kill-switch on,
-   * coach disabled, etc.) — call still bridges normally.
+   * Public URL of wk-voice-transcription. When provided, we emit
+   * `<Start><Transcription …/></Start>` before `<Dial>` so Twilio's
+   * Real-Time Transcription forwards transcript chunks to that endpoint
+   * over HTTP POST. Pass null to skip (kill switch / coach disabled /
+   * openai key empty) — call still bridges normally.
    */
-  streamWssUrl: string | null;
+  transcriptionCallbackUrl: string | null;
 }
 
 function escapeXml(s: string): string {
@@ -50,20 +54,31 @@ export function buildOutgoingTwiml(args: BuildOutgoingTwimlArgs): string {
     `</Dial>`,
   ].join('\n');
 
-  // <Start><Stream> must appear BEFORE <Dial> so the stream is open as soon
-  // as the bridge connects. track="both_tracks" forks both legs (caller +
-  // agent) so the AI coach hears the full conversation.
-  const streamBlock = args.streamWssUrl
+  // <Start><Transcription> must come BEFORE <Dial> so transcription begins
+  // the moment the bridge connects. track="both_tracks" captures BOTH legs:
+  //   inbound_track  → caller (the dialed number's audio)
+  //   outbound_track → agent  (Twilio Client → bridged in)
+  // wk-voice-transcription maps these labels back to the speaker enum.
+  const transcriptionBlock = args.transcriptionCallbackUrl
     ? [
         `<Start>`,
-        `  <Stream url="${escapeXml(args.streamWssUrl)}" track="both_tracks">`,
-        `    <Parameter name="callSid" value="{{CallSid}}"/>`,
-        `  </Stream>`,
+        `  <Transcription`,
+        `    statusCallbackUrl="${escapeXml(args.transcriptionCallbackUrl)}"`,
+        `    statusCallbackMethod="POST"`,
+        `    track="both_tracks"`,
+        `    languageCode="en-GB"`,
+        `    enableAutomaticPunctuation="true"`,
+        `    profanityFilter="false"`,
+        `    speechModel="telephony"`,
+        `    inboundTrackLabel="caller"`,
+        `    outboundTrackLabel="agent"`,
+        `    partialResults="false"`,
+        `  />`,
         `</Start>`,
       ].join('\n')
     : '';
 
-  const body = [streamBlock, dialBlock].filter((s) => s.length > 0).join('\n');
+  const body = [transcriptionBlock, dialBlock].filter((s) => s.length > 0).join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n${body}\n</Response>`;
 }

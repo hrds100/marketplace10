@@ -1,12 +1,14 @@
 // Pins the TwiML returned by wk-voice-twiml-outgoing.
 //
-// Critical contract: when streamWssUrl is set, the response MUST include
-// <Start><Stream> BEFORE <Dial>, with track="both_tracks" so the AI coach
-// receives both legs of audio.
+// Critical contract: when transcriptionCallbackUrl is set, the response MUST
+// include <Start><Transcription> BEFORE <Dial>, with track="both_tracks"
+// so Twilio Real-Time Transcription forwards both legs to our webhook.
+// (Replaces the earlier <Start><Stream> + Supabase WebSocket bridge that
+// returned Twilio error 31920 every call — switched 2026-04-26.)
 //
-// When streamWssUrl is null, the response MUST be backward-compatible (just
-// <Dial>) — kill switch / coach disabled / openai key empty all collapse to
-// the same null on the caller's side.
+// When transcriptionCallbackUrl is null, the response MUST be
+// backwards-compatible (just <Dial>) — kill switch / coach disabled /
+// openai key empty all collapse to the same null on the caller's side.
 
 import { describe, it, expect } from 'vitest';
 import { buildOutgoingTwiml } from '../buildOutgoingTwiml';
@@ -18,57 +20,87 @@ const BASE = {
   recordingUrl: 'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/wk-voice-recording',
 };
 
-describe('buildOutgoingTwiml — without stream URL', () => {
-  it('emits <Dial> with caller-ID and no <Start><Stream>', () => {
-    const out = buildOutgoingTwiml({ ...BASE, streamWssUrl: null });
+const TRANSCRIPTION_URL =
+  'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/wk-voice-transcription';
+
+describe('buildOutgoingTwiml — without transcription URL', () => {
+  it('emits <Dial> with caller-ID and no <Start><Transcription>', () => {
+    const out = buildOutgoingTwiml({ ...BASE, transcriptionCallbackUrl: null });
     expect(out).toContain('<Response>');
     expect(out).toContain('<Dial');
     expect(out).toContain('callerId="+447380308316"');
     expect(out).toContain('<Number>+447863992555</Number>');
     expect(out).not.toContain('<Start>');
-    expect(out).not.toContain('<Stream');
+    expect(out).not.toContain('<Transcription');
+    expect(out).not.toContain('<Stream'); // legacy stream verb is gone
   });
 
   it('omits caller-ID attribute when null', () => {
-    const out = buildOutgoingTwiml({ ...BASE, callerIdE164: null, streamWssUrl: null });
+    const out = buildOutgoingTwiml({
+      ...BASE,
+      callerIdE164: null,
+      transcriptionCallbackUrl: null,
+    });
     expect(out).not.toContain('callerId=');
     expect(out).toContain('<Dial');
   });
 });
 
-describe('buildOutgoingTwiml — with stream URL', () => {
-  const STREAM = 'wss://asazddtvjvmckouxcmmo.supabase.co/functions/v1/wk-ai-live-coach';
-
-  it('includes <Start><Stream> before <Dial>', () => {
-    const out = buildOutgoingTwiml({ ...BASE, streamWssUrl: STREAM });
+describe('buildOutgoingTwiml — with transcription URL', () => {
+  it('includes <Start><Transcription> before <Dial>', () => {
+    const out = buildOutgoingTwiml({
+      ...BASE,
+      transcriptionCallbackUrl: TRANSCRIPTION_URL,
+    });
     const startIdx = out.indexOf('<Start>');
+    const transcriptIdx = out.indexOf('<Transcription');
     const dialIdx = out.indexOf('<Dial');
     expect(startIdx).toBeGreaterThan(-1);
+    expect(transcriptIdx).toBeGreaterThan(-1);
     expect(dialIdx).toBeGreaterThan(-1);
     expect(startIdx).toBeLessThan(dialIdx);
+    expect(transcriptIdx).toBeLessThan(dialIdx);
   });
 
-  it('uses track="both_tracks" so caller AND agent audio reach the coach', () => {
-    const out = buildOutgoingTwiml({ ...BASE, streamWssUrl: STREAM });
+  it('uses track="both_tracks" so caller AND agent audio reach the webhook', () => {
+    const out = buildOutgoingTwiml({
+      ...BASE,
+      transcriptionCallbackUrl: TRANSCRIPTION_URL,
+    });
     expect(out).toContain('track="both_tracks"');
   });
 
-  it('emits the wss URL XML-escaped', () => {
+  it('points statusCallbackUrl at the transcription webhook (XML-escaped)', () => {
     const out = buildOutgoingTwiml({
       ...BASE,
-      streamWssUrl: 'wss://example.test/coach?callSid=abc&agent=u1',
+      transcriptionCallbackUrl: 'https://example.test/cb?x=1&y=2',
     });
     // Ampersand must be escaped to &amp; for valid XML.
-    expect(out).toContain('callSid=abc&amp;agent=u1');
+    expect(out).toContain('statusCallbackUrl="https://example.test/cb?x=1&amp;y=2"');
   });
 
-  it('passes CallSid through as a Stream parameter', () => {
-    const out = buildOutgoingTwiml({ ...BASE, streamWssUrl: STREAM });
-    expect(out).toContain('<Parameter name="callSid" value="{{CallSid}}"/>');
+  it('labels tracks as caller/agent so wk-voice-transcription maps cleanly', () => {
+    const out = buildOutgoingTwiml({
+      ...BASE,
+      transcriptionCallbackUrl: TRANSCRIPTION_URL,
+    });
+    expect(out).toContain('inboundTrackLabel="caller"');
+    expect(out).toContain('outboundTrackLabel="agent"');
+  });
+
+  it('uses partialResults="false" — only final chunks, no draft noise', () => {
+    const out = buildOutgoingTwiml({
+      ...BASE,
+      transcriptionCallbackUrl: TRANSCRIPTION_URL,
+    });
+    expect(out).toContain('partialResults="false"');
   });
 
   it('still emits the <Dial> block with caller-ID + recording webhook', () => {
-    const out = buildOutgoingTwiml({ ...BASE, streamWssUrl: STREAM });
+    const out = buildOutgoingTwiml({
+      ...BASE,
+      transcriptionCallbackUrl: TRANSCRIPTION_URL,
+    });
     expect(out).toContain('<Dial');
     expect(out).toContain('callerId="+447380308316"');
     expect(out).toContain('record="record-from-answer-dual"');
