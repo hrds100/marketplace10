@@ -5,50 +5,30 @@
 //   1. Agent's own row (wk_call_scripts WHERE owner_agent_id = auth.uid())
 //   2. Default row (wk_call_scripts WHERE is_default = true)
 //   3. Empty state
-// Each agent edits via /smsv2/settings → AI coach → "My script".
+// Each agent edits inline via the pencil icon (PR 4).
 //
-// The script is the *map* the agent follows — the AI coach pane (col 2)
-// writes the literal next sentence to read.
-//
-// Hugo 2026-04-30 (PR A): each rendered block is clickable. Click toggles
-// "read" → the block dims to opacity 0.5 with line-through so the agent
-// can visually track where they are mid-call. Read state persists in
-// localStorage keyed by callId so a refresh keeps progress; cleared per
-// call (different callId → different key).
+// Hugo 2026-04-26 (PR 5): teleprompter — script blocks auto-grey as
+// the agent reads them aloud. Read state is driven by useScriptRead-
+// Tracking, which fuzzy-matches wk_live_transcripts (speaker = 'agent')
+// against parsed blocks. Replaces the manual click-to-mark mechanism
+// from PR #585. The current (next-to-read) block gets a green left
+// border so the agent's eye snaps to it.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FileText, RotateCcw, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAgentScript } from '../../hooks/useAgentScript';
 import { parseBlocks, type Block } from '../../lib/scriptParser';
+import { useScriptReadTracking } from '../../hooks/useScriptReadTracking';
 import EditScriptModal from './EditScriptModal';
 
 interface Props {
-  /** Active call id — used to scope read-tracking state in localStorage. */
+  /** Active call id — used to scope teleprompter state per call. */
   callId: string | null;
   /** First name of the contact, used for {{first_name}} substitution. */
   contactFirstName: string;
   /** Agent first name, used for {{agent_first_name}} substitution. */
   agentFirstName: string;
-}
-
-function readStorageKey(callId: string | null): string | null {
-  if (!callId) return null;
-  return `smsv2-script-read:${callId}`;
-}
-
-function loadReadSet(callId: string | null): Set<number> {
-  const k = readStorageKey(callId);
-  if (!k) return new Set();
-  try {
-    const raw = window.localStorage.getItem(k);
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return new Set();
-    return new Set(parsed.filter((n): n is number => typeof n === 'number'));
-  } catch {
-    return new Set();
-  }
 }
 
 export default function CallScriptPane({
@@ -57,47 +37,7 @@ export default function CallScriptPane({
   agentFirstName,
 }: Props) {
   const { script, loading, error, saving, save } = useAgentScript();
-  const [readIdxs, setReadIdxs] = useState<Set<number>>(() =>
-    loadReadSet(callId)
-  );
   const [editing, setEditing] = useState(false);
-
-  // Re-hydrate when callId changes (different call → different state).
-  useEffect(() => {
-    setReadIdxs(loadReadSet(callId));
-  }, [callId]);
-
-  // Persist on every change.
-  useEffect(() => {
-    const k = readStorageKey(callId);
-    if (!k) return;
-    try {
-      window.localStorage.setItem(k, JSON.stringify(Array.from(readIdxs)));
-    } catch {
-      /* localStorage full or denied — ignore, in-memory state still works */
-    }
-  }, [callId, readIdxs]);
-
-  const toggleRead = useCallback((idx: number) => {
-    setReadIdxs((prev) => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
-      return next;
-    });
-  }, []);
-
-  const reset = useCallback(() => {
-    setReadIdxs(new Set());
-    const k = readStorageKey(callId);
-    if (k) {
-      try {
-        window.localStorage.removeItem(k);
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [callId]);
 
   const rendered = useMemo(() => {
     const body = (script.body_md || '').trim();
@@ -106,6 +46,12 @@ export default function CallScriptPane({
       .replace(/\{\{\s*first_name\s*\}\}/gi, contactFirstName)
       .replace(/\{\{\s*agent_first_name\s*\}\}/gi, agentFirstName);
   }, [script.body_md, contactFirstName, agentFirstName]);
+
+  // Teleprompter state — fuzzy-matches agent voice to script blocks.
+  const { readIdxs, currentIdx, reset } = useScriptReadTracking(
+    callId,
+    rendered
+  );
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -126,11 +72,11 @@ export default function CallScriptPane({
           >
             <Pencil className="w-3 h-3" />
           </button>
-          {callId && readIdxs.size > 0 && (
+          {callId && (readIdxs.size > 0 || currentIdx !== null) && (
             <button
               onClick={reset}
               className="text-[10px] text-[#9CA3AF] hover:text-[#1A1A1A] inline-flex items-center gap-0.5"
-              title="Reset read progress for this call"
+              title="Reset teleprompter progress for this call"
             >
               <RotateCcw className="w-3 h-3" /> Reset
             </button>
@@ -155,7 +101,7 @@ export default function CallScriptPane({
           <ScriptMarkdown
             body={rendered}
             readIdxs={readIdxs}
-            onToggle={toggleRead}
+            currentIdx={currentIdx}
           />
         )}
       </div>
@@ -172,58 +118,52 @@ export default function CallScriptPane({
   );
 }
 
-// Lightweight Markdown rendering — no external dep. Handles the subset
-// the call-script seed uses: # / ## / ### headings, lists (- / *), bold
-// (**), italic (*), inline code (`), blockquotes (>), and paragraphs.
-// Anything fancier reads as plain text rather than crashing.
+// Renders the parsed script blocks with teleprompter styling:
+//   - read blocks: dimmed + line-through
+//   - current block (next to read): 2px green left border
+//   - everything else: normal
 function ScriptMarkdown({
   body,
   readIdxs,
-  onToggle,
+  currentIdx,
 }: {
   body: string;
   readIdxs: Set<number>;
-  onToggle: (idx: number) => void;
+  currentIdx: number | null;
 }) {
   const blocks = parseBlocks(body);
   return (
     <div className="space-y-3 text-[13px] leading-relaxed text-[#1A1A1A]">
       {blocks.map((b, i) => (
-        <ClickableBlock
+        <TeleprompterBlock
           key={i}
           isRead={readIdxs.has(i)}
-          onClick={() => onToggle(i)}
+          isCurrent={currentIdx === i}
         >
           {renderBlock(b, i)}
-        </ClickableBlock>
+        </TeleprompterBlock>
       ))}
     </div>
   );
 }
 
-function ClickableBlock({
+function TeleprompterBlock({
   isRead,
-  onClick,
+  isCurrent,
   children,
 }: {
   isRead: boolean;
-  onClick: () => void;
+  isCurrent: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
       className={cn(
-        'cursor-pointer rounded -mx-1 px-1 transition-opacity hover:bg-[#F9FAFB]',
-        isRead && 'opacity-50 line-through'
+        'rounded -mx-1 px-1 transition-opacity',
+        isRead && 'opacity-50 line-through',
+        isCurrent &&
+          !isRead &&
+          'border-l-2 border-[#1E9A80] -ml-[2px] pl-2 bg-[#ECFDF5]/40'
       )}
     >
       {children}
