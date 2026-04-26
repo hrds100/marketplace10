@@ -67,23 +67,21 @@ async function validateTwilioSignature(
 
 async function generateCoachSuggestion(
   apiKey: string,
-  _systemPromptIgnoredForNow: string,
+  systemPromptOverride: string,
   recentTranscript: string,
   latestUtterance: string,
   speaker: 'caller' | 'agent'
 ): Promise<string | null> {
   if (!apiKey || !latestUtterance || speaker !== 'caller') return null;
 
-  // Teleprompter coach with the FULL nfstay sales context baked in. Hugo
-  // collated the call script, the live deal numbers (Pembroke Place, 15-bed
-  // Liverpool), the JV partnership mechanics, and the objection book on
-  // 2026-04-26 — this prompt is the canonical version. Any future product /
-  // numbers / script change ships as a prompt edit here + an edge fn redeploy.
-  //
-  // The model writes ONE first-person spoken line, ready to read aloud.
-  // Never instructional ("Reintroduce", "Ask", "Describe", etc.) — that
-  // failure mode was Hugo's repeated complaint.
-  const systemPrompt = [
+  // The system prompt is now sourced from wk_ai_settings.live_coach_system_prompt
+  // (editable via /smsv2/settings → AI coach → System prompts). Hugo's
+  // 2026-04-26 directive: "it cannot be just hard-coded invisible, it has to
+  // be there where I can edit and change". The DEFAULT_COACH_PROMPT below is
+  // only used if the DB column is empty / null — the seeded value is the
+  // canonical nfstay teleprompter prompt with the full deal + JV + script
+  // context.
+  const DEFAULT_COACH_PROMPT = [
     'You are a live teleprompter for an nfstay (UK Airbnb investment platform) sales agent on a phone call with a UK property lead.',
     '',
     '== ABOUT NFSTAY ==',
@@ -154,6 +152,11 @@ async function generateCoachSuggestion(
     '- "Ask about the property location." (instructional)',
     '- "Tell them about the 5-year agreement." (instructional)',
   ].join('\n');
+
+  // Prefer the DB-stored prompt (editable in Settings); fall back to the
+  // default if the column is empty or whitespace-only.
+  const trimmed = (systemPromptOverride ?? '').trim();
+  const systemPrompt = trimmed.length > 0 ? trimmed : DEFAULT_COACH_PROMPT;
 
   const userMsg = [
     'Recent conversation (most recent line at bottom):',
@@ -348,9 +351,11 @@ serve(async (req: Request) => {
             )
             .join('\n');
 
+          // Pass the DB-stored prompt straight through. generateCoachSuggestion
+          // falls back to the canonical DEFAULT_COACH_PROMPT if it's empty.
           const tip = await generateCoachSuggestion(
             ai.openai_api_key as string,
-            (ai.live_coach_system_prompt as string) || 'You are a sales coach for a UK property landlord. Always reply with one short, useful tip — never reply with "skip".',
+            (ai.live_coach_system_prompt as string) ?? '',
             ctx,
             transcriptText,
             speaker
