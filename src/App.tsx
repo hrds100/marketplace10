@@ -128,6 +128,7 @@ import Smsv2ContactDetailPage from '@/features/smsv2/pages/ContactDetailPage';
 import Smsv2PipelinesPage from '@/features/smsv2/pages/PipelinesPage';
 import Smsv2ReportsPage from '@/features/smsv2/pages/ReportsPage';
 import Smsv2SettingsPage from '@/features/smsv2/pages/SettingsPage';
+import Smsv2TestPage from '@/features/smsv2/pages/TestPage';
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -317,6 +318,7 @@ const App = () => (
             <Route path="pipelines" element={<Smsv2PipelinesPage />} />
             <Route path="reports" element={<Smsv2ReportsPage />} />
             <Route path="settings" element={<Smsv2SettingsPage />} />
+            <Route path="test" element={<Smsv2TestPage />} />
           </Route>
           {/* nfstay traveler-facing routes — standalone (no operator layout) */}
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
