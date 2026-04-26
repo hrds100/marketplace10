@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-04-26 — supabase: migration history cleanup
+
+The repo had drifted out of sync with the Supabase migration history table.
+Two issues:
+1. ~48 local migration files used date-only 8-digit prefixes (e.g.
+   `20260314_deals_v2.sql`). The supabase CLI's `db push` filename parser
+   silently skipped these and complained about "remote versions not found
+   in local migrations directory".
+2. The remote `supabase_migrations.schema_migrations` table held 23
+   phantom entries for migrations applied directly to the DB during early
+   dashboard-driven development (no matching local files).
+
+This cleanup:
+- Renames all 48 date-only files to use 14-digit timestamps (with
+  `000000`, `000001`, … suffixes per date for ordering). File contents
+  unchanged.
+- Adds 23 placeholder `*_remote_history_placeholder.sql` files (comments
+  only) so the CLI can match every remote version to a local file.
+- Re-records every renamed migration in `supabase_migrations` as applied.
+
+After the cleanup, `supabase db push --linked --dry-run` reports
+"**Remote database is up to date.**" Future migrations follow the
+standard workflow described in `docs/runbooks/SUPABASE_MIGRATIONS.md`.
+
+No schema changes — this PR is purely metadata + filename hygiene.
+
 ## 2026-04-26 — smsv2: past-call transcript + full-screen archive view (item F)
 
 Hugo's 2026-04-26 ask: "Calls history page is missing recording playback
