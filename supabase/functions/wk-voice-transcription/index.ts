@@ -68,11 +68,22 @@ async function validateTwilioSignature(
 async function generateCoachSuggestion(
   apiKey: string,
   systemPromptOverride: string,
+  modelOverride: string,
   recentTranscript: string,
   latestUtterance: string,
   speaker: 'caller' | 'agent'
 ): Promise<string | null> {
   if (!apiKey || !latestUtterance || speaker !== 'caller') return null;
+
+  // Model is admin-editable via /smsv2/settings → AI coach → "Model — live
+  // coach". Hugo's directive 2026-04-27: "make sure it's always wired and
+  // it's always reflects on our front end as well for the user, you know,
+  // like make that a rule". The DB column wk_ai_settings.live_coach_model
+  // is the source of truth; the hard-coded fallback below applies only
+  // when the column is empty / null.
+  const DEFAULT_LIVE_COACH_MODEL = 'gpt-5.4-mini';
+  const trimmedModel = (modelOverride ?? '').trim();
+  const liveCoachModel = trimmedModel.length > 0 ? trimmedModel : DEFAULT_LIVE_COACH_MODEL;
 
   // The system prompt is now sourced from wk_ai_settings.live_coach_system_prompt
   // (editable via /smsv2/settings → AI coach → System prompts). Hugo's
@@ -85,37 +96,48 @@ async function generateCoachSuggestion(
     'You are the live teleprompter for an NFsTay sales agent on a phone call with a UK property investor lead. NFsTay = UK Airbnb investment via Joint Venture partnerships, entry from £500.',
     '',
     '==========================================================================',
-    'GOLDEN RULE: match the call stage. Do not push for a close on every line.',
+    'GOLDEN RULE: Straight Line Selling — build the THREE TENS before close',
+    '[1] Product Love · [2] Trust in You · [3] Trust in Company',
+    'Do not push for a close on every line. Close ONCE, when all three are high.',
     '==========================================================================',
     '',
     'A real conversation has rhythm. Most lines are *talking* — answering, asking, riffing. The close happens ONCE, at the right moment, after the pitch has actually landed. If you keep ending every reply with "I\'ll send the breakdown — morning or afternoon tomorrow?" you sound like a robot and you blow the deal.',
     '',
     '==========================================================================',
+    'TONALITY MARKERS — prepend [warm] / [firm] / [low] / [reasonable man] when',
+    'the delivery matters. The agent reads the marker as a stage direction, not',
+    'aloud. Use sparingly — only on lines where tone changes the outcome.',
+    '==========================================================================',
+    '',
+    '==========================================================================',
     'CALL STAGES — figure out where the call is, then pick the right kind of line',
     '==========================================================================',
     '',
-    'WARM-UP (first 30 seconds — light, human)',
+    'WARM-UP (first 30 seconds — light, human) — Build TRUST IN YOU',
     '  → Confirm name + WhatsApp source. Build rapport. NO pitch, NO close.',
-    '  → e.g. "Cheers for picking up, [name]. Saw you in our property WhatsApp group — quick one, are you actively looking at deals at the moment, or more keeping an eye?"',
+    '  → e.g. [warm] "Cheers for picking up, [name]. Saw you in our property WhatsApp group — quick one, are you actively looking at deals at the moment, or more keeping an eye?"',
     '',
-    'DISCOVERY (next 1-2 minutes — open questions, qualify)',
+    'DISCOVERY (next 1-2 minutes — open questions, qualify) — Build PRODUCT LOVE',
     '  → Ask open questions. Find their goal, budget, timeline. NO close yet.',
     '  → e.g. "What\'s pulled you toward Airbnb specifically — is it the monthly cashflow side or more the asset?"',
     '  → e.g. "Roughly what kind of pot are you thinking of putting in?"',
     '  → e.g. "Have you done any property investing before, or this your first proper look?"',
     '',
-    'PITCH (only after rapport + qualification)',
+    'PITCH (only after rapport + qualification) — Build TRUST IN COMPANY',
     '  → JV model + Pembroke Place numbers, in punchy beats — drip, don\'t dump.',
     '  → "We run Airbnb properties as Joint Ventures — partners pool in, we handle the setup, bookings, the lot, and you take a monthly share. Entry\'s from £500."',
-    '  → After interest signals: "Right now our flagship is a 15-bed in Liverpool. Setup\'s about £37k split across partners, 5-year agreement, yield runs about 9.6% monthly. About 70% sold."',
+    '  → After interest signals: [firm] "Right now our flagship is a 15-bed in Liverpool. Setup\'s about £37k split across partners, 5-year agreement, yield runs about 9.6% monthly. About 70% sold."',
     '',
-    'OBJECTION HANDLING (whenever they push back)',
-    '  → ANSWER the actual concern from the objection book.',
-    '  → Then ask a question to keep the conversation going. NOT every reply ends in a close.',
+    'OBJECTION HANDLING — LOOP: ANSWER → RE-PRESENT → ASK',
+    '  → ANSWER the actual concern from the objection book (direct, no waffle).',
+    '  → RE-PRESENT one piece of the value briefly (a number, a guarantee, a fact that lifts one of the Three Tens).',
+    '  → ASK an open question to keep the conversation going. Not every reply ends in a close.',
+    '  → e.g. [low, empathy] "Yeah, totally fair. We\'ve got the HMO licence and you can see every property and payout on the platform — that\'s why we keep entry at £500, you can test the water. What\'s the bit that\'s on your mind?"',
     '',
-    'SOFT CLOSE (only when they\'re warm + the pitch has landed + they haven\'t refused)',
+    'SOFT CLOSE (only when the THREE TENS are high + pitch landed + no refusal)',
     '  → Once. Send the breakdown by SMS, lock tomorrow.',
     '  → Vary the language each time so it doesn\'t sound canned.',
+    '  → e.g. [reasonable man] "Right, sounds like there\'s something here. I\'ll drop the full breakdown over so you can sit with the numbers properly — what time tomorrow works for a quick five minutes?"',
     '',
     '==========================================================================',
     'WHEN THE CALLER ASKS A QUESTION — answer it directly. Don\'t deflect to SMS.',
@@ -241,10 +263,7 @@ async function generateCoachSuggestion(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // gpt-5.4-mini (Hugo's directive 2026-04-27). Newer family with
-        // better stage-awareness + variation than gpt-4.1-mini, while
-        // staying mini-tier for latency.
-        model: 'gpt-5.4-mini',
+        model: liveCoachModel,       // sourced from wk_ai_settings.live_coach_model (Settings UI)
         temperature: 0.9,            // higher → less repetition / more colour
         presence_penalty: 0.85,      // strongly discourage reusing words from prior tips
         frequency_penalty: 0.5,
@@ -401,7 +420,7 @@ serve(async (req: Request) => {
         try {
           const { data: ai } = await supa
             .from('wk_ai_settings')
-            .select('ai_enabled, live_coach_enabled, openai_api_key, live_coach_system_prompt')
+            .select('ai_enabled, live_coach_enabled, openai_api_key, live_coach_system_prompt, live_coach_model')
             .limit(1)
             .maybeSingle();
           if (!ai?.ai_enabled || !ai?.live_coach_enabled || !ai?.openai_api_key) return;
@@ -425,6 +444,7 @@ serve(async (req: Request) => {
           const tip = await generateCoachSuggestion(
             ai.openai_api_key as string,
             (ai.live_coach_system_prompt as string) ?? '',
+            (ai.live_coach_model as string) ?? '',
             ctx,
             transcriptText,
             speaker

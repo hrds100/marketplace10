@@ -1,5 +1,43 @@
 # Changelog
 
+## 2026-04-27 — smsv2: coach model wired to Settings UI + prompt v4 (Belfort)
+
+Two issues from Hugo's 2026-04-27 audit:
+
+1. **Model wasn't wired to the UI.** Last patch hardcoded `gpt-5.4-mini`
+   in the edge function. The Settings UI dropdown still showed legacy
+   `gpt-4o-realtime-preview` options that didn't reflect what was
+   actually running. Hugo: "make sure it's always wired and it's always
+   reflects on our front end as well for the user, you know, like make
+   that a rule."
+2. **Prompt v3 was 8/10.** Needed Belfort tweaks per Hugo's audit:
+   explicit Three Tens, looping in objection handling, tonality markers.
+
+What changed:
+
+- `wk-voice-transcription` now SELECTs `live_coach_model` from
+  `wk_ai_settings` and passes it through to the OpenAI chat completion
+  call. Hardcoded `gpt-5.4-mini` is now a fallback (used only if the DB
+  column is empty). Hot-swap takes effect on the next coach card.
+- Settings UI "AI coach" tab — both model dropdowns (`postcall_model`
+  and `live_coach_model`) updated with current model lists grouped by
+  family: GPT-5 (newest), GPT-4.1, GPT-4o (legacy). The live-coach
+  dropdown's label changed from "Realtime API" to "chat completions,
+  per-utterance" since that's what the edge fn actually calls.
+- `live_coach_model` column DEFAULT changed from `gpt-4o-realtime-preview`
+  (misleading — never used) to `gpt-5.4-mini`. Singleton row UPDATEd to
+  match.
+- Coach prompt v4 — added Three Tens (Product Love · Trust in You ·
+  Trust in Company) to the GOLDEN RULE, explicit ANSWER → RE-PRESENT →
+  ASK loop in objection handling, tonality markers `[warm]` / `[firm]`
+  / `[low]` / `[reasonable man]` for lines where delivery matters.
+
+Saved a global rule to memory: backend changes that drive runtime
+behaviour MUST be visible + editable in the admin UI. Hardcode is
+fallback only.
+
+Migration applied via `supabase db push`. Edge fn redeployed.
+
 ## 2026-04-27 — smsv2: coach model → gpt-5.4-mini
 
 Hugo's directive after the v3 ship: switch from `gpt-4.1-mini` to
