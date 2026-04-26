@@ -80,7 +80,7 @@ async function generateCoachSuggestion(
     '',
     `Caller just said: "${latestUtterance}"`,
     '',
-    'Give the agent ONE short coaching tip (max 12 words). If no tip is needed, reply with the literal word "skip".',
+    'Give the agent ONE short, actionable coaching tip (max 14 words). Always provide a tip — even early in the call ("Mirror their energy", "Ask their goal", etc.). Never reply with "skip".',
   ].join('\n');
 
   try {
@@ -106,7 +106,9 @@ async function generateCoachSuggestion(
     }
     const j = await resp.json();
     const text = String(j?.choices?.[0]?.message?.content ?? '').trim();
-    if (!text || /^skip\.?$/i.test(text)) return null;
+    if (!text) return null;
+    // Belt-and-braces: if the model still says "skip", drop it.
+    if (/^skip\.?$/i.test(text)) return null;
     return text;
   } catch (e) {
     console.warn('[wk-voice-transcription] openai chat threw', e);
@@ -210,9 +212,12 @@ serve(async (req: Request) => {
     });
 
     // Coaching path — only when AI is enabled for THIS call AND the caller
-    // (not the agent) just spoke. Don't await: respond 200 to Twilio fast.
+    // (not the agent) just spoke. Use EdgeRuntime.waitUntil so the async
+    // pipeline survives past the 200 response to Twilio. A bare `void async`
+    // IIFE gets torn down by Deno Deploy / Supabase Edge Functions when the
+    // handler returns; transcripts INSERT but coach calls die mid-flight.
     if (call.ai_coach_enabled && speaker === 'caller') {
-      void (async () => {
+      const coachPromise = (async () => {
         try {
           const { data: ai } = await supa
             .from('wk_ai_settings')
@@ -237,7 +242,7 @@ serve(async (req: Request) => {
 
           const tip = await generateCoachSuggestion(
             ai.openai_api_key as string,
-            (ai.live_coach_system_prompt as string) || 'You are a sales coach for a UK property landlord.',
+            (ai.live_coach_system_prompt as string) || 'You are a sales coach for a UK property landlord. Always reply with one short, useful tip — never reply with "skip".',
             ctx,
             transcriptText,
             speaker
@@ -254,6 +259,18 @@ serve(async (req: Request) => {
           console.warn('[wk-voice-transcription] coach pipeline threw', e);
         }
       })();
+
+      // Supabase Edge Functions expose EdgeRuntime.waitUntil to extend the
+      // worker's lifetime past the response. Without this, the OpenAI fetch
+      // is killed when the function returns 200 to Twilio.
+      // deno-lint-ignore no-explicit-any
+      const er = (globalThis as any).EdgeRuntime;
+      if (er && typeof er.waitUntil === 'function') {
+        er.waitUntil(coachPromise);
+      } else {
+        // Fallback: still run but no lifetime guarantee.
+        void coachPromise;
+      }
     }
 
     return new Response('ok', { status: 200, headers: corsHeaders });
