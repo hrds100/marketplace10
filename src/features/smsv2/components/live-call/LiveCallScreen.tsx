@@ -20,7 +20,7 @@ import LiveTranscriptPane from './LiveTranscriptPane';
 import CallScriptPane from './CallScriptPane';
 import TerminologyPane from './TerminologyPane';
 import MidCallSmsSender from './MidCallSmsSender';
-import ApplyAutomationButton from './ApplyAutomationButton';
+import ApplyAutomationToggle from './ApplyAutomationToggle';
 import ContactMetaCompact from './ContactMetaCompact';
 import CallTimeline from './CallTimeline';
 import PostCallPanel from './PostCallPanel';
@@ -211,7 +211,7 @@ export default function LiveCallScreen() {
             <div className="mt-2">
               <ContactMetaCompact contact={contact} />
               <div className="mt-2">
-                <ApplyAutomationButton
+                <ApplyAutomationToggle
                   callId={call?.callId ?? null}
                   contactId={contact.id}
                   columnId={contact.pipelineColumnId}
