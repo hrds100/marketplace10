@@ -66,7 +66,7 @@ const TABS = [
   { id: 'agents', label: 'Agents & spend', icon: Users },
   { id: 'numbers', label: 'Numbers', icon: Phone },
   { id: 'ai', label: 'AI coach', icon: Bot },
-  { id: 'kb', label: 'Knowledge base', icon: Brain },
+  { id: 'kb', label: 'Coach facts', icon: Brain },
   { id: 'glossary', label: 'Glossary', icon: BookOpen },
   { id: 'pacing', label: 'Pacing & safety', icon: Shield },
   { id: 'kill', label: 'Kill switches & audit', icon: Activity },
@@ -1459,7 +1459,7 @@ function AITab() {
             />
           </div>
           <div className="text-[11px] text-[#6B7280] border border-dashed border-[#E5E7EB] rounded-lg p-2 bg-[#F9FAFB]">
-            <span className="font-semibold text-[#1A1A1A]">Layer 3 — Knowledge base</span> lives in <code className="bg-[#F3F3EE] px-1 rounded">wk_coach_facts</code> and is edited in the new <span className="font-semibold">Knowledge base</span> tab on the left.
+            <span className="font-semibold text-[#1A1A1A]">Layer 3 — Coach facts</span> lives in <code className="bg-[#F3F3EE] px-1 rounded">wk_coach_facts</code> and is edited in the <span className="font-semibold">Coach facts</span> tab on the left. The agent-facing <span className="font-semibold">Glossary</span> + <span className="font-semibold">Objections</span> tabs (col 4 of the live-call screen) live in <code className="bg-[#F3F3EE] px-1 rounded">wk_terminologies</code> — separate surface, separate Settings tab.
           </div>
           <details className="border border-[#E5E7EB] rounded-xl p-3">
             <summary className="text-[12px] font-semibold text-[#6B7280] cursor-pointer">
@@ -2046,7 +2046,7 @@ function KnowledgeBaseTab() {
   return (
     <>
       <Card
-        title="Knowledge base"
+        title="Coach facts"
         hint="Facts the AI may quote during a call. Edits propagate live."
       >
         <div className="text-[12px] text-[#6B7280] leading-snug mb-3">
@@ -2171,7 +2171,7 @@ function KnowledgeBaseTab() {
           ))}
           {!loading && items.length === 0 && editingId !== 'new' && (
             <div className="text-[12px] text-[#9CA3AF] text-center py-6">
-              No facts yet. Click "Add fact" to seed the knowledge base.
+              No facts yet. Click "Add fact" to seed the coach facts.
             </div>
           )}
         </div>
