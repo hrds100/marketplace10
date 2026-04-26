@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-04-27 — smsv2: coach prompt v3 + model upgrade (gpt-4.1-mini)
+
+Hugo's 2026-04-26 live test still showed the coach pushing "I'll send the
+breakdown — morning or afternoon tomorrow?" on 4 of 6 cards even when the
+caller was just exploring or asking factual questions. v2's hard rule
+"every objection ends with a soft close" forced this. v3 fixes it.
+
+What changed:
+- New stage-aware decision tree: warm-up → discovery → pitch → objection →
+  close. Most lines are *talking*, not closing. The close happens once,
+  at the right moment, after rapport + pitch.
+- Direct-answer rule: when the caller asks a factual question (e.g.
+  "where are you based?", "when is it available?"), answer it. No SMS
+  deflection.
+- UK English tone — explicit avoid-list of American/corporate phrases
+  ("reach out", "circle back", "absolutely", "that's a great question",
+  "going forward").
+- Variation rule — "if your last suggestion was X, do not produce another
+  version of X". Plus temperature 0.7→0.9 and presence_penalty 0.6→0.85
+  in the OpenAI call.
+- Bigger objection book ("what's the catch?", "sounds too good?").
+- Removed v2's hard rule "every objection ends with a soft close".
+
+Model: `gpt-4.1-nano` → `gpt-4.1-mini`. ~1.5-2x latency hit (~600-900ms
+vs ~300-500ms) for noticeably better stage-awareness and variation.
+Acceptable trade — agents read each line aloud, so a slight delay
+doesn't break the flow. Easy to revert via the same hardcoded line if
+needed.
+
+DB updated via `supabase db push --linked` (now possible after the
+2026-04-26 history cleanup). Edge fn redeployed.
+
 ## 2026-04-26 — supabase: migration history cleanup
 
 The repo had drifted out of sync with the Supabase migration history table.
