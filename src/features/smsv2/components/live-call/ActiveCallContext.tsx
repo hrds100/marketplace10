@@ -4,7 +4,12 @@ import type { Call as TwilioCall } from '@twilio/voice-sdk';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
 import { useTwilioDevice } from '../../hooks/useTwilioDevice';
-import { addIncomingCallListener } from '@/core/integrations/twilio-voice';
+import {
+  addIncomingCallListener,
+  disconnectAllCalls,
+  getDeviceCalls,
+  muteAllCalls,
+} from '@/core/integrations/twilio-voice';
 import { startCallOrchestration, type StartCallResult } from '../../lib/startCallOrchestration';
 
 export type CallPhase = 'idle' | 'placing' | 'in_call' | 'post_call';
@@ -100,33 +105,35 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const activeTwilioCallRef = useRef<TwilioCall | null>(null);
 
   const toggleMute = useCallback(() => {
-    // Prefer the active call ref (set on startCall + inbound paths). Fall back
-    // to whatever Twilio Device currently treats as the live call — covers the
-    // dialer-winner broadcast path and any race where the manual ref hasn't
-    // landed yet. Without this, clicking Mute silently no-ops and the callee
-    // keeps hearing the agent.
-    const c = activeTwilioCallRef.current ?? device.activeCall ?? null;
-    if (!c) {
-      console.info('[mute] no active Twilio Call — toggleMute is a no-op');
+    // ROOT CAUSE of the "I clicked Mute, callee still hears me" bug:
+    // Twilio Device maintains MULTIPLE Calls simultaneously (device.calls).
+    // Every device.connect() appends a new Call without disposing prior
+    // ones — the agent's mic feeds them ALL until each one's track.enabled
+    // is flipped or the Call is disconnected. Across rapid test cycles,
+    // navigating away mid-call, or any missed disconnect, zombie Calls
+    // accumulate. Muting only the activeTwilioCallRef leaves the zombies
+    // streaming, so the callee keeps hearing the agent.
+    //
+    // Fix: mute EVERY Call the Device is maintaining. The active ref is
+    // also muted (it's in device.calls). isMuted() truth comes from the
+    // active ref / device.activeCall (both reflect the same Call) so the
+    // icon flips correctly.
+    const all = getDeviceCalls();
+    const truth =
+      activeTwilioCallRef.current ?? device.activeCall ?? all[all.length - 1] ?? null;
+    if (!truth && all.length === 0) {
+      console.info('[mute] no Twilio Calls on device — toggleMute is a no-op');
       return;
     }
-    // Read truth from the SDK, not stale React state. If another flow (or
-    // the SDK itself, on a track replacement) flipped mute, our local state
-    // could be wrong, and !muted would re-mute instead of unmute.
     const wasMuted = (() => {
-      try { return c.isMuted(); } catch { return muted; }
+      try { return truth ? truth.isMuted() : muted; } catch { return muted; }
     })();
     const next = !wasMuted;
-    console.info('[mute] toggle', { wasMuted, next });
-    try {
-      c.mute(next);
-    } catch (e) {
-      console.warn('[mute] failed', e);
-      return;
-    }
+    console.info('[mute] toggle', { wasMuted, next, calls: all.length });
+    muteAllCalls(next);
     // The 'mute' event listener wired in startCall / incoming will sync
-    // React state. Set optimistically so the icon flips immediately even
-    // if the SDK doesn't emit (e.g. unit tests with a bare fake Call).
+    // React state on the active Call. Set optimistically too so the icon
+    // flips immediately even if a Call's stream isn't fully wired yet.
     setMuted(next);
   }, [muted, device.activeCall]);
 
@@ -242,6 +249,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       const contact = store.getContact(contactId);
       const phone = (phoneOverride ?? contact?.phone ?? '').trim();
       const contactName = contact?.name ?? nameOverride ?? 'Unknown caller';
+
+      // Evict any zombie Twilio Calls before placing a fresh one. Without
+      // this, prior leaked Calls (rapid test cycles, navigation mid-call,
+      // missed disconnects) keep streaming the agent's mic in parallel,
+      // and Mute can't catch up. Cheap no-op when device.calls is empty.
+      try { disconnectAllCalls(); } catch { /* ignore */ }
+      activeTwilioCallRef.current = null;
 
       // Optimistic UI: show placing state so the agent gets immediate
       // feedback (the "calling…" pill). startedAt is set once the call
@@ -361,7 +375,11 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       startCall,
       resumeFromBroadcast,
       endCall: () => {
-        try { activeTwilioCallRef.current?.disconnect(); } catch { /* ignore */ }
+        // Disconnect EVERY Call on the Device — not just the active ref.
+        // The "callee still hears me" zombie Calls (see toggleMute comment)
+        // also need to be evicted so they stop streaming the mic.
+        try { disconnectAllCalls(); } catch { /* ignore */ }
+        activeTwilioCallRef.current = null;
         setPhase('post_call');
         setMuted(false);
       },
