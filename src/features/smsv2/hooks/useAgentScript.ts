@@ -156,59 +156,75 @@ export function useAgentScript() {
   // Save the agent's own row. Always creates / updates the OWN row,
   // even if the agent is currently viewing the default (i.e. clicking
   // Save creates a personal copy that diverges from the default).
-  const save = useCallback(async () => {
-    if (!agentId) {
-      setError('Not signed in');
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    setSaved(false);
-    try {
-      const client = supabase as unknown as ScriptsTable;
-      // If we're currently viewing the agent's own row, UPDATE it.
-      // Otherwise INSERT a new row owned by the agent.
-      if (script.source === 'own' && script.id) {
-        const { error: e } = await client
+  //
+  // Accepts an optional `override` so callers (like the inline edit
+  // modal) can pass the latest form values directly without racing
+  // setField — calling setField + save back-to-back would otherwise
+  // hit the stale closure of `script`.
+  const save = useCallback(
+    async (override?: { name?: string; body_md?: string }) => {
+      if (!agentId) {
+        setError('Not signed in');
+        return;
+      }
+      const draft = {
+        ...script,
+        ...(override?.name !== undefined ? { name: override.name } : {}),
+        ...(override?.body_md !== undefined
+          ? { body_md: override.body_md }
+          : {}),
+      };
+      setSaving(true);
+      setError(null);
+      setSaved(false);
+      try {
+        const client = supabase as unknown as ScriptsTable;
+        // If we're currently viewing the agent's own row, UPDATE it.
+        // Otherwise INSERT a new row owned by the agent.
+        if (draft.source === 'own' && draft.id) {
+          const { error: e } = await client
+            .from('wk_call_scripts')
+            .update({ name: draft.name, body_md: draft.body_md })
+            .eq('id', draft.id);
+          if (e) {
+            setError(e.message);
+            return;
+          }
+          setScript(draft);
+          setSaved(true);
+          return;
+        }
+        const { data, error: e } = await client
           .from('wk_call_scripts')
-          .update({ name: script.name, body_md: script.body_md })
-          .eq('id', script.id);
+          .insert({
+            name: draft.name || 'My script',
+            body_md: draft.body_md,
+            owner_agent_id: agentId,
+            is_default: false,
+          })
+          .select('id, name, body_md, owner_agent_id, is_default')
+          .single();
         if (e) {
           setError(e.message);
           return;
         }
-        setSaved(true);
-        return;
+        if (data) {
+          setScript({
+            id: data.id,
+            source: 'own',
+            name: data.name,
+            body_md: data.body_md,
+          });
+          setSaved(true);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'save failed');
+      } finally {
+        setSaving(false);
       }
-      const { data, error: e } = await client
-        .from('wk_call_scripts')
-        .insert({
-          name: script.name || 'My script',
-          body_md: script.body_md,
-          owner_agent_id: agentId,
-          is_default: false,
-        })
-        .select('id, name, body_md, owner_agent_id, is_default')
-        .single();
-      if (e) {
-        setError(e.message);
-        return;
-      }
-      if (data) {
-        setScript({
-          id: data.id,
-          source: 'own',
-          name: data.name,
-          body_md: data.body_md,
-        });
-        setSaved(true);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'save failed');
-    } finally {
-      setSaving(false);
-    }
-  }, [agentId, script]);
+    },
+    [agentId, script]
+  );
 
   // Reset agent's own row back to the default — DELETE the own row
   // (if any) and re-fetch the default for display.

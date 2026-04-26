@@ -17,10 +17,11 @@
 // call (different callId → different key).
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, RotateCcw } from 'lucide-react';
+import { FileText, RotateCcw, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAgentScript } from '../../hooks/useAgentScript';
 import { parseBlocks, type Block } from '../../lib/scriptParser';
+import EditScriptModal from './EditScriptModal';
 
 interface Props {
   /** Active call id — used to scope read-tracking state in localStorage. */
@@ -55,10 +56,11 @@ export default function CallScriptPane({
   contactFirstName,
   agentFirstName,
 }: Props) {
-  const { script, loading, error } = useAgentScript();
+  const { script, loading, error, saving, save } = useAgentScript();
   const [readIdxs, setReadIdxs] = useState<Set<number>>(() =>
     loadReadSet(callId)
   );
+  const [editing, setEditing] = useState(false);
 
   // Re-hydrate when callId changes (different call → different state).
   useEffect(() => {
@@ -116,6 +118,14 @@ export default function CallScriptPane({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-[#9CA3AF]">{script.name}</span>
+          <button
+            onClick={() => setEditing(true)}
+            className="p-1 rounded hover:bg-[#F3F3EE] text-[#9CA3AF] hover:text-[#1A1A1A]"
+            title="Edit your script"
+            disabled={loading}
+          >
+            <Pencil className="w-3 h-3" />
+          </button>
           {callId && readIdxs.size > 0 && (
             <button
               onClick={reset}
@@ -149,6 +159,15 @@ export default function CallScriptPane({
           />
         )}
       </div>
+
+      <EditScriptModal
+        open={editing}
+        onOpenChange={setEditing}
+        script={script}
+        saving={saving}
+        error={error}
+        onSave={(next) => save({ name: next.name, body_md: next.body_md })}
+      />
     </div>
   );
 }
