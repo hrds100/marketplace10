@@ -21,6 +21,7 @@ interface WkColumnRow {
   icon: string | null;
   position: number;
   is_default_on_timeout: boolean | null;
+  requires_followup: boolean | null;
 }
 
 interface WkAutomationRow {
@@ -49,6 +50,7 @@ export function rowToPipelineColumn(
     icon: row.icon ?? 'Sparkles',
     position: row.position,
     isDefaultOnTimeout: row.is_default_on_timeout ?? false,
+    requiresFollowup: row.requires_followup ?? false,
     automation: {
       sendSms: automation?.send_sms ?? false,
       smsTemplateId: automation?.sms_template_id ?? undefined,
@@ -85,7 +87,7 @@ export function useHydratePipelineColumns(): void {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_pipeline_columns' as any) as any)
           .select(
-            'id, pipeline_id, name, colour, icon, position, is_default_on_timeout'
+            'id, pipeline_id, name, colour, icon, position, is_default_on_timeout, requires_followup'
           )
           .order('sort_order', { ascending: true }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
