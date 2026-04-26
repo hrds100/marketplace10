@@ -41,17 +41,13 @@ const COACH_ICONS = {
   warning: { Icon: Activity, colour: '#F59E0B', label: '📊 INSIGHT' },
 };
 
-// Coach card text scales with length: short rebuttals stay punchy at 15px,
-// longer breakdowns scale up to 17-18px so they're easy to read aloud
-// without squinting (Hugo 2026-04-26: "coach card text is too small,
-// especially for longer recommended lines").
-function coachBodyTextSize(text: string): string {
-  const len = text.length;
-  if (len < 60) return 'text-[15px]';
-  if (len < 120) return 'text-[16px]';
-  if (len < 200) return 'text-[17px]';
-  return 'text-[18px]';
-}
+// Hugo 2026-04-28: only the LATEST card matters for reading aloud.
+// Older cards get visually demoted (smaller, dimmed, truncated) so the
+// agent's eye snaps to the new line. Latest is fixed at 22px (sweet
+// spot for fast-scan from the laptop while on a call) — older are
+// 12px clamped to 2 lines.
+const LATEST_BODY_CLASS = 'text-[22px] leading-[1.35] font-semibold tracking-[-0.005em]';
+const OLDER_BODY_CLASS = 'text-[12px] leading-snug line-clamp-2';
 
 export default function LiveTranscriptPane({ durationSec, contactId, callId }: Props) {
   const { aiCoach } = useKillSwitch();
@@ -282,18 +278,22 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
               [...events].reverse().map((event, idx) => {
                 const meta = COACH_ICONS[event.kind];
                 const isLatest = idx === 0;
-                const sizeClass = coachBodyTextSize(event.body);
                 return (
                   <div
                     key={event.id}
                     className={cn(
-                      'p-3.5 rounded-lg border bg-white transition-colors',
-                      isLatest ? 'border-[#1E9A80] bg-[#ECFDF5]/40 shadow-[0_4px_16px_rgba(30,154,128,0.18)]' : 'border-[#E5E7EB]'
+                      'rounded-lg border bg-white transition-all',
+                      isLatest
+                        ? 'p-4 border-[#1E9A80] bg-[#ECFDF5]/50 shadow-[0_6px_24px_rgba(30,154,128,0.22)]'
+                        : 'p-2 border-[#E5E7EB] opacity-55 hover:opacity-90'
                     )}
-                    style={{ borderLeftColor: meta.colour, borderLeftWidth: 3 }}
+                    style={{ borderLeftColor: meta.colour, borderLeftWidth: isLatest ? 4 : 2 }}
                   >
                     <div
-                      className="text-[10px] font-bold tracking-wide mb-1 flex items-center gap-2"
+                      className={cn(
+                        'font-bold tracking-wide flex items-center gap-2',
+                        isLatest ? 'text-[10px] mb-2' : 'text-[9px] mb-0.5'
+                      )}
                       style={{ color: meta.colour }}
                     >
                       <span>{meta.label}{event.title ? ` · ${event.title}` : ''}</span>
@@ -303,7 +303,7 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
                         </span>
                       )}
                     </div>
-                    <div className={cn('text-[#1A1A1A] leading-relaxed font-medium', sizeClass)}>
+                    <div className={cn('text-[#1A1A1A]', isLatest ? LATEST_BODY_CLASS : OLDER_BODY_CLASS)}>
                       {event.body}
                     </div>
                   </div>
