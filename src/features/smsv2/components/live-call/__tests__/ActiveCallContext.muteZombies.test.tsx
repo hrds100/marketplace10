@@ -236,6 +236,53 @@ describe('ActiveCallProvider toggleMute — multi-Call zombies', () => {
     expect(fakeDeviceCalls).not.toContain(zombie);
   });
 
+  it('a prior Call disconnect does NOT stomp on a freshly placed call (regression for "hangs up immediately")', async () => {
+    // Hugo's repro on 2026-04-26: after PR #547 added disconnectAllCalls()
+    // at the start of every dial, recalling immediately sent the new call
+    // to post_call. Root cause: the prior Call's lifecycle listeners
+    // (attached in the previous startCall) ran setPhase('post_call') on
+    // disconnect — even though the disconnecting Call was no longer the
+    // active one. The fix gates every listener on activeTwilioCallRef
+    // equality so old Calls cannot mutate state for the live one.
+    const firstCall = makeFakeCall();
+    invokeMock.mockResolvedValue({
+      data: { call_id: CALL_UUID, allowed: true },
+      error: null,
+    });
+    dialMock.mockImplementationOnce(async () => {
+      fakeDeviceCalls.push(firstCall);
+      return firstCall;
+    });
+
+    renderProvider();
+    await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+
+    // First dial completes and the call is up.
+    await act(async () => { await snapshot!.startCall(CONTACT.id); });
+    await act(async () => { firstCall.fire('accept'); });
+    expect(snapshot!.phase).toBe('in_call');
+
+    // Second dial: should evict the first Call AND start a new one.
+    const secondCall = makeFakeCall();
+    dialMock.mockImplementationOnce(async () => {
+      fakeDeviceCalls.push(secondCall);
+      return secondCall;
+    });
+
+    await act(async () => { await snapshot!.startCall(CONTACT.id); });
+
+    // Replay: the SDK fires 'disconnect' on the first (now-evicted) Call
+    // asynchronously after disconnectAllCalls. Without the guard, this
+    // would set phase to 'post_call' and stomp on the new call.
+    await act(async () => { firstCall.fire('disconnect'); });
+
+    // The new call must STILL be in 'placing' (or 'in_call' after its own
+    // accept), never 'post_call' or 'idle'.
+    expect(snapshot!.phase).not.toBe('post_call');
+    expect(snapshot!.phase).not.toBe('idle');
+    expect(snapshot!.call).not.toBeNull();
+  });
+
   it('endCall disconnects every Call on the Device', async () => {
     const live = makeFakeCall();
     const second = makeFakeCall();
