@@ -8,6 +8,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   parseSseChunk,
   createThrottledWriter,
+  retrieveFacts,
+  type CoachFact,
 } from '../../../../supabase/functions/wk-voice-transcription/coach-stream';
 
 describe('parseSseChunk — OpenAI streaming SSE parser', () => {
@@ -143,5 +145,76 @@ describe('createThrottledWriter — throttled async write', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(fn).toHaveBeenCalledTimes(2);
     expect(fn).toHaveBeenNthCalledWith(2, 'b');
+  });
+});
+
+describe('retrieveFacts — keyword-matched knowledge base lookup', () => {
+  const facts: CoachFact[] = [
+    {
+      key: 'partner_count',
+      label: 'Partners on the deal',
+      value: 'About 14 partners already on this deal.',
+      keywords: ['how many people', 'how many partners', 'partner count'],
+    },
+    {
+      key: 'office_location',
+      label: 'Office',
+      value: 'Manchester, 9 Owen Street.',
+      keywords: ['where are you based', 'office', 'address'],
+    },
+    {
+      key: 'entry_minimum',
+      label: 'Min entry',
+      value: 'Entry from £500.',
+      keywords: ['minimum', 'how much do i need', 'cheapest'],
+    },
+  ];
+
+  it('returns no matches for an utterance that mentions none of the keywords', () => {
+    expect(retrieveFacts('hello there', facts)).toEqual([]);
+    expect(retrieveFacts('', facts)).toEqual([]);
+  });
+
+  it('matches a single fact by exact keyword phrase', () => {
+    const m = retrieveFacts('How many people are on the deal?', facts);
+    expect(m).toHaveLength(1);
+    expect(m[0].key).toBe('partner_count');
+  });
+
+  it('matches multiple facts if the utterance hits multiple', () => {
+    const m = retrieveFacts(
+      "Where are you based and what's the minimum?",
+      facts
+    );
+    const keys = m.map((f) => f.key).sort();
+    expect(keys).toEqual(['entry_minimum', 'office_location']);
+  });
+
+  it('is case-insensitive', () => {
+    const m = retrieveFacts('WHERE ARE YOU BASED', facts);
+    expect(m).toHaveLength(1);
+    expect(m[0].key).toBe('office_location');
+  });
+
+  it('does not double-match the same fact even if multiple keywords hit', () => {
+    const m = retrieveFacts(
+      'How many people, how many partners — partner count?',
+      facts
+    );
+    expect(m).toHaveLength(1);
+    expect(m[0].key).toBe('partner_count');
+  });
+
+  it('treats facts with no keywords as never-matching (skip)', () => {
+    const withEmpty: CoachFact[] = [
+      ...facts,
+      { key: 'no_keywords', label: 'X', value: 'Y', keywords: [] },
+    ];
+    const m = retrieveFacts('partner count', withEmpty);
+    expect(m.map((f) => f.key)).toEqual(['partner_count']);
+  });
+
+  it('handles undefined / null utterance defensively', () => {
+    expect(retrieveFacts(undefined as unknown as string, facts)).toEqual([]);
   });
 });

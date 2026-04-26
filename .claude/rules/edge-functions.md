@@ -27,6 +27,7 @@ If you change what a function accepts or returns, update the contract.
 - landlord: landlord-magic-login, claim-landlord-account, lead-magic-login
 - admin: hard-delete-user, hard-delete-property, ghl-enroll, reset-for-testing
 - ai: ai-chat, ai-description, airbnb-pricing, ai-parse-listing
+- smsv2 / live coach: wk-voice-transcription (streaming live coach — three-layer prompt system, see docs/runbooks/COACH_PROMPT_LAYERS.md)
 - email: send-email, deal-expiry
 - referral: track-referral
 - wallet: particle-generate-jwt, particle-jwks

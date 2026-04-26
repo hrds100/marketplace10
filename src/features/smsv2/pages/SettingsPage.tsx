@@ -22,6 +22,7 @@ import {
   EyeOff,
   Mail,
   BookOpen,
+  Brain,
   FileText,
   type LucideIcon,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useAiSettings } from '../hooks/useAiSettings';
 import { useDefaultCallScript } from '../hooks/useDefaultCallScript';
 import { useTerminologies, type Terminology } from '../hooks/useTerminologies';
+import { useCoachFacts, type CoachFact } from '../hooks/useCoachFacts';
 import { useTwilioAccount } from '../hooks/useTwilioAccount';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,6 +64,7 @@ const TABS = [
   { id: 'agents', label: 'Agents & spend', icon: Users },
   { id: 'numbers', label: 'Numbers', icon: Phone },
   { id: 'ai', label: 'AI coach', icon: Bot },
+  { id: 'kb', label: 'Knowledge base', icon: Brain },
   { id: 'glossary', label: 'Glossary', icon: BookOpen },
   { id: 'pacing', label: 'Pacing & safety', icon: Shield },
   { id: 'kill', label: 'Kill switches & audit', icon: Activity },
@@ -120,6 +123,7 @@ export default function SettingsPage() {
           {tab === 'agents' && <AgentsTab />}
           {tab === 'numbers' && <NumbersTab />}
           {tab === 'ai' && <AITab />}
+          {tab === 'kb' && <KnowledgeBaseTab />}
           {tab === 'glossary' && <GlossaryTab />}
           {tab === 'pacing' && <PacingTab />}
           {tab === 'kill' && <KillTab />}
@@ -1210,17 +1214,57 @@ function AITab() {
         </div>
       </Card>
 
-      <Card title="System prompts" hint="Persisted to wk_ai_settings — used by every call">
+      <Card
+        title="Live coach — three-layer prompt"
+        hint="Style + Script + Knowledge Base (Hugo 2026-04-29). See docs/runbooks/COACH_PROMPT_LAYERS.md."
+      >
         <div className="space-y-3">
           <div>
-            <Label>Live coach prompt</Label>
+            <Label>Layer 1 — Style / voice</Label>
+            <div className="text-[10px] text-[#9CA3AF] mb-1">
+              How the rep sounds. UK English, plain, commercial. Bans on
+              acting notes, multiple variants, American slop. Persisted
+              to <code className="bg-[#F3F3EE] px-1 rounded">wk_ai_settings.coach_style_prompt</code>.
+            </div>
             <textarea
-              value={settings.live_coach_system_prompt}
-              onChange={(e) => setField('live_coach_system_prompt', e.target.value)}
-              rows={6}
+              value={settings.coach_style_prompt}
+              onChange={(e) => setField('coach_style_prompt', e.target.value)}
+              rows={8}
+              placeholder="Leave empty to use the canonical default from the edge function."
               className="w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2"
             />
           </div>
+          <div>
+            <Label>Layer 2 — Script / call logic</Label>
+            <div className="text-[10px] text-[#9CA3AF] mb-1">
+              Call stages, open-ended default, earned-close gate,
+              retrieval instruction (point the model at the KB for
+              factual questions). Persisted to <code className="bg-[#F3F3EE] px-1 rounded">wk_ai_settings.coach_script_prompt</code>.
+            </div>
+            <textarea
+              value={settings.coach_script_prompt}
+              onChange={(e) => setField('coach_script_prompt', e.target.value)}
+              rows={12}
+              placeholder="Leave empty to use the canonical default from the edge function."
+              className="w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2"
+            />
+          </div>
+          <div className="text-[11px] text-[#6B7280] border border-dashed border-[#E5E7EB] rounded-lg p-2 bg-[#F9FAFB]">
+            <span className="font-semibold text-[#1A1A1A]">Layer 3 — Knowledge base</span> lives in <code className="bg-[#F3F3EE] px-1 rounded">wk_coach_facts</code> and is edited in the new <span className="font-semibold">Knowledge base</span> tab on the left.
+          </div>
+          <details className="border border-[#E5E7EB] rounded-xl p-3">
+            <summary className="text-[12px] font-semibold text-[#6B7280] cursor-pointer">
+              Legacy single-prompt (deprecated) — used only as fallback if both new layers are empty
+            </summary>
+            <div className="mt-2">
+              <textarea
+                value={settings.live_coach_system_prompt}
+                onChange={(e) => setField('live_coach_system_prompt', e.target.value)}
+                rows={6}
+                className="w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2 opacity-70"
+              />
+            </div>
+          </details>
           <div>
             <Label>Post-call analysis prompt</Label>
             <textarea
@@ -1570,6 +1614,336 @@ function GlossaryEditor({
           placeholder="**Term** — full definition. Use **bold** + bullets if needed."
           className="w-full px-3 py-2 text-[12px] font-mono border border-[#E5E7EB] rounded-[10px] bg-white"
         />
+      </div>
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={onSave}
+          disabled={!canSave}
+          className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+        >
+          Save
+        </button>
+        <button
+          onClick={onCancel}
+          className="text-[12px] text-[#6B7280] px-3 py-1.5 rounded-[10px] hover:bg-[#F3F3EE]"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Knowledge base — wk_coach_facts CRUD (Hugo 2026-04-29) ──────
+//
+// Three-layer prompt system:
+//   - Layer 1 (Style):   wk_ai_settings.coach_style_prompt    (AI tab)
+//   - Layer 2 (Script):  wk_ai_settings.coach_script_prompt   (AI tab)
+//   - Layer 3 (Facts):   wk_coach_facts                       (this tab)
+//
+// Facts the model may quote when the caller asks a direct factual
+// question. The edge fn matches keywords against the caller's last
+// utterance and passes the matches as a "POSSIBLY RELEVANT FACTS" hint.
+// See docs/runbooks/COACH_PROMPT_LAYERS.md.
+function KnowledgeBaseTab() {
+  const { items, loading, error, add, patch, remove } = useCoachFacts();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{
+    key: string;
+    label: string;
+    value: string;
+    keywordsRaw: string;
+  }>({ key: '', label: '', value: '', keywordsRaw: '' });
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const startEdit = (f: CoachFact) => {
+    setEditingId(f.id);
+    setDraft({
+      key: f.key,
+      label: f.label,
+      value: f.value,
+      keywordsRaw: f.keywords.join(', '),
+    });
+  };
+
+  const startNew = () => {
+    setEditingId('new');
+    setDraft({ key: '', label: '', value: '', keywordsRaw: '' });
+  };
+
+  const cancel = () => {
+    setEditingId(null);
+    setDraft({ key: '', label: '', value: '', keywordsRaw: '' });
+    setActionError(null);
+  };
+
+  const parseKeywords = (raw: string) =>
+    raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+  const save = async () => {
+    setActionError(null);
+    try {
+      const keywords = parseKeywords(draft.keywordsRaw);
+      if (editingId === 'new') {
+        const nextOrder = (items[items.length - 1]?.sort_order ?? 0) + 10;
+        await add({
+          key: draft.key.trim(),
+          label: draft.label.trim(),
+          value: draft.value.trim(),
+          keywords,
+          sort_order: nextOrder,
+          is_active: true,
+        });
+      } else if (editingId) {
+        await patch(editingId, {
+          key: draft.key.trim(),
+          label: draft.label.trim(),
+          value: draft.value.trim(),
+          keywords,
+        });
+      }
+      cancel();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'save failed');
+    }
+  };
+
+  const toggleActive = async (f: CoachFact) => {
+    setActionError(null);
+    try {
+      await patch(f.id, { is_active: !f.is_active });
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'update failed');
+    }
+  };
+
+  const move = async (f: CoachFact, dir: -1 | 1) => {
+    const idx = items.findIndex((x) => x.id === f.id);
+    const swapWith = items[idx + dir];
+    if (!swapWith) return;
+    setActionError(null);
+    try {
+      await Promise.all([
+        patch(f.id, { sort_order: swapWith.sort_order }),
+        patch(swapWith.id, { sort_order: f.sort_order }),
+      ]);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'reorder failed');
+    }
+  };
+
+  const del = async (f: CoachFact) => {
+    if (!confirm(`Delete fact "${f.key}"? This is permanent.`)) return;
+    setActionError(null);
+    try {
+      await remove(f.id);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'delete failed');
+    }
+  };
+
+  return (
+    <>
+      <Card
+        title="Knowledge base"
+        hint="Facts the AI may quote during a call. Edits propagate live."
+      >
+        <div className="text-[12px] text-[#6B7280] leading-snug mb-3">
+          The coach matches each fact's <code className="bg-[#F3F3EE] px-1 rounded">keywords</code> against the caller's last utterance. Matches get highlighted to the model as <span className="font-semibold">POSSIBLY RELEVANT FACTS</span>. The full table is also passed in every call as the system-message KB. The model must answer factual questions ONLY from this table — it's instructed not to guess.
+        </div>
+
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[12px] text-[#6B7280]">
+            {loading ? 'Loading…' : `${items.length} facts`}
+          </div>
+          <button
+            onClick={startNew}
+            disabled={editingId !== null}
+            className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] inline-flex items-center gap-1 hover:bg-[#1E9A80]/90 disabled:opacity-60"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add fact
+          </button>
+        </div>
+
+        {(error || actionError) && (
+          <div className="text-[11px] text-[#EF4444] mb-2">
+            ⚠ {actionError ?? error}
+          </div>
+        )}
+
+        {editingId === 'new' && (
+          <KnowledgeBaseEditor
+            draft={draft}
+            setDraft={setDraft}
+            onSave={save}
+            onCancel={cancel}
+          />
+        )}
+
+        <div className="space-y-2">
+          {items.map((f, i) => (
+            <div
+              key={f.id}
+              className={cn(
+                'border rounded-xl p-3 transition-colors',
+                f.is_active
+                  ? 'border-[#E5E7EB] bg-white'
+                  : 'border-[#E5E7EB] bg-[#F9FAFB] opacity-70'
+              )}
+            >
+              {editingId === f.id ? (
+                <KnowledgeBaseEditor
+                  draft={draft}
+                  setDraft={setDraft}
+                  onSave={save}
+                  onCancel={cancel}
+                />
+              ) : (
+                <div className="flex gap-3">
+                  <div className="flex flex-col items-center gap-0.5 pt-0.5">
+                    <button
+                      onClick={() => void move(f, -1)}
+                      disabled={i === 0}
+                      className="text-[#9CA3AF] hover:text-[#1A1A1A] disabled:opacity-30 text-[10px]"
+                      title="Move up"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => void move(f, 1)}
+                      disabled={i === items.length - 1}
+                      className="text-[#9CA3AF] hover:text-[#1A1A1A] disabled:opacity-30 text-[10px]"
+                      title="Move down"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <code className="text-[10px] bg-[#F3F3EE] text-[#525252] px-1.5 py-0.5 rounded font-mono">
+                        {f.key}
+                      </code>
+                      <div className="text-[13px] font-semibold text-[#1A1A1A]">
+                        {f.label}
+                      </div>
+                      {!f.is_active && (
+                        <span className="text-[10px] text-[#9CA3AF] uppercase tracking-wide">
+                          inactive
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[12px] text-[#1A1A1A] mt-1 leading-snug">
+                      {f.value}
+                    </div>
+                    {f.keywords.length > 0 && (
+                      <div className="text-[10px] text-[#6B7280] mt-1.5">
+                        <span className="uppercase tracking-wide font-semibold mr-1">
+                          keywords:
+                        </span>
+                        {f.keywords.join(' · ')}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => startEdit(f)}
+                      className="text-[11px] px-2 py-1 rounded-md border border-[#E5E7EB] hover:bg-[#F3F3EE] text-[#1A1A1A]"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => void toggleActive(f)}
+                      className="text-[11px] px-2 py-1 rounded-md border border-[#E5E7EB] hover:bg-[#F3F3EE] text-[#6B7280]"
+                    >
+                      {f.is_active ? 'Hide' : 'Show'}
+                    </button>
+                    <button
+                      onClick={() => void del(f)}
+                      className="text-[11px] px-2 py-1 rounded-md text-[#EF4444] hover:bg-[#FEF2F2]"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+          {!loading && items.length === 0 && editingId !== 'new' && (
+            <div className="text-[12px] text-[#9CA3AF] text-center py-6">
+              No facts yet. Click "Add fact" to seed the knowledge base.
+            </div>
+          )}
+        </div>
+      </Card>
+    </>
+  );
+}
+
+function KnowledgeBaseEditor({
+  draft,
+  setDraft,
+  onSave,
+  onCancel,
+}: {
+  draft: { key: string; label: string; value: string; keywordsRaw: string };
+  setDraft: (d: { key: string; label: string; value: string; keywordsRaw: string }) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const set = (k: keyof typeof draft, v: string) => setDraft({ ...draft, [k]: v });
+  const canSave =
+    draft.key.trim().length > 0 &&
+    draft.label.trim().length > 0 &&
+    draft.value.trim().length > 0;
+  return (
+    <div className="border border-[#1E9A80]/40 bg-[#ECFDF5] rounded-xl p-3 mb-3 space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label>Key (snake_case identifier)</Label>
+          <input
+            type="text"
+            value={draft.key}
+            onChange={(e) => set('key', e.target.value)}
+            placeholder="e.g. partner_count"
+            className="w-full px-3 py-2 text-[12px] font-mono border border-[#E5E7EB] rounded-[10px] bg-white"
+          />
+        </div>
+        <div>
+          <Label>Label (human-readable)</Label>
+          <input
+            type="text"
+            value={draft.label}
+            onChange={(e) => set('label', e.target.value)}
+            placeholder="e.g. Partners on the deal"
+            className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
+          />
+        </div>
+      </div>
+      <div>
+        <Label>Value (the answer the AI should quote)</Label>
+        <textarea
+          value={draft.value}
+          onChange={(e) => set('value', e.target.value)}
+          rows={3}
+          placeholder="e.g. About 14 partners already on this deal."
+          className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
+        />
+      </div>
+      <div>
+        <Label>Keywords (comma-separated trigger phrases)</Label>
+        <input
+          type="text"
+          value={draft.keywordsRaw}
+          onChange={(e) => set('keywordsRaw', e.target.value)}
+          placeholder="how many people, how many partners, partner count"
+          className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
+        />
+        <div className="text-[10px] text-[#9CA3AF] mt-1">
+          Substring match against the caller's last utterance (case-insensitive). Each phrase comma-separated.
+        </div>
       </div>
       <div className="flex items-center gap-2 pt-1">
         <button

@@ -232,6 +232,28 @@ npx playwright test                      # e2e tests
 
 **If the debug artifact is unavailable** (env var not set, or Hugo cannot reproduce): say so explicitly and proceed with normal audit steps.
 
+## SMSv2 Live Coach — Three-Layer Prompt System
+
+The live-call AI coach (edge fn `wk-voice-transcription`) uses **three
+independently-editable layers**, NOT a single mega-prompt:
+
+| Layer | Storage | Edit in |
+|---|---|---|
+| 1. Style / voice | `wk_ai_settings.coach_style_prompt` | /smsv2/settings → AI coach |
+| 2. Script / call logic | `wk_ai_settings.coach_script_prompt` | /smsv2/settings → AI coach |
+| 3. Knowledge base / facts | `wk_coach_facts` table | /smsv2/settings → Knowledge base |
+
+**Hard rule for any agent touching the coach prompt:** facts (numbers,
+locations, partner count, deal data) go in `wk_coach_facts` — never in
+the script or style prompt. The model is instructed to answer factual
+questions ONLY from the KB and to say "I'll check that and come back to
+you" if the answer isn't there.
+
+Full architecture + edit runbook: [`docs/runbooks/COACH_PROMPT_LAYERS.md`](docs/runbooks/COACH_PROMPT_LAYERS.md).
+
+The legacy single-column `wk_ai_settings.live_coach_system_prompt` is
+**deprecated as of 2026-04-29** (kept as fallback only).
+
 ## Cross-Repo Coordination
 
 marketplace10 and bookingsite share Supabase project `asazddtvjvmckouxcmmo`.
