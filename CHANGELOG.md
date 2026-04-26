@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-04-26 — smsv2: mid-call SMS sender (item D)
+
+New `MidCallSmsSender` component embedded at the bottom of COL 1
+(LiveCallScreen). Lets the agent fire a templated SMS without leaving the
+call. Reuses the same `sms-send` edge function used by /smsv2/inbox so
+the message lands in `sms_messages` and follows the GHL/Twilio path —
+no new infrastructure.
+
+- Templates dropdown reads `wk_sms_templates` (admin-RLS, agent-or-admin
+  read).
+- `{{first_name}}` and `{{agent_first_name}}` substituted at template
+  insertion.
+- Free-text fallback if no templates exist.
+- 160-char counter (turns amber over 160).
+- Toast on success/failure (uses the existing `pushToast` from store).
+
 ## 2026-04-26 — smsv2: 4-column live-call layout (item B2)
 
 The live-call screen is now split into 4 resizable columns. Transcript

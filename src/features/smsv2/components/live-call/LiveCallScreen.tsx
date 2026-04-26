@@ -20,6 +20,7 @@ import { useActiveCallCtx } from './ActiveCallContext';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import CallScriptPane from './CallScriptPane';
 import TerminologyPane from './TerminologyPane';
+import MidCallSmsSender from './MidCallSmsSender';
 import PostCallPanel from './PostCallPanel';
 import StageSelector from '../shared/StageSelector';
 import EditContactModal from '../contacts/EditContactModal';
@@ -258,6 +259,15 @@ export default function LiveCallScreen() {
                 comparing Rightmove gross.
               </div>
             </div>
+
+            {/* Mid-call SMS sender (Hugo 2026-04-26): templated send without
+                leaving the call screen. Reuses sms-send edge fn. */}
+            <MidCallSmsSender
+              contactId={contact.id}
+              contactName={contact.name}
+              contactPhone={contact.phone}
+              agentFirstName={myFirstName ?? ''}
+            />
           </div>
         </ResizablePanel>
 
