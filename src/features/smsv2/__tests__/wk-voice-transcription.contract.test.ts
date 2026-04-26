@@ -68,4 +68,22 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
       /track\.startsWith\(['"]outbound['"]\)\s*\?\s*['"]caller['"]\s*:\s*['"]agent['"]/
     );
   });
+
+  it('passes the last 3 coach cards back to the model for anti-repetition', () => {
+    // Hugo 2026-04-28: cards were repeating "Yeah fair enough" 4 in a
+    // row because each call was independent — the model had no memory
+    // of what it just produced. Fix: SELECT recent wk_live_coach_events
+    // and pass them in the user message under "YOUR LAST FEW COACH
+    // CARDS".
+    expect(source).toMatch(/from\(['"]wk_live_coach_events['"]\)[\s\S]*?\.select\(['"]body/);
+    expect(source).toContain('YOUR LAST FEW COACH CARDS');
+    expect(source).toContain('priorCards');
+  });
+
+  it('has explicit anti-repetition rules in the default prompt', () => {
+    // Lock the wording so the rule can't quietly drift.
+    expect(source).toContain('ANTI-REPETITION');
+    expect(source).toMatch(/first\s+5\s+words/i);
+    expect(source).toMatch(/Yeah fair enough.*max ONCE per call/);
+  });
 });

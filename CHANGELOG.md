@@ -1,5 +1,40 @@
 # Changelog
 
+## 2026-04-28 — smsv2: kill coach repetition + readable card UI (prompt v5)
+
+Hugo's 2026-04-28 audit: 4-of-4 coach cards in a row opened with
+"[warm] Yeah fair enough — sounds like you're keeping an eye…",
+near-duplicates of each other; UI text was 15-18px scaling making
+older cards as visually loud as the latest.
+
+Two root causes for repetition:
+1. The model has no memory across calls. Each utterance fires an
+   independent OpenAI call. It can't avoid what it just produced.
+2. The GOOD EXAMPLES section literally had "Yeah fair enough" three
+   times — anchoring the model on that exact opener.
+
+Fixes shipped (PR #570):
+- Edge fn now SELECTs the last 3 wk_live_coach_events for the call
+  alongside the recent transcript and passes them in the user message
+  under "YOUR LAST FEW COACH CARDS — DO NOT repeat the opening words".
+- New ANTI-REPETITION block in the system prompt with hard rules:
+  no shared first-5-words with prior cards; "Yeah fair enough" max
+  once per call; ONE primary line, no variants; commercially sharp
+  not soft; match short/blunt energy when caller is short.
+- GOOD EXAMPLES rewritten — varied openers (firm-quick-version /
+  direct statement / question / number) — no more "Yeah fair enough"
+  anchor.
+- UI: latest coach card now 22px font-semibold tight leading + bigger
+  halo. Older cards demoted to 12px with opacity-55 + line-clamp-2.
+  The agent's eye snaps to the new line; the old ones fade out.
+- Contract test expanded to lock the last-3-cards SELECT and the
+  anti-repetition rules in the prompt so they can't drift.
+
+**NOT YET shipped (next PR):** real-time streaming of coach tokens +
+trigger on interim transcript chunks (instead of only `Final=true`).
+That's a bigger architecture change with risk of breaking the working
+pipeline. Doing it as its own TDD-driven PR.
+
 ## 2026-04-27 — smsv2: fix coach silently producing zero cards on gpt-5.4-mini
 
 Hugo's live test 2026-04-27: AI coach pane was empty during a call,

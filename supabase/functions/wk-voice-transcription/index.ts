@@ -71,7 +71,8 @@ async function generateCoachSuggestion(
   modelOverride: string,
   recentTranscript: string,
   latestUtterance: string,
-  speaker: 'caller' | 'agent'
+  speaker: 'caller' | 'agent',
+  priorCards: string[] = []
 ): Promise<string | null> {
   if (!apiKey || !latestUtterance || speaker !== 'caller') return null;
 
@@ -174,6 +175,15 @@ async function generateCoachSuggestion(
     'VARY YOUR LANGUAGE. If your last suggestion was "I\'ll send you the full breakdown — morning or afternoon tomorrow?" do NOT produce another version of that. Pick a different angle: ask a question, share a number, push curiosity, share a story.',
     '',
     '==========================================================================',
+    'ANTI-REPETITION (read this every time)',
+    '==========================================================================',
+    '- The user message includes "YOUR LAST FEW COACH CARDS". Your next card MUST NOT share its first 5 words with any of those. No exceptions.',
+    '- "Yeah fair enough" max ONCE per call. Same for "Right,", "Sure,", "No worries". Don\'t lean on the same opener — pick from: a direct statement, a question, the caller\'s name, a number, an observation, a soft challenge.',
+    '- ONE primary line. Do not produce two variants of the same idea in the same card. The agent reads ONE thing aloud — give them ONE thing.',
+    '- Be commercially sharp, not soft or apologetic. Cut filler ("just", "honestly", "to be fair") unless it earns its place.',
+    '- If the caller is short / blunt ("just tell me what you want"), be short / blunt back. Match their energy, don\'t over-warm.',
+    '',
+    '==========================================================================',
     'DEAL DATA you can pull from when relevant',
     '==========================================================================',
     '- Pembroke Place, Liverpool — 15 beds, 4 baths, 2 kitchens (operates like a small hotel).',
@@ -202,29 +212,32 @@ async function generateCoachSuggestion(
     'GOOD EXAMPLES — varied, natural, stage-aware',
     '==========================================================================',
     '',
-    '[caller, early call, exploring]',
-    '"Yeah fair enough — sounds like you\'re keeping an eye on the market more than chasing a deal. What\'s pulled you toward Airbnb specifically?"',
+    '[caller, early call, blunt — "just tell me what you want"]',
+    '[firm] "Quick version: we\'ve got a 15-bed Airbnb deal in Liverpool, JV structure, entry £500. Want me to walk through the numbers?"',
+    '',
+    '[caller, early call, soft — "I\'m just keeping an eye"]',
+    '"Makes sense — most partners start that way. What kind of returns are you weighing up at the moment?"',
     '',
     '[caller asks "what makes you think I want this property"]',
-    '"Honestly, I don\'t yet — I\'m here to show you what we\'re running and see if it lines up. Mind if I ask what kind of return you\'re chasing right now?"',
+    '"I don\'t yet — that\'s why I\'m calling. If it doesn\'t fit, no problem. Mind if I ask what kind of return you\'re chasing right now?"',
     '',
     '[caller asks "when is it available from"]',
-    '"Live now — we launched this week and we\'re about 70% sold already, so it\'s moving."',
+    '"Live now — about 70% sold, ~£15k left to raise. Moving quick."',
     '',
     '[caller asks "tell me more"]',
-    '"Quickest version: 15-bed in Liverpool, run as a JV. Partners pool in, we handle setup and bookings, you take a monthly share. Entry\'s £500. Want the headline numbers?"',
+    '"15-bed in Liverpool, run as a JV — partners pool in, we run the property, you take a monthly share. £500 entry. Want the numbers?"',
     '',
     '[caller asks about returns, after pitch landed]',
-    '"Yield\'s running about 9.6% monthly through the platform, on a 5-year agreement. So a £500 entry — call it about a tenner a month while it runs. Make sense so far?"',
+    '[firm] "9.6% monthly yield through the platform, 5-year agreement. A £500 entry pays out around a tenner a month while it runs. Make sense?"',
     '',
-    '[caller hesitating]',
-    '"Yeah, totally fair. What\'s the bit that\'s on your mind — is it the deal itself, the structure, or just the timing?"',
+    '[caller hesitating after pitch]',
+    '[low] "What\'s sitting wrong — the deal, the structure, or the timing?"',
     '',
     '[caller refused SMS — bend]',
-    '"No worries — quick spoken version: 15-bed in Liverpool, ~£37k total setup split between partners, £500 minimum, around 9.6% monthly through the platform, 5-year agreement, ~70% sold. Want me to dig into any specific bit?"',
+    '"Sure — 15-bed Liverpool, ~£37k setup split across partners, £500 minimum, 9.6% monthly through the platform, 5-year agreement, ~70% sold. Which bit do you want me to dig into?"',
     '',
     '[end of call, soft close — only when warm + pitch has landed]',
-    '"Right, sounds like there\'s something here. I\'ll drop the full breakdown over so you can sit with the numbers properly — what time tomorrow works for a quick five minutes?"',
+    '[reasonable man] "Sounds like there\'s something here. Let me get the breakdown over so you can sit with the numbers — what time tomorrow works for five minutes?"',
     '',
     '==========================================================================',
     'BAD EXAMPLES — NEVER write like this',
@@ -246,13 +259,27 @@ async function generateCoachSuggestion(
   const trimmed = (systemPromptOverride ?? '').trim();
   const systemPrompt = trimmed.length > 0 ? trimmed : DEFAULT_COACH_PROMPT;
 
+  // Last few coach cards passed back to the model so it doesn't echo
+  // openers / structures it just produced. Without this, the model has
+  // no memory across calls — Hugo 2026-04-28: "Yeah fair enough" was
+  // appearing on 4 of 4 cards in a row.
+  const priorCardsBlock =
+    priorCards.length === 0
+      ? '(none yet — this is your first card on this call)'
+      : priorCards.map((c, i) => `${i + 1}. "${c}"`).join('\n');
+
   const userMsg = [
     'Recent conversation (most recent line at bottom):',
     recentTranscript || '(no prior context yet)',
     '',
+    '=== YOUR LAST FEW COACH CARDS (most recent first) ===',
+    'DO NOT repeat the opening words, phrasing, or structure of any of these.',
+    'If the same situation keeps coming up, find a different angle.',
+    priorCardsBlock,
+    '',
     `Caller just said: "${latestUtterance}"`,
     '',
-    'Write the EXACT next sentence the agent should say (first person, verbatim, no instructions):',
+    'Write ONE sharp UK-sales line the agent should say next (first person, verbatim, no instructions, no labels). One primary line — not multiple variants. Vary the opener vs your last cards.',
   ].join('\n');
 
   try {
@@ -432,18 +459,38 @@ serve(async (req: Request) => {
           if (!ai?.ai_enabled || !ai?.live_coach_enabled || !ai?.openai_api_key) return;
 
           // Build a rolling 6-line context window from recent transcripts.
-          const { data: recent } = await supa
-            .from('wk_live_transcripts')
-            .select('speaker, body, ts')
-            .eq('call_id', call.id)
-            .order('ts', { ascending: false })
-            .limit(6);
-          const ctx = (recent ?? [])
+          // Run in parallel with the prior-cards fetch — both are
+          // independent reads against different tables.
+          const [recentRes, priorCardsRes] = await Promise.all([
+            supa
+              .from('wk_live_transcripts')
+              .select('speaker, body, ts')
+              .eq('call_id', call.id)
+              .order('ts', { ascending: false })
+              .limit(6),
+            supa
+              .from('wk_live_coach_events')
+              .select('body, ts')
+              .eq('call_id', call.id)
+              .order('ts', { ascending: false })
+              .limit(3),
+          ]);
+
+          const ctx = (recentRes.data ?? [])
             .reverse()
             .map((r: { speaker: string; body: string }) =>
               `${r.speaker === 'agent' ? 'Agent' : 'Caller'}: ${r.body}`
             )
             .join('\n');
+
+          // Hugo 2026-04-28: the model was producing "Yeah fair enough"
+          // openers on 4-of-4 cards in a row because each call is
+          // independent — the model has no memory of what it just said.
+          // Pass the last 3 cards back so the prompt's anti-repetition
+          // rule has something concrete to compare against.
+          const priorCards: string[] = ((priorCardsRes.data ?? []) as { body: string }[])
+            .map((c) => c.body)
+            .filter((s): s is string => typeof s === 'string' && s.length > 0);
 
           // Pass the DB-stored prompt straight through. generateCoachSuggestion
           // falls back to the canonical DEFAULT_COACH_PROMPT if it's empty.
@@ -453,7 +500,8 @@ serve(async (req: Request) => {
             (ai.live_coach_model as string) ?? '',
             ctx,
             transcriptText,
-            speaker
+            speaker,
+            priorCards
           );
           if (!tip) return;
 
