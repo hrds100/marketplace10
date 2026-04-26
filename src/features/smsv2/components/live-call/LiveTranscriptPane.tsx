@@ -135,20 +135,42 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId }: P
         }
       )
       .subscribe();
+    // Subscribe to ALL changes (INSERT / UPDATE / DELETE) so the
+    // streaming coach pipeline (PR #572 onwards) can morph a card in
+    // place as tokens arrive, then DELETE if rejected by the
+    // post-processor or superseded by a newer generation.
     const cCh = supabase
       .channel(`live-coach:${callId}`)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'wk_live_coach_events',
           filter: `call_id=eq.${callId}`,
         },
-        (payload: { new: LiveCoachRow }) => {
-          setLiveEvents((prev) =>
-            prev.some((e) => e.id === payload.new.id) ? prev : [...prev, payload.new]
-          );
+        (payload: {
+          eventType?: string;
+          new?: LiveCoachRow;
+          old?: { id?: string };
+        }) => {
+          const evType = payload.eventType ?? '';
+          if (evType === 'INSERT' && payload.new) {
+            const next = payload.new;
+            setLiveEvents((prev) =>
+              prev.some((e) => e.id === next.id) ? prev : [...prev, next]
+            );
+          } else if (evType === 'UPDATE' && payload.new) {
+            const next = payload.new;
+            setLiveEvents((prev) =>
+              prev.some((e) => e.id === next.id)
+                ? prev.map((e) => (e.id === next.id ? { ...e, ...next } : e))
+                : [...prev, next]
+            );
+          } else if (evType === 'DELETE' && payload.old?.id) {
+            const oldId = payload.old.id;
+            setLiveEvents((prev) => prev.filter((e) => e.id !== oldId));
+          }
         }
       )
       .subscribe();

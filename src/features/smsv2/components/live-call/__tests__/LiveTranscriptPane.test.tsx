@@ -10,15 +10,29 @@ import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { type ReactNode } from 'react';
 
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    channel: vi.fn(() => ({
-      on: vi.fn().mockReturnThis(),
-      subscribe: vi.fn().mockReturnThis(),
-    })),
-    removeChannel: vi.fn(),
-  },
-}));
+// vi.mock factories are hoisted, so any helper must be inlined.
+// The component fires backfill SELECTs on mount when callId is set —
+// stub the chain to resolve with empty data so realtime is what
+// drives the rendered output, matching how the existing tests assert.
+vi.mock('@/integrations/supabase/client', () => {
+  const buildQuery = () => {
+    const q: Record<string, unknown> = {};
+    q.select = vi.fn().mockReturnValue(q);
+    q.eq = vi.fn().mockReturnValue(q);
+    q.order = vi.fn().mockResolvedValue({ data: [], error: null });
+    return q;
+  };
+  return {
+    supabase: {
+      from: vi.fn(buildQuery),
+      channel: vi.fn(() => ({
+        on: vi.fn().mockReturnThis(),
+        subscribe: vi.fn().mockReturnThis(),
+      })),
+      removeChannel: vi.fn(),
+    },
+  };
+});
 
 import LiveTranscriptPane from '../LiveTranscriptPane';
 import { SmsV2Provider } from '../../../store/SmsV2Store';
