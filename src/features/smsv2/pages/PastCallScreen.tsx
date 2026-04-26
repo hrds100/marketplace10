@@ -15,12 +15,15 @@ import {
   HelpCircle,
   Activity,
   Download,
+  MessageSquare,
+  FileEdit,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useCalls, signCallRecording } from '../hooks/useCalls';
+import { useCallTimeline } from '../hooks/useCallTimeline';
 import { useSmsV2 } from '../store/SmsV2Store';
-import { formatDuration, formatRelativeTime } from '../data/helpers';
+import { formatDuration, formatRelativeTime, formatTimeOnly } from '../data/helpers';
 
 interface TranscriptRow {
   id: string;
@@ -73,6 +76,19 @@ export default function PastCallScreen() {
   const [events, setEvents] = useState<CoachRow[]>([]);
   const [loadingTranscript, setLoadingTranscript] = useState(true);
   const [signedRecordingUrl, setSignedRecordingUrl] = useState<string | null>(null);
+
+  // Phase 8 (Hugo 2026-04-30): pull SMS + activities (notes / stage
+  // moves) from the unified timeline view. Same hook as the in-call
+  // CallTimeline pane so the past-call view stays consistent.
+  const { items: timelineItems } = useCallTimeline(callId ?? null);
+  const smsItems = useMemo(
+    () => timelineItems.filter((r) => r.kind === 'sms'),
+    [timelineItems]
+  );
+  const activityItems = useMemo(
+    () => timelineItems.filter((r) => r.kind === 'activity'),
+    [timelineItems]
+  );
 
   useEffect(() => {
     if (!callId) return;
@@ -274,6 +290,70 @@ export default function PastCallScreen() {
                   </div>
                 );
               })}
+            </div>
+          </section>
+        )}
+
+        {/* Phase 8 (Hugo 2026-04-30): SMS history for this call */}
+        {smsItems.length > 0 && (
+          <section className="bg-white border border-[#E5E7EB] rounded-2xl p-4">
+            <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-3 flex items-center gap-1">
+              <MessageSquare className="w-3 h-3" />
+              SMS history ({smsItems.length})
+            </div>
+            <div className="space-y-2">
+              {smsItems.map((sms) => {
+                const outbound = sms.subtype === 'outbound';
+                return (
+                  <div
+                    key={sms.ref_id ?? sms.ts}
+                    className={cn(
+                      'rounded-2xl px-3 py-2 max-w-[80%] text-[13px] leading-snug',
+                      outbound
+                        ? 'bg-[#1E9A80]/10 border border-[#1E9A80]/30 ml-auto'
+                        : 'bg-[#F3F3EE] border border-[#E5E7EB]'
+                    )}
+                  >
+                    <div className="text-[10px] uppercase tracking-wide text-[#6B7280] font-semibold mb-0.5 flex items-center justify-between gap-2">
+                      <span>{outbound ? 'Sent' : 'Received'}</span>
+                      <span className="tabular-nums font-normal">
+                        {formatTimeOnly(sms.ts)}
+                      </span>
+                    </div>
+                    <div className="text-[#1A1A1A]">{sms.body}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Phase 8 (Hugo 2026-04-30): activities (notes, stage changes) */}
+        {activityItems.length > 0 && (
+          <section className="bg-white border border-[#E5E7EB] rounded-2xl p-4">
+            <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-3 flex items-center gap-1">
+              <FileEdit className="w-3 h-3" />
+              Notes & activity ({activityItems.length})
+            </div>
+            <div className="space-y-2">
+              {activityItems.map((a) => (
+                <div
+                  key={a.ref_id ?? a.ts}
+                  className="border border-[#E5E7EB] rounded-lg px-3 py-2 bg-white"
+                >
+                  <div className="text-[10px] uppercase tracking-wide text-[#6B7280] font-semibold mb-0.5 flex items-center justify-between gap-2">
+                    <span>{a.subtype ?? 'activity'}</span>
+                    <span className="tabular-nums font-normal">
+                      {formatTimeOnly(a.ts)}
+                    </span>
+                  </div>
+                  {a.body && (
+                    <div className="text-[13px] text-[#1A1A1A] leading-relaxed">
+                      {a.body}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </section>
         )}
