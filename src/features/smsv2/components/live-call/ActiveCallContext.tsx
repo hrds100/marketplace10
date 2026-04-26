@@ -365,10 +365,22 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
           causes: err?.causes,
           description: err?.description,
         });
-        store.pushToast(
-          `Call error ${err?.code ?? ''}: ${err?.message ?? 'unknown'}`,
-          'error'
-        );
+        // Surface the most actionable reason in the toast. 31401 is by far
+        // the most common — Chrome has the mic blocked for hub.nfstay.com.
+        // Generic codes get a one-line summary so the agent isn't staring
+        // at "Call error 31005" with no idea what to do.
+        const code = err?.code as number | undefined;
+        let toast: string;
+        if (code === 31401) {
+          toast = 'Mic blocked. Click the 🔒 next to the URL → Microphone → Allow → reload.';
+        } else if (code === 31403 || code === 31486) {
+          toast = `Call refused by Twilio (${code}). Check phone number / caller ID.`;
+        } else if (code === 31005 || code === 31009) {
+          toast = `Connection lost (${code}). Refresh the page if it doesn't recover.`;
+        } else {
+          toast = `Call error ${code ?? ''}: ${err?.message ?? 'unknown'}`;
+        }
+        store.pushToast(toast, 'error');
       });
       // SDK is the source of truth for mute state. Without this, calling
       // .mute() externally (or any internal track-replacement re-application)
