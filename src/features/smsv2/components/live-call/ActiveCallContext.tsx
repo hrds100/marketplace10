@@ -487,7 +487,25 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
                 },
               });
               if (error) {
-                store.pushToast(`Server outcome failed: ${error.message}`, 'error');
+                // supabase-js wraps every non-2xx into FunctionsHttpError with
+                // the useless "Edge Function returned a non-2xx status code".
+                // Pull the actual JSON error off the captured Response so the
+                // toast tells the agent what really failed (forbidden, RLS,
+                // missing FK, etc.) instead of "non-2xx".
+                let real = error.message;
+                const ctx = (error as unknown as { context?: Response }).context;
+                if (ctx) {
+                  try {
+                    const body = await ctx.clone().text();
+                    let parsed: { error?: string } | null = null;
+                    try { parsed = body ? JSON.parse(body) : null; } catch { /* not JSON */ }
+                    real = `${ctx.status} ${parsed?.error || body || error.message}`.trim();
+                  } catch {
+                    // fall through with original message
+                  }
+                }
+                console.error('[wk-outcome-apply] failed', real);
+                store.pushToast(`Server outcome failed: ${real}`, 'error');
               } else if (data?.applied && data.applied.length === 0 && badges.length > 0) {
                 console.warn('outcome: server fired no automations', data);
               }
