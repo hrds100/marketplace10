@@ -220,9 +220,12 @@ export default function LiveCallScreen() {
           </div>
         </aside>
 
-        {/* Centre — transcript + coach OR post-call panel */}
+        {/* Centre — transcript + coach during dial/in-call, post-call panel
+            after hangup. We mount LiveTranscriptPane the moment callId is
+            known (during 'placing'), not just on 'in_call', so we don't miss
+            the first transcript chunks Twilio fires before bridge-accept. */}
         <section className="flex-1 bg-white border-r border-[#E5E7EB] overflow-hidden">
-          {phase === 'in_call' ? (
+          {phase === 'placing' || phase === 'in_call' ? (
             <LiveTranscriptPane durationSec={durationSec} contactId={contact.id} callId={call?.callId ?? null} />
           ) : (
             <PostCallPanel />
