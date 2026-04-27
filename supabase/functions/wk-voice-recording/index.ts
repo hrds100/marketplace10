@@ -25,21 +25,40 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// PR 30: poke wk-jobs-worker right after queuing a job so the queue
-// doesn't depend on a non-existent scheduler. Fire-and-forget — the
-// caller doesn't await; failures fall back to the next invocation.
+// PR 37 (Hugo 2026-04-27): the original PR 30 kick was a void fetch
+// (fire-and-forget). On Deno Deploy the in-flight request is
+// cancelled the moment serve() returns, so the worker barely has
+// time to start before being killed — Hugo wasn't seeing recordings
+// because the worker never actually ran.
+//
+// Fix: wrap the fetch in EdgeRuntime.waitUntil so the runtime keeps
+// the worker invocation alive past the webhook's 200 response. Same
+// pattern wk-voice-transcription uses for its OpenAI streaming.
 function kickJobsWorker(): void {
   const url = `${SUPABASE_URL}/functions/v1/wk-jobs-worker`;
-  void fetch(url, {
+  const promise = fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
       'Content-Type': 'application/json',
     },
     body: '{}',
-  }).catch(() => {
-    /* fire-and-forget — next webhook will retry */
-  });
+  })
+    .then((r) => {
+      if (!r.ok) {
+        console.warn('[wk-voice-recording] kick wk-jobs-worker non-2xx', r.status);
+      }
+    })
+    .catch((e) => {
+      console.warn('[wk-voice-recording] kick wk-jobs-worker failed', e);
+    });
+  // deno-lint-ignore no-explicit-any
+  const er = (globalThis as any).EdgeRuntime;
+  if (er && typeof er.waitUntil === 'function') {
+    er.waitUntil(promise);
+  } else {
+    void promise;
+  }
 }
 
 async function validateTwilioSignature(
