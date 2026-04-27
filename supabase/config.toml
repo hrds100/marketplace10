@@ -129,6 +129,16 @@ verify_jwt = false
 [functions.wk-sms-send]
 verify_jwt = true
 
+# CRM WhatsApp — PR 61 (multi-channel PR 2). Wazzup24 personal-WA gateway.
+[functions.wazzup-send]
+verify_jwt = true
+
+[functions.wazzup-webhook]
+verify_jwt = false
+
+[functions.wazzup-sync-channels]
+verify_jwt = true
+
 # PR 59 — admin Listen / Whisper on a live call
 [functions.wk-supervisor-join]
 verify_jwt = true
