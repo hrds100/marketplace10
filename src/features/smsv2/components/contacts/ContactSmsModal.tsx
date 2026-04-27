@@ -62,6 +62,9 @@ interface Template {
   body_md: string;
   move_to_stage_id: string | null;
   channel: Channel | null;
+  /** PR 90: email subject (also on universal templates so they can
+   *  carry through to email mode). NULL for sms/whatsapp. */
+  subject: string | null;
 }
 
 interface SendInvoke {
@@ -132,7 +135,7 @@ export default function ContactSmsModal({
       try {
         const { data } = await (supabase as unknown as TemplatesTable)
           .from('wk_sms_templates')
-          .select('id, name, body_md, move_to_stage_id, channel')
+          .select('id, name, body_md, move_to_stage_id, channel, subject')
           .order('name', { ascending: true });
         if (!cancelled && data) setTemplates(data);
       } catch {
@@ -222,6 +225,16 @@ export default function ContactSmsModal({
       agentFirstName,
     });
     setBody(expanded);
+    // PR 90 (Hugo 2026-04-27): when applying a template on the email
+    // channel, also fill the subject. Universal templates with a subject
+    // carry through too.
+    if (channel === 'email' && tpl.subject) {
+      const expandedSubject = interpolateTemplate(tpl.subject, {
+        firstName,
+        agentFirstName,
+      });
+      setSubject(expandedSubject);
+    }
     setShowSentBanner(false);
   };
 

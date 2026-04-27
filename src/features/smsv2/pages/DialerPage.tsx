@@ -9,6 +9,7 @@ import EditContactModal from '../components/contacts/EditContactModal';
 import { MOCK_CAMPAIGNS, COACH_PROMPTS } from '../data/mockCampaigns';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { useSpendLimit } from '../hooks/useSpendLimit';
+import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
 import { useAuth } from '@/hooks/useAuth';
@@ -70,6 +71,17 @@ export default function DialerPage() {
   const [editing, setEditing] = useState<Contact | null>(null);
   const { startCall } = useActiveCallCtx();
   const spend = useSpendLimit();
+  // PR 90 (Hugo 2026-04-27): the Start button only checked spend limit \u2014
+  // an admin could press Start while the global "all dialers off" kill
+  // switch was active, then the backend would reject and the UI looked
+  // confused. Now the frontend disables Start when allDialers is on.
+  const ks = useKillSwitch();
+  const dialerBlocked = spend.isLimitReached || ks.allDialers;
+  const blockReason = ks.allDialers
+    ? 'All dialers are off (kill switch). Toggle off in Settings \u2192 AI Coach.'
+    : spend.isLimitReached
+      ? 'Daily spend limit reached.'
+      : null;
   const { contacts, patchContact, upsertContact, pushToast } = useSmsV2();
 
   // Keep activeId valid when the real list arrives or changes
@@ -322,10 +334,11 @@ export default function DialerPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => void handleStart()}
-                  disabled={spend.isLimitReached}
+                  disabled={dialerBlocked}
+                  title={blockReason ?? undefined}
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12px] font-semibold shadow-[0_4px_12px_rgba(30,154,128,0.35)]',
-                    spend.isLimitReached
+                    dialerBlocked
                       ? 'bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed shadow-none'
                       : 'bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90'
                   )}
