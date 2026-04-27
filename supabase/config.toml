@@ -129,6 +129,10 @@ verify_jwt = false
 [functions.wk-sms-send]
 verify_jwt = true
 
+# Temporary diagnostic — remove after PR 52 verification
+[functions.wk-diag]
+verify_jwt = false
+
 [functions.sms-send]
 verify_jwt = false
 
