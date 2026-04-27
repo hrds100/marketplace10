@@ -270,8 +270,13 @@ export default function ContactSmsModal({
 
       let resp: Awaited<ReturnType<SendInvoke['invoke']>>;
       if (channel === 'sms') {
-        resp = await fn.invoke('sms-send', {
-          body: { to: contact.phone, body: trimBody },
+        // PR 96 (Hugo 2026-04-28): was hitting legacy `sms-send` which
+        // writes to the legacy `sms_messages` table. The inbox reads
+        // wk_sms_messages, so SMS sent from this modal never appeared
+        // in the thread until refresh \u2014 sometimes never. Routes through
+        // wk-sms-send now (same as InboxPage + MidCallSmsSender).
+        resp = await fn.invoke('wk-sms-send', {
+          body: { contact_id: contact.id, body: trimBody },
         });
       } else if (channel === 'whatsapp') {
         resp = await fn.invoke('unipile-send', {

@@ -167,7 +167,9 @@ serve(async (req: Request) => {
         .eq('status', 'dialing');
     }
 
-    // Realtime broadcast — frontend morphs Parallel Dialer → Live Call
+    // Realtime broadcast — frontend morphs Parallel Dialer → Live Call.
+    // PR 96: include campaign_id so the live-call screen can thread it
+    // into MidCallSmsSender → wk_campaign_numbers resolution.
     await supa.channel(`dialer:${thisCall.agent_id}`)
       .send({
         type: 'broadcast',
@@ -175,6 +177,7 @@ serve(async (req: Request) => {
         payload: {
           call_id: thisCall.id,
           contact_id: thisCall.contact_id,
+          campaign_id: thisCall.campaign_id ?? null,
           twilio_call_sid: callSid,
           ai_coach_enabled: !!thisCall.ai_coach_enabled,
         },

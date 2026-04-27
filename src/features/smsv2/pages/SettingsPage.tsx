@@ -1987,7 +1987,7 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('wk_numbers' as any) as any)
         .select('id, e164, channel, provider, voice_enabled, sms_enabled, is_active')
@@ -1995,8 +1995,24 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
         .order('channel', { ascending: true })
         .order('e164', { ascending: true });
       if (!cancelled) setAllNumbers((data ?? []) as Row[]);
-    })();
-    return () => { cancelled = true; };
+    };
+    void load();
+    // PR 96 (Hugo 2026-04-28): when admin connects a new WhatsApp /
+    // Twilio number, the campaign-channel-slot dropdown should show it
+    // without a refresh. Subscribe to wk_numbers changes.
+    const ch = supabase
+      .channel('wk_numbers-campaign-panel')
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        'postgres_changes' as any,
+        { event: '*', schema: 'public', table: 'wk_numbers' },
+        () => { if (!cancelled) void load(); }
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      try { void supabase.removeChannel(ch); } catch { /* ignore */ }
+    };
   }, []);
 
   const channelLabel = (c: Row['channel']) =>

@@ -112,7 +112,7 @@ describe('ContactSmsModal', () => {
     expect(text).toMatch(/\+447863992555/);
   });
 
-  it('Send button fires sms-send with the typed body', async () => {
+  it('Send button fires wk-sms-send with the typed body', async () => {
     const { getByTestId } = render(
       wrap(<ContactSmsModal contact={fixture} onClose={() => {}} agentFirstName="Hugo" />)
     );
@@ -122,8 +122,9 @@ describe('ContactSmsModal', () => {
     fireEvent.change(textarea, { target: { value: 'Hi from the contacts page' } });
     fireEvent.click(getByTestId('contact-sms-modal-send'));
     await tick();
-    expect(invokeMock).toHaveBeenCalledWith('sms-send', {
-      body: { to: '+447863992555', body: 'Hi from the contacts page' },
+    // PR 96: SMS routes through wk-sms-send (was legacy sms-send).
+    expect(invokeMock).toHaveBeenCalledWith('wk-sms-send', {
+      body: { contact_id: fixture.id, body: 'Hi from the contacts page' },
     });
     expect(pushToastMock).toHaveBeenCalledWith('SMS sent', 'success');
   });
