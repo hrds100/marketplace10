@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import {
   MicOff,
-  Pause,
-  PhoneForwarded,
-  StickyNote,
   PhoneOff,
   Minimize2,
   Flame,
@@ -128,9 +125,11 @@ export default function LiveCallScreen() {
               onClick={toggleMute}
               active={muted}
             />
-            <TopBtn icon={<Pause className="w-4 h-4" />} label="Hold" />
-            <TopBtn icon={<PhoneForwarded className="w-4 h-4" />} label="Transfer" />
-            <TopBtn icon={<StickyNote className="w-4 h-4" />} label="Note" />
+            {/* PR 89 (Hugo 2026-04-27): Hold / Transfer / Note buttons
+                were rendered with no onClick \u2014 pure dead UI. Hold +
+                Transfer require Twilio routing changes (out of scope
+                for the inbox audit). Note duplicates the sticky-note
+                textarea in the transcript pane, so we drop it here. */}
             {muted && (
               // Self-test hint: when Hugo calls his own phone in the same
               // room and mutes the browser, his phone's OWN microphone keeps

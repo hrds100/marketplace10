@@ -292,3 +292,6 @@ verify_jwt = false
 
 [functions.wk-ai-template]
 verify_jwt = false
+
+[functions.wk-dialer-hangup-leg]
+verify_jwt = false

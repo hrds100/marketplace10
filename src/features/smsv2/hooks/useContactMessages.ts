@@ -112,8 +112,14 @@ export function useContactMessages(contactId: string): {
       )
       .subscribe();
 
+    // PR 89 (Hugo 2026-04-27): polling fallback (30s) so even if the
+    // realtime payload never arrives (service-role inserts from edge fns
+    // sometimes silently drop), the open thread refreshes itself.
+    const pollId = window.setInterval(() => { void load(); }, 30_000);
+
     return () => {
       try { void supabase.removeChannel(channel); } catch { /* ignore */ }
+      window.clearInterval(pollId);
     };
   }, [contactId, load]);
 
