@@ -65,8 +65,11 @@ function buildOutgoingTwiml(args: {
     ? `callerId="${escapeXml(args.callerIdE164)}"`
     : '';
 
+  // PR 29: timeout bumped from default 30 → 60s so the callee has a
+  // full minute to pick up before the leg drops. Mirrors the canonical
+  // src/features/smsv2/lib/buildOutgoingTwiml.ts.
   const dialBlock = [
-    `<Dial ${callerIdAttr} answerOnBridge="true" record="record-from-answer-dual"`,
+    `<Dial ${callerIdAttr} answerOnBridge="true" timeout="60" record="record-from-answer-dual"`,
     `      recordingStatusCallback="${escapeXml(args.recordingUrl)}"`,
     `      recordingStatusCallbackEvent="completed"`,
     `      action="${escapeXml(args.statusUrl)}"`,
