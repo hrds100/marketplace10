@@ -117,8 +117,43 @@ export function useDialerCampaigns(): UseDialerCampaignsResult {
 
     void load();
 
+    // PR 54 (Hugo 2026-04-27): subscribe to wk_dialer_queue realtime
+    // so Queue / Done / Connected / Voicemail counters refresh as
+    // calls progress without the agent having to refresh the page.
+    // Debounced via 500ms RAF so a burst of inserts (e.g. CSV upload)
+    // doesn't trigger 50 refetches.
+    let pending: ReturnType<typeof setTimeout> | null = null;
+    const refresh = () => {
+      if (pending) return;
+      pending = setTimeout(() => {
+        pending = null;
+        if (!cancelled) void load();
+      }, 500);
+    };
+    const queueChan = supabase
+      .channel('dialer-campaigns-queue')
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        'postgres_changes' as any,
+        { event: '*', schema: 'public', table: 'wk_dialer_queue' },
+        refresh
+      )
+      .subscribe();
+    const campaignsChan = supabase
+      .channel('dialer-campaigns-meta')
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        'postgres_changes' as any,
+        { event: '*', schema: 'public', table: 'wk_dialer_campaigns' },
+        refresh
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      if (pending) clearTimeout(pending);
+      try { void supabase.removeChannel(queueChan); } catch { /* ignore */ }
+      try { void supabase.removeChannel(campaignsChan); } catch { /* ignore */ }
     };
   }, [seq]);
 

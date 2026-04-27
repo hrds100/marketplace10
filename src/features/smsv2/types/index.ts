@@ -24,6 +24,13 @@ export interface Agent {
   spendPence: number;
   limitPence: number;
   isAdmin?: boolean;
+  /** PR 54 (Hugo 2026-04-27): % of today's calls that were
+   *  answered (answered ÷ max(1, callsToday) × 100). Computed in
+   *  useAgentsToday so the dashboard column renders without
+   *  client-side math at every row. */
+  answerRatePct?: number;
+  /** PR 54: outbound wk_sms_messages count for this agent today. */
+  smsSentToday?: number;
 }
 
 export interface Contact {

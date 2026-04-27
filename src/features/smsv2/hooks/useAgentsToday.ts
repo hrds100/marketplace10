@@ -58,6 +58,14 @@ export function useAgentsToday(): { agents: Agent[]; loading: boolean } {
       .select('agent_id, status, duration_sec')
       .gte('started_at', todayIso);
 
+    // PR 54 (Hugo 2026-04-27): SMS sent today per agent.
+    // wk_sms_messages.created_by = agent_id for outbound rows.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const smsRes = await (supabase.from('wk_sms_messages' as any) as any)
+      .select('created_by')
+      .eq('direction', 'outbound')
+      .gte('created_at', todayIso);
+
     const limitByAgent = new Map<string, LimitRow>();
     for (const l of (limitsRes.data ?? []) as LimitRow[]) limitByAgent.set(l.agent_id, l);
 
@@ -69,6 +77,12 @@ export function useAgentsToday(): { agents: Agent[]; loading: boolean } {
       callsByAgent.set(aid, list);
     }
 
+    const smsCountByAgent = new Map<string, number>();
+    for (const s of (smsRes.data ?? []) as Array<{ created_by: string | null }>) {
+      const aid = s.created_by ?? 'unknown';
+      smsCountByAgent.set(aid, (smsCountByAgent.get(aid) ?? 0) + 1);
+    }
+
     const out: Agent[] = ((profilesRes.data ?? []) as ProfileRow[]).map((p) => {
       const calls = callsByAgent.get(p.id) ?? [];
       const answered = calls.filter((c) =>
@@ -77,6 +91,8 @@ export function useAgentsToday(): { agents: Agent[]; loading: boolean } {
       const totalDur = answered.reduce((s, c) => s + (c.duration_sec ?? 0), 0);
       const avgDur = answered.length > 0 ? Math.round(totalDur / answered.length) : 0;
       const limit = limitByAgent.get(p.id);
+      const answerRatePct =
+        calls.length > 0 ? Math.round((answered.length / calls.length) * 100) : 0;
 
       return {
         id: p.id,
@@ -91,6 +107,8 @@ export function useAgentsToday(): { agents: Agent[]; loading: boolean } {
         spendPence: limit?.daily_spend_pence ?? 0,
         limitPence: limit?.daily_limit_pence ?? 0,
         isAdmin: limit?.is_admin ?? p.workspace_role === 'admin',
+        answerRatePct,
+        smsSentToday: smsCountByAgent.get(p.id) ?? 0,
       };
     });
 

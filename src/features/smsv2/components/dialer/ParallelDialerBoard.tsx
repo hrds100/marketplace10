@@ -42,6 +42,12 @@ export default function ParallelDialerBoard({ active }: Props) {
     return () => window.clearInterval(id);
   }, [legs.length]);
 
+  // PR 54 (Hugo 2026-04-27): "Dialing now" label was showing even when
+  // the board was empty. Tie the label visibility + dot pulse to the
+  // hook's filtered legs (already ages-out stale rows). When idle, show
+  // "Idle — press Start" so the agent isn't confused by a "Dialing now"
+  // header with no legs underneath.
+  const isLive = legs.length > 0;
   return (
     <div className="border border-[#E5E7EB] rounded-2xl bg-[#F3F3EE]/40 overflow-hidden">
       <div className="px-4 py-2.5 border-b border-[#E5E7EB] bg-white flex items-center justify-between">
@@ -49,18 +55,18 @@ export default function ParallelDialerBoard({ active }: Props) {
           <PhoneCall
             className={cn(
               'w-4 h-4',
-              active && legs.length > 0 ? 'text-[#1E9A80]' : 'text-[#9CA3AF]'
+              active && isLive ? 'text-[#1E9A80]' : 'text-[#9CA3AF]'
             )}
           />
           <span className="text-[12px] font-semibold text-[#1A1A1A]">
-            Dialing now
+            {isLive ? 'Calling now' : 'Idle'}
           </span>
-          {active && legs.length > 0 && (
+          {active && isLive && (
             <span className="w-1.5 h-1.5 rounded-full bg-[#1E9A80] animate-pulse" />
           )}
         </div>
         <span className="text-[11px] text-[#6B7280]">
-          {legs.length === 0
+          {!isLive
             ? 'No active legs'
             : `${legs.length} ${legs.length === 1 ? 'line' : 'lines'} · first answer wins`}
         </span>
@@ -89,8 +95,24 @@ export default function ParallelDialerBoard({ active }: Props) {
                 L{idx + 1}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-semibold text-[#1A1A1A] truncate">
+                <div className="text-[13px] font-semibold text-[#1A1A1A] truncate flex items-center gap-1.5">
                   {leg.contactName}
+                  {/* PR 54: visible retry badge when this is the 2nd or
+                      3rd attempt at the same contact in the current
+                      campaign queue. Orange for try 2, red for try 3. */}
+                  {leg.attempts !== null && leg.attempts >= 1 && (
+                    <span
+                      className={cn(
+                        'inline-flex items-center text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded',
+                        leg.attempts >= 2
+                          ? 'bg-[#FEE2E2] text-[#B91C1C]'
+                          : 'bg-[#FEF3C7] text-[#B45309]'
+                      )}
+                      title={`Attempt ${leg.attempts + 1} of 3`}
+                    >
+                      {leg.attempts >= 2 ? 'try 3' : 'try 2'}
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-[#6B7280] tabular-nums">{leg.phone}</div>
               </div>

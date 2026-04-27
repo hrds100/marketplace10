@@ -42,7 +42,13 @@ interface ProfileRow {
   email: string | null;
 }
 
-export function useLiveActivity(): { rows: LiveActivityRow[]; loading: boolean } {
+export function useLiveActivity(
+  // PR 54 (Hugo 2026-04-27): optional agent filter. When set, the
+  // dashboard's Live Activity feed only shows calls for that agent.
+  // Click an agent in AgentsTable → DashboardPage sets this →
+  // refresh() applies the eq.agent_id filter.
+  agentId?: string | null,
+): { rows: LiveActivityRow[]; loading: boolean } {
   const [rows, setRows] = useState<LiveActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,11 +61,13 @@ export function useLiveActivity(): { rows: LiveActivityRow[]; loading: boolean }
     // hide it from the live feed regardless of status.
     const oneHourAgoIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const callsRes = await (supabase.from('wk_calls' as any) as any)
+    let q = (supabase.from('wk_calls' as any) as any)
       .select('id, agent_id, contact_id, status, started_at, ai_coach_enabled, to_e164')
       .in('status', ['queued', 'ringing', 'in_progress'])
       .gte('started_at', oneHourAgoIso)
       .order('started_at', { ascending: false });
+    if (agentId) q = q.eq('agent_id', agentId);
+    const callsRes = await q;
 
     const calls = (callsRes.data ?? []) as CallRow[];
     const contactIds = Array.from(
@@ -106,7 +114,7 @@ export function useLiveActivity(): { rows: LiveActivityRow[]; loading: boolean }
       })
     );
     setLoading(false);
-  }, []);
+  }, [agentId]);
 
   useEffect(() => {
     void refresh();

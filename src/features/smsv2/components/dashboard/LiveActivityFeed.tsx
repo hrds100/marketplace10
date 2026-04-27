@@ -18,8 +18,14 @@ function formatLiveDuration(startedAtIso: string, nowMs: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function LiveActivityFeed() {
-  const { rows, loading } = useLiveActivity();
+interface Props {
+  /** PR 54 (Hugo 2026-04-27): when set, only show this agent's
+   *  active calls. Wired from DashboardPage via AgentsTable click. */
+  selectedAgentId?: string | null;
+}
+
+export default function LiveActivityFeed({ selectedAgentId }: Props = {}) {
+  const { rows, loading } = useLiveActivity(selectedAgentId ?? null);
   const [nowMs, setNowMs] = useState(Date.now());
   const [watching, setWatching] = useState<{ callId: string; agentName: string; contactName: string } | null>(null);
 

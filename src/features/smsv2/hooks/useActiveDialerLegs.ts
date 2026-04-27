@@ -29,15 +29,28 @@ export interface DialerLeg {
   status: DialerLegStatus;
   startedAt: number;
   twilioSid: string | null;
+  /** PR 54 (Hugo 2026-04-27): retry counter from wk_dialer_queue.attempts.
+   *  0 = first try, 1 = second try, etc. Null when no queue row matches
+   *  (e.g. manual single-dial calls that never went through the dialer
+   *  campaign queue). */
+  attempts: number | null;
 }
 
 interface CallRow {
   id: string;
   contact_id: string | null;
+  campaign_id: string | null;
   to_e164: string | null;
   status: string;
   started_at: string | null;
+  ended_at: string | null;
   twilio_call_sid: string | null;
+}
+
+interface QueueRow {
+  contact_id: string;
+  campaign_id: string;
+  attempts: number;
 }
 
 interface ContactRow {
@@ -53,6 +66,14 @@ const ACTIVE_STATUSES = new Set<string>([
   'ringing',
   'in_progress',
 ]);
+
+/** PR 54 (Hugo 2026-04-27): max age for an in-flight leg before we
+ *  hide it from the board even if Twilio's terminal status callback
+ *  hasn't landed yet. Twilio's outbound-dial timeout is 60s, so any
+ *  leg older than 90s is almost certainly dead. The admin Live
+ *  Activity feed uses a 60-min cutoff because it's a history view;
+ *  the dialer board is a real-time snapshot, so we're stricter. */
+const STALE_LEG_MAX_AGE_MS = 90_000;
 
 interface SupaTable<T> {
   from: (t: string) => {
@@ -83,8 +104,18 @@ interface SupaTable<T> {
 export function useActiveDialerLegs(): { legs: DialerLeg[]; loading: boolean } {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [contactsById, setContactsById] = useState<Map<string, ContactRow>>(new Map());
+  const [queueByCampaignContact, setQueueByCampaignContact] = useState<Map<string, number>>(
+    new Map()
+  );
   const [agentId, setAgentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // 1Hz tick so the stale-leg cutoff re-evaluates without waiting
+  // for a wk_calls realtime event to drop the row.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Resolve agent id once.
   useEffect(() => {
@@ -104,7 +135,7 @@ export function useActiveDialerLegs(): { legs: DialerLeg[]; loading: boolean } {
     const reload = async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('wk_calls' as any) as any)
-        .select('id, contact_id, to_e164, status, started_at, twilio_call_sid')
+        .select('id, contact_id, campaign_id, to_e164, status, started_at, ended_at, twilio_call_sid')
         .eq('agent_id', agentId)
         .in('status', Array.from(ACTIVE_STATUSES))
         .order('started_at', { ascending: false });
@@ -142,6 +173,45 @@ export function useActiveDialerLegs(): { legs: DialerLeg[]; loading: boolean } {
     };
   }, [agentId]);
 
+  // PR 54 (Hugo 2026-04-27): pull wk_dialer_queue.attempts for the
+  // (campaign_id, contact_id) pairs in scope so the dialer board can
+  // show "2nd try" / "3rd try" badges. Re-runs whenever the call set
+  // changes — re-uses the existing fetch path instead of subscribing
+  // to wk_dialer_queue separately (each leg's row is already covered
+  // by the wk_calls realtime channel via reload()).
+  useEffect(() => {
+    const pairs = calls
+      .filter((c) => !!c.campaign_id && !!c.contact_id)
+      .map((c) => ({
+        campaign_id: c.campaign_id as string,
+        contact_id: c.contact_id as string,
+      }));
+    if (pairs.length === 0) {
+      if (queueByCampaignContact.size > 0) setQueueByCampaignContact(new Map());
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const campaignIds = Array.from(new Set(pairs.map((p) => p.campaign_id)));
+      const contactIds = Array.from(new Set(pairs.map((p) => p.contact_id)));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('wk_dialer_queue' as any) as any)
+        .select('campaign_id, contact_id, attempts')
+        .in('campaign_id', campaignIds)
+        .in('contact_id', contactIds);
+      if (cancelled || !data) return;
+      const next = new Map<string, number>();
+      for (const row of data as QueueRow[]) {
+        next.set(`${row.campaign_id}:${row.contact_id}`, row.attempts ?? 0);
+      }
+      setQueueByCampaignContact(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calls]);
+
   // Resolve contact names for the active calls (parallel SELECT). Cache
   // by id so subsequent reloads don't re-fetch unchanged contacts.
   useEffect(() => {
@@ -169,10 +239,27 @@ export function useActiveDialerLegs(): { legs: DialerLeg[]; loading: boolean } {
   }, [calls, contactsById]);
 
   const legs = useMemo<DialerLeg[]>(() => {
+    const cutoff = Date.now() - STALE_LEG_MAX_AGE_MS;
     return calls
       .filter((c) => ACTIVE_STATUSES.has(c.status))
+      // PR 54 (Hugo 2026-04-27): drop "Connected" / "Calling…" rows
+      // that are older than STALE_LEG_MAX_AGE_MS — Twilio's terminal
+      // status callback may be delayed or lost; this prevents the
+      // dialer board showing a ghost timer ticking up forever.
+      // ended_at being non-null also drops the row.
+      .filter((c) => c.ended_at === null)
+      .filter((c) => {
+        const startedMs = c.started_at ? new Date(c.started_at).getTime() : Date.now();
+        return startedMs > cutoff;
+      })
       .map((c) => {
         const contact = c.contact_id ? contactsById.get(c.contact_id) : undefined;
+        const queueKey =
+          c.campaign_id && c.contact_id ? `${c.campaign_id}:${c.contact_id}` : null;
+        const attempts =
+          queueKey && queueByCampaignContact.has(queueKey)
+            ? (queueByCampaignContact.get(queueKey) ?? 0)
+            : null;
         return {
           id: c.id,
           contactId: c.contact_id,
@@ -181,9 +268,10 @@ export function useActiveDialerLegs(): { legs: DialerLeg[]; loading: boolean } {
           status: c.status as DialerLegStatus,
           startedAt: c.started_at ? new Date(c.started_at).getTime() : Date.now(),
           twilioSid: c.twilio_call_sid,
+          attempts,
         };
       });
-  }, [calls, contactsById]);
+  }, [calls, contactsById, queueByCampaignContact]);
 
   return { legs, loading };
 }
