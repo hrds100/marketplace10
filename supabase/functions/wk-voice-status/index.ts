@@ -299,6 +299,21 @@ serve(async (req: Request) => {
     }
     if (isTerminal) update.ended_at = new Date().toISOString();
 
+    // PR 59 (Hugo 2026-04-27): capture both legs' Twilio CallSids so
+    // wk-supervisor-join can target them when admin starts Listen /
+    // Whisper. Twilio sends a webhook for the parent <Dial> call AND
+    // a separate one for the spawned <Client> child leg. Differentiate
+    // via the From / To params:
+    //   - Parent call to PSTN: From=<our number>, To=<contact phone>
+    //   - <Dial><Client> child: From=<our number>, To=client:<agent_uid>
+    const fromParam = (params.From ?? '').toLowerCase();
+    const toParam = (params.To ?? '').toLowerCase();
+    if (toParam.startsWith('client:')) {
+      update.agent_twilio_call_sid = callSid;
+    } else if (fromParam && !fromParam.startsWith('client:')) {
+      update.contact_twilio_call_sid = callSid;
+    }
+
     const { error } = await supabase
       .from('wk_calls')
       .update(update)
