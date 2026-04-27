@@ -129,6 +129,10 @@ verify_jwt = false
 [functions.wk-sms-send]
 verify_jwt = true
 
+# PR 59 — admin Listen / Whisper on a live call
+[functions.wk-supervisor-join]
+verify_jwt = true
+
 # Temporary diagnostic — remove after PR 52 verification
 [functions.wk-diag]
 verify_jwt = false
