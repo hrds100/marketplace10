@@ -10,6 +10,14 @@ import { useDialerCampaigns } from '../../hooks/useDialerCampaigns';
 interface Props {
   open: boolean;
   onClose: () => void;
+  /** PR 62 (Hugo 2026-04-27): when set, the modal pre-fills the
+   *  campaign picker with this id and locks it (admin can't change
+   *  it). Used by the per-campaign Settings → Upload leads tab. */
+  prefillCampaignId?: string | null;
+  /** Locks the campaign picker so the admin can't accidentally
+   *  upload to the wrong one. Defaults to true when prefillCampaignId
+   *  is set. */
+  lockCampaign?: boolean;
 }
 
 interface ParsedRow {
@@ -45,7 +53,12 @@ function pickKey(row: Record<string, string>, candidates: string[]): string | un
   return undefined;
 }
 
-export default function BulkUploadModal({ open, onClose }: Props) {
+export default function BulkUploadModal({
+  open,
+  onClose,
+  prefillCampaignId = null,
+  lockCampaign,
+}: Props) {
   const [step, setStep] = useState<'pick' | 'review' | 'importing' | 'done'>('pick');
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
@@ -55,12 +68,18 @@ export default function BulkUploadModal({ open, onClose }: Props) {
   const [result, setResult] = useState<ImportResult | null>(null);
   const { columns, pushToast } = useSmsV2();
   const { agents } = useAgentsToday();
-  const { campaigns } = useDialerCampaigns();
+  const { campaigns } = useDialerCampaigns({ includeInactive: true });
   const [stageId, setStageId] = useState<string>(columns[0]?.id ?? '');
   // PR 22: optional "add to campaign queue" — when set, the imported
   // contacts are also INSERTed into wk_dialer_queue for that campaign
   // so wk-dialer-start has leads to pick from.
-  const [campaignId, setCampaignId] = useState<string>('');
+  // PR 62: prefilled when opened from a campaign Settings page.
+  const [campaignId, setCampaignId] = useState<string>(prefillCampaignId ?? '');
+  // Re-sync if the parent prop changes between mount cycles.
+  if (open && prefillCampaignId && campaignId !== prefillCampaignId) {
+    setCampaignId(prefillCampaignId);
+  }
+  const isCampaignLocked = lockCampaign ?? !!prefillCampaignId;
 
   if (!open) return null;
 
@@ -380,14 +399,19 @@ export default function BulkUploadModal({ open, onClose }: Props) {
                   the parallel dialer has no leads to pick from. */}
               <div>
                 <Label icon={<Phone className="w-3.5 h-3.5" />}>
-                  Add to dialer queue (optional)
+                  {isCampaignLocked
+                    ? 'Adding leads to this campaign'
+                    : 'Add to dialer queue (optional)'}
                 </Label>
                 <select
                   value={campaignId}
                   onChange={(e) => setCampaignId(e.target.value)}
-                  className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
+                  disabled={isCampaignLocked}
+                  className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white disabled:bg-[#F3F3EE] disabled:text-[#6B7280]"
                 >
-                  <option value="">— don't queue, just import —</option>
+                  {!isCampaignLocked && (
+                    <option value="">— don't queue, just import —</option>
+                  )}
                   {campaigns.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} ({c.parallelLines} {c.parallelLines === 1 ? 'line' : 'lines'})

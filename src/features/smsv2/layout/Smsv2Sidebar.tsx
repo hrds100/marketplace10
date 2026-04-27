@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   MessageSquare,
@@ -13,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Smsv2SidebarProps {
   collapsed: boolean;
@@ -37,6 +40,28 @@ const MOBILE_TAB_ITEMS = NAV_ITEMS.filter(({ label }) =>
 export default function Smsv2Sidebar({ collapsed, onCollapse }: Smsv2SidebarProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
+  // PR 62 (Hugo 2026-04-27): admin-only items (Dashboard + Settings)
+  // are hidden entirely from agents — no point showing a row that
+  // CrmGuard would block. Resolve workspace_role from profiles + the
+  // hardcoded admin allow-list (hugo@nfstay.com / admin@hub.nfstay.com).
+  const { user, isAdmin } = useAuth();
+  const [workspaceRole, setWorkspaceRole] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (!user) { setWorkspaceRole(null); return; }
+    let cancelled = false;
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('profiles' as any) as any)
+        .select('workspace_role')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!cancelled) setWorkspaceRole((data?.workspace_role as string | null) ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const isAdminOrWorkspaceAdmin = isAdmin || workspaceRole === 'admin';
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
@@ -82,7 +107,10 @@ export default function Smsv2Sidebar({ collapsed, onCollapse }: Smsv2SidebarProp
       </div>
 
       <nav className="flex-1 py-2 px-2 space-y-1">
-        {NAV_ITEMS.map(({ label, path, icon: Icon, adminOnly }) => (
+        {NAV_ITEMS
+          // PR 62: hide admin-only items from agents entirely.
+          .filter(({ adminOnly }) => !adminOnly || isAdminOrWorkspaceAdmin)
+          .map(({ label, path, icon: Icon, adminOnly }) => (
           <Link
             key={path}
             to={path}

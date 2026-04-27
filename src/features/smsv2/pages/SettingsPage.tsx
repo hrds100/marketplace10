@@ -42,6 +42,7 @@ import { useCoachFacts, type CoachFact } from '../hooks/useCoachFacts';
 import { useCampaignAgents } from '../hooks/useCampaignAgents';
 import { useCampaignNumbers } from '../hooks/useCampaignNumbers';
 import { useAgentsToday } from '../hooks/useAgentsToday';
+import BulkUploadModal from '../components/contacts/BulkUploadModal';
 import { useTwilioAccount } from '../hooks/useTwilioAccount';
 import ChannelsTab from '../components/settings/ChannelsTab';
 import { useSmsV2 } from '../store/SmsV2Store';
@@ -146,39 +147,213 @@ function ScopeBadge({
   );
 }
 
+// PR 62 (Hugo 2026-04-27): scope = which "container" the user is editing.
+//   - 'workspace'         → workspace defaults (the master template)
+//   - 'campaign:<uuid>'   → a specific campaign's overrides + bundle
+//   - 'workspace-only:<id>' → workspace-level only (Agents, Numbers,
+//                              Pacing, Kill switches — no campaign override)
+type Scope =
+  | { kind: 'workspace' }
+  | { kind: 'campaign'; campaignId: string }
+  | { kind: 'workspace-only'; tabId: 'agents' | 'numbers' | 'pacing' | 'kill' };
+
+const WORKSPACE_BUNDLE_TABS = [
+  { id: 'pipelines', label: 'Pipeline & outcomes', icon: Kanban },
+  { id: 'templates', label: 'SMS templates', icon: MessageSquare },
+  { id: 'ai', label: 'AI coach', icon: Bot },
+  { id: 'kb', label: 'Coach facts', icon: Brain },
+  { id: 'glossary', label: 'Glossary', icon: BookOpen },
+] as const;
+
+const CAMPAIGN_BUNDLE_TABS = [
+  { id: 'overview', label: 'Overview', icon: Megaphone },
+  { id: 'pipelines', label: 'Pipeline', icon: Kanban },
+  { id: 'templates', label: 'SMS templates', icon: MessageSquare },
+  { id: 'ai', label: 'AI coach', icon: Bot },
+  { id: 'kb', label: 'Coach facts', icon: Brain },
+  { id: 'glossary', label: 'Glossary', icon: BookOpen },
+  { id: 'agents', label: 'Assigned agents', icon: Users },
+  { id: 'numbers', label: 'Assigned numbers', icon: Phone },
+  { id: 'leads', label: 'Upload leads (CSV)', icon: Plus },
+] as const;
+
+const WORKSPACE_ONLY_TABS = [
+  { id: 'agents' as const, label: 'Agents & spend', icon: Users },
+  { id: 'numbers' as const, label: 'Numbers (workspace pool)', icon: Phone },
+  { id: 'pacing' as const, label: 'Pacing & safety', icon: Shield },
+  { id: 'kill' as const, label: 'Kill switches & audit', icon: Activity },
+];
+
 export default function SettingsPage() {
-  // PR 60: default to Campaigns since it's the parent of everything below.
-  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('campaigns');
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
-  const showCampaignPicker = CAMPAIGN_SCOPED_TABS.has(tab);
+  const [scope, setScope] = useState<Scope>({ kind: 'workspace' });
+  const [bundleTab, setBundleTab] = useState<string>('overview');
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto">
-      <header className="mb-5 flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Settings</h1>
-          <p className="text-[13px] text-[#6B7280]">
-            Nothing in the agent UI is hardcoded — everything below is editable here
-          </p>
-        </div>
-        {showCampaignPicker && (
-          <CampaignScopePicker
-            value={selectedCampaignId}
-            onChange={setSelectedCampaignId}
-          />
-        )}
+      <header className="mb-5">
+        <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Settings</h1>
+        <p className="text-[13px] text-[#6B7280]">
+          Nothing in the agent UI is hardcoded — everything below is editable here
+        </p>
       </header>
 
       <div className="grid grid-cols-12 gap-5">
-        {/* Tab nav */}
-        <nav className="col-span-12 lg:col-span-3 space-y-1">
-          {TABS.map((t) => (
+        <SettingsSidebar scope={scope} onScopeChange={(s) => { setScope(s); setBundleTab(s.kind === 'campaign' ? 'overview' : 'pipelines'); }} />
+        <main className="col-span-12 lg:col-span-9">
+          {scope.kind === 'workspace' && (
+            <WorkspaceBundle
+              tab={bundleTab}
+              onTabChange={setBundleTab}
+            />
+          )}
+          {scope.kind === 'campaign' && (
+            <CampaignBundle
+              campaignId={scope.campaignId}
+              tab={bundleTab}
+              onTabChange={setBundleTab}
+            />
+          )}
+          {scope.kind === 'workspace-only' && (
+            <>
+              {scope.tabId === 'agents' && <AgentsTab />}
+              {scope.tabId === 'numbers' && <NumbersTab />}
+              {scope.tabId === 'pacing' && <PacingTab />}
+              {scope.tabId === 'kill' && <KillTab />}
+            </>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sidebar (campaign-first, PR 62) ───────────────────────────────────
+function SettingsSidebar({
+  scope,
+  onScopeChange,
+}: {
+  scope: Scope;
+  onScopeChange: (s: Scope) => void;
+}) {
+  // Always read all campaigns including inactive — admin needs to see
+  // what they just created.
+  const { campaigns, refetch } = useDialerCampaigns({ includeInactive: true });
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [createErr, setCreateErr] = useState<string | null>(null);
+
+  const create = async () => {
+    setCreateErr(null);
+    if (!newName.trim()) return;
+    setCreating(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('wk_dialer_campaigns' as any) as any)
+        .insert({
+          name: newName.trim(),
+          parallel_lines: 3,
+          auto_advance_seconds: 10,
+          ai_coach_enabled: true,
+          is_active: true,
+        })
+        .select('id')
+        .single();
+      if (error) {
+        setCreateErr(error.message);
+        return;
+      }
+      setNewName('');
+      refetch();
+      if (data?.id) onScopeChange({ kind: 'campaign', campaignId: data.id as string });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const isWorkspace = scope.kind === 'workspace';
+  return (
+    <nav className="col-span-12 lg:col-span-3 space-y-3">
+      {/* Workspace defaults */}
+      <div className="space-y-1">
+        <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-bold px-2 mb-1">
+          Workspace defaults
+        </div>
+        <button
+          onClick={() => onScopeChange({ kind: 'workspace' })}
+          className={cn(
+            'w-full flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] text-left transition-colors',
+            isWorkspace
+              ? 'bg-white border border-[#E5E7EB] text-[#1E9A80] font-semibold shadow-sm'
+              : 'text-[#6B7280] hover:bg-white/50'
+          )}
+        >
+          <Settings className="w-4 h-4" strokeWidth={1.8} />
+          ★ Master template
+        </button>
+      </div>
+
+      {/* Campaigns list */}
+      <div className="space-y-1">
+        <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-bold px-2 mb-1">
+          Campaigns
+        </div>
+        {campaigns.map((c) => {
+          const isSelected = scope.kind === 'campaign' && scope.campaignId === c.id;
+          return (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={c.id}
+              onClick={() => onScopeChange({ kind: 'campaign', campaignId: c.id })}
               className={cn(
                 'w-full flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] text-left transition-colors',
-                tab === t.id
+                isSelected
+                  ? 'bg-white border border-[#E5E7EB] text-[#1E9A80] font-semibold shadow-sm'
+                  : 'text-[#6B7280] hover:bg-white/50'
+              )}
+            >
+              <Megaphone className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
+              <span className="flex-1 truncate">{c.name}</span>
+              {!c.isActive && (
+                <span className="text-[9px] text-[#B45309] bg-[#FEF3C7] px-1 rounded">paused</span>
+              )}
+            </button>
+          );
+        })}
+        {/* Create new campaign */}
+        <div className="flex gap-1.5 mt-2">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && void create()}
+            placeholder="New campaign…"
+            className="flex-1 px-2 py-1.5 text-[12px] bg-white border border-[#E5E7EB] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/40"
+          />
+          <button
+            onClick={() => void create()}
+            disabled={creating || !newName.trim()}
+            className="bg-[#1E9A80] text-white text-[11px] font-semibold px-2 py-1.5 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+          >
+            {creating ? '…' : '+'}
+          </button>
+        </div>
+        {createErr && (
+          <div className="text-[10px] text-[#B91C1C] px-2">{createErr}</div>
+        )}
+      </div>
+
+      {/* Workspace-only */}
+      <div className="space-y-1">
+        <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-bold px-2 mb-1">
+          Workspace-only
+        </div>
+        {WORKSPACE_ONLY_TABS.map((t) => {
+          const isSelected = scope.kind === 'workspace-only' && scope.tabId === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => onScopeChange({ kind: 'workspace-only', tabId: t.id })}
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] text-left transition-colors',
+                isSelected
                   ? 'bg-white border border-[#E5E7EB] text-[#1E9A80] font-semibold shadow-sm'
                   : 'text-[#6B7280] hover:bg-white/50'
               )}
@@ -186,24 +361,318 @@ export default function SettingsPage() {
               <t.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
               {t.label}
             </button>
-          ))}
-        </nav>
-
-        <main className="col-span-12 lg:col-span-9">
-          {tab === 'pipelines' && <PipelinesTab />}
-          {tab === 'templates' && <TemplatesTab />}
-          {tab === 'campaigns' && <CampaignsTab />}
-          {tab === 'agents' && <AgentsTab />}
-          {tab === 'numbers' && <NumbersTab />}
-          {tab === 'channels' && <ChannelsTab />}
-          {tab === 'ai' && <AITab campaignId={selectedCampaignId} />}
-          {tab === 'kb' && <KnowledgeBaseTab campaignId={selectedCampaignId} />}
-          {tab === 'glossary' && <GlossaryTab campaignId={selectedCampaignId} />}
-          {tab === 'pacing' && <PacingTab />}
-          {tab === 'kill' && <KillTab />}
-        </main>
+          );
+        })}
       </div>
+    </nav>
+  );
+}
+
+// ─── Workspace Bundle: master template view (PR 62) ───────────────────
+function WorkspaceBundle({ tab, onTabChange }: { tab: string; onTabChange: (t: string) => void }) {
+  // Default to first tab if invalid
+  const validTab = WORKSPACE_BUNDLE_TABS.some((t) => t.id === tab) ? tab : 'pipelines';
+  return (
+    <>
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl px-5 py-3 mb-3">
+        <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-bold mb-1">
+          ★ Workspace defaults
+        </div>
+        <div className="text-[14px] font-semibold text-[#1A1A1A]">Master template</div>
+        <div className="text-[11px] text-[#6B7280]">
+          Every campaign inherits these defaults until you override a specific item inside that campaign.
+        </div>
+      </div>
+      <div className="flex gap-1 mb-3 overflow-x-auto">
+        {WORKSPACE_BUNDLE_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => onTabChange(t.id)}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-medium whitespace-nowrap transition-colors',
+              validTab === t.id
+                ? 'bg-white border border-[#E5E7EB] text-[#1E9A80] shadow-sm'
+                : 'text-[#6B7280] hover:bg-white/50'
+            )}
+          >
+            <t.icon className="w-3.5 h-3.5" strokeWidth={1.8} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {validTab === 'pipelines' && <PipelinesTab />}
+      {validTab === 'templates' && <TemplatesTab />}
+      {validTab === 'ai' && <AITab campaignId={null} />}
+      {validTab === 'kb' && <KnowledgeBaseTab campaignId={null} />}
+      {validTab === 'glossary' && <GlossaryTab campaignId={null} />}
+    </>
+  );
+}
+
+// ─── Campaign Bundle: ONE screen with everything for a campaign (PR 62) ─
+function CampaignBundle({
+  campaignId,
+  tab,
+  onTabChange,
+}: {
+  campaignId: string;
+  tab: string;
+  onTabChange: (t: string) => void;
+}) {
+  const { campaigns, refetch } = useDialerCampaigns({ includeInactive: true });
+  const camp = campaigns.find((c) => c.id === campaignId);
+  const validTab = CAMPAIGN_BUNDLE_TABS.some((t) => t.id === tab) ? tab : 'overview';
+
+  if (!camp) {
+    return (
+      <div className="p-6 text-center text-[#9CA3AF] italic">
+        Campaign not found. Pick another from the sidebar.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <CampaignBundleHeader campaign={camp} onChanged={refetch} onSelected={(id) => {/* parent handles via setScope on next render */ void id;}} />
+      <div className="flex gap-1 mb-3 overflow-x-auto">
+        {CAMPAIGN_BUNDLE_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => onTabChange(t.id)}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-medium whitespace-nowrap transition-colors',
+              validTab === t.id
+                ? 'bg-white border border-[#E5E7EB] text-[#1E9A80] shadow-sm'
+                : 'text-[#6B7280] hover:bg-white/50'
+            )}
+          >
+            <t.icon className="w-3.5 h-3.5" strokeWidth={1.8} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {validTab === 'overview' && <CampaignOverviewTab campaignId={campaignId} />}
+      {validTab === 'pipelines' && <PipelinesTab />}
+      {validTab === 'templates' && <TemplatesTab campaignId={campaignId} />}
+      {validTab === 'ai' && <AITab campaignId={campaignId} />}
+      {validTab === 'kb' && <KnowledgeBaseTab campaignId={campaignId} />}
+      {validTab === 'glossary' && <GlossaryTab campaignId={campaignId} />}
+      {validTab === 'agents' && <CampaignAgentsPanelStandalone campaignId={campaignId} />}
+      {validTab === 'numbers' && <CampaignNumbersPanelStandalone campaignId={campaignId} />}
+      {validTab === 'leads' && <CampaignLeadsCsvPanel campaignId={campaignId} campaignName={camp.name} />}
+    </>
+  );
+}
+
+// Header for the campaign bundle — name + active toggle + duplicate + delete.
+function CampaignBundleHeader({
+  campaign,
+  onChanged,
+  onSelected,
+}: {
+  campaign: { id: string; name: string; isActive: boolean; aiCoachEnabled: boolean; parallelLines: number; totalLeads: number };
+  onChanged: () => void;
+  onSelected: (id: string) => void;
+}) {
+  const [actionErr, setActionErr] = useState<string | null>(null);
+
+  const patch = async (p: Record<string, unknown>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('wk_dialer_campaigns' as any) as any)
+      .update(p)
+      .eq('id', campaign.id);
+    if (error) setActionErr(error.message);
+    else onChanged();
+  };
+
+  const duplicate = async () => {
+    const newName = window.prompt(`Duplicate "${campaign.name}" — name for the copy?`, `${campaign.name} (copy)`);
+    if (!newName?.trim()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('wk_duplicate_campaign', {
+      p_source_id: campaign.id,
+      p_new_name: newName.trim(),
+    });
+    if (error) setActionErr(error.message);
+    else {
+      onChanged();
+      if (typeof data === 'string') onSelected(data);
+    }
+  };
+
+  const remove = async () => {
+    if (!confirm(`Delete "${campaign.name}"?\nThis removes the campaign + its bundle (AI overrides, facts, glossary, agent + number assignments, SMS templates). Queue rows are deleted via ON DELETE CASCADE.`)) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('wk_dialer_campaigns' as any) as any)
+      .delete()
+      .eq('id', campaign.id);
+    if (error) setActionErr(error.message);
+    else onChanged();
+  };
+
+  return (
+    <div className="bg-white border border-[#E5E7EB] rounded-2xl px-5 py-3 mb-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-bold mb-0.5">
+            Campaign
+          </div>
+          <div className="text-[16px] font-bold text-[#1A1A1A] truncate">{campaign.name}</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => void patch({ is_active: !campaign.isActive })}
+            className={cn(
+              'inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border',
+              campaign.isActive
+                ? 'bg-[#ECFDF5] text-[#1E9A80] border-[#1E9A80]/30'
+                : 'bg-[#FEF3C7] text-[#B45309] border-[#F59E0B]/30'
+            )}
+          >
+            {campaign.isActive ? '🟢 Active' : '⏸ Paused'}
+          </button>
+          <button
+            onClick={() => void patch({ ai_coach_enabled: !campaign.aiCoachEnabled })}
+            className={cn(
+              'inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border',
+              campaign.aiCoachEnabled
+                ? 'bg-[#ECFDF5] text-[#1E9A80] border-[#1E9A80]/30'
+                : 'bg-[#F3F3EE] text-[#9CA3AF] border-[#E5E7EB]'
+            )}
+          >
+            <Bot className="w-3 h-3" /> Coach: {campaign.aiCoachEnabled ? 'ON' : 'OFF'}
+          </button>
+          <button
+            onClick={() => void duplicate()}
+            className="text-[11px] text-[#1A1A1A] border border-[#E5E7EB] hover:bg-[#F3F3EE] px-3 py-1 rounded-[8px]"
+          >
+            Duplicate
+          </button>
+          <button
+            onClick={() => void remove()}
+            className="text-[11px] text-[#EF4444] hover:bg-[#FEE2E2] px-3 py-1 rounded-[8px]"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+      <div className="mt-2 text-[11px] text-[#6B7280]">
+        {campaign.parallelLines} parallel lines · {campaign.totalLeads} leads in queue
+      </div>
+      {actionErr && (
+        <div className="mt-2 text-[11px] text-[#B91C1C]">⚠ {actionErr}</div>
+      )}
     </div>
+  );
+}
+
+function CampaignOverviewTab({ campaignId }: { campaignId: string }) {
+  const { campaigns, refetch } = useDialerCampaigns({ includeInactive: true });
+  const camp = campaigns.find((c) => c.id === campaignId);
+  if (!camp) return null;
+  return (
+    <Card title="Settings" hint="Per-campaign defaults that the dialer uses on Start">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label>Parallel lines (1–5)</Label>
+          <input
+            type="number"
+            min={1}
+            max={5}
+            defaultValue={camp.parallelLines}
+            onBlur={async (e) => {
+              const n = Math.max(1, Math.min(5, parseInt(e.target.value, 10) || 1));
+              if (n === camp.parallelLines) return;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase.from('wk_dialer_campaigns' as any) as any)
+                .update({ parallel_lines: n }).eq('id', campaignId);
+              refetch();
+            }}
+            className="w-full px-2 py-1.5 text-[13px] border border-[#E5E7EB] rounded-[8px] tabular-nums bg-white"
+          />
+        </div>
+        <div>
+          <Label>Auto-advance (seconds)</Label>
+          <input
+            type="number"
+            min={1}
+            defaultValue={camp.autoAdvanceSeconds}
+            onBlur={async (e) => {
+              const n = Math.max(1, parseInt(e.target.value, 10) || 10);
+              if (n === camp.autoAdvanceSeconds) return;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase.from('wk_dialer_campaigns' as any) as any)
+                .update({ auto_advance_seconds: n }).eq('id', campaignId);
+              refetch();
+            }}
+            className="w-full px-2 py-1.5 text-[13px] border border-[#E5E7EB] rounded-[8px] tabular-nums bg-white"
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// Standalone wrappers around the existing CampaignAgentsPanel /
+// CampaignNumbersPanel functions so they can render as full tabs in
+// the campaign bundle.
+function CampaignAgentsPanelStandalone({ campaignId }: { campaignId: string }) {
+  return (
+    <Card title="Assigned agents" hint="Only these agents can dial this campaign. None assigned = anyone with workspace access.">
+      <CampaignAgentsPanel campaignId={campaignId} />
+    </Card>
+  );
+}
+
+function CampaignNumbersPanelStandalone({ campaignId }: { campaignId: string }) {
+  return (
+    <Card title="Assigned numbers" hint="Twilio numbers the dialer uses as the from-line. None pinned = falls back to any voice-enabled workspace number.">
+      <CampaignNumbersPanel campaignId={campaignId} />
+    </Card>
+  );
+}
+
+// PR 62: CSV upload of leads, scoped to a campaign. Reuses the existing
+// BulkUploadModal but locks the campaign picker so the admin can't
+// accidentally upload to the wrong campaign.
+function CampaignLeadsCsvPanel({
+  campaignId,
+  campaignName,
+}: {
+  campaignId: string;
+  campaignName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card title="Upload leads" hint={`CSV → wk_contacts + wk_dialer_queue rows pinned to "${campaignName}"`}>
+      <div className="space-y-3">
+        <div className="text-[12px] text-[#6B7280] leading-relaxed">
+          Upload a CSV of leads (phone number, optional name + custom fields).
+          Each row becomes a contact + a queue entry pinned to <strong className="text-[#1A1A1A]">{campaignName}</strong>.
+          Agents on this campaign immediately see them in the dialer queue.
+        </div>
+        <button
+          onClick={() => setOpen(true)}
+          className="bg-[#1E9A80] text-white text-[12px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 inline-flex items-center gap-1.5"
+        >
+          <Plus className="w-3.5 h-3.5" /> Upload CSV
+        </button>
+        <div className="text-[10px] text-[#9CA3AF]">
+          Accepted columns (case-insensitive):{' '}
+          <code className="bg-[#F3F3EE] px-1 rounded">phone</code> /{' '}
+          <code className="bg-[#F3F3EE] px-1 rounded">mobile</code> /{' '}
+          <code className="bg-[#F3F3EE] px-1 rounded">number</code> + optional{' '}
+          <code className="bg-[#F3F3EE] px-1 rounded">name</code>,{' '}
+          <code className="bg-[#F3F3EE] px-1 rounded">email</code>. Anything else is stored as a custom field.
+        </div>
+      </div>
+      <BulkUploadModal
+        open={open}
+        onClose={() => setOpen(false)}
+        prefillCampaignId={campaignId}
+        lockCampaign
+      />
+    </Card>
   );
 }
 
@@ -717,8 +1186,10 @@ function Chip({ label, colour }: { label: string; colour: string }) {
 // Hugo 2026-04-30: stage-coupled templates. Each template can
 // optionally carry a move_to_stage_id; when an agent picks the
 // template and sends, the contact moves to that stage.
-function TemplatesTab() {
-  const { items, loading, error, add, patch, remove } = useSmsTemplates();
+function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}) {
+  // PR 62: campaign-aware. workspace rows show as inherited; new rows
+  // when campaignId is set go into wk_campaign_sms_templates.
+  const { items, loading, error, add, patch, remove } = useSmsTemplates({ campaignId });
   const { columns } = useSmsV2();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{
