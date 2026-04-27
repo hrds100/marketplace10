@@ -24,6 +24,9 @@ export function useCampaignNumbers(campaignId: string | null): {
   add: (numberId: string, priority?: number) => Promise<void>;
   remove: (id: string) => Promise<void>;
   setPriority: (id: string, priority: number) => Promise<void>;
+  /** PR 94 (Hugo 2026-04-28): swap which wk_numbers row is assigned to
+   *  this campaign-channel slot. Same priority, different number. */
+  swapNumber: (id: string, newNumberId: string) => Promise<void>;
 } {
   const [rows, setRows] = useState<CampaignNumber[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,5 +103,13 @@ export function useCampaignNumbers(campaignId: string | null): {
     if (e) throw new Error(e.message);
   }, []);
 
-  return { rows, loading, error, add, remove, setPriority };
+  const swapNumber = useCallback(async (id: string, newNumberId: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: e } = await (supabase.from('wk_campaign_numbers' as any) as any)
+      .update({ number_id: newNumberId })
+      .eq('id', id);
+    if (e) throw new Error(e.message);
+  }, []);
+
+  return { rows, loading, error, add, remove, setPriority, swapNumber };
 }
