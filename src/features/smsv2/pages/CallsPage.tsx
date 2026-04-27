@@ -45,7 +45,7 @@ export default function CallsPage() {
   const [transcriptCallId, setTranscriptCallId] = useState<string | null>(null);
 
   const { calls: realCalls } = useCalls();
-  const { contacts: realContacts } = useSmsV2();
+  const { contacts: realContacts, columns } = useSmsV2();
   const demoMode = useDemoMode();
 
   // In production, always use real data — even if empty. The mock fallback
@@ -202,6 +202,7 @@ export default function CallsPage() {
               <th className="text-left px-2 py-2.5 font-semibold">Prospect</th>
               <th className="text-left px-2 py-2.5 font-semibold">Agent</th>
               <th className="text-left px-2 py-2.5 font-semibold">Status</th>
+              <th className="text-left px-2 py-2.5 font-semibold">Stage</th>
               <th className="text-right px-2 py-2.5 font-semibold">Duration</th>
               <th className="text-right px-2 py-2.5 font-semibold">Cost</th>
               <th className="text-left px-2 py-2.5 font-semibold">Date · Time</th>
@@ -266,6 +267,35 @@ export default function CallsPage() {
                         {c.status}
                       </span>
                     </td>
+                    {/* PR 36 (Hugo 2026-04-27): show the contact's
+                        current pipeline stage on each call row so
+                        the agent can see where the lead landed
+                        without opening the call. */}
+                    <td className="px-2 py-2.5">
+                      {(() => {
+                        const stage = contact?.pipelineColumnId
+                          ? columns.find((col) => col.id === contact.pipelineColumnId)
+                          : undefined;
+                        if (!stage) {
+                          return <span className="text-[10px] text-[#9CA3AF]">—</span>;
+                        }
+                        return (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded"
+                            style={{
+                              background: `${stage.colour}1A`,
+                              color: stage.colour,
+                            }}
+                          >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ background: stage.colour }}
+                            />
+                            {stage.name}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     <td className="px-2 py-2.5 text-right tabular-nums">
                       {c.durationSec > 0 ? formatDuration(c.durationSec) : '—'}
                     </td>
@@ -317,9 +347,9 @@ export default function CallsPage() {
                         <Link
                           to={`/smsv2/calls/${c.id}`}
                           className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[#1E9A80] hover:bg-[#1E9A80] hover:text-white rounded-[8px] transition-colors"
-                          title="Open the full call screen with transcript + recording + coach events"
+                          title="Reopen the call room — transcript, recording, coach events, follow-ups"
                         >
-                          <ExternalLink className="w-3 h-3" /> Open
+                          <ExternalLink className="w-3 h-3" /> Open call room
                         </Link>
                       </div>
                     </td>
@@ -328,7 +358,7 @@ export default function CallsPage() {
                   {/* Inline player — real audio element with signed URL */}
                   {isPlaying && c.recordingUrl && (
                     <tr key={`${c.id}-player`}>
-                      <td colSpan={9} className="px-4 py-3 bg-[#ECFDF5]/40">
+                      <td colSpan={10} className="px-4 py-3 bg-[#ECFDF5]/40">
                         {signedUrl ? (
                           <div className="flex items-center gap-3">
                             <audio
@@ -367,7 +397,7 @@ export default function CallsPage() {
                   {/* Expanded — previous calls to same prospect */}
                   {isExpanded && (
                     <tr key={`${c.id}-expand`}>
-                      <td colSpan={9} className="px-4 py-3 bg-[#F3F3EE]/40">
+                      <td colSpan={10} className="px-4 py-3 bg-[#F3F3EE]/40">
                         <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-2">
                           Previous calls to {contact?.name} ({previousCalls.length})
                         </div>
@@ -413,7 +443,7 @@ export default function CallsPage() {
             })}
             {filteredCalls.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-[#9CA3AF]">
+                <td colSpan={10} className="px-4 py-12 text-center text-[#9CA3AF]">
                   No calls match these filters.
                 </td>
               </tr>
