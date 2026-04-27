@@ -147,7 +147,7 @@ describe('ContactSmsModal', () => {
 
   // Multi-channel coverage (PR 63 / multi-channel PR 4).
 
-  it('switching to WhatsApp routes Send to wazzup-send with contact_id + body', async () => {
+  it('switching to WhatsApp routes Send to unipile-send with contact_id + body', async () => {
     const { getByTestId } = render(
       wrap(<ContactSmsModal contact={fixture} onClose={() => {}} agentFirstName="Hugo" />)
     );

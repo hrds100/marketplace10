@@ -4,7 +4,7 @@
 // Different from the existing send-email function: that one is a
 // templated marketplace notification dispatcher (30+ types, hard-coded
 // HTML, gated by user prefs). This one is a free-text agent-typed
-// email tied to a wk_contacts row, mirroring wk-sms-send / wazzup-send
+// email tied to a wk_contacts row, mirroring wk-sms-send / unipile-send
 // shape so the PR 63 channel-picker just routes by channel.
 //
 // Body:

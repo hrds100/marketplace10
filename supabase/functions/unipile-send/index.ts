@@ -1,7 +1,7 @@
 // unipile-send — outbound WhatsApp (and email later) via Unipile.
 // PR 69 (multi-channel pivot), Hugo 2026-04-27.
 //
-// Mirrors wazzup-send / wk-email-send shape so the existing channel-picker
+// Mirrors wk-sms-send / wk-email-send shape so the channel-picker
 // can route to it by changing one string. Uses Unipile's /chats endpoint
 // to start a chat (sends first message to a new attendee — no tariff gate).
 //

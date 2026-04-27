@@ -1,9 +1,11 @@
 // ChannelsTab — Settings → Channels. Lists every paired channel
-// (SMS via Twilio, WhatsApp via Wazzup24, Email via Resend) grouped
-// by provider, with on/off toggle per row and a "Sync from Wazzup24"
-// button that pulls newly-paired WhatsApp numbers into wk_numbers.
+// (SMS via Twilio, WhatsApp via Unipile, Email via Resend) grouped
+// by provider, with on/off toggle per row.
 //
 // PR 64 (multi-channel PR 5), Hugo 2026-04-27.
+// PR 69 migrated WhatsApp from Wazzup24 → Unipile.
+// PR 91 (Hugo 2026-04-27): comment hygiene — Wazzup24 references
+// removed from active code (DB CHECK constraint kept for legacy rows).
 
 import { useMemo, useState } from 'react';
 import {
