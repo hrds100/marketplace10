@@ -13,6 +13,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export type TemplateChannel = 'sms' | 'whatsapp' | 'email';
+
 export interface SmsTemplate {
   id: string;
   name: string;
@@ -20,6 +22,12 @@ export interface SmsTemplate {
   is_global: boolean;
   owner_agent_id: string | null;
   move_to_stage_id: string | null;
+  /** PR 60 / PR 64: which channel this template targets. NULL =
+   *  universal (works on any channel). 'email' templates also need
+   *  a non-empty subject (UI-validated). */
+  channel: TemplateChannel | null;
+  /** PR 64: subject line for email templates. */
+  subject: string | null;
   created_at: string;
   updated_at: string;
   /** PR 62: 'workspace' (wk_sms_templates) or 'campaign'
@@ -42,6 +50,8 @@ interface RawWorkspaceRow {
   is_global: boolean;
   owner_agent_id: string | null;
   move_to_stage_id: string | null;
+  channel: TemplateChannel | null;
+  subject: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -52,6 +62,8 @@ interface RawCampaignRow {
   name: string;
   body_md: string;
   merge_fields: unknown;
+  channel: TemplateChannel | null;
+  subject: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -66,7 +78,7 @@ export function useSmsTemplates(opts: UseSmsTemplatesOpts = {}) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const wsRes = await (supabase.from('wk_sms_templates' as any) as any)
-        .select('id, name, body_md, is_global, owner_agent_id, move_to_stage_id, created_at, updated_at')
+        .select('id, name, body_md, is_global, owner_agent_id, move_to_stage_id, channel, subject, created_at, updated_at')
         .order('name', { ascending: true });
 
       let merged: SmsTemplate[] = ((wsRes.data ?? []) as RawWorkspaceRow[]).map(
@@ -76,7 +88,7 @@ export function useSmsTemplates(opts: UseSmsTemplatesOpts = {}) {
       if (campaignId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const cRes = await (supabase.from('wk_campaign_sms_templates' as any) as any)
-          .select('id, campaign_id, name, body_md, merge_fields, created_at, updated_at')
+          .select('id, campaign_id, name, body_md, merge_fields, channel, subject, created_at, updated_at')
           .eq('campaign_id', campaignId)
           .order('name', { ascending: true });
         const campRows = (cRes.data ?? []) as RawCampaignRow[];
@@ -91,6 +103,8 @@ export function useSmsTemplates(opts: UseSmsTemplatesOpts = {}) {
               is_global: false,
               owner_agent_id: null,
               move_to_stage_id: null,
+              channel: r.channel,
+              subject: r.subject,
               created_at: r.created_at,
               updated_at: r.updated_at,
               source: 'campaign',
@@ -168,8 +182,8 @@ export function useSmsTemplates(opts: UseSmsTemplatesOpts = {}) {
         .insert(payload)
         .select(
           campaignId
-            ? 'id, campaign_id, name, body_md, merge_fields, created_at, updated_at'
-            : 'id, name, body_md, is_global, owner_agent_id, move_to_stage_id, created_at, updated_at'
+            ? 'id, campaign_id, name, body_md, merge_fields, channel, subject, created_at, updated_at'
+            : 'id, name, body_md, is_global, owner_agent_id, move_to_stage_id, channel, subject, created_at, updated_at'
         )
         .single();
       if (e) throw new Error(e.message);
