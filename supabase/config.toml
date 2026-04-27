@@ -122,6 +122,13 @@ verify_jwt = false
 [functions.sms-webhook-status]
 verify_jwt = false
 
+# CRM SMS — PR 50 refactor
+[functions.wk-sms-incoming]
+verify_jwt = false
+
+[functions.wk-sms-send]
+verify_jwt = true
+
 [functions.sms-send]
 verify_jwt = false
 

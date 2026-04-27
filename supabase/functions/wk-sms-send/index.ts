@@ -1,0 +1,171 @@
+// wk-sms-send — outbound SMS for /crm. PR 50, Hugo 2026-04-27.
+//
+// Body:
+//   { contact_id: string, body: string, from_e164?: string }
+//
+// 1. Verify JWT, look up the agent.
+// 2. Resolve the wk_contact to get phone.
+// 3. POST to Twilio Messages.create.
+// 4. INSERT a wk_sms_messages row with direction='outbound' +
+//    twilio_sid + status mapped from Twilio's response.
+// 5. Return { message_id, twilio_sid }.
+//
+// Companion to wk-sms-incoming. Both write into the same table.
+
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID') ?? '';
+const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN') ?? '';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+interface SendBody {
+  contact_id: string;
+  body: string;
+  // Optional — defaults to the workspace's first voice/SMS-enabled
+  // wk_numbers row. Pass when an agent has multiple lines.
+  from_e164?: string;
+}
+
+const json = (status: number, payload: Record<string, unknown>) =>
+  new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
+serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return json(405, { error: 'Method not allowed' });
+
+  try {
+    const auth = req.headers.get('authorization') ?? '';
+    const jwt = auth.replace(/^Bearer\s+/i, '');
+    if (!jwt) return json(401, { error: 'Missing bearer token' });
+
+    const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const { data: userResp, error: userErr } = await supa.auth.getUser(jwt);
+    if (userErr || !userResp?.user) return json(401, { error: 'Invalid token' });
+    const agentId = userResp.user.id;
+
+    let payload: SendBody;
+    try {
+      payload = await req.json() as SendBody;
+    } catch {
+      return json(400, { error: 'Invalid JSON' });
+    }
+
+    const contactId = (payload.contact_id ?? '').trim();
+    const body = (payload.body ?? '').trim();
+    if (!contactId) return json(400, { error: 'contact_id required' });
+    if (!body) return json(400, { error: 'body required' });
+    if (body.length > 1600) return json(400, { error: 'body too long (max 1600 chars)' });
+
+    // Resolve contact's phone.
+    const { data: contact, error: contactErr } = await supa
+      .from('wk_contacts')
+      .select('id, phone, name')
+      .eq('id', contactId)
+      .maybeSingle();
+    if (contactErr) return json(500, { error: contactErr.message });
+    if (!contact) return json(404, { error: 'Contact not found' });
+
+    const toE164 = (contact.phone as string | null)?.trim();
+    if (!toE164) return json(400, { error: 'Contact has no phone number' });
+
+    // Resolve sender number.
+    let fromE164 = (payload.from_e164 ?? '').trim();
+    if (!fromE164) {
+      const { data: defaultNum } = await supa
+        .from('wk_numbers')
+        .select('e164')
+        .eq('sms_enabled', true)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      fromE164 = (defaultNum?.e164 as string | undefined) ?? '';
+    }
+    if (!fromE164) {
+      return json(503, { error: 'No SMS-enabled number configured (wk_numbers)' });
+    }
+
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+      return json(503, { error: 'Twilio creds not set on edge function secrets' });
+    }
+
+    // POST to Twilio Messages.create.
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+    const auth64 = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+    const form = new URLSearchParams({
+      To: toE164,
+      From: fromE164,
+      Body: body,
+      // StatusCallback could be wired later for delivery receipts;
+      // out of scope for the receive-path refactor.
+    });
+    const twResp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${auth64}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: form.toString(),
+    });
+    if (!twResp.ok) {
+      const errText = await twResp.text();
+      console.error('[wk-sms-send] twilio error', twResp.status, errText);
+      return json(502, { error: `Twilio ${twResp.status}: ${errText}` });
+    }
+    const twJson = await twResp.json() as {
+      sid?: string;
+      status?: string;
+    };
+
+    // Persist the outbound row. We always write, even if Twilio's
+    // response is unparseable — the message has left.
+    const { data: inserted, error: insErr } = await supa
+      .from('wk_sms_messages')
+      .insert({
+        contact_id: contactId,
+        direction: 'outbound',
+        body,
+        twilio_sid: twJson.sid ?? null,
+        from_e164: fromE164,
+        to_e164: toE164,
+        status: twJson.status ?? 'queued',
+        created_by: agentId,
+      })
+      .select('id')
+      .single();
+
+    if (insErr) {
+      console.error('[wk-sms-send] db insert failed (twilio sent though)', insErr);
+      return json(200, {
+        twilio_sid: twJson.sid ?? null,
+        warning: 'sent via Twilio but local insert failed',
+      });
+    }
+
+    // Bump wk_contacts.last_contact_at so the inbox sorts correctly.
+    await supa
+      .from('wk_contacts')
+      .update({ last_contact_at: new Date().toISOString() })
+      .eq('id', contactId);
+
+    return json(200, {
+      message_id: inserted?.id,
+      twilio_sid: twJson.sid ?? null,
+      status: twJson.status ?? 'queued',
+    });
+  } catch (e) {
+    console.error('[wk-sms-send] threw', e);
+    return json(500, { error: e instanceof Error ? e.message : 'Internal error' });
+  }
+});

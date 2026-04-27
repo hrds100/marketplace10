@@ -20,6 +20,8 @@ import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactTimeline } from '../hooks/useContactTimeline';
+import { useContactMessages } from '../hooks/useContactMessages';
+import { useInboxThreads } from '../hooks/useInboxThreads';
 import { useContactPersistence } from '../hooks/useContactPersistence';
 import { supabase } from '@/integrations/supabase/client';
 import type { Contact } from '../types';
@@ -29,7 +31,15 @@ interface SmsSendInvoke {
     name: string,
     options: { body: Record<string, unknown> }
   ) => Promise<{
-    data: { sid?: string; error?: string } | null;
+    // wk-sms-send returns { message_id, twilio_sid, status } on success
+    // or { error } on failure. Older sms-send shape kept for compatibility.
+    data: {
+      message_id?: string;
+      twilio_sid?: string;
+      sid?: string;
+      status?: string;
+      error?: string;
+    } | null;
     error: { message: string } | null;
   }>;
 }
@@ -49,13 +59,35 @@ export default function InboxPage() {
 
   const activeContact = contacts.find((c) => c.id === activeContactId) ?? contacts[0];
   const timeline = useContactTimeline(activeContact?.id ?? '', activeContact?.phone);
+  // PR 50 (Hugo 2026-04-27): SMS source is wk_sms_messages now.
+  // useContactTimeline still loads the legacy sms_messages rows for
+  // backward compatibility (so any historical conversations from the
+  // old /sms inbox remain visible), but the canonical CRM source
+  // going forward is the realtime-subscribed useContactMessages.
+  const { messages: crmMessages } = useContactMessages(activeContact?.id ?? '');
+  const { threads: inboxThreads } = useInboxThreads();
+
+  // Convert wk_sms_messages → SmsMessage shape so the existing
+  // thread renderer doesn't have to change.
+  const crmSms = useMemo(() => crmMessages.map((m) => ({
+    id: m.id,
+    contactId: m.contactId,
+    direction: m.direction,
+    body: m.body,
+    sentAt: m.createdAt,
+  })), [crmMessages]);
 
   // Real data only in production. Mock fallback restricted to ?demo=1.
-  const contactSms = timeline.sms.length > 0
-    ? timeline.sms
-    : demoMode
-      ? MOCK_SMS.filter((m) => m.contactId === activeContact?.id)
-      : [];
+  // CRM messages are the primary source; legacy timeline SMS shown
+  // only when CRM messages are empty so historical /sms threads
+  // don't disappear.
+  const contactSms = crmSms.length > 0
+    ? crmSms
+    : timeline.sms.length > 0
+      ? timeline.sms
+      : demoMode
+        ? MOCK_SMS.filter((m) => m.contactId === activeContact?.id)
+        : [];
   const contactActivity = timeline.activities.length > 0
     ? timeline.activities
     : demoMode
@@ -87,11 +119,16 @@ export default function InboxPage() {
     if (!reply.trim() || !activeContact || sending) return;
     setSending(true);
     try {
+      // PR 50 (Hugo 2026-04-27): outbound SMS now goes through
+      // wk-sms-send, which writes to wk_sms_messages so the message
+      // appears in the thread immediately via realtime subscription.
+      // The legacy sms-send wrote to sms_messages and bypassed the
+      // /crm inbox entirely.
       const { data, error } = await (
         supabase.functions as unknown as SmsSendInvoke
-      ).invoke('sms-send', {
+      ).invoke('wk-sms-send', {
         body: {
-          to: activeContact.phone,
+          contact_id: activeContact.id,
           body: reply.trim(),
         },
       });
@@ -148,19 +185,23 @@ export default function InboxPage() {
         </div>
         <div className="flex-1 overflow-y-auto divide-y divide-[#E5E7EB]">
           {contacts.map((c) => {
-            // No mock leak in production: list rows surface only real
-            // history. The legacy mock fallback returns ONLY when ?demo=1
-            // is in the URL.
+            // PR 50 (Hugo 2026-04-27): the inbox preview now reads
+            // from useInboxThreads (wk_sms_messages — realtime). The
+            // mock fallback is still reachable via ?demo=1 for
+            // internal demos / Storybook screenshots.
+            const thread = inboxThreads.find((t) => t.contactId === c.id);
             const lastCall = demoMode
               ? MOCK_CALLS.filter((cl) => cl.contactId === c.id).sort(
                   (a, b) => +new Date(b.startedAt) - +new Date(a.startedAt)
                 )[0]
               : undefined;
-            const lastSms = demoMode
-              ? MOCK_SMS.filter((m) => m.contactId === c.id).sort(
-                  (a, b) => +new Date(b.sentAt) - +new Date(a.sentAt)
-                )[0]
-              : undefined;
+            const lastSms = thread
+              ? { body: thread.lastMessageBody, sentAt: thread.lastMessageAt }
+              : demoMode
+                ? MOCK_SMS.filter((m) => m.contactId === c.id).sort(
+                    (a, b) => +new Date(b.sentAt) - +new Date(a.sentAt)
+                  )[0]
+                : undefined;
             return (
               <button
                 key={c.id}
