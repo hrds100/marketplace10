@@ -146,7 +146,7 @@ export default function PastCallScreen() {
     <div className="flex flex-col h-full bg-[#F3F3EE]">
       <header className="bg-white border-b border-[#E5E7EB] px-5 py-3 flex items-center gap-3">
         <button
-          onClick={() => navigate('/smsv2/calls')}
+          onClick={() => navigate('/crm/calls')}
           className="p-1.5 rounded hover:bg-[#F3F3EE] text-[#6B7280] hover:text-[#1A1A1A]"
           title="Back to calls"
         >
@@ -172,8 +172,8 @@ export default function PastCallScreen() {
         <Link
           to={
             contact
-              ? `/smsv2/contacts/${contact.id}`
-              : '/smsv2/calls'
+              ? `/crm/contacts/${contact.id}`
+              : '/crm/calls'
           }
           className="text-[12px] text-[#1E9A80] hover:underline"
         >

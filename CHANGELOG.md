@@ -1,5 +1,54 @@
 # Changelog
 
+## 2026-04-27 — CRM rename (PR 45) + Watch Agent + post-call nav (PRs 42–44)
+
+**Public rename: SMSV2 → CRM** (user-facing only).
+
+- New URL home: `/crm/*`. Old `/smsv2/*` URLs redirect to `/crm/*`
+  (wildcard `<Navigate>`), so any agent bookmark or external link
+  keeps working.
+- New dedicated agent sign-in at `/crm/login` — email + password
+  form purpose-built for CRM agents. The regular `/signin` keeps
+  serving every other user (tenants, landlords, social login, etc.).
+- New `CrmGuard` (replaces `ProtectedRoute` on the CRM layout):
+  only profiles whose `workspace_role IN ('admin','agent','viewer')`
+  can enter. Hardcoded admin allow-list (`admin@hub.nfstay.com`,
+  `hugo@nfstay.com`) is still honoured. Anyone else gets a polite
+  "CRM access required" wall + sign-in CTA.
+- Admin tab bar (`AdminLayout` top nav) gains a **CRM** tile next to
+  **SMS**, linking to `/crm/inbox`.
+- Internal labels: sidebar now reads "CRM" (was "Workspace v2");
+  layout header reads "CRM" (was "Workspace · SANDBOX v2"); footer
+  reads "NFSTAY CRM".
+
+**What did NOT change** (deliberate — see `docs/runbooks/CRM_RENAME.md`):
+- Folder `src/features/smsv2/` keeps its name (renaming would touch
+  ~200 import paths for zero user-visible value).
+- Database tables stay `wk_*` (40+ tables, every realtime channel
+  filter, every RLS policy — high-risk, no benefit).
+- Edge functions stay `wk-*` (`wk-voice-transcription`, `wk-create-agent`,
+  etc. — Twilio webhook URLs would need re-pointing, breaks live
+  calls during cutover).
+- `wk` = "workwave", the original codename for this module. Treat it
+  as the engine codename; users never see it.
+
+**Other changes shipped today:**
+- **PR 42** — coach state cursor: `wk_calls.current_stage` + STAGE
+  LOCK injection. Coach no longer regresses to OPEN mid-call after
+  it has already fired QUALIFY (Hugo's screenshot bug 2026-04-27).
+  Migration `20260430000013_smsv2_call_current_stage.sql`. Edge fn
+  `wk-voice-transcription` redeployed.
+- **PR 43** — Watch Agent: dashboard's Live Activity "watch" button
+  is no longer inert. Opens a read-only modal subscribed to
+  `wk_live_transcripts` + `wk_live_coach_events` for the selected
+  call_id. Two-column layout (transcript + coach), latest card
+  highlighted. Invite-agents flow (`wk-create-agent`) verified.
+- **PR 44** — post-call panel: CTA renamed "Call now" → "Next call"
+  (verb matches behaviour), new "← Previous call" button pops the
+  agent back into the just-ended lead's room without ending the
+  dial cycle. `ActiveCallContext` now exposes `lastEndedContactId`
+  + `openPreviousCall()`.
+
 ## 2026-04-29 — smsv2: coach v8 (looser script + filler cadence + faster debounce)
 
 Per Hugo's PR-v8 spec — high-impact / low-risk subset of the audit fix

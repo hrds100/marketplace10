@@ -46,7 +46,7 @@ function renderWith(
   search?: string
 ) {
   return render(
-    <MemoryRouter initialEntries={[search ?? '/smsv2/inbox']}>
+    <MemoryRouter initialEntries={[search ?? '/crm/inbox']}>
       <SmsV2Provider>
         <LiveTranscriptPane
           durationSec={30}
@@ -89,7 +89,7 @@ describe('LiveTranscriptPane — with callId', () => {
 
 describe('LiveTranscriptPane — ?demo=1 still allows the legacy mock fallback', () => {
   it('renders MOCK_TRANSCRIPT lines when ?demo=1 is in the URL and no callId', () => {
-    const { container } = renderWith({ callId: null }, '/smsv2/inbox?demo=1');
+    const { container } = renderWith({ callId: null }, '/crm/inbox?demo=1');
     const text = container.textContent ?? '';
     // At least one mock transcript line should be visible — we don't pin
     // exact wording (it can change), but presence indicates the fallback

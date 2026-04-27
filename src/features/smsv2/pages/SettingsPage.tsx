@@ -806,13 +806,13 @@ function CampaignsTab() {
     <Card title="Campaigns & lead distribution">
       {/* PR 27 honesty banner: this tab edits the IN-MEMORY store
           campaigns (mock data), not real wk_dialer_campaigns rows.
-          Real CRUD lands in a follow-up. Today: use /smsv2/dialer to
+          Real CRUD lands in a follow-up. Today: use /crm/dialer to
           run the real campaigns Hugo seeded via SQL / Supabase Studio. */}
       <div className="mb-3 px-3 py-2 bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-[10px] text-[11px] text-[#92400E]">
         ⚠ Heads up — edits below only update local state. Real campaigns
         live in <code className="bg-white/60 px-1 rounded">wk_dialer_campaigns</code> and aren't editable
         from this tab yet (use Supabase Studio for now). Running campaigns
-        + parallel-dial UI is on /smsv2/dialer.
+        + parallel-dial UI is on /crm/dialer.
       </div>
       <div className="space-y-2">
         {campaigns.map((c) => (

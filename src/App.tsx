@@ -130,6 +130,12 @@ import Smsv2PipelinesPage from '@/features/smsv2/pages/PipelinesPage';
 import Smsv2ReportsPage from '@/features/smsv2/pages/ReportsPage';
 import Smsv2SettingsPage from '@/features/smsv2/pages/SettingsPage';
 import Smsv2TestPage from '@/features/smsv2/pages/TestPage';
+// PR 45 (Hugo 2026-04-27): the SMSV2 module is rebranded to "CRM"
+// for the user-facing surface. /crm/* routes are the new home;
+// /smsv2/* are kept as redirects so any bookmark / external link
+// keeps working. Internal folder + DB tables stay smsv2 / wk_* —
+// see docs/runbooks/CRM_RENAME.md.
+import CrmLoginPage from '@/features/smsv2/pages/CrmLoginPage';
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -307,9 +313,13 @@ const App = () => (
             <Route path="dashboard" element={<SmsDashboardPage />} />
             <Route path="webhooks" element={<SmsWebhooksPage />} />
           </Route>
-          {/* SMSv2 Workspace — sandbox calling + CRM (Phase 0 UI) */}
-          <Route path="/smsv2" element={<Smsv2Layout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
+          {/* CRM workspace (PR 45 — renamed from SMSV2). Internal
+              folder + DB tables stay smsv2 / wk_* (see runbook). The
+              CrmGuard inside Smsv2Layout enforces workspace_role
+              membership; agents land here via /crm/login. */}
+          <Route path="/crm/login" element={<CrmLoginPage />} />
+          <Route path="/crm" element={<Smsv2Layout />}>
+            <Route index element={<Navigate to="inbox" replace />} />
             <Route path="dashboard" element={<Smsv2DashboardPage />} />
             <Route path="inbox" element={<Smsv2InboxPage />} />
             <Route path="calls" element={<Smsv2CallsPage />} />
@@ -322,6 +332,9 @@ const App = () => (
             <Route path="settings" element={<Smsv2SettingsPage />} />
             <Route path="test" element={<Smsv2TestPage />} />
           </Route>
+          {/* Legacy /smsv2/* redirects → /crm/* so bookmarks survive. */}
+          <Route path="/smsv2" element={<Navigate to="/crm" replace />} />
+          <Route path="/smsv2/*" element={<Navigate to="/crm" replace />} />
           {/* nfstay traveler-facing routes — standalone (no operator layout) */}
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
           <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />

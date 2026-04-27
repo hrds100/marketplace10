@@ -112,7 +112,7 @@ export default function FollowupBanner() {
               >
                 <button
                   onClick={() => {
-                    if (contact) navigate(`/smsv2/contacts/${contact.id}`);
+                    if (contact) navigate(`/crm/contacts/${contact.id}`);
                   }}
                   className="text-[12px] font-semibold text-[#1A1A1A] hover:underline truncate flex-1 text-left"
                   title={f.note ?? ''}
@@ -144,7 +144,7 @@ export default function FollowupBanner() {
                   <Phone className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => contact && navigate(`/smsv2/inbox?contact=${contact.id}`)}
+                  onClick={() => contact && navigate(`/crm/inbox?contact=${contact.id}`)}
                   disabled={!contact}
                   title="SMS now"
                   className="p-1 rounded hover:bg-[#3B82F6]/10 text-[#3B82F6] disabled:opacity-50"

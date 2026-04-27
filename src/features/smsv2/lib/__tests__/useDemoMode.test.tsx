@@ -12,35 +12,35 @@ function wrapAt(path: string) {
 describe('useDemoMode', () => {
   it('returns false by default (no query string)', () => {
     const { result } = renderHook(() => useDemoMode(), {
-      wrapper: wrapAt('/smsv2/contacts'),
+      wrapper: wrapAt('/crm/contacts'),
     });
     expect(result.current).toBe(false);
   });
 
   it('returns false when demo=0', () => {
     const { result } = renderHook(() => useDemoMode(), {
-      wrapper: wrapAt('/smsv2/calls?demo=0'),
+      wrapper: wrapAt('/crm/calls?demo=0'),
     });
     expect(result.current).toBe(false);
   });
 
   it('returns true when demo=1', () => {
     const { result } = renderHook(() => useDemoMode(), {
-      wrapper: wrapAt('/smsv2/calls?demo=1'),
+      wrapper: wrapAt('/crm/calls?demo=1'),
     });
     expect(result.current).toBe(true);
   });
 
   it('returns false when demo=true (only "1" enables — strict)', () => {
     const { result } = renderHook(() => useDemoMode(), {
-      wrapper: wrapAt('/smsv2/calls?demo=true'),
+      wrapper: wrapAt('/crm/calls?demo=true'),
     });
     expect(result.current).toBe(false);
   });
 
   it('combines with other params correctly', () => {
     const { result } = renderHook(() => useDemoMode(), {
-      wrapper: wrapAt('/smsv2/calls?foo=bar&demo=1&x=y'),
+      wrapper: wrapAt('/crm/calls?foo=bar&demo=1&x=y'),
     });
     expect(result.current).toBe(true);
   });

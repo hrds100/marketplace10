@@ -82,7 +82,7 @@ export default function CallTranscriptModal({ callId, callerLabel, onClose }: Pr
           </div>
           <div className="flex items-center gap-2">
             <Link
-              to={`/smsv2/calls/${callId}`}
+              to={`/crm/calls/${callId}`}
               className="text-[11px] text-[#1E9A80] hover:underline"
               onClick={onClose}
             >

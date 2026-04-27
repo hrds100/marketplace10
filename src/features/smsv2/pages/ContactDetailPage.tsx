@@ -45,7 +45,7 @@ export default function ContactDetailPage() {
   if (!contact) {
     return (
       <div className="p-6">
-        <Link to="/smsv2/contacts" className="text-[13px] text-[#1E9A80] hover:underline">
+        <Link to="/crm/contacts" className="text-[13px] text-[#1E9A80] hover:underline">
           ← Back to contacts
         </Link>
         <p className="mt-4 text-[#6B7280]">Contact not found.</p>
@@ -108,7 +108,7 @@ export default function ContactDetailPage() {
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
       <Link
-        to="/smsv2/contacts"
+        to="/crm/contacts"
         className="inline-flex items-center gap-1 text-[12px] text-[#6B7280] hover:text-[#1E9A80]"
       >
         <ArrowLeft className="w-3.5 h-3.5" /> Contacts
