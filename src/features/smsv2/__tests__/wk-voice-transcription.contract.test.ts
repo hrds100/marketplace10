@@ -248,7 +248,7 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
   });
 
   it('v8 — OpenAI request tagged with prompt_cache_key for prefix caching', () => {
-    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11|12|13|14)['"]/);
+    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11|12|13|14|15)['"]/);
   });
 
   it('v8 — script prompt is intent-based with USE FRESH WORDING + EARNED-PITCH + JUST EXPLORING', () => {

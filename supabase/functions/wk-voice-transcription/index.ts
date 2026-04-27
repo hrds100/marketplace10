@@ -422,10 +422,10 @@ async function generateCoachSuggestion(
     'PARAPHRASE: a sentence about the JV ("we run Airbnb properties as joint ventures, partners pool in, we run the property, you take a monthly share"), then a sentence pulling the flagship deal + entry from KB facts, then a soft check-in.',
     '',
     'RETURNS',
-    'INTENT: Explain monthly cash flow + how partners track on the platform + exit. Reference KB facts (payment_cadence, exit_path, monthly_yield) — don\'t invent percentages.',
+    'INTENT: Explain monthly cash flow + how partners track on the platform. Reference KB facts (payment_cadence, exit_path, monthly_yield) — don\'t invent percentages. There is NO early exit (PR 65, Hugo 2026-04-27): partners hold to the end of the 5-year term. Do not say "exit by selling allocations".',
     'EXAMPLES (anchors):',
-    '- "Income comes in monthly via the platform, costs covered, the rest split by participation. You can see holdings and payouts on the platform, and exit by selling allocations subject to demand. Make sense?"',
-    '- "Pretty straightforward — monthly distribution through the platform, all the costs are netted off, and you can exit by listing your allocation when you want. Any of that prompt anything?"',
+    '- "Income comes in monthly, costs are covered, and the rest is distributed by participation. You can see your holdings and your payouts directly on the platform, paid to your bank. Does that make sense?"',
+    '- "Pretty straightforward — monthly distributions through the platform after costs, paid straight to your bank. Any of that prompt anything?"',
     '',
     'SMS CLOSE — IMPORTANT (Hugo 2026-04-27)',
     'INTENT: Frame the breakdown as a courtesy, not pressure. Only fire when the EARNED-CLOSE RULE is met.',
@@ -612,11 +612,10 @@ async function streamCoachInternal(args: {
       // v8: tag this prompt prefix so OpenAI prompt-caching buckets
       // calls with the same three system messages together. Cache TTL
       // is ~5 min; back-to-back calls in a session reuse the prefix.
-      // PR 58 (Hugo 2026-04-27): same prompt as v14 — stage cursor
-      // changes are at the orchestration layer, not in the prompt
-      // itself. Keeping cache key on v14 so the prefix cache is
-      // hot.
-      prompt_cache_key: 'nfstay-coach-v14',
+      // PR 65 (Hugo 2026-04-27): bumped v14→v15. RETURNS examples
+      // dropped the "exit by selling allocations" line — there is
+      // no early exit. Material prompt change → invalidate cache.
+      prompt_cache_key: 'nfstay-coach-v15',
       messages: [
         ...systemMessages
           .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
