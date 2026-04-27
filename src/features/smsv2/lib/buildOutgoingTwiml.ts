@@ -44,8 +44,13 @@ export function buildOutgoingTwiml(args: BuildOutgoingTwimlArgs): string {
     ? `callerId="${escapeXml(args.callerIdE164)}"`
     : '';
 
+  // PR 29 (Hugo 2026-04-27): bumped `timeout` to 60s. Twilio's default
+  // is 30s — if the destination phone hasn't picked up by then the
+  // dial leg drops, which Hugo hit while testing with the callee's
+  // phone on silent. 60s is the common "give them a minute" pattern;
+  // anything beyond that and most carriers route to voicemail anyway.
   const dialBlock = [
-    `<Dial ${callerIdAttr} answerOnBridge="true" record="record-from-answer-dual"`,
+    `<Dial ${callerIdAttr} answerOnBridge="true" timeout="60" record="record-from-answer-dual"`,
     `      recordingStatusCallback="${escapeXml(args.recordingUrl)}"`,
     `      recordingStatusCallbackEvent="completed"`,
     `      action="${escapeXml(args.statusUrl)}"`,
