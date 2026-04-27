@@ -112,6 +112,9 @@ export default function AdminLayout() {
               <Link to="/sms/inbox" className="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary">
                 SMS
               </Link>
+              <Link to="/crm/inbox" className="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary">
+                CRM
+              </Link>
             </div>
 
             <div className="hidden md:flex gap-1 overflow-x-auto flex-1" style={{ scrollbarWidth: 'none' }}>

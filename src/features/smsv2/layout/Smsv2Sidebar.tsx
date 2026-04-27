@@ -20,14 +20,14 @@ interface Smsv2SidebarProps {
 }
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/smsv2/dashboard', icon: LayoutDashboard, adminOnly: true },
-  { label: 'Inbox', path: '/smsv2/inbox', icon: MessageSquare },
-  { label: 'Calls', path: '/smsv2/calls', icon: PhoneCall },
-  { label: 'Dialer', path: '/smsv2/dialer', icon: Radio },
-  { label: 'Contacts', path: '/smsv2/contacts', icon: Users },
-  { label: 'Pipelines', path: '/smsv2/pipelines', icon: Kanban },
-  { label: 'Reports', path: '/smsv2/reports', icon: BarChart3 },
-  { label: 'Settings', path: '/smsv2/settings', icon: Settings, adminOnly: true },
+  { label: 'Dashboard', path: '/crm/dashboard', icon: LayoutDashboard, adminOnly: true },
+  { label: 'Inbox', path: '/crm/inbox', icon: MessageSquare },
+  { label: 'Calls', path: '/crm/calls', icon: PhoneCall },
+  { label: 'Dialer', path: '/crm/dialer', icon: Radio },
+  { label: 'Contacts', path: '/crm/contacts', icon: Users },
+  { label: 'Pipelines', path: '/crm/pipelines', icon: Kanban },
+  { label: 'Reports', path: '/crm/reports', icon: BarChart3 },
+  { label: 'Settings', path: '/crm/settings', icon: Settings, adminOnly: true },
 ] as const;
 
 const MOBILE_TAB_ITEMS = NAV_ITEMS.filter(({ label }) =>
@@ -71,12 +71,7 @@ export default function Smsv2Sidebar({ collapsed, onCollapse }: Smsv2SidebarProp
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E7EB]/60">
         {!collapsed && (
-          <span className="text-sm font-semibold text-[#1A1A1A] tracking-tight">
-            Workspace
-            <span className="ml-1.5 text-[10px] font-medium text-[#1E9A80] bg-[#ECFDF5] px-1.5 py-0.5 rounded">
-              v2
-            </span>
-          </span>
+          <span className="text-sm font-semibold text-[#1A1A1A] tracking-tight">CRM</span>
         )}
         <button
           onClick={() => onCollapse(!collapsed)}
@@ -114,8 +109,7 @@ export default function Smsv2Sidebar({ collapsed, onCollapse }: Smsv2SidebarProp
 
       {!collapsed && (
         <div className="px-4 py-3 border-t border-[#E5E7EB]/60 text-[11px] text-[#9CA3AF]">
-          <span className="block">Sandbox build</span>
-          <span className="block">Production /sms untouched</span>
+          <span className="block">NFSTAY CRM</span>
         </div>
       )}
     </aside>

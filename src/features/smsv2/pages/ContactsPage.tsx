@@ -183,7 +183,7 @@ export default function ContactsPage() {
                 <tr key={c.id} className="hover:bg-[#F3F3EE]/30">
                   <td className="px-4 py-2.5">
                     <Link
-                      to={`/smsv2/contacts/${c.id}`}
+                      to={`/crm/contacts/${c.id}`}
                       className="font-semibold text-[#1A1A1A] hover:text-[#1E9A80] flex items-center gap-1.5"
                     >
                       {c.name}

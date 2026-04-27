@@ -397,7 +397,7 @@ export default function BulkUploadModal({ open, onClose }: Props) {
                 {campaignId && (
                   <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#1E9A80]">
                     <Phone className="w-3 h-3" />
-                    These leads will be ready to dial via the campaign on /smsv2/dialer
+                    These leads will be ready to dial via the campaign on /crm/dialer
                   </div>
                 )}
               </div>

@@ -345,7 +345,7 @@ export default function CallsPage() {
                           <MessageSquare className="w-3 h-3" /> Transcript
                         </button>
                         <Link
-                          to={`/smsv2/calls/${c.id}`}
+                          to={`/crm/calls/${c.id}`}
                           className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[#1E9A80] hover:bg-[#1E9A80] hover:text-white rounded-[8px] transition-colors"
                           title="Reopen the call room — transcript, recording, coach events, follow-ups"
                         >

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import CrmGuard from '../components/CrmGuard';
 import Smsv2Sidebar from './Smsv2Sidebar';
 import Smsv2StatusBar from './Smsv2StatusBar';
 import Softphone from '../components/softphone/Softphone';
@@ -25,7 +25,7 @@ export default function Smsv2Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <ProtectedRoute>
+    <CrmGuard>
       <SmsV2Provider>
         <StoreHydrator />
         <ActiveCallProvider>
@@ -41,10 +41,7 @@ export default function Smsv2Layout() {
               >
                 nfstay
               </Link>
-              <span className="text-sm font-medium text-[#9CA3AF]">Workspace</span>
-              <span className="text-[10px] font-semibold tracking-wide text-[#1E9A80] bg-[#ECFDF5] px-1.5 py-0.5 rounded">
-                SANDBOX v2
-              </span>
+              <span className="text-sm font-medium text-[#9CA3AF]">CRM</span>
 
               <div className="ml-auto flex items-center gap-3">
                 <Smsv2StatusBar />
@@ -75,6 +72,6 @@ export default function Smsv2Layout() {
           </div>
         </ActiveCallProvider>
       </SmsV2Provider>
-    </ProtectedRoute>
+    </CrmGuard>
   );
 }
