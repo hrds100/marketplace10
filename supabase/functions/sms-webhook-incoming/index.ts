@@ -82,15 +82,35 @@ serve(async (req: Request) => {
     const twilioSignature = req.headers.get('x-twilio-signature') || '';
     const webhookUrl = `${SUPABASE_URL}/functions/v1/sms-webhook-incoming`;
 
+    // PR 39 (Hugo 2026-04-27): inbound SMS wasn't being received and
+    // Hugo needed clearer diagnostics. Log every entry point with
+    // enough detail to tell whether (a) Twilio is even calling us
+    // (zero logs = wrong webhook URL in Twilio Console) or (b) the
+    // signature check is the rejector (need to verify TWILIO_AUTH_TOKEN
+    // env var matches the Account/Subaccount that owns the number).
+    console.log(
+      `[sms-webhook-incoming] inbound from=${rawFrom} to=${rawTo} sid=${messageSid} channel=${channel} sigPresent=${twilioSignature ? 'yes' : 'no'} tokenLen=${TWILIO_AUTH_TOKEN.length}`
+    );
+
     if (TWILIO_AUTH_TOKEN && twilioSignature) {
       const isValid = await validateTwilioSignature(TWILIO_AUTH_TOKEN, twilioSignature, webhookUrl, params);
       if (!isValid) {
-        console.error('Invalid Twilio signature');
+        console.error(
+          `[sms-webhook-incoming] INVALID SIGNATURE — url=${webhookUrl} sigLen=${twilioSignature.length} authTokenLen=${TWILIO_AUTH_TOKEN.length} from=${rawFrom} sid=${messageSid}. Most likely cause: TWILIO_AUTH_TOKEN env var does not match the account that signed the request. Check Supabase Edge Function secrets vs Twilio Console > Account > Auth Token. If you recently rotated the token, redeploy this function with the new value.`
+        );
         return new Response(
           JSON.stringify({ error: 'Invalid signature' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+    } else if (!TWILIO_AUTH_TOKEN) {
+      console.warn(
+        '[sms-webhook-incoming] TWILIO_AUTH_TOKEN env var is empty — accepting webhook unverified. Set the secret to enable signature validation.'
+      );
+    } else if (!twilioSignature) {
+      console.warn(
+        '[sms-webhook-incoming] no x-twilio-signature header — request not from Twilio (accepting for now in case Hugo is testing via curl)'
+      );
     }
 
     // Create Supabase client with service role (bypasses RLS)
