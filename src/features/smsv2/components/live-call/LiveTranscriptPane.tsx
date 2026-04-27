@@ -57,6 +57,7 @@ interface LiveCoachRow {
   kind: CoachKind;
   body: string;
   ts: string;
+  status?: string | null;
   /** For kind === 'script': human label of the section (Open / Qualify
    *  / Pitch / …). Surfaces in the badge as "SCRIPT — <section>". */
   script_section?: string | null;
@@ -171,7 +172,7 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
           .order('ts', { ascending: true }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_live_coach_events' as any) as any)
-          .select('id, kind, body, ts, script_section')
+          .select('id, kind, body, ts, script_section, status')
           .eq('call_id', callId)
           .order('ts', { ascending: true }),
       ]);
@@ -260,9 +261,23 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
     : allowMock
       ? MOCK_TRANSCRIPT.filter((l) => l.ts <= Math.max(durationSec, 140))
       : [];
+  // PR 35 (Hugo 2026-04-27): hide stuck streaming placeholders. The
+  // pre-INSERT placeholder body is "…" (status='streaming'); when
+  // postProcessCoachText returns null (e.g. STAY_ON_SCRIPT) the
+  // worker is supposed to DELETE the row. If the DELETE fails / lags,
+  // the agent sees empty SUGGESTION cards cluttering the older-cards
+  // stack. Filter rows whose body is just a placeholder marker —
+  // doesn't break the streaming-morph UX because a card with real
+  // partial text passes through.
+  const PLACEHOLDER_BODIES = new Set(['…', '...', '']);
+  const isRenderable = (e: { body: string }) => {
+    const trimmed = (e.body ?? '').trim();
+    return !PLACEHOLDER_BODIES.has(trimmed);
+  };
   const events = useLive
     ? liveEvents
         .filter((e) => e.kind in COACH_ICONS)
+        .filter(isRenderable)
         .map((e) => ({
           id: e.id,
           kind: e.kind,
