@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Eye, Bot, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLiveActivity } from '../../hooks/useLiveActivity';
+import WatchAgentModal from './WatchAgentModal';
 
 const STATUS_DOT = {
   queued: 'bg-[#9CA3AF]',
@@ -20,6 +21,7 @@ function formatLiveDuration(startedAtIso: string, nowMs: number): string {
 export default function LiveActivityFeed() {
   const { rows, loading } = useLiveActivity();
   const [nowMs, setNowMs] = useState(Date.now());
+  const [watching, setWatching] = useState<{ callId: string; agentName: string; contactName: string } | null>(null);
 
   // 1Hz tick for the live duration
   useEffect(() => {
@@ -65,10 +67,23 @@ export default function LiveActivityFeed() {
                 <Bot className="w-3 h-3" /> coach
               </span>
             )}
-            <button className="flex items-center gap-1 text-[11px] text-[#6B7280] hover:text-[#1E9A80] px-2 py-1 rounded hover:bg-[#ECFDF5]">
+            <button
+              onClick={() =>
+                setWatching({
+                  callId: row.callId,
+                  agentName: row.agentName,
+                  contactName: row.contactName,
+                })
+              }
+              className="flex items-center gap-1 text-[11px] text-[#6B7280] hover:text-[#1E9A80] px-2 py-1 rounded hover:bg-[#ECFDF5]"
+              title="Watch this call (read-only)"
+            >
               <Eye className="w-3.5 h-3.5" /> watch
             </button>
-            <button className="text-[11px] text-[#6B7280] hover:text-[#1E9A80] px-2 py-1 rounded hover:bg-[#ECFDF5]">
+            <button
+              className="text-[11px] text-[#6B7280] hover:text-[#1E9A80] px-2 py-1 rounded hover:bg-[#ECFDF5]"
+              title={row.contactPhone}
+            >
               <Phone className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -82,6 +97,14 @@ export default function LiveActivityFeed() {
           <div className="px-4 py-6 text-center text-[12px] text-[#9CA3AF]">Loading…</div>
         )}
       </div>
+      {watching && (
+        <WatchAgentModal
+          callId={watching.callId}
+          agentName={watching.agentName}
+          contactName={watching.contactName}
+          onClose={() => setWatching(null)}
+        />
+      )}
     </div>
   );
 }
