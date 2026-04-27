@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Phone, MessageSquare, Flame, Pencil, Upload } from 'lucide-react';
+import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import StageSelector from '../components/shared/StageSelector';
@@ -29,6 +29,9 @@ export default function ContactsPage() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [creatingDraft, setCreatingDraft] = useState<Contact | null>(null);
   const [smsTo, setSmsTo] = useState<Contact | null>(null);
+  // PR 83: which channel the modal opens with when an icon is clicked.
+  // null = picker stays unselected (when clicking the generic Edit/Call buttons).
+  const [smsChannel, setSmsChannel] = useState<'sms' | 'whatsapp' | 'email' | null>(null);
   const { firstName: agentFirstName } = useCurrentAgent();
 
   const startNewContact = () => {
@@ -236,6 +239,7 @@ export default function ContactsPage() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
+                          setSmsChannel('sms');
                           setSmsTo(c);
                         }}
                         className="p-1.5 hover:bg-[#ECFDF5] rounded text-[#1E9A80]"
@@ -243,6 +247,34 @@ export default function ContactsPage() {
                         data-testid={`contacts-row-sms-${c.id}`}
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
+                      </button>
+                      {/* PR 83: WhatsApp + Email icon shortcuts. Same modal,
+                          just opens with the right channel pre-selected. */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSmsChannel('whatsapp');
+                          setSmsTo(c);
+                        }}
+                        className="p-1.5 hover:bg-[#DCFCE7] rounded text-[#25D366]"
+                        title={`WhatsApp ${c.name}`}
+                        data-testid={`contacts-row-whatsapp-${c.id}`}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" strokeWidth={2.4} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSmsChannel('email');
+                          setSmsTo(c);
+                        }}
+                        className="p-1.5 hover:bg-[#DBEAFE] rounded text-[#3B82F6]"
+                        title={`Email ${c.name}`}
+                        data-testid={`contacts-row-email-${c.id}`}
+                      >
+                        <Mail className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </td>
@@ -263,8 +295,12 @@ export default function ContactsPage() {
       <BulkUploadModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
       <ContactSmsModal
         contact={smsTo}
-        onClose={() => setSmsTo(null)}
+        onClose={() => {
+          setSmsTo(null);
+          setSmsChannel(null);
+        }}
         agentFirstName={agentFirstName ?? ''}
+        defaultChannel={smsChannel}
       />
       <EditContactModal
         contact={editing}
