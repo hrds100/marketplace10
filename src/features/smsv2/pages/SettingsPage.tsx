@@ -183,7 +183,7 @@ function ChannelBadge({ channel }: { channel: 'sms' | 'whatsapp' | 'email' | nul
 type Scope =
   | { kind: 'workspace' }
   | { kind: 'campaign'; campaignId: string }
-  | { kind: 'workspace-only'; tabId: 'agents' | 'numbers' | 'pacing' | 'kill' };
+  | { kind: 'workspace-only'; tabId: 'agents' | 'numbers' | 'channels' | 'pacing' | 'kill' };
 
 const WORKSPACE_BUNDLE_TABS = [
   { id: 'pipelines', label: 'Pipeline & outcomes', icon: Kanban },
@@ -208,6 +208,7 @@ const CAMPAIGN_BUNDLE_TABS = [
 const WORKSPACE_ONLY_TABS = [
   { id: 'agents' as const, label: 'Agents & spend', icon: Users },
   { id: 'numbers' as const, label: 'Numbers (workspace pool)', icon: Phone },
+  { id: 'channels' as const, label: 'Channels (WhatsApp / Email)', icon: Radio },
   { id: 'pacing' as const, label: 'Pacing & safety', icon: Shield },
   { id: 'kill' as const, label: 'Kill switches & audit', icon: Activity },
 ];
@@ -245,6 +246,7 @@ export default function SettingsPage() {
             <>
               {scope.tabId === 'agents' && <AgentsTab />}
               {scope.tabId === 'numbers' && <NumbersTab />}
+              {scope.tabId === 'channels' && <ChannelsTab />}
               {scope.tabId === 'pacing' && <PacingTab />}
               {scope.tabId === 'kill' && <KillTab />}
             </>
