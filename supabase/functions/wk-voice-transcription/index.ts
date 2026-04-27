@@ -665,7 +665,7 @@ serve(async (req: Request) => {
     // call script and substitute the contact's first name into it (PR 8).
     const { data: call } = await supa
       .from('wk_calls')
-      .select('id, ai_coach_enabled, agent_id, contact_id, current_stage')
+      .select('id, ai_coach_enabled, agent_id, contact_id, current_stage, campaign_id')
       .eq('twilio_call_sid', callSid)
       .maybeSingle();
 
@@ -802,9 +802,13 @@ serve(async (req: Request) => {
           //    agent profile + contact + agent's call script in parallel.
           //    Agent's call script (PR 8): prefer the agent's OWN row
           //    (wk_call_scripts WHERE owner_agent_id = call.agent_id),
-          //    fall back to the default row (is_default = true). Two
-          //    queries — Promise.all keeps total latency at one round-
-          //    trip's worth.
+          //    fall back to the default row (is_default = true).
+          //
+          //    PR 56 (Hugo 2026-04-27): also read per-campaign overrides
+          //    (wk_campaign_ai_settings + wk_campaign_facts + the campaign
+          //    row's call_script_id). Cascade lookup happens after the
+          //    parallel fetch — null fields fall through to workspace.
+          const campaignId = (call.campaign_id as string | null) ?? null;
           const [
             recentRes,
             priorCardsRes,
@@ -813,6 +817,9 @@ serve(async (req: Request) => {
             contactRes,
             ownScriptRes,
             defaultScriptRes,
+            campaignRes,
+            campaignAiRes,
+            campaignFactsRes,
           ] = await Promise.all([
             supa
               .from('wk_live_transcripts')
@@ -860,6 +867,31 @@ serve(async (req: Request) => {
               .select('name, body_md')
               .eq('is_default', true)
               .limit(1),
+            // PR 56: campaign row → call_script_id pin
+            campaignId
+              ? supa
+                  .from('wk_dialer_campaigns')
+                  .select('call_script_id')
+                  .eq('id', campaignId)
+                  .maybeSingle()
+              : Promise.resolve({ data: null, error: null }),
+            // PR 56: per-campaign AI settings (style/script overrides)
+            campaignId
+              ? supa
+                  .from('wk_campaign_ai_settings')
+                  .select('coach_style_prompt, coach_script_prompt, live_coach_model')
+                  .eq('campaign_id', campaignId)
+                  .maybeSingle()
+              : Promise.resolve({ data: null, error: null }),
+            // PR 56: per-campaign KB facts (override workspace by `key`)
+            campaignId
+              ? supa
+                  .from('wk_campaign_facts')
+                  .select('key, label, value, keywords, sort_order')
+                  .eq('campaign_id', campaignId)
+                  .eq('is_active', true)
+                  .order('sort_order', { ascending: true })
+              : Promise.resolve({ data: null, error: null }),
           ]);
           const ctx = (recentRes.data ?? [])
             .reverse()
@@ -937,8 +969,21 @@ serve(async (req: Request) => {
           //    via Settings UI. The legacy live_coach_system_prompt is
           //    only used as a back-compat fallback if BOTH new layer
           //    columns are empty.
-          const dbStyle = (ai.coach_style_prompt as string | null) ?? '';
-          const dbScript = (ai.coach_script_prompt as string | null) ?? '';
+          //
+          //    PR 56 (Hugo 2026-04-27): cascade fallback for the active
+          //    campaign. wk_campaign_ai_settings overrides the workspace
+          //    style/script when non-null. wk_campaign_facts override
+          //    workspace facts on `key` collision (campaign wins).
+          const wsStyle = (ai.coach_style_prompt as string | null) ?? '';
+          const wsScript = (ai.coach_script_prompt as string | null) ?? '';
+          const campAi = (campaignAiRes.data ?? null) as
+            | { coach_style_prompt: string | null; coach_script_prompt: string | null; live_coach_model: string | null }
+            | null;
+          const campStyle = (campAi?.coach_style_prompt ?? '').trim();
+          const campScript = (campAi?.coach_script_prompt ?? '').trim();
+          const campModel = (campAi?.live_coach_model ?? '').trim();
+          const dbStyle = campStyle.length > 0 ? campStyle : wsStyle;
+          const dbScript = campScript.length > 0 ? campScript : wsScript;
           const legacyPrompt = (ai.live_coach_system_prompt as string | null) ?? '';
           // PR 8 (2026-04-26): the AGENT'S CALL SCRIPT is now a separate
           // layer the coach can see. Resolution priority mirrors the
@@ -957,12 +1002,35 @@ serve(async (req: Request) => {
           const defaultScriptRow = Array.isArray(defaultScriptRes.data)
             ? (defaultScriptRes.data[0] as { name: string; body_md: string } | undefined)
             : undefined;
-          const resolvedAgentScript = ownScriptRow ?? defaultScriptRow ?? null;
-          const agentScriptSource: 'own' | 'default' | 'none' = ownScriptRow
+
+          // PR 56: campaign-pinned script lookup. If the campaign has
+          // call_script_id set, fetch that row and slot it between
+          // own > campaign > default in the resolution chain.
+          let campaignScriptRow:
+            | { name: string; body_md: string }
+            | undefined;
+          const campRow = (campaignRes.data ?? null) as { call_script_id: string | null } | null;
+          const pinnedScriptId = campRow?.call_script_id ?? null;
+          if (!ownScriptRow && pinnedScriptId) {
+            const { data: pinned } = await supa
+              .from('wk_call_scripts')
+              .select('name, body_md')
+              .eq('id', pinnedScriptId)
+              .maybeSingle();
+            if (pinned) {
+              campaignScriptRow = pinned as { name: string; body_md: string };
+            }
+          }
+
+          const resolvedAgentScript =
+            ownScriptRow ?? campaignScriptRow ?? defaultScriptRow ?? null;
+          const agentScriptSource: 'own' | 'campaign' | 'default' | 'none' = ownScriptRow
             ? 'own'
-            : defaultScriptRow
-              ? 'default'
-              : 'none';
+            : campaignScriptRow
+              ? 'campaign'
+              : defaultScriptRow
+                ? 'default'
+                : 'none';
 
           const agentName = (
             (agentProfileRes.data as { name?: string | null } | null)?.name ?? ''
@@ -979,6 +1047,17 @@ serve(async (req: Request) => {
                 .replace(/\{\{\s*agent_first_name\s*\}\}/gi, agentFirstName)
             : '';
 
+          // PR 56: merge workspace + campaign facts. Campaign wins on
+          // key collision; workspace facts that aren't overridden are
+          // preserved so the model still has the full company context.
+          const wsFacts = (factsRes.data ?? []) as CoachFact[];
+          const campFacts = (campaignFactsRes.data ?? []) as CoachFact[];
+          const overrideKeys = new Set(campFacts.map((f) => f.key));
+          const mergedFacts: CoachFact[] = [
+            ...wsFacts.filter((f) => !overrideKeys.has(f.key)),
+            ...campFacts,
+          ];
+
           const layers = {
             stylePrompt:
               dbStyle.trim().length > 0
@@ -992,20 +1071,23 @@ serve(async (req: Request) => {
                 : dbStyle.trim().length > 0
                   ? '' // style set, script empty — DEFAULT_SCRIPT_PROMPT
                   : '', // legacy prompt is fine in stylePrompt slot; let script default apply
-            facts: ((factsRes.data ?? []) as CoachFact[]),
+            facts: mergedFacts,
             agentScriptBody,
             agentScriptSource,
           };
           log(
             'layers loaded',
-            `style=${layers.stylePrompt.length}c script=${layers.scriptPrompt.length}c facts=${layers.facts.length} agentScript=${agentScriptBody.length}c(${agentScriptSource}) caller=${contactFirstName}`
+            `style=${layers.stylePrompt.length}c script=${layers.scriptPrompt.length}c facts=${layers.facts.length}(ws=${wsFacts.length}+cam=${campFacts.length}) agentScript=${agentScriptBody.length}c(${agentScriptSource}) campaign=${campaignId ?? 'none'} caller=${contactFirstName}`
           );
 
           // 8. Build the user message + run streaming.
+          // PR 56: live_coach_model can be overridden per-campaign.
           let firstToken = true;
+          const effectiveModel =
+            campModel.length > 0 ? campModel : (ai.live_coach_model as string) ?? '';
           const cleaned = await generateCoachSuggestion({
             apiKey: ai.openai_api_key as string,
-            model: (ai.live_coach_model as string) ?? '',
+            model: effectiveModel,
             layers,
             recentTranscript: ctx,
             latestUtterance: transcriptText,
