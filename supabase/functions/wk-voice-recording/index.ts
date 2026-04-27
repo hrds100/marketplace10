@@ -25,6 +25,23 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+// PR 30: poke wk-jobs-worker right after queuing a job so the queue
+// doesn't depend on a non-existent scheduler. Fire-and-forget — the
+// caller doesn't await; failures fall back to the next invocation.
+function kickJobsWorker(): void {
+  const url = `${SUPABASE_URL}/functions/v1/wk-jobs-worker`;
+  void fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  }).catch(() => {
+    /* fire-and-forget — next webhook will retry */
+  });
+}
+
 async function validateTwilioSignature(
   authToken: string,
   signature: string,
@@ -144,6 +161,14 @@ serve(async (req: Request) => {
       } catch (e) {
         console.warn('wk_jobs insert failed (non-fatal):', e);
       }
+      // PR 30 (Hugo 2026-04-27): no scheduler hits wk-jobs-worker so
+      // pending recording_ingest jobs were sitting forever — that's
+      // why the Calls page showed durations + transcripts but no
+      // playable audio. Kick the worker fire-and-forget right now so
+      // the Twilio media → Supabase storage upload happens within
+      // seconds of the recording webhook. fetch is unawaited; if it
+      // fails the next webhook (or a manual retry) will drain the row.
+      kickJobsWorker();
     }
 
     return new Response('<?xml version="1.0" encoding="UTF-8"?><Response/>', {

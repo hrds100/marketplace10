@@ -77,6 +77,12 @@ serve(async (req: Request) => {
       });
     }
 
+    // PR 30 (Hugo 2026-04-27): wk_apply_outcome inserts a send_sms
+    // job into wk_jobs when the picked column has SMS automation.
+    // No scheduler drains the queue, so the SMS sat there forever.
+    // Fire-and-forget kick to wk-jobs-worker right now.
+    kickJobsWorker();
+
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -89,3 +95,19 @@ serve(async (req: Request) => {
     });
   }
 });
+
+// PR 30: poke wk-jobs-worker right after queuing a job so the queue
+// doesn't depend on a non-existent scheduler. Fire-and-forget.
+function kickJobsWorker(): void {
+  const url = `${SUPABASE_URL}/functions/v1/wk-jobs-worker`;
+  void fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  }).catch(() => {
+    /* fire-and-forget — next request will retry */
+  });
+}
