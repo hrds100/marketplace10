@@ -7,6 +7,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export type ChannelKind = 'sms' | 'whatsapp' | 'email';
+
 export interface CrmMessage {
   id: string;
   contactId: string;
@@ -15,6 +17,11 @@ export interface CrmMessage {
   createdAt: string;
   twilioSid: string | null;
   status: string;
+  /** PR 78: which channel this message landed on. null = legacy row
+   *  predating the channel column → treat as 'sms'. */
+  channel: ChannelKind;
+  /** Email subject line (null for sms/whatsapp). */
+  subject: string | null;
 }
 
 interface MessageRow {
@@ -25,6 +32,8 @@ interface MessageRow {
   created_at: string;
   twilio_sid: string | null;
   status: string;
+  channel: ChannelKind | null;
+  subject: string | null;
 }
 
 function rowToMessage(r: MessageRow): CrmMessage {
@@ -36,6 +45,8 @@ function rowToMessage(r: MessageRow): CrmMessage {
     createdAt: r.created_at,
     twilioSid: r.twilio_sid,
     status: r.status,
+    channel: (r.channel ?? 'sms') as ChannelKind,
+    subject: r.subject ?? null,
   };
 }
 
@@ -56,7 +67,7 @@ export function useContactMessages(contactId: string): {
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase.from('wk_sms_messages' as any) as any)
-      .select('id, contact_id, direction, body, created_at, twilio_sid, status')
+      .select('id, contact_id, direction, body, created_at, twilio_sid, status, channel, subject')
       .eq('contact_id', contactId)
       .order('created_at', { ascending: true })
       .limit(500);

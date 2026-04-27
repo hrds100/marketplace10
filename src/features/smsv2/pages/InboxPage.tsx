@@ -10,6 +10,7 @@ import {
   Play,
   Pencil,
   Send,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../data/mockCalls';
@@ -44,7 +45,26 @@ interface SmsSendInvoke {
   }>;
 }
 
-type Filter = 'all' | 'sms' | 'calls' | 'voicemail' | 'missed';
+type Filter = 'all' | 'sms' | 'whatsapp' | 'email' | 'calls' | 'voicemail' | 'missed';
+
+type ChannelKindUI = 'sms' | 'whatsapp' | 'email';
+
+/** Tiny channel-icon glyph for inbox rows + message bubbles. PR 78. */
+function ChannelGlyph({
+  channel,
+  size = 12,
+  className,
+}: {
+  channel: ChannelKindUI;
+  size?: number;
+  className?: string;
+}) {
+  const cls = cn('flex-shrink-0', className);
+  // Lucide icons take size via prop, but cn-cls already injects color.
+  if (channel === 'whatsapp') return <MessageSquare style={{ width: size, height: size }} className={cn(cls, 'text-[#25D366]')} aria-label="WhatsApp" />;
+  if (channel === 'email') return <Mail style={{ width: size, height: size }} className={cn(cls, 'text-[#3B82F6]')} aria-label="Email" />;
+  return <Phone style={{ width: size, height: size }} className={cn(cls, 'text-[#1E9A80]')} aria-label="SMS" />;
+}
 
 export default function InboxPage() {
   const { contacts, patchContact, upsertContact, pushToast } = useSmsV2();
@@ -79,6 +99,8 @@ export default function InboxPage() {
       lastMessageBody: string | null;
       lastMessageAt: string | null;
       lastDirection: 'inbound' | 'outbound' | null;
+      lastChannel: ChannelKindUI | null;
+      channelCounts: Record<ChannelKindUI, number>;
       isHot: boolean;
       tags: string[];
     };
@@ -96,6 +118,8 @@ export default function InboxPage() {
         lastMessageBody: t.lastMessageBody,
         lastMessageAt: t.lastMessageAt,
         lastDirection: t.lastDirection,
+        lastChannel: t.lastChannel,
+        channelCounts: t.channelCounts,
         isHot: !!c?.isHot,
         tags: c?.tags ?? [],
       });
@@ -113,13 +137,22 @@ export default function InboxPage() {
         lastMessageBody: null,
         lastMessageAt: c.lastContactAt ?? null,
         lastDirection: null,
+        lastChannel: null,
+        channelCounts: { sms: 0, whatsapp: 0, email: 0 },
         isHot: c.isHot,
         tags: c.tags,
       });
     }
 
+    // PR 78: filter by selected channel pill. 'all' / 'calls' / 'voicemail'
+    // / 'missed' don't filter messages (calls etc. aren't message rows
+    // here — those are timeline events). 'sms' / 'whatsapp' / 'email'
+    // restrict to threads whose latest message was on that channel.
+    if (filter === 'sms' || filter === 'whatsapp' || filter === 'email') {
+      return out.filter((r) => r.lastChannel === filter || r.channelCounts[filter] > 0);
+    }
     return out;
-  }, [inboxThreads, contacts]);
+  }, [inboxThreads, contacts, filter]);
 
   // Auto-select the newest thread on first load (Hugo's spec: newest
   // conversation must be visible without scrolling).
@@ -159,13 +192,17 @@ export default function InboxPage() {
   const { messages: crmMessages } = useContactMessages(activeContact?.id ?? '');
 
   // Convert wk_sms_messages → SmsMessage shape so the existing
-  // thread renderer doesn't have to change.
+  // thread renderer doesn't have to change. PR 78: pass channel +
+  // subject through so the thread bubbles can show the channel icon
+  // and email subject prefix.
   const crmSms = useMemo(() => crmMessages.map((m) => ({
     id: m.id,
     contactId: m.contactId,
     direction: m.direction,
     body: m.body,
     sentAt: m.createdAt,
+    channel: m.channel,
+    subject: m.subject,
   })), [crmMessages]);
 
   // Real data only in production. Mock fallback restricted to ?demo=1.
@@ -278,18 +315,29 @@ export default function InboxPage() {
               className="w-full pl-7 pr-2 py-1.5 text-[12px] bg-[#F3F3EE] border-0 rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30"
             />
           </div>
-          <div className="flex gap-1">
-            {(['all', 'sms', 'calls', 'voicemail', 'missed'] as Filter[]).map((f) => (
+          {/* PR 78: channel filter pills — agent can scope the inbox to
+              SMS / WhatsApp / Email at a glance. Industry-standard
+              pattern (HubSpot Conversations, Front, Intercom). */}
+          <div className="flex gap-1 flex-wrap">
+            {(['all', 'sms', 'whatsapp', 'email', 'calls', 'voicemail', 'missed'] as Filter[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
+                data-testid={`inbox-filter-${f}`}
                 className={cn(
-                  'px-2 py-0.5 text-[10px] font-medium rounded-full transition-colors uppercase tracking-wide',
+                  'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full transition-colors uppercase tracking-wide',
                   filter === f
                     ? 'bg-[#1E9A80] text-white'
                     : 'bg-[#F3F3EE] text-[#6B7280] hover:bg-black/[0.05]'
                 )}
               >
+                {(f === 'sms' || f === 'whatsapp' || f === 'email') && (
+                  <ChannelGlyph
+                    channel={f}
+                    size={9}
+                    className={filter === f ? 'text-white' : ''}
+                  />
+                )}
                 {f}
               </button>
             ))}
@@ -324,10 +372,13 @@ export default function InboxPage() {
                     <div className="text-[13px] font-semibold text-[#1A1A1A] truncate flex items-center gap-1">
                       {r.name}
                     </div>
-                    <div className="text-[11px] text-[#6B7280] truncate">
-                      {r.lastMessageBody
-                        ? `${r.lastDirection === 'outbound' ? '↗' : '💬'} ${r.lastMessageBody.slice(0, 40)}`
-                        : '—'}
+                    <div className="text-[11px] text-[#6B7280] truncate flex items-center gap-1">
+                      {r.lastChannel && <ChannelGlyph channel={r.lastChannel} size={10} />}
+                      <span className="truncate">
+                        {r.lastMessageBody
+                          ? `${r.lastDirection === 'outbound' ? '↗' : '💬'} ${r.lastMessageBody.slice(0, 36)}`
+                          : '—'}
+                      </span>
                     </div>
                   </div>
                   {r.lastMessageAt && (
@@ -400,6 +451,8 @@ export default function InboxPage() {
           {threadItems.map((item) => {
             if (item.kind === 'sms') {
               const m = item.payload;
+              const ch = (('channel' in m && m.channel) || 'sms') as ChannelKindUI;
+              const subj = ('subject' in m && m.subject) ? m.subject : null;
               return (
                 <div
                   key={`sms-${m.id}`}
@@ -410,6 +463,16 @@ export default function InboxPage() {
                       : 'bg-white border border-[#E5E7EB] text-[#1A1A1A]'
                   )}
                 >
+                  {/* PR 78: channel + subject prefix on each bubble */}
+                  <div className="flex items-center gap-1 text-[10px] text-[#6B7280] uppercase tracking-wide mb-1 font-bold">
+                    <ChannelGlyph channel={ch} size={10} />
+                    {ch === 'whatsapp' ? 'WhatsApp' : ch === 'email' ? 'Email' : 'SMS'}
+                  </div>
+                  {subj && (
+                    <div className="text-[12px] font-semibold text-[#1A1A1A] mb-1">
+                      {subj}
+                    </div>
+                  )}
                   {m.body}
                   <div className="text-[10px] text-[#9CA3AF] mt-0.5 tabular-nums">
                     {formatTimeOnly(m.sentAt)}
