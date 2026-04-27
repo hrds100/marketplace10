@@ -205,8 +205,22 @@ async function generateCoachSuggestion(
     '3. The caller has NOT refused the SMS in this call.',
     'Otherwise default to a question that moves the conversation forward.',
     '',
-    'DIRECT FACTUAL QUESTIONS',
-    'If the caller asks a factual question (numbers, locations, structure, agreement length, payouts, etc.), answer ONLY from the KNOWLEDGE BASE that the system message provides. Do not invent. If the fact is not in the KNOWLEDGE BASE, say "I\'ll check that and come back to you" — never guess.',
+    'KNOWLEDGE POLICY — three tiers (Hugo 2026-04-27, PR 46)',
+    'Distinguish between three kinds of caller question and pick the right source for each:',
+    '',
+    '1. COMPANY-SPECIFIC FACTS — KB ONLY.',
+    '   Anything that depends on NFSTAY\'s specific operations: deal numbers, entry minimums, monthly yields, agreement length, exit timing, payout cadence, partner counts, flagship deal name/location/structure, the property\'s licence number, the LLP/LLC structure, the exact return percentage, the company\'s Companies House number.',
+    '   Source: KNOWLEDGE BASE only. If the answer isn\'t there, say "I\'ll check that and come back to you" — NEVER invent figures, locations, or deal structure.',
+    '',
+    '2. GENERAL DOMAIN KNOWLEDGE — OK from your general training.',
+    '   What an HMO licence is and how it works in general, holiday-let / short-term-let regulations in the UK, what a redress scheme is, the role of TfL / local-council STL planning consoles, Article 4 areas, planning use classes (C3 / C4 / sui generis), 90-day rule for short lets in London, the Property Ombudsman, how AST vs FHL differ — anything regulatory, industry, or domain-conceptual that isn\'t company-specific.',
+    '   You may answer these from your general knowledge in a brief, plain-English UK style. Prefer the [EXPLAIN] card kind for these (not [SCRIPT]) so the agent\'s UI marks them as a regulatory answer rather than a script line.',
+    '   If you genuinely don\'t know (or it\'s a niche regulatory edge case), say so — DO NOT bluff.',
+    '',
+    '3. UNCERTAIN / NICHE — DEFER.',
+    '   If the question doesn\'t fit (1) or (2) and you\'re not confident, say "I\'ll check that and come back to you" or pivot to "let me check with the team and come back in writing".',
+    '',
+    'NEVER blend tiers — don\'t answer a company-specific question with general knowledge ("I think most JV deals are around 8%…") and don\'t answer a general question with a deflection if you actually know the concept ("I\'ll check what an HMO is" is wrong — you know what an HMO is, just answer).',
     '',
     'OBJECTIONS',
     'If the caller pushes back, use the matching approved answer from the KNOWLEDGE BASE. Then return to the next open-ended question — NOT immediately to a close (see EARNED-CLOSE RULE).',
@@ -436,7 +450,11 @@ async function streamCoachInternal(args: {
       // v8: tag this prompt prefix so OpenAI prompt-caching buckets
       // calls with the same three system messages together. Cache TTL
       // is ~5 min; back-to-back calls in a session reuse the prefix.
-      prompt_cache_key: 'nfstay-coach-v11',
+      // PR 46 (Hugo 2026-04-27): bumped v11→v12 because the script
+      // prompt changed materially (three-tier knowledge policy). The
+      // cache key is content-bound — we don't want v12 calls reusing
+      // v11's cached prefix and bypassing the new policy.
+      prompt_cache_key: 'nfstay-coach-v12',
       messages: [
         ...systemMessages
           .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)

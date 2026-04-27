@@ -33,7 +33,8 @@ const corsHeaders = {
 
 interface StartBody {
   campaign_id: string;
-  lines?: number;       // override campaign.parallel_lines (1-5)
+  lines?: number;          // override campaign.parallel_lines (1-5)
+  parallel_lines?: number; // PR 46 alias — older clients send this name
 }
 
 async function originateTwilioCall(
@@ -150,7 +151,14 @@ serve(async (req: Request) => {
       });
     }
 
-    const lines = Math.max(1, Math.min(5, body.lines ?? campaign.parallel_lines ?? 1));
+    // PR 46 (Hugo 2026-04-27): accept both `lines` (canonical) and
+    // `parallel_lines` (legacy alias from DialerPage). Frontend now
+    // sends both names but DB column is also kept in sync ahead of
+    // this call, so all three sources should agree. The Math.min(5,…)
+    // hard cap remains the orchestration-level guard rail.
+    const requestedLines =
+      body.lines ?? body.parallel_lines ?? campaign.parallel_lines ?? 1;
+    const lines = Math.max(1, Math.min(5, requestedLines));
     const twimlUrl = `${PUBLIC_FN_BASE}/wk-voice-twiml-outgoing`;
     const statusUrl = `${PUBLIC_FN_BASE}/wk-voice-status`;
 

@@ -284,6 +284,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       const phone = (phoneOverride ?? contact?.phone ?? '').trim();
       const contactName = contact?.name ?? nameOverride ?? 'Unknown caller';
 
+      // PR 46 (Hugo 2026-04-27): remove the contact from the queue
+      // BEFORE the dial fires. Otherwise state.queue[0] is still the
+      // contact we just started dialling, and sentinel flows like
+      // Skip / Next-now / auto-advance pop it again → "calls same
+      // person twice in a row" bug.
+      store.removeFromQueue(contactId);
+
       // We used to call disconnectAllCalls() here to evict zombie Calls
       // before each new dial. Hugo's regression report (2026-04-26): "I
       // try to recall and then it gets hung up immediately, never rings".
@@ -492,9 +499,16 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        // Sentinels — Skip / Call Now: no stage move, just advance
+        // Sentinels — Skip / Next-now: no stage move, just advance.
+        // PR 46: pass call.contactId as excludeContactId so we never
+        // pop the just-finished lead even if startCall hadn't yet
+        // dispatched the queue/remove (React batching). Phone dedupe
+        // is INTENTIONALLY not applied here — Hugo's call: testing
+        // with N contacts on the same phone still works via Skip /
+        // Next-now; production safety lives in the real applyOutcome
+        // path below.
         if (columnId === 'skipped' || columnId === 'next-now') {
-          const nextId = store.popNextFromQueue();
+          const nextId = store.popNextFromQueue(call.contactId);
           if (nextId) {
             void startCall(nextId);
           } else {

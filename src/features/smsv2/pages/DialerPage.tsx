@@ -98,6 +98,22 @@ export default function DialerPage() {
     } catch {
       /* ignore — wk-dialer-start will surface a clearer error */
     }
+    // PR 46 (Hugo 2026-04-27): persist the user's `lines` choice to
+    // wk_dialer_campaigns.parallel_lines BEFORE firing wk-dialer-start.
+    // Previously the UI dropdown only updated local state, so the edge
+    // fn read the stale DB value and dialled more lines than the user
+    // chose. This keeps DB authoritative.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('wk_dialer_campaigns' as any) as any)
+        .update({
+          parallel_lines: Math.max(1, Math.min(5, lines)),
+          auto_advance_seconds: autoAdvance,
+        })
+        .eq('id', activeId);
+    } catch {
+      /* non-fatal — wk-dialer-start also accepts `lines` in body below */
+    }
     try {
       const { data, error } = await (
         supabase.functions as unknown as DialerStartInvoke
@@ -105,6 +121,10 @@ export default function DialerPage() {
         body: {
           campaign_id: activeId,
           mode,
+          // PR 46: backend reads `body.lines`. Sending both names keeps
+          // older edge-fn versions working too (defensive — see
+          // wk-dialer-start where both keys are accepted).
+          lines,
           parallel_lines: lines,
           auto_advance_seconds: autoAdvance,
         },

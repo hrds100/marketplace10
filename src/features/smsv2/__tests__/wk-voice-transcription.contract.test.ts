@@ -135,7 +135,13 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     expect(source).toContain('OPEN-ENDED DEFAULT');
     expect(source).toContain('EARNED-CLOSE RULE');
     expect(source).toMatch(/PITCH and RETURNS already delivered/);
-    expect(source).toMatch(/answer ONLY from the KNOWLEDGE BASE/);
+    // PR 46 (v11, Hugo 2026-04-27): three-tier knowledge policy
+    // replaces the old "answer ONLY from KB" hard rule. Company-
+    // specific facts still go to KB only; general domain knowledge
+    // can come from the model's general training.
+    expect(source).toMatch(/COMPANY-SPECIFIC FACTS — KB ONLY/);
+    expect(source).toMatch(/GENERAL DOMAIN KNOWLEDGE/);
+    expect(source).toMatch(/UNCERTAIN \/ NICHE — DEFER/);
     // The old "Three Tens / Belfort" framing must not be back.
     expect(source).not.toMatch(/THREE TENS/);
     expect(source).not.toMatch(/Straight Line Selling/);
@@ -239,7 +245,7 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
   });
 
   it('v8 — OpenAI request tagged with prompt_cache_key for prefix caching', () => {
-    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11)['"]/);
+    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11|12)['"]/);
   });
 
   it('v8 — script prompt is intent-based with USE FRESH WORDING + EARNED-PITCH + JUST EXPLORING', () => {

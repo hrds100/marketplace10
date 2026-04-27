@@ -41,14 +41,52 @@ serve(async (req: Request) => {
     const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     const out = { unstuck: 0, outbox_retried: 0 };
 
-    // 1. Unstick orphaned 'dialing' rows
-    const stuckCutoff = new Date(Date.now() - 90_000).toISOString();
-    const { data: stuck } = await supa.from('wk_dialer_queue')
-      .update({ status: 'pending', agent_id: null })
+    // 1. Unstick orphaned 'dialing' rows.
+    //
+    // PR 46 (Hugo 2026-04-27): tightened. Old logic re-queued ANY row
+    // whose status='dialing' was older than 90s — but Twilio's ring
+    // timeout is 60s and we observed ringing legs at the 90s mark
+    // being prematurely re-queued, which then re-fired with the next
+    // wk-dialer-start call. Net effect: dialer accumulated more
+    // ringing legs than the configured parallel cap.
+    //
+    // New rule: only re-queue rows where ALSO the most recent
+    // wk_calls row for the (campaign_id, contact_id) pair is in a
+    // terminal state ({completed, busy, no_answer, canceled, failed,
+    // missed}) OR no wk_calls row exists at all (Twilio never reached
+    // our TwiML endpoint). Window also bumped to 120s.
+    const stuckCutoff = new Date(Date.now() - 120_000).toISOString();
+    const { data: candidates } = await supa.from('wk_dialer_queue')
+      .select('id, campaign_id, contact_id, scheduled_for')
       .lt('scheduled_for', stuckCutoff)
-      .eq('status', 'dialing')
-      .select('id');
-    out.unstuck = stuck?.length ?? 0;
+      .eq('status', 'dialing');
+
+    let unstuckCount = 0;
+    for (const row of candidates ?? []) {
+      // Look at the latest wk_calls for this lead in this campaign.
+      const { data: latestCall } = await supa.from('wk_calls')
+        .select('status')
+        .eq('campaign_id', row.campaign_id)
+        .eq('contact_id', row.contact_id)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const terminalStatuses = [
+        'completed', 'busy', 'no_answer', 'canceled', 'failed', 'missed',
+      ];
+      const safeToReQueue =
+        !latestCall ||
+        terminalStatuses.includes((latestCall.status as string) ?? '');
+
+      if (!safeToReQueue) continue; // ringing or in_progress — leave it
+
+      const { error: revertErr } = await supa.from('wk_dialer_queue')
+        .update({ status: 'pending', agent_id: null })
+        .eq('id', row.id);
+      if (!revertErr) unstuckCount++;
+    }
+    out.unstuck = unstuckCount;
 
     // 2. Re-deliver outbox events (basic retry — caller's webhook URL
     //    lives in payload.endpoint).
