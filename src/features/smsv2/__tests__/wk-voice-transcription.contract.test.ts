@@ -131,7 +131,10 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     expect(source).toMatch(/ABSOLUTE BANS/);
     expect(source).toMatch(/No multiple variants/);
     // Script markers
-    expect(source).toContain('OPEN → QUALIFY → PERMISSION TO PITCH → PITCH → RETURNS → SMS CLOSE → FOLLOW-UP LOCK');
+    // PR 51 (v12): stages now enumerated 1-7 for strict forward-only
+    // progression. The arrow-form was replaced with a numbered list.
+    expect(source).toMatch(/1\. Open[\s\S]+2\. Qualify[\s\S]+3\. Permission to pitch[\s\S]+4\. Pitch[\s\S]+5\. Returns[\s\S]+6\. SMS close[\s\S]+7\. Follow-up lock/);
+    expect(source).toMatch(/STAGE LOCK — STRICT FORWARD-ONLY/);
     expect(source).toContain('OPEN-ENDED DEFAULT');
     expect(source).toContain('EARNED-CLOSE RULE');
     expect(source).toMatch(/PITCH and RETURNS already delivered/);
@@ -245,7 +248,7 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
   });
 
   it('v8 — OpenAI request tagged with prompt_cache_key for prefix caching', () => {
-    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11|12)['"]/);
+    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11|12|13)['"]/);
   });
 
   it('v8 — script prompt is intent-based with USE FRESH WORDING + EARNED-PITCH + JUST EXPLORING', () => {
