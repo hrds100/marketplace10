@@ -28,8 +28,6 @@ import {
   Settings,
   Wand2,
   Loader2,
-  ChevronUp,
-  ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -1968,27 +1966,12 @@ function CampaignAgentsPanel({ campaignId }: { campaignId: string }) {
 // ASC. When empty it falls back to the agent's caller-ID then to any
 // voice-enabled workspace number.
 function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
-  const { rows, add, remove, setPriority } = useCampaignNumbers(campaignId);
+  // PR 94 (Hugo 2026-04-28): up/down reorder arrows replaced with a
+  // per-row dropdown. Hugo's mental model: each row is one channel;
+  // the dropdown picks WHICH SMS / WhatsApp / email is assigned to that
+  // slot. Reordering wasn't the right abstraction.
+  const { rows, add, remove, swapNumber } = useCampaignNumbers(campaignId);
   const [pickingNumberId, setPickingNumberId] = useState<string>('');
-
-  // PR 93 (Hugo 2026-04-28): swap row priorities so the top is always
-  // the primary. We swap the priority *values* of the two rows being
-  // moved \u2014 not a renumber of the whole list \u2014 so concurrent edits
-  // don't fight. wk-dialer-start orders by priority asc, so a swap is
-  // enough to put a row above its neighbour.
-  const moveRow = async (idx: number, dir: -1 | 1) => {
-    const sorted = [...rows].sort((a, b) => a.priority - b.priority);
-    const a = sorted[idx];
-    const b = sorted[idx + dir];
-    if (!a || !b) return;
-    // If priorities are equal (legacy data), nudge so they differ before swap.
-    const aP = a.priority;
-    const bP = b.priority === aP ? aP + dir : b.priority;
-    await Promise.all([
-      setPriority(a.id, bP),
-      setPriority(b.id, aP),
-    ]);
-  };
   // PR 85 (Hugo 2026-04-27): show all channels — SMS / WhatsApp / Email —
   // not just SMS numbers. Each row gets a channel-aware label + icon so
   // it's obvious what's assigned. Picker groups by channel.
@@ -2050,7 +2033,7 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
       <div className="text-[11px] text-[#6B7280] mb-2 leading-snug">
         {rows.length === 0
           ? 'No channels pinned \u2014 dialer + sender fall back to the workspace pool.'
-          : `${rows.length} channel${rows.length === 1 ? '' : 's'} pinned. The top row is the primary; the others are backups in order. Use \u2191 / \u2193 to reorder.`}
+          : `${rows.length} channel${rows.length === 1 ? '' : 's'} pinned. Use the dropdown on each row to swap which number / WhatsApp / email is assigned. Add another channel below.`}
       </div>
       <div className="space-y-1.5 mb-2">
         {rows.length === 0 && (
@@ -2059,14 +2042,22 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
             send fns pick the first active channel for their type.
           </div>
         )}
-        {rows.map((r, idx) => {
+        {rows.map((r) => {
           const n = allNumbers.find((x) => x.id === r.number_id);
+          // Same-channel pool the agent can swap to (active rows only,
+          // including the currently-assigned one so the dropdown shows
+          // the current value).
+          const sameChannel = n
+            ? allNumbers.filter(
+                (x) => x.channel === n.channel && (x.is_active || x.id === n.id)
+              )
+            : [];
           return (
             <div key={r.id} className="flex items-center justify-between gap-2 text-[12px]">
-              <span className="text-[#1A1A1A] tabular-nums flex-1 inline-flex items-center gap-1.5">
+              <span className="text-[#1A1A1A] tabular-nums flex-1 inline-flex items-center gap-1.5 min-w-0">
                 {n && (
                   <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] rounded uppercase font-bold tracking-wide"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] rounded uppercase font-bold tracking-wide flex-shrink-0"
                     style={{
                       background:
                         n.channel === 'whatsapp'
@@ -2085,43 +2076,35 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
                     {channelIcon(n.channel)} {channelLabel(n.channel)}
                   </span>
                 )}
-                <span>{n?.e164 ?? r.number_id.slice(0, 8)}</span>
+                {/* PR 94: dropdown replaces the static label so agents
+                    can swap which number/account is in this slot without
+                    deleting + re-adding. */}
+                {n && sameChannel.length > 1 ? (
+                  <select
+                    value={r.number_id}
+                    onChange={(e) => void swapNumber(r.id, e.target.value)}
+                    title={`Pick a different ${channelLabel(n.channel)}`}
+                    className="px-1.5 py-0.5 text-[12px] bg-white border border-[#E5E7EB] rounded-[6px] flex-1 min-w-0 truncate"
+                  >
+                    {sameChannel.map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.e164}
+                        {opt.channel === 'sms' && !opt.voice_enabled ? ' (no voice)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="truncate">{n?.e164 ?? r.number_id.slice(0, 8)}</span>
+                )}
                 {n && n.channel === 'sms' && !n.voice_enabled && (
-                  <span className="ml-2 text-[9px] text-[#B45309] bg-[#FEF3C7] px-1 rounded">
+                  <span className="ml-2 text-[9px] text-[#B45309] bg-[#FEF3C7] px-1 rounded flex-shrink-0">
                     not voice-enabled
                   </span>
                 )}
               </span>
-              {/* PR 93 (Hugo 2026-04-28): typing "10" in the priority box
-                  was meaningless. Replaced with up/down arrows that just
-                  swap this row with its neighbour. The list is sorted by
-                  priority, so the top row is always the primary. */}
-              <span className="text-[10px] text-[#6B7280] tabular-nums w-8 text-right">
-                {idx === 0 ? 'primary' : `#${idx + 1}`}
-              </span>
-              <div className="inline-flex flex-col">
-                <button
-                  type="button"
-                  onClick={() => void moveRow(idx, -1)}
-                  disabled={idx === 0}
-                  title="Move up"
-                  className="p-0.5 text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <ChevronUp className="w-3 h-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void moveRow(idx, +1)}
-                  disabled={idx === rows.length - 1}
-                  title="Move down"
-                  className="p-0.5 text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-              </div>
               <button
                 onClick={() => void remove(r.id)}
-                className="text-[10px] text-[#EF4444] hover:underline"
+                className="text-[10px] text-[#EF4444] hover:underline flex-shrink-0"
               >
                 Remove
               </button>
