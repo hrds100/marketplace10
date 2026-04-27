@@ -35,9 +35,30 @@ interface DialerStartInvoke {
 export default function DialerPage() {
   // PR 62 (Hugo 2026-04-27): non-admins only see campaigns they're
   // assigned to via wk_campaign_agents. Admins see everything.
+  // PR 63 (Hugo 2026-04-27): workspace_role wins when set — Hugo
+  // demoted his own hugo@nfstay.com to agent and was still seeing
+  // every campaign because the email allow-list (isAdmin=true)
+  // bypassed the scope. Now we read profiles.workspace_role and use
+  // role-first logic.
   const { user, isAdmin } = useAuth();
+  const [workspaceRole, setWorkspaceRole] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!user) { setWorkspaceRole(null); return; }
+    let cancelled = false;
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('profiles' as any) as any)
+        .select('workspace_role')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!cancelled) setWorkspaceRole((data?.workspace_role as string | null) ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+  const isEffectiveAdmin =
+    workspaceRole === 'admin' || (workspaceRole === null && isAdmin);
   const { campaigns: realCampaigns } = useDialerCampaigns({
-    scopedToAgentId: !isAdmin && user ? user.id : null,
+    scopedToAgentId: !isEffectiveAdmin && user ? user.id : null,
   });
   const allCampaigns = useMemo<Campaign[]>(
     () => (realCampaigns.length > 0 ? realCampaigns : MOCK_CAMPAIGNS),

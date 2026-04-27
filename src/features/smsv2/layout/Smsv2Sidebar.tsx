@@ -63,7 +63,12 @@ export default function Smsv2Sidebar({ collapsed, onCollapse }: Smsv2SidebarProp
     return () => { cancelled = true; };
   }, [authLoading, user]);
 
-  const isAdminOrWorkspaceAdmin = isAdmin || workspaceRole === 'admin';
+  // PR 63 (Hugo 2026-04-27): workspace_role wins when explicitly set.
+  // Aligns the sidebar with AdminOnlyRoute so an account whose email
+  // is in the hardcoded admin list (e.g. hugo@nfstay.com) but whose
+  // workspace_role has been set to 'agent' is treated as an agent.
+  const isAdminOrWorkspaceAdmin =
+    workspaceRole === 'admin' || (workspaceRole === null && isAdmin);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
