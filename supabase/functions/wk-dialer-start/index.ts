@@ -119,13 +119,32 @@ serve(async (req: Request) => {
       });
     }
 
-    // Resolve campaign + agent's caller-ID
-    const [{ data: campaign }, { data: profile }] = await Promise.all([
+    // Resolve campaign + agent's caller-ID + per-campaign assignments.
+    //
+    // PR 57 (Hugo 2026-04-27): when wk_campaign_numbers has rows for
+    // this campaign, we ONLY use those numbers (priority ASC). Falls
+    // back to the agent's default caller-ID and finally to any voice-
+    // enabled workspace number when the campaign hasn't been
+    // configured yet.
+    //
+    // wk_campaign_agents gating: when ANY rows exist for the
+    // campaign, the dialing agent MUST be in that list. When no rows
+    // exist (legacy / unconfigured), any signed-in agent may dial —
+    // so existing campaigns keep working without a forced setup
+    // step.
+    const [{ data: campaign }, { data: profile }, campNumsRes, campAgentsRes] = await Promise.all([
       supa.from('wk_dialer_campaigns')
           .select('id, parallel_lines, ai_coach_enabled, is_active')
           .eq('id', body.campaign_id).maybeSingle(),
       supa.from('profiles')
           .select('default_caller_id_number_id').eq('id', agentId).maybeSingle(),
+      supa.from('wk_campaign_numbers')
+          .select('number_id, priority')
+          .eq('campaign_id', body.campaign_id)
+          .order('priority', { ascending: true }),
+      supa.from('wk_campaign_agents')
+          .select('agent_id')
+          .eq('campaign_id', body.campaign_id),
     ]);
     if (!campaign || !campaign.is_active) {
       return new Response(JSON.stringify({ error: 'campaign not active' }), {
@@ -133,12 +152,49 @@ serve(async (req: Request) => {
       });
     }
 
+    // Agent gating (PR 57).
+    const agentAssignments = (campAgentsRes.data ?? []) as { agent_id: string }[];
+    if (agentAssignments.length > 0) {
+      const allowed = new Set(agentAssignments.map((r) => r.agent_id));
+      if (!allowed.has(agentId)) {
+        return new Response(JSON.stringify({
+          error: 'Agent not assigned to this campaign',
+          reason: 'not_in_wk_campaign_agents',
+        }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Resolve from-number with the new priority chain.
     let from: string | null = null;
-    if (profile?.default_caller_id_number_id) {
+    const campNums = (campNumsRes.data ?? []) as { number_id: string; priority: number }[];
+    if (campNums.length > 0) {
+      // PR 57: pick the highest-priority assigned number that is
+      // voice + sms enabled and exists in wk_numbers.
+      const numIds = campNums.map((r) => r.number_id);
+      const { data: nums } = await supa.from('wk_numbers')
+        .select('id, e164, voice_enabled')
+        .in('id', numIds);
+      const byId = new Map((nums ?? []).map((n) => [n.id as string, n]));
+      // Walk in campNums order (already sorted priority ASC) and
+      // pick the first voice-enabled one we resolve.
+      for (const cn of campNums) {
+        const n = byId.get(cn.number_id);
+        if (n?.voice_enabled && n.e164) {
+          from = n.e164 as string;
+          break;
+        }
+      }
+    }
+    // Fallback: agent's default caller-ID (legacy).
+    if (!from && profile?.default_caller_id_number_id) {
       const { data: num } = await supa.from('wk_numbers')
         .select('e164').eq('id', profile.default_caller_id_number_id).maybeSingle();
       from = num?.e164 ?? null;
     }
+    // Fallback: any voice-enabled workspace number.
     if (!from) {
       const { data: anyNum } = await supa.from('wk_numbers')
         .select('e164').eq('voice_enabled', true)

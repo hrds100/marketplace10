@@ -38,6 +38,9 @@ import { useAgentScript } from '../hooks/useAgentScript';
 import { useSmsTemplates, type SmsTemplate } from '../hooks/useSmsTemplates';
 import { useTerminologies, type Terminology } from '../hooks/useTerminologies';
 import { useCoachFacts, type CoachFact } from '../hooks/useCoachFacts';
+import { useCampaignAgents } from '../hooks/useCampaignAgents';
+import { useCampaignNumbers } from '../hooks/useCampaignNumbers';
+import { useAgentsToday } from '../hooks/useAgentsToday';
 import { useTwilioAccount } from '../hooks/useTwilioAccount';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
@@ -939,77 +942,399 @@ function TemplateEditor({
 }
 
 // ─── Campaigns ─────────────────────────────────────────────────────
+// PR 57 (Hugo 2026-04-27): replaced the mock store-driven UI with
+// real wk_dialer_campaigns CRUD + per-campaign agent + number
+// assignment panels. The body lives in RealCampaignsPanel below.
 function CampaignsTab() {
-  const { campaigns, patchCampaign } = useSmsV2();
+  return <RealCampaignsPanel />;
+}
+
+// PR 57 (Hugo 2026-04-27): real wk_dialer_campaigns CRUD + per-
+// campaign agent + number assignments. Replaces the mock UI that
+// edited the in-memory store. Admin can:
+//   - Create / rename / delete real campaigns
+//   - Toggle is_active + ai_coach_enabled
+//   - Set parallel_lines + auto_advance_seconds
+//   - Assign agents (dialer enforcement gate via wk_campaign_agents)
+//   - Assign numbers (dialer picks from-line via wk_campaign_numbers)
+//   - Duplicate a campaign (RPC wk_duplicate_campaign — copies bundle)
+function RealCampaignsPanel() {
+  const { campaigns, refetch } = useDialerCampaigns();
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const create = async () => {
+    setActionError(null);
+    if (!newName.trim()) return;
+    setCreating(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('wk_dialer_campaigns' as any) as any)
+        .insert({
+          name: newName.trim(),
+          parallel_lines: 3,
+          auto_advance_seconds: 10,
+          ai_coach_enabled: true,
+          is_active: false,
+        });
+      if (error) {
+        setActionError(error.message);
+        return;
+      }
+      setNewName('');
+      refetch();
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const remove = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"?\nThis removes the campaign + its bundle (AI overrides, facts, glossary, agent + number assignments). Queue rows are deleted via ON DELETE CASCADE.`)) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('wk_dialer_campaigns' as any) as any)
+      .delete()
+      .eq('id', id);
+    if (error) {
+      setActionError(error.message);
+      return;
+    }
+    if (expandedId === id) setExpandedId(null);
+    refetch();
+  };
+
+  const patch = async (id: string, p: Record<string, unknown>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('wk_dialer_campaigns' as any) as any)
+      .update(p)
+      .eq('id', id);
+    if (error) setActionError(error.message);
+    else refetch();
+  };
+
+  const duplicate = async (id: string, name: string) => {
+    const newCopyName = window.prompt(`Duplicate "${name}" — name for the copy?`, `${name} (copy)`);
+    if (!newCopyName?.trim()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).rpc('wk_duplicate_campaign', {
+      p_source_id: id,
+      p_new_name: newCopyName.trim(),
+    });
+    if (error) {
+      setActionError(error.message);
+      return;
+    }
+    refetch();
+  };
+
   return (
-    <Card title="Campaigns & lead distribution">
-      {/* PR 27 honesty banner: this tab edits the IN-MEMORY store
-          campaigns (mock data), not real wk_dialer_campaigns rows.
-          Real CRUD lands in a follow-up. Today: use /crm/dialer to
-          run the real campaigns Hugo seeded via SQL / Supabase Studio. */}
-      <div className="mb-3 px-3 py-2 bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-[10px] text-[11px] text-[#92400E]">
-        ⚠ Heads up — edits below only update local state. Real campaigns
-        live in <code className="bg-white/60 px-1 rounded">wk_dialer_campaigns</code> and aren't editable
-        from this tab yet (use Supabase Studio for now). Running campaigns
-        + parallel-dial UI is on /crm/dialer.
-      </div>
-      <div className="space-y-2">
-        {campaigns.map((c) => (
-          <div key={c.id} className="border border-[#E5E7EB] rounded-xl p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[13px] font-semibold text-[#1A1A1A]">{c.name}</span>
-              <span className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">
-                {c.mode} · {c.parallelLines} lines
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-[#6B7280] mb-2 items-center">
-              <span>Pipeline: {ACTIVE_PIPELINE.name}</span>
-              <span>{c.totalLeads} leads</span>
-              <button
-                onClick={() => patchCampaign(c.id, { aiCoachEnabled: !c.aiCoachEnabled })}
-                className={cn(
-                  'inline-flex items-center justify-self-start gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors',
-                  c.aiCoachEnabled
-                    ? 'bg-[#ECFDF5] text-[#1E9A80] border-[#1E9A80]/30'
-                    : 'bg-[#F3F3EE] text-[#9CA3AF] border-[#E5E7EB]'
-                )}
-              >
-                <Bot className="w-3 h-3" />
-                AI coach: {c.aiCoachEnabled ? 'ON' : 'OFF'}
-              </button>
-              <span className="inline-flex items-center gap-1">
-                Auto-advance:{' '}
-                <input
-                  type="number"
-                  value={c.autoAdvanceSeconds}
-                  onChange={(e) =>
-                    patchCampaign(c.id, {
-                      autoAdvanceSeconds: Math.max(1, parseInt(e.target.value, 10) || 1),
-                    })
-                  }
-                  className="inline-block w-12 px-1 py-0.5 text-[11px] border border-[#E5E7EB] rounded tabular-nums"
-                />
-                s
-              </span>
-            </div>
-            <details className="border-t border-[#E5E7EB] pt-2 mt-2">
-              <summary className="text-[11px] text-[#1E9A80] cursor-pointer">
-                Edit call script (markdown)
-              </summary>
-              <textarea
-                rows={4}
-                value={c.scriptMd ?? `Hi {name}, this is {agent} from NFSTAY…`}
-                onChange={(e) => patchCampaign(c.id, { scriptMd: e.target.value })}
-                className="mt-1.5 w-full px-2 py-1.5 text-[11px] font-mono border border-[#E5E7EB] rounded-[8px]"
-              />
-            </details>
-          </div>
-        ))}
-        <button className="flex items-center gap-1 text-[12px] font-medium text-[#1E9A80] hover:bg-[#ECFDF5] px-2 py-1.5 rounded-[10px]">
-          <Plus className="w-3.5 h-3.5" /> New campaign · CSV upload
+    <Card title="Campaigns" hint="Real wk_dialer_campaigns rows · drives /crm/dialer + per-campaign coach overrides">
+      {actionError && (
+        <div className="mb-2 px-2 py-1 text-[11px] text-[#B91C1C] bg-[#FEE2E2] rounded-[6px]">
+          {actionError}
+        </div>
+      )}
+
+      <div className="flex gap-1.5 mb-3">
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && void create()}
+          placeholder="New campaign name…"
+          className="flex-1 px-3 py-1.5 text-[12px] bg-white border border-[#E5E7EB] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/40"
+        />
+        <button
+          onClick={() => void create()}
+          disabled={creating || !newName.trim()}
+          className="bg-[#1E9A80] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+        >
+          {creating ? 'Creating…' : '+ Create'}
         </button>
       </div>
+
+      <div className="space-y-2">
+        {campaigns.length === 0 && (
+          <div className="text-[12px] text-[#9CA3AF] italic px-1 py-2">
+            No campaigns yet. Create one above.
+          </div>
+        )}
+        {campaigns.map((c) => {
+          const isOpen = expandedId === c.id;
+          return (
+            <div key={c.id} className="border border-[#E5E7EB] rounded-xl">
+              <div className="flex items-center justify-between px-3 py-2.5">
+                <button
+                  onClick={() => setExpandedId(isOpen ? null : c.id)}
+                  className="flex-1 text-left text-[13px] font-semibold text-[#1A1A1A] hover:text-[#1E9A80]"
+                >
+                  {isOpen ? '▾ ' : '▸ '}
+                  {c.name}
+                </button>
+                <span className="text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF] mr-3">
+                  {c.parallelLines} lines · {c.totalLeads} leads
+                </span>
+                <button
+                  onClick={() => void duplicate(c.id, c.name)}
+                  className="text-[11px] text-[#1A1A1A] border border-[#E5E7EB] hover:bg-[#F3F3EE] px-2 py-1 rounded-[8px] mr-1.5"
+                  title="Duplicate this campaign + its full bundle"
+                >
+                  Duplicate
+                </button>
+                <button
+                  onClick={() => void remove(c.id, c.name)}
+                  className="text-[11px] text-[#EF4444] hover:bg-[#FEE2E2] px-2 py-1 rounded-[8px]"
+                  title="Delete (cascades bundle)"
+                >
+                  Delete
+                </button>
+              </div>
+              {isOpen && (
+                <div className="border-t border-[#E5E7EB] p-3 space-y-3 bg-[#F9FAFB]">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Parallel lines (1–5)">
+                      <input
+                        type="number"
+                        min={1}
+                        max={5}
+                        defaultValue={c.parallelLines}
+                        onBlur={(e) => {
+                          const n = Math.max(1, Math.min(5, parseInt(e.target.value, 10) || 1));
+                          if (n !== c.parallelLines) void patch(c.id, { parallel_lines: n });
+                        }}
+                        className="w-full px-2 py-1 text-[12px] border border-[#E5E7EB] rounded-[8px] tabular-nums bg-white"
+                      />
+                    </Field>
+                    <Field label="Auto-advance (s)">
+                      <input
+                        type="number"
+                        min={1}
+                        defaultValue={c.autoAdvanceSeconds}
+                        onBlur={(e) => {
+                          const n = Math.max(1, parseInt(e.target.value, 10) || 10);
+                          if (n !== c.autoAdvanceSeconds) void patch(c.id, { auto_advance_seconds: n });
+                        }}
+                        className="w-full px-2 py-1 text-[12px] border border-[#E5E7EB] rounded-[8px] tabular-nums bg-white"
+                      />
+                    </Field>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => void patch(c.id, { ai_coach_enabled: !c.aiCoachEnabled })}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors',
+                        c.aiCoachEnabled
+                          ? 'bg-[#ECFDF5] text-[#1E9A80] border-[#1E9A80]/30'
+                          : 'bg-[#F3F3EE] text-[#9CA3AF] border-[#E5E7EB]'
+                      )}
+                    >
+                      <Bot className="w-3 h-3" />
+                      AI coach: {c.aiCoachEnabled ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+                  <CampaignAgentsPanel campaignId={c.id} />
+                  <CampaignNumbersPanel campaignId={c.id} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </Card>
+  );
+}
+
+// ─── PR 57: per-campaign agent assignments ────────────────────────
+// Lives inside RealCampaignsPanel as a sub-panel for each expanded
+// campaign row. wk-dialer-start enforces these on Start.
+function CampaignAgentsPanel({ campaignId }: { campaignId: string }) {
+  const { rows, add, remove } = useCampaignAgents(campaignId);
+  const { agents } = useAgentsToday();
+  const [pickingAgentId, setPickingAgentId] = useState<string>('');
+  const assignedIds = new Set(rows.map((r) => r.agent_id));
+  const available = agents.filter((a) => !assignedIds.has(a.id) && !a.isAdmin);
+
+  const onAdd = async () => {
+    if (!pickingAgentId) return;
+    try {
+      await add(pickingAgentId);
+      setPickingAgentId('');
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'add failed');
+    }
+  };
+
+  return (
+    <div className="border border-[#E5E7EB] bg-white rounded-[10px] p-3">
+      <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-2">
+        Assigned agents
+        <span className="ml-2 text-[10px] text-[#6B7280] normal-case font-normal">
+          {rows.length === 0
+            ? 'no rows → any agent may dial this campaign'
+            : `${rows.length} agent${rows.length === 1 ? '' : 's'} — only these may dial`}
+        </span>
+      </div>
+      <div className="space-y-1.5 mb-2">
+        {rows.length === 0 && (
+          <div className="text-[11px] text-[#9CA3AF] italic">
+            None assigned. Add at least one to lock this campaign down.
+          </div>
+        )}
+        {rows.map((r) => {
+          const a = agents.find((x) => x.id === r.agent_id);
+          return (
+            <div key={r.id} className="flex items-center justify-between text-[12px]">
+              <span className="text-[#1A1A1A]">
+                {a?.name ?? r.agent_id.slice(0, 8)}{' '}
+                <span className="text-[10px] text-[#9CA3AF]">({r.role})</span>
+              </span>
+              <button
+                onClick={() => void remove(r.id)}
+                className="text-[10px] text-[#EF4444] hover:underline"
+              >
+                Remove
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-1.5">
+        <select
+          value={pickingAgentId}
+          onChange={(e) => setPickingAgentId(e.target.value)}
+          className="flex-1 px-2 py-1.5 text-[12px] bg-white border border-[#E5E7EB] rounded-[8px]"
+        >
+          <option value="">Pick an agent…</option>
+          {available.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => void onAdd()}
+          disabled={!pickingAgentId}
+          className="bg-[#1E9A80] text-white text-[11px] font-semibold px-3 py-1.5 rounded-[8px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+        >
+          + Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── PR 57: per-campaign number assignments ───────────────────────
+// wk-dialer-start picks the from-line from these rows by priority
+// ASC. When empty it falls back to the agent's caller-ID then to any
+// voice-enabled workspace number.
+function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
+  const { rows, add, remove, setPriority } = useCampaignNumbers(campaignId);
+  const [pickingNumberId, setPickingNumberId] = useState<string>('');
+  const [allNumbers, setAllNumbers] = useState<
+    Array<{ id: string; e164: string; voice_enabled: boolean; sms_enabled: boolean }>
+  >([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('wk_numbers' as any) as any)
+        .select('id, e164, voice_enabled, sms_enabled')
+        .order('e164', { ascending: true });
+      if (!cancelled) {
+        setAllNumbers(
+          (data ?? []) as Array<{ id: string; e164: string; voice_enabled: boolean; sms_enabled: boolean }>
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const assignedIds = new Set(rows.map((r) => r.number_id));
+  const available = allNumbers.filter((n) => !assignedIds.has(n.id));
+
+  const onAdd = async () => {
+    if (!pickingNumberId) return;
+    try {
+      await add(pickingNumberId, rows.length); // priority ASC by insertion
+      setPickingNumberId('');
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'add failed');
+    }
+  };
+
+  return (
+    <div className="border border-[#E5E7EB] bg-white rounded-[10px] p-3">
+      <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-2">
+        Assigned numbers
+        <span className="ml-2 text-[10px] text-[#6B7280] normal-case font-normal">
+          {rows.length === 0
+            ? 'no rows → dialer falls back to workspace pool'
+            : `${rows.length} number${rows.length === 1 ? '' : 's'} — first priority dials out`}
+        </span>
+      </div>
+      <div className="space-y-1.5 mb-2">
+        {rows.length === 0 && (
+          <div className="text-[11px] text-[#9CA3AF] italic">
+            None pinned. wk-dialer-start uses any voice-enabled workspace number.
+          </div>
+        )}
+        {rows.map((r) => {
+          const n = allNumbers.find((x) => x.id === r.number_id);
+          return (
+            <div key={r.id} className="flex items-center justify-between gap-2 text-[12px]">
+              <span className="text-[#1A1A1A] tabular-nums flex-1">
+                {n?.e164 ?? r.number_id.slice(0, 8)}
+                {n && !n.voice_enabled && (
+                  <span className="ml-2 text-[9px] text-[#B45309] bg-[#FEF3C7] px-1 rounded">
+                    not voice-enabled
+                  </span>
+                )}
+              </span>
+              <input
+                type="number"
+                defaultValue={r.priority}
+                onBlur={(e) => {
+                  const n = parseInt(e.target.value, 10);
+                  if (Number.isFinite(n) && n !== r.priority) void setPriority(r.id, n);
+                }}
+                className="w-12 px-1.5 py-0.5 text-[11px] border border-[#E5E7EB] rounded text-right tabular-nums"
+                title="Lower = picked first"
+              />
+              <button
+                onClick={() => void remove(r.id)}
+                className="text-[10px] text-[#EF4444] hover:underline"
+              >
+                Remove
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-1.5">
+        <select
+          value={pickingNumberId}
+          onChange={(e) => setPickingNumberId(e.target.value)}
+          className="flex-1 px-2 py-1.5 text-[12px] bg-white border border-[#E5E7EB] rounded-[8px]"
+        >
+          <option value="">Pick a number…</option>
+          {available.map((n) => (
+            <option key={n.id} value={n.id}>
+              {n.e164} {n.voice_enabled ? '' : '(no voice)'}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => void onAdd()}
+          disabled={!pickingNumberId}
+          className="bg-[#1E9A80] text-white text-[11px] font-semibold px-3 py-1.5 rounded-[8px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+        >
+          + Add
+        </button>
+      </div>
+    </div>
   );
 }
 
