@@ -1261,7 +1261,13 @@ function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}
       return;
     }
     try {
-      const subjectValue = draft.channel === 'email' ? draft.subject.trim() : null;
+      // PR 83: persist subject for email AND universal templates so it
+      // carries through when the template is later used in email mode.
+      // SMS / WhatsApp templates store NULL since they ignore subject.
+      const subjectValue =
+        draft.channel === 'email' || draft.channel === null
+          ? draft.subject.trim() || null
+          : null;
       if (editingId === 'new') {
         await add({
           name: draft.name.trim(),
@@ -1462,10 +1468,16 @@ function TemplateEditor({
           </select>
         </div>
       </div>
-      {/* PR 64: subject only when channel = email. */}
-      {draft.channel === 'email' && (
+      {/* PR 83 (Hugo 2026-04-27): show the subject field for email AND
+          universal templates. SMS / WhatsApp don't use the subject so we
+          hide it there. Required only when channel=email; on universal
+          it's optional but recommended so the template is ready to be
+          used as an email later. */}
+      {(draft.channel === 'email' || draft.channel === null) && (
         <div>
-          <Label>Email subject (required)</Label>
+          <Label>
+            Email subject {draft.channel === 'email' ? '(required)' : '(optional — used when sent as email)'}
+          </Label>
           <input
             type="text"
             value={draft.subject}

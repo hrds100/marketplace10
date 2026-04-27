@@ -88,6 +88,10 @@ interface Props {
   contact: Contact | null;
   onClose: () => void;
   agentFirstName?: string;
+  /** PR 83: caller can pre-select the channel so e.g. clicking the
+   *  "WhatsApp" icon on the contacts list opens the modal already
+   *  pinned to WhatsApp instead of forcing a re-pick. */
+  defaultChannel?: Channel | null;
 }
 
 const CHANNEL_LABEL: Record<Channel, string> = {
@@ -100,13 +104,16 @@ export default function ContactSmsModal({
   contact,
   onClose,
   agentFirstName,
+  defaultChannel = null,
 }: Props) {
   const { pushToast, columns, patchContact } = useSmsV2();
   const persist = useContactPersistence();
   // PR 80 safety: channel starts UNSELECTED — agent must consciously pick
   // SMS / WhatsApp / Email before send. Prevents accidentally messaging
   // on the wrong channel.
-  const [channel, setChannel] = useState<Channel | null>(null);
+  // PR 83: when the parent passes a defaultChannel (e.g. clicking the
+  // WhatsApp icon on a contact row), open with that channel pre-selected.
+  const [channel, setChannel] = useState<Channel | null>(defaultChannel);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [emailFroms, setEmailFroms] = useState<EmailFromRow[]>([]);
   const [selectedFromId, setSelectedFromId] = useState<string>('');
@@ -160,6 +167,8 @@ export default function ContactSmsModal({
   }, []);
 
   // Reset state when modal opens for a different contact OR channel changes.
+  // PR 83: re-apply defaultChannel each time the modal opens, since the
+  // parent may pass a different channel per click (WhatsApp icon vs Email icon).
   useEffect(() => {
     if (contact) {
       setSelectedTemplateId('');
@@ -167,8 +176,9 @@ export default function ContactSmsModal({
       setSubject('');
       setRecentSendCount(0);
       setShowSentBanner(false);
+      setChannel(defaultChannel);
     }
-  }, [contact]);
+  }, [contact, defaultChannel]);
 
   useEffect(() => {
     setSelectedTemplateId('');

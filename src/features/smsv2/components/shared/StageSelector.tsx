@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ACTIVE_PIPELINE } from '../../data/mockPipelines';
+import { useSmsV2 } from '../../store/SmsV2Store';
 
 interface Props {
   value?: string; // pipeline column id
@@ -30,7 +31,17 @@ export default function StageSelector({ value, onChange, size = 'sm', className 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
-  const current = ACTIVE_PIPELINE.columns.find((c) => c.id === value);
+  // PR 83 (Hugo 2026-04-27): read columns from the DB-hydrated store.
+  // Mock fallback only when the store hasn't loaded yet (e.g. fresh
+  // session before useHydratePipelineColumns finishes). Hugo's bug:
+  // mock IDs aren't UUIDs, so persist.moveToColumn skipped DB writes
+  // and the stage didn't stick on reload.
+  const { columns: storeCols } = useSmsV2();
+  const columns = useMemo(
+    () => (storeCols.length > 0 ? storeCols : ACTIVE_PIPELINE.columns),
+    [storeCols]
+  );
+  const current = columns.find((c) => c.id === value);
 
   // Compute viewport position whenever opening or on resize/scroll.
   useEffect(() => {
@@ -116,7 +127,7 @@ export default function StageSelector({ value, onChange, size = 'sm', className 
           className="fixed z-[400] min-w-[180px] max-w-[260px] max-h-[260px] overflow-y-auto bg-white border border-[#E5E7EB] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] py-1"
           style={{ top: popoverPos.top, left: popoverPos.left }}
         >
-          {ACTIVE_PIPELINE.columns.map((c) => (
+          {columns.map((c) => (
             <button
               key={c.id}
               type="button"

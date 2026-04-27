@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Agent, Contact } from '../../types';
 import { MOCK_AGENTS } from '../../data/mockAgents';
 import { ACTIVE_PIPELINE } from '../../data/mockPipelines';
+import { useSmsV2 } from '../../store/SmsV2Store';
 
 interface Props {
   contact: Contact | null;
@@ -19,6 +20,14 @@ interface Props {
 export default function EditContactModal({ contact, onClose, onSave, agents }: Props) {
   // Real agents when provided, mock fallback so dev/Storybook still works.
   const ownerOptions = agents && agents.length > 0 ? agents : MOCK_AGENTS;
+  // PR 83 (Hugo 2026-04-27): pipeline stages from the DB-hydrated store
+  // so the UUID stage IDs we save on contact edit actually match real
+  // wk_pipeline_columns.id (mock IDs were silently dropped on save).
+  const { columns: storeCols } = useSmsV2();
+  const pipelineColumns = useMemo(
+    () => (storeCols.length > 0 ? storeCols : ACTIVE_PIPELINE.columns),
+    [storeCols]
+  );
   const [draft, setDraft] = useState<Contact | null>(contact);
   const [newField, setNewField] = useState({ key: '', value: '' });
   const [newTag, setNewTag] = useState('');
@@ -102,7 +111,7 @@ export default function EditContactModal({ contact, onClose, onSave, agents }: P
                 className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
               >
                 <option value="">— None —</option>
-                {ACTIVE_PIPELINE.columns.map((c) => (
+                {pipelineColumns.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
