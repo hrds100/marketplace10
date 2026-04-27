@@ -21,8 +21,13 @@ test('admin sees campaigns sidebar + can expand a campaign without crash', async
   await page.waitForSelector('text=Inbox', { timeout: 30_000 });
 
   await page.goto('https://hub.nfstay.com/crm/settings', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(5000);
+  await page.screenshot({ path: 'e2e/screenshots/pr62-settings-debug.png', fullPage: true });
+  console.log('--- console errors so far ---');
+  for (const e of errors) console.log(e);
+  console.log('--- end ---');
   // The sidebar is the load signal — admin only.
-  await page.waitForSelector('text=Master template', { timeout: 30_000 });
+  await page.waitForSelector('text=Master template', { timeout: 15_000 });
   await page.waitForSelector('text=Workspace defaults', { timeout: 15_000 });
   await page.screenshot({ path: 'e2e/screenshots/pr62-settings-default.png', fullPage: true });
 
