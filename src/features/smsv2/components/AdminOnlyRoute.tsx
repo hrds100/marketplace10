@@ -49,7 +49,15 @@ export default function AdminOnlyRoute({ children }: Props) {
     );
   }
 
-  const allowed = isAdmin || workspaceRole === 'admin';
+  // PR 63 (Hugo 2026-04-27): workspace_role wins when explicitly set.
+  // The hardcoded admin email allow-list (hugo@nfstay.com etc.) used
+  // to override an explicit 'agent' role — Hugo found this when he
+  // renamed his own profile to "Rod" + workspace_role='agent' and
+  // could still see Settings because the email match snuck through.
+  // New rule: if workspace_role IS set, that's the source of truth.
+  // If workspace_role is null, fall back to the email allow-list.
+  const allowed =
+    workspaceRole === 'admin' || (workspaceRole === null && isAdmin);
   if (!allowed) return <Navigate to="/crm/inbox" replace />;
 
   return <>{children}</>;
