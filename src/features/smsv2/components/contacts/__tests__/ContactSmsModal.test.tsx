@@ -116,6 +116,8 @@ describe('ContactSmsModal', () => {
     const { getByTestId } = render(
       wrap(<ContactSmsModal contact={fixture} onClose={() => {}} agentFirstName="Hugo" />)
     );
+    // PR 80 safety: pick a channel first (no longer auto-defaults).
+    fireEvent.click(getByTestId('channel-radio-sms'));
     const textarea = getByTestId('contact-sms-modal-body') as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'Hi from the contacts page' } });
     fireEvent.click(getByTestId('contact-sms-modal-send'));

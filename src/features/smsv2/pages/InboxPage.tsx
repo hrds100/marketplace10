@@ -75,7 +75,12 @@ export default function InboxPage() {
   const [editing, setEditing] = useState<Contact | null>(null);
   const [reply, setReply] = useState('');
   const [replySubject, setReplySubject] = useState('');
-  const [replyChannel, setReplyChannel] = useState<ChannelKindUI>('sms');
+  // PR 80 safety: channel starts UNSELECTED. Send is disabled and a
+  // tooltip prompts "Pick SMS / WhatsApp / Email first" until the
+  // agent consciously chooses. We auto-default to whatever channel the
+  // contact's last message used, so the agent isn't pestered when the
+  // intent is obvious.
+  const [replyChannel, setReplyChannel] = useState<ChannelKindUI | null>(null);
   const [sending, setSending] = useState(false);
   const { startCall, openCallRoom } = useActiveCallCtx();
   const threadScrollRef = useRef<HTMLDivElement>(null);
@@ -209,11 +214,18 @@ export default function InboxPage() {
 
   // PR 79: auto-default the reply channel to whatever the contact's
   // LAST message used. If they last messaged on WhatsApp, our default
-  // reply channel is WhatsApp. Falls back to SMS if there are no
-  // messages yet.
+  // reply channel is WhatsApp. PR 80 update: when contact has NO
+  // messages OR has changed, reset to null so the agent must pick
+  // explicitly (anti-mistake guard).
   useEffect(() => {
-    if (!activeContactId) return;
-    if (crmMessages.length === 0) return;
+    if (!activeContactId) {
+      setReplyChannel(null);
+      return;
+    }
+    if (crmMessages.length === 0) {
+      setReplyChannel(null);
+      return;
+    }
     const last = crmMessages[crmMessages.length - 1];
     if (last?.channel) setReplyChannel(last.channel);
   }, [activeContactId, crmMessages]);
@@ -279,6 +291,10 @@ export default function InboxPage() {
 
   const send = async () => {
     if (!reply.trim() || !activeContact || sending) return;
+    if (!replyChannel) {
+      pushToast('Pick a channel first — SMS, WhatsApp or Email.', 'error');
+      return;
+    }
     if (replyChannel === 'email' && !replySubject.trim()) {
       pushToast('Email subject required', 'error');
       return;
@@ -555,34 +571,46 @@ export default function InboxPage() {
           {/* PR 79: channel picker on the reply box. Reply routes through
               wk-sms-send / unipile-send / wk-email-send accordingly. */}
           <div className="flex items-center justify-between gap-2">
-            <div
-              role="radiogroup"
-              aria-label="Reply channel"
-              className="inline-flex p-0.5 bg-[#F3F3EE] rounded-[8px] border border-[#E5E5E5] gap-0.5"
-            >
-              {(['sms', 'whatsapp', 'email'] as const).map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  role="radio"
-                  aria-checked={replyChannel === c}
-                  onClick={() => setReplyChannel(c)}
-                  data-testid={`inbox-reply-channel-${c}`}
-                  className={cn(
-                    'inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-[6px] transition-colors',
-                    replyChannel === c
-                      ? 'bg-white text-[#1E9A80] shadow-sm'
-                      : 'text-[#6B7280] hover:text-[#1A1A1A]'
-                  )}
-                >
-                  <ChannelGlyph
-                    channel={c}
-                    size={10}
-                    className={replyChannel === c ? '' : 'opacity-70'}
-                  />
-                  {c === 'sms' ? 'SMS' : c === 'whatsapp' ? 'WhatsApp' : 'Email'}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <div
+                role="radiogroup"
+                aria-label="Reply channel"
+                className={cn(
+                  'inline-flex p-0.5 bg-[#F3F3EE] rounded-[8px] gap-0.5 border',
+                  replyChannel === null
+                    ? 'border-[#F59E0B] ring-1 ring-[#F59E0B]/30'
+                    : 'border-[#E5E5E5]'
+                )}
+              >
+                {(['sms', 'whatsapp', 'email'] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    role="radio"
+                    aria-checked={replyChannel === c}
+                    onClick={() => setReplyChannel(c)}
+                    data-testid={`inbox-reply-channel-${c}`}
+                    className={cn(
+                      'inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-[6px] transition-colors',
+                      replyChannel === c
+                        ? 'bg-white text-[#1E9A80] shadow-sm'
+                        : 'text-[#6B7280] hover:text-[#1A1A1A]'
+                    )}
+                  >
+                    <ChannelGlyph
+                      channel={c}
+                      size={10}
+                      className={replyChannel === c ? '' : 'opacity-70'}
+                    />
+                    {c === 'sms' ? 'SMS' : c === 'whatsapp' ? 'WhatsApp' : 'Email'}
+                  </button>
+                ))}
+              </div>
+              {replyChannel === null && (
+                <span className="text-[10px] font-semibold text-[#B45309] uppercase tracking-wide">
+                  Pick a channel ↑
+                </span>
+              )}
             </div>
             {replyChannel === 'email' && (
               <input
@@ -600,11 +628,13 @@ export default function InboxPage() {
               value={reply}
               onChange={(e) => setReply(e.target.value)}
               placeholder={
-                replyChannel === 'whatsapp'
-                  ? 'Type a WhatsApp reply…'
-                  : replyChannel === 'email'
-                    ? 'Type the email body…'
-                    : 'Type a reply…'
+                replyChannel === null
+                  ? 'Pick a channel above to start typing…'
+                  : replyChannel === 'whatsapp'
+                    ? 'Type a WhatsApp reply…'
+                    : replyChannel === 'email'
+                      ? 'Type the email body…'
+                      : 'Type a reply…'
               }
               disabled={sending}
               data-testid="inbox-reply-body"
@@ -615,9 +645,11 @@ export default function InboxPage() {
               disabled={
                 !reply.trim() ||
                 sending ||
+                !replyChannel ||
                 (replyChannel === 'email' && !replySubject.trim())
               }
               data-testid="inbox-reply-send"
+              title={!replyChannel ? 'Pick SMS, WhatsApp or Email first' : undefined}
               className="flex items-center gap-1.5 bg-[#1E9A80] text-white text-[13px] font-semibold px-4 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3.5 h-3.5" />

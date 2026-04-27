@@ -74,7 +74,10 @@ export default function MidCallSmsSender({
   const { pushToast, columns, patchContact, contacts } = useSmsV2();
   const currentContact = contacts.find((c) => c.id === contactId);
   const persist = useContactPersistence();
-  const [channel, setChannel] = useState<Channel>('sms');
+  // PR 80 safety: channel starts UNSELECTED. Mid-call sender forces
+  // an explicit channel pick before send to prevent accidental cross-
+  // channel messages.
+  const [channel, setChannel] = useState<Channel | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [body, setBody] = useState('');
@@ -156,7 +159,10 @@ export default function MidCallSmsSender({
 
   const stageMissing = pickedStageId === null;
 
+  const channelMissing = channel === null;
+
   const isSendDisabled =
+    channelMissing ||
     !body.trim() ||
     sending ||
     stageMissing ||

@@ -103,7 +103,10 @@ export default function ContactSmsModal({
 }: Props) {
   const { pushToast, columns, patchContact } = useSmsV2();
   const persist = useContactPersistence();
-  const [channel, setChannel] = useState<Channel>('sms');
+  // PR 80 safety: channel starts UNSELECTED — agent must consciously pick
+  // SMS / WhatsApp / Email before send. Prevents accidentally messaging
+  // on the wrong channel.
+  const [channel, setChannel] = useState<Channel | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [emailFroms, setEmailFroms] = useState<EmailFromRow[]>([]);
   const [selectedFromId, setSelectedFromId] = useState<string>('');
@@ -224,11 +227,16 @@ export default function ContactSmsModal({
   const isSendDisabled =
     !body.trim() ||
     sending ||
+    channel === null ||
     !!channelDisabledReason ||
     (channel === 'email' && !subject.trim());
 
   const send = async () => {
     if (!contact || isSendDisabled) return;
+    if (!channel) {
+      pushToast('Pick a channel first — SMS, WhatsApp or Email.', 'error');
+      return;
+    }
     setSending(true);
     try {
       const fn = supabase.functions as unknown as SendInvoke;
@@ -301,7 +309,8 @@ export default function ContactSmsModal({
   const channelIcon =
     channel === 'email' ? Mail : channel === 'whatsapp' ? MessageSquare : Phone;
   const ChannelIcon = channelIcon;
-
+  // Header label: when no channel picked, show generic "Message".
+  const headerLabel = channel ? CHANNEL_LABEL[channel] : 'Message';
   const recipientLabel =
     channel === 'email' ? contact.email ?? '(no email)' : contact.phone;
 
@@ -335,31 +344,45 @@ export default function ContactSmsModal({
         </header>
 
         <div className="px-5 py-4 space-y-3">
-          {/* Channel picker — segmented radio. */}
-          <div
-            role="radiogroup"
-            aria-label="Channel"
-            className="inline-flex p-0.5 bg-[#F3F3EE] rounded-[10px] border border-[#E5E5E5] gap-0.5"
-            data-testid="contact-sms-modal-channel-picker"
-          >
-            {(['sms', 'whatsapp', 'email'] as const).map((c) => (
-              <button
-                key={c}
-                role="radio"
-                aria-checked={channel === c}
-                onClick={() => setChannel(c)}
-                className={cn(
-                  'px-3 py-1 text-[12px] font-medium rounded-[8px] transition-colors',
-                  channel === c
-                    ? 'bg-white text-[#1E9A80] shadow-sm'
-                    : 'text-[#6B7280] hover:text-[#1A1A1A]'
-                )}
-                data-testid={`channel-radio-${c}`}
-                type="button"
-              >
-                {CHANNEL_LABEL[c]}
-              </button>
-            ))}
+          {/* Channel picker — segmented radio. PR 80: starts UNSELECTED so
+              the agent must pick consciously. Amber border when no
+              channel chosen so it's visually obvious. */}
+          <div className="flex items-center gap-2">
+            <div
+              role="radiogroup"
+              aria-label="Channel"
+              className={cn(
+                'inline-flex p-0.5 bg-[#F3F3EE] rounded-[10px] gap-0.5 border',
+                channel === null
+                  ? 'border-[#F59E0B] ring-1 ring-[#F59E0B]/30'
+                  : 'border-[#E5E5E5]'
+              )}
+              data-testid="contact-sms-modal-channel-picker"
+            >
+              {(['sms', 'whatsapp', 'email'] as const).map((c) => (
+                <button
+                  key={c}
+                  role="radio"
+                  aria-checked={channel === c}
+                  onClick={() => setChannel(c)}
+                  className={cn(
+                    'px-3 py-1 text-[12px] font-medium rounded-[8px] transition-colors',
+                    channel === c
+                      ? 'bg-white text-[#1E9A80] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#1A1A1A]'
+                  )}
+                  data-testid={`channel-radio-${c}`}
+                  type="button"
+                >
+                  {CHANNEL_LABEL[c]}
+                </button>
+              ))}
+            </div>
+            {channel === null && (
+              <span className="text-[10px] font-semibold text-[#B45309] uppercase tracking-wide">
+                Pick one
+              </span>
+            )}
           </div>
 
           {channelDisabledReason && (
