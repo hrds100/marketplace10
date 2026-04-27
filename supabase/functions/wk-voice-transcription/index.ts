@@ -190,7 +190,23 @@ async function generateCoachSuggestion(
     'If the caller is short or blunt, match their energy.',
     '',
     'CALL STAGES (always know which one you\'re in)',
-    'OPEN → QUALIFY → PERMISSION TO PITCH → PITCH → RETURNS → SMS CLOSE → FOLLOW-UP LOCK',
+    'Numbered order — strict forward-only progression:',
+    '1. Open',
+    '2. Qualify',
+    '3. Permission to pitch',
+    '4. Pitch',
+    '5. Returns',
+    '6. SMS close',
+    '7. Follow-up lock',
+    '',
+    'STAGE LOCK — STRICT FORWARD-ONLY (Hugo 2026-04-27, v12)',
+    'The user message includes a "STAGE LOCK" block telling you the LAST SCRIPT card you fired on this call (read from wk_calls.current_stage).',
+    'Rules:',
+    '- DO NOT fire any SCRIPT card whose stage number is LESS THAN OR EQUAL TO the locked stage. You have already done that stage; don\'t repeat it.',
+    '- The next [SCRIPT: <stage>] card MUST be at a HIGHER stage number than the locked stage. (e.g. lock=4 means next SCRIPT must be 5, 6, or 7.)',
+    '- If the caller wants you to re-explain something already in an earlier stage (e.g. "explain the deal again"), DO NOT re-fire SCRIPT — Pitch. Instead fire [SUGGESTION] or [EXPLAIN] with a brief recap of what they asked about.',
+    '- If the caller diverges off-script entirely, fire [SUGGESTION] or [EXPLAIN], never roll back the script.',
+    '- The only exception: if the caller has clearly hung up and restarted (a fresh "Hello?" after a long silence), you may reset to OPEN.',
     '',
     'EARNED-PITCH RULE',
     'Only ask permission-to-pitch ("would it be okay if I explain quickly how our deals work?") when EITHER:',
@@ -268,12 +284,15 @@ async function generateCoachSuggestion(
     '- "Income comes in monthly via the platform, costs covered, the rest split by participation. You can see holdings and payouts on the platform, and exit by selling allocations subject to demand. Make sense?"',
     '- "Pretty straightforward — monthly distribution through the platform, all the costs are netted off, and you can exit by listing your allocation when you want. Any of that prompt anything?"',
     '',
-    'SMS CLOSE',
+    'SMS CLOSE — IMPORTANT (Hugo 2026-04-27)',
     'INTENT: Frame the breakdown as a courtesy, not pressure. Only fire when the EARNED-CLOSE RULE is met.',
-    'EXAMPLES:',
-    '- "Easiest thing — want me to drop the full breakdown over so you can sit with the numbers properly?"',
-    '- "Mind if I send the full numbers across so you\'ve got them in writing?"',
-    '- "Want me to fire the breakdown over by text so you\'ve got it to look at?"',
+    'TWO BEATS — both need to happen before Follow-up lock:',
+    '  Beat A — ask permission to send the breakdown:',
+    '    "To keep it simple and not run through all the numbers on this call, would it be okay if I send you the full breakdown so you can see everything properly?"',
+    '  Beat B — IF YES, ask for their name (we don\'t have it in our records):',
+    '    "Perfect — can you confirm your name so I can add you to my contacts here?"',
+    '    After they give their name: "Great, you\'ll receive the SMS right after this call."',
+    'The agent will not have the prospect\'s name reliably — always include Beat B before sending the SMS. Do not skip this beat.',
     '',
     'FOLLOW-UP LOCK',
     'INTENT: Lock tomorrow without being pushy.',
@@ -450,11 +469,11 @@ async function streamCoachInternal(args: {
       // v8: tag this prompt prefix so OpenAI prompt-caching buckets
       // calls with the same three system messages together. Cache TTL
       // is ~5 min; back-to-back calls in a session reuse the prefix.
-      // PR 46 (Hugo 2026-04-27): bumped v11→v12 because the script
-      // prompt changed materially (three-tier knowledge policy). The
-      // cache key is content-bound — we don't want v12 calls reusing
-      // v11's cached prefix and bypassing the new policy.
-      prompt_cache_key: 'nfstay-coach-v12',
+      // PR 51 (Hugo 2026-04-27 evening): bumped v12→v13 — strict
+      // forward-only stage lock + SMS_CLOSE name-confirm beat are
+      // material prompt changes; we don't want v13 calls reusing
+      // v12's cached prefix.
+      prompt_cache_key: 'nfstay-coach-v13',
       messages: [
         ...systemMessages
           .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
