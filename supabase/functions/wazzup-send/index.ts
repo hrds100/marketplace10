@@ -187,8 +187,22 @@ serve(async (req: Request) => {
     const wzBody = await wzResp.text();
     if (!wzResp.ok) {
       console.error('[wazzup-send] wazzup error', wzResp.status, wzBody);
-      return json(502, {
-        error: `Wazzup ${wzResp.status}: ${wzBody.slice(0, 500)}`,
+      // Return 200 with the upstream error embedded so the frontend
+      // picker can surface the real reason. Supabase functions.invoke()
+      // collapses non-2xx responses into a generic
+      // "Edge Function returned a non-2xx status code" string and
+      // throws away the body.
+      let parsedDescription = wzBody.slice(0, 500);
+      try {
+        const j = JSON.parse(wzBody);
+        // Wazzup error shape: { error, description, data: [{code, description}] }
+        const inner = Array.isArray(j?.data) && j.data[0]?.description;
+        parsedDescription = inner || j?.description || j?.error || parsedDescription;
+      } catch { /* leave raw text */ }
+      return json(200, {
+        error: `Wazzup ${wzResp.status}: ${parsedDescription}`,
+        wazzup_status: wzResp.status,
+        wazzup_body: wzBody.slice(0, 1000),
       });
     }
 

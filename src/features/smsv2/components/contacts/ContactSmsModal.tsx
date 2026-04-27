@@ -32,6 +32,29 @@ import type { Contact } from '../../types';
 
 type Channel = 'sms' | 'whatsapp' | 'email';
 
+interface EmailFromRow {
+  id: string;
+  e164: string; // email address stored in e164 column for email rows
+}
+
+interface FromsTable {
+  from: (t: string) => {
+    select: (c: string) => {
+      eq: (col: string, val: string) => {
+        eq: (
+          col: string,
+          val: string | boolean
+        ) => {
+          order: (
+            col: string,
+            opts: { ascending: boolean }
+          ) => Promise<{ data: EmailFromRow[] | null; error: { message: string } | null }>;
+        };
+      };
+    };
+  };
+}
+
 interface Template {
   id: string;
   name: string;
@@ -82,6 +105,8 @@ export default function ContactSmsModal({
   const persist = useContactPersistence();
   const [channel, setChannel] = useState<Channel>('sms');
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [emailFroms, setEmailFroms] = useState<EmailFromRow[]>([]);
+  const [selectedFromId, setSelectedFromId] = useState<string>('');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -103,6 +128,27 @@ export default function ContactSmsModal({
         // RLS / missing column — render with no templates.
       } finally {
         if (!cancelled) setLoadingTpls(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load active email "from" addresses (Elijah@, Georgia@, ...).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await (supabase as unknown as FromsTable)
+          .from('wk_numbers')
+          .select('id, e164')
+          .eq('channel', 'email')
+          .eq('is_active', true)
+          .order('e164', { ascending: true });
+        if (!cancelled && data) setEmailFroms(data);
+      } catch {
+        // RLS / table not yet seeded — picker just hides the select.
       }
     })();
     return () => {
@@ -200,7 +246,12 @@ export default function ContactSmsModal({
         });
       } else {
         resp = await fn.invoke('wk-email-send', {
-          body: { contact_id: contact.id, subject: trimSubject, body: trimBody },
+          body: {
+            contact_id: contact.id,
+            subject: trimSubject,
+            body: trimBody,
+            channel_id: selectedFromId || undefined,
+          },
         });
       }
       const { data, error } = resp;
@@ -362,6 +413,22 @@ export default function ContactSmsModal({
                 <span className="font-semibold">{targetStage.name}</span>
               </span>
             </div>
+          )}
+
+          {channel === 'email' && emailFroms.length > 0 && (
+            <select
+              value={selectedFromId}
+              onChange={(e) => setSelectedFromId(e.target.value)}
+              className="w-full px-2 py-1.5 text-[12px] border border-[#E5E5E5] rounded-[10px] bg-white"
+              data-testid="contact-sms-modal-from"
+            >
+              <option value="">From: (default)</option>
+              {emailFroms.map((f) => (
+                <option key={f.id} value={f.id}>
+                  From: {f.e164}
+                </option>
+              ))}
+            </select>
           )}
 
           {channel === 'email' && (
