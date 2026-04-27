@@ -813,6 +813,9 @@ function PipelinesTab() {
   const { columns: cols, patchColumn, upsertColumn, removeColumn } = useSmsV2();
   const persist = useColumnPersistence();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // PR 90: real templates from wk_sms_templates (was iterating MOCK_TEMPLATES,
+  // so admin couldn't see actual templates in the stage-automation dropdown).
+  const { items: realTemplates } = useSmsTemplates();
 
   // PR 84: every store mutation also persists to wk_pipeline_columns +
   // wk_pipeline_automations so changes survive a refresh. Previously the
@@ -995,9 +998,9 @@ function PipelinesTab() {
                           className="px-2 py-1 text-[12px] border border-[#E5E7EB] rounded-[8px] bg-white disabled:opacity-50"
                         >
                           <option value="">Pick template…</option>
-                          {MOCK_TEMPLATES.map((t) => (
+                          {realTemplates.map((t) => (
                             <option key={t.id} value={t.id}>
-                              {t.name}
+                              {t.name}{t.channel ? ` · ${t.channel}` : ''}
                             </option>
                           ))}
                         </select>
@@ -2149,6 +2152,35 @@ function AgentsTab() {
 
   const remove = (id: string) => removeAgent(id);
 
+  // PR 90 (Hugo 2026-04-27): the limit input was defaultValue-only with
+  // no onBlur \u2014 admin could type a new cap, refresh, lose it. Now writes
+  // wk_voice_agent_limits.daily_limit_pence on blur (only if changed).
+  const updateAgentLimit = async (agentId: string, raw: string) => {
+    const pounds = Number(raw);
+    if (!Number.isFinite(pounds) || pounds < 0) {
+      pushToast('Limit must be a non-negative number', 'error');
+      return;
+    }
+    const target = agents.find((a) => a.id === agentId);
+    if (!target) return;
+    const newPence = Math.round(pounds * 100);
+    if (newPence === target.limitPence) return;
+    upsertAgent({ ...target, limitPence: newPence });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('wk_voice_agent_limits' as any) as any)
+      .upsert(
+        { agent_id: agentId, daily_limit_pence: newPence },
+        { onConflict: 'agent_id' }
+      );
+    if (error) {
+      pushToast(`Save failed: ${error.message}`, 'error');
+      // Roll back optimistic update.
+      upsertAgent(target);
+    } else {
+      pushToast(`Limit updated to \u00a3${pounds}`, 'success');
+    }
+  };
+
   const randomPassword = () => {
     const charset = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
     let out = '';
@@ -2239,10 +2271,18 @@ function AgentsTab() {
                 <td className="py-2 text-[#6B7280] tabular-nums">{a.extension}</td>
                 <td className="py-2 text-right tabular-nums">{formatPence(a.spendPence)}</td>
                 <td className="py-2 text-right">
-                  <input
-                    defaultValue={a.isAdmin ? '∞' : (a.limitPence / 100).toFixed(0)}
-                    className="w-16 px-2 py-1 text-right tabular-nums border border-[#E5E7EB] rounded-[8px]"
-                  />
+                  {a.isAdmin ? (
+                    <span className="text-[#9CA3AF]">∞</span>
+                  ) : (
+                    <input
+                      type="number"
+                      min={0}
+                      defaultValue={(a.limitPence / 100).toFixed(0)}
+                      onBlur={(e) => void updateAgentLimit(a.id, e.target.value)}
+                      data-testid={`agent-limit-${a.id}`}
+                      className="w-16 px-2 py-1 text-right tabular-nums border border-[#E5E7EB] rounded-[8px]"
+                    />
+                  )}
                 </td>
                 <td className="py-2 text-right">
                   {a.isAdmin ? (
@@ -2725,6 +2765,23 @@ function AITab({ campaignId = null }: { campaignId?: string | null } = {}) {
               <option value="whisper-1">whisper-1 (default)</option>
             </select>
           </div>
+
+          {/* PR 90 (Hugo 2026-04-27): the three model selectors above only
+              called setField locally \u2014 changes were lost on refresh.
+              Dedicated Save button persists wk_ai_settings via the same
+              save() the API key uses. */}
+          <div className="flex items-center gap-2 pt-2 border-t border-[#E5E7EB]">
+            <button
+              onClick={() => void save()}
+              disabled={saving || loading}
+              className="bg-[#1E9A80] text-white text-[12px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
+            >
+              {saving ? 'Saving\u2026' : saved ? 'Saved \u2713' : 'Save AI model settings'}
+            </button>
+            <span className="text-[10px] text-[#9CA3AF]">
+              Hot-swap \u2014 takes effect on the next call.
+            </span>
+          </div>
         </div>
       </Card>
 
@@ -3054,6 +3111,16 @@ function GlossaryTab({
 
   const save = async () => {
     setActionError(null);
+    // PR 90 (Hugo 2026-04-27): empty term/definition rendered blank rows
+    // in the live-call glossary panel. Validate at the boundary.
+    if (!draft.term.trim()) {
+      setActionError('Term is required.');
+      return;
+    }
+    if (!draft.definition_md.trim()) {
+      setActionError('Definition is required.');
+      return;
+    }
     try {
       if (editingId === 'new') {
         const nextOrder = (items[items.length - 1]?.sort_order ?? 0) + 10;
@@ -3363,6 +3430,16 @@ function KnowledgeBaseTab({
 
   const save = async () => {
     setActionError(null);
+    // PR 90 (Hugo 2026-04-27): KB key/value empty save was silently
+    // accepted, breaking coach matching. Hard-fail at the boundary.
+    if (!draft.key.trim()) {
+      setActionError('Key is required (used by coach to match keywords).');
+      return;
+    }
+    if (!draft.value.trim()) {
+      setActionError('Value is required (the answer the coach speaks).');
+      return;
+    }
     try {
       const keywords = parseKeywords(draft.keywordsRaw);
       if (editingId === 'new') {

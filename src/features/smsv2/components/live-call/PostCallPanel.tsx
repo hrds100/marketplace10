@@ -30,7 +30,7 @@ export default function PostCallPanel() {
   const { applyOutcome, call, lastEndedContactId, openPreviousCall } = useActiveCallCtx();
   const store = useSmsV2();
   const columns = store.columns;
-  const autoAdvanceSeconds = store.activeCampaign.autoAdvanceSeconds ?? 10;
+  const autoAdvanceSeconds = store.activeCampaign?.autoAdvanceSeconds ?? 10;
   const [secondsLeft, setSecondsLeft] = useState(autoAdvanceSeconds);
   const [paused, setPaused] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -39,6 +39,10 @@ export default function PostCallPanel() {
   // advance timer while the modal is open keeps the agent from being
   // dragged onto the next call before they've set the timer.
   const [pendingFollowupColId, setPendingFollowupColId] = useState<string | null>(null);
+  // PR 90 (Hugo 2026-04-27): the quick-note input was uncontrolled \u2014
+  // anything typed disappeared on phase change. Now state-bound + threaded
+  // through applyOutcome.
+  const [quickNote, setQuickNote] = useState('');
 
   // Reset countdown if the active campaign changes (different auto-advance)
   useEffect(() => {
@@ -75,8 +79,9 @@ export default function PostCallPanel() {
 
   const commitOutcome = (columnId: string) => {
     setSubmitted(true);
+    const note = quickNote.trim() || undefined;
     // Defer slightly so the button's optimistic disabled state paints first
-    setTimeout(() => applyOutcome(columnId), 200);
+    setTimeout(() => applyOutcome(columnId, note), 200);
   };
 
   // Keyboard shortcuts
@@ -91,10 +96,10 @@ export default function PostCallPanel() {
         setPaused((p) => !p);
       } else if (e.key.toLowerCase() === 's') {
         setSubmitted(true);
-        setTimeout(() => applyOutcome('skipped'), 200);
+        setTimeout(() => applyOutcome('skipped', quickNote.trim() || undefined), 200);
       } else if (e.key.toLowerCase() === 'n') {
         setSubmitted(true);
-        setTimeout(() => applyOutcome('next-now'), 200);
+        setTimeout(() => applyOutcome('next-now', quickNote.trim() || undefined), 200);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -169,7 +174,10 @@ export default function PostCallPanel() {
             Quick note
           </div>
           <input
+            value={quickNote}
+            onChange={(e) => setQuickNote(e.target.value)}
             placeholder="Add a note (optional)…"
+            data-testid="postcall-quicknote"
             className="w-full px-3 py-2 text-[13px] bg-white border border-[#E5E5E5] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
           />
         </div>
@@ -229,7 +237,7 @@ export default function PostCallPanel() {
           onClick={() => {
             if (submitted) return;
             setSubmitted(true);
-            setTimeout(() => applyOutcome('skipped'), 200);
+            setTimeout(() => applyOutcome('skipped', quickNote.trim() || undefined), 200);
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white"
         >
@@ -239,7 +247,7 @@ export default function PostCallPanel() {
           onClick={() => {
             if (submitted) return;
             setSubmitted(true);
-            setTimeout(() => applyOutcome('next-now'), 200);
+            setTimeout(() => applyOutcome('next-now', quickNote.trim() || undefined), 200);
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#1E9A80] text-white text-[12px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
         >

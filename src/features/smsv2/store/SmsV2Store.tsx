@@ -6,7 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { MOCK_CAMPAIGNS, MOCK_TEMPLATES } from '../data/mockCampaigns';
+import { MOCK_TEMPLATES } from '../data/mockCampaigns';
 import type {
   Agent,
   Contact,
@@ -57,12 +57,17 @@ type Action =
   | { type: 'toast/push'; toast: ToastMsg }
   | { type: 'toast/dismiss'; id: string };
 
+// PR 90 (Hugo 2026-04-27): initial state hardcoded MOCK_CAMPAIGNS,
+// which leaked into any component reading state.campaigns before
+// useDialerCampaigns hydrated the real list. Start empty; the dialer
+// page is the single owner of real campaigns and falls back to MOCK
+// only when the real list is empty AND demo mode is on.
 const initialState: State = {
   contacts: [],
   columns: [],
   agents: [],
-  campaigns: MOCK_CAMPAIGNS,
-  activeCampaignId: MOCK_CAMPAIGNS[0].id,
+  campaigns: [],
+  activeCampaignId: '',
   queue: [],
   activity: [],
   notesByContactId: {},
@@ -166,7 +171,10 @@ export interface SmsV2API {
   columns: PipelineColumn[];
   agents: Agent[];
   campaigns: Campaign[];
-  activeCampaign: Campaign;
+  /** PR 90: was `Campaign` (always defined), but the store now starts
+   *  with an empty campaigns array (no MOCK leak). undefined when
+   *  no campaigns exist. */
+  activeCampaign: Campaign | undefined;
   queue: string[];
   activity: ActivityEvent[];
   toasts: ToastMsg[];
