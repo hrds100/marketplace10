@@ -139,6 +139,16 @@ verify_jwt = false
 [functions.wazzup-sync-channels]
 verify_jwt = true
 
+# CRM multi-channel via Unipile — PR 69. Hosted-auth QR flow + send + webhook.
+[functions.unipile-create-link]
+verify_jwt = true
+
+[functions.unipile-send]
+verify_jwt = true
+
+[functions.unipile-webhook]
+verify_jwt = false
+
 # CRM Email — PR 62 (multi-channel PR 3). Resend on inbox.nfstay.com subdomain.
 [functions.wk-email-send]
 verify_jwt = true

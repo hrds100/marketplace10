@@ -9,7 +9,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export type ChannelKind = 'sms' | 'whatsapp' | 'email';
-export type ChannelProvider = 'twilio' | 'wazzup' | 'resend';
+export type ChannelProvider = 'twilio' | 'wazzup' | 'resend' | 'unipile';
+export type UnipileProvider = 'WHATSAPP' | 'GMAIL' | 'OUTLOOK' | 'MAIL' | 'LINKEDIN' | 'TELEGRAM';
 
 export interface ChannelRow {
   id: string;
@@ -41,6 +42,13 @@ export function useChannels(): {
   reload: () => Promise<void>;
   toggleActive: (id: string, next: boolean) => Promise<void>;
   syncWazzup: () => Promise<{ synced: number; skipped: number; error?: string }>;
+  /** PR 69: open Unipile's hosted-auth page so the user scans the QR on
+   *  Unipile's UI (we never render our own). Returns the URL we just
+   *  opened so the caller can show a fallback "click here if popup blocked". */
+  connectUnipile: (
+    provider: UnipileProvider,
+    label?: string
+  ) => Promise<{ url?: string; error?: string }>;
 } {
   const [rows, setRows] = useState<ChannelRow[]>([]);
   const [credentials, setCredentials] = useState<CredentialRow[]>([]);
@@ -123,5 +131,40 @@ export function useChannels(): {
     }
   }, [reload]);
 
-  return { rows, credentials, loading, error, syncing, reload, toggleActive, syncWazzup };
+  const connectUnipile = useCallback(
+    async (provider: UnipileProvider, label?: string) => {
+      try {
+        const { data, error: e } = await supabase.functions.invoke(
+          'unipile-create-link',
+          { body: { provider, label } }
+        );
+        if (e) return { error: e.message };
+        const json = data as { url?: string; error?: string };
+        if (json?.error) return { error: json.error };
+        if (!json?.url) return { error: 'No url returned by Unipile' };
+        // Open in a new tab — Unipile's docs warn against iframes.
+        try {
+          window.open(json.url, '_blank', 'noopener,noreferrer');
+        } catch {
+          /* popup blocker — caller can fall back to <a href> */
+        }
+        return { url: json.url };
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : 'connect failed' };
+      }
+    },
+    []
+  );
+
+  return {
+    rows,
+    credentials,
+    loading,
+    error,
+    syncing,
+    reload,
+    toggleActive,
+    syncWazzup,
+    connectUnipile,
+  };
 }

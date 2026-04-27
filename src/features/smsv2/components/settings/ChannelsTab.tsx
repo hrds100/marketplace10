@@ -14,9 +14,16 @@ import {
   ExternalLink,
   CheckCircle2,
   XCircle,
+  QrCode,
+  Linkedin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useChannels, type ChannelRow, type ChannelProvider } from '../../hooks/useChannels';
+import {
+  useChannels,
+  type ChannelRow,
+  type ChannelProvider,
+  type UnipileProvider,
+} from '../../hooks/useChannels';
 import { useSmsV2 } from '../../store/SmsV2Store';
 
 interface SectionDef {
@@ -26,6 +33,9 @@ interface SectionDef {
   Icon: typeof Phone;
   hint: string;
   externalLink?: { href: string; label: string };
+  /** PR 69: when set, render a "Connect via QR" button that calls
+   *  unipile-create-link with the given Unipile provider. */
+  unipileConnect?: { provider: UnipileProvider; label: string; icon: typeof Phone };
 }
 
 const SECTIONS: SectionDef[] = [
@@ -37,14 +47,22 @@ const SECTIONS: SectionDef[] = [
     hint: 'Numbers managed in the Numbers tab; this list is read-only here.',
   },
   {
+    provider: 'unipile',
+    channelKind: 'whatsapp',
+    label: 'WhatsApp — Unipile',
+    Icon: MessageSquare,
+    hint: 'Click "Connect via QR" — Unipile opens a hosted page where you scan the WhatsApp QR with your phone. After scanning, the number appears below and is ready to send/receive.',
+    unipileConnect: { provider: 'WHATSAPP', label: 'Connect via QR', icon: QrCode },
+  },
+  {
     provider: 'wazzup',
     channelKind: 'whatsapp',
-    label: 'WhatsApp — Wazzup24',
+    label: 'WhatsApp — Wazzup24 (legacy)',
     Icon: MessageSquare,
-    hint: 'Pair new WhatsApp numbers on wazzup24.com (QR scan). Click "Sync from Wazzup" to pull them in here.',
+    hint: 'Legacy gateway — being phased out in favour of Unipile. Existing chats keep working until you disconnect the channel.',
     externalLink: {
       href: 'https://app.wazzup24.com/',
-      label: 'Open Wazzup24 to (re)pair',
+      label: 'Open Wazzup24',
     },
   },
   {
@@ -52,15 +70,33 @@ const SECTIONS: SectionDef[] = [
     channelKind: 'email',
     label: 'Email — Resend',
     Icon: Mail,
-    hint: 'Inbound on inbox.nfstay.com (subdomain MX → Resend). Outbound from inbox@inbox.nfstay.com.',
+    hint: 'Outbound from elijah@/georgia@mail.nfstay.com works today. Inbound is being re-wired — expect a separate update.',
   },
 ];
 
+const UNIPILE_OPTIONS: Array<{ provider: UnipileProvider; label: string; icon: typeof Phone }> = [
+  { provider: 'WHATSAPP', label: 'WhatsApp', icon: MessageSquare },
+  { provider: 'LINKEDIN', label: 'LinkedIn', icon: Linkedin },
+  { provider: 'GMAIL', label: 'Gmail', icon: Mail },
+  { provider: 'OUTLOOK', label: 'Outlook', icon: Mail },
+  { provider: 'MAIL', label: 'Custom IMAP', icon: Mail },
+];
+
 export default function ChannelsTab() {
-  const { rows, credentials, loading, error, syncing, toggleActive, syncWazzup } =
-    useChannels();
+  const {
+    rows,
+    credentials,
+    loading,
+    error,
+    syncing,
+    toggleActive,
+    syncWazzup,
+    connectUnipile,
+  } = useChannels();
   const { pushToast } = useSmsV2();
   const [busyRowId, setBusyRowId] = useState<string | null>(null);
+  const [connectingUnipile, setConnectingUnipile] = useState<UnipileProvider | null>(null);
+  const [unipileFallbackUrl, setUnipileFallbackUrl] = useState<string | null>(null);
 
   const grouped = useMemo(() => {
     const m = new Map<ChannelProvider, ChannelRow[]>();
@@ -101,6 +137,24 @@ export default function ChannelsTab() {
         (r.skipped ? ` (${r.skipped} skipped)` : ''),
       'success'
     );
+  };
+
+  const handleUnipileConnect = async (provider: UnipileProvider) => {
+    setConnectingUnipile(provider);
+    setUnipileFallbackUrl(null);
+    try {
+      const r = await connectUnipile(provider);
+      if (r.error) {
+        pushToast(`Connect failed: ${r.error}`, 'error');
+        return;
+      }
+      if (r.url) {
+        setUnipileFallbackUrl(r.url);
+        pushToast(`Opened Unipile — scan the ${provider} QR/login on the new tab`, 'success');
+      }
+    } finally {
+      setConnectingUnipile(null);
+    }
   };
 
   if (loading) {
@@ -147,6 +201,19 @@ export default function ChannelsTab() {
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-none">
+                {section.unipileConnect && (
+                  <button
+                    onClick={() => void handleUnipileConnect(section.unipileConnect!.provider)}
+                    disabled={connectingUnipile === section.unipileConnect.provider}
+                    className="inline-flex items-center gap-1.5 text-[12px] font-semibold bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90 px-3 py-1.5 rounded-[10px] disabled:opacity-60"
+                    data-testid={`connect-${section.unipileConnect.provider.toLowerCase()}`}
+                  >
+                    <section.unipileConnect.icon className="w-3 h-3" />
+                    {connectingUnipile === section.unipileConnect.provider
+                      ? 'Opening…'
+                      : section.unipileConnect.label}
+                  </button>
+                )}
                 {section.provider === 'wazzup' && (
                   <button
                     onClick={() => void handleSync()}
@@ -163,7 +230,7 @@ export default function ChannelsTab() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-[12px] font-medium border border-[#E5E7EB] text-[#1A1A1A] hover:bg-[#F3F3EE] px-3 py-1.5 rounded-[10px]"
-                    title="Opens wazzup24.com in a new tab"
+                    title="Opens in a new tab"
                   >
                     <ExternalLink className="w-3 h-3" />
                     {section.externalLink.label}
@@ -171,6 +238,22 @@ export default function ChannelsTab() {
                 )}
               </div>
             </header>
+
+            {section.provider === 'unipile' && unipileFallbackUrl && (
+              <div className="px-5 py-3 border-b border-[#E5E7EB] bg-[#ECFDF5]/40">
+                <div className="text-[11px] text-[#1E9A80] font-semibold mb-1">
+                  If the Unipile tab didn't open
+                </div>
+                <a
+                  href={unipileFallbackUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[12px] underline text-[#1E9A80] break-all"
+                >
+                  {unipileFallbackUrl}
+                </a>
+              </div>
+            )}
 
             <div className="px-5 py-3">
               {sectionRows.length === 0 ? (
