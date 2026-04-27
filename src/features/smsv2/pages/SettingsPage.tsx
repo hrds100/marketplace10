@@ -26,8 +26,11 @@ import {
   FileText,
   Radio,
   Settings,
+  Wand2,
+  Loader2,
   type LucideIcon,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { ACTIVE_PIPELINE } from '../data/mockPipelines';
 import { MOCK_TEMPLATES, COACH_PROMPTS } from '../data/mockCampaigns';
@@ -48,7 +51,6 @@ import { useTwilioAccount } from '../hooks/useTwilioAccount';
 import { useColumnPersistence } from '../hooks/useColumnPersistence';
 import ChannelsTab from '../components/settings/ChannelsTab';
 import { useSmsV2 } from '../store/SmsV2Store';
-import { supabase } from '@/integrations/supabase/client';
 import type { Agent, PipelineColumn } from '../types';
 
 interface CreateAgentInvoke {
@@ -1430,6 +1432,16 @@ interface TemplateDraft {
   subject: string;
 }
 
+// PR 88 (Hugo 2026-04-27): AI assist in the templates editor. Agent
+// can pick a model and either Generate (from a name/hint) or Refine
+// (improve an existing draft).
+const AI_MODELS: Array<{ id: string; label: string }> = [
+  { id: 'gpt-4o-mini', label: 'GPT-4o mini (fast, default)' },
+  { id: 'gpt-4o', label: 'GPT-4o (best quality)' },
+  { id: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+  { id: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+];
+
 function TemplateEditor({
   draft,
   setDraft,
@@ -1452,6 +1464,44 @@ function TemplateEditor({
     draft.name.trim().length > 0 &&
     draft.body_md.trim().length > 0 &&
     !subjectInvalid;
+
+  // PR 88: AI assist state.
+  const [aiModel, setAiModel] = useState<string>(AI_MODELS[0].id);
+  const [aiBusy, setAiBusy] = useState<'generate' | 'refine' | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const runAi = async (mode: 'generate' | 'refine') => {
+    setAiError(null);
+    setAiBusy(mode);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.functions as any).invoke('wk-ai-template', {
+        body: {
+          mode,
+          channel: draft.channel,
+          name: draft.name,
+          subject: draft.subject,
+          body: draft.body_md,
+          model: aiModel,
+        },
+      });
+      if (error) throw new Error(error.message ?? 'AI call failed');
+      const d = (data ?? {}) as { name?: string; subject?: string; body?: string; error?: string };
+      if (d.error) throw new Error(d.error);
+      setDraft({
+        ...draft,
+        name: (d.name && d.name.trim()) || draft.name,
+        subject: (d.subject ?? draft.subject ?? '').trim(),
+        body_md: (d.body ?? draft.body_md ?? '').trim(),
+      });
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : 'AI call failed');
+    } finally {
+      setAiBusy(null);
+    }
+  };
+
+  const canRefine = draft.body_md.trim().length > 0;
   return (
     <div className="border border-[#1E9A80]/40 bg-[#ECFDF5] rounded-xl p-3 mb-3 space-y-2">
       <div className="grid grid-cols-2 gap-2">
@@ -1523,19 +1573,67 @@ function TemplateEditor({
         </select>
       </div>
       <div>
-        <Label>Body (use {'{{first_name}}'} / {'{{agent_first_name}}'})</Label>
+        <Label>Body (use {'{first_name}'} / {'{agent_first_name}'})</Label>
         <textarea
           value={draft.body_md}
           onChange={(e) => set('body_md', e.target.value)}
           rows={4}
           placeholder={
             draft.channel === 'email'
-              ? 'Hi {{first_name}},\n\nHere\'s the breakdown…'
-              : 'Hi {{first_name}}, …'
+              ? 'Hi {first_name},\n\nHere\'s the breakdown…'
+              : 'Hi {first_name}, …'
           }
           className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
         />
       </div>
+      {/* PR 88: AI assist row — model picker + Generate / Refine buttons. */}
+      <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#E5E7EB] mt-1">
+        <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+          AI assist
+        </div>
+        <select
+          value={aiModel}
+          onChange={(e) => setAiModel(e.target.value)}
+          disabled={aiBusy !== null}
+          className="px-2 py-1 text-[11px] border border-[#E5E7EB] rounded-[8px] bg-white disabled:opacity-60"
+          title="Pick the AI model"
+        >
+          {AI_MODELS.map((m) => (
+            <option key={m.id} value={m.id}>{m.label}</option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => void runAi('generate')}
+          disabled={aiBusy !== null}
+          className="inline-flex items-center gap-1 bg-white border border-[#1E9A80]/40 text-[#1E9A80] text-[11px] font-semibold px-2.5 py-1 rounded-[8px] hover:bg-[#ECFDF5] disabled:opacity-60"
+          title="Generate a fresh template from the name + channel"
+        >
+          {aiBusy === 'generate' ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <Sparkles className="w-3 h-3" />
+          )}
+          Generate with AI
+        </button>
+        <button
+          type="button"
+          onClick={() => void runAi('refine')}
+          disabled={aiBusy !== null || !canRefine}
+          className="inline-flex items-center gap-1 bg-white border border-[#E5E7EB] text-[#1A1A1A] text-[11px] font-semibold px-2.5 py-1 rounded-[8px] hover:bg-[#F3F3EE] disabled:opacity-60"
+          title={canRefine ? 'Improve the existing draft' : 'Type a body first, then refine'}
+        >
+          {aiBusy === 'refine' ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <Wand2 className="w-3 h-3" />
+          )}
+          Refine with AI
+        </button>
+      </div>
+      {aiError && (
+        <div className="text-[10px] text-[#EF4444]">⚠ {aiError}</div>
+      )}
       <div className="flex items-center gap-2 pt-1">
         <button
           onClick={onSave}
