@@ -19,6 +19,23 @@ import { isRealContactId } from './useContactPersistence';
 import { rowToCall } from './useCalls';
 import type { CallRecord, SmsMessage, ActivityEvent, Task } from '../types';
 
+// PR 32 (Hugo 2026-04-27): Twilio + sms_messages don't always store
+// phone numbers in the same format. Build the common variants for the
+// .or filter so inbound messages don't miss when from_number arrives
+// without the leading '+'.
+function phoneVariants(e164: string): string[] {
+  const trimmed = e164.trim();
+  if (!trimmed) return [];
+  const digits = trimmed.replace(/[^0-9]/g, '');
+  const out = new Set<string>();
+  out.add(trimmed);                  // raw, e.g. '+447863992555'
+  if (digits) {
+    out.add(digits);                  // '447863992555'
+    out.add(`+${digits}`);            // ensures leading +
+  }
+  return Array.from(out);
+}
+
 interface WkActivityRow {
   id: string;
   contact_id: string;
@@ -104,12 +121,21 @@ export function useContactTimeline(contactId: string, contactPhone?: string): Co
       // sms_messages — only if we have the contact's phone to filter on.
       // Existing /sms/inbox owns this table; we only READ. Match either
       // direction so inbound + outbound show up.
+      //
+      // PR 32 (Hugo 2026-04-27): Twilio sometimes sends from_number with
+      // the leading '+' and sometimes without; sms_messages stores the
+      // raw value. Build all phone variants the contact's E.164 might
+      // appear as so the .or() filter doesn't miss inbound messages.
       if (contactPhone) {
+        const variants = phoneVariants(contactPhone);
+        const orClause = variants
+          .flatMap((v) => [`from_number.eq.${v}`, `to_number.eq.${v}`])
+          .join(',');
         queries.push(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (supabase.from('sms_messages' as any) as any)
             .select('id, body, direction, created_at, from_number, to_number')
-            .or(`from_number.eq.${contactPhone},to_number.eq.${contactPhone}`)
+            .or(orClause)
             .order('created_at', { ascending: false })
             .limit(100)
         );
@@ -186,8 +212,44 @@ export function useContactTimeline(contactId: string, contactPhone?: string): Co
     }
 
     void load();
+
+    // PR 32 (Hugo 2026-04-27): subscribe to realtime sms_messages
+    // INSERT so inbound replies appear in the inbox without having to
+    // refresh the page. Filter is best-effort — the supabase realtime
+    // filter syntax is exact-match only, so we listen on ALL inserts
+    // and re-load if a row's from_number / to_number matches one of
+    // the contact's phone variants.
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    if (contactPhone) {
+      const variantSet = new Set(phoneVariants(contactPhone));
+      channel = supabase
+        .channel(`sms_messages:${contactId}`)
+        .on(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          'postgres_changes' as any,
+          { event: 'INSERT', schema: 'public', table: 'sms_messages' },
+          (payload: { new?: { from_number?: string; to_number?: string } }) => {
+            const row = payload.new ?? {};
+            if (
+              (row.from_number && variantSet.has(row.from_number)) ||
+              (row.to_number && variantSet.has(row.to_number))
+            ) {
+              void load();
+            }
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
       cancelled = true;
+      if (channel) {
+        try {
+          void supabase.removeChannel(channel);
+        } catch {
+          /* ignore */
+        }
+      }
     };
   }, [contactId, contactPhone]);
 
