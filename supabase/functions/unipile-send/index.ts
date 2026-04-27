@@ -30,7 +30,12 @@ const corsHeaders = {
 interface SendBody {
   contact_id: string;
   body: string;
+  /** Pin a specific wk_numbers row as the from-line. Highest priority. */
   channel_id?: string;
+  /** PR 86: when set, resolve from wk_campaign_numbers (channel='whatsapp')
+   *  for this campaign — same precedence rule wk-dialer-start uses for
+   *  voice. Falls through to channel_id, then workspace default. */
+  campaign_id?: string;
 }
 
 const json = (status: number, payload: Record<string, unknown>) =>
@@ -79,8 +84,13 @@ serve(async (req: Request) => {
     const toPhone = (contact.phone as string | null)?.trim();
     if (!toPhone) return json(400, { error: 'Contact has no phone' });
 
-    // Resolve a Unipile WhatsApp account.
+    // Resolve a Unipile WhatsApp account. Precedence (mirrors wk-dialer-start):
+    //   1. explicit channel_id (caller pinned a specific number)
+    //   2. campaign_id → first wk_campaign_numbers row (lowest priority)
+    //      whose wk_numbers row is whatsapp + active
+    //   3. workspace default — first active whatsapp wk_numbers row
     let accountRow: { id: string; e164: string; external_id: string } | null = null;
+
     if (payload.channel_id) {
       const { data } = await supa
         .from('wk_numbers')
@@ -90,7 +100,33 @@ serve(async (req: Request) => {
       if (data && data.provider === 'unipile' && data.channel === 'whatsapp' && data.is_active) {
         accountRow = data as typeof accountRow;
       }
-    } else {
+    }
+
+    if (!accountRow && payload.campaign_id) {
+      // Pull all campaign-pinned numbers + their wk_numbers details.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: pinned } = await (supa.from('wk_campaign_numbers' as any) as any)
+        .select('priority, number_id, wk_numbers(id, e164, external_id, provider, channel, is_active)')
+        .eq('campaign_id', payload.campaign_id)
+        .order('priority', { ascending: true });
+      const rows = (pinned ?? []) as Array<{
+        priority: number;
+        number_id: string;
+        wk_numbers: {
+          id: string; e164: string; external_id: string;
+          provider: string; channel: string; is_active: boolean;
+        } | null;
+      }>;
+      for (const r of rows) {
+        const n = r.wk_numbers;
+        if (n && n.provider === 'unipile' && n.channel === 'whatsapp' && n.is_active) {
+          accountRow = { id: n.id, e164: n.e164, external_id: n.external_id };
+          break;
+        }
+      }
+    }
+
+    if (!accountRow) {
       const { data } = await supa
         .from('wk_numbers')
         .select('id, e164, external_id')

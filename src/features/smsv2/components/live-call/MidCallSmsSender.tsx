@@ -56,6 +56,10 @@ interface Props {
   contactPhone: string;
   contactEmail?: string;
   agentFirstName: string;
+  /** PR 86: when set, send fns resolve from wk_campaign_numbers for
+   *  this campaign (matching channel) before falling back to workspace
+   *  default. Same precedence rule wk-dialer-start uses for voice. */
+  campaignId?: string | null;
 }
 
 const CHANNEL_LABEL: Record<Channel, string> = {
@@ -70,6 +74,7 @@ export default function MidCallSmsSender({
   contactPhone,
   contactEmail,
   agentFirstName,
+  campaignId = null,
 }: Props) {
   const { pushToast, columns, patchContact, contacts } = useSmsV2();
   const currentContact = contacts.find((c) => c.id === contactId);
@@ -177,6 +182,10 @@ export default function MidCallSmsSender({
       const trimSubject = subject.trim();
       const fn = supabase.functions as unknown as SendInvoke;
 
+      // PR 86: pass campaignId through so send fns resolve from
+      // wk_campaign_numbers when on a call. Falls through to workspace
+      // default when null/undefined.
+      const camp = campaignId ?? undefined;
       let resp: Awaited<ReturnType<SendInvoke['invoke']>>;
       if (channel === 'sms') {
         resp = await fn.invoke('sms-send', {
@@ -184,11 +193,16 @@ export default function MidCallSmsSender({
         });
       } else if (channel === 'whatsapp') {
         resp = await fn.invoke('unipile-send', {
-          body: { contact_id: contactId, body: trimBody },
+          body: { contact_id: contactId, body: trimBody, campaign_id: camp },
         });
       } else {
         resp = await fn.invoke('wk-email-send', {
-          body: { contact_id: contactId, subject: trimSubject, body: trimBody },
+          body: {
+            contact_id: contactId,
+            subject: trimSubject,
+            body: trimBody,
+            campaign_id: camp,
+          },
         });
       }
       const { data, error } = resp;
