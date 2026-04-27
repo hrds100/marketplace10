@@ -177,7 +177,7 @@ export default function MidCallSmsSender({
           body: { to: contactPhone, body: trimBody },
         });
       } else if (channel === 'whatsapp') {
-        resp = await fn.invoke('wazzup-send', {
+        resp = await fn.invoke('unipile-send', {
           body: { contact_id: contactId, body: trimBody },
         });
       } else {

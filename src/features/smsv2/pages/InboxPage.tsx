@@ -74,6 +74,8 @@ export default function InboxPage() {
   const [activeContactId, setActiveContactId] = useState<string>('');
   const [editing, setEditing] = useState<Contact | null>(null);
   const [reply, setReply] = useState('');
+  const [replySubject, setReplySubject] = useState('');
+  const [replyChannel, setReplyChannel] = useState<ChannelKindUI>('sms');
   const [sending, setSending] = useState(false);
   const { startCall, openCallRoom } = useActiveCallCtx();
   const threadScrollRef = useRef<HTMLDivElement>(null);
@@ -205,6 +207,17 @@ export default function InboxPage() {
     subject: m.subject,
   })), [crmMessages]);
 
+  // PR 79: auto-default the reply channel to whatever the contact's
+  // LAST message used. If they last messaged on WhatsApp, our default
+  // reply channel is WhatsApp. Falls back to SMS if there are no
+  // messages yet.
+  useEffect(() => {
+    if (!activeContactId) return;
+    if (crmMessages.length === 0) return;
+    const last = crmMessages[crmMessages.length - 1];
+    if (last?.channel) setReplyChannel(last.channel);
+  }, [activeContactId, crmMessages]);
+
   // Real data only in production. Mock fallback restricted to ?demo=1.
   // CRM messages are the primary source; legacy timeline SMS shown
   // only when CRM messages are empty so historical /sms threads
@@ -266,29 +279,53 @@ export default function InboxPage() {
 
   const send = async () => {
     if (!reply.trim() || !activeContact || sending) return;
+    if (replyChannel === 'email' && !replySubject.trim()) {
+      pushToast('Email subject required', 'error');
+      return;
+    }
     setSending(true);
     try {
-      // PR 50 (Hugo 2026-04-27): outbound SMS now goes through
-      // wk-sms-send, which writes to wk_sms_messages so the message
-      // appears in the thread immediately via realtime subscription.
-      // The legacy sms-send wrote to sms_messages and bypassed the
-      // /crm inbox entirely.
-      const { data, error } = await (
-        supabase.functions as unknown as SmsSendInvoke
-      ).invoke('wk-sms-send', {
-        body: {
-          contact_id: activeContact.id,
-          body: reply.trim(),
-        },
-      });
-      if (error || data?.error) {
-        pushToast(`SMS send failed: ${error?.message ?? data?.error ?? 'unknown'}`, 'error');
+      // PR 79 (Hugo 2026-04-27): inbox reply routes by selected channel.
+      // sms      → wk-sms-send  (Twilio)
+      // whatsapp → unipile-send (Unipile, replaces Wazzup)
+      // email    → wk-email-send (Resend)
+      const fn = supabase.functions as unknown as SmsSendInvoke;
+      const trimmedBody = reply.trim();
+      let resp: Awaited<ReturnType<SmsSendInvoke['invoke']>>;
+      if (replyChannel === 'whatsapp') {
+        resp = await fn.invoke('unipile-send', {
+          body: { contact_id: activeContact.id, body: trimmedBody },
+        });
+      } else if (replyChannel === 'email') {
+        resp = await fn.invoke('wk-email-send', {
+          body: {
+            contact_id: activeContact.id,
+            subject: replySubject.trim(),
+            body: trimmedBody,
+          },
+        });
       } else {
-        pushToast('SMS sent', 'success');
+        resp = await fn.invoke('wk-sms-send', {
+          body: { contact_id: activeContact.id, body: trimmedBody },
+        });
+      }
+      const { data, error } = resp;
+      const channelLabel =
+        replyChannel === 'whatsapp' ? 'WhatsApp' :
+        replyChannel === 'email' ? 'Email' :
+        'SMS';
+      if (error || data?.error) {
+        pushToast(
+          `${channelLabel} send failed: ${error?.message ?? data?.error ?? 'unknown'}`,
+          'error'
+        );
+      } else {
+        pushToast(`${channelLabel} sent`, 'success');
         setReply('');
+        if (replyChannel === 'email') setReplySubject('');
       }
     } catch (e) {
-      pushToast(`SMS send crashed: ${e instanceof Error ? e.message : 'unknown'}`, 'error');
+      pushToast(`Send crashed: ${e instanceof Error ? e.message : 'unknown'}`, 'error');
     } finally {
       setSending(false);
     }
@@ -513,23 +550,80 @@ export default function InboxPage() {
             e.preventDefault();
             void send();
           }}
-          className="px-5 py-3 bg-white border-t border-[#E5E7EB] flex gap-2"
+          className="px-5 py-3 bg-white border-t border-[#E5E7EB] flex flex-col gap-2"
         >
-          <input
-            value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            placeholder="Type a reply…"
-            disabled={sending}
-            className="flex-1 px-3 py-2 text-[13px] bg-[#F3F3EE] border-0 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#1E9A80]/30 disabled:opacity-60"
-          />
-          <button
-            type="submit"
-            disabled={!reply.trim() || sending}
-            className="flex items-center gap-1.5 bg-[#1E9A80] text-white text-[13px] font-semibold px-4 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Send className="w-3.5 h-3.5" />
-            {sending ? 'Sending…' : 'Send'}
-          </button>
+          {/* PR 79: channel picker on the reply box. Reply routes through
+              wk-sms-send / unipile-send / wk-email-send accordingly. */}
+          <div className="flex items-center justify-between gap-2">
+            <div
+              role="radiogroup"
+              aria-label="Reply channel"
+              className="inline-flex p-0.5 bg-[#F3F3EE] rounded-[8px] border border-[#E5E5E5] gap-0.5"
+            >
+              {(['sms', 'whatsapp', 'email'] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  role="radio"
+                  aria-checked={replyChannel === c}
+                  onClick={() => setReplyChannel(c)}
+                  data-testid={`inbox-reply-channel-${c}`}
+                  className={cn(
+                    'inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-[6px] transition-colors',
+                    replyChannel === c
+                      ? 'bg-white text-[#1E9A80] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#1A1A1A]'
+                  )}
+                >
+                  <ChannelGlyph
+                    channel={c}
+                    size={10}
+                    className={replyChannel === c ? '' : 'opacity-70'}
+                  />
+                  {c === 'sms' ? 'SMS' : c === 'whatsapp' ? 'WhatsApp' : 'Email'}
+                </button>
+              ))}
+            </div>
+            {replyChannel === 'email' && (
+              <input
+                value={replySubject}
+                onChange={(e) => setReplySubject(e.target.value)}
+                placeholder="Email subject"
+                disabled={sending}
+                data-testid="inbox-reply-subject"
+                className="flex-1 max-w-[360px] px-3 py-1.5 text-[12px] bg-[#F3F3EE] border-0 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#1E9A80]/30 disabled:opacity-60"
+              />
+            )}
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              placeholder={
+                replyChannel === 'whatsapp'
+                  ? 'Type a WhatsApp reply…'
+                  : replyChannel === 'email'
+                    ? 'Type the email body…'
+                    : 'Type a reply…'
+              }
+              disabled={sending}
+              data-testid="inbox-reply-body"
+              className="flex-1 px-3 py-2 text-[13px] bg-[#F3F3EE] border-0 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#1E9A80]/30 disabled:opacity-60"
+            />
+            <button
+              type="submit"
+              disabled={
+                !reply.trim() ||
+                sending ||
+                (replyChannel === 'email' && !replySubject.trim())
+              }
+              data-testid="inbox-reply-send"
+              className="flex items-center gap-1.5 bg-[#1E9A80] text-white text-[13px] font-semibold px-4 rounded-[10px] hover:bg-[#1E9A80]/90 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Send className="w-3.5 h-3.5" />
+              {sending ? 'Sending…' : 'Send'}
+            </button>
+          </div>
         </form>
       </section>
 

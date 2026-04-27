@@ -38,10 +38,8 @@ export function useChannels(): {
   credentials: CredentialRow[];
   loading: boolean;
   error: string | null;
-  syncing: boolean;
   reload: () => Promise<void>;
   toggleActive: (id: string, next: boolean) => Promise<void>;
-  syncWazzup: () => Promise<{ synced: number; skipped: number; error?: string }>;
   /** PR 69: open Unipile's hosted-auth page so the user scans the QR on
    *  Unipile's UI (we never render our own). Returns the URL we just
    *  opened so the caller can show a fallback "click here if popup blocked". */
@@ -54,7 +52,6 @@ export function useChannels(): {
   const [credentials, setCredentials] = useState<CredentialRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -100,37 +97,6 @@ export function useChannels(): {
     []
   );
 
-  const syncWazzup = useCallback(async () => {
-    setSyncing(true);
-    try {
-      const { data, error: e } = await supabase.functions.invoke(
-        'wazzup-sync-channels',
-        { body: {} }
-      );
-      if (e) {
-        return { synced: 0, skipped: 0, error: e.message };
-      }
-      const json = data as { synced_count?: number; skipped_count?: number; error?: string };
-      if (json?.error) {
-        return { synced: 0, skipped: 0, error: json.error };
-      }
-      // Re-pull rows now that wk_numbers has new whatsapp entries.
-      await reload();
-      return {
-        synced: json?.synced_count ?? 0,
-        skipped: json?.skipped_count ?? 0,
-      };
-    } catch (e) {
-      return {
-        synced: 0,
-        skipped: 0,
-        error: e instanceof Error ? e.message : 'sync failed',
-      };
-    } finally {
-      setSyncing(false);
-    }
-  }, [reload]);
-
   const connectUnipile = useCallback(
     async (provider: UnipileProvider, label?: string) => {
       try {
@@ -161,10 +127,8 @@ export function useChannels(): {
     credentials,
     loading,
     error,
-    syncing,
     reload,
     toggleActive,
-    syncWazzup,
     connectUnipile,
   };
 }

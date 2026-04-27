@@ -154,7 +154,7 @@ describe('ContactSmsModal', () => {
     fireEvent.change(textarea, { target: { value: 'Hey via WhatsApp' } });
     fireEvent.click(getByTestId('contact-sms-modal-send'));
     await tick();
-    expect(invokeMock).toHaveBeenCalledWith('wazzup-send', {
+    expect(invokeMock).toHaveBeenCalledWith('unipile-send', {
       body: { contact_id: fixture.id, body: 'Hey via WhatsApp' },
     });
     expect(pushToastMock).toHaveBeenCalledWith('WhatsApp sent', 'success');
