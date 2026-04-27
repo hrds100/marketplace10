@@ -9,6 +9,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export type ChannelKind = 'sms' | 'whatsapp' | 'email';
+
 export interface InboxThread {
   contactId: string;
   contactName: string;
@@ -16,6 +18,12 @@ export interface InboxThread {
   lastMessageBody: string;
   lastMessageAt: string;
   lastDirection: 'inbound' | 'outbound';
+  /** PR 78: channel of the latest message. Used by inbox filter
+   *  pills + thread-row icon. */
+  lastChannel: ChannelKind;
+  /** Per-channel count of messages on this thread (helps the agent
+   *  see "this contact has 4 SMS + 1 WA + 2 email" at a glance). */
+  channelCounts: Record<ChannelKind, number>;
   /** Inbound-only count of messages newer than the contact's
    *  last_read_at (not yet implemented — placeholder = 0). */
   unreadCount: number;
@@ -27,6 +35,7 @@ interface MessageRow {
   direction: 'inbound' | 'outbound';
   body: string;
   created_at: string;
+  channel: ChannelKind | null;
 }
 
 interface ContactRow {
@@ -47,7 +56,7 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
     const [msgsRes, contactsRes] = await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from('wk_sms_messages' as any) as any)
-        .select('id, contact_id, direction, body, created_at')
+        .select('id, contact_id, direction, body, created_at, channel')
         .order('created_at', { ascending: false })
         .limit(500),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,6 +68,15 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
     const contacts = (contactsRes.data ?? []) as ContactRow[];
     const contactById = new Map<string, ContactRow>();
     for (const c of contacts) contactById.set(c.id, c);
+
+    // Per-contact channel counts (walk all 500 once).
+    const counts = new Map<string, Record<ChannelKind, number>>();
+    for (const m of msgs) {
+      const cur = counts.get(m.contact_id) ?? { sms: 0, whatsapp: 0, email: 0 };
+      const ch: ChannelKind = (m.channel ?? 'sms') as ChannelKind;
+      cur[ch] = (cur[ch] ?? 0) + 1;
+      counts.set(m.contact_id, cur);
+    }
 
     // Walk newest → oldest, take the first message we see per contact.
     const seen = new Set<string>();
@@ -74,6 +92,8 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
         lastMessageBody: m.body,
         lastMessageAt: m.created_at,
         lastDirection: m.direction,
+        lastChannel: (m.channel ?? 'sms') as ChannelKind,
+        channelCounts: counts.get(m.contact_id) ?? { sms: 0, whatsapp: 0, email: 0 },
         unreadCount: 0,
       });
     }
