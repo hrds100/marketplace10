@@ -49,6 +49,10 @@ export function rowToCampaign(row: WkCampaignRow, queue: QueueRollup | undefined
     aiCoachPromptId: row.ai_coach_prompt_id ?? undefined,
     scriptMd: row.script_md ?? undefined,
     autoAdvanceSeconds: row.auto_advance_seconds,
+    // PR 60 (Hugo 2026-04-27): expose is_active to the Settings UI
+    // so admin can pause/resume without deleting. The Campaign type
+    // already has isActive: boolean (was missing from the mapper).
+    isActive: row.is_active,
   };
 }
 
@@ -59,7 +63,19 @@ export interface UseDialerCampaignsResult {
   refetch: () => void;
 }
 
-export function useDialerCampaigns(): UseDialerCampaignsResult {
+interface UseDialerCampaignsOpts {
+  /** PR 60 (Hugo 2026-04-27): when true, include `is_active=false`
+   *  campaigns. Dialer page wants only running ones (default = false);
+   *  Settings page wants ALL campaigns so admins can see what they
+   *  just created — even though new campaigns start inactive so a
+   *  fresh row doesn't immediately start dialing. */
+  includeInactive?: boolean;
+}
+
+export function useDialerCampaigns(
+  opts: UseDialerCampaignsOpts = {},
+): UseDialerCampaignsResult {
+  const { includeInactive = false } = opts;
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,14 +87,17 @@ export function useDialerCampaigns(): UseDialerCampaignsResult {
     async function load() {
       setLoading(true);
       setError(null);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let campaignsQuery = (supabase.from('wk_dialer_campaigns' as any) as any)
+        .select(
+          'id, name, pipeline_id, parallel_lines, auto_advance_seconds, ai_coach_enabled, ai_coach_prompt_id, script_md, created_by, is_active'
+        )
+        .order('name', { ascending: true });
+      if (!includeInactive) {
+        campaignsQuery = campaignsQuery.eq('is_active', true);
+      }
       const [campaignsRes, queueRes] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_dialer_campaigns' as any) as any)
-          .select(
-            'id, name, pipeline_id, parallel_lines, auto_advance_seconds, ai_coach_enabled, ai_coach_prompt_id, script_md, created_by, is_active'
-          )
-          .eq('is_active', true)
-          .order('name', { ascending: true }),
+        campaignsQuery,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_dialer_queue' as any) as any).select('campaign_id, status'),
       ]);
@@ -155,7 +174,7 @@ export function useDialerCampaigns(): UseDialerCampaignsResult {
       try { void supabase.removeChannel(queueChan); } catch { /* ignore */ }
       try { void supabase.removeChannel(campaignsChan); } catch { /* ignore */ }
     };
-  }, [seq]);
+  }, [seq, includeInactive]);
 
   return {
     campaigns,
