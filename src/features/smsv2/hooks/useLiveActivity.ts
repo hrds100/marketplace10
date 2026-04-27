@@ -47,10 +47,18 @@ export function useLiveActivity(): { rows: LiveActivityRow[]; loading: boolean }
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    // PR 31 (Hugo 2026-04-27): only consider calls started in the
+    // last hour. Hugo saw the dashboard's timer ticking on calls that
+    // had clearly ended — the row was stuck at status='in_progress'
+    // because Twilio's status callback didn't land (or hasn't yet).
+    // Any row older than 60 minutes is almost certainly a stale ghost;
+    // hide it from the live feed regardless of status.
+    const oneHourAgoIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const callsRes = await (supabase.from('wk_calls' as any) as any)
       .select('id, agent_id, contact_id, status, started_at, ai_coach_enabled, to_e164')
       .in('status', ['queued', 'ringing', 'in_progress'])
+      .gte('started_at', oneHourAgoIso)
       .order('started_at', { ascending: false });
 
     const calls = (callsRes.data ?? []) as CallRow[];

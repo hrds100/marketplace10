@@ -248,12 +248,16 @@ export default function MidCallSmsSender({
           </span>
         )}
       </div>
+      {/* PR 31 (Hugo 2026-04-27): "let us expand the box where you
+          write the message bigger so we can read the entire message
+          there." rows bumped 3 → 5 for default height; resize-y lets
+          the agent drag the bottom edge to make it as tall as needed. */}
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Type a message, or pick a template above."
-        rows={3}
-        className="w-full px-2 py-1.5 text-[12px] border border-[#E5E5E5] rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80] resize-none"
+        rows={5}
+        className="w-full px-2 py-1.5 text-[12px] border border-[#E5E5E5] rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80] resize-y min-h-[80px]"
       />
       <div className="flex items-center justify-between mt-1.5">
         <span
