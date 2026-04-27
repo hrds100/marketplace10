@@ -32,6 +32,7 @@ import { MOCK_TEMPLATES, COACH_PROMPTS } from '../data/mockCampaigns';
 import { formatPence } from '../data/helpers';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useAiSettings } from '../hooks/useAiSettings';
+import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
 import { useDefaultCallScript } from '../hooks/useDefaultCallScript';
 import { useAgentScript } from '../hooks/useAgentScript';
 import { useSmsTemplates, type SmsTemplate } from '../hooks/useSmsTemplates';
@@ -86,16 +87,75 @@ const COLOUR_PALETTE = [
   '#9CA3AF', '#525252', '#8B5CF6', '#EC4899',
 ];
 
+// PR 56 (Hugo 2026-04-27): the AI / KB / Glossary tabs are scoped to
+// either workspace defaults or a specific campaign's overrides.
+// Campaigns / Agents / Numbers / Pipelines / Templates remain
+// workspace-level. We pass selectedCampaignId only to the cascade-
+// aware tabs.
+const CAMPAIGN_SCOPED_TABS = new Set(['ai', 'kb', 'glossary']);
+
+// PR 56: a tiny inline pill that reflects whether a field is
+// inheriting a workspace default ('inherited') or has a per-campaign
+// override ('override'). When the user is in workspace mode the
+// badge is hidden. When the user has overridden a field in campaign
+// mode, the badge shows a "↺" reset action that clears the override.
+function ScopeBadge({
+  source,
+  campaignId,
+  onReset,
+}: {
+  source: 'workspace' | 'campaign' | undefined;
+  campaignId: string | null;
+  onReset?: () => void;
+}) {
+  if (!campaignId) return null;
+  if (source === 'campaign') {
+    return (
+      <span className="inline-flex items-center gap-1 ml-2 text-[9px] uppercase font-bold tracking-wide text-[#1E9A80] bg-[#ECFDF5] px-1.5 py-0.5 rounded">
+        override
+        {onReset && (
+          <button
+            type="button"
+            onClick={onReset}
+            className="hover:text-[#0F766E]"
+            title="Clear override + fall back to workspace default"
+          >
+            ↺
+          </button>
+        )}
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center ml-2 text-[9px] uppercase font-bold tracking-wide text-[#9CA3AF] bg-[#F3F3EE] px-1.5 py-0.5 rounded"
+      title="Inherited from workspace default — edit to create a campaign override"
+    >
+      inherited
+    </span>
+  );
+}
+
 export default function SettingsPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]['id']>('pipelines');
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const showCampaignPicker = CAMPAIGN_SCOPED_TABS.has(tab);
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto">
-      <header className="mb-5">
-        <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Settings</h1>
-        <p className="text-[13px] text-[#6B7280]">
-          Nothing in the agent UI is hardcoded — everything below is editable here
-        </p>
+      <header className="mb-5 flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Settings</h1>
+          <p className="text-[13px] text-[#6B7280]">
+            Nothing in the agent UI is hardcoded — everything below is editable here
+          </p>
+        </div>
+        {showCampaignPicker && (
+          <CampaignScopePicker
+            value={selectedCampaignId}
+            onChange={setSelectedCampaignId}
+          />
+        )}
       </header>
 
       <div className="grid grid-cols-12 gap-5">
@@ -124,13 +184,92 @@ export default function SettingsPage() {
           {tab === 'campaigns' && <CampaignsTab />}
           {tab === 'agents' && <AgentsTab />}
           {tab === 'numbers' && <NumbersTab />}
-          {tab === 'ai' && <AITab />}
-          {tab === 'kb' && <KnowledgeBaseTab />}
-          {tab === 'glossary' && <GlossaryTab />}
+          {tab === 'ai' && <AITab campaignId={selectedCampaignId} />}
+          {tab === 'kb' && <KnowledgeBaseTab campaignId={selectedCampaignId} />}
+          {tab === 'glossary' && <GlossaryTab campaignId={selectedCampaignId} />}
           {tab === 'pacing' && <PacingTab />}
           {tab === 'kill' && <KillTab />}
         </main>
       </div>
+    </div>
+  );
+}
+
+// PR 56: dropdown that lets the admin pick "Workspace defaults" or a
+// specific campaign for the AI/KB/Glossary tabs. Reads campaigns from
+// useDialerCampaigns so it shows whatever's in wk_dialer_campaigns.
+function CampaignScopePicker({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (id: string | null) => void;
+}) {
+  const { campaigns, refetch } = useDialerCampaigns();
+  const current = campaigns.find((c) => c.id === value);
+  const [duplicating, setDuplicating] = useState(false);
+
+  const onDuplicate = async () => {
+    if (!current) return;
+    const newName = window.prompt(
+      `Duplicate "${current.name}" — what should the copy be called?`,
+      `${current.name} (copy)`,
+    );
+    if (!newName?.trim()) return;
+    setDuplicating(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc('wk_duplicate_campaign', {
+        p_source_id: current.id,
+        p_new_name: newName.trim(),
+      });
+      if (error) {
+        window.alert(`Duplicate failed: ${error.message}`);
+        return;
+      }
+      refetch();
+      if (typeof data === 'string') onChange(data);
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+        Editing
+      </span>
+      <select
+        value={value ?? '__workspace__'}
+        onChange={(e) => {
+          const v = e.target.value;
+          onChange(v === '__workspace__' ? null : v);
+        }}
+        className="bg-white border border-[#E5E7EB] rounded-[10px] px-3 py-1.5 text-[13px] font-medium text-[#1A1A1A] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/40 focus:border-[#1E9A80]"
+        title="Switch between workspace defaults and a specific campaign override"
+      >
+        <option value="__workspace__">Workspace defaults</option>
+        {campaigns.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      {current && (
+        <>
+          <span className="text-[10px] font-medium text-[#1E9A80] bg-[#ECFDF5] px-1.5 py-0.5 rounded">
+            campaign override
+          </span>
+          <button
+            onClick={() => void onDuplicate()}
+            disabled={duplicating}
+            className="text-[12px] font-medium text-[#1A1A1A] bg-white border border-[#E5E7EB] hover:bg-[#F3F3EE] px-3 py-1.5 rounded-[10px] disabled:opacity-60"
+            title="Copy this campaign + its full bundle (AI / facts / glossary / agents / numbers)"
+          >
+            {duplicating ? 'Duplicating…' : '+ Duplicate'}
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -1348,9 +1487,10 @@ function NumbersTab() {
 }
 
 // ─── AI — API key + model dropdown ─────────────────────────────────
-function AITab() {
+function AITab({ campaignId = null }: { campaignId?: string | null } = {}) {
   const ks = useKillSwitch();
-  const { settings, loading, saving, error, saved, setField, save } = useAiSettings();
+  const { settings, loading, saving, error, saved, fieldSource, setField, save, resetField } =
+    useAiSettings({ campaignId });
   const [showKey, setShowKey] = useState(false);
 
   return (
@@ -1515,32 +1655,59 @@ function AITab() {
       >
         <div className="space-y-3">
           <div>
-            <Label>Layer 1 — Style / voice</Label>
+            <Label>
+              Layer 1 — Style / voice
+              <ScopeBadge
+                source={fieldSource.coach_style_prompt}
+                campaignId={campaignId}
+                onReset={() => void resetField('coach_style_prompt')}
+              />
+            </Label>
             <div className="text-[10px] text-[#9CA3AF] mb-1">
               How the rep sounds. UK English, plain, commercial. Bans on
-              acting notes, multiple variants, American slop. Persisted
-              to <code className="bg-[#F3F3EE] px-1 rounded">wk_ai_settings.coach_style_prompt</code>.
+              acting notes, multiple variants, American slop.
+              {campaignId
+                ? ' Per-campaign override stored in wk_campaign_ai_settings.'
+                : ' Persisted to wk_ai_settings.coach_style_prompt (workspace default).'}
             </div>
             <textarea
               value={settings.coach_style_prompt}
               onChange={(e) => setField('coach_style_prompt', e.target.value)}
               rows={8}
-              placeholder="Leave empty to use the canonical default from the edge function."
+              placeholder={
+                campaignId
+                  ? 'Leave empty to inherit the workspace default.'
+                  : 'Leave empty to use the canonical default from the edge function.'
+              }
               className="w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2"
             />
           </div>
           <div>
-            <Label>Layer 2 — Script / call logic</Label>
+            <Label>
+              Layer 2 — Script / call logic
+              <ScopeBadge
+                source={fieldSource.coach_script_prompt}
+                campaignId={campaignId}
+                onReset={() => void resetField('coach_script_prompt')}
+              />
+            </Label>
             <div className="text-[10px] text-[#9CA3AF] mb-1">
               Call stages, open-ended default, earned-close gate,
               retrieval instruction (point the model at the KB for
-              factual questions). Persisted to <code className="bg-[#F3F3EE] px-1 rounded">wk_ai_settings.coach_script_prompt</code>.
+              factual questions).
+              {campaignId
+                ? ' Per-campaign override stored in wk_campaign_ai_settings.'
+                : ' Persisted to wk_ai_settings.coach_script_prompt (workspace default).'}
             </div>
             <textarea
               value={settings.coach_script_prompt}
               onChange={(e) => setField('coach_script_prompt', e.target.value)}
               rows={12}
-              placeholder="Leave empty to use the canonical default from the edge function."
+              placeholder={
+                campaignId
+                  ? 'Leave empty to inherit the workspace default.'
+                  : 'Leave empty to use the canonical default from the edge function.'
+              }
               className="w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2"
             />
           </div>
@@ -1733,8 +1900,12 @@ function CallScriptCard() {
 }
 
 // ─── Glossary tab — wk_terminologies CRUD (admin) ─────────────────
-function GlossaryTab() {
-  const { items, loading, error, add, patch, remove } = useTerminologies();
+function GlossaryTab({
+  campaignId = null,
+}: { campaignId?: string | null } = {}) {
+  // PR 56: campaign-aware. workspace rows show as inherited; new
+  // entries go into wk_campaign_terminologies when scoped to a campaign.
+  const { items, loading, error, add, patch, remove } = useTerminologies({ campaignId });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{
     term: string;
@@ -2029,8 +2200,13 @@ function GlossaryEditor({
 // question. The edge fn matches keywords against the caller's last
 // utterance and passes the matches as a "POSSIBLY RELEVANT FACTS" hint.
 // See docs/runbooks/COACH_PROMPT_LAYERS.md.
-function KnowledgeBaseTab() {
-  const { items, loading, error, add, patch, remove } = useCoachFacts();
+function KnowledgeBaseTab({
+  campaignId = null,
+}: { campaignId?: string | null } = {}) {
+  // PR 56: when campaignId is set, edits go to wk_campaign_facts
+  // and the list shows merged workspace + campaign facts. The hook
+  // already handles that — we just thread the prop through.
+  const { items, loading, error, add, patch, remove } = useCoachFacts({ campaignId });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{
     key: string;
