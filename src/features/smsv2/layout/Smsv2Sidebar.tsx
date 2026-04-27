@@ -44,10 +44,12 @@ export default function Smsv2Sidebar({ collapsed, onCollapse }: Smsv2SidebarProp
   // are hidden entirely from agents — no point showing a row that
   // CrmGuard would block. Resolve workspace_role from profiles + the
   // hardcoded admin allow-list (hugo@nfstay.com / admin@hub.nfstay.com).
-  const { user, isAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const [workspaceRole, setWorkspaceRole] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
+    // Wait for auth to settle before resolving the role.
+    if (authLoading) return;
     if (!user) { setWorkspaceRole(null); return; }
     let cancelled = false;
     void (async () => {
@@ -59,7 +61,7 @@ export default function Smsv2Sidebar({ collapsed, onCollapse }: Smsv2SidebarProp
       if (!cancelled) setWorkspaceRole((data?.workspace_role as string | null) ?? null);
     })();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [authLoading, user]);
 
   const isAdminOrWorkspaceAdmin = isAdmin || workspaceRole === 'admin';
 
