@@ -169,6 +169,32 @@ serve(async (req: Request) => {
       continue;
     }
 
+    // PR 84 (Hugo 2026-04-27 — "I just connected a new WhatsApp but it's
+    // not reflecting on the channels"): self-heal wk_numbers on every
+    // poll cycle. Unipile's hosted-auth notify_url callback isn't firing
+    // for our endpoint (same upstream bug as message_received webhooks),
+    // so newly-paired accounts never auto-create their row. Polling +
+    // upserting fixes this with no agent intervention.
+    const phoneFromUnipile = acct.connection_params?.im?.phone_number ?? '';
+    const accountE164 = phoneFromUnipile
+      ? digitsToE164(phoneFromUnipile)
+      : `unipile:${accountId}`;
+    await supa
+      .from('wk_numbers')
+      .upsert(
+        {
+          e164: accountE164,
+          channel: 'whatsapp',
+          provider: 'unipile',
+          external_id: accountId,
+          is_active: true,
+          voice_enabled: false,
+          sms_enabled: false,
+          recording_enabled: false,
+        },
+        { onConflict: 'channel,external_id', ignoreDuplicates: false }
+      );
+
     const mr = await fetch(
       `https://${UNIPILE_DSN}/api/v1/messages?account_id=${accountId}&limit=100`,
       { headers: { 'X-API-KEY': UNIPILE_TOKEN, accept: 'application/json' } }
